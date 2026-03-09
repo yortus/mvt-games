@@ -92,11 +92,15 @@ Each module has a barrel file (`index.ts`) that defines its public API.
 
 ```
 src/
-├── main.ts          Entry point — bootstraps app, wires models ↔ views, starts ticker
-├── data/            Static data and configuration constants
-├── models/          State and domain logic + shared domain types
-├── utils/           General helpers (e.g. change-detection watches)
-└── views/           Rendering and user-input handling
+├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
+├── cabinet/             Cabinet model & view (game selection)
+├── games/               Game registry + per-game modules
+│   ├── game-entry.ts    GameEntry & GameSession interfaces
+│   └── <name>/          Self-contained game module
+│       ├── data/        Static data and configuration constants
+│       ├── models/      State and domain logic + domain types
+│       └── views/       Rendering and user-input handling
+└── utils/               General helpers (e.g. change-detection watches)
 ```
 
 | Directory | Contains                                                         | Typical Exports                                           |

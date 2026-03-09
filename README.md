@@ -1,8 +1,19 @@
-# Pacman
+# MVT Games
 
-A classic arcade game built with modern web technologies, structured around the
-**MVT (Model-View-Ticker)** architecture for clean separation of concerns,
-testability, and buttery-smooth animation.
+A collection of classic arcade games built with modern web technologies,
+demonstrating the **MVT (Model-View-Ticker)** architecture for clean separation
+of concerns, testability, and buttery-smooth animation.
+
+## Games
+
+| Game    | Description                |
+| ------- | -------------------------- |
+| Pac-Man | Navigate mazes, eat dots   |
+| Dig Dug | Dig tunnels, defeat enemies |
+
+Each game is a self-contained module under `src/games/<name>/` with its own
+data, models, and views. A **Cabinet** manages game selection and delegates to
+the active game session.
 
 ## Tech Stack
 
@@ -43,6 +54,8 @@ approach designed for visual/interactive applications with frame-based animation
 - **Views** are stateless renderers that read model state through a `bindings`
   interface and refresh every frame.
 - **Ticker** drives the loop: update models → refresh views → render frame.
+- **Cabinet** manages game selection; each game is a self-contained module
+  that exposes a `GameEntry` descriptor and produces a `GameSession` when started.
 
 See the [MVT Architecture Guide](docs/mvt-guide.md) for full details.
 
@@ -59,11 +72,12 @@ See the [MVT Architecture Guide](docs/mvt-guide.md) for full details.
 
 ```
 src/
-├── main.ts          Entry point — bootstraps app, wires models ↔ views, starts ticker
-├── data/            Static data and configuration constants
-├── models/          State & domain logic + shared domain types (Direction, TileKind, GamePhase)
-├── utils/           General helpers (e.g. change-detection watches)
-└── views/           Pixi.js rendering
+├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
+├── cabinet/             Cabinet model & view (game selection)
+├── games/               Game registry + per-game modules
+│   ├── game-entry.ts    GameEntry & GameSession interfaces
+│   └── <name>/          Self-contained game (data/, models/, views/)
+└── utils/               Shared helpers (e.g. change-detection watches)
 ```
 
 Each directory is a module with a barrel file (`index.ts`) defining its public API.
