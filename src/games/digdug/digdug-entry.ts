@@ -28,7 +28,7 @@ export function createDigdugEntry(): GameEntry {
         screenHeight: FIELD_ROWS * TILE_SIZE + HUD_HEIGHT,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('/sprites/digdug-sprites.json');
+            textures = await loadSpriteTextures('sprites/digdug-sprites.json');
         },
 
         start(stage: Container): GameSession {

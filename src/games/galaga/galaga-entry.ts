@@ -27,7 +27,7 @@ export function createGalagaEntry(): GameEntry {
         screenHeight: PLAY_HEIGHT + HUD_HEIGHT,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('/sprites/galaga-sprites.json');
+            textures = await loadSpriteTextures('sprites/galaga-sprites.json');
         },
 
         start(stage: Container): GameSession {

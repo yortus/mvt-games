@@ -28,7 +28,7 @@ export function createPacmanEntry(): GameEntry {
         screenHeight: MAZE_ROWS * TILE_SIZE + HUD_HEIGHT,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('/sprites/pacman-sprites.json');
+            textures = await loadSpriteTextures('sprites/pacman-sprites.json');
         },
 
         start(stage: Container): GameSession {
