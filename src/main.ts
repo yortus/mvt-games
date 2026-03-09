@@ -1,6 +1,6 @@
 import { Application } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
-import { createPacmanEntry, createDigdugEntry } from './games';
+import { createPacmanEntry, createDigdugEntry, createGalagaEntry } from './games';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     document.body.appendChild(app.canvas);
 
     // ---- Game registry -----------------------------------------------------
-    const games = [createPacmanEntry(), createDigdugEntry()];
+    const games = [createPacmanEntry(), createDigdugEntry(), createGalagaEntry()];
 
     // ---- Cabinet model -----------------------------------------------------
     const cabinet = createCabinetModel({ games });
