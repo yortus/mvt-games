@@ -16,6 +16,7 @@ Coding conventions, naming rules, and project structure for this codebase.
 - [Project Structure](#project-structure)
 - [Modules and Barrel Files](#modules-and-barrel-files)
 - [Enumeration Types](#enumeration-types)
+- [No `null`](#no-null)
 - [Models](#models)
 - [Views](#views)
 - [Code Organisation](#code-organisation)
@@ -162,20 +163,71 @@ import type { Direction } from '../models/common';
 
 ### Barrel File Contents
 
-Barrel files (`index.ts`) contain only re-exports — no logic, no side effects.
-They define which symbols are part of the module's public API:
+Barrel files (`index.ts`) contain **only re-exports** — no declarations, no
+logic, no side effects. They define which symbols are part of the module's
+public API:
 
 ```ts
-// index.ts
+// index.ts — ✅ correct: re-exports only
 export { createCounterModel } from './counter-model';
 export type { CounterModel, CounterModelOptions } from './counter-model';
 export { createTimerModel } from './timer-model';
 export type { TimerModel } from './timer-model';
 ```
 
+```ts
+// index.ts — ❌ wrong: barrel contains a declaration
+export function createFooEntry(): FooEntry { /* ... */ }
+export { createHelperModel } from './helper-model';
+```
+
+Move any declarations that live in a barrel into their own file and re-export
+them instead:
+
+```ts
+// foo-entry.ts          ← declaration lives here
+export function createFooEntry(): FooEntry { /* ... */ }
+
+// index.ts              ← barrel re-exports it
+export { createFooEntry } from './foo-entry';
+```
+
+**Why no declarations in barrels?**
+
+- **Locatability** — definitions in an `index.ts` are hard to find because every
+  directory has one and editors highlight them all. A dedicated file gives the
+  definition a clear, searchable name.
+- **Cyclic-import safety** — when a barrel both declares code and re-exports
+  sibling modules, those siblings may try to import the barrel-declared symbol.
+  This creates a cycle through the barrel, which can cause subtle runtime
+  errors (e.g. accessing an import before its module has finished executing).
+  Keeping barrels declaration-free eliminates this risk entirely.
+
 Internal-only files (helpers, constants used only within the module) are **not**
 re-exported. This keeps the public surface intentional — consumers can only
 depend on what you explicitly choose to expose.
+
+### No Self-Imports Through the Barrel
+
+Files inside a directory module must **never** import from their own barrel
+(`index.ts`). Always use direct relative paths to the sibling file instead:
+
+```ts
+// Inside models/score-model.ts
+
+// ✅ Correct — direct relative import to sibling
+import { type Direction } from './common';
+
+// ❌ Wrong — importing from own barrel creates a cycle
+import { type Direction } from '.';          // resolves to ./index.ts
+import { type Direction } from './index';    // same problem, explicit
+```
+
+**Why?** Importing from your own barrel creates a circular dependency: the
+barrel re-exports you, and you import from the barrel. Even when the cycle is
+technically resolvable, it makes the dependency graph harder to reason about
+and can cause runtime issues where an imported value is `undefined` because
+the exporting module hasn't finished initializing.
 
 **Why barrel files?**
 
@@ -219,6 +271,23 @@ enum TileType {
 
 ---
 
+## No `null`
+
+Prefer `undefined` over `null` throughout the codebase to align with
+JavaScript's own APIs (which consistently use `undefined`).
+
+```ts
+// ✅ Preferred
+function find(id: string): Item | undefined;
+let selected: Item | undefined;
+
+// ❌ Avoid
+function find(id: string): Item | null;
+let selected: Item | null = null;
+```
+
+---
+
 ## Models
 
 - Define each model as a **pure interface** describing its public API.
@@ -227,7 +296,9 @@ enum TileType {
 - Implement models as **plain records** satisfying the interface. Use closure
   scope for private state — no classes.
 - Include an `update(deltaMs)` method for time-based state advancement (see
-  [MVT Guide — Models](mvt-guide.md#models)).
+  [MVT Guide — Models](mvt-guide.md#models)). When using GSAP timelines,
+  structure `update()` as _advance then orchestrate_ — see
+  [Structuring update()](mvt-guide.md#structuring-update--advance-then-orchestrate).
 
 ```ts
 // ---------------------------------------------------------------------------

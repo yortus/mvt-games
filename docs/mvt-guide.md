@@ -19,6 +19,7 @@ separation of concerns, deterministic state, and smooth frame-based animation.
     - [Model Hierarchy and Composition](#model-hierarchy-and-composition)
     - [Time Management](#time-management)
     - [GSAP Timeline Recipe](#gsap-timeline-recipe)
+    - [Structuring update() — Advance then Orchestrate](#structuring-update--advance-then-orchestrate)
 - [Views](#views)
     - [Responsibilities](#view-responsibilities)
     - [The refresh() Contract](#the-refresh-contract)
@@ -237,6 +238,53 @@ update(deltaMs) {
 This gives you the expressiveness of GSAP's timeline API while keeping all state
 advancement under the ticker's explicit control. The single long-lived timeline
 instance with `autoRemoveChildren` keeps memory tidy without manual cleanup.
+
+### Structuring `update()` — Advance then Orchestrate
+
+When a model uses GSAP timelines, `update()` should follow a strict two-phase
+pattern:
+
+1. **Advance** — unconditionally advance every timeline.
+2. **Orchestrate** — check current state and trigger new sequences as needed.
+
+`update()` must _not_ contain detailed sequencing logic (manual timer
+arithmetic, multi-step state machines). That work belongs in `schedule*()`
+helpers that build timeline sequences.
+
+```ts
+// ✅ Good — advance + orchestrate
+update(deltaMs) {
+    const dt = 0.001 * deltaMs;
+    moveTimeline.time(moveTimeline.time() + dt);
+    attackTimeline.time(attackTimeline.time() + dt);
+
+    // Orchestration: trigger next sequence when idle
+    if (!state.moving) scheduleMove();
+}
+
+// ❌ Bad — manual sequencing inside update()
+update(deltaMs) {
+    if (state.phase === 'windup') {
+        state.windupTimer -= deltaMs;
+        if (state.windupTimer <= 0) {
+            state.phase = 'attack';
+            state.attackTimer = 500;
+        }
+    } else if (state.phase === 'attack') {
+        state.attackTimer -= deltaMs;
+        // ...etc — increasingly tangled branches
+    }
+}
+```
+
+**Why this matters:**
+
+- `schedule*()` helpers describe sequences _declaratively_ using the timeline
+  API — durations, easing, callbacks — in one place you can read top-to-bottom.
+- `update()` stays short, flat, and easy to audit. Each frame it does the same
+  thing: advance clocks, check a few predicates, maybe kick off new sequences.
+- Multiple timelines (movement, attack, cooldown) advance independently,
+  avoiding nested `if/else` chains that grow with every new behaviour.
 
 ---
 
