@@ -77,9 +77,6 @@ src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
-│   ├── game-entry.ts    GameEntry & GameSession interfaces
 │   └── <name>/          Self-contained game (data/, models/, views/)
 └── utils/               Shared helpers (e.g. change-detection watches)
 ```
-
-Each directory is a module with a barrel file (`index.ts`) defining its public API.
