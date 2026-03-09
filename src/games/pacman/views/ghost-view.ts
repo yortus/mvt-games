@@ -1,5 +1,14 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Sprite, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
+
+// ---------------------------------------------------------------------------
+// Textures
+// ---------------------------------------------------------------------------
+
+export interface GhostViewTextures {
+    readonly body: Texture;
+    readonly eyes: Texture;
+}
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -16,60 +25,41 @@ export interface GhostViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGhostView(bindings: GhostViewBindings): Container {
-    // ---- Change detection ---------------------------------------------------
+export function createGhostView(
+    bindings: GhostViewBindings,
+    textures: GhostViewTextures,
+): Container {
     const watchColor = createWatch(bindings.getColor);
     const watchTileSize = createWatch(bindings.getTileSize);
 
-    // ---- Scene elements -------------------------------------------------------
     const container = new Container();
-    const gfx = new Graphics();
-    container.addChild(gfx);
+    const bodySprite = new Sprite({ texture: textures.body, anchor: 0.5 });
+    const eyesSprite = new Sprite({ texture: textures.eyes, anchor: 0.5 });
+    bodySprite.tint = bindings.getColor();
+    container.addChild(bodySprite);
+    container.addChild(eyesSprite);
 
-    updateLayout();
+    const s = watchTileSize.value / 20;
+    bodySprite.scale.set(s);
+    eyesSprite.scale.set(s);
+
     container.onRender = refresh;
     return container;
 
     function refresh(): void {
-        if (watchColor.changed() | watchTileSize.changed()) updateLayout();
-
         const ts = bindings.getTileSize();
         const x = bindings.getX() * ts + ts / 2;
         const y = bindings.getY() * ts + ts / 2;
         container.position.set(x, y);
-    }
 
-    function updateLayout(): void {
-        const ts = watchTileSize.value;
-        const r = ts * 0.45;
-        gfx.clear();
+        if (watchColor.changed()) {
+            bodySprite.tint = watchColor.value;
+        }
 
-        // Body — semicircle top + rectangle bottom + wavy bottom edge
-        gfx
-            // top dome
-            .arc(0, -r * 0.2, r, Math.PI, 0)
-            // right side down
-            .lineTo(r, r * 0.6)
-            // wavy bottom
-            .lineTo(r * 0.66, r * 0.35)
-            .lineTo(r * 0.33, r * 0.6)
-            .lineTo(0, r * 0.35)
-            .lineTo(-r * 0.33, r * 0.6)
-            .lineTo(-r * 0.66, r * 0.35)
-            .lineTo(-r, r * 0.6)
-            // left side up
-            .lineTo(-r, -r * 0.2)
-            .closePath()
-            .fill(watchColor.value);
-
-        // Eyes
-        const eyeR = r * 0.2;
-        const eyeY = -r * 0.25;
-        gfx.circle(-r * 0.3, eyeY, eyeR).fill(0xffffff);
-        gfx.circle(r * 0.3, eyeY, eyeR).fill(0xffffff);
-        // Pupils
-        const pupilR = eyeR * 0.5;
-        gfx.circle(-r * 0.25, eyeY, pupilR).fill(0x0000aa);
-        gfx.circle(r * 0.35, eyeY, pupilR).fill(0x0000aa);
+        if (watchTileSize.changed()) {
+            const sc = ts / 20;
+            bodySprite.scale.set(sc);
+            eyesSprite.scale.set(sc);
+        }
     }
 }

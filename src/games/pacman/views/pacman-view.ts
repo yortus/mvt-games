@@ -1,6 +1,16 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Sprite, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
 import type { Direction } from '../models';
+
+// ---------------------------------------------------------------------------
+// Textures
+// ---------------------------------------------------------------------------
+
+export interface PacmanViewTextures {
+    readonly closed: Texture;
+    readonly mid: Texture;
+    readonly open: Texture;
+}
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -18,17 +28,21 @@ export interface PacmanViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createPacmanView(bindings: PacmanViewBindings): Container {
-    // ---- Change detection ---------------------------------------------------
+export function createPacmanView(
+    bindings: PacmanViewBindings,
+    textures: PacmanViewTextures,
+): Container {
     const watchDirection = createWatch(bindings.getDirection);
     const watchTileSize = createWatch(bindings.getTileSize);
-    let prevMouth = -1;
 
-    // ---- Scene elements -------------------------------------------------------
     const container = new Container();
-    const gfx = new Graphics();
-    container.addChild(gfx);
+    const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
+    container.addChild(sprite);
 
+    let prevFrame = -1;
+
+    sprite.scale.set(watchTileSize.value / 20);
+    container.rotation = directionToRotation(watchDirection.value);
     container.onRender = refresh;
     return container;
 
@@ -36,29 +50,29 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
         const ts = watchTileSize.value;
         const x = bindings.getX() * ts + ts / 2;
         const y = bindings.getY() * ts + ts / 2;
-        const progress = bindings.getStepProgress();
-
-        // Derive mouth angle from step progress (one open/close cycle per tile)
-        const MAX_MOUTH_ANGLE = 0.8;
-        const mouth = Math.sin(progress * Math.PI) * MAX_MOUTH_ANGLE;
-
         container.position.set(x, y);
-        container.rotation = directionToRotation(watchDirection.value);
 
-        // Only redraw if mouth angle, direction, or tile size changed
-        const dirChanged = watchDirection.changed();
-        const tsChanged = watchTileSize.changed();
-        if (mouth !== prevMouth || dirChanged || tsChanged) {
-            prevMouth = mouth;
+        if (watchTileSize.changed()) {
+            sprite.scale.set(ts / 20);
+        }
 
-            const radius = ts * 0.45;
-            gfx.clear();
+        // Mouth frame: 0 = closed, 1 = mid, 2 = open
+        const progress = bindings.getStepProgress();
+        const mouth = Math.sin(progress * Math.PI);
+        const frame = mouth < 0.33 ? 0 : mouth < 0.66 ? 1 : 2;
 
-            // Draw pac-man as an arc with a mouth wedge
-            const startAngle = mouth;
-            const endAngle = Math.PI * 2 - mouth;
+        if (frame !== prevFrame) {
+            prevFrame = frame;
+            // prettier-ignore
+            switch (frame) {
+                case 0: sprite.texture = textures.closed; break;
+                case 1: sprite.texture = textures.mid;    break;
+                case 2: sprite.texture = textures.open;   break;
+            }
+        }
 
-            gfx.moveTo(0, 0).arc(0, 0, radius, startAngle, endAngle).closePath().fill(0xffff00);
+        if (watchDirection.changed()) {
+            container.rotation = directionToRotation(watchDirection.value);
         }
     }
 

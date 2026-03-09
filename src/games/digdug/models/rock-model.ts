@@ -44,12 +44,20 @@ const SHATTER_SECONDS = 0.8;
 export function createRockModel(options: RockModelOptions): RockModel {
     const { row: initRow, col: initCol, fieldRows, isWalkable, fallSpeed = 8 } = options;
 
-    const state = {
+    const state: {
+        row: number;
+        col: number;
+        x: number;
+        y: number;
+        phase: RockPhase;
+        progress: number;
+        alive: boolean;
+    } = {
         row: initRow,
         col: initCol,
         x: initCol,
         y: initRow,
-        phase: 'stable' as RockPhase,
+        phase: 'stable',
         progress: 0,
         alive: true,
     };

@@ -65,6 +65,16 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     menuLayer.addChild(subtitle);
 
     let itemTexts: Text[] = [];
+    const arrow = new Text({
+        text: '\u25b6',
+        style: {
+            fontFamily: 'monospace',
+            fontSize: 22,
+            fill: 0xffff00,
+        },
+    });
+    arrow.anchor.set(1, 0);
+    menuLayer.addChild(arrow);
     buildMenuItems();
 
     // ---- Keyboard input ---------------------------------------------------
@@ -156,10 +166,9 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             const item = itemTexts[i];
             if (i === sel) {
                 item.style.fill = 0xffff00;
-                item.text = '\u25b6 ' + bindings.getGameName(i);
+                arrow.position.set(item.x - item.width / 2 - 8, item.y);
             } else {
                 item.style.fill = 0xffffff;
-                item.text = '  ' + bindings.getGameName(i);
             }
         }
     }

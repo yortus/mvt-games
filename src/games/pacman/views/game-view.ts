@@ -3,8 +3,8 @@ import { createWatch } from '#utils';
 import type { Direction, TileKind, GamePhase, PlayerInputModel } from '../models';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 import { createMazeView } from './maze-view';
-import { createPacmanView } from './pacman-view';
-import { createGhostView } from './ghost-view';
+import { createPacmanView, type PacmanViewTextures } from './pacman-view';
+import { createGhostView, type GhostViewTextures } from './ghost-view';
 import { createHudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
@@ -37,10 +37,19 @@ export interface GameViewBindings {
 }
 
 // ---------------------------------------------------------------------------
+// Textures
+// ---------------------------------------------------------------------------
+
+export interface GameViewTextures {
+    readonly pacman: PacmanViewTextures;
+    readonly ghost: GhostViewTextures;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings): Container {
+export function createGameView(bindings: GameViewBindings, textures: GameViewTextures): Container {
     // ---- Change detection ---------------------------------------------------
     const watchTileSize = createWatch(bindings.getTileSize);
     const watchRows = createWatch(bindings.getRows);
@@ -69,7 +78,7 @@ export function createGameView(bindings: GameViewBindings): Container {
         getDirection: bindings.getPacmanDirection,
         getStepProgress: bindings.getPacmanStepProgress,
         getTileSize: bindings.getTileSize,
-    });
+    }, textures.pacman);
     container.addChild(pacmanContainer);
 
     // Ghosts — managed as a dynamic list
@@ -159,7 +168,7 @@ export function createGameView(bindings: GameViewBindings): Container {
                 getY: () => bindings.getGhostY(idx),
                 getColor: () => bindings.getGhostColor(idx),
                 getTileSize: bindings.getTileSize,
-            });
+            }, textures.ghost);
             container.addChild(ghostContainer);
             ghostContainers.push(ghostContainer);
         }

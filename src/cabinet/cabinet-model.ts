@@ -11,10 +11,10 @@ export interface CabinetModel {
     readonly phase: CabinetPhase;
     readonly games: readonly GameEntry[];
     readonly selectedIndex: number;
-    readonly activeSession: GameSession | null;
+    readonly activeSession: GameSession | undefined;
     selectNext(): void;
     selectPrev(): void;
-    launchSelected(stage: Container): void;
+    launchSelected(stage: Container): Promise<void>;
     exitToMenu(): void;
     update(deltaMs: number): void;
 }
@@ -36,7 +36,7 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
 
     let phase: CabinetPhase = 'menu';
     let selectedIndex = 0;
-    let activeSession: GameSession | null = null;
+    let activeSession: GameSession | undefined;
 
     const model: CabinetModel = {
         get phase() {
@@ -62,22 +62,23 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
             selectedIndex = (selectedIndex - 1 + games.length) % games.length;
         },
 
-        launchSelected(stage: Container): void {
+        async launchSelected(stage: Container): Promise<void> {
             if (phase !== 'menu' || games.length === 0) return;
             const entry = games[selectedIndex];
+            if (entry.preload) await entry.preload();
             activeSession = entry.start(stage);
             phase = 'playing';
         },
 
         exitToMenu(): void {
-            if (phase !== 'playing' || activeSession === null) return;
+            if (phase !== 'playing' || !activeSession) return;
             activeSession.destroy();
-            activeSession = null;
+            activeSession = undefined;
             phase = 'menu';
         },
 
         update(deltaMs: number): void {
-            if (phase === 'playing' && activeSession !== null) {
+            if (phase === 'playing' && activeSession) {
                 activeSession.update(deltaMs);
             }
         },

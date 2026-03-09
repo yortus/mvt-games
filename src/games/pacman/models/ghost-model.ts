@@ -57,12 +57,19 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
     const { startRow, startCol, color, speed, behavior, isWalkable, chaseTarget, flankPartner, scatterTarget } =
         options;
 
-    const state = {
+    const state: {
+        x: number;
+        y: number;
+        col: number;
+        row: number;
+        direction: Direction;
+        moving: boolean;
+    } = {
         x: startCol,
         y: startRow,
         col: startCol,
         row: startRow,
-        direction: 'up' as Direction,
+        direction: 'up',
         moving: false,
     };
 

@@ -59,7 +59,10 @@ export const MAZE_DATA: TileKind[][] = mazeRows.map((row) =>
 export const PACMAN_SPAWN: [number, number] = (() => {
     for (let r = 0; r < mazeRows.length; r++) {
         const c = mazeRows[r].indexOf(PACMAN_CHAR);
-        if (c !== -1) return [r, c] as [number, number];
+        if (c !== -1) {
+            const result: [number, number] = [r, c];
+            return result;
+        }
     }
     throw new Error('Pac-Man spawn not found in maze');
 })();

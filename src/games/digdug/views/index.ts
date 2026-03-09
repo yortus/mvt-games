@@ -1,1 +1,1 @@
-export { createGameView, type GameViewBindings } from './game-view';
+export { createGameView, type GameViewBindings, type GameViewTextures } from './game-view';

@@ -13,13 +13,16 @@ const CABINET_HEIGHT = 360;
 // Bootstrap
 // ---------------------------------------------------------------------------
 
+main();
+
 async function main(): Promise<void> {
     const app = new Application();
     await app.init({
         width: CABINET_WIDTH,
         height: CABINET_HEIGHT,
         backgroundColor: 0x000000,
-        antialias: true,
+        antialias: false,
+        roundPixels: true,
     });
     document.body.appendChild(app.canvas);
 
@@ -57,5 +60,3 @@ async function main(): Promise<void> {
         cabinet.update(ticker.deltaMS);
     });
 }
-
-main();

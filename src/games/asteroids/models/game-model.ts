@@ -73,10 +73,10 @@ const RADIUS_BY_SIZE: Record<AsteroidSize, number> = {
     small: ASTEROID_RADIUS_SMALL,
 };
 
-const CHILD_SIZE: Record<AsteroidSize, AsteroidSize | null> = {
+const CHILD_SIZE: Record<AsteroidSize, AsteroidSize | undefined> = {
     large: 'medium',
     medium: 'small',
-    small: null,
+    small: undefined,
 };
 
 export function createGameModel(options: GameModelOptions): GameModel {
@@ -281,7 +281,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         ast.kill();
 
         const childSize = CHILD_SIZE[ast.size];
-        if (childSize === null) return;
+        if (!childSize) return;
 
         // Spawn two children
         for (let c = 0; c < 2; c++) {
@@ -297,7 +297,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 arenaWidth,
                 arenaHeight,
             });
-            (asteroids as AsteroidModel[]).push(child);
+            asteroids.push(child);
         }
     }
 

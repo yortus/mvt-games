@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
 import type { TileKind, DepthLayer } from '../data';
 import type {
@@ -11,9 +11,9 @@ import type {
     PlayerInputModel,
 } from '../models';
 import { createFieldView } from './field-view';
-import { createDiggerView } from './digger-view';
-import { createEnemyView } from './enemy-view';
-import { createRockView } from './rock-view';
+import { createDiggerView, type DiggerViewTextures } from './digger-view';
+import { createEnemyView, type EnemyViewTextures } from './enemy-view';
+import { createRockView, type RockViewTextures } from './rock-view';
 import { createHudView } from './hud-view';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 
@@ -64,10 +64,21 @@ export interface GameViewBindings {
 }
 
 // ---------------------------------------------------------------------------
+// Textures
+// ---------------------------------------------------------------------------
+
+export interface GameViewTextures {
+    readonly digger: DiggerViewTextures;
+    readonly enemy: EnemyViewTextures;
+    readonly rock: RockViewTextures;
+    readonly diggerIcon: Texture;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings): Container {
+export function createGameView(bindings: GameViewBindings, textures: GameViewTextures): Container {
     const watchTileSize = createWatch(bindings.getTileSize);
     const watchRows = createWatch(bindings.getRows);
     const watchCols = createWatch(bindings.getCols);
@@ -99,7 +110,7 @@ export function createGameView(bindings: GameViewBindings): Container {
         isHarpoonExtended: bindings.isHarpoonExtended,
         getHarpoonDistance: bindings.getHarpoonDistance,
         getTileSize: bindings.getTileSize,
-    });
+    }, textures.digger);
     container.addChild(diggerContainer);
 
     // Enemies — dynamic list
@@ -117,7 +128,7 @@ export function createGameView(bindings: GameViewBindings): Container {
         getLevel: bindings.getLevel,
         getTileSize: bindings.getTileSize,
         getCols: bindings.getCols,
-    });
+    }, textures.diggerIcon);
     container.addChild(hudContainer);
 
     // Overlay (game over / level clear)
@@ -194,7 +205,7 @@ export function createGameView(bindings: GameViewBindings): Container {
                 isFireActive: () => bindings.isEnemyFireActive(idx),
                 isFireTelegraph: () => bindings.isEnemyFireTelegraph(idx),
                 getTileSize: bindings.getTileSize,
-            });
+            }, textures.enemy);
             container.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
         }
@@ -215,7 +226,7 @@ export function createGameView(bindings: GameViewBindings): Container {
                 getPhase: () => bindings.getRockPhase(idx),
                 isAlive: () => bindings.isRockAlive(idx),
                 getTileSize: bindings.getTileSize,
-            });
+            }, textures.rock);
             container.addChild(rockContainer);
             rockContainers.push(rockContainer);
         }

@@ -1,7 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
+import { loadSpriteTextures, type SpriteTextures } from '#utils';
 import { createGameModel } from './models';
-import { createGameView, type GameViewBindings } from './views';
+import { createGameView, type GameViewBindings, type GameViewTextures } from './views';
 import {
     SCREEN_WIDTH,
     PLAY_HEIGHT,
@@ -17,13 +18,21 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createGalagaEntry(): GameEntry {
+    let textures: SpriteTextures | undefined;
+
     return {
         id: 'galaga',
         name: 'Galaga',
         screenWidth: SCREEN_WIDTH,
         screenHeight: PLAY_HEIGHT + HUD_HEIGHT,
 
+        async preload(): Promise<void> {
+            textures = await loadSpriteTextures('/sprites/galaga-sprites.json');
+        },
+
         start(stage: Container): GameSession {
+            if (!textures) throw new Error('galaga: preload() must be called before start()');
+
             const game = createGameModel({
                 waves: WAVES,
                 playHeight: PLAY_HEIGHT,
@@ -33,6 +42,14 @@ export function createGalagaEntry(): GameEntry {
                 shipMinX: SHIP_HALF_WIDTH,
                 shipMaxX: SCREEN_WIDTH - SHIP_HALF_WIDTH,
             });
+
+            const gameTextures: GameViewTextures = {
+                boss: textures['boss'],
+                butterfly: textures['butterfly'],
+                bee: textures['bee'],
+                ship: textures['ship'],
+                'ship-icon': textures['ship-icon'],
+            };
 
             const bindings: GameViewBindings = {
                 getScreenWidth: () => SCREEN_WIDTH,
@@ -61,7 +78,7 @@ export function createGalagaEntry(): GameEntry {
                 getPlayerInput: () => game.playerInput,
             };
 
-            const gameContainer = createGameView(bindings);
+            const gameContainer = createGameView(bindings, gameTextures);
             stage.addChild(gameContainer);
 
             return {

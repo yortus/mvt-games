@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Sprite, Text, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
 
 // ---------------------------------------------------------------------------
@@ -16,7 +16,7 @@ export interface HudViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
+export function createHudView(bindings: HudViewBindings, shipIconTexture: Texture): Container {
     const watchScore = createWatch(bindings.getScore);
     const watchLives = createWatch(bindings.getLives);
     const watchStage = createWatch(bindings.getStage);
@@ -71,13 +71,8 @@ export function createHudView(bindings: HudViewBindings): Container {
         livesContainer.removeChildren();
         const lives = bindings.getLives();
         for (let i = 0; i < lives; i++) {
-            const icon = new Graphics();
-            // Tiny ship icon
-            icon.moveTo(i * 14, 0)
-                .lineTo(i * 14 + 4, 10)
-                .lineTo(i * 14 - 4, 10)
-                .closePath()
-                .fill(0x88ccff);
+            const icon = new Sprite({ texture: shipIconTexture, anchor: { x: 0, y: 0 } });
+            icon.position.set(i * 14, 0);
             livesContainer.addChild(icon);
         }
     }

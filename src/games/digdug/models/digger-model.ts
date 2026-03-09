@@ -78,13 +78,26 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         isWalkable, isDirt, fieldRows, fieldCols, getHarpoonMaxDistance,
     } = options;
 
-    const state = {
+    const state: {
+        x: number;
+        y: number;
+        col: number;
+        row: number;
+        direction: Direction;
+        requestedDirection: Direction;
+        moving: boolean;
+        alive: boolean;
+        harpoonExtended: boolean;
+        harpoonDistance: number;
+        harpoonLocked: boolean;
+        pumping: boolean;
+    } = {
         x: startCol,
         y: startRow,
         col: startCol,
         row: startRow,
-        direction: 'right' as Direction,
-        requestedDirection: 'none' as Direction,
+        direction: 'right',
+        requestedDirection: 'none',
         moving: false,
         alive: true,
         harpoonExtended: false,

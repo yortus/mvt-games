@@ -45,13 +45,21 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
     const { startRow, startCol, speed, isWalkable } = options;
 
     // Internal mutable state -------------------------------------------------
-    const state = {
+    const state: {
+        x: number;
+        y: number;
+        col: number;
+        row: number;
+        direction: Direction;
+        requestedDirection: Direction;
+        moving: boolean;
+    } = {
         x: startCol,
         y: startRow,
         col: startCol,
         row: startRow,
-        direction: 'left' as Direction,
-        requestedDirection: 'left' as Direction,
+        direction: 'left',
+        requestedDirection: 'left',
         moving: false,
     };
 

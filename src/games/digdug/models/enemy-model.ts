@@ -75,19 +75,37 @@ const FIRE_DURATION_MS = 800;
 const FIRE_COOLDOWN_MS = 4000;
 const FIRE_RANGE = 3; // tiles
 
+const NEXT_INFLATION: readonly InflationStage[] = [1, 2, 3, 4, 4];
+
 export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
     const { startRow, startCol, kind, speed, ghostInterval, fieldRows, fieldCols, isWalkable, chaseTarget, canStartGhosting } = options;
 
-    const state = {
+    const state: {
+        x: number;
+        y: number;
+        col: number;
+        row: number;
+        direction: Direction;
+        moving: boolean;
+        alive: boolean;
+        phase: EnemyPhase;
+        inflationStage: InflationStage;
+        ghostMovesRemaining: number;
+        fireActive: boolean;
+        fireTelegraph: boolean;
+        fireReady: boolean;
+        fleeing: boolean;
+        patrolSwitchTimer: number;
+    } = {
         x: startCol,
         y: startRow,
         col: startCol,
         row: startRow,
-        direction: 'left' as Direction,
+        direction: 'left',
         moving: false,
         alive: true,
-        phase: 'patrol' as EnemyPhase,
-        inflationStage: 0 as InflationStage,
+        phase: 'patrol',
+        inflationStage: 0,
         ghostMovesRemaining: 0,
         fireActive: false,
         fireTelegraph: false,
@@ -160,7 +178,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         deflateTimeline.clear().time(0);
         deflateTimeline.to(state, { inflationStage: 0, duration, ease: 'none', roundProps: 'inflationStage' });
         deflateTimeline.call(() => {
-            state.inflationStage = 0 as InflationStage;
+            state.inflationStage = 0;
             if (state.fleeing) {
                 // Resume flee: ghost through dirt to surface
                 state.phase = 'ghosting';
@@ -169,6 +187,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             } else {
                 state.phase = 'chase';
             }
+            if (kind === 'fygar') scheduleFireCooldown();
         }, undefined, duration);
     }
 
@@ -495,11 +514,14 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
             state.phase = 'inflating';
             timeline.clear().time(0);
+            fireTimeline.clear().time(0);
             deflateTimeline.clear().time(0);
+            state.fireTelegraph = false;
+            state.fireActive = false;
             state.moving = false;
 
             if (state.inflationStage < 4) {
-                state.inflationStage = (state.inflationStage + 1) as InflationStage;
+                state.inflationStage = NEXT_INFLATION[state.inflationStage];
             }
             if (state.inflationStage === 4) {
                 state.phase = 'popped';
@@ -560,7 +582,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             state.moving = false;
             state.alive = true;
             state.phase = 'patrol';
-            state.inflationStage = 0 as InflationStage;
+            state.inflationStage = 0;
             state.ghostMovesRemaining = 0;
             state.fireActive = false;
             state.fireTelegraph = false;

@@ -67,10 +67,17 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         getFormationOffsetY,
     } = options;
 
-    const state = {
+    const state: {
+        x: number;
+        y: number;
+        phase: EnemyPhase;
+        alive: boolean;
+        wantsToFire: boolean;
+        enterTimer: number;
+    } = {
         x: slotX,
         y: -30,
-        phase: 'entering' as EnemyPhase,
+        phase: 'entering',
         alive: true,
         wantsToFire: false,
         enterTimer: enterDelay,

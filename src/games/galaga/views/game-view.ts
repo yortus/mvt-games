@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
 import type {
     EnemyKind,
@@ -7,7 +7,7 @@ import type {
     PlayerInputModel,
 } from '../models';
 import { createShipView } from './ship-view';
-import { createEnemyView } from './enemy-view';
+import { createEnemyView, type EnemyViewTextures } from './enemy-view';
 import { createBulletView } from './bullet-view';
 import { createHudView } from './hud-view';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
@@ -52,14 +52,32 @@ export interface GameViewBindings {
 }
 
 // ---------------------------------------------------------------------------
+// Textures
+// ---------------------------------------------------------------------------
+
+export interface GameViewTextures {
+    readonly boss: Texture;
+    readonly butterfly: Texture;
+    readonly bee: Texture;
+    readonly ship: Texture;
+    readonly 'ship-icon': Texture;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings): Container {
+export function createGameView(bindings: GameViewBindings, textures: GameViewTextures): Container {
     const watchEnemyCount = createWatch(bindings.getEnemyCount);
     const watchPBulletCount = createWatch(bindings.getPlayerBulletCount);
     const watchEBulletCount = createWatch(bindings.getEnemyBulletCount);
     const watchPhase = createWatch(bindings.getGamePhase);
+
+    const enemyTextures: EnemyViewTextures = {
+        boss: textures.boss,
+        butterfly: textures.butterfly,
+        bee: textures.bee,
+    };
 
     const container = new Container();
 
@@ -85,7 +103,7 @@ export function createGameView(bindings: GameViewBindings): Container {
         getX: bindings.getShipX,
         getY: bindings.getShipY,
         isAlive: bindings.isShipAlive,
-    });
+    }, textures.ship);
     container.addChild(shipContainer);
 
     // HUD
@@ -95,7 +113,7 @@ export function createGameView(bindings: GameViewBindings): Container {
         getLives: bindings.getLives,
         getStage: bindings.getStage,
         getScreenWidth: bindings.getScreenWidth,
-    });
+    }, textures['ship-icon']);
     hudContainer.position.set(0, playHeight);
     container.addChild(hudContainer);
 
@@ -168,7 +186,7 @@ export function createGameView(bindings: GameViewBindings): Container {
                 getKind: () => bindings.getEnemyKind(idx),
                 getPhase: () => bindings.getEnemyPhase(idx),
                 isAlive: () => bindings.isEnemyAlive(idx),
-            });
+            }, enemyTextures);
             container.addChild(c);
             enemyContainers.push(c);
         }
