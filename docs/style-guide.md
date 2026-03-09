@@ -47,6 +47,8 @@ All naming rules collected in one place for easy reference.
 |---------|-----------|---------|
 | Files | `lower-kebab-case.ts` | `score-model.ts`, `tile-kind.ts` |
 | Types / Interfaces | `PascalCase` | `ScoreModel`, `GameViewBindings` |
+| Model types | Suffix with `Model` | `ScoreModel`, `PlayerInputModel` |
+| View types | Suffix with `View` | `MazeView`, `KeyboardPlayerInputView` |
 | Functions / Variables | `camelCase` | `createScoreModel`, `deltaMs` |
 | Factory functions | `create` + `PascalCase` noun | `createScoreModel`, `createHudView` |
 | Binding accessors | `get` + description | `getScore()`, `getEntityX()` |

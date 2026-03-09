@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import type { Direction, TileKind, GamePhase } from '../models';
+import type { Direction, TileKind, GamePhase, PlayerInputModel } from '../models';
 import { createWatch } from '../utils';
+import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 import { createMazeView } from './maze-view';
 import { createPacmanView } from './pacman-view';
 import { createGhostView } from './ghost-view';
@@ -31,9 +32,8 @@ export interface GameViewBindings {
     getScore(): number;
     // State
     getGamePhase(): GamePhase;
-    // Input events
-    onDirectionInput(dir: Direction): void;
-    onRestart(): void;
+    // Player input
+    getPlayerInput(): PlayerInputModel;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,13 +102,8 @@ export function createGameView(bindings: GameViewBindings): Container {
     overlay.addChild(overlayText);
     container.addChild(overlay);
 
-    // ---- Event handling -------------------------------------------------------
-    window.addEventListener('keydown', onKeyDown);
-    const originalDestroy = container.destroy.bind(container);
-    container.destroy = (options) => {
-        window.removeEventListener('keydown', onKeyDown);
-        originalDestroy(options);
-    };
+    // ---- Player input --------------------------------------------------------
+    container.addChild(createKeyboardPlayerInputView(bindings.getPlayerInput()));
 
     updateLayout();
     container.onRender = refresh;
@@ -169,27 +164,4 @@ export function createGameView(bindings: GameViewBindings): Container {
             ghostContainers.push(ghostContainer);
         }
     }
-
-    function onKeyDown(e: KeyboardEvent): void {
-        const dir = KEY_MAP[e.key];
-        if (dir !== undefined) {
-            e.preventDefault();
-            bindings.onDirectionInput(dir);
-            return;
-        }
-        if (e.key === 'Enter') {
-            bindings.onRestart();
-        }
-    }
 }
-
-const KEY_MAP: Record<string, Direction> = {
-    ArrowUp: 'up',
-    ArrowDown: 'down',
-    ArrowLeft: 'left',
-    ArrowRight: 'right',
-    w: 'up',
-    s: 'down',
-    a: 'left',
-    d: 'right',
-};

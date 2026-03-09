@@ -1,8 +1,9 @@
 import type { TileKind } from '../data';
-import { type Direction } from './common';
+import { createWatch } from '../utils';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';
 import { createGhostModel, type GhostModel, type GhostBehavior } from './ghost-model';
+import { createPlayerInputModel, type PlayerInputModel } from './player-input-model';
 import { createScoreModel, type ScoreModel } from './score-model';
 
 // ---------------------------------------------------------------------------
@@ -15,7 +16,7 @@ export interface GameModel {
     readonly pacman: PacmanModel;
     readonly ghosts: readonly GhostModel[];
     readonly score: ScoreModel;
-    setDirection(dir: Direction): void;
+    readonly playerInput: PlayerInputModel;
     reset(): void;
     update(deltaMs: number): void;
 }
@@ -91,6 +92,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let ghosts = buildGhosts(maze);
     let scoreModel = createScoreModel();
 
+    // Player input — persists across resets (input device outlives a single game)
+    const playerInput = createPlayerInputModel();
+    const watchDirection = createWatch(() => playerInput.direction);
+    let watchRestart = createWatch(() => playerInput.restartRequested);
+
     // ---- Collision detection -----------------------------------------------
 
     /** Distance squared between two entities (in grid units). */
@@ -139,10 +145,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get score() {
             return scoreModel;
         },
-
-        setDirection(dir: Direction): void {
-            if (gamePhase !== 'playing') return;
-            pacman.setDirection(dir);
+        get playerInput() {
+            return playerInput;
         },
 
         reset(): void {
@@ -154,6 +158,24 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            playerInput.update(deltaMs);
+
+            // Process restart request (allowed from any non-playing phase)
+            if (watchRestart.changed() && watchRestart.value) {
+                if (gamePhase !== 'playing') {
+                    model.reset();
+                    // Re-create the restart watch so its baseline is the
+                    // cleared flag, ready for the next restart request.
+                    watchRestart = createWatch(() => playerInput.restartRequested);
+                }
+                playerInput.restartRequested = false;
+            }
+
+            // Process direction (only while playing)
+            if (watchDirection.changed() && gamePhase === 'playing') {
+                pacman.setDirection(watchDirection.value);
+            }
+
             if (gamePhase !== 'playing') return;
 
             maze.update(deltaMs);

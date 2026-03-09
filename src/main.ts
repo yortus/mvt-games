@@ -53,9 +53,8 @@ async function main(): Promise<void> {
         getScore: () => game.score.score,
         // State
         getGamePhase: () => game.phase,
-        // Input
-        onDirectionInput: (dir) => game.setDirection(dir),
-        onRestart: () => game.reset(),
+        // Player input
+        getPlayerInput: () => game.playerInput,
     };
 
     // ---- View --------------------------------------------------------------
