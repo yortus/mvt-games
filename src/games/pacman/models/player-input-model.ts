@@ -22,9 +22,7 @@ export interface PlayerInputModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createPlayerInputModel(
-    options: PlayerInputModelOptions = {},
-): PlayerInputModel {
+export function createPlayerInputModel(options: PlayerInputModelOptions = {}): PlayerInputModel {
     const { initialDirection = 'left' } = options;
 
     const model: PlayerInputModel = {

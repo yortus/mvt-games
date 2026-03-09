@@ -6,7 +6,7 @@ const TILE_CHARS: Record<string, TileKind> = {
     '#': 'wall',
     '.': 'dot',
     ' ': 'empty',
-    'G': 'ghost-house',
+    G: 'ghost-house',
     [PACMAN_CHAR]: 'dot',
 };
 
@@ -51,7 +51,7 @@ export const TILE_SIZE = 20;
 
 const mazeRows = MAZE_STRING.split('\n');
 
-export const MAZE_DATA: TileKind[][] = mazeRows.map(row =>
+export const MAZE_DATA: TileKind[][] = mazeRows.map((row) =>
     Array.from({ length: MAZE_COLS }, (_, i) => TILE_CHARS[row[i]] ?? 'empty'),
 );
 

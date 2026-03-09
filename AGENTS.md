@@ -15,12 +15,24 @@ Full reference: [docs/mvt-guide.md](docs/mvt-guide.md)
 
 ```
 src/
-├── main.ts          Bootstrap: init app, wire models ↔ views, start ticker
-├── data/            Static data and configuration constants
-├── models/          State & domain logic (all models) + shared domain types
-├── utils/           General helpers (e.g. change-detection watches)
-└── views/           Pixi.js rendering (all views)
+├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
+├── cabinet/             Cabinet (game-selection) model & view
+├── games/               Game registry + per-game modules
+│   ├── game-entry.ts    GameEntry & GameSession interfaces
+│   └── pacman/          Pac-Man game (self-contained)
+│       ├── data/        Static maze data and configuration constants
+│       ├── models/      State & domain logic + domain types
+│       └── views/       Pixi.js rendering
+└── utils/               General helpers (e.g. change-detection watches)
 ```
+
+## Cabinet Architecture
+
+- **GameEntry** — descriptor for a game registered in the cabinet: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
+- **GameSession** — a running game instance: `{ update(deltaMs), destroy() }`
+- **CabinetModel** — owns menu state, selected game, active session; delegates `update()` to the active session
+- **CabinetView** — renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
+- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`
 
 ## Key Conventions
 
@@ -37,13 +49,13 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Start Vite dev server |
-| `npm run build` | Type-check + production build |
-| `npm run lint` | ESLint on `src/` |
-| `npm run format` | Prettier format all files |
-| `npm run format:check` | Check formatting |
+| Command                | Purpose                       |
+| ---------------------- | ----------------------------- |
+| `npm run dev`          | Start Vite dev server         |
+| `npm run build`        | Type-check + production build |
+| `npm run lint`         | ESLint on `src/`              |
+| `npm run format`       | Prettier format all files     |
+| `npm run format:check` | Check formatting              |
 
 ## Critical Rules (Do Not Violate)
 

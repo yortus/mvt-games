@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
+import { createWatch } from '#utils';
 import type { Direction } from '../models';
-import { createWatch } from '../utils';
 
 // ---------------------------------------------------------------------------
 // Bindings

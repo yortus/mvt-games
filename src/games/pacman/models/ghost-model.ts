@@ -67,7 +67,9 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
     };
 
     // Paused timeline for tile-to-tile movement — advanced only via update().
-    const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
+    // No autoRemoveChildren — we clear manually before each move to
+    // avoid the mid-iteration removal race (see style-guide GSAP §).
+    const timeline = gsap.timeline({ paused: true });
 
     // ---- Helpers -----------------------------------------------------------
 
@@ -164,10 +166,11 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         state.moving = true;
 
         const duration = 1 / speed;
-        const t = timeline.time();
 
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' }, t);
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, t + duration);
+        // Fresh timeline for each move — prevents accumulated-time drift.
+        timeline.clear().time(0);
+        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' });
+        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, duration);
     }
 
     // ---- Public record -----------------------------------------------------

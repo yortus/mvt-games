@@ -1,69 +1,60 @@
 import { Application } from 'pixi.js';
-import { createGameModel } from './models';
-import { createGameView, type GameViewBindings } from './views';
-import {
-    MAZE_DATA,
-    TILE_SIZE,
-    MAZE_ROWS,
-    MAZE_COLS,
-    PACMAN_SPAWN,
-    GHOST_SPAWNS,
-    GHOST_COLORS,
-    HUD_HEIGHT,
-} from './data';
+import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
+import { createPacmanEntry } from './games';
+
+// ---------------------------------------------------------------------------
+// Default cabinet dimensions (used for the menu screen)
+// ---------------------------------------------------------------------------
+
+const CABINET_WIDTH = 480;
+const CABINET_HEIGHT = 360;
+
+// ---------------------------------------------------------------------------
+// Bootstrap
+// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-    // ---- Pixi application --------------------------------------------------
     const app = new Application();
     await app.init({
-        width: MAZE_COLS * TILE_SIZE,
-        height: MAZE_ROWS * TILE_SIZE + HUD_HEIGHT,
+        width: CABINET_WIDTH,
+        height: CABINET_HEIGHT,
         backgroundColor: 0x000000,
         antialias: true,
     });
     document.body.appendChild(app.canvas);
 
-    // ---- Model -------------------------------------------------------------
-    const game = createGameModel({
-        grid: MAZE_DATA,
-        pacmanSpawn: PACMAN_SPAWN,
-        ghostSpawns: GHOST_SPAWNS,
-        ghostColors: GHOST_COLORS,
-    });
+    // ---- Game registry -----------------------------------------------------
+    const games = [createPacmanEntry()];
 
-    // ---- Bindings (Model → View bridge) ------------------------------------
-    const bindings: GameViewBindings = {
-        // Maze
-        getTileSize: () => TILE_SIZE,
-        getRows: () => MAZE_ROWS,
-        getCols: () => MAZE_COLS,
-        getTileKind: (r, c) => game.maze.tileAt(r, c),
-        isDotAt: (r, c) => game.maze.isDot(r, c),
-        // Pac-Man
-        getPacmanX: () => game.pacman.x,
-        getPacmanY: () => game.pacman.y,
-        getPacmanDirection: () => game.pacman.direction,
-        getPacmanStepProgress: () => game.pacman.stepProgress,
-        // Ghosts
-        getGhostCount: () => game.ghosts.length,
-        getGhostX: (i) => game.ghosts[i].x,
-        getGhostY: (i) => game.ghosts[i].y,
-        getGhostColor: (i) => game.ghosts[i].color,
-        // HUD
-        getScore: () => game.score.score,
-        // State
-        getGamePhase: () => game.phase,
-        // Player input
-        getPlayerInput: () => game.playerInput,
+    // ---- Cabinet model -----------------------------------------------------
+    const cabinet = createCabinetModel({ games });
+
+    // ---- Bindings (Cabinet Model → Cabinet View) ---------------------------
+    const bindings: CabinetViewBindings = {
+        getPhase: () => cabinet.phase,
+        getGameCount: () => cabinet.games.length,
+        getGameName: (i) => cabinet.games[i].name,
+        getSelectedIndex: () => cabinet.selectedIndex,
+        onSelectNext: () => cabinet.selectNext(),
+        onSelectPrev: () => cabinet.selectPrev(),
+        onLaunch: () => {
+            const entry = cabinet.games[cabinet.selectedIndex];
+            app.renderer.resize(entry.screenWidth, entry.screenHeight);
+            cabinet.launchSelected(app.stage);
+        },
+        onExit: () => {
+            cabinet.exitToMenu();
+            app.renderer.resize(CABINET_WIDTH, CABINET_HEIGHT);
+        },
     };
 
     // ---- View --------------------------------------------------------------
-    const gameContainer = createGameView(bindings);
-    app.stage.addChild(gameContainer);
+    const cabinetContainer = createCabinetView(bindings);
+    app.stage.addChild(cabinetContainer);
 
-    // ---- Ticker (model-only) -----------------------------------------------
+    // ---- Ticker ------------------------------------------------------------
     app.ticker.add((ticker) => {
-        game.update(ticker.deltaMS);
+        cabinet.update(ticker.deltaMS);
     });
 }
 

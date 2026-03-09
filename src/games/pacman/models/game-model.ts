@@ -1,5 +1,5 @@
+import { createWatch } from '#utils';
 import type { TileKind } from '../data';
-import { createWatch } from '../utils';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';
 import { createGhostModel, type GhostModel, type GhostBehavior } from './ghost-model';
@@ -94,7 +94,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // Player input — persists across resets (input device outlives a single game)
     const playerInput = createPlayerInputModel();
-    const watchDirection = createWatch(() => playerInput.direction);
     let watchRestart = createWatch(() => playerInput.restartRequested);
 
     // ---- Collision detection -----------------------------------------------
@@ -171,9 +170,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 playerInput.restartRequested = false;
             }
 
-            // Process direction (only while playing)
-            if (watchDirection.changed() && gamePhase === 'playing') {
-                pacman.setDirection(watchDirection.value);
+            // Apply current direction every tick (not via watch — a watch
+            // would "consume" a direction the player repeats after a failed
+            // turn attempt, making input feel unresponsive).
+            if (gamePhase === 'playing') {
+                pacman.setDirection(playerInput.direction);
             }
 
             if (gamePhase !== 'playing') return;

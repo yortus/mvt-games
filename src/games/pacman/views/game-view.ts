@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
+import { createWatch } from '#utils';
 import type { Direction, TileKind, GamePhase, PlayerInputModel } from '../models';
-import { createWatch } from '../utils';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 import { createMazeView } from './maze-view';
 import { createPacmanView } from './pacman-view';

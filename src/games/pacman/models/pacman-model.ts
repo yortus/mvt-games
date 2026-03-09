@@ -56,6 +56,7 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
     };
 
     // Paused timeline — movement tweens, advanced only via update().
+    // autoRemoveChildren cleans up completed tweens (see style-guide GSAP §).
     const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
     // Helpers ----------------------------------------------------------------
@@ -77,10 +78,11 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
         const delta = DIRECTION_DELTA[dir];
         const nextRow = state.row + delta[0];
         const nextCol = state.col + delta[1];
-        const dist = Math.abs(nextCol - state.x) + Math.abs(nextRow - state.y);
+        const dist = Math.abs(nextCol - state.x) + Math.abs(nextRow - state.y) || 0.001; // prevent zero-duration tween
         const duration = dist / speed;
-        const t = timeline.time();
 
+        // Position new tweens at current playhead (see style-guide GSAP §).
+        const t = timeline.time();
         timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' }, t);
         timeline.set(state, { row: nextRow, col: nextCol, moving: false }, t + duration);
     }

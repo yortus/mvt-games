@@ -25,6 +25,8 @@ export default tseslint.config(
                         'pixi.js/**',
                         'gsap',
                         'gsap/**',
+                        // Allow project-level import-map aliases
+                        '#utils',
                     ],
                 },
             ],

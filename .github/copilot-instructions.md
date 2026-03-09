@@ -8,6 +8,21 @@ Pixi.js, and GSAP. Follow these conventions when generating code.
 - **Models** own state and logic; advance via `update(deltaMs)` only — never wall-clock time.
 - **Views** are stateless; read via `bindings` object, write to Pixi scene graph.
 - **Ticker** loop: `model.update(deltaMs)` → `view.refresh()` → render.
+- **Cabinet** manages game selection; each game is a self-contained module under `src/games/<name>/`.
+- **GameEntry** — descriptor: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
+- **GameSession** — running instance: `{ update(deltaMs), destroy() }`
+
+## Project Structure
+
+```
+src/
+├── main.ts              Bootstrap cabinet, start ticker
+├── cabinet/             Cabinet model & view (game selection)
+├── games/               Game registry + per-game modules
+│   ├── game-entry.ts    GameEntry & GameSession interfaces
+│   └── pacman/          Pac-Man (data/, models/, views/)
+└── utils/               Shared helpers (e.g. createWatch)
+```
 
 ## Code Style
 
@@ -27,12 +42,13 @@ Pixi.js, and GSAP. Follow these conventions when generating code.
 ## Bindings
 
 - View factory accepts a `bindings` object with:
-  - `get*()` — read-only state accessors (e.g. `getScore(): number`)
-  - `on*()` — user-input event handlers (e.g. `onDirectionChange(dir: Direction): void`)
+    - `get*()` — read-only state accessors (e.g. `getScore(): number`)
+    - `on*()` — user-input event handlers (e.g. `onDirectionChange(dir: Direction): void`)
 
 ## Hot Paths
 
 `update()` and `refresh()` run every tick. Avoid per-tick allocations:
+
 - No `array.map/filter/slice`, spread, `for...of`, destructuring, inline closures
 - Use index-based `for` loops and pre-allocated structures
 - Use arithmetic keys (`row * cols + col`) instead of template-string keys

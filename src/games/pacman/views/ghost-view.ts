@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatch } from '../utils';
+import { createWatch } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings

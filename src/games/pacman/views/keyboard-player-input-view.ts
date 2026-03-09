@@ -5,9 +5,7 @@ import type { Direction, PlayerInputModel } from '../models';
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createKeyboardPlayerInputView(
-    playerInput: PlayerInputModel,
-): Container {
+export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Container {
     const container = new Container();
     container.label = 'keyboard-player-input';
 

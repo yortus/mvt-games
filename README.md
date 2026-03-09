@@ -6,14 +6,14 @@ testability, and buttery-smooth animation.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Language | TypeScript (strict mode) |
-| Rendering | Pixi.js |
-| Animation | GSAP |
-| Build | Vite |
-| Linting | ESLint + TypeScript ESLint |
-| Formatting | Prettier |
+| Layer      | Technology                 |
+| ---------- | -------------------------- |
+| Language   | TypeScript (strict mode)   |
+| Rendering  | Pixi.js                    |
+| Animation  | GSAP                       |
+| Build      | Vite                       |
+| Linting    | ESLint + TypeScript ESLint |
+| Formatting | Prettier                   |
 
 ## Quickstart
 
@@ -24,14 +24,14 @@ npm run dev
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start the Vite dev server with hot reload |
-| `npm run build` | Type-check with `tsc` then bundle for production |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Lint `src/` with ESLint |
-| `npm run format` | Format all files with Prettier |
-| `npm run format:check` | Check formatting without writing changes |
+| Command                | Description                                      |
+| ---------------------- | ------------------------------------------------ |
+| `npm run dev`          | Start the Vite dev server with hot reload        |
+| `npm run build`        | Type-check with `tsc` then bundle for production |
+| `npm run preview`      | Preview the production build locally             |
+| `npm run lint`         | Lint `src/` with ESLint                          |
+| `npm run format`       | Format all files with Prettier                   |
+| `npm run format:check` | Check formatting without writing changes         |
 
 ## Architecture
 
@@ -48,12 +48,12 @@ See the [MVT Architecture Guide](docs/mvt-guide.md) for full details.
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Documentation Hub](docs/README.md) | Start here — index of all guides with glossary |
-| [MVT Architecture Guide](docs/mvt-guide.md) | Full MVT pattern reference with diagrams |
-| [TypeScript Style Guide](docs/style-guide.md) | Coding conventions, naming, project structure |
-| [AGENTS.md](AGENTS.md) | AI agent orientation — architecture & conventions at a glance |
+| Document                                      | Description                                                   |
+| --------------------------------------------- | ------------------------------------------------------------- |
+| [Documentation Hub](docs/README.md)           | Start here — index of all guides with glossary                |
+| [MVT Architecture Guide](docs/mvt-guide.md)   | Full MVT pattern reference with diagrams                      |
+| [TypeScript Style Guide](docs/style-guide.md) | Coding conventions, naming, project structure                 |
+| [AGENTS.md](AGENTS.md)                        | AI agent orientation — architecture & conventions at a glance |
 
 ## Project Structure
 

@@ -19,12 +19,12 @@ combination works.
 ## Table of Contents
 
 - [The Patterns Behind MVT](#the-patterns-behind-mvt)
-  - [The Game Loop (Ticker)](#the-game-loop-ticker)
-  - [Deterministic Simulation (Models)](#deterministic-simulation-models)
-  - [Passive View (Bindings)](#passive-view-bindings)
-  - [Stateless Rendering (Views)](#stateless-rendering-views)
-  - [Dirty Checking (Watch)](#dirty-checking-watch)
-  - [Hierarchical Composition](#hierarchical-composition)
+    - [The Game Loop (Ticker)](#the-game-loop-ticker)
+    - [Deterministic Simulation (Models)](#deterministic-simulation-models)
+    - [Passive View (Bindings)](#passive-view-bindings)
+    - [Stateless Rendering (Views)](#stateless-rendering-views)
+    - [Dirty Checking (Watch)](#dirty-checking-watch)
+    - [Hierarchical Composition](#hierarchical-composition)
 - [Why These Patterns Fit Together](#why-these-patterns-fit-together)
 - [Further Reading](#further-reading)
 
@@ -39,14 +39,14 @@ renderer draws, once per frame, continuously.
 
 **Established pattern:** The **Game Loop** — a fixed-structure frame loop that
 drives simulation and rendering in lockstep. Described in Robert Nystrom's
-*Game Programming Patterns* (2014) as a core architectural pattern, and
+_Game Programming Patterns_ (2014) as a core architectural pattern, and
 standard practice in every major game engine:
 
-| Engine | Equivalent |
-|--------|-----------|
-| Unity | `MonoBehaviour.Update(deltaTime)` |
-| Unreal | `AActor::Tick(DeltaSeconds)` |
-| Godot | `Node._process(delta)` |
+| Engine | Equivalent                        |
+| ------ | --------------------------------- |
+| Unity  | `MonoBehaviour.Update(deltaTime)` |
+| Unreal | `AActor::Tick(DeltaSeconds)`      |
+| Godot  | `Node._process(delta)`            |
 
 **Why it's proven:** The game loop has been the backbone of interactive
 applications since the earliest video games. It provides predictable frame
@@ -70,7 +70,7 @@ where identical inputs always produce identical outputs.
 - **Replay systems** — record inputs and `deltaMs` values, replay them to
   reproduce exact state sequences (used in every competitive game).
 - **Lockstep networking** — synchronise multiplayer state by sharing only
-  inputs, not full state (standard since *Age of Empires*, 1997).
+  inputs, not full state (standard since _Age of Empires_, 1997).
 - **Time manipulation** — pause, slow-motion, fast-forward, and frame-stepping
   all work by controlling what `deltaMs` the ticker provides. The model doesn't
   know or care.
@@ -120,7 +120,7 @@ output, the display is guaranteed to be consistent with the model after every
 frame.
 
 **How MVT applies it:** Views update a persistent scene graph in `refresh()`.
-The scene graph is retained (not rebuilt) for performance, but the *logic* is
+The scene graph is retained (not rebuilt) for performance, but the _logic_ is
 stateless — `refresh()` is idempotent, and calling it twice with the same
 model state produces the same visual.
 
@@ -149,8 +149,8 @@ unchanged.)
 children). Views compose into trees (parent creates child views, each with own
 bindings). The hierarchies mirror each other.
 
-**Established pattern:** The **Composite** pattern (Gamma et al., *Design
-Patterns*, 1994) — treating individual objects and compositions uniformly
+**Established pattern:** The **Composite** pattern (Gamma et al., _Design
+Patterns_, 1994) — treating individual objects and compositions uniformly
 through a shared interface. Every UI framework uses this: React's component
 tree, the browser DOM, Unity's `GameObject` hierarchy, and Pixi.js's own
 `Container` parent–child structure.
@@ -215,14 +215,14 @@ conflicting. Learn one, and the next follows naturally.
 
 ## Further Reading
 
-- Robert Nystrom, *Game Programming Patterns* (2014) — **Game Loop** and
+- Robert Nystrom, _Game Programming Patterns_ (2014) — **Game Loop** and
   **Update Method** chapters. The definitive reference for the Ticker and Model
   `update()` patterns. Freely available at gameprogrammingpatterns.com.
 - Martin Fowler, "Passive View" (2006) — the decoupling pattern behind
   MVT's bindings. Part of Fowler's catalogue of UI architectural patterns.
 - John Gossman, "Introduction to Model/View/ViewModel" (2005) — the ViewModel
   concept, structurally identical to MVT's bindings object.
-- Gamma, Helm, Johnson, Vlissides, *Design Patterns* (1994) — the Composite
+- Gamma, Helm, Johnson, Vlissides, _Design Patterns_ (1994) — the Composite
   pattern used by both model and view hierarchies.
 - Evan Czaplicki, "Elm Architecture" (2012) — Model → update → view as a
   functional loop. MVT is a continuous-time, imperative-rendering adaptation

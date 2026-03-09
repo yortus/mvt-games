@@ -14,19 +14,19 @@ separation of concerns, deterministic state, and smooth frame-based animation.
 - [Overview](#overview)
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [Models](#models)
-  - [Responsibilities](#model-responsibilities)
-  - [The update(deltaMs) Contract](#the-updatedeltams-contract)
-  - [Model Hierarchy and Composition](#model-hierarchy-and-composition)
-  - [Time Management](#time-management)
-  - [GSAP Timeline Recipe](#gsap-timeline-recipe)
+    - [Responsibilities](#model-responsibilities)
+    - [The update(deltaMs) Contract](#the-updatedeltams-contract)
+    - [Model Hierarchy and Composition](#model-hierarchy-and-composition)
+    - [Time Management](#time-management)
+    - [GSAP Timeline Recipe](#gsap-timeline-recipe)
 - [Views](#views)
-  - [Responsibilities](#view-responsibilities)
-  - [The refresh() Contract](#the-refresh-contract)
-  - [The Bindings Pattern](#the-bindings-pattern)
-  - [Reactive Bindings](#reactive-bindings)
-  - [Change Detection](#change-detection)
-  - [View Hierarchy and Composition](#view-hierarchy-and-composition)
-  - [Multiple Views, One Model](#multiple-views-one-model)
+    - [Responsibilities](#view-responsibilities)
+    - [The refresh() Contract](#the-refresh-contract)
+    - [The Bindings Pattern](#the-bindings-pattern)
+    - [Reactive Bindings](#reactive-bindings)
+    - [Change Detection](#change-detection)
+    - [View Hierarchy and Composition](#view-hierarchy-and-composition)
+    - [Multiple Views, One Model](#multiple-views-one-model)
 - [Ticker](#ticker)
 - [Presentation State](#presentation-state)
 - [Hot Paths](#hot-paths)
@@ -77,11 +77,11 @@ flowchart LR
 
 ### Component Summary
 
-| Component | Owns | Receives | Produces | Must Not |
-|-----------|------|----------|----------|----------|
-| **Model** | State, domain logic, time-based transitions | `deltaMs` via `update()` | Readable state (properties, accessors) | Know about views, use wall-clock time |
-| **View** | Scene graph arrangement | State via `bindings.get*()` | Visual output, user-input events via `bindings.on*()` | Hold domain state, run autonomous animations |
-| **Ticker** | Frame loop, timing | `requestAnimationFrame` callbacks | `deltaMs` for models, `refresh` calls for views | Contain domain logic or rendering code |
+| Component  | Owns                                        | Receives                          | Produces                                              | Must Not                                     |
+| ---------- | ------------------------------------------- | --------------------------------- | ----------------------------------------------------- | -------------------------------------------- |
+| **Model**  | State, domain logic, time-based transitions | `deltaMs` via `update()`          | Readable state (properties, accessors)                | Know about views, use wall-clock time        |
+| **View**   | Scene graph arrangement                     | State via `bindings.get*()`       | Visual output, user-input events via `bindings.on*()` | Hold domain state, run autonomous animations |
+| **Ticker** | Frame loop, timing                          | `requestAnimationFrame` callbacks | `deltaMs` for models, `refresh` calls for views       | Contain domain logic or rendering code       |
 
 ---
 
@@ -152,7 +152,9 @@ function createRootModel(): RootModel {
     const childB = createChildModelB();
 
     return {
-        get score() { return childA.score; },
+        get score() {
+            return childA.score;
+        },
         update(deltaMs) {
             childA.update(deltaMs);
             childB.update(deltaMs);
@@ -173,12 +175,12 @@ cross-cutting concerns (collisions, phase transitions, scoring).
 
 **Forbidden** (advances state outside the ticker's control):
 
-| Mechanism | Why it's forbidden |
-|-----------|-------------------|
-| `setTimeout` / `setInterval` | Fires on wall-clock time, not model time |
-| `requestAnimationFrame` | Bypasses the ticker's `deltaMs` pipeline |
-| Auto-playing GSAP tweens | GSAP's global ticker advances them independently |
-| `Date.now()` / `performance.now()` | Wall-clock reads create non-determinism |
+| Mechanism                          | Why it's forbidden                               |
+| ---------------------------------- | ------------------------------------------------ |
+| `setTimeout` / `setInterval`       | Fires on wall-clock time, not model time         |
+| `requestAnimationFrame`            | Bypasses the ticker's `deltaMs` pipeline         |
+| Auto-playing GSAP tweens           | GSAP's global ticker advances them independently |
+| `Date.now()` / `performance.now()` | Wall-clock reads create non-determinism          |
 
 **Allowed:** Paused GSAP timelines advanced manually in `update()` (see recipe
 below).
@@ -198,7 +200,7 @@ sequenced transitions), use a **paused GSAP timeline** advanced manually:
 
 ```ts
 const timeline = gsap.timeline({
-    paused: true,           // detach from GSAP's global ticker
+    paused: true, // detach from GSAP's global ticker
     autoRemoveChildren: true, // clean up completed tweens automatically
 });
 ```
@@ -207,11 +209,15 @@ const timeline = gsap.timeline({
 
 ```ts
 function scheduleMove(targetX: number, targetY: number): void {
-    timeline.to(model, {
-        x: targetX,
-        y: targetY,
-        duration: 0.3,
-    }, timeline.time()); // insert at current playhead
+    timeline.to(
+        model,
+        {
+            x: targetX,
+            y: targetY,
+            duration: 0.3,
+        },
+        timeline.time(),
+    ); // insert at current playhead
 
     // update logical state when the tween completes
     timeline.set(model, { state: 'idle' }, timeline.time() + 0.3);
@@ -292,10 +298,10 @@ Key principles:
 The `bindings` object is the contract between a view and the rest of the
 application. It contains two kinds of members:
 
-| Prefix | Purpose | Direction | Example |
-|--------|---------|-----------|---------|
-| `get*()` | Read current state | Model → View | `getScore(): number` |
-| `on*()` | Relay user input | View → Model | `onDirectionChange(dir: Direction): void` |
+| Prefix   | Purpose            | Direction    | Example                                   |
+| -------- | ------------------ | ------------ | ----------------------------------------- |
+| `get*()` | Read current state | Model → View | `getScore(): number`                      |
+| `on*()`  | Relay user input   | View → Model | `onDirectionChange(dir: Direction): void` |
 
 ```mermaid
 sequenceDiagram
@@ -414,7 +420,9 @@ function createWatch<T>(read: () => T): Watch<T> {
             current = next;
             return 1;
         },
-        get value() { return current; },
+        get value() {
+            return current;
+        },
     };
 }
 ```
@@ -438,11 +446,11 @@ only on change**.
 
 #### When to use change detection
 
-| Situation | Approach |
-|-----------|----------|
-| Value changes most frames (entity x/y) | Read binding directly — change detection has no benefit |
-| Value changes rarely, reaction is cheap (text label) | Compare previous value — skip redundant updates |
-| Value change triggers expensive rebuild (scene graph teardown/rebuild) | Essential — avoid rebuilding every frame |
+| Situation                                                              | Approach                                                |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| Value changes most frames (entity x/y)                                 | Read binding directly — change detection has no benefit |
+| Value changes rarely, reaction is cheap (text label)                   | Compare previous value — skip redundant updates         |
+| Value change triggers expensive rebuild (scene graph teardown/rebuild) | Essential — avoid rebuilding every frame                |
 
 #### Change detection as consumer-defined events
 
@@ -597,18 +605,18 @@ allocation or computation is genuinely per-tick.
 
 ### Patterns to Avoid on Hot Paths
 
-| Avoid | Prefer | Why |
-|-------|--------|-----|
-| `array.map()`, `.filter()`, `.slice()`, `[...arr]` | Index-based `for` loop, mutate in place | Each call allocates a new array |
-| `for...of` on arrays | `for (let i = 0; i < arr.length; i++)` | May allocate an iterator object |
-| Destructuring (`const [a, b] = pair`) | Direct access (`pair[0]`, `pair[1]`) | Can allocate intermediate wrappers |
-| Template-string keys (`` `${r},${c}` ``) | Arithmetic encoding (`r * cols + c`) | Allocates a new string every call |
-| `Map<string, T>` / `Set<string>` for grids | Flat `T[]` indexed by `row * cols + col` | Avoids hashing and string allocation |
-| Inline closures in hot functions | Hoisted functions or pre-bound references | Each call allocates a new function object |
-| `Object.keys()` / `.values()` / `.entries()` | Direct property access or pre-cached key lists | Each call allocates a new array |
-| `Math.sqrt` for distance comparison | Distance-squared comparison | Cheaper arithmetic, same ordering |
-| Redundant recomputation | Cache previous values, early-out when unchanged | Skip work that produces the same result |
-| Returning `[row, col]` tuples | Out-parameters or pre-allocated result objects | Avoids per-call array allocation |
+| Avoid                                              | Prefer                                          | Why                                       |
+| -------------------------------------------------- | ----------------------------------------------- | ----------------------------------------- |
+| `array.map()`, `.filter()`, `.slice()`, `[...arr]` | Index-based `for` loop, mutate in place         | Each call allocates a new array           |
+| `for...of` on arrays                               | `for (let i = 0; i < arr.length; i++)`          | May allocate an iterator object           |
+| Destructuring (`const [a, b] = pair`)              | Direct access (`pair[0]`, `pair[1]`)            | Can allocate intermediate wrappers        |
+| Template-string keys (`` `${r},${c}` ``)           | Arithmetic encoding (`r * cols + c`)            | Allocates a new string every call         |
+| `Map<string, T>` / `Set<string>` for grids         | Flat `T[]` indexed by `row * cols + col`        | Avoids hashing and string allocation      |
+| Inline closures in hot functions                   | Hoisted functions or pre-bound references       | Each call allocates a new function object |
+| `Object.keys()` / `.values()` / `.entries()`       | Direct property access or pre-cached key lists  | Each call allocates a new array           |
+| `Math.sqrt` for distance comparison                | Distance-squared comparison                     | Cheaper arithmetic, same ordering         |
+| Redundant recomputation                            | Cache previous values, early-out when unchanged | Skip work that produces the same result   |
+| Returning `[row, col]` tuples                      | Out-parameters or pre-allocated result objects  | Avoids per-call array allocation          |
 
 ### Quick Test
 
@@ -619,14 +627,14 @@ allocation or computation is genuinely per-tick.
 
 ## Benefits
 
-| Concern | How MVT Addresses It |
-|---------|---------------------|
-| **Separation of concerns** | Models own state, views own presentation, ticker owns timing. No layer reaches into another. |
-| **Testability** | Models are deterministic — replay `update()` calls and assert state. Views accept mock bindings — assert rendering without real models. |
-| **Scalability** | Hierarchical models and views compose naturally. Add new features as new model/view pairs without touching existing ones. |
-| **Performance** | A single ticker loop ensures consistent frame pacing. Hot-path guidelines prevent per-tick waste. |
-| **Debugging** | Deterministic models can be stepped frame-by-frame. No hidden timers or async state mutations to chase. |
-| **Flexibility** | The ticker can pause, slow-mo, fast-forward, or record/replay. Models don't care — they only see `deltaMs`. |
+| Concern                    | How MVT Addresses It                                                                                                                                             |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Separation of concerns** | Models own state, views own presentation, ticker owns timing. No layer reaches into another.                                                                     |
+| **Testability**            | Models are deterministic — replay `update()` calls and assert state. Views accept mock bindings — assert rendering without real models.                          |
+| **Scalability**            | Hierarchical models and views compose naturally. Add new features as new model/view pairs without touching existing ones.                                        |
+| **Performance**            | A single ticker loop ensures consistent frame pacing. Hot-path guidelines prevent per-tick waste.                                                                |
+| **Debugging**              | Deterministic models can be stepped frame-by-frame. No hidden timers or async state mutations to chase.                                                          |
+| **Flexibility**            | The ticker can pause, slow-mo, fast-forward, or record/replay. Models don't care — they only see `deltaMs`.                                                      |
 | **Multi-view consistency** | Multiple views can project from the same model state, guaranteed in sync — the ticker updates all models before any view refreshes. No coordination code needed. |
 
 ---
