@@ -1,4 +1,5 @@
 export type { GameEntry, GameSession } from './game-entry';
-export { createPacmanEntry } from './pacman';
+export { createAsteroidsEntry } from './asteroids';
 export { createDigdugEntry } from './digdug';
 export { createGalagaEntry } from './galaga';
+export { createPacmanEntry } from './pacman';
