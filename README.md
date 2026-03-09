@@ -6,10 +6,12 @@ of concerns, testability, and buttery-smooth animation.
 
 ## Games
 
-| Game    | Description                |
-| ------- | -------------------------- |
-| Pac-Man | Navigate mazes, eat dots   |
-| Dig Dug | Dig tunnels, defeat enemies |
+| Game      | Description                          |
+| --------- | ------------------------------------ |
+| Asteroids | Blast asteroids in a vector-art void |
+| Dig Dug   | Dig tunnels, defeat enemies          |
+| Galaga    | Shoot waves of alien invaders        |
+| Pac-Man   | Navigate mazes, eat dots             |
 
 Each game is a self-contained module under `src/games/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to
