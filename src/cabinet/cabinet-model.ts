@@ -12,8 +12,7 @@ export interface CabinetModel {
     readonly games: readonly GameEntry[];
     readonly selectedIndex: number;
     readonly activeSession: GameSession | undefined;
-    selectNext(): void;
-    selectPrev(): void;
+    selectByDelta(delta: number): void;
     launchSelected(stage: Container): Promise<void>;
     exitToMenu(): void;
     update(deltaMs: number): void;
@@ -52,14 +51,9 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
             return activeSession;
         },
 
-        selectNext(): void {
+        selectByDelta(delta: number): void {
             if (phase !== 'menu' || games.length === 0) return;
-            selectedIndex = (selectedIndex + 1) % games.length;
-        },
-
-        selectPrev(): void {
-            if (phase !== 'menu' || games.length === 0) return;
-            selectedIndex = (selectedIndex - 1 + games.length) % games.length;
+            selectedIndex = ((selectedIndex + delta) % games.length + games.length) % games.length;
         },
 
         async launchSelected(stage: Container): Promise<void> {

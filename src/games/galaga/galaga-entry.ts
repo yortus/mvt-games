@@ -25,6 +25,7 @@ export function createGalagaEntry(): GameEntry {
         name: 'Galaga',
         screenWidth: SCREEN_WIDTH,
         screenHeight: PLAY_HEIGHT + HUD_HEIGHT,
+        thumbnailAdvanceMs: 2000,
 
         async preload(): Promise<void> {
             textures = await loadSpriteTextures('sprites/galaga-sprites.json');

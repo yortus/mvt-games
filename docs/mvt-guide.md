@@ -208,6 +208,24 @@ The contract guarantees:
 - **Consistent snapshots** — between `update()` and `refresh()`, model state
   is stable. No background timer can mutate it mid-frame.
 
+> **No large time leaps.** Model `update()` implementations typically contain
+> multi-phase state machines and per-tile GSAP timelines that depend on
+> inter-tick transitions. A single `update(5000)` call will _not_ produce the
+> same result as 312 × `update(16)` calls, because:
+>
+> 1. **Early returns after phase changes** — a phase-guarded block may
+>    transition to a new phase and then `return`, so the new phase's logic
+>    only runs on the _next_ tick.
+> 2. **GSAP timelines with callbacks** — a huge time jump can overshoot a
+>    timeline's total duration, skipping `set()` / `call()` triggers that
+>    schedule the next sequence.
+> 3. **Orchestration guards** — patterns like
+>    `if (!state.moving) scheduleMove()` depend on intermediate ticks to
+>    observe the completed-move flag and enqueue the next one.
+>
+> When you need to fast-forward a model (e.g. generating thumbnails), always
+> step in small increments (~16 ms) to preserve correct behaviour.
+
 ### Model Hierarchy and Composition
 
 Complex applications break models into a tree. The root model's `update()`

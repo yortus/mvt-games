@@ -15,6 +15,12 @@ export interface GameEntry {
     /** Desired canvas height in pixels. */
     readonly screenHeight: number;
     /**
+     * Milliseconds to advance the model when generating a thumbnail.
+     * Defaults to 16 ms (one tick). Games that need time for entities
+     * to assemble (e.g. Galaga) can set a higher value.
+     */
+    readonly thumbnailAdvanceMs?: number;
+    /**
      * Optional async hook called before `start()` to load assets
      * (e.g. sprite sheets). Games without assets may omit this.
      */
