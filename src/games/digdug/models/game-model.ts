@@ -6,7 +6,7 @@ import { createFieldModel, type FieldModel } from './field-model';
 import { createDiggerModel, type DiggerModel } from './digger-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createRockModel, type RockModel } from './rock-model';
-import { createPlayerInputModel, type PlayerInputModel } from './player-input-model';
+import { createPlayerInput, type PlayerInput } from './player-input';
 import { createScoreModel, type ScoreModel } from './score-model';
 import type { GamePhase, Direction } from './common';
 import { DIRECTION_DELTA } from './common';
@@ -22,7 +22,7 @@ export interface GameModel {
     readonly enemies: readonly EnemyModel[];
     readonly rocks: readonly RockModel[];
     readonly score: ScoreModel;
-    readonly playerInput: PlayerInputModel;
+    readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
 }
@@ -161,7 +161,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let enemies = buildEnemies(field);
     let rocks = buildRocks(field);
     const scoreModel = createScoreModel();
-    const playerInput = createPlayerInputModel();
+    const playerInput = createPlayerInput();
     let watchRestart = createWatch(() => playerInput.restartRequested);
 
     // ---- Helpers -----------------------------------------------------------
@@ -432,7 +432,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-            playerInput.update(deltaMs);
 
             // Restart handling
             if (watchRestart.changed() && watchRestart.value) {

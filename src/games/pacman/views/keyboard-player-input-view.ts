@@ -1,11 +1,20 @@
 import { Container } from 'pixi.js';
-import type { Direction, PlayerInputModel } from '../models';
+import type { Direction } from '../models';
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+export interface KeyboardInputBindings {
+    onDirectionChange(dir: Direction): void;
+    onRestartRequest(): void;
+}
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Container {
+export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): Container {
     const container = new Container();
     container.label = 'keyboard-player-input';
 
@@ -13,11 +22,11 @@ export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Co
         const dir = KEY_MAP[e.key];
         if (dir !== undefined) {
             e.preventDefault();
-            playerInput.direction = dir;
+            bindings.onDirectionChange(dir);
             return;
         }
         if (e.key === 'Enter') {
-            playerInput.restartRequested = true;
+            bindings.onRestartRequest();
         }
     }
 

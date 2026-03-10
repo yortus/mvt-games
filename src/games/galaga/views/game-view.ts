@@ -1,55 +1,12 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
-import type {
-    EnemyKind,
-    EnemyPhase,
-    GamePhase,
-    PlayerInputModel,
-} from '../models';
+import type { GameModel } from '../models';
+import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
 import { createEnemyView, type EnemyViewTextures } from './enemy-view';
 import { createBulletView } from './bullet-view';
 import { createHudView } from './hud-view';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
-
-// ---------------------------------------------------------------------------
-// Bindings
-// ---------------------------------------------------------------------------
-
-export interface GameViewBindings {
-    // Screen
-    getScreenWidth(): number;
-    getPlayHeight(): number;
-    // Ship
-    getShipX(): number;
-    getShipY(): number;
-    isShipAlive(): boolean;
-    // Enemies
-    getEnemyCount(): number;
-    getEnemyX(index: number): number;
-    getEnemyY(index: number): number;
-    getEnemyKind(index: number): EnemyKind;
-    getEnemyPhase(index: number): EnemyPhase;
-    isEnemyAlive(index: number): boolean;
-    // Player Bullets
-    getPlayerBulletCount(): number;
-    getPlayerBulletX(index: number): number;
-    getPlayerBulletY(index: number): number;
-    isPlayerBulletActive(index: number): boolean;
-    // Enemy Bullets
-    getEnemyBulletCount(): number;
-    getEnemyBulletX(index: number): number;
-    getEnemyBulletY(index: number): number;
-    isEnemyBulletActive(index: number): boolean;
-    // HUD
-    getScore(): number;
-    getLives(): number;
-    getStage(): number;
-    // State
-    getGamePhase(): GamePhase;
-    // Input
-    getPlayerInput(): PlayerInputModel;
-}
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -67,11 +24,11 @@ export interface GameViewTextures {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings, textures: GameViewTextures): Container {
-    const watchEnemyCount = createWatch(bindings.getEnemyCount);
-    const watchPBulletCount = createWatch(bindings.getPlayerBulletCount);
-    const watchEBulletCount = createWatch(bindings.getEnemyBulletCount);
-    const watchPhase = createWatch(bindings.getGamePhase);
+export function createGameView(game: GameModel, textures: GameViewTextures): Container {
+    const watchEnemyCount = createWatch(() => game.enemies.length);
+    const watchPBulletCount = createWatch(() => game.playerBullets.length);
+    const watchEBulletCount = createWatch(() => game.enemyBullets.length);
+    const watchPhase = createWatch(() => game.phase);
 
     const enemyTextures: EnemyViewTextures = {
         boss: textures.boss,
@@ -84,7 +41,7 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
     // Static star backdrop
     const starsGfx = new Graphics();
     container.addChild(starsGfx);
-    drawStars(starsGfx, bindings.getScreenWidth(), bindings.getPlayHeight());
+    drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
     // Enemy views — dynamic list
     let enemyContainers: Container[] = [];
@@ -100,40 +57,43 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
 
     // Ship
     const shipContainer = createShipView({
-        getX: bindings.getShipX,
-        getY: bindings.getShipY,
-        isAlive: bindings.isShipAlive,
+        getX: () => game.ship.x,
+        getY: () => game.ship.y,
+        isAlive: () => game.ship.alive,
     }, textures.ship);
     container.addChild(shipContainer);
 
     // HUD
-    const playHeight = bindings.getPlayHeight();
     const hudContainer = createHudView({
-        getScore: bindings.getScore,
-        getLives: bindings.getLives,
-        getStage: bindings.getStage,
-        getScreenWidth: bindings.getScreenWidth,
+        getScore: () => game.score.score,
+        getLives: () => game.score.lives,
+        getStage: () => game.score.stage,
+        getScreenWidth: () => SCREEN_WIDTH,
     }, textures['ship-icon']);
-    hudContainer.position.set(0, playHeight);
+    hudContainer.position.set(0, PLAY_HEIGHT);
     container.addChild(hudContainer);
 
     // Overlay (game over / stage clear)
     const overlay = new Container();
     overlay.visible = false;
     const overlayBg = new Graphics();
+    overlayBg.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill({ color: 0x000000, alpha: 0.6 });
     overlay.addChild(overlayBg);
     const overlayText = new Text({
         text: '',
         style: { fontFamily: 'monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
     });
     overlayText.anchor.set(0.5);
+    overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
     overlay.addChild(overlayText);
     container.addChild(overlay);
 
-    updateOverlayLayout();
-
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView(bindings.getPlayerInput()));
+    container.addChild(createKeyboardPlayerInputView({
+        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
+        onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
+        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+    }));
 
     container.onRender = refresh;
     return container;
@@ -159,16 +119,6 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
     }
 
-    // ---- layout helpers ----------------------------------------------------
-
-    function updateOverlayLayout(): void {
-        const w = bindings.getScreenWidth();
-        const h = bindings.getPlayHeight();
-        overlayBg.clear();
-        overlayBg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.6 });
-        overlayText.position.set(w / 2, h / 2);
-    }
-
     // ---- builder helpers ---------------------------------------------------
 
     function buildEnemies(): void {
@@ -177,15 +127,15 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
         enemyContainers = [];
 
-        const count = bindings.getEnemyCount();
+        const count = game.enemies.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const c = createEnemyView({
-                getX: () => bindings.getEnemyX(idx),
-                getY: () => bindings.getEnemyY(idx),
-                getKind: () => bindings.getEnemyKind(idx),
-                getPhase: () => bindings.getEnemyPhase(idx),
-                isAlive: () => bindings.isEnemyAlive(idx),
+                getX: () => game.enemies[idx].x,
+                getY: () => game.enemies[idx].y,
+                getKind: () => game.enemies[idx].kind,
+                getPhase: () => game.enemies[idx].phase,
+                isAlive: () => game.enemies[idx].alive,
             }, enemyTextures);
             container.addChild(c);
             enemyContainers.push(c);
@@ -198,13 +148,13 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
         pBulletContainers = [];
 
-        const count = bindings.getPlayerBulletCount();
+        const count = game.playerBullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const c = createBulletView({
-                getX: () => bindings.getPlayerBulletX(idx),
-                getY: () => bindings.getPlayerBulletY(idx),
-                isActive: () => bindings.isPlayerBulletActive(idx),
+                getX: () => game.playerBullets[idx].x,
+                getY: () => game.playerBullets[idx].y,
+                isActive: () => game.playerBullets[idx].active,
                 getColor: () => 0xffffff,
             });
             container.addChild(c);
@@ -218,13 +168,13 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
         eBulletContainers = [];
 
-        const count = bindings.getEnemyBulletCount();
+        const count = game.enemyBullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const c = createBulletView({
-                getX: () => bindings.getEnemyBulletX(idx),
-                getY: () => bindings.getEnemyBulletY(idx),
-                isActive: () => bindings.isEnemyBulletActive(idx),
+                getX: () => game.enemyBullets[idx].x,
+                getY: () => game.enemyBullets[idx].y,
+                isActive: () => game.enemyBullets[idx].active,
                 getColor: () => 0xff4444,
             });
             container.addChild(c);

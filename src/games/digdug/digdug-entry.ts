@@ -2,14 +2,13 @@ import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { loadSpriteTextures, type SpriteTextures } from '#utils';
 import { createGameModel } from './models';
-import { createGameView, type GameViewBindings, type GameViewTextures } from './views';
+import { createGameView, type GameViewTextures } from './views';
 import {
     TILE_SIZE,
     FIELD_ROWS,
     FIELD_COLS,
     HUD_HEIGHT,
     BASE_FIELD,
-    DEPTH_LAYERS,
     DIGGER_SPAWN,
     LEVELS,
 } from './data';
@@ -34,7 +33,7 @@ export function createDigdugEntry(): GameEntry {
         start(stage: Container): GameSession {
             if (!textures) throw new Error('digdug: preload() must be called before start()');
 
-            const game = createGameModel({
+            const gameModel = createGameModel({
                 levels: LEVELS,
                 fieldCols: FIELD_COLS,
                 fieldRows: FIELD_ROWS,
@@ -69,51 +68,16 @@ export function createDigdugEntry(): GameEntry {
                 diggerIcon: textures['digger-icon'],
             };
 
-            const bindings: GameViewBindings = {
-                getTileSize: () => TILE_SIZE,
-                getRows: () => FIELD_ROWS,
-                getCols: () => FIELD_COLS,
-                getTileKind: (r, c) => game.field.tileAt(r, c),
-                getDepthLayers: () => DEPTH_LAYERS,
-                getTunnelCount: () => game.field.tunnelCount,
-                getDiggerX: () => game.digger.x,
-                getDiggerY: () => game.digger.y,
-                getDiggerDirection: () => game.digger.direction,
-                getDiggerStepProgress: () => game.digger.stepProgress,
-                isDiggerAlive: () => game.digger.alive,
-                isHarpoonExtended: () => game.digger.harpoonExtended,
-                getHarpoonDistance: () => game.digger.harpoonDistance,
-                getEnemyCount: () => game.enemies.length,
-                getEnemyX: (i) => game.enemies[i].x,
-                getEnemyY: (i) => game.enemies[i].y,
-                getEnemyKind: (i) => game.enemies[i].kind,
-                getEnemyPhase: (i) => game.enemies[i].phase,
-                getInflationStage: (i) => game.enemies[i].inflationStage,
-                getEnemyDirection: (i) => game.enemies[i].direction,
-                isEnemyFireActive: (i) => game.enemies[i].fireActive,
-                isEnemyFireTelegraph: (i) => game.enemies[i].fireTelegraph,
-                getRockCount: () => game.rocks.length,
-                getRockX: (i) => game.rocks[i].x,
-                getRockY: (i) => game.rocks[i].y,
-                getRockPhase: (i) => game.rocks[i].phase,
-                isRockAlive: (i) => game.rocks[i].alive,
-                getScore: () => game.score.score,
-                getLives: () => game.score.lives,
-                getLevel: () => game.score.level,
-                getGamePhase: () => game.phase,
-                getPlayerInput: () => game.playerInput,
-            };
-
-            const gameContainer = createGameView(bindings, gameTextures);
-            stage.addChild(gameContainer);
+            const gameView = createGameView(gameModel, gameTextures);
+            stage.addChild(gameView);
 
             return {
                 update(deltaMs: number): void {
-                    game.update(deltaMs);
+                    gameModel.update(deltaMs);
                 },
                 destroy(): void {
-                    stage.removeChild(gameContainer);
-                    gameContainer.destroy({ children: true });
+                    stage.removeChild(gameView);
+                    gameView.destroy({ children: true });
                 },
             };
         },

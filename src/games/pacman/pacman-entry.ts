@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { loadSpriteTextures, type SpriteTextures } from '#utils';
 import { createGameModel } from './models';
-import { createGameView, type GameViewBindings, type GameViewTextures } from './views';
+import { createGameView, type GameViewTextures } from './views';
 import {
     MAZE_DATA,
     TILE_SIZE,
@@ -34,7 +34,7 @@ export function createPacmanEntry(): GameEntry {
         start(stage: Container): GameSession {
             if (!textures) throw new Error('pacman: preload() must be called before start()');
 
-            const game = createGameModel({
+            const gameModel = createGameModel({
                 grid: MAZE_DATA,
                 pacmanSpawn: PACMAN_SPAWN,
                 ghostSpawns: GHOST_SPAWNS,
@@ -53,35 +53,16 @@ export function createPacmanEntry(): GameEntry {
                 },
             };
 
-            const bindings: GameViewBindings = {
-                getTileSize: () => TILE_SIZE,
-                getRows: () => MAZE_ROWS,
-                getCols: () => MAZE_COLS,
-                getTileKind: (r, c) => game.maze.tileAt(r, c),
-                isDotAt: (r, c) => game.maze.isDot(r, c),
-                getPacmanX: () => game.pacman.x,
-                getPacmanY: () => game.pacman.y,
-                getPacmanDirection: () => game.pacman.direction,
-                getPacmanStepProgress: () => game.pacman.stepProgress,
-                getGhostCount: () => game.ghosts.length,
-                getGhostX: (i) => game.ghosts[i].x,
-                getGhostY: (i) => game.ghosts[i].y,
-                getGhostColor: (i) => game.ghosts[i].color,
-                getScore: () => game.score.score,
-                getGamePhase: () => game.phase,
-                getPlayerInput: () => game.playerInput,
-            };
-
-            const gameContainer = createGameView(bindings, gameTextures);
-            stage.addChild(gameContainer);
+            const gameView = createGameView(gameModel, gameTextures);
+            stage.addChild(gameView);
 
             return {
                 update(deltaMs: number): void {
-                    game.update(deltaMs);
+                    gameModel.update(deltaMs);
                 },
                 destroy(): void {
-                    stage.removeChild(gameContainer);
-                    gameContainer.destroy({ children: true });
+                    stage.removeChild(gameView);
+                    gameView.destroy({ children: true });
                 },
             };
         },

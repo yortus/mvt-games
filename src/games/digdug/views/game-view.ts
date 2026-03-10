@@ -1,67 +1,13 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
-import type { TileKind, DepthLayer } from '../data';
-import type {
-    Direction,
-    EnemyKind,
-    EnemyPhase,
-    InflationStage,
-    RockPhase,
-    GamePhase,
-    PlayerInputModel,
-} from '../models';
+import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
+import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
 import { createDiggerView, type DiggerViewTextures } from './digger-view';
 import { createEnemyView, type EnemyViewTextures } from './enemy-view';
 import { createRockView, type RockViewTextures } from './rock-view';
 import { createHudView } from './hud-view';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
-
-// ---------------------------------------------------------------------------
-// Bindings
-// ---------------------------------------------------------------------------
-
-export interface GameViewBindings {
-    // Field
-    getTileSize(): number;
-    getRows(): number;
-    getCols(): number;
-    getTileKind(row: number, col: number): TileKind;
-    getDepthLayers(): readonly DepthLayer[];
-    getTunnelCount(): number;
-    // Digger
-    getDiggerX(): number;
-    getDiggerY(): number;
-    getDiggerDirection(): Direction;
-    getDiggerStepProgress(): number;
-    isDiggerAlive(): boolean;
-    isHarpoonExtended(): boolean;
-    getHarpoonDistance(): number;
-    // Enemies
-    getEnemyCount(): number;
-    getEnemyX(index: number): number;
-    getEnemyY(index: number): number;
-    getEnemyKind(index: number): EnemyKind;
-    getEnemyPhase(index: number): EnemyPhase;
-    getInflationStage(index: number): InflationStage;
-    getEnemyDirection(index: number): Direction;
-    isEnemyFireActive(index: number): boolean;
-    isEnemyFireTelegraph(index: number): boolean;
-    // Rocks
-    getRockCount(): number;
-    getRockX(index: number): number;
-    getRockY(index: number): number;
-    getRockPhase(index: number): RockPhase;
-    isRockAlive(index: number): boolean;
-    // HUD
-    getScore(): number;
-    getLives(): number;
-    getLevel(): number;
-    // State
-    getGamePhase(): GamePhase;
-    // Input
-    getPlayerInput(): PlayerInputModel;
-}
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -78,38 +24,38 @@ export interface GameViewTextures {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings, textures: GameViewTextures): Container {
-    const watchTileSize = createWatch(bindings.getTileSize);
-    const watchRows = createWatch(bindings.getRows);
-    const watchCols = createWatch(bindings.getCols);
-    const watchEnemyCount = createWatch(bindings.getEnemyCount);
-    const watchRockCount = createWatch(bindings.getRockCount);
-    const watchPhase = createWatch(bindings.getGamePhase);
+export function createGameView(game: GameModel, textures: GameViewTextures): Container {
+    const watchEnemyCount = createWatch(() => game.enemies.length);
+    const watchRockCount = createWatch(() => game.rocks.length);
+    const watchPhase = createWatch(() => game.phase);
+
+    const canvasW = FIELD_COLS * TILE_SIZE;
+    const canvasH = FIELD_ROWS * TILE_SIZE;
 
     const container = new Container();
 
     // Field
     const fieldContainer = createFieldView({
-        getTileSize: bindings.getTileSize,
-        getRows: bindings.getRows,
-        getCols: bindings.getCols,
-        getTileKind: bindings.getTileKind,
-        getDepthLayers: bindings.getDepthLayers,
-        getTunnelCount: bindings.getTunnelCount,
-        getGamePhase: bindings.getGamePhase,
+        getTileSize: () => TILE_SIZE,
+        getRows: () => FIELD_ROWS,
+        getCols: () => FIELD_COLS,
+        getTileKind: (r, c) => game.field.tileAt(r, c),
+        getDepthLayers: () => DEPTH_LAYERS,
+        getTunnelCount: () => game.field.tunnelCount,
+        getGamePhase: () => game.phase,
     });
     container.addChild(fieldContainer);
 
     // Digger
     const diggerContainer = createDiggerView({
-        getX: bindings.getDiggerX,
-        getY: bindings.getDiggerY,
-        getDirection: bindings.getDiggerDirection,
-        getStepProgress: bindings.getDiggerStepProgress,
-        isAlive: bindings.isDiggerAlive,
-        isHarpoonExtended: bindings.isHarpoonExtended,
-        getHarpoonDistance: bindings.getHarpoonDistance,
-        getTileSize: bindings.getTileSize,
+        getX: () => game.digger.x,
+        getY: () => game.digger.y,
+        getDirection: () => game.digger.direction,
+        getStepProgress: () => game.digger.stepProgress,
+        isAlive: () => game.digger.alive,
+        isHarpoonExtended: () => game.digger.harpoonExtended,
+        getHarpoonDistance: () => game.digger.harpoonDistance,
+        getTileSize: () => TILE_SIZE,
     }, textures.digger);
     container.addChild(diggerContainer);
 
@@ -123,38 +69,41 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
 
     // HUD
     const hudContainer = createHudView({
-        getScore: bindings.getScore,
-        getLives: bindings.getLives,
-        getLevel: bindings.getLevel,
-        getTileSize: bindings.getTileSize,
-        getCols: bindings.getCols,
+        getScore: () => game.score.score,
+        getLives: () => game.score.lives,
+        getLevel: () => game.score.level,
+        getTileSize: () => TILE_SIZE,
+        getCols: () => FIELD_COLS,
     }, textures.diggerIcon);
+    hudContainer.position.set(0, canvasH);
     container.addChild(hudContainer);
 
     // Overlay (game over / level clear)
     const overlay = new Container();
     overlay.visible = false;
     const overlayBg = new Graphics();
+    overlayBg.rect(0, 0, canvasW, canvasH).fill({ color: 0x000000, alpha: 0.6 });
     overlay.addChild(overlayBg);
     const overlayText = new Text({
         text: '',
         style: { fontFamily: 'monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
     });
     overlayText.anchor.set(0.5);
+    overlayText.position.set(canvasW / 2, canvasH / 2);
     overlay.addChild(overlayText);
     container.addChild(overlay);
 
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView(bindings.getPlayerInput()));
+    container.addChild(createKeyboardPlayerInputView({
+        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
+        onPumpChange: (pressed) => { game.playerInput.pumpPressed = pressed; },
+        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+    }));
 
-    updateLayout();
     container.onRender = refresh;
     return container;
 
     function refresh(): void {
-        const dimsChanged = watchTileSize.changed() | watchRows.changed() | watchCols.changed();
-        if (dimsChanged) updateLayout();
-
         if (watchEnemyCount.changed()) buildEnemies();
         if (watchRockCount.changed()) buildRocks();
 
@@ -172,39 +121,25 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
     }
 
-    function updateLayout(): void {
-        const ts = watchTileSize.value;
-        const rows = watchRows.value;
-        const cols = watchCols.value;
-        const canvasW = cols * ts;
-        const canvasH = rows * ts;
-
-        hudContainer.position.set(0, canvasH);
-
-        overlayBg.clear();
-        overlayBg.rect(0, 0, canvasW, canvasH).fill({ color: 0x000000, alpha: 0.6 });
-        overlayText.position.set(canvasW / 2, canvasH / 2);
-    }
-
     function buildEnemies(): void {
         for (let i = 0; i < enemyContainers.length; i++) {
             enemyContainers[i].destroy();
         }
         enemyContainers = [];
 
-        const count = bindings.getEnemyCount();
+        const count = game.enemies.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const enemyContainer = createEnemyView({
-                getX: () => bindings.getEnemyX(idx),
-                getY: () => bindings.getEnemyY(idx),
-                getKind: () => bindings.getEnemyKind(idx),
-                getPhase: () => bindings.getEnemyPhase(idx),
-                getInflationStage: () => bindings.getInflationStage(idx),
-                getDirection: () => bindings.getEnemyDirection(idx),
-                isFireActive: () => bindings.isEnemyFireActive(idx),
-                isFireTelegraph: () => bindings.isEnemyFireTelegraph(idx),
-                getTileSize: bindings.getTileSize,
+                getX: () => game.enemies[idx].x,
+                getY: () => game.enemies[idx].y,
+                getKind: () => game.enemies[idx].kind,
+                getPhase: () => game.enemies[idx].phase,
+                getInflationStage: () => game.enemies[idx].inflationStage,
+                getDirection: () => game.enemies[idx].direction,
+                isFireActive: () => game.enemies[idx].fireActive,
+                isFireTelegraph: () => game.enemies[idx].fireTelegraph,
+                getTileSize: () => TILE_SIZE,
             }, textures.enemy);
             container.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
@@ -217,15 +152,15 @@ export function createGameView(bindings: GameViewBindings, textures: GameViewTex
         }
         rockContainers = [];
 
-        const count = bindings.getRockCount();
+        const count = game.rocks.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const rockContainer = createRockView({
-                getX: () => bindings.getRockX(idx),
-                getY: () => bindings.getRockY(idx),
-                getPhase: () => bindings.getRockPhase(idx),
-                isAlive: () => bindings.isRockAlive(idx),
-                getTileSize: bindings.getTileSize,
+                getX: () => game.rocks[idx].x,
+                getY: () => game.rocks[idx].y,
+                getPhase: () => game.rocks[idx].phase,
+                isAlive: () => game.rocks[idx].alive,
+                getTileSize: () => TILE_SIZE,
             }, textures.rock);
             container.addChild(rockContainer);
             rockContainers.push(rockContainer);

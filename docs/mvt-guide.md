@@ -26,6 +26,7 @@ separation of concerns, deterministic state, and smooth frame-based animation.
     - [The Bindings Pattern](#the-bindings-pattern)
     - [Reactive Bindings](#reactive-bindings)
     - [Change Detection](#change-detection)
+    - [Choosing How Views Access State](#choosing-how-views-access-state)
     - [View Hierarchy and Composition](#view-hierarchy-and-composition)
     - [Multiple Views, One Model](#multiple-views-one-model)
 - [Ticker](#ticker)
@@ -525,24 +526,93 @@ A second view can watch the same binding and react differently — or ignore it
 entirely. No event registration, no coupling to the producer's event API, and
 no risk of missing or double-handling an event.
 
+### Choosing How Views Access State
+
+Not every view needs a full `get*()`/`on*()` bindings interface. MVT recognises
+three access patterns — choose by reuse potential and data-source complexity.
+
+#### Decision criteria
+
+| View kind | Access pattern | Rationale |
+| --- | --- | --- |
+| **Top-level application view** | Accept model(s) + config directly | Application-specific by definition; biggest bindings savings; no reuse scenario; eliminates collection verbosity |
+| **Reusable leaf view** | `get*()`/`on*()` bindings interface | Small interface cost; genuine reuse across applications; adapter layer absorbs model-shape mismatches at the wiring site |
+| **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or receive as a plain parameter (reusable) | Never changes at runtime; not reactive state; avoids polluting bindings interfaces |
+
+#### Why top-level views skip bindings
+
+An application's top-level view (the one that orchestrates all sub-views) is the
+**least** likely to be reused elsewhere — it exists to wire this application's
+specific sub-views together. It is also the view with the **largest** bindings
+surface: every property in every collection must be projected through indexed
+accessors. Letting it read model properties directly eliminates that entire
+layer.
+
+Because the top-level view accesses models directly, it wires sub-view bindings
+from model properties without an intermediate bindings interface:
+
+```ts
+// Example: a game's top-level view wires sub-views from the model tree
+function createGameView(game: GameModel, textures: GameViewTextures): Container {
+    const hudContainer = createHudView({
+        getScore: () => game.score.score,
+        getLives: () => game.score.lives,
+    });
+
+    for (let i = 0; i < game.entities.length; i++) {
+        const entity = game.entities[i];
+        createEntityView({
+            getX: () => entity.x,
+            getY: () => entity.y,
+        });
+    }
+}
+```
+
+#### Why leaf views use bindings
+
+Smaller, focused views — entity renderers, HUD panels, overlays — are natural
+candidates for reuse as the application library grows. The `get*()`/`on*()`
+bindings interface gives them an adapter layer: if a model's property is named
+`posX` but the view expects `getX()`, only the wiring changes — neither the
+model nor the view needs modifying. With direct structural access, one or both
+would need to change.
+
 ### View Hierarchy and Composition
 
 Like models, views compose hierarchically. A parent view creates child views,
-each with its own bindings, and adds them to the scene graph:
+each with its own bindings, and adds them to the scene graph.
+
+The top-level application view typically receives model(s) directly and wires
+bindings for each child. Child views know nothing about the model tree — they
+only see their own `get*()`/`on*()` bindings:
 
 ```ts
-function createGameView(bindings: GameViewBindings): Container {
+// Example: a game's top-level view wires sub-view bindings from the model tree
+function createGameView(game: GameModel, textures: Textures): Container {
     const container = new Container();
-    container.addChild(createGridView(bindings));
-    container.addChild(createHudView(bindings));
-    container.addChild(createEntityView(bindings));
+
+    container.addChild(createGridView({
+        getRows: () => game.grid.rows,
+        getCols: () => game.grid.cols,
+        getTileKind: (r, c) => game.grid.tileAt(r, c),
+    }));
+
+    container.addChild(createHudView({
+        getScore: () => game.score.score,
+    }));
+
+    container.addChild(createKeyboardInputView({
+        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
+        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+    }));
+
     return container;
 }
 ```
 
 Child views are independent — each only knows about the `get*()` and `on*()`
-members it needs. A parent may pass the same bindings object or construct
-specialised sub-bindings for each child.
+members it needs.
 
 ### Multiple Views, One Model
 
@@ -696,7 +766,9 @@ A quick checklist for working in an MVT codebase:
 2. **Views are stateless mirrors.** They reflect current model state, period.
    When in doubt, put the state in the model.
 3. **Bindings are the bridge.** `get*()` reads state, `on*()` relays input.
-   If a view needs data, add it to the bindings — don't import the model.
+   Top-level application views may access models directly (they're
+   application-specific and never reused); reusable leaf views should use
+   bindings to stay decoupled.
 4. **One frame, one sequence.** Ticker calls `update()` then `refresh()` then
    renders. Never interleave or skip steps.
 5. **No hidden time.** No `setTimeout`, `setInterval`, auto-playing tweens, or

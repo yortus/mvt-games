@@ -1,10 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { createWatch } from '#utils';
-import type {
-    AsteroidSize,
-    GamePhase,
-    PlayerInputModel,
-} from '../models';
+import type { GameModel } from '../models';
+import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
 import { createAsteroidView } from './asteroid-view';
 import { createBulletView } from './bullet-view';
@@ -12,58 +9,20 @@ import { createHudView } from './hud-view';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 
 // ---------------------------------------------------------------------------
-// Bindings
-// ---------------------------------------------------------------------------
-
-export interface GameViewBindings {
-    // Screen
-    getScreenWidth(): number;
-    getPlayHeight(): number;
-    // Ship
-    getShipX(): number;
-    getShipY(): number;
-    getShipAngle(): number;
-    isShipAlive(): boolean;
-    isShipThrusting(): boolean;
-    // Asteroids
-    getAsteroidCount(): number;
-    getAsteroidX(index: number): number;
-    getAsteroidY(index: number): number;
-    getAsteroidAngle(index: number): number;
-    getAsteroidSize(index: number): AsteroidSize;
-    getAsteroidRadius(index: number): number;
-    isAsteroidAlive(index: number): boolean;
-    getAsteroidShapeSeed(index: number): number;
-    // Bullets
-    getBulletCount(): number;
-    getBulletX(index: number): number;
-    getBulletY(index: number): number;
-    isBulletActive(index: number): boolean;
-    // HUD
-    getScore(): number;
-    getLives(): number;
-    getWave(): number;
-    // State
-    getGamePhase(): GamePhase;
-    // Input
-    getPlayerInput(): PlayerInputModel;
-}
-
-// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(bindings: GameViewBindings): Container {
-    const watchAsteroidCount = createWatch(bindings.getAsteroidCount);
-    const watchBulletCount = createWatch(bindings.getBulletCount);
-    const watchPhase = createWatch(bindings.getGamePhase);
+export function createGameView(game: GameModel): Container {
+    const watchAsteroidCount = createWatch(() => game.asteroids.length);
+    const watchBulletCount = createWatch(() => game.bullets.length);
+    const watchPhase = createWatch(() => game.phase);
 
     const container = new Container();
 
     // Static star backdrop
     const starsGfx = new Graphics();
     container.addChild(starsGfx);
-    drawStars(starsGfx, bindings.getScreenWidth(), bindings.getPlayHeight());
+    drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
     // Asteroid views — dynamic list
     let asteroidContainers: Container[] = [];
@@ -75,42 +34,46 @@ export function createGameView(bindings: GameViewBindings): Container {
 
     // Ship
     const shipContainer = createShipView({
-        getX: bindings.getShipX,
-        getY: bindings.getShipY,
-        getAngle: bindings.getShipAngle,
-        isAlive: bindings.isShipAlive,
-        isThrusting: bindings.isShipThrusting,
+        getX: () => game.ship.x,
+        getY: () => game.ship.y,
+        getAngle: () => game.ship.angle,
+        isAlive: () => game.ship.alive,
+        isThrusting: () => game.ship.thrusting,
     });
     container.addChild(shipContainer);
 
     // HUD
-    const playHeight = bindings.getPlayHeight();
     const hudContainer = createHudView({
-        getScore: bindings.getScore,
-        getLives: bindings.getLives,
-        getWave: bindings.getWave,
-        getScreenWidth: bindings.getScreenWidth,
+        getScore: () => game.score.score,
+        getLives: () => game.score.lives,
+        getWave: () => game.score.wave,
+        getScreenWidth: () => SCREEN_WIDTH,
     });
-    hudContainer.position.set(0, playHeight);
+    hudContainer.position.set(0, PLAY_HEIGHT);
     container.addChild(hudContainer);
 
     // Overlay (game over / wave clear)
     const overlay = new Container();
     overlay.visible = false;
     const overlayBg = new Graphics();
+    overlayBg.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill({ color: 0x000000, alpha: 0.6 });
     overlay.addChild(overlayBg);
     const overlayText = new Text({
         text: '',
         style: { fontFamily: 'monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
     });
     overlayText.anchor.set(0.5);
+    overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
     overlay.addChild(overlayText);
     container.addChild(overlay);
 
-    updateOverlayLayout();
-
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView(bindings.getPlayerInput()));
+    container.addChild(createKeyboardPlayerInputView({
+        onRotationChange: (rot) => { game.playerInput.rotation = rot; },
+        onThrustChange: (pressed) => { game.playerInput.thrustPressed = pressed; },
+        onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
+        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+    }));
 
     container.onRender = refresh;
     return container;
@@ -135,16 +98,6 @@ export function createGameView(bindings: GameViewBindings): Container {
         }
     }
 
-    // ---- layout helpers ----------------------------------------------------
-
-    function updateOverlayLayout(): void {
-        const w = bindings.getScreenWidth();
-        const h = bindings.getPlayHeight();
-        overlayBg.clear();
-        overlayBg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.6 });
-        overlayText.position.set(w / 2, h / 2);
-    }
-
     // ---- builder helpers ---------------------------------------------------
 
     function buildAsteroids(): void {
@@ -153,17 +106,17 @@ export function createGameView(bindings: GameViewBindings): Container {
         }
         asteroidContainers = [];
 
-        const count = bindings.getAsteroidCount();
+        const count = game.asteroids.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const c = createAsteroidView({
-                getX: () => bindings.getAsteroidX(idx),
-                getY: () => bindings.getAsteroidY(idx),
-                getAngle: () => bindings.getAsteroidAngle(idx),
-                getSize: () => bindings.getAsteroidSize(idx),
-                getRadius: () => bindings.getAsteroidRadius(idx),
-                isAlive: () => bindings.isAsteroidAlive(idx),
-                getShapeSeed: () => bindings.getAsteroidShapeSeed(idx),
+                getX: () => game.asteroids[idx].x,
+                getY: () => game.asteroids[idx].y,
+                getAngle: () => game.asteroids[idx].angle,
+                getSize: () => game.asteroids[idx].size,
+                getRadius: () => game.asteroids[idx].radius,
+                isAlive: () => game.asteroids[idx].alive,
+                getShapeSeed: () => game.asteroids[idx].shapeSeed,
             });
             container.addChild(c);
             asteroidContainers.push(c);
@@ -176,13 +129,13 @@ export function createGameView(bindings: GameViewBindings): Container {
         }
         bulletContainers = [];
 
-        const count = bindings.getBulletCount();
+        const count = game.bullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
             const c = createBulletView({
-                getX: () => bindings.getBulletX(idx),
-                getY: () => bindings.getBulletY(idx),
-                isActive: () => bindings.isBulletActive(idx),
+                getX: () => game.bullets[idx].x,
+                getY: () => game.bullets[idx].y,
+                isActive: () => game.bullets[idx].active,
             });
             container.addChild(c);
             bulletContainers.push(c);

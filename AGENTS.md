@@ -41,7 +41,7 @@ src/
 - **Interfaces over implementations** — export the interface type, not the concrete object shape
 - **String-literal unions for enums** — `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names — avoids overloading the word "type" in TypeScript
-- **`get*` / `on*` naming** in bindings — `get` for state accessors, `on` for user-input event handlers
+- **Bindings for reusable views** — leaf views (entity renderers, HUDs) accept a `get*()`/`on*()` bindings object; top-level application views accept the model directly (they're application-specific, never reused)
 - **`_` prefix** for intentionally unused parameters
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
@@ -60,7 +60,7 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 ## Critical Rules (Do Not Violate)
 
 1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only.
-2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings, write to the scene graph, nothing else. (Exception: limited presentation-only state like score-counter tweens — see MVT guide.)
+2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings (leaf views) or model properties (top-level application views), write to the scene graph, nothing else. (Exception: limited presentation-only state like score-counter tweens — see MVT guide.)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`).
 4. **No classes.** Use factory functions returning plain records that satisfy an interface.
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures.

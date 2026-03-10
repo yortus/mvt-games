@@ -30,7 +30,7 @@ import type { AsteroidSize, GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createAsteroidModel, type AsteroidModel } from './asteroid-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
-import { createPlayerInputModel, type PlayerInputModel } from './player-input-model';
+import { createPlayerInput, type PlayerInput } from './player-input';
 import { createScoreModel, type ScoreModel } from './score-model';
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ export interface GameModel {
     readonly asteroids: readonly AsteroidModel[];
     readonly bullets: readonly BulletModel[];
     readonly score: ScoreModel;
-    readonly playerInput: PlayerInputModel;
+    readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
 }
@@ -177,7 +177,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let bullets = buildBulletPool();
     let asteroids: AsteroidModel[] = [];
     const scoreModel = createScoreModel();
-    const playerInput = createPlayerInputModel();
+    const playerInput = createPlayerInput();
     let watchRestart = createWatch(() => playerInput.restartRequested);
 
     // Spawn first wave
@@ -329,7 +329,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-            playerInput.update(deltaMs);
 
             // Restart handling
             if (watchRestart.changed() && watchRestart.value) {

@@ -41,9 +41,10 @@ src/
 
 ## Bindings
 
-- View factory accepts a `bindings` object with:
+- **Reusable leaf views** accept a `bindings` object with:
     - `get*()` — read-only state accessors (e.g. `getScore(): number`)
     - `on*()` — user-input event handlers (e.g. `onDirectionChange(dir: Direction): void`)
+- **Top-level application views** accept the model directly (application-specific, never reused)
 
 ## Hot Paths
 

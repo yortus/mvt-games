@@ -361,12 +361,40 @@ Key points:
 
 ## Views
 
-- Expose each view as a **factory function** that accepts a `bindings` object
-  and returns a Pixi.js `Container`.
+- Expose each view as a **factory function** that returns a Pixi.js
+  `Container`.
+- **Top-level application views** accept the application model (and textures)
+  directly. They're application-specific and have no reuse scenario.
+- **Leaf/reusable views** accept a `bindings` object with `get*()` and `on*()`
+  members. This keeps them decoupled from any particular model shape.
 - No view properties or methods need to be exposed beyond what `Container`
   already provides.
 - Use Pixi's `onRender` property to schedule the internal `refresh` function —
   set it once at construction time so rendering is automatic.
+
+**Top-level application view** (accepts model directly, wires sub-view bindings):
+
+```ts
+// Example: a game's top-level view
+function createGameView(game: GameModel, textures: GameViewTextures): Container {
+    const container = new Container();
+
+    container.addChild(createHudView({
+        getScore: () => game.score.score,
+    }));
+
+    container.addChild(createKeyboardInputView({
+        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
+    }));
+
+    // ... sub-views ...
+
+    container.onRender = refresh;
+    return container;
+}
+```
+
+**Leaf/reusable view** (accepts bindings):
 
 ```ts
 // ---------------------------------------------------------------------------

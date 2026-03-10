@@ -1,5 +1,16 @@
 import { Container } from 'pixi.js';
-import type { RotationDirection, PlayerInputModel } from '../models';
+import type { RotationDirection } from '../models';
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+export interface KeyboardInputBindings {
+    onRotationChange(rot: RotationDirection): void;
+    onThrustChange(pressed: boolean): void;
+    onFireChange(pressed: boolean): void;
+    onRestartRequest(): void;
+}
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -19,53 +30,58 @@ const DIR_KEYS: Record<RotationDirection, string[]> = {
     'rotate-right': ['ArrowRight', 'd'],
 };
 
-export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Container {
+export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): Container {
     const container = new Container();
     container.label = 'keyboard-player-input';
 
     /** Set of currently held rotation keys. */
     const heldKeys = new Set<string>();
 
+    /** Current rotation reported to the model. */
+    let currentRotation: RotationDirection = 'none';
+
     function onKeyDown(e: KeyboardEvent): void {
         const rot = ROTATION_MAP[e.key];
         if (rot !== undefined) {
             e.preventDefault();
             heldKeys.add(e.key);
-            playerInput.rotation = rot;
+            currentRotation = rot;
+            bindings.onRotationChange(rot);
             return;
         }
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
-            playerInput.thrustPressed = true;
+            bindings.onThrustChange(true);
             return;
         }
         if (e.key === ' ') {
             e.preventDefault();
-            playerInput.firePressed = true;
+            bindings.onFireChange(true);
             return;
         }
         if (e.key === 'Enter') {
-            playerInput.restartRequested = true;
+            bindings.onRestartRequest();
         }
     }
 
     function onKeyUp(e: KeyboardEvent): void {
         if (e.key === ' ') {
             e.preventDefault();
-            playerInput.firePressed = false;
+            bindings.onFireChange(false);
             return;
         }
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
-            playerInput.thrustPressed = false;
+            bindings.onThrustChange(false);
             return;
         }
         const rot = ROTATION_MAP[e.key];
         if (rot !== undefined) {
             e.preventDefault();
             heldKeys.delete(e.key);
-            if (playerInput.rotation === rot) {
-                playerInput.rotation = findHeldRotation();
+            if (currentRotation === rot) {
+                currentRotation = findHeldRotation();
+                bindings.onRotationChange(currentRotation);
             }
         }
     }

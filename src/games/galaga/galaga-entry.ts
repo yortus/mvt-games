@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { loadSpriteTextures, type SpriteTextures } from '#utils';
 import { createGameModel } from './models';
-import { createGameView, type GameViewBindings, type GameViewTextures } from './views';
+import { createGameView, type GameViewTextures } from './views';
 import {
     SCREEN_WIDTH,
     PLAY_HEIGHT,
@@ -33,7 +33,7 @@ export function createGalagaEntry(): GameEntry {
         start(stage: Container): GameSession {
             if (!textures) throw new Error('galaga: preload() must be called before start()');
 
-            const game = createGameModel({
+            const gameModel = createGameModel({
                 waves: WAVES,
                 playHeight: PLAY_HEIGHT,
                 shipStartX: SCREEN_WIDTH / 2,
@@ -51,43 +51,16 @@ export function createGalagaEntry(): GameEntry {
                 'ship-icon': textures['ship-icon'],
             };
 
-            const bindings: GameViewBindings = {
-                getScreenWidth: () => SCREEN_WIDTH,
-                getPlayHeight: () => PLAY_HEIGHT,
-                getShipX: () => game.ship.x,
-                getShipY: () => game.ship.y,
-                isShipAlive: () => game.ship.alive,
-                getEnemyCount: () => game.enemies.length,
-                getEnemyX: (i) => game.enemies[i].x,
-                getEnemyY: (i) => game.enemies[i].y,
-                getEnemyKind: (i) => game.enemies[i].kind,
-                getEnemyPhase: (i) => game.enemies[i].phase,
-                isEnemyAlive: (i) => game.enemies[i].alive,
-                getPlayerBulletCount: () => game.playerBullets.length,
-                getPlayerBulletX: (i) => game.playerBullets[i].x,
-                getPlayerBulletY: (i) => game.playerBullets[i].y,
-                isPlayerBulletActive: (i) => game.playerBullets[i].active,
-                getEnemyBulletCount: () => game.enemyBullets.length,
-                getEnemyBulletX: (i) => game.enemyBullets[i].x,
-                getEnemyBulletY: (i) => game.enemyBullets[i].y,
-                isEnemyBulletActive: (i) => game.enemyBullets[i].active,
-                getScore: () => game.score.score,
-                getLives: () => game.score.lives,
-                getStage: () => game.score.stage,
-                getGamePhase: () => game.phase,
-                getPlayerInput: () => game.playerInput,
-            };
-
-            const gameContainer = createGameView(bindings, gameTextures);
-            stage.addChild(gameContainer);
+            const gameView = createGameView(gameModel, gameTextures);
+            stage.addChild(gameView);
 
             return {
                 update(deltaMs: number): void {
-                    game.update(deltaMs);
+                    gameModel.update(deltaMs);
                 },
                 destroy(): void {
-                    stage.removeChild(gameContainer);
-                    gameContainer.destroy({ children: true });
+                    stage.removeChild(gameView);
+                    gameView.destroy({ children: true });
                 },
             };
         },

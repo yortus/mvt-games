@@ -1,5 +1,15 @@
 import { Container } from 'pixi.js';
-import type { Direction, PlayerInputModel } from '../models';
+import type { Direction } from '../models';
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+export interface KeyboardInputBindings {
+    onDirectionChange(dir: Direction): void;
+    onPumpChange(pressed: boolean): void;
+    onRestartRequest(): void;
+}
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -25,35 +35,39 @@ const DIR_KEYS: Record<Direction, string[]> = {
     right: ['ArrowRight', 'd'],
 };
 
-export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Container {
+export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): Container {
     const container = new Container();
     container.label = 'keyboard-player-input';
 
     /** Set of currently held direction keys. */
     const heldKeys = new Set<string>();
 
+    /** Current direction reported to the model. */
+    let currentDirection: Direction = 'none';
+
     function onKeyDown(e: KeyboardEvent): void {
         const dir = KEY_MAP[e.key];
         if (dir !== undefined) {
             e.preventDefault();
             heldKeys.add(e.key);
-            playerInput.direction = dir;
+            currentDirection = dir;
+            bindings.onDirectionChange(dir);
             return;
         }
         if (e.key === ' ') {
             e.preventDefault();
-            playerInput.pumpPressed = true;
+            bindings.onPumpChange(true);
             return;
         }
         if (e.key === 'Enter') {
-            playerInput.restartRequested = true;
+            bindings.onRestartRequest();
         }
     }
 
     function onKeyUp(e: KeyboardEvent): void {
         if (e.key === ' ') {
             e.preventDefault();
-            playerInput.pumpPressed = false;
+            bindings.onPumpChange(false);
             return;
         }
         const dir = KEY_MAP[e.key];
@@ -61,8 +75,9 @@ export function createKeyboardPlayerInputView(playerInput: PlayerInputModel): Co
             e.preventDefault();
             heldKeys.delete(e.key);
             // If this was the active direction, check if another direction key is still held
-            if (playerInput.direction === dir) {
-                playerInput.direction = findHeldDirection();
+            if (currentDirection === dir) {
+                currentDirection = findHeldDirection();
+                bindings.onDirectionChange(currentDirection);
             }
         }
     }
