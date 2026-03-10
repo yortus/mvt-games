@@ -45,10 +45,9 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
 
     // Pac-Man
     const pacmanContainer = createPacmanView({
-        getX: () => game.pacman.x,
-        getY: () => game.pacman.y,
+        getRow: () => game.pacman.row,
+        getCol: () => game.pacman.col,
         getDirection: () => game.pacman.direction,
-        getStepProgress: () => game.pacman.stepProgress,
         getTileSize: () => TILE_SIZE,
     }, textures.pacman);
     container.addChild(pacmanContainer);
@@ -122,8 +121,8 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         for (let i = 0; i < count; i++) {
             const idx = i;
             const ghostContainer = createGhostView({
-                getX: () => game.ghosts[idx].x,
-                getY: () => game.ghosts[idx].y,
+                getRow: () => game.ghosts[idx].row,
+                getCol: () => game.ghosts[idx].col,
                 getColor: () => game.ghosts[idx].color,
                 getTileSize: () => TILE_SIZE,
             }, textures.ghost);

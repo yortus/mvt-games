@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { createWatch } from '#utils';
-import type { EnemyKind, EnemyPhase, InflationStage, Direction } from '../models';
+import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -25,8 +25,8 @@ export interface EnemyViewTextures {
 // ---------------------------------------------------------------------------
 
 export interface EnemyViewBindings {
-    getX(): number;
-    getY(): number;
+    getRow(): number;
+    getCol(): number;
     getKind(): EnemyKind;
     getPhase(): EnemyPhase;
     getInflationStage(): InflationStage;
@@ -66,8 +66,10 @@ export function createEnemyView(
 
     function refresh(): void {
         const ts = watchTileSize.value;
-        const x = bindings.getX() * ts + ts / 2;
-        const y = bindings.getY() * ts + ts / 2;
+        const col = bindings.getCol();
+        const row = bindings.getRow();
+        const x = col * ts + ts / 2;
+        const y = row * ts + ts / 2;
         container.position.set(x, y);
 
         const phaseChanged = watchPhase.changed();

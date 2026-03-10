@@ -64,6 +64,7 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`).
 4. **No classes.** Use factory functions returning plain records that satisfy an interface.
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures.
+6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` — not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. See MVT guide § "What Belongs in a Model vs a View".
 
 ## File Organisation Within a Module
 

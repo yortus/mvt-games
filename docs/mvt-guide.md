@@ -15,6 +15,7 @@ separation of concerns, deterministic state, and smooth frame-based animation.
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [Models](#models)
     - [Responsibilities](#model-responsibilities)
+    - [What Belongs in a Model vs a View](#what-belongs-in-a-model-vs-a-view)
     - [The update(deltaMs) Contract](#the-updatedeltams-contract)
     - [Model Hierarchy and Composition](#model-hierarchy-and-composition)
     - [Time Management](#time-management)
@@ -110,6 +111,79 @@ Models can be organised hierarchically — a parent model composes child models,
 delegating `update(deltaMs)` calls down the tree. This allows complex domains
 to be broken into focused, independently testable units.
 
+### What Belongs in a Model vs a View
+
+The core MVT principle: **models describe _what is happening_ in domain
+terms; views describe _how it looks_ on screen.** Anything that could change
+if you swapped the renderer (e.g. Pixi.js → terminal, 2D → 3D) belongs in
+the view, not the model.
+
+| Concern | Model | View |
+| --- | --- | --- |
+| Position | `row`, `col`, `heading`, world-units | Pixel coordinates, screen offsets |
+| Speed | tiles/s, world-units/s | — (derives from model position each frame) |
+| Size / extents | grid cells, world-unit radius | Pixel dimensions, sprite scale |
+| Colours & textures | Named state: `color: 'red'`, `phase: 'inflating'` | Actual hex values, texture lookups, tint |
+| Animation progress | Sequence order and progress: `inflationStage: 2`, `progress: 0.3` | Sprite frame, alpha tween, particle burst |
+| Layout | Count of items, grid dimensions | Pixel spacing, margins, font size |
+| Audio | Named events: `'pelletEaten'`, `'levelClear'` | Sound file, volume, pan |
+| Timing | Internal timers via `update(deltaMs)` | Frame-synced presentation tweens (see [Presentation State](#presentation-state)) |
+
+**Why this split matters:**
+
+- **Presentation independence** — models work unchanged regardless of tile
+  size, screen resolution, or rendering technology.
+- **Testability** — domain-level tests don't break when visuals change.
+- **Clarity** — `row: 5, col: 3` is unambiguous; `x: 60, y: 100` depends
+  on knowing the tile size and coordinate origin.
+
+#### In-depth example: coordinates
+
+For grid-based entities that move tile-to-tile, the model exposes **fractional
+`row`/`col`** — an integer means "centred on that tile"; a fraction means
+"between tiles." Combined with `direction`, this tells the view everything it
+needs without pixels ever entering the model's interface.
+
+```ts
+interface EntityModel {
+    /** Row position — fractional while moving between tiles. */
+    readonly row: number;
+    /** Column position — fractional while moving between tiles. */
+    readonly col: number;
+    /** Current movement direction. */
+    readonly direction: Direction;
+    update(deltaMs: number): void;
+}
+```
+
+The view converts to pixels:
+
+```ts
+// In a leaf view's refresh():
+const pixelX = bindings.getCol() * tileSize + tileSize / 2;
+const pixelY = bindings.getRow() * tileSize + tileSize / 2;
+container.position.set(pixelX, pixelY);
+```
+
+Internally, the model may keep separate integer `tileRow`/`tileCol` fields
+for tile-level decisions (pathfinding, wall checks, dot eating) while GSAP
+tweens the public `row`/`col` between integers — but those are private
+implementation details inside the factory closure.
+
+For continuous-space games (e.g. asteroids floating in open space), the same
+principle applies: use abstract world-units or normalised 0–1 space, and let
+the view apply a scale factor to reach pixels.
+
+#### Signs of presentation leakage
+
+| Smell | Remedy |
+| --- | --- |
+| Properties documented "in pixels" | Switch to domain units (grid cells, world-units, normalised 0–1) |
+| Velocities in "pixels per second" | Express in domain units per second (tiles/s, world-units/s) |
+| Model constants defined in pixel terms (e.g., `CELL_SIZE = 24`) | Define grid counts/slots; let the view compute pixel spacing |
+| Redundant `x`/`y` alongside `row`/`col` on grid entities | Remove from the interface; let `row`/`col` be fractional |
+| Hex colour values or texture names in model state | Use named domain states; let the view map to visual assets |
+
 ### The `update(deltaMs)` Contract
 
 Every model exposes an `update(deltaMs)` method. The ticker calls it once per
@@ -118,8 +192,9 @@ frame, passing the number of milliseconds since the last frame. This is the
 
 ```ts
 interface EntityModel {
-    readonly x: number;
-    readonly y: number;
+    readonly row: number;
+    readonly col: number;
+    readonly direction: Direction;
     update(deltaMs: number): void;
 }
 ```

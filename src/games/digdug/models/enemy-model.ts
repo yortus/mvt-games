@@ -13,8 +13,6 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface EnemyModel {
-    readonly x: number;
-    readonly y: number;
     readonly col: number;
     readonly row: number;
     readonly direction: Direction;
@@ -80,32 +78,16 @@ const NEXT_INFLATION: readonly InflationStage[] = [1, 2, 3, 4, 4];
 export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
     const { startRow, startCol, kind, speed, ghostInterval, fieldRows, fieldCols, isWalkable, chaseTarget, canStartGhosting } = options;
 
-    const state: {
-        x: number;
-        y: number;
-        col: number;
-        row: number;
-        direction: Direction;
-        moving: boolean;
-        alive: boolean;
-        phase: EnemyPhase;
-        inflationStage: InflationStage;
-        ghostMovesRemaining: number;
-        fireActive: boolean;
-        fireTelegraph: boolean;
-        fireReady: boolean;
-        fleeing: boolean;
-        patrolSwitchTimer: number;
-    } = {
-        x: startCol,
-        y: startRow,
+    const state = {
         col: startCol,
         row: startRow,
-        direction: 'left',
+        tileCol: startCol,
+        tileRow: startRow,
+        direction: 'left' as Direction,
         moving: false,
         alive: true,
-        phase: 'patrol',
-        inflationStage: 0,
+        phase: 'patrol' as EnemyPhase,
+        inflationStage: 0 as InflationStage,
         ghostMovesRemaining: 0,
         fireActive: false,
         fireTelegraph: false,
@@ -127,8 +109,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
     /** Returns true if the digger is on the same row, in the direction we face, and within fire range. */
     function isDiggerInFireLine(): boolean {
-        if (state.row !== chaseTarget.row) return false;
-        const dc = chaseTarget.col - state.col;
+        if (state.tileRow !== Math.round(chaseTarget.row)) return false;
+        const dc = Math.round(chaseTarget.col) - state.tileCol;
         if (dc === 0) return false;
         if (state.direction === 'right' && dc > 0 && dc <= FIRE_RANGE) return true;
         if (state.direction === 'left' && dc < 0 && -dc <= FIRE_RANGE) return true;
@@ -217,12 +199,12 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
     function advanceGhosting(): void {
         if (state.moving) return;
         // Flee-ghosting: exit to normal fleeing once on a walkable tile
-        if (state.fleeing && isWalkable(state.row, state.col)) {
+        if (state.fleeing && isWalkable(state.tileRow, state.tileCol)) {
             state.phase = 'fleeing';
             return;
         }
         // Normal ghosting: exit after min moves on a walkable tile
-        if (!state.fleeing && state.ghostMovesRemaining <= 0 && isWalkable(state.row, state.col)) {
+        if (!state.fleeing && state.ghostMovesRemaining <= 0 && isWalkable(state.tileRow, state.tileCol)) {
             state.phase = 'chase';
             return;
         }
@@ -236,7 +218,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
     function checkFleeEscape(): boolean {
         if (state.phase !== 'fleeing') return false;
-        if (state.row === 0 && state.col === 0) {
+        if (state.tileRow === 0 && state.tileCol === 0) {
             state.alive = false;
             state.phase = 'popped';
             return true;
@@ -261,7 +243,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
         // Prefer to continue in current direction
         const delta = DIRECTION_DELTA[state.direction];
-        if (isWalkable(state.row + delta[0], state.col + delta[1])) {
+        if (isWalkable(state.tileRow + delta[0], state.tileCol + delta[1])) {
             // Occasionally change direction
             if (state.patrolSwitchTimer <= 0) {
                 // Pick a random walkable direction
@@ -269,7 +251,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                     const dir = ALL_DIRS[i];
                     if (dir === reverse) continue;
                     const d = DIRECTION_DELTA[dir];
-                    if (isWalkable(state.row + d[0], state.col + d[1])) {
+                    if (isWalkable(state.tileRow + d[0], state.tileCol + d[1])) {
                         bestDir = dir;
                         found = true;
                     }
@@ -285,7 +267,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 const dir = ALL_DIRS[i];
                 if (dir === reverse) continue;
                 const d = DIRECTION_DELTA[dir];
-                if (isWalkable(state.row + d[0], state.col + d[1])) {
+                if (isWalkable(state.tileRow + d[0], state.tileCol + d[1])) {
                     bestDir = dir;
                     found = true;
                     break;
@@ -294,7 +276,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             if (!found) {
                 // Dead end — reverse
                 const rd = DIRECTION_DELTA[reverse];
-                if (isWalkable(state.row + rd[0], state.col + rd[1])) {
+                if (isWalkable(state.tileRow + rd[0], state.tileCol + rd[1])) {
                     bestDir = reverse;
                 }
             }
@@ -314,8 +296,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             const dir = ALL_DIRS[i];
             if (dir === reverse) continue;
             const delta = DIRECTION_DELTA[dir];
-            const nr = state.row + delta[0];
-            const nc = state.col + delta[1];
+            const nr = state.tileRow + delta[0];
+            const nc = state.tileCol + delta[1];
             if (!isWalkable(nr, nc)) continue;
             const d = distanceSq(nr, nc, targetRow, targetCol);
             if (d < bestDist) {
@@ -326,7 +308,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
         if (bestDist === Infinity) {
             const reverseDelta = DIRECTION_DELTA[reverse];
-            if (isWalkable(state.row + reverseDelta[0], state.col + reverseDelta[1])) {
+            if (isWalkable(state.tileRow + reverseDelta[0], state.tileCol + reverseDelta[1])) {
                 return reverse;
             }
         }
@@ -338,10 +320,10 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         // Head toward surface (row 0), then head left (col 0) once on surface
         const reverse = oppositeDirection(state.direction);
 
-        if (state.row === 0) {
+        if (state.tileRow === 0) {
             // On surface — head left toward col 0
             const leftDelta = DIRECTION_DELTA['left'];
-            if (isWalkable(state.row + leftDelta[0], state.col + leftDelta[1])) {
+            if (isWalkable(state.tileRow + leftDelta[0], state.tileCol + leftDelta[1])) {
                 return 'left';
             }
         }
@@ -354,8 +336,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             const dir = ALL_DIRS[i];
             if (dir === reverse) continue;
             const delta = DIRECTION_DELTA[dir];
-            const nr = state.row + delta[0];
-            const nc = state.col + delta[1];
+            const nr = state.tileRow + delta[0];
+            const nc = state.tileCol + delta[1];
             if (!isWalkable(nr, nc)) continue;
             // Score: prefer lower row and lower col
             const score = nr * 100 + nc;
@@ -367,7 +349,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
         if (bestScore === Infinity) {
             const reverseDelta = DIRECTION_DELTA[reverse];
-            if (isWalkable(state.row + reverseDelta[0], state.col + reverseDelta[1])) {
+            if (isWalkable(state.tileRow + reverseDelta[0], state.tileCol + reverseDelta[1])) {
                 return reverse;
             }
         }
@@ -388,19 +370,24 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         }
 
         const delta = DIRECTION_DELTA[dir];
-        const nextRow = state.row + delta[0];
-        const nextCol = state.col + delta[1];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
 
-        if (!isWalkable(nextRow, nextCol)) return;
+        if (!isWalkable(nextTileRow, nextTileCol)) return;
 
         state.direction = dir;
         state.moving = true;
 
-        const duration = 1 / speed;
+        // Snap perpendicular axis to prevent diagonal sliding on axis switch
+        if (delta[0] !== 0) state.col = state.tileCol;
+        if (delta[1] !== 0) state.row = state.tileRow;
+
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
+        const duration = dist / speed;
 
         timeline.clear().time(0);
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' });
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, duration);
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' });
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
 
     function scheduleFleeGhostMove(): void {
@@ -411,8 +398,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         for (let i = 0; i < ALL_DIRS.length; i++) {
             const dir = ALL_DIRS[i];
             const delta = DIRECTION_DELTA[dir];
-            const nr = state.row + delta[0];
-            const nc = state.col + delta[1];
+            const nr = state.tileRow + delta[0];
+            const nc = state.tileCol + delta[1];
             if (nr < 0 || nr >= fieldRows || nc < 0 || nc >= fieldCols) continue;
             // Prefer lowest row (surface), then lowest col
             const d = nr * 1000 + nc;
@@ -423,17 +410,22 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         }
 
         const delta = DIRECTION_DELTA[bestDir];
-        const nextRow = state.row + delta[0];
-        const nextCol = state.col + delta[1];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
 
         state.direction = bestDir;
         state.moving = true;
 
-        const duration = 1 / (speed * GHOST_SPEED_FACTOR);
+        // Snap perpendicular axis to prevent diagonal sliding
+        if (delta[0] !== 0) state.col = state.tileCol;
+        if (delta[1] !== 0) state.row = state.tileRow;
+
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
+        const duration = dist / (speed * GHOST_SPEED_FACTOR);
 
         timeline.clear().time(0);
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' });
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, duration);
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' });
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
 
     function scheduleGhostMove(): void {
@@ -446,8 +438,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         for (let i = 0; i < ALL_DIRS.length; i++) {
             const dir = ALL_DIRS[i];
             const delta = DIRECTION_DELTA[dir];
-            const nr = state.row + delta[0];
-            const nc = state.col + delta[1];
+            const nr = state.tileRow + delta[0];
+            const nc = state.tileCol + delta[1];
             // Ghosting ignores walkability — can move through anything in bounds
             if (nr < 0 || nr >= fieldRows || nc < 0 || nc >= fieldCols) continue;
             const d = distanceSq(nr, nc, targetRow, targetCol);
@@ -458,28 +450,27 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         }
 
         const delta = DIRECTION_DELTA[bestDir];
-        const nextRow = state.row + delta[0];
-        const nextCol = state.col + delta[1];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
 
         state.direction = bestDir;
         state.moving = true;
 
-        const duration = 1 / (speed * GHOST_SPEED_FACTOR);
+        // Snap perpendicular axis to prevent diagonal sliding
+        if (delta[0] !== 0) state.col = state.tileCol;
+        if (delta[1] !== 0) state.row = state.tileRow;
+
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
+        const duration = dist / (speed * GHOST_SPEED_FACTOR);
 
         timeline.clear().time(0);
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' });
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, duration);
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' });
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
 
     // ---- Public record -----------------------------------------------------
 
     const model: EnemyModel = {
-        get x() {
-            return state.x;
-        },
-        get y() {
-            return state.y;
-        },
         get col() {
             return state.col;
         },
@@ -554,7 +545,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             if (state.phase === 'inflating') return;
 
             // If trapped in dirt (not on walkable tile), ghost to surface
-            if (!isWalkable(state.row, state.col)) {
+            if (!isWalkable(state.tileRow, state.tileCol)) {
                 state.phase = 'ghosting';
                 timeline.clear().time(0);
                 ghostTimeline.clear().time(0);
@@ -574,10 +565,10 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             fireTimeline.clear().time(0);
             deflateTimeline.clear().time(0);
             ghostTimeline.clear().time(0);
-            state.x = col;
-            state.y = row;
             state.col = col;
             state.row = row;
+            state.tileCol = col;
+            state.tileRow = row;
             state.direction = 'left';
             state.moving = false;
             state.alive = true;
@@ -613,7 +604,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             // 3. Orchestration
             if (state.phase === 'patrol') {
                 state.patrolSwitchTimer -= deltaMs;
-                const dist = distanceSq(state.row, state.col, chaseTarget.row, chaseTarget.col);
+                const dist = distanceSq(state.tileRow, state.tileCol, chaseTarget.row, chaseTarget.col);
                 if (dist < 36) state.phase = 'chase';
             }
             if (canFireNow()) { scheduleFireSequence(); return; }

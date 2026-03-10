@@ -166,10 +166,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // ---- Helpers -----------------------------------------------------------
 
-    function entityDistSq(a: { x: number; y: number }, b: { x: number; y: number }): number {
-        return (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
-    }
-
     function aliveEnemyCount(): number {
         let count = 0;
         for (let i = 0; i < enemies.length; i++) {
@@ -241,8 +237,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function checkDigging(): void {
         // If digger is at a dirt tile, dig it
-        if (field.isDirt(digger.row, digger.col)) {
-            field.dig(digger.row, digger.col);
+        const digRow = Math.round(digger.row);
+        const digCol = Math.round(digger.col);
+        if (field.isDirt(digRow, digCol)) {
+            field.dig(digRow, digCol);
         }
     }
 
@@ -298,7 +296,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const enemy = enemies[i];
             if (!enemy.alive || enemy.phase === 'popped' || enemy.phase === 'crushed') continue;
 
-            const dist = (enemy.x - tipCol) ** 2 + (enemy.y - tipRow) ** 2;
+            const dist = (enemy.col - tipCol) ** 2 + (enemy.row - tipRow) ** 2;
             if (dist < COLLISION_THRESHOLD_SQ) {
                 harpoonTarget = i;
                 pumpConsumed = true;
@@ -340,14 +338,18 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let j = 0; j < enemies.length; j++) {
                 const enemy = enemies[j];
                 if (!enemy.alive) continue;
-                if (entityDistSq(rock, enemy) < COLLISION_THRESHOLD_SQ) {
+                const dr = rock.y - enemy.row;
+                const dc = rock.x - enemy.col;
+                if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
                     enemy.crush();
                     scoreModel.addPoints(ROCK_CRUSH_POINTS);
                 }
             }
 
             // Check collision with digger
-            if (entityDistSq(rock, digger) < COLLISION_THRESHOLD_SQ) {
+            const ddr = rock.y - digger.row;
+            const ddc = rock.x - digger.col;
+            if (ddr * ddr + ddc * ddc < COLLISION_THRESHOLD_SQ) {
                 digger.kill();
                 scheduleDying();
             }
@@ -359,7 +361,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const enemy = enemies[i];
             if (!enemy.alive) continue;
             if (enemy.phase === 'inflating' || enemy.phase === 'popped' || enemy.phase === 'crushed') continue;
-            if (entityDistSq(digger, enemy) < COLLISION_THRESHOLD_SQ) {
+            const dr = digger.row - enemy.row;
+            const dc = digger.col - enemy.col;
+            if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
                 digger.kill();
                 scheduleDying();
                 return;
@@ -380,8 +384,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let t = 1; t <= FIRE_RANGE; t++) {
                 const fireCol = enemy.col + dc * t;
                 const fireRow = enemy.row;
-                const dx = digger.x - fireCol;
-                const dy = digger.y - fireRow;
+                const dx = digger.col - fireCol;
+                const dy = digger.row - fireRow;
                 if (dx * dx + dy * dy < COLLISION_THRESHOLD_SQ) {
                     digger.kill();
                     scheduleDying();

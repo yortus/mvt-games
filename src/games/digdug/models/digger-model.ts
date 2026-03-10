@@ -6,18 +6,12 @@ import { type Direction, DIRECTION_DELTA, oppositeDirection } from './common';
 // ---------------------------------------------------------------------------
 
 export interface DiggerModel {
-    /** Visual x position in grid-unit space (tweened). */
-    readonly x: number;
-    /** Visual y position in grid-unit space (tweened). */
-    readonly y: number;
-    /** Current logical tile column. */
+    /** Current column position (fractional while moving between tiles). */
     readonly col: number;
-    /** Current logical tile row. */
+    /** Current row position (fractional while moving between tiles). */
     readonly row: number;
     /** Current movement direction. */
     readonly direction: Direction;
-    /** Progress through the current step (0 = at tile centre, 1 = arrived). */
-    readonly stepProgress: number;
     /** Whether the player is alive. */
     readonly alive: boolean;
     /** Whether the pump harpoon is currently extended. */
@@ -78,26 +72,13 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         isWalkable, isDirt, fieldRows, fieldCols, getHarpoonMaxDistance,
     } = options;
 
-    const state: {
-        x: number;
-        y: number;
-        col: number;
-        row: number;
-        direction: Direction;
-        requestedDirection: Direction;
-        moving: boolean;
-        alive: boolean;
-        harpoonExtended: boolean;
-        harpoonDistance: number;
-        harpoonLocked: boolean;
-        pumping: boolean;
-    } = {
-        x: startCol,
-        y: startRow,
+    const state = {
         col: startCol,
         row: startRow,
-        direction: 'right',
-        requestedDirection: 'none',
+        tileCol: startCol,
+        tileRow: startRow,
+        direction: 'right' as Direction,
+        requestedDirection: 'none' as Direction,
         moving: false,
         alive: true,
         harpoonExtended: false,
@@ -117,15 +98,15 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
 
     function canMove(dir: Direction): boolean {
         const delta = DIRECTION_DELTA[dir];
-        const nr = state.row + delta[0];
-        const nc = state.col + delta[1];
+        const nr = state.tileRow + delta[0];
+        const nc = state.tileCol + delta[1];
         if (!inBounds(nr, nc)) return false;
         return isWalkable(nr, nc) || isDirt(nr, nc);
     }
 
     function effectiveHarpoonMax(): number {
         if (getHarpoonMaxDistance) {
-            return getHarpoonMaxDistance(state.direction, state.row, state.col, maxHarpoonRange);
+            return getHarpoonMaxDistance(state.direction, state.tileRow, state.tileCol, maxHarpoonRange);
         }
         return maxHarpoonRange;
     }
@@ -169,25 +150,24 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         state.moving = true;
 
         const delta = DIRECTION_DELTA[state.direction];
-        const nextRow = state.row + delta[0];
-        const nextCol = state.col + delta[1];
-        const dist = Math.abs(nextCol - state.x) + Math.abs(nextRow - state.y) || 0.001;
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
+
+        // Snap perpendicular axis to prevent diagonal sliding on axis switch
+        if (delta[0] !== 0) state.col = state.tileCol;
+        if (delta[1] !== 0) state.row = state.tileRow;
+
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
         const duration = dist / speed;
 
         const t = timeline.time();
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' }, t);
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, t + duration);
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' }, t);
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, t + duration);
     }
 
     // ---- Public record -----------------------------------------------------
 
     const model: DiggerModel = {
-        get x() {
-            return state.x;
-        },
-        get y() {
-            return state.y;
-        },
         get col() {
             return state.col;
         },
@@ -196,10 +176,6 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         },
         get direction() {
             return state.direction;
-        },
-        get stepProgress() {
-            if (!state.moving) return 0;
-            return Math.abs(state.x - state.col) + Math.abs(state.y - state.row);
         },
         get alive() {
             return state.alive;
@@ -227,9 +203,8 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
 
             if (dir !== 'none' && state.moving && dir === oppositeDirection(state.direction)) {
                 timeline.clear();
-                const delta = DIRECTION_DELTA[state.direction];
-                state.row += delta[0];
-                state.col += delta[1];
+                state.tileRow += DIRECTION_DELTA[state.direction][0];
+                state.tileCol += DIRECTION_DELTA[state.direction][1];
                 state.direction = dir;
                 state.moving = false;
             }
@@ -250,8 +225,8 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
                 if (!state.harpoonExtended) {
                     if (state.moving) {
                         timeline.clear();
-                        state.x = state.col;
-                        state.y = state.row;
+                        state.col = state.tileCol;
+                        state.row = state.tileRow;
                         state.moving = false;
                     }
                     state.harpoonExtended = true;
@@ -283,10 +258,10 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         respawn(row: number, col: number): void {
             timeline.clear().time(0);
             harpoonTimeline.clear().time(0);
-            state.x = col;
-            state.y = row;
             state.col = col;
             state.row = row;
+            state.tileCol = col;
+            state.tileRow = row;
             state.direction = 'right';
             state.requestedDirection = 'none';
             state.moving = false;

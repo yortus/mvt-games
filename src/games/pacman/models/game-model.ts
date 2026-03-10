@@ -98,16 +98,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // ---- Collision detection -----------------------------------------------
 
-    /** Distance squared between two entities (in grid units). */
-    function entityDistSq(a: { x: number; y: number }, b: { x: number; y: number }): number {
-        return (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
-    }
-
     function checkCollisions(): void {
         if (gamePhase !== 'playing') return;
 
         // Pac-Man eats dots
-        if (maze.eatDot(pacman.row, pacman.col)) {
+        if (maze.eatDot(Math.round(pacman.row), Math.round(pacman.col))) {
             scoreModel.addPoints(DOT_POINTS);
         }
 
@@ -119,7 +114,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         // Ghost collisions
         for (let i = 0; i < ghosts.length; i++) {
-            if (entityDistSq(pacman, ghosts[i]) < COLLISION_THRESHOLD_SQ) {
+            const dr = pacman.row - ghosts[i].row;
+            const dc = pacman.col - ghosts[i].col;
+            if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
                 gamePhase = 'game-over';
                 return;
             }

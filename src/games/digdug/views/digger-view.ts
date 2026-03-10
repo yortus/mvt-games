@@ -18,10 +18,9 @@ export interface DiggerViewTextures {
 // ---------------------------------------------------------------------------
 
 export interface DiggerViewBindings {
-    getX(): number;
-    getY(): number;
+    getRow(): number;
+    getCol(): number;
     getDirection(): Direction;
-    getStepProgress(): number;
     isAlive(): boolean;
     isHarpoonExtended(): boolean;
     getHarpoonDistance(): number;
@@ -55,8 +54,11 @@ export function createDiggerView(
 
     function refresh(): void {
         const ts = watchTileSize.value;
-        const x = bindings.getX() * ts + ts / 2;
-        const y = bindings.getY() * ts + ts / 2;
+        const col = bindings.getCol();
+        const row = bindings.getRow();
+        const dir = bindings.getDirection();
+        const x = col * ts + ts / 2;
+        const y = row * ts + ts / 2;
         container.position.set(x, y);
 
         if (watchAlive.changed()) {
@@ -71,9 +73,10 @@ export function createDiggerView(
         // Determine pose
         const harpoonChanged = watchHarpoon.changed();
         const dirChanged = watchDirection.changed();
-        const progress = bindings.getStepProgress();
         const isHarpoon = bindings.isHarpoonExtended();
-        const dir = watchDirection.value;
+
+        // Use fractional distance from tile centre as walk cycle input
+        const progress = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
 
         let pose: 'idle' | 'walk-a' | 'walk-b' | 'pump';
         if (isHarpoon) {

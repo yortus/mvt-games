@@ -17,10 +17,9 @@ export interface PacmanViewTextures {
 // ---------------------------------------------------------------------------
 
 export interface PacmanViewBindings {
-    getX(): number;
-    getY(): number;
+    getRow(): number;
+    getCol(): number;
     getDirection(): Direction;
-    getStepProgress(): number;
     getTileSize(): number;
 }
 
@@ -48,17 +47,18 @@ export function createPacmanView(
 
     function refresh(): void {
         const ts = watchTileSize.value;
-        const x = bindings.getX() * ts + ts / 2;
-        const y = bindings.getY() * ts + ts / 2;
-        container.position.set(x, y);
+        const col = bindings.getCol();
+        const row = bindings.getRow();
+        container.position.set(col * ts + ts / 2, row * ts + ts / 2);
 
         if (watchTileSize.changed()) {
             sprite.scale.set(ts / 20);
         }
 
         // Mouth frame: 0 = closed, 1 = mid, 2 = open
-        const progress = bindings.getStepProgress();
-        const mouth = Math.sin(progress * Math.PI);
+        // Use fractional distance from nearest tile centre as mouth cycle input
+        const frac = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
+        const mouth = Math.sin(frac * Math.PI);
         const frame = mouth < 0.33 ? 0 : mouth < 0.66 ? 1 : 2;
 
         if (frame !== prevFrame) {

@@ -48,10 +48,9 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
 
     // Digger
     const diggerContainer = createDiggerView({
-        getX: () => game.digger.x,
-        getY: () => game.digger.y,
+        getRow: () => game.digger.row,
+        getCol: () => game.digger.col,
         getDirection: () => game.digger.direction,
-        getStepProgress: () => game.digger.stepProgress,
         isAlive: () => game.digger.alive,
         isHarpoonExtended: () => game.digger.harpoonExtended,
         getHarpoonDistance: () => game.digger.harpoonDistance,
@@ -131,8 +130,8 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         for (let i = 0; i < count; i++) {
             const idx = i;
             const enemyContainer = createEnemyView({
-                getX: () => game.enemies[idx].x,
-                getY: () => game.enemies[idx].y,
+                getRow: () => game.enemies[idx].row,
+                getCol: () => game.enemies[idx].col,
                 getKind: () => game.enemies[idx].kind,
                 getPhase: () => game.enemies[idx].phase,
                 getInflationStage: () => game.enemies[idx].inflationStage,

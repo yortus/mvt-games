@@ -16,10 +16,10 @@ const FICKLE_SCATTER_DIST = 8;
 // ---------------------------------------------------------------------------
 
 export interface GhostModel {
-    readonly x: number;
-    readonly y: number;
-    readonly col: number;
+    /** Current row position (fractional while moving between tiles). */
     readonly row: number;
+    /** Current column position (fractional while moving between tiles). */
+    readonly col: number;
     readonly direction: Direction;
     readonly color: number;
     update(deltaMs: number): void;
@@ -57,19 +57,12 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
     const { startRow, startCol, color, speed, behavior, isWalkable, chaseTarget, flankPartner, scatterTarget } =
         options;
 
-    const state: {
-        x: number;
-        y: number;
-        col: number;
-        row: number;
-        direction: Direction;
-        moving: boolean;
-    } = {
-        x: startCol,
-        y: startRow,
-        col: startCol,
+    const state = {
         row: startRow,
-        direction: 'up',
+        col: startCol,
+        tileRow: startRow,
+        tileCol: startCol,
+        direction: 'up' as Direction,
         moving: false,
     };
 
@@ -139,8 +132,8 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
             const dir = ALL_DIRS[i];
             if (dir === reverse) continue; // ghosts cannot reverse
             const delta = DIRECTION_DELTA[dir];
-            const nr = state.row + delta[0];
-            const nc = state.col + delta[1];
+            const nr = state.tileRow + delta[0];
+            const nc = state.tileCol + delta[1];
             if (!isWalkable(nr, nc)) continue;
             const d = distanceSq(nr, nc, targetRow, targetCol);
             if (d < bestDist) {
@@ -152,7 +145,7 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         // If nothing was found (dead-end), allow reversing
         if (bestDist === Infinity) {
             const reverseDelta = DIRECTION_DELTA[reverse];
-            if (isWalkable(state.row + reverseDelta[0], state.col + reverseDelta[1])) {
+            if (isWalkable(state.tileRow + reverseDelta[0], state.tileCol + reverseDelta[1])) {
                 return reverse;
             }
         }
@@ -164,10 +157,10 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
     function scheduleMove(): void {
         const dir = chooseDirection();
         const delta = DIRECTION_DELTA[dir];
-        const nextRow = state.row + delta[0];
-        const nextCol = state.col + delta[1];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
 
-        if (!isWalkable(nextRow, nextCol)) return;
+        if (!isWalkable(nextTileRow, nextTileCol)) return;
 
         state.direction = dir;
         state.moving = true;
@@ -176,24 +169,18 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
 
         // Fresh timeline for each move — prevents accumulated-time drift.
         timeline.clear().time(0);
-        timeline.to(state, { x: nextCol, y: nextRow, duration, ease: 'none' });
-        timeline.set(state, { row: nextRow, col: nextCol, moving: false }, duration);
+        timeline.to(state, { row: nextTileRow, col: nextTileCol, duration, ease: 'none' });
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
 
     // ---- Public record -----------------------------------------------------
 
     const model: GhostModel = {
-        get x() {
-            return state.x;
-        },
-        get y() {
-            return state.y;
+        get row() {
+            return state.row;
         },
         get col() {
             return state.col;
-        },
-        get row() {
-            return state.row;
         },
         get direction() {
             return state.direction;

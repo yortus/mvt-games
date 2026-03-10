@@ -15,8 +15,8 @@ export interface GhostViewTextures {
 // ---------------------------------------------------------------------------
 
 export interface GhostViewBindings {
-    getX(): number;
-    getY(): number;
+    getRow(): number;
+    getCol(): number;
     getColor(): number;
     getTileSize(): number;
 }
@@ -48,9 +48,10 @@ export function createGhostView(
 
     function refresh(): void {
         const ts = bindings.getTileSize();
-        const x = bindings.getX() * ts + ts / 2;
-        const y = bindings.getY() * ts + ts / 2;
-        container.position.set(x, y);
+        container.position.set(
+            bindings.getCol() * ts + ts / 2,
+            bindings.getRow() * ts + ts / 2,
+        );
 
         if (watchColor.changed()) {
             bodySprite.tint = watchColor.value;
