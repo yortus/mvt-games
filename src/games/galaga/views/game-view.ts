@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
@@ -25,10 +25,12 @@ export interface GameViewTextures {
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
-    const watchEnemyCount = createWatch(() => game.enemies.length);
-    const watchPBulletCount = createWatch(() => game.playerBullets.length);
-    const watchEBulletCount = createWatch(() => game.enemyBullets.length);
-    const watchPhase = createWatch(() => game.phase);
+    const watched = createWatcher({
+        enemyCount: () => game.enemies.length,
+        pBulletCount: () => game.playerBullets.length,
+        eBulletCount: () => game.enemyBullets.length,
+        phase: () => game.phase,
+    });
 
     const enemyTextures: EnemyViewTextures = {
         boss: textures.boss,
@@ -101,12 +103,14 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     // ---- refresh -----------------------------------------------------------
 
     function refresh(): void {
-        if (watchEnemyCount.changed()) buildEnemies();
-        if (watchPBulletCount.changed()) buildPlayerBullets();
-        if (watchEBulletCount.changed()) buildEnemyBullets();
+        watched.poll();
 
-        if (watchPhase.changed()) {
-            const phase = watchPhase.value;
+        if (watched.enemyCount.changed) buildEnemies();
+        if (watched.pBulletCount.changed) buildPlayerBullets();
+        if (watched.eBulletCount.changed) buildEnemyBullets();
+
+        if (watched.phase.changed) {
+            const phase = watched.phase.value;
             if (phase === 'playing' || phase === 'dying') {
                 overlay.visible = false;
             } else if (phase === 'game-over') {

@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { TileKind, DepthLayer } from '../data';
 import type { GamePhase } from '../models';
 
@@ -24,11 +24,13 @@ export interface FieldViewBindings {
 const SKY_COLOR = 0x44aaff;
 
 export function createFieldView(bindings: FieldViewBindings): Container {
-    const watchRows = createWatch(bindings.getRows);
-    const watchCols = createWatch(bindings.getCols);
-    const watchTileSize = createWatch(bindings.getTileSize);
-    const watchPhase = createWatch(bindings.getGamePhase);
-    const watchTunnelCount = createWatch(bindings.getTunnelCount);
+    const watched = createWatcher({
+        rows: bindings.getRows,
+        cols: bindings.getCols,
+        tileSize: bindings.getTileSize,
+        phase: bindings.getGamePhase,
+        tunnelCount: bindings.getTunnelCount,
+    });
 
     const container = new Container();
     const gfx = new Graphics();
@@ -39,11 +41,10 @@ export function createFieldView(bindings: FieldViewBindings): Container {
     return container;
 
     function refresh(): void {
-        const dimsChanged = watchRows.changed() | watchCols.changed() | watchTileSize.changed();
-        const phaseChanged = watchPhase.changed();
-        const tunnelsChanged = watchTunnelCount.changed();
+        watched.poll();
+        const dimsChanged = watched.rows.changed || watched.cols.changed || watched.tileSize.changed;
 
-        if (dimsChanged || (phaseChanged && watchPhase.value === 'playing') || tunnelsChanged) {
+        if (dimsChanged || (watched.phase.changed && watched.phase.value === 'playing') || watched.tunnelCount.changed) {
             buildField();
         }
     }

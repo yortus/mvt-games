@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { CabinetPhase } from './cabinet-model';
 
 // ---------------------------------------------------------------------------
@@ -49,9 +49,11 @@ interface Card {
 }
 
 export function createCabinetView(bindings: CabinetViewBindings): Container {
-    const watchPhase = createWatch(bindings.getPhase);
-    const watchSelected = createWatch(bindings.getSelectedIndex);
-    const watchCount = createWatch(bindings.getGameCount);
+    const watched = createWatcher({
+        phase: bindings.getPhase,
+        selected: bindings.getSelectedIndex,
+        count: bindings.getGameCount,
+    });
 
     // ---- Scene elements ---------------------------------------------------
     const container = new Container();
@@ -135,19 +137,17 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     // ---- Internals --------------------------------------------------------
 
     function refresh(): void {
-        const phaseChanged = watchPhase.changed();
-        const selChanged = watchSelected.changed();
-        const countChanged = watchCount.changed();
+        watched.poll();
 
-        if (phaseChanged) {
-            menuLayer.visible = watchPhase.value === 'menu';
+        if (watched.phase.changed) {
+            menuLayer.visible = watched.phase.value === 'menu';
         }
 
-        if (countChanged) {
+        if (watched.count.changed) {
             buildCards();
         }
 
-        if (selChanged || countChanged) {
+        if (watched.selected.changed || watched.count.changed) {
             updateSelection();
         }
     }

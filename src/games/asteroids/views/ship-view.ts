@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -18,7 +18,7 @@ export interface ShipViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createShipView(bindings: ShipViewBindings): Container {
-    const watchAlive = createWatch(bindings.isAlive);
+    const watched = createWatcher({ alive: bindings.isAlive });
 
     const container = new Container();
     const bodyGfx = new Graphics();
@@ -35,8 +35,9 @@ export function createShipView(bindings: ShipViewBindings): Container {
         container.position.set(bindings.getX(), bindings.getY());
         container.rotation = bindings.getAngle();
 
-        if (watchAlive.changed()) {
-            container.visible = watchAlive.value;
+        watched.poll();
+        if (watched.alive.changed) {
+            container.visible = watched.alive.value;
         }
 
         flameGfx.visible = bindings.isThrusting();

@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
@@ -13,9 +13,11 @@ import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel): Container {
-    const watchAsteroidCount = createWatch(() => game.asteroids.length);
-    const watchBulletCount = createWatch(() => game.bullets.length);
-    const watchPhase = createWatch(() => game.phase);
+    const watched = createWatcher({
+        asteroidCount: () => game.asteroids.length,
+        bulletCount: () => game.bullets.length,
+        phase: () => game.phase,
+    });
 
     const container = new Container();
 
@@ -81,11 +83,13 @@ export function createGameView(game: GameModel): Container {
     // ---- refresh -----------------------------------------------------------
 
     function refresh(): void {
-        if (watchAsteroidCount.changed()) buildAsteroids();
-        if (watchBulletCount.changed()) buildBullets();
+        watched.poll();
 
-        if (watchPhase.changed()) {
-            const phase = watchPhase.value;
+        if (watched.asteroidCount.changed) buildAsteroids();
+        if (watched.bulletCount.changed) buildBullets();
+
+        if (watched.phase.changed) {
+            const phase = watched.phase.value;
             if (phase === 'playing' || phase === 'dying') {
                 overlay.visible = false;
             } else if (phase === 'game-over') {

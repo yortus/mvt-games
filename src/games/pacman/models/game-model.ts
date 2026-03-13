@@ -1,4 +1,4 @@
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { TileKind } from '../data';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';
@@ -94,7 +94,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // Player input — persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
-    let watchRestart = createWatch(() => playerInput.restartRequested);
+    let watched = createWatcher({ restart: () => playerInput.restartRequested });
 
     // ---- Collision detection -----------------------------------------------
 
@@ -156,12 +156,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
         update(deltaMs: number): void {
 
             // Process restart request (allowed from any non-playing phase)
-            if (watchRestart.changed() && watchRestart.value) {
+            watched.poll();
+            if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase !== 'playing') {
                     model.reset();
                     // Re-create the restart watch so its baseline is the
                     // cleared flag, ready for the next restart request.
-                    watchRestart = createWatch(() => playerInput.restartRequested);
+                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
                 playerInput.restartRequested = false;
             }

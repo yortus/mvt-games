@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -17,9 +17,11 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings): Container {
-    const watchScore = createWatch(bindings.getScore);
-    const watchLives = createWatch(bindings.getLives);
-    const watchWave = createWatch(bindings.getWave);
+    const watched = createWatcher({
+        score: bindings.getScore,
+        lives: bindings.getLives,
+        wave: bindings.getWave,
+    });
 
     const container = new Container();
 
@@ -49,14 +51,16 @@ export function createHudView(bindings: HudViewBindings): Container {
     return container;
 
     function refresh(): void {
-        if (watchScore.changed()) {
-            scoreText.text = `Score: ${watchScore.value}`;
+        watched.poll();
+
+        if (watched.score.changed) {
+            scoreText.text = `Score: ${watched.score.value}`;
         }
-        if (watchWave.changed()) {
-            waveText.text = `Wave ${watchWave.value}`;
+        if (watched.wave.changed) {
+            waveText.text = `Wave ${watched.wave.value}`;
             updateWaveLayout();
         }
-        if (watchLives.changed()) {
+        if (watched.lives.changed) {
             updateLives();
         }
     }

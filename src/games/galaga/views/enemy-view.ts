@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { EnemyKind, EnemyPhase } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -32,8 +32,10 @@ export function createEnemyView(
     bindings: EnemyViewBindings,
     textures: EnemyViewTextures,
 ): Container {
-    const watchKind = createWatch(bindings.getKind);
-    const watchPhase = createWatch(bindings.getPhase);
+    const watched = createWatcher({
+        kind: bindings.getKind,
+        phase: bindings.getPhase,
+    });
 
     const container = new Container();
     const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
@@ -44,18 +46,13 @@ export function createEnemyView(
 
     function refresh(): void {
         const phase = bindings.getPhase();
+        const visible = phase !== 'dead' && phase !== 'entering';
+        container.visible = visible;
+        if (!visible) return;
 
-        if (phase === 'dead' || phase === 'entering') {
-            container.visible = false;
-            watchPhase.changed();
-            watchKind.changed();
-            return;
-        }
-        container.visible = true;
-
+        watched.poll();
         container.position.set(bindings.getX(), bindings.getY());
-
-        if (watchPhase.changed() | watchKind.changed()) {
+        if (watched.phase.changed || watched.kind.changed) {
             sprite.texture = textures[bindings.getKind()];
         }
     }

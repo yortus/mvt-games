@@ -1,5 +1,5 @@
 import { Container, Sprite, Text, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -18,9 +18,11 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings, diggerIconTexture: Texture): Container {
-    const watchScore = createWatch(bindings.getScore);
-    const watchLives = createWatch(bindings.getLives);
-    const watchLevel = createWatch(bindings.getLevel);
+    const watched = createWatcher({
+        score: bindings.getScore,
+        lives: bindings.getLives,
+        level: bindings.getLevel,
+    });
 
     const container = new Container();
 
@@ -50,14 +52,16 @@ export function createHudView(bindings: HudViewBindings, diggerIconTexture: Text
     return container;
 
     function refresh(): void {
-        if (watchScore.changed()) {
-            scoreText.text = `Score: ${watchScore.value}`;
+        watched.poll();
+
+        if (watched.score.changed) {
+            scoreText.text = `Score: ${watched.score.value}`;
         }
-        if (watchLevel.changed()) {
-            levelText.text = `LV ${watchLevel.value}`;
+        if (watched.level.changed) {
+            levelText.text = `LV ${watched.level.value}`;
             updateLevelLayout();
         }
-        if (watchLives.changed()) {
+        if (watched.lives.changed) {
             updateLives();
         }
     }

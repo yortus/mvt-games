@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { GameModel } from '../models';
 import { TILE_SIZE, MAZE_ROWS, MAZE_COLS } from '../data';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
@@ -23,8 +23,10 @@ export interface GameViewTextures {
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
     // ---- Change detection ---------------------------------------------------
-    const watchGhostCount = createWatch(() => game.ghosts.length);
-    const watchPhase = createWatch(() => game.phase);
+    const watched = createWatcher({
+        ghostCount: () => game.ghosts.length,
+        phase: () => game.phase,
+    });
 
     const canvasW = MAZE_COLS * TILE_SIZE;
     const canvasH = MAZE_ROWS * TILE_SIZE;
@@ -95,16 +97,17 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     return container;
 
     function refresh(): void {
-        if (watchGhostCount.changed()) buildGhosts();
+        watched.poll();
 
-        if (watchPhase.changed()) {
-            const phase = watchPhase.value;
-            if (phase === 'playing') {
+        if (watched.ghostCount.changed) buildGhosts();
+
+        if (watched.phase.changed) {
+            if (watched.phase.value === 'playing') {
                 overlay.visible = false;
             } else {
                 overlay.visible = true;
                 overlayText.text =
-                    phase === 'game-over'
+                    watched.phase.value === 'game-over'
                         ? 'GAME OVER\n\nPress Enter to restart'
                         : 'YOU WIN!\n\nPress Enter to restart';
             }

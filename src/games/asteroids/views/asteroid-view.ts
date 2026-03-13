@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { AsteroidSize } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ const SIZE_COLOR: Record<AsteroidSize, number> = {
 const VERTICES = 10;
 
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
-    const watchAlive = createWatch(bindings.isAlive);
+    const watched = createWatcher({ alive: bindings.isAlive });
 
     const container = new Container();
     const bodyGfx = new Graphics();
@@ -41,8 +41,10 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     return container;
 
     function refresh(): void {
-        if (watchAlive.changed()) {
-            container.visible = watchAlive.value;
+        watched.poll();
+
+        if (watched.alive.changed) {
+            container.visible = watched.alive.value;
         }
         if (!bindings.isAlive()) return;
 

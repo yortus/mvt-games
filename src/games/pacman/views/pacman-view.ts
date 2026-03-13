@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { Direction } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -31,8 +31,7 @@ export function createPacmanView(
     bindings: PacmanViewBindings,
     textures: PacmanViewTextures,
 ): Container {
-    const watchDirection = createWatch(bindings.getDirection);
-    const watchTileSize = createWatch(bindings.getTileSize);
+    const watched = createWatcher({ direction: bindings.getDirection });
 
     const container = new Container();
     const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
@@ -40,20 +39,19 @@ export function createPacmanView(
 
     let prevFrame = -1;
 
-    sprite.scale.set(watchTileSize.value / 20);
-    container.rotation = directionToRotation(watchDirection.value);
+    sprite.scale.set(bindings.getTileSize() / 20);
+    container.rotation = directionToRotation(watched.direction.value);
     container.onRender = refresh;
     return container;
 
     function refresh(): void {
-        const ts = watchTileSize.value;
+        watched.poll();
+
+        const ts = bindings.getTileSize();
         const col = bindings.getCol();
         const row = bindings.getRow();
         container.position.set(col * ts + ts / 2, row * ts + ts / 2);
-
-        if (watchTileSize.changed()) {
-            sprite.scale.set(ts / 20);
-        }
+        sprite.scale.set(ts / 20);
 
         // Mouth frame: 0 = closed, 1 = mid, 2 = open
         // Use fractional distance from nearest tile centre as mouth cycle input
@@ -71,8 +69,8 @@ export function createPacmanView(
             }
         }
 
-        if (watchDirection.changed()) {
-            container.rotation = directionToRotation(watchDirection.value);
+        if (watched.direction.changed) {
+            container.rotation = directionToRotation(watched.direction.value);
         }
     }
 

@@ -1,5 +1,5 @@
 import { Container, Sprite, Text, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -17,9 +17,11 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings, shipIconTexture: Texture): Container {
-    const watchScore = createWatch(bindings.getScore);
-    const watchLives = createWatch(bindings.getLives);
-    const watchStage = createWatch(bindings.getStage);
+    const watched = createWatcher({
+        score: bindings.getScore,
+        lives: bindings.getLives,
+        stage: bindings.getStage,
+    });
 
     const container = new Container();
 
@@ -49,14 +51,16 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
     return container;
 
     function refresh(): void {
-        if (watchScore.changed()) {
-            scoreText.text = `Score: ${watchScore.value}`;
+        watched.poll();
+
+        if (watched.score.changed) {
+            scoreText.text = `Score: ${watched.score.value}`;
         }
-        if (watchStage.changed()) {
-            stageText.text = `Stage ${watchStage.value}`;
+        if (watched.stage.changed) {
+            stageText.text = `Stage ${watched.stage.value}`;
             updateStageLayout();
         }
-        if (watchLives.changed()) {
+        if (watched.lives.changed) {
             updateLives();
         }
     }

@@ -1,5 +1,5 @@
 import { Container, Text } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -15,7 +15,7 @@ export interface HudViewBindings {
 
 export function createHudView(bindings: HudViewBindings): Container {
     // ---- Change detection -------------------------------------------------------
-    const watchScore = createWatch(bindings.getScore);
+    const watched = createWatcher({ score: bindings.getScore });
 
     // ---- Scene elements -------------------------------------------------------
     const container = new Container();
@@ -34,8 +34,10 @@ export function createHudView(bindings: HudViewBindings): Container {
     return container;
 
     function refresh(): void {
-        if (watchScore.changed()) {
-            scoreText.text = `Score: ${watchScore.value}`;
+        watched.poll();
+
+        if (watched.score.changed) {
+            scoreText.text = `Score: ${watched.score.value}`;
         }
     }
 }

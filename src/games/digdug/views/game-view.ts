@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
@@ -25,9 +25,11 @@ export interface GameViewTextures {
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
-    const watchEnemyCount = createWatch(() => game.enemies.length);
-    const watchRockCount = createWatch(() => game.rocks.length);
-    const watchPhase = createWatch(() => game.phase);
+    const watched = createWatcher({
+        enemyCount: () => game.enemies.length,
+        rockCount: () => game.rocks.length,
+        phase: () => game.phase,
+    });
 
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
@@ -103,11 +105,13 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     return container;
 
     function refresh(): void {
-        if (watchEnemyCount.changed()) buildEnemies();
-        if (watchRockCount.changed()) buildRocks();
+        watched.poll();
 
-        if (watchPhase.changed()) {
-            const phase = watchPhase.value;
+        if (watched.enemyCount.changed) buildEnemies();
+        if (watched.rockCount.changed) buildRocks();
+
+        if (watched.phase.changed) {
+            const phase = watched.phase.value;
             if (phase === 'playing' || phase === 'dying') {
                 overlay.visible = false;
             } else if (phase === 'game-over') {

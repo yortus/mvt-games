@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,
@@ -178,7 +178,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let asteroids: AsteroidModel[] = [];
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    let watchRestart = createWatch(() => playerInput.restartRequested);
+    let watched = createWatcher({ restart: () => playerInput.restartRequested });
 
     // Spawn first wave
     asteroids = spawnWaveAsteroids(asteroidCountForWave(1));
@@ -331,10 +331,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         update(deltaMs: number): void {
 
             // Restart handling
-            if (watchRestart.changed() && watchRestart.value) {
+            watched.poll();
+            if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase === 'game-over') {
                     model.reset();
-                    watchRestart = createWatch(() => playerInput.restartRequested);
+                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
                 playerInput.restartRequested = false;
             }

@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { Direction } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -35,10 +35,12 @@ export function createDiggerView(
     bindings: DiggerViewBindings,
     textures: DiggerViewTextures,
 ): Container {
-    const watchDirection = createWatch(bindings.getDirection);
-    const watchTileSize = createWatch(bindings.getTileSize);
-    const watchAlive = createWatch(bindings.isAlive);
-    const watchHarpoon = createWatch(bindings.isHarpoonExtended);
+    const watched = createWatcher({
+        direction: bindings.getDirection,
+        tileSize: bindings.getTileSize,
+        alive: bindings.isAlive,
+        harpoon: bindings.isHarpoonExtended,
+    });
 
     const container = new Container();
     const sprite = new Sprite({ texture: textures.idle, anchor: 0.5 });
@@ -48,12 +50,14 @@ export function createDiggerView(
 
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
-    sprite.scale.set(watchTileSize.value / 20);
+    sprite.scale.set(watched.tileSize.value / 20);
     container.onRender = refresh;
     return container;
 
     function refresh(): void {
-        const ts = watchTileSize.value;
+        watched.poll();
+
+        const ts = watched.tileSize.value;
         const col = bindings.getCol();
         const row = bindings.getRow();
         const dir = bindings.getDirection();
@@ -61,18 +65,18 @@ export function createDiggerView(
         const y = row * ts + ts / 2;
         container.position.set(x, y);
 
-        if (watchAlive.changed()) {
-            container.visible = watchAlive.value;
+        if (watched.alive.changed) {
+            container.visible = watched.alive.value;
         }
         if (!bindings.isAlive()) return;
 
-        if (watchTileSize.changed()) {
+        if (watched.tileSize.changed) {
             sprite.scale.set(ts / 20);
         }
 
         // Determine pose
-        const harpoonChanged = watchHarpoon.changed();
-        const dirChanged = watchDirection.changed();
+        const harpoonChanged = watched.harpoon.changed;
+        const dirChanged = watched.direction.changed;
         const isHarpoon = bindings.isHarpoonExtended();
 
         // Use fractional distance from tile centre as walk cycle input

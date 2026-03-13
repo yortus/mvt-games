@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import type { TileKind, DepthLayer, LevelConfig } from '../data';
 import { DEPTH_LAYERS } from '../data';
 import { createFieldModel, type FieldModel } from './field-model';
@@ -162,7 +162,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let rocks = buildRocks(field);
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    let watchRestart = createWatch(() => playerInput.restartRequested);
+    let watched = createWatcher({ restart: () => playerInput.restartRequested });
 
     // ---- Helpers -----------------------------------------------------------
 
@@ -438,10 +438,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         update(deltaMs: number): void {
 
             // Restart handling
-            if (watchRestart.changed() && watchRestart.value) {
+            watched.poll();
+            if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase === 'game-over') {
                     model.reset();
-                    watchRestart = createWatch(() => playerInput.restartRequested);
+                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
                 playerInput.restartRequested = false;
             }

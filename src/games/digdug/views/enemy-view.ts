@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { createWatch } from '#utils';
+import { createWatcher } from '#utils';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -44,13 +44,15 @@ export function createEnemyView(
     bindings: EnemyViewBindings,
     textures: EnemyViewTextures,
 ): Container {
-    const watchKind = createWatch(bindings.getKind);
-    const watchPhase = createWatch(bindings.getPhase);
-    const watchInflation = createWatch(bindings.getInflationStage);
-    const watchTileSize = createWatch(bindings.getTileSize);
-    const watchDirection = createWatch(bindings.getDirection);
-    const watchFire = createWatch(bindings.isFireActive);
-    const watchTelegraph = createWatch(bindings.isFireTelegraph);
+    const watched = createWatcher({
+        kind: bindings.getKind,
+        phase: bindings.getPhase,
+        inflation: bindings.getInflationStage,
+        tileSize: bindings.getTileSize,
+        direction: bindings.getDirection,
+        fire: bindings.isFireActive,
+        telegraph: bindings.isFireTelegraph,
+    });
 
     const container = new Container();
     const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
@@ -60,36 +62,25 @@ export function createEnemyView(
     container.addChild(telegraphGfx);
     container.addChild(fireGfx);
 
-    sprite.scale.set(watchTileSize.value / 20);
+    sprite.scale.set(watched.tileSize.value / 20);
     container.onRender = refresh;
     return container;
 
     function refresh(): void {
-        const ts = watchTileSize.value;
+        watched.poll();
+        const ts = watched.tileSize.value;
         const col = bindings.getCol();
         const row = bindings.getRow();
         const x = col * ts + ts / 2;
         const y = row * ts + ts / 2;
         container.position.set(x, y);
 
-        const phaseChanged = watchPhase.changed();
-        const inflationChanged = watchInflation.changed();
-        const kindChanged = watchKind.changed();
-        const tsChanged = watchTileSize.changed();
-        const dirChanged = watchDirection.changed();
-        const fireChanged = watchFire.changed();
-        const telegraphChanged = watchTelegraph.changed();
-
         const phase = bindings.getPhase();
-
-        if (phase === 'popped') {
-            container.visible = false;
-            return;
-        }
-        container.visible = true;
+        container.visible = phase !== 'popped';
+        if (phase === 'popped') return;
 
         if (phase === 'ghosting') {
-            if (phaseChanged || tsChanged) {
+            if (watched.phase.changed || watched.tileSize.changed) {
                 sprite.texture = textures['ghost-eyes'];
                 updateScale(0);
             }
@@ -99,7 +90,7 @@ export function createEnemyView(
             return;
         }
 
-        if (phaseChanged || inflationChanged || kindChanged || tsChanged) {
+        if (watched.phase.changed || watched.inflation.changed || watched.kind.changed || watched.tileSize.changed) {
             const kind = bindings.getKind();
             const inflation = bindings.getInflationStage();
             sprite.texture = pickTexture(kind, phase, inflation);
@@ -110,7 +101,7 @@ export function createEnemyView(
         container.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
 
         // Fygar fire (stays procedural — variable shape)
-        if (fireChanged || dirChanged || tsChanged) {
+        if (watched.fire.changed || watched.direction.changed || watched.tileSize.changed) {
             fireGfx.clear();
             if (bindings.isFireActive() && bindings.getKind() === 'fygar') {
                 const dir = bindings.getDirection();
@@ -123,7 +114,7 @@ export function createEnemyView(
         }
 
         // Fygar fire telegraph
-        if (telegraphChanged || dirChanged || tsChanged) {
+        if (watched.telegraph.changed || watched.direction.changed || watched.tileSize.changed) {
             telegraphGfx.clear();
             if (bindings.isFireTelegraph() && bindings.getKind() === 'fygar') {
                 const mr = ts * 0.4;
@@ -155,7 +146,7 @@ export function createEnemyView(
     }
 
     function updateScale(inflation: InflationStage): void {
-        const base = watchTileSize.value / 20;
+        const base = watched.tileSize.value / 20;
         const inflScale = 1.0 + inflation * 0.3;
         sprite.scale.set(base * inflScale);
     }
