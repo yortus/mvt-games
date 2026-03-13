@@ -62,7 +62,6 @@ export function createEnemyView(
     view.addChild(telegraphGfx);
     view.addChild(fireGfx);
 
-    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 

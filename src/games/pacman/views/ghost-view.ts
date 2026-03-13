@@ -37,13 +37,8 @@ export function createGhostView(
     const view = new Container();
     const bodySprite = new Sprite({ texture: textures.body, anchor: 0.5 });
     const eyesSprite = new Sprite({ texture: textures.eyes, anchor: 0.5 });
-    bodySprite.tint = bindings.getColor();
     view.addChild(bodySprite);
     view.addChild(eyesSprite);
-
-    const s = bindings.getTileSize() / 20;
-    bodySprite.scale.set(s);
-    eyesSprite.scale.set(s);
 
     view.onRender = refresh;
     return view;

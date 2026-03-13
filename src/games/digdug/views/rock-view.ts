@@ -42,7 +42,6 @@ export function createRockView(
 
     let wobbleToggle = false;
 
-    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 

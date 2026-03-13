@@ -14,7 +14,7 @@ export type WatchedValues<T extends Record<string, () => unknown>> = {
 export interface WatchedProperty<T> {
     readonly changed: boolean;
     readonly value: T;
-    readonly previous: T;
+    readonly previous: T | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -24,10 +24,11 @@ export interface WatchedProperty<T> {
 export function createWatcher<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
     const reads = keys.map(k => getters[k]);
-    const state = reads.map(read => {
-        const initial = read();
-        return { changed: false, value: initial, previous: initial };
-    });
+    const state = reads.map(() => ({
+        changed: false,
+        value: undefined as unknown,
+        previous: undefined as unknown,
+    }));
     const watched = Object.fromEntries(keys.map((k, i) => [k, state[i]])) as WatchedValues<T>;
 
     return {

@@ -89,7 +89,6 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     menuLayer.addChild(hint);
 
     let cards: Card[] = [];
-    buildCards();
 
     // ---- Keyboard input ---------------------------------------------------
 

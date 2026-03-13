@@ -45,9 +45,6 @@ export function createHudView(bindings: HudViewBindings, diggerIconTexture: Text
     const livesContainer = new Container();
     view.addChild(livesContainer);
 
-    updateLevelLayout();
-    updateLives();
-
     view.onRender = refresh;
     return view;
 

@@ -39,8 +39,6 @@ export function createPacmanView(
 
     let prevFrame = -1;
 
-    sprite.scale.set(bindings.getTileSize() / 20);
-    view.rotation = directionToRotation(bindings.getDirection());
     view.onRender = refresh;
     return view;
 

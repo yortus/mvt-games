@@ -36,7 +36,6 @@ export function createFieldView(bindings: FieldViewBindings): Container {
     const gfx = new Graphics();
     view.addChild(gfx);
 
-    buildField();
     view.onRender = refresh;
     return view;
 

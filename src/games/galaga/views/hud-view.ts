@@ -44,8 +44,6 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
     const livesContainer = new Container();
     view.addChild(livesContainer);
 
-    updateStageLayout();
-    updateLives();
 
     view.onRender = refresh;
     return view;

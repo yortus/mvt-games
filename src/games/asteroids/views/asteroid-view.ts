@@ -36,7 +36,6 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     view.addChild(bodyGfx);
 
     drawAsteroid();
-    view.visible = bindings.isAlive();
     view.onRender = refresh;
     return view;
 

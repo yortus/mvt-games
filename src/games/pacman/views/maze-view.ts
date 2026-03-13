@@ -35,7 +35,6 @@ export function createMazeView(bindings: MazeViewBindings): Container {
     const wallGfx = new Graphics();
     view.addChild(wallGfx);
 
-    updateLayout();
     view.onRender = refresh;
     return view;
 

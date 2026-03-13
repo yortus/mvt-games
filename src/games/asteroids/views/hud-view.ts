@@ -44,8 +44,6 @@ export function createHudView(bindings: HudViewBindings): Container {
     const livesContainer = new Container();
     view.addChild(livesContainer);
 
-    updateWaveLayout();
-    updateLives();
 
     view.onRender = refresh;
     return view;

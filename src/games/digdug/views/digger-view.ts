@@ -50,7 +50,6 @@ export function createDiggerView(
 
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
-    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 
