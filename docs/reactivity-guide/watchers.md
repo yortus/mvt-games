@@ -47,42 +47,11 @@ function refresh() {
 This works, but repeating the pattern for many values is verbose and
 error-prone. A small abstraction can encapsulate it.
 
-## Basic Implementation: `createWatch`
+## Implementation: `createWatcher`
 
-The simplest encapsulation - a single getter with a cached value, in ~20 lines:
-
-```typescript
-interface Watch<T> {
-    /** Advances state: evaluates getter, compares to cache. */
-    changed(): boolean;
-    /** The most recent value (updated on each changed() call). */
-    readonly value: T;
-}
-
-function createWatch<T>(read: () => T): Watch<T> {
-    let current = read();
-
-    return {
-        changed(): boolean {
-            const next = read();
-            if (next === current) return false;
-            current = next;
-            return true;
-        },
-        get value(): T {
-            return current;
-        },
-    };
-}
-```
-
-No subscription, no disposal, no framework. It is a closure with a cached
-value.
-
-## Aggregate Watcher: `createWatcher`
-
-When a view needs to watch multiple values, an aggregate API avoids repetitive
-boilerplate and provides a single `poll()` call that advances all state at once:
+A view typically watches several values at once. `createWatcher` accepts a
+record of getter functions and provides a single `poll()` call that advances
+all state together:
 
 ```typescript
 interface WatchedProperty<T> {
@@ -149,7 +118,7 @@ interface GameModel {
     readonly score: number;
     readonly phase: 'ready' | 'playing' | 'game-over';
     readonly lives: number;
-    readonly elapsed: number;  // increments every tick - frequently-changing
+    readonly power: number;  // 0..1, changes every tick when charging
 }
 
 function createGameModel(): GameModel {
@@ -157,7 +126,7 @@ function createGameModel(): GameModel {
         score: 0,
         phase: 'ready' as GameModel['phase'],
         lives: 3,
-        elapsed: 0,
+        power: 0,
     };
     return model;
 }
@@ -169,11 +138,11 @@ function createHudView(model: GameModel): Container {
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     const phaseText = new Text({ text: 'READY', style: { fill: 'yellow', fontSize: 32 } });
-    const timerText = new Text({ text: '0', style: { fill: 'grey', fontSize: 16 } });
+    const powerBar = new Graphics();
     livesText.y = 30;
     phaseText.y = 60;
-    timerText.y = 100;
-    container.addChild(scoreText, livesText, phaseText, timerText);
+    powerBar.y = 100;
+    container.addChild(scoreText, livesText, phaseText, powerBar);
 
     // Watch infrequently-changing state
     const watched = createWatcher({
@@ -197,7 +166,7 @@ function createHudView(model: GameModel): Container {
         }
 
         // Frequently-changing value - just read directly, no watcher needed
-        timerText.text = String(Math.floor(model.elapsed));
+        powerBar.clear().rect(0, 0, model.power * 100, 8).fill('lime');
     };
 
     return container;
@@ -219,7 +188,7 @@ The model is a plain object. The view reads it through watchers (for infrequent
 changes) and direct reads (for per-tick values). No events, no signals, no
 framework.
 
-**An important idiom:** values that change every tick (like `elapsed`) don't
+**An important idiom:** values that change every tick (like `power`) don't
 need a watcher - just read them directly. Watchers are most valuable for
 **infrequently-changing state**, where they avoid redundant view updates. For
 state that changes every frame, a direct read is simpler and cheaper. This means
@@ -408,8 +377,8 @@ value isn't a signal, it can't trigger effects.
 
 ### 5. Trivial to implement, no dependencies
 
-The reference implementation is ~20 lines; the aggregate `createWatcher` is
-~30. There is no external library, no build-time plugin, no runtime framework.
+The reference implementation is ~30 lines. There is no external library, no
+build-time plugin, no runtime framework.
 The team owns every line of code and can modify it freely. If avoiding vendored
 dependencies on reactivity runtimes is a project goal, watchers are the
 lightweight choice.

@@ -51,12 +51,12 @@ function createScoreModel(emitter: TypedEmitter<ScoreEvents>) {
 function createScoreView(
     model: { score: number; elapsed: number },
     emitter: TypedEmitter<ScoreEvents>,
-    stage: Container,
-) {
+): Container {
+    const container = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white' } });
     const timerText = new Text({ text: '0', style: { fill: 'grey' } });
     timerText.y = 30;
-    stage.addChild(scoreText, timerText);
+    container.addChild(scoreText, timerText);
 
     // Initial sync - events don't carry history
     scoreText.text = String(model.score);
@@ -65,16 +65,16 @@ function createScoreView(
     const onScoreChanged = (score: number) => { scoreText.text = String(score); };
     emitter.on('score-changed', onScoreChanged);
 
-    return {
-        refresh() {
-            // Frequently-changing value - read directly every tick
-            timerText.text = String(Math.floor(model.elapsed));
-        },
-        destroy() {
-            emitter.off('score-changed', onScoreChanged);  // Must clean up
-            stage.removeChild(scoreText, timerText);
-        },
+    container.onRender = () => {
+        // Frequently-changing value - read directly every tick
+        timerText.text = String(Math.floor(model.elapsed));
     };
+
+    container.on('destroyed', () => {
+        emitter.off('score-changed', onScoreChanged);  // Must clean up
+    });
+
+    return container;
 }
 ```
 
@@ -83,8 +83,8 @@ function createScoreView(
 - The model intentionally does NOT emit for per-tick values like `elapsed` -
   events are a poor fit for high-frequency state.
 - View must manually initialise (read `model.score` after subscribing).
-- View must clean up the subscription.
-- The view still needs a `refresh()` loop for per-tick values - events alone
+- View must clean up the subscription on destroy.
+- The view still needs an `onRender` loop for per-tick values - events alone
   are insufficient.
 
 ### Signals
@@ -119,11 +119,12 @@ function createScoreModel(): ScoreModel {
 }
 
 // --- View ---
-function createScoreView(model: ScoreModel, stage: Container): { destroy(): void } {
+function createScoreView(model: ScoreModel): Container {
+    const container = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white' } });
     const timerText = new Text({ text: '0', style: { fill: 'grey' } });
     timerText.y = 30;
-    stage.addChild(scoreText, timerText);
+    container.addChild(scoreText, timerText);
 
     const dispose = createRoot((dispose) => {
         createEffect(() => {
@@ -137,19 +138,16 @@ function createScoreView(model: ScoreModel, stage: Container): { destroy(): void
         return dispose;
     });
 
-    return {
-        destroy() {
-            dispose();  // Must clean up reactive root
-            stage.removeChild(scoreText, timerText);
-        },
-    };
+    container.on('destroyed', dispose);  // Must clean up reactive root
+
+    return container;
 }
 ```
 
 **Observations:**
 - No manual initial sync - the effect runs once on creation.
 - No explicit dependency declaration - auto-tracked.
-- Must manage reactive root lifecycle (`dispose()`).
+- Must manage reactive root lifecycle (disposed on container destroy).
 - Per-tick values like `elapsed` work but incur signal overhead with no benefit.
 - Requires SolidJS runtime.
 
@@ -249,10 +247,10 @@ function createGhostModel(emitter: TypedEmitter<GhostEvents>) {
 function createGhostView(
     model: { phase: GhostPhase; col: number; row: number },
     emitter: TypedEmitter<GhostEvents>,
-    stage: Container,
-) {
+): Container {
+    const container = new Container();
     const sprite = new Sprite();
-    stage.addChild(sprite);
+    container.addChild(sprite);
 
     // Initial appearance
     applyPhaseAppearance(sprite, model.phase);
@@ -271,39 +269,39 @@ function createGhostView(
 
     emitter.on('phase-changed', onPhaseChanged);
 
-    return {
-        refresh() {
-            // Per-tick position - direct read
-            sprite.x = model.col * TILE_SIZE;
-            sprite.y = model.row * TILE_SIZE;
-        },
-        destroy() {
-            emitter.off('phase-changed', onPhaseChanged);
-            stage.removeChild(sprite);
-        },
+    container.onRender = () => {
+        // Per-tick position - direct read
+        sprite.x = model.col * TILE_SIZE;
+        sprite.y = model.row * TILE_SIZE;
     };
+
+    container.on('destroyed', () => {
+        emitter.off('phase-changed', onPhaseChanged);
+    });
+
+    return container;
 }
 ```
 
 **Observations:**
 - Events naturally carry `from`/`to` - the model packages transition data.
 - Transition-specific logic is clean and readable.
-- Per-tick position requires a separate `refresh()` loop - events don't help.
-- Initial sync and cleanup are manual.
+- Per-tick position requires an `onRender` loop - events don't help.
+- Initial sync and cleanup are handled via the container lifecycle.
 
 ### Signals
 
 ```typescript
-import { createSignal, createEffect, createRoot, on } from 'solid-js';
+import { createSignal, createEffect, createRoot } from 'solid-js';
 
 // --- Model ---
 
 type GhostPhase = 'chase' | 'scatter' | 'frightened' | 'eaten';
 
 interface GhostModel {
-    readonly phase: () => GhostPhase;
-    readonly col: () => number;
-    readonly row: () => number;
+    readonly phase: GhostPhase;
+    readonly col: number;
+    readonly row: number;
     setPhase(p: GhostPhase): void;
     update(dt: number): void;
 }
@@ -314,9 +312,9 @@ function createGhostModel(): GhostModel {
     const [row, setRow] = createSignal(0);
 
     return {
-        phase,
-        col,
-        row,
+        get phase() { return phase(); },
+        get col() { return col(); },
+        get row() { return row(); },
         setPhase(p: GhostPhase) { setPhase(p); },
         update(dt: number) {
             setCol(prev => prev + dt * 0.01);
@@ -326,13 +324,18 @@ function createGhostModel(): GhostModel {
 }
 
 // --- View ---
-function createGhostView(model: GhostModel, stage: Container): { destroy(): void } {
+function createGhostView(model: GhostModel): Container {
+    const container = new Container();
     const sprite = new Sprite();
-    stage.addChild(sprite);
+    container.addChild(sprite);
 
     const dispose = createRoot((dispose) => {
-        // Phase changes - with previous value via `on()` helper
-        createEffect(on(model.phase, (to, from) => {
+        // Phase changes - with previous value tracking
+        let prevPhase: GhostPhase | undefined;
+        createEffect(() => {
+            const to = model.phase;
+            const from = prevPhase;
+            prevPhase = to;
             applyPhaseAppearance(sprite, to);
 
             if (to === 'frightened') {
@@ -341,34 +344,30 @@ function createGhostView(model: GhostModel, stage: Container): { destroy(): void
             if (from === 'frightened' && to === 'chase') {
                 audioManager.play('ghost-recover');
             }
-        }));
+        });
 
         // Per-tick position - effect re-runs every tick due to signal writes
         createEffect(() => {
-            sprite.x = model.col() * TILE_SIZE;
-            sprite.y = model.row() * TILE_SIZE;
+            sprite.x = model.col * TILE_SIZE;
+            sprite.y = model.row * TILE_SIZE;
         });
 
         return dispose;
     });
 
-    return {
-        destroy() {
-            dispose();
-            stage.removeChild(sprite);
-        },
-    };
+    container.on('destroyed', dispose);
+
+    return container;
 }
 ```
 
 **Observations:**
-- SolidJS's `on()` helper provides the previous value - clean API for
-  transitions.
+- With a property-based interface, the view must track previous state manually.
+  SolidJS's `on()` helper could provide previous values, but requires exposing
+  raw signal accessors in the interface (breaking consistency with events/watchers).
 - Per-tick position values are signals, so the position effect re-runs every
   tick with full dependency-tracking overhead.
-- Requires understanding SolidJS-specific `on()` helper for accessing previous
-  values.
-- Must dispose reactive root.
+- Must dispose reactive root (hooked to container destroy).
 
 ### Watchers
 
@@ -470,8 +469,10 @@ function createBrickGridModel(emitter: TypedEmitter<BrickEvents>) {
 function createBrickGridView(
     emitter: TypedEmitter<BrickEvents>,
     brickSprites: Map<string, Sprite>,
-    stage: Container,
-) {
+): Container {
+    const container = new Container();
+    // ... populate initial sprites into container ...
+
     const onBrickDestroyed = ({ col, row }: { col: number; row: number }) => {
         const key = `${col},${row}`;
         const sprite = brickSprites.get(key);
@@ -485,7 +486,7 @@ function createBrickGridView(
             duration: 0.3,
             ease: 'power2.out',
             onComplete: () => {
-                stage.removeChild(sprite);
+                container.removeChild(sprite);
                 brickSprites.delete(key);
             },
         });
@@ -493,11 +494,11 @@ function createBrickGridView(
 
     emitter.on('brick-destroyed', onBrickDestroyed);
 
-    return {
-        destroy() {
-            emitter.off('brick-destroyed', onBrickDestroyed);
-        },
-    };
+    container.on('destroyed', () => {
+        emitter.off('brick-destroyed', onBrickDestroyed);
+    });
+
+    return container;
 }
 ```
 
@@ -517,8 +518,8 @@ import { createSignal, createEffect, createRoot, batch } from 'solid-js';
 
 interface BrickGridModel {
     isBrick(col: number, row: number): boolean;
-    readonly lastDestroyed: () => { col: number; row: number } | null;
-    readonly destroyVersion: () => number;
+    readonly lastDestroyed: { col: number; row: number } | null;
+    readonly destroyVersion: number;
     destroyBrick(col: number, row: number): void;
 }
 
@@ -529,8 +530,8 @@ function createBrickGridModel(): BrickGridModel {
 
     return {
         isBrick(col: number, row: number) { return bricks[row][col]; },
-        lastDestroyed,
-        destroyVersion,
+        get lastDestroyed() { return lastDestroyed(); },
+        get destroyVersion() { return destroyVersion(); },
         destroyBrick(col: number, row: number) {
             bricks[row][col] = false;
             batch(() => {
@@ -545,12 +546,14 @@ function createBrickGridModel(): BrickGridModel {
 function createBrickGridView(
     model: BrickGridModel,
     brickSprites: Map<string, Sprite>,
-    stage: Container,
-): { destroy(): void } {
+): Container {
+    const container = new Container();
+    // ... populate initial sprites into container ...
+
     const dispose = createRoot((dispose) => {
         createEffect(() => {
-            model.destroyVersion();  // track the version signal
-            const brick = model.lastDestroyed();
+            model.destroyVersion;  // track the version signal via getter
+            const brick = model.lastDestroyed;
             if (!brick) return;
 
             const key = `${brick.col},${brick.row}`;
@@ -561,7 +564,7 @@ function createBrickGridView(
                 alpha: 0, scaleX: 1.5, scaleY: 1.5, duration: 0.3,
                 ease: 'power2.out',
                 onComplete: () => {
-                    stage.removeChild(sprite);
+                    container.removeChild(sprite);
                     brickSprites.delete(key);
                 },
             });
@@ -569,23 +572,19 @@ function createBrickGridView(
         return dispose;
     });
 
-    return {
-        destroy() {
-            dispose();
-            stage.removeChildren();
-        },
-    };
+    container.on('destroyed', dispose);
+
+    return container;
 }
 ```
 
 **Observations:**
-- Signals are awkward for discrete events. There is no "fire and forget" -
-  you must change a value and have the effect detect the change. Using a version
-  counter is a workaround that recreates event semantics inside the signal model.
+- Signals are a poor fit for discrete events. There is no "fire and forget" -
+  you must change a value and have the effect detect the change. The version
+  counter workaround recreates event semantics inside the signal model.
 - An alternative is to use SolidJS stores with array mutations, but the core
   issue remains: signals model *state*, not *events*.
-- This is a case where the wrong abstraction adds complexity. An event system
-  would be more natural here.
+- For truly discrete events, an event emitter is more natural.
 
 ### Watchers
 
@@ -611,12 +610,10 @@ function createBrickGridModel() {
 // --- View ---
 function createBrickGridView(
     model: ReturnType<typeof createBrickGridModel>,
-    stage: Container,
 ): Container {
     const container = new Container();
     const brickSprites = new Map<string, Sprite>();
     // ... populate initial sprites ...
-    stage.addChild(container);
 
     const watched = createWatcher({
         destroyVersion: () => model.destroyVersion,
@@ -702,18 +699,18 @@ function createAsteroidField(emitter: TypedEmitter<AsteroidFieldEvents>) {
 function createAsteroidFieldView(
     field: ReturnType<typeof createAsteroidField>,
     emitter: TypedEmitter<AsteroidFieldEvents>,
-    stage: Container,
-) {
+): Container {
+    const container = new Container();
     const sprites = new Map<string, Sprite>();
 
     const onAdded = (a: Asteroid) => {
         const s = new Sprite(asteroidTexture);
         sprites.set(a.id, s);
-        stage.addChild(s);
+        container.addChild(s);
     };
     const onRemoved = (id: string) => {
         const s = sprites.get(id);
-        if (s) { stage.removeChild(s); sprites.delete(id); }
+        if (s) { container.removeChild(s); sprites.delete(id); }
     };
 
     emitter.on('asteroid-added', onAdded);
@@ -722,29 +719,29 @@ function createAsteroidFieldView(
     // Initial sync for asteroids that already exist
     for (const a of field.getAll().values()) onAdded(a);
 
-    return {
-        refresh() {
-            // Per-frame position sync - events don't help here,
-            // so we fall back to direct reads
-            for (const [id, a] of field.getAll()) {
-                const s = sprites.get(id);
-                if (s) { s.x = a.x; s.y = a.y; }
-            }
-        },
-        destroy() {
-            emitter.off('asteroid-added', onAdded);
-            emitter.off('asteroid-removed', onRemoved);
-            stage.removeChildren();
-        },
+    container.onRender = () => {
+        // Per-frame position sync - events don't help here,
+        // so we fall back to direct reads
+        for (const [id, a] of field.getAll()) {
+            const s = sprites.get(id);
+            if (s) { s.x = a.x; s.y = a.y; }
+        }
     };
+
+    container.on('destroyed', () => {
+        emitter.off('asteroid-added', onAdded);
+        emitter.off('asteroid-removed', onRemoved);
+    });
+
+    return container;
 }
 ```
 
 **Observations:**
 - Events handle add/remove well - discrete occurrences.
-- Per-frame position updates still require direct reads in `refresh()` -
+- Per-frame position updates still require direct reads in `onRender` -
   events can't/shouldn't fire 60 times per second per asteroid.
-- Cleanup requires two `off()` calls.
+- Cleanup requires two `off()` calls (hooked to container destroy).
 - Initial sync loop is needed for pre-existing asteroids.
 
 ### Signals
@@ -788,8 +785,8 @@ function createAsteroidFieldModel(): AsteroidFieldModel {
 // --- View ---
 function createAsteroidFieldView(
     model: AsteroidFieldModel,
-    stage: Container,
-): { destroy(): void } {
+): Container {
+    const container = new Container();
     const sprites = new Map<string, Sprite>();
 
     const dispose = createRoot((dispose) => {
@@ -801,7 +798,7 @@ function createAsteroidFieldView(
                 if (!s) {
                     s = new Sprite(asteroidTexture);
                     sprites.set(a.id, s);
-                    stage.addChild(s);
+                    container.addChild(s);
                 }
                 s.x = a.x;
                 s.y = a.y;
@@ -809,7 +806,7 @@ function createAsteroidFieldView(
             // Remove sprites for asteroids that no longer exist
             for (const [id, s] of sprites) {
                 if (!currentIds.has(id)) {
-                    stage.removeChild(s);
+                    container.removeChild(s);
                     sprites.delete(id);
                 }
             }
@@ -817,7 +814,9 @@ function createAsteroidFieldView(
         return dispose;
     });
 
-    return { destroy() { dispose(); stage.removeChildren(); } };
+    container.on('destroyed', dispose);
+
+    return container;
 }
 ```
 
@@ -863,7 +862,7 @@ function createAsteroidFieldView(
     field: ReturnType<typeof createAsteroidField>,
 ): Container {
     const container = new Container();
-    const sprites: Sprite[] = [];
+    const sprites = new Map<string, Sprite>();
 
     const watched = createWatcher({
         version: () => field.version,
@@ -872,22 +871,31 @@ function createAsteroidFieldView(
     container.onRender = () => {
         watched.poll();
 
-        // Rebuild sprite list only when asteroids are added/removed (infrequent)
+        // Rebuild sprite map only when asteroids are added/removed (infrequent)
         if (watched.version.changed) {
-            while (sprites.length > field.asteroids.length) {
-                container.removeChild(sprites.pop()!);
+            const currentIds = new Set<string>();
+            for (let i = 0; i < field.asteroids.length; i++) {
+                const a = field.asteroids[i];
+                currentIds.add(a.id);
+                if (!sprites.has(a.id)) {
+                    const s = new Sprite(asteroidTexture);
+                    sprites.set(a.id, s);
+                    container.addChild(s);
+                }
             }
-            while (sprites.length < field.asteroids.length) {
-                const s = new Sprite(asteroidTexture);
-                sprites.push(s);
-                container.addChild(s);
+            for (const [id, s] of sprites) {
+                if (!currentIds.has(id)) {
+                    container.removeChild(s);
+                    sprites.delete(id);
+                }
             }
         }
 
         // Per-frame position sync - direct read, no watcher
-        for (let i = 0; i < sprites.length; i++) {
-            sprites[i].x = field.asteroids[i].x;
-            sprites[i].y = field.asteroids[i].y;
+        for (let i = 0; i < field.asteroids.length; i++) {
+            const a = field.asteroids[i];
+            const s = sprites.get(a.id);
+            if (s) { s.x = a.x; s.y = a.y; }
         }
     };
 
@@ -898,7 +906,8 @@ function createAsteroidFieldView(
 **Observations:**
 - Version stamp watches collection membership changes (add/remove), which are
   infrequent. Sprite creation/destruction only happens when the collection
-  changes.
+  changes - same ID-based diffing as the signals approach, but triggered
+  explicitly by the version stamp.
 - Per-frame position sync is a direct indexed loop with no watcher overhead.
   The watcher system is *not used* for values that change every tick - direct
   reads are simpler and cheaper.
@@ -910,10 +919,10 @@ function createAsteroidFieldView(
 |---------|--------|---------|----------|
 | Collection add/remove | Clean (discrete events) | Verbose (store + produce) | Version stamp |
 | Per-frame position sync | Direct read (events don't help) | Effect re-runs (overhead) | Direct read |
-| Sprite lifecycle | Event handlers | Manual diffing | Version-triggered rebuild |
-| Cleanup | 2× `off()` | `dispose()` | None |
+| Sprite lifecycle | Event handlers | Manual diffing | Version-triggered diffing |
+| Cleanup | `off()` on destroy | `dispose()` on destroy | None |
 | Initial sync | Manual loop | Automatic (effect) | Automatic (first poll) |
-| Per-tick state handling | Separate `refresh()` loop | 60 signal writes/sec | Direct read |
+| Per-tick state handling | Separate `onRender` loop | 60 signal writes/sec | Direct read |
 
 This example illustrates a key insight: **per-frame continuous values are best
 handled by direct reads, not any reactive mechanism.** Watchers shine for
@@ -929,8 +938,8 @@ updates. Signals handle both, but for per-frame values they add dependency-track
 | Pattern | Events | Signals | Watchers |
 |---------|--------|---------|----------|
 | Scalar state → view sync | ⚠️ Manual init sync | ✅ Automatic | ✅ Automatic (with poll) |
-| State transitions (from → to) | ✅ Payload includes both | ✅ `on()` helper | ✅ `previous` built into watcher |
-| Discrete one-off events | ✅ Natural fit | ⚠️ Awkward (version counters) | ⚠️ Version stamp workaround |
+| State transitions (from → to) | ✅ Payload includes both | ⚠️ Manual previous tracking | ✅ `previous` built into watcher |
+| Discrete one-off events | ✅ Natural fit | ⚠️ Version counter workaround | ⚠️ Version stamp workaround |
 | Per-frame continuous values | ❌ 60 emits/sec wasteful | ⚠️ 60 signal writes/sec | ✅ Direct read (no watcher needed) |
 | Dynamic collections | ✅ Add/remove events | ⚠️ Store-based, verbose | ✅ Version stamp |
 | External tween integration | ✅ Tween → event on complete | ⚠️ Bridge values to signals | ✅ Read tween target directly |

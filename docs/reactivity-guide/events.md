@@ -59,11 +59,12 @@ class ScoreModel extends EventTarget {
 
 // --- Subscriber (view layer) ---
 
-function createHudView(scoreModel: ScoreModel, stage: Container): { destroy(): void } {
+function createHudView(scoreModel: ScoreModel): Container {
+    const container = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     livesText.y = 30;
-    stage.addChild(scoreText, livesText);
+    container.addChild(scoreText, livesText);
 
     // Subscribe to events
     const onScoreChanged = (e: Event) => {
@@ -76,19 +77,19 @@ function createHudView(scoreModel: ScoreModel, stage: Container): { destroy(): v
     scoreModel.addEventListener('score-changed', onScoreChanged);
     scoreModel.addEventListener('lives-changed', onLivesChanged);
 
-    return {
-        destroy() {
-            // MUST unsubscribe to avoid leaks
-            scoreModel.removeEventListener('score-changed', onScoreChanged);
-            scoreModel.removeEventListener('lives-changed', onLivesChanged);
-            stage.removeChild(scoreText, livesText);
-        },
-    };
+    // Cleanup when container is destroyed
+    container.on('destroyed', () => {
+        scoreModel.removeEventListener('score-changed', onScoreChanged);
+        scoreModel.removeEventListener('lives-changed', onLivesChanged);
+    });
+
+    return container;
 }
 
 // --- Usage ---
 const score = new ScoreModel();
-const hud = createHudView(score, app.stage);
+const hud = createHudView(score);
+app.stage.addChild(hud);
 
 score.addPoints(100);  // HUD updates immediately
 score.loseLife();       // HUD updates immediately
@@ -306,37 +307,46 @@ Adding a new event requires modifying the source - breaking the decoupling that
 events were meant to provide.
 
 This is a fundamental constraint worth emphasising: **the consumer's reactivity
-vocabulary is limited to what the source has chosen to publish.** If
-`ScoreModel` emits `'score-changed'` but not `'high-score-reached'`, a consumer
-that wants to react when the score exceeds 10,000 must:
+vocabulary is limited to what the source has chosen to publish.** Consider a
+`GhostModel` that emits `'phase-changed'` whenever the ghost's AI phase changes.
+A consumer wants to react when a ghost enters a tunnel (determined by position
+reaching a specific tile). But position changes every tick - no event is
+emitted for it. The consumer has no way to subscribe to "ghost entered tunnel"
+because the source never publishes that condition:
 
 ```typescript
-// Option A: modify ScoreModel to emit 'high-score-reached' (breaks decoupling)
-// Option B: check the condition in every 'score-changed' handler (duplicated logic)
-scoreModel.on('score-changed', (score) => {
-    if (score >= 10_000) {
-        // high-score logic here - duplicated in every consumer that cares
-    }
-});
+// The source emits events for phase changes...
+ghostModel.on('phase-changed', handler);
+
+// ...but the consumer wants to know when the ghost enters a tunnel.
+// There is no 'entered-tunnel' event. The consumer's options:
+// Option A: modify GhostModel to emit 'entered-tunnel' (breaks decoupling)
+// Option B: poll position in a tick loop (abandons events for this case)
 ```
 
-A closely related limitation: **consumers cannot easily combine existing events
-into composite reactions.** If a consumer wants to react when both the score AND
-the level change (e.g. to trigger a bonus), it must subscribe to both events
-separately and manually track whether both conditions have been met:
+The consumer cannot derive new reactive conditions from existing state without
+the source's cooperation. If the source didn't anticipate the consumer's needs,
+the consumer is stuck.
+
+A closely related limitation: **consumers cannot easily express conditions that
+span multiple sources.** If a view should flash a warning when a ghost is
+*frightened* (phase) AND *near the player* (position from two models), it must
+subscribe to phase events and then independently check position on each tick -
+mixing two paradigms:
 
 ```typescript
-let scoreReady = false;
-let levelReady = false;
+let ghostFrightened = false;
 
-scoreModel.on('score-changed', () => {
-    scoreReady = true;
-    if (scoreReady && levelReady) triggerBonus();
+ghostModel.on('phase-changed', (phase) => {
+    ghostFrightened = phase === 'frightened';
 });
-levelModel.on('level-changed', () => {
-    levelReady = true;
-    if (scoreReady && levelReady) triggerBonus();
-});
+
+// Still need a tick loop to check proximity - events can't express this
+function refresh() {
+    if (ghostFrightened && distance(ghost, player) < 3) {
+        showWarning();
+    }
+}
 ```
 
 This ad-hoc coordination is error-prone and scales poorly with more conditions.
@@ -345,7 +355,10 @@ Watchers avoid this entirely: consumers define what they watch, and can derive
 any condition from any readable state - including cross-model conditions:
 
 ```typescript
-const bonusReady = createWatch(() => model.score >= threshold && model.level > 5);
+const watched = createWatcher({
+    dangerClose: () =>
+        ghost.phase === 'frightened' && distance(ghost, player) < 3,
+});
 ```
 
 Signals partially avoid this: a consumer can create a `createMemo` over any
@@ -410,6 +423,32 @@ at runtime, not by reading the code.
 does. In a signal system, effects are colocated with the code that reads
 signals, making dependencies more locally visible (though the execution order
 is still determined by the scheduler).
+
+## Design Considerations
+
+### Aggregate Values (Arrays and Objects)
+
+Dynamic collections - enemy lists, inventory arrays, particle pools - require
+careful event design. The source must decide what events to emit and at what
+granularity:
+
+| Strategy | Trade-off |
+|----------|----------|
+| Per-item events (`'enemy-added'`, `'enemy-removed'`) | Clean for add/remove; does not help with property changes on existing items |
+| Bulk-change event (`'enemies-changed'`) | Consumer must diff or rebuild; simple to implement |
+| Versioned event (`'enemies-changed'` + version counter) | Consumer uses version to skip redundant rebuilds |
+
+**Per-item events** are the most common choice: they map well to discrete
+collection mutations and let the view handle each add/remove individually.
+However, bulk operations (clearing all enemies, loading a new level) may need
+a separate `'reset'` event to avoid N individual emissions.
+
+For per-frame state within collection items (positions, velocities), events
+are not practical - emitting 60 times per second per item is wasteful. The
+typical pattern is events for collection membership changes plus direct reads
+for per-frame item state. See
+[Examples § Asteroid Field](examples.md#example-4-asteroid-field-asteroids)
+for this pattern in practice.
 
 ## When Events Are a Good Fit
 

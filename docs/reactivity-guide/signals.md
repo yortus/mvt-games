@@ -65,11 +65,12 @@ function createScoreModel(): ScoreModel {
 
 // --- View ---
 
-function createHudView(model: ScoreModel, stage: Container): { destroy(): void } {
+function createHudView(model: ScoreModel): Container {
+    const container = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     livesText.y = 30;
-    stage.addChild(scoreText, livesText);
+    container.addChild(scoreText, livesText);
 
     const dispose = createRoot((dispose) => {
         createEffect(() => { scoreText.text = String(model.score); });
@@ -80,17 +81,16 @@ function createHudView(model: ScoreModel, stage: Container): { destroy(): void }
         return dispose;
     });
 
-    return {
-        destroy() {
-            dispose();  // MUST dispose, or effects leak (see Drawback 2)
-            stage.removeChild(scoreText, livesText);
-        },
-    };
+    // MUST dispose, or effects leak (see Drawback 2)
+    container.on('destroyed', dispose);
+
+    return container;
 }
 
 // --- Usage ---
 const scoreModel = createScoreModel();
-const hud = createHudView(scoreModel, app.stage);
+const hud = createHudView(scoreModel);
+app.stage.addChild(hud);
 
 scoreModel.addPoints(100);  // scoreText updates automatically
 scoreModel.addPoints(9900); // scoreText updates, PLUS highScoreReached effect fires
@@ -318,16 +318,17 @@ functions are signals to understand what the effect reacts to.
 ```typescript
 // Which of these is a signal? You can't tell from usage alone.
 createEffect(() => {
-    if (getPhase() === 'frightened') {
-        playSound(getVolume());
-    }
+    const speed = getBaseSpeed() * getDifficultyMultiplier();
+    enemySprite.animationSpeed = speed;
 });
 ```
 
-If `getPhase` is a signal but `getVolume` is a plain function, this effect
-reacts to phase changes but **never reacts to volume changes**. The code reads
-as if it should react to both. This bug is invisible in code review without
-knowledge of each function's implementation.
+If `getBaseSpeed` is a signal but `getDifficultyMultiplier` is a plain getter
+on a config object, this effect reacts to base-speed changes but **silently
+ignores difficulty changes**. The animation speed becomes stale whenever
+difficulty changes without base speed also changing. This bug is invisible in
+code review and may go unnoticed in testing if difficulty rarely changes
+independently.
 
 **This also means the source must pre-decide which values are signals.** A
 signal system does not make *all* state reactive by default - the source must
@@ -337,11 +338,21 @@ effects. This mirrors the [pre-declaration limitation of events](events.md#4-sou
 the consumer's reactive vocabulary is limited by the source's decisions about
 what to make reactive.
 
-**This cannot be solved at the TypeScript type level.** Even with branded signal
-types, `createEffect` accepts a `() => void` callback, and TypeScript does not
-analyse closure bodies to enforce constraints on what functions are called
-inside. The distinction can only be maintained through naming conventions (e.g.
-all signals are `value()` on a signal object) or runtime dev-mode warnings.
+**Importantly, some sources may not be yours to modify.** Third-party libraries,
+platform APIs, and shared modules may expose plain properties or functions that
+are not signal-wrapped. If you consume values from such sources inside an effect,
+the effect will not react to their changes - and there is no way to make them
+reactive without introducing a bridging layer (writing their values into your
+own signals each tick), which negates the automatic-tracking benefit.
+
+**This problem cannot be detected statically.** Even with branded signal types,
+`createEffect` accepts a `() => void` callback, and TypeScript does not analyse
+closure bodies to enforce constraints on what functions are called inside. The
+distinction can only be maintained through naming conventions (e.g. all signals
+are `value()` on a signal object) or careful manual review. Some signal
+runtimes offer dev-mode warnings when an effect runs without tracking any
+signals, but these only catch the case where *no* dependencies are tracked -
+not when *some* dependencies are missed.
 
 **Comparison:** In a watcher system, every watched value goes through the same
 `watch(() => ...)` mechanism - there is no distinction between "reactive" and
@@ -457,6 +468,37 @@ per-frame reads anyway.
 infrequent changes, and direct reads for per-frame values. There is no reactive
 system to bypass - both are just property reads, with watchers adding a thin
 change-detection layer for values that benefit from it.
+
+## Design Considerations
+
+### Aggregate Values (Arrays and Objects)
+
+Dynamic collections are one of signals' more complex areas. The challenge is
+tracking changes to collection *membership* (items added/removed) and to
+individual item *properties* (positions, state).
+
+| Strategy | Trade-off |
+|----------|----------|
+| Stores with deep tracking (SolidJS `createStore`) | Automatic granular reactivity; framework-specific; complex mental model |
+| Signal holding an array + version counter | Simple; loses granularity (entire array is "one signal") |
+| Map of signals (one signal per item property) | Granular; verbose; lifecycle management for each signal |
+
+**SolidJS stores** with `produce` provide the most ergonomic solution: mutations
+to individual items trigger only effects that read those items. However, stores
+are framework-specific, and outside of JSX rendering (e.g. Canvas/WebGL), the
+developer must manually diff the collection to sync view objects.
+
+**Version counters** (a signal that increments on each mutation) are a common
+workaround that recreates event semantics: the effect detects the version change
+and re-processes the collection. This works but means the signal system's
+automatic dependency tracking is not providing its usual benefit.
+
+For per-frame state within collection items (positions, velocities), writing to
+signals 60 times per second per item incurs dependency-tracking overhead with
+no benefit over direct reads. The typical pattern is signals for collection
+membership plus direct reads for per-frame item state. See
+[Examples § Asteroid Field](examples.md#example-4-asteroid-field-asteroids)
+for this pattern in practice.
 
 ## When Signals Are a Good Fit
 

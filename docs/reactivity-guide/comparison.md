@@ -100,13 +100,13 @@ in the number of watches, regardless of value relationships.
 
 For perspective, here are rough estimates at 60fps (16.6ms frame budget):
 
-| Scenario | Watchers | Signals | Events |
+| Scenario | Events | Signals | Watchers |
 |---|---|---|---|
-| 50 primitive watches, nothing changes | ~0.25μs | ~0μs | ~0μs |
-| 50 primitive watches, all change | ~0.25μs | ~5–50μs* | ~0μs (no events) |
-| 50 watches, 5 change | ~0.25μs | ~1–5μs | ~0.5μs (5 emits) |
-| 200 watches, nothing changes | ~1μs | ~0μs | ~0μs |
-| 200 watches, 50 change | ~1μs | ~20–100μs* | ~5μs (50 emits) |
+| 50 primitive watches, nothing changes | ~0μs | ~0μs | ~0.25μs |
+| 50 primitive watches, all change | ~0μs (no events) | ~5–50μs* | ~0.25μs |
+| 50 watches, 5 change | ~0.5μs (5 emits) | ~1–5μs | ~0.25μs |
+| 200 watches, nothing changes | ~0μs | ~0μs | ~1μs |
+| 200 watches, 50 change | ~5μs (50 emits) | ~20–100μs* | ~1μs |
 
 \*Signal costs vary significantly with implementation and graph topology. These
 ranges are illustrative, not measured. Use the benchmarks above to measure your
@@ -163,6 +163,53 @@ new state, others still at their old state.
 
 - **Watchers:** All getter functions are treated uniformly. No distinction
   between "reactive" and "non-reactive" reads.
+
+## Testability
+
+- **Events:** Models with event emitters can be tested by subscribing and
+  asserting on emitted payloads. The test must create an emitter, wire it to
+  the model, and manage subscription cleanup. View tests require subscribing
+  to events and verifying that handler logic produces the expected output.
+
+- **Signals:** Models can be tested by writing to signals and asserting on
+  computed values or effect side-effects. Tests must run inside a reactive
+  root and dispose it afterwards. The test must be aware of the signal
+  runtime's batching semantics - some assertions may need to account for
+  deferred updates.
+
+- **Watchers:** Models are plain objects - test with direct property reads and
+  assertions. No reactive runtime, no roots, no disposal. Watcher logic can
+  be tested by calling `poll()` and checking `changed` / `value` /
+  `previous`. The test is a simple sequence of mutations and assertions with
+  no framework ceremony.
+
+See each approach's Testing Considerations section for code examples:
+[Events](events.md#testing-considerations),
+[Signals](signals.md#testing-considerations),
+[Watchers](watchers.md#testing-considerations).
+
+## Maintainability
+
+- **Events:** As the system grows, the runtime flow becomes implicit and
+  distributed. Understanding what happens when an event fires requires
+  searching the entire codebase for subscribers. Refactoring event names or
+  payloads requires updating all subscribers. Typed event maps help, but the
+  relationship between emitter and subscriber is only discoverable at runtime.
+
+- **Signals:** Dependencies are local and automatic - reading the effect code
+  shows what it depends on. However, the invisible boundary between signal
+  accessors and plain functions (see
+  [Signals § Drawback 3](signals.md#3-invisible-reactivity-boundary--signals-vs-plain-functions))
+  means refactoring a signal to a plain getter silently breaks reactivity.
+  Ownership and disposal semantics add a dimension that must be maintained
+  across every component lifecycle.
+
+- **Watchers:** All reactive behaviour is visible in the render callback,
+  readable top-to-bottom. Refactoring a model property does not change
+  reactive semantics - any readable value can be watched. No disposal or
+  subscription lifecycle to maintain. The trade-off is that derived state must
+  be maintained at the model layer rather than expressed declaratively with
+  `createMemo`.
 
 ## Architectural Fit
 
