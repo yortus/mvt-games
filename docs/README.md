@@ -10,6 +10,7 @@ patterns, and coding conventions used throughout the codebase.
 | [MVT Architecture Guide](mvt-guide.md)   | The Model-View-Ticker pattern — components, data flow, time management, bindings, hot paths                            |
 | [MVT Foundations](mvt-foundations.md)    | Proven patterns behind the architecture — game loop, passive view, deterministic simulation, and how they fit together |
 | [TypeScript Style Guide](style-guide.md) | Coding conventions — naming, file structure, barrel imports, factory patterns, enums                                   |
+| [Reactivity Guide](reactivity-guide/README.md) | Choosing a reactivity strategy — events, signals, watchers — with comparison framework and worked examples             |
 
 **New to the project?** Start with the [Style Guide](style-guide.md) for coding
 conventions, then read the [MVT Guide](mvt-guide.md) for architecture.
