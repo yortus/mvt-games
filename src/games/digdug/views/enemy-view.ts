@@ -54,17 +54,17 @@ export function createEnemyView(
         telegraph: bindings.isFireTelegraph,
     });
 
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
     const fireGfx = new Graphics();
     const telegraphGfx = new Graphics();
-    container.addChild(sprite);
-    container.addChild(telegraphGfx);
-    container.addChild(fireGfx);
+    view.addChild(sprite);
+    view.addChild(telegraphGfx);
+    view.addChild(fireGfx);
 
     sprite.scale.set(watched.tileSize.value / 20);
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
@@ -73,10 +73,10 @@ export function createEnemyView(
         const row = bindings.getRow();
         const x = col * ts + ts / 2;
         const y = row * ts + ts / 2;
-        container.position.set(x, y);
+        view.position.set(x, y);
 
         const phase = bindings.getPhase();
-        container.visible = phase !== 'popped';
+        view.visible = phase !== 'popped';
         if (phase === 'popped') return;
 
         if (phase === 'ghosting') {
@@ -84,7 +84,7 @@ export function createEnemyView(
                 sprite.texture = textures['ghost-eyes'];
                 updateScale(0);
             }
-            container.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
+            view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
             fireGfx.clear();
             telegraphGfx.clear();
             return;
@@ -98,7 +98,7 @@ export function createEnemyView(
         }
 
         // Direction flip
-        container.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
+        view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
 
         // Fygar fire (stays procedural — variable shape)
         if (watched.fire.changed || watched.direction.changed || watched.tileSize.changed) {

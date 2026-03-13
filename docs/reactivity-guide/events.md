@@ -1,4 +1,4 @@
-﻿# Events (Pub/Sub)
+# Events (Pub/Sub)
 
 The event pattern - also called publish/subscribe, observer, or event emitter -
 is the oldest and most widely used reactivity mechanism in JavaScript.
@@ -60,11 +60,11 @@ class ScoreModel extends EventTarget {
 // --- Subscriber (view layer) ---
 
 function createHudView(scoreModel: ScoreModel): Container {
-    const container = new Container();
+    const view = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     livesText.y = 30;
-    container.addChild(scoreText, livesText);
+    view.addChild(scoreText, livesText);
 
     // Subscribe to events
     const onScoreChanged = (e: Event) => {
@@ -77,13 +77,13 @@ function createHudView(scoreModel: ScoreModel): Container {
     scoreModel.addEventListener('score-changed', onScoreChanged);
     scoreModel.addEventListener('lives-changed', onLivesChanged);
 
-    // Cleanup when container is destroyed
-    container.on('destroyed', () => {
+    // Cleanup when view is destroyed
+    view.on('destroyed', () => {
         scoreModel.removeEventListener('score-changed', onScoreChanged);
         scoreModel.removeEventListener('lives-changed', onLivesChanged);
     });
 
-    return container;
+    return view;
 }
 
 // --- Usage ---

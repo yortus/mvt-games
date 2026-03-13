@@ -20,24 +20,24 @@ export interface ShipViewBindings {
 export function createShipView(bindings: ShipViewBindings): Container {
     const watched = createWatcher({ alive: bindings.isAlive });
 
-    const container = new Container();
+    const view = new Container();
     const bodyGfx = new Graphics();
     const flameGfx = new Graphics();
-    container.addChild(bodyGfx);
-    container.addChild(flameGfx);
+    view.addChild(bodyGfx);
+    view.addChild(flameGfx);
 
     drawShip();
     drawFlame();
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
-        container.position.set(bindings.getX(), bindings.getY());
-        container.rotation = bindings.getAngle();
+        view.position.set(bindings.getX(), bindings.getY());
+        view.rotation = bindings.getAngle();
 
         watched.poll();
         if (watched.alive.changed) {
-            container.visible = watched.alive.value;
+            view.visible = watched.alive.value;
         }
 
         flameGfx.visible = bindings.isThrusting();

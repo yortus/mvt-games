@@ -5,14 +5,14 @@ export interface PlayerInput {
     direction: Direction;
     /** Whether the fire button is currently held. */
     firePressed: boolean;
-    /** Set to true when the player requests a restart. */
-    restartRequested: boolean;
+    /** Whether the restart key is currently held. */
+    restartPressed: boolean;
 }
 
 export function createPlayerInput(initialDirection: Direction = 'none'): PlayerInput {
     return {
         direction: initialDirection,
         firePressed: false,
-        restartRequested: false,
+        restartPressed: false,
     };
 }

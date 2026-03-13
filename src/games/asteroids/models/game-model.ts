@@ -178,7 +178,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let asteroids: AsteroidModel[] = [];
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    let watched = createWatcher({ restart: () => playerInput.restartRequested });
+    const watched = createWatcher({ restart: () => playerInput.restartPressed });
 
     // Spawn first wave
     asteroids = spawnWaveAsteroids(asteroidCountForWave(1));
@@ -335,9 +335,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase === 'game-over') {
                     model.reset();
-                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
-                playerInput.restartRequested = false;
             }
 
             // Apply input

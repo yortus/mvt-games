@@ -1,4 +1,4 @@
-﻿# Watchers (Poll-Based Change Detection)
+# Watchers (Poll-Based Change Detection)
 
 Watchers are a lightweight pull-based reactivity mechanism: a consumer polls a
 source on each tick and compares the result to a cached value. If the value
@@ -109,7 +109,7 @@ function createWatcher<T extends Record<string, () => unknown>>(
 
 A score and phase display for a Pac-Man-style game. The view returns a
 `Container` - the caller adds it to the stage. The `onRender` callback is
-invoked by Pixi's ticker automatically while the container is on stage.
+invoked by Pixi's ticker automatically while the view is on stage.
 
 ```typescript
 // --- Model (plain object, no reactivity awareness) ---
@@ -134,7 +134,7 @@ function createGameModel(): GameModel {
 // --- View ---
 
 function createHudView(model: GameModel): Container {
-    const container = new Container();
+    const view = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     const phaseText = new Text({ text: 'READY', style: { fill: 'yellow', fontSize: 32 } });
@@ -142,7 +142,7 @@ function createHudView(model: GameModel): Container {
     livesText.y = 30;
     phaseText.y = 60;
     powerBar.y = 100;
-    container.addChild(scoreText, livesText, phaseText, powerBar);
+    view.addChild(scoreText, livesText, phaseText, powerBar);
 
     // Watch infrequently-changing state
     const watched = createWatcher({
@@ -151,7 +151,7 @@ function createHudView(model: GameModel): Container {
         phase: () => model.phase,
     });
 
-    container.onRender = () => {
+    view.onRender = () => {
         // Poll all watchers - evaluate getters, compare to cache
         watched.poll();
 
@@ -169,7 +169,7 @@ function createHudView(model: GameModel): Container {
         powerBar.clear().rect(0, 0, model.power * 100, 8).fill('lime');
     };
 
-    return container;
+    return view;
 }
 
 // --- Usage ---
@@ -292,15 +292,15 @@ garbage collected like any other object.
 
 ```typescript
 function createEnemyView(model: EnemyModel): Container {
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite(texture);
-    container.addChild(sprite);
+    view.addChild(sprite);
 
     const watched = createWatcher({
         phase: () => model.phase,
     });
 
-    container.onRender = () => {
+    view.onRender = () => {
         watched.poll();
         if (watched.phase.changed) {
             applyPhaseAppearance(sprite, watched.phase.value);
@@ -310,7 +310,7 @@ function createEnemyView(model: EnemyModel): Container {
         sprite.y = model.y * TILE_SIZE;
     };
 
-    return container;
+    return view;
 }
 ```
 
@@ -326,7 +326,7 @@ scheduler, no deferred execution, no asynchronous notification. The order of
 evaluation is the order the code is written in.
 
 ```typescript
-container.onRender = () => {
+view.onRender = () => {
     watched.poll();
     // These run in exactly this order, every frame, predictably
     if (watched.score.changed) { /* ... */ }   // 1st

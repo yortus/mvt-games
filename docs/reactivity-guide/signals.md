@@ -1,4 +1,4 @@
-﻿# Signals
+# Signals
 
 Signals are reactive primitives that automatically track dependencies and
 propagate changes through a computation graph. They are the reactivity
@@ -66,11 +66,11 @@ function createScoreModel(): ScoreModel {
 // --- View ---
 
 function createHudView(model: ScoreModel): Container {
-    const container = new Container();
+    const view = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
     const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
     livesText.y = 30;
-    container.addChild(scoreText, livesText);
+    view.addChild(scoreText, livesText);
 
     const dispose = createRoot((dispose) => {
         createEffect(() => { scoreText.text = String(model.score); });
@@ -82,9 +82,9 @@ function createHudView(model: ScoreModel): Container {
     });
 
     // MUST dispose, or effects leak (see Drawback 2)
-    container.on('destroyed', dispose);
+    view.on('destroyed', dispose);
 
-    return container;
+    return view;
 }
 
 // --- Usage ---

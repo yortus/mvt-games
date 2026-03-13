@@ -32,13 +32,13 @@ export function createFieldView(bindings: FieldViewBindings): Container {
         tunnelCount: bindings.getTunnelCount,
     });
 
-    const container = new Container();
+    const view = new Container();
     const gfx = new Graphics();
-    container.addChild(gfx);
+    view.addChild(gfx);
 
     buildField();
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();

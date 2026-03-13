@@ -37,21 +37,21 @@ export function createEnemyView(
         phase: bindings.getPhase,
     });
 
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
-    container.addChild(sprite);
+    view.addChild(sprite);
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         const phase = bindings.getPhase();
         const visible = phase !== 'dead' && phase !== 'entering';
-        container.visible = visible;
+        view.visible = visible;
         if (!visible) return;
 
         watched.poll();
-        container.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.getX(), bindings.getY());
         if (watched.phase.changed || watched.kind.changed) {
             sprite.texture = textures[bindings.getKind()];
         }

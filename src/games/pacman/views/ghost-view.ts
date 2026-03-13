@@ -34,25 +34,25 @@ export function createGhostView(
         tileSize: bindings.getTileSize,
     });
 
-    const container = new Container();
+    const view = new Container();
     const bodySprite = new Sprite({ texture: textures.body, anchor: 0.5 });
     const eyesSprite = new Sprite({ texture: textures.eyes, anchor: 0.5 });
     bodySprite.tint = bindings.getColor();
-    container.addChild(bodySprite);
-    container.addChild(eyesSprite);
+    view.addChild(bodySprite);
+    view.addChild(eyesSprite);
 
     const s = watched.tileSize.value / 20;
     bodySprite.scale.set(s);
     eyesSprite.scale.set(s);
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
 
         const ts = bindings.getTileSize();
-        container.position.set(
+        view.position.set(
             bindings.getCol() * ts + ts / 2,
             bindings.getRow() * ts + ts / 2,
         );

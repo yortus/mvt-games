@@ -23,7 +23,7 @@ export function createHudView(bindings: HudViewBindings): Container {
         wave: bindings.getWave,
     });
 
-    const container = new Container();
+    const view = new Container();
 
     // Score — left
     const scoreText = new Text({
@@ -31,24 +31,24 @@ export function createHudView(bindings: HudViewBindings): Container {
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
     });
     scoreText.position.set(8, 6);
-    container.addChild(scoreText);
+    view.addChild(scoreText);
 
     // Wave — right
     const waveText = new Text({
         text: 'Wave 1',
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
     });
-    container.addChild(waveText);
+    view.addChild(waveText);
 
     // Lives — centre (ship icons)
     const livesContainer = new Container();
-    container.addChild(livesContainer);
+    view.addChild(livesContainer);
 
     updateWaveLayout();
     updateLives();
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();

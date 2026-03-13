@@ -18,7 +18,7 @@ export function createHudView(bindings: HudViewBindings): Container {
     const watched = createWatcher({ score: bindings.getScore });
 
     // ---- Scene elements -------------------------------------------------------
-    const container = new Container();
+    const view = new Container();
     const scoreText = new Text({
         text: 'Score: 0',
         style: {
@@ -28,10 +28,10 @@ export function createHudView(bindings: HudViewBindings): Container {
         },
     });
     scoreText.position.set(8, 4);
-    container.addChild(scoreText);
+    view.addChild(scoreText);
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();

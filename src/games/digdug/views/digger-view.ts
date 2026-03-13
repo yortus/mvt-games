@@ -42,17 +42,17 @@ export function createDiggerView(
         harpoon: bindings.isHarpoonExtended,
     });
 
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite({ texture: textures.idle, anchor: 0.5 });
     const harpoonGfx = new Graphics();
-    container.addChild(sprite);
-    container.addChild(harpoonGfx);
+    view.addChild(sprite);
+    view.addChild(harpoonGfx);
 
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
     sprite.scale.set(watched.tileSize.value / 20);
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
@@ -63,10 +63,10 @@ export function createDiggerView(
         const dir = bindings.getDirection();
         const x = col * ts + ts / 2;
         const y = row * ts + ts / 2;
-        container.position.set(x, y);
+        view.position.set(x, y);
 
         if (watched.alive.changed) {
-            container.visible = watched.alive.value;
+            view.visible = watched.alive.value;
         }
         if (!bindings.isAlive()) return;
 
@@ -104,17 +104,17 @@ export function createDiggerView(
 
         // Direction: flip horizontally for left, rotate for up/down
         if (dir === 'left') {
-            container.scale.x = -1;
-            container.rotation = 0;
+            view.scale.x = -1;
+            view.rotation = 0;
         } else if (dir === 'up') {
-            container.scale.x = 1;
-            container.rotation = -Math.PI / 2;
+            view.scale.x = 1;
+            view.rotation = -Math.PI / 2;
         } else if (dir === 'down') {
-            container.scale.x = 1;
-            container.rotation = Math.PI / 2;
+            view.scale.x = 1;
+            view.rotation = Math.PI / 2;
         } else {
-            container.scale.x = 1;
-            container.rotation = 0;
+            view.scale.x = 1;
+            view.rotation = 0;
         }
 
         // Harpoon line (stays procedural — variable length)

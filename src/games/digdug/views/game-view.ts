@@ -34,7 +34,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
 
-    const container = new Container();
+    const view = new Container();
 
     // Field
     const fieldContainer = createFieldView({
@@ -46,7 +46,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getTunnelCount: () => game.field.tunnelCount,
         getGamePhase: () => game.phase,
     });
-    container.addChild(fieldContainer);
+    view.addChild(fieldContainer);
 
     // Digger
     const diggerContainer = createDiggerView({
@@ -58,7 +58,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getHarpoonDistance: () => game.digger.harpoonDistance,
         getTileSize: () => TILE_SIZE,
     }, textures.digger);
-    container.addChild(diggerContainer);
+    view.addChild(diggerContainer);
 
     // Enemies — dynamic list
     let enemyContainers: Container[] = [];
@@ -77,7 +77,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getCols: () => FIELD_COLS,
     }, textures.diggerIcon);
     hudContainer.position.set(0, canvasH);
-    container.addChild(hudContainer);
+    view.addChild(hudContainer);
 
     // Overlay (game over / level clear)
     const overlay = new Container();
@@ -92,17 +92,17 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     overlayText.anchor.set(0.5);
     overlayText.position.set(canvasW / 2, canvasH / 2);
     overlay.addChild(overlayText);
-    container.addChild(overlay);
+    view.addChild(overlay);
 
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView({
+    view.addChild(createKeyboardPlayerInputView({
         onDirectionChange: (dir) => { game.playerInput.direction = dir; },
         onPumpChange: (pressed) => { game.playerInput.pumpPressed = pressed; },
-        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
@@ -144,7 +144,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isFireTelegraph: () => game.enemies[idx].fireTelegraph,
                 getTileSize: () => TILE_SIZE,
             }, textures.enemy);
-            container.addChild(enemyContainer);
+            view.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
         }
     }
@@ -165,7 +165,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isAlive: () => game.rocks[idx].alive,
                 getTileSize: () => TILE_SIZE,
             }, textures.rock);
-            container.addChild(rockContainer);
+            view.addChild(rockContainer);
             rockContainers.push(rockContainer);
         }
     }

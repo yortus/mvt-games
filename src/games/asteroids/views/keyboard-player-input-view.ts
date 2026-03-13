@@ -9,7 +9,7 @@ export interface KeyboardInputBindings {
     onRotationChange(rot: RotationDirection): void;
     onThrustChange(pressed: boolean): void;
     onFireChange(pressed: boolean): void;
-    onRestartRequest(): void;
+    onRestartChange(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -31,8 +31,8 @@ const DIR_KEYS: Record<RotationDirection, string[]> = {
 };
 
 export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): Container {
-    const container = new Container();
-    container.label = 'keyboard-player-input';
+    const view = new Container();
+    view.label = 'keyboard-player-input';
 
     /** Set of currently held rotation keys. */
     const heldKeys = new Set<string>();
@@ -60,7 +60,7 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartRequest();
+            bindings.onRestartChange(true);
         }
     }
 
@@ -73,6 +73,10 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
             bindings.onThrustChange(false);
+            return;
+        }
+        if (e.key === 'Enter') {
+            bindings.onRestartChange(false);
             return;
         }
         const rot = ROTATION_MAP[e.key];
@@ -100,12 +104,12 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
 
-    const originalDestroy = container.destroy.bind(container);
-    container.destroy = (options) => {
+    const originalDestroy = view.destroy.bind(view);
+    view.destroy = (options) => {
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         originalDestroy(options);
     };
 
-    return container;
+    return view;
 }

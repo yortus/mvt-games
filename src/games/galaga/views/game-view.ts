@@ -38,11 +38,11 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         bee: textures.bee,
     };
 
-    const container = new Container();
+    const view = new Container();
 
     // Static star backdrop
     const starsGfx = new Graphics();
-    container.addChild(starsGfx);
+    view.addChild(starsGfx);
     drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
     // Enemy views — dynamic list
@@ -63,7 +63,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getY: () => game.ship.y,
         isAlive: () => game.ship.alive,
     }, textures.ship);
-    container.addChild(shipContainer);
+    view.addChild(shipContainer);
 
     // HUD
     const hudContainer = createHudView({
@@ -73,7 +73,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getScreenWidth: () => SCREEN_WIDTH,
     }, textures['ship-icon']);
     hudContainer.position.set(0, PLAY_HEIGHT);
-    container.addChild(hudContainer);
+    view.addChild(hudContainer);
 
     // Overlay (game over / stage clear)
     const overlay = new Container();
@@ -88,17 +88,17 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     overlayText.anchor.set(0.5);
     overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
     overlay.addChild(overlayText);
-    container.addChild(overlay);
+    view.addChild(overlay);
 
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView({
+    view.addChild(createKeyboardPlayerInputView({
         onDirectionChange: (dir) => { game.playerInput.direction = dir; },
         onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
-        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     // ---- refresh -----------------------------------------------------------
 
@@ -141,7 +141,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 getPhase: () => game.enemies[idx].phase,
                 isAlive: () => game.enemies[idx].alive,
             }, enemyTextures);
-            container.addChild(c);
+            view.addChild(c);
             enemyContainers.push(c);
         }
     }
@@ -161,7 +161,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isActive: () => game.playerBullets[idx].active,
                 getColor: () => 0xffffff,
             });
-            container.addChild(c);
+            view.addChild(c);
             pBulletContainers.push(c);
         }
     }
@@ -181,7 +181,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isActive: () => game.enemyBullets[idx].active,
                 getColor: () => 0xff4444,
             });
-            container.addChild(c);
+            view.addChild(c);
             eBulletContainers.push(c);
         }
     }

@@ -24,7 +24,7 @@ export function createHudView(bindings: HudViewBindings, diggerIconTexture: Text
         level: bindings.getLevel,
     });
 
-    const container = new Container();
+    const view = new Container();
 
     // Score — left
     const scoreText = new Text({
@@ -32,24 +32,24 @@ export function createHudView(bindings: HudViewBindings, diggerIconTexture: Text
         style: { fontFamily: 'monospace', fontSize: 16, fill: 0xffffff },
     });
     scoreText.position.set(8, 4);
-    container.addChild(scoreText);
+    view.addChild(scoreText);
 
     // Level — right
     const levelText = new Text({
         text: 'LV 1',
         style: { fontFamily: 'monospace', fontSize: 16, fill: 0xffffff },
     });
-    container.addChild(levelText);
+    view.addChild(levelText);
 
     // Lives — center (small icons)
     const livesContainer = new Container();
-    container.addChild(livesContainer);
+    view.addChild(livesContainer);
 
     updateLevelLayout();
     updateLives();
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();

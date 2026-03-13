@@ -162,7 +162,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let rocks = buildRocks(field);
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    let watched = createWatcher({ restart: () => playerInput.restartRequested });
+    const watched = createWatcher({ restart: () => playerInput.restartPressed });
 
     // ---- Helpers -----------------------------------------------------------
 
@@ -442,9 +442,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase === 'game-over') {
                     model.reset();
-                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
-                playerInput.restartRequested = false;
             }
 
             // Apply input

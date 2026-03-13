@@ -56,11 +56,11 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     });
 
     // ---- Scene elements ---------------------------------------------------
-    const container = new Container();
+    const view = new Container();
 
     // Menu layer
     const menuLayer = new Container();
-    container.addChild(menuLayer);
+    view.addChild(menuLayer);
 
     const title = new Text({
         text: '\u2726  MVT GAMES  \u2726',
@@ -124,15 +124,15 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
 
     // ---- Lifecycle --------------------------------------------------------
 
-    container.onRender = refresh;
+    view.onRender = refresh;
 
-    const originalDestroy = container.destroy.bind(container);
-    container.destroy = (options) => {
+    const originalDestroy = view.destroy.bind(view);
+    view.destroy = (options) => {
         window.removeEventListener('keydown', onKeyDown);
         originalDestroy(options);
     };
 
-    return container;
+    return view;
 
     // ---- Internals --------------------------------------------------------
 

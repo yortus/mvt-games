@@ -4,7 +4,7 @@ export interface PlayerInput {
     rotation: RotationDirection;
     thrustPressed: boolean;
     firePressed: boolean;
-    restartRequested: boolean;
+    restartPressed: boolean;
 }
 
 export function createPlayerInput(initialRotation: RotationDirection = 'none'): PlayerInput {
@@ -12,6 +12,6 @@ export function createPlayerInput(initialRotation: RotationDirection = 'none'): 
         rotation: initialRotation,
         thrustPressed: false,
         firePressed: false,
-        restartRequested: false,
+        restartPressed: false,
     };
 }

@@ -94,7 +94,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // Player input — persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
-    let watched = createWatcher({ restart: () => playerInput.restartRequested });
+    const watched = createWatcher({ restart: () => playerInput.restartPressed });
 
     // ---- Collision detection -----------------------------------------------
 
@@ -160,11 +160,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase !== 'playing') {
                     model.reset();
-                    // Re-create the restart watch so its baseline is the
-                    // cleared flag, ready for the next restart request.
-                    watched = createWatcher({ restart: () => playerInput.restartRequested });
                 }
-                playerInput.restartRequested = false;
             }
 
             // Apply current direction every tick (not via watch — a watch

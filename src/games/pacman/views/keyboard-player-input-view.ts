@@ -7,7 +7,7 @@ import type { Direction } from '../models';
 
 export interface KeyboardInputBindings {
     onDirectionChange(dir: Direction): void;
-    onRestartRequest(): void;
+    onRestartChange(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -15,8 +15,8 @@ export interface KeyboardInputBindings {
 // ---------------------------------------------------------------------------
 
 export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): Container {
-    const container = new Container();
-    container.label = 'keyboard-player-input';
+    const view = new Container();
+    view.label = 'keyboard-player-input';
 
     function onKeyDown(e: KeyboardEvent): void {
         const dir = KEY_MAP[e.key];
@@ -26,19 +26,28 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartRequest();
+            bindings.onRestartChange(true);
         }
     }
 
     window.addEventListener('keydown', onKeyDown);
 
-    const originalDestroy = container.destroy.bind(container);
-    container.destroy = (options) => {
+    function onKeyUp(e: KeyboardEvent): void {
+        if (e.key === 'Enter') {
+            bindings.onRestartChange(false);
+        }
+    }
+
+    window.addEventListener('keyup', onKeyUp);
+
+    const originalDestroy = view.destroy.bind(view);
+    view.destroy = (options) => {
         window.removeEventListener('keydown', onKeyDown);
+        window.removeEventListener('keyup', onKeyUp);
         originalDestroy(options);
     };
 
-    return container;
+    return view;
 }
 
 // ---------------------------------------------------------------------------

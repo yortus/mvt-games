@@ -19,11 +19,11 @@ export function createGameView(game: GameModel): Container {
         phase: () => game.phase,
     });
 
-    const container = new Container();
+    const view = new Container();
 
     // Static star backdrop
     const starsGfx = new Graphics();
-    container.addChild(starsGfx);
+    view.addChild(starsGfx);
     drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
     // Asteroid views — dynamic list
@@ -42,7 +42,7 @@ export function createGameView(game: GameModel): Container {
         isAlive: () => game.ship.alive,
         isThrusting: () => game.ship.thrusting,
     });
-    container.addChild(shipContainer);
+    view.addChild(shipContainer);
 
     // HUD
     const hudContainer = createHudView({
@@ -52,7 +52,7 @@ export function createGameView(game: GameModel): Container {
         getScreenWidth: () => SCREEN_WIDTH,
     });
     hudContainer.position.set(0, PLAY_HEIGHT);
-    container.addChild(hudContainer);
+    view.addChild(hudContainer);
 
     // Overlay (game over / wave clear)
     const overlay = new Container();
@@ -67,18 +67,18 @@ export function createGameView(game: GameModel): Container {
     overlayText.anchor.set(0.5);
     overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
     overlay.addChild(overlayText);
-    container.addChild(overlay);
+    view.addChild(overlay);
 
     // Keyboard input
-    container.addChild(createKeyboardPlayerInputView({
+    view.addChild(createKeyboardPlayerInputView({
         onRotationChange: (rot) => { game.playerInput.rotation = rot; },
         onThrustChange: (pressed) => { game.playerInput.thrustPressed = pressed; },
         onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
-        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     // ---- refresh -----------------------------------------------------------
 
@@ -122,7 +122,7 @@ export function createGameView(game: GameModel): Container {
                 isAlive: () => game.asteroids[idx].alive,
                 getShapeSeed: () => game.asteroids[idx].shapeSeed,
             });
-            container.addChild(c);
+            view.addChild(c);
             asteroidContainers.push(c);
         }
     }
@@ -141,7 +141,7 @@ export function createGameView(game: GameModel): Container {
                 getY: () => game.bullets[idx].y,
                 isActive: () => game.bullets[idx].active,
             });
-            container.addChild(c);
+            view.addChild(c);
             bulletContainers.push(c);
         }
     }

@@ -33,16 +33,16 @@ export function createPacmanView(
 ): Container {
     const watched = createWatcher({ direction: bindings.getDirection });
 
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
-    container.addChild(sprite);
+    view.addChild(sprite);
 
     let prevFrame = -1;
 
     sprite.scale.set(bindings.getTileSize() / 20);
-    container.rotation = directionToRotation(watched.direction.value);
-    container.onRender = refresh;
-    return container;
+    view.rotation = directionToRotation(watched.direction.value);
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
@@ -50,7 +50,7 @@ export function createPacmanView(
         const ts = bindings.getTileSize();
         const col = bindings.getCol();
         const row = bindings.getRow();
-        container.position.set(col * ts + ts / 2, row * ts + ts / 2);
+        view.position.set(col * ts + ts / 2, row * ts + ts / 2);
         sprite.scale.set(ts / 20);
 
         // Mouth frame: 0 = closed, 1 = mid, 2 = open
@@ -70,7 +70,7 @@ export function createPacmanView(
         }
 
         if (watched.direction.changed) {
-            container.rotation = directionToRotation(watched.direction.value);
+            view.rotation = directionToRotation(watched.direction.value);
         }
     }
 

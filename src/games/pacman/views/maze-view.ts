@@ -31,13 +31,13 @@ export function createMazeView(bindings: MazeViewBindings): Container {
     });
 
     // ---- Scene elements -------------------------------------------------------
-    const container = new Container();
+    const view = new Container();
     const wallGfx = new Graphics();
-    container.addChild(wallGfx);
+    view.addChild(wallGfx);
 
     updateLayout();
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         // Poll all watches
@@ -95,7 +95,7 @@ export function createMazeView(bindings: MazeViewBindings): Container {
                 if (bindings.isDotAt(r, c)) {
                     const dot = new Graphics();
                     dot.circle(c * ts + ts / 2, r * ts + ts / 2, ts * 0.15).fill(0xffff00);
-                    container.addChild(dot);
+                    view.addChild(dot);
                     dotEntries.push({ r, c, gfx: dot });
                 }
             }

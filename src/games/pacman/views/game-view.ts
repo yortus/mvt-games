@@ -32,7 +32,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     const canvasH = MAZE_ROWS * TILE_SIZE;
 
     // ---- Scene elements -------------------------------------------------------
-    const container = new Container();
+    const view = new Container();
 
     // Maze
     const mazeContainer = createMazeView({
@@ -43,7 +43,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         isDotAt: (r, c) => game.maze.isDot(r, c),
         getGamePhase: () => game.phase,
     });
-    container.addChild(mazeContainer);
+    view.addChild(mazeContainer);
 
     // Pac-Man
     const pacmanContainer = createPacmanView({
@@ -52,7 +52,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getDirection: () => game.pacman.direction,
         getTileSize: () => TILE_SIZE,
     }, textures.pacman);
-    container.addChild(pacmanContainer);
+    view.addChild(pacmanContainer);
 
     // Ghosts — managed as a dynamic list
     let ghostContainers: Container[] = [];
@@ -63,7 +63,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         getScore: () => game.score.score,
     });
     hudContainer.position.set(0, canvasH);
-    container.addChild(hudContainer);
+    view.addChild(hudContainer);
 
     // Overlay (game over / win)
     const overlay = new Container();
@@ -85,16 +85,16 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     overlayText.anchor.set(0.5);
     overlayText.position.set(canvasW / 2, canvasH / 2);
     overlay.addChild(overlayText);
-    container.addChild(overlay);
+    view.addChild(overlay);
 
     // ---- Player input --------------------------------------------------------
-    container.addChild(createKeyboardPlayerInputView({
+    view.addChild(createKeyboardPlayerInputView({
         onDirectionChange: (dir) => { game.playerInput.direction = dir; },
-        onRestartRequest: () => { game.playerInput.restartRequested = true; },
+        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
@@ -129,7 +129,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 getColor: () => game.ghosts[idx].color,
                 getTileSize: () => TILE_SIZE,
             }, textures.ghost);
-            container.addChild(ghostContainer);
+            view.addChild(ghostContainer);
             ghostContainers.push(ghostContainer);
         }
     }

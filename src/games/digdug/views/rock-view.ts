@@ -36,18 +36,18 @@ export function createRockView(
         tileSize: bindings.getTileSize,
     });
 
-    const container = new Container();
+    const view = new Container();
     const sprite = new Sprite({ texture: textures.rock, anchor: 0.5 });
-    container.addChild(sprite);
+    view.addChild(sprite);
 
     let wobbleToggle = false;
 
     sprite.scale.set(watched.tileSize.value / 20);
-    container.onRender = refresh;
-    return container;
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
-        container.visible = bindings.isAlive();
+        view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
         const ts = bindings.getTileSize();
@@ -67,6 +67,6 @@ export function createRockView(
             wobbleOffset = wobbleToggle ? 2 : -2;
         }
 
-        container.position.set(x + wobbleOffset, y);
+        view.position.set(x + wobbleOffset, y);
     }
 }

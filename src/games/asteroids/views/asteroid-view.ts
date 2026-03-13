@@ -31,25 +31,25 @@ const VERTICES = 10;
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     const watched = createWatcher({ alive: bindings.isAlive });
 
-    const container = new Container();
+    const view = new Container();
     const bodyGfx = new Graphics();
-    container.addChild(bodyGfx);
+    view.addChild(bodyGfx);
 
     drawAsteroid();
-    container.visible = bindings.isAlive();
-    container.onRender = refresh;
-    return container;
+    view.visible = bindings.isAlive();
+    view.onRender = refresh;
+    return view;
 
     function refresh(): void {
         watched.poll();
 
         if (watched.alive.changed) {
-            container.visible = watched.alive.value;
+            view.visible = watched.alive.value;
         }
         if (!bindings.isAlive()) return;
 
-        container.position.set(bindings.getX(), bindings.getY());
-        container.rotation = bindings.getAngle();
+        view.position.set(bindings.getX(), bindings.getY());
+        view.rotation = bindings.getAngle();
     }
 
     function drawAsteroid(): void {
