@@ -22,9 +22,9 @@ interested parties. The source *pushes* the update outward.
 
 ```
 ┌────────┐  "I changed!"   ┌────────────┐
-│ Source  │ ──────────────► │ Consumer A │
+│ Source │ ──────────────► │ Consumer A │
 │        │ ──────────────► │ Consumer B │
-└────────┘                  └────────────┘
+└────────┘                 └────────────┘
 ```
 
 The consumer registers interest in advance (subscribes). When the source
@@ -44,6 +44,7 @@ SolidJS/Angular signals (effects are pushed to), the Observer pattern.
 | Cost when something changes | Proportional to number of subscribers |
 | Consumer setup | Must subscribe (and later unsubscribe) |
 | Timing control | Determined by the source or a scheduler |
+| GC pressure | Subscriber list and callback closures are long-lived; low churn unless subscriptions change frequently |
 
 ## Pull: The Consumer Checks
 
@@ -52,7 +53,7 @@ changed. The consumer *pulls* the current state at a time of its choosing.
 
 ```
 ┌────────┐  "Did you change?"  ┌────────────┐
-│ Source  │ ◄───────────────── │  Consumer  │
+│ Source │ ◄─────────────────  │  Consumer  │
 │        │ ──────────────────► │            │
 └────────┘  "Here's my value"  └────────────┘
 ```
@@ -75,6 +76,7 @@ described in this guide.
 | Cost when something changes | Same as when nothing changes |
 | Consumer setup | Just read — no subscription needed |
 | Timing control | Consumer decides when to check |
+| GC pressure | Minimal — a cached value and a getter closure per watcher; no subscription graph |
 
 ## Hybrid: Push Notification, Pull Value
 
@@ -84,7 +86,7 @@ re-evaluation), but the actual value is *pulled* (the computation reads the
 signal's current value when it runs).
 
 ```
-┌────────┐  "Something changed"  ┌───────────┐  "Give me the value"  ┌────────┐
+┌────────┐  "Something changed"  ┌───────────┐  "Give me the value"   ┌────────┐
 │ Signal │ ────────────────────► │ Scheduler │ ─────────────────────► │ Signal │
 │ Write  │                       │           │ ◄───────────────────── │ Read   │
 └────────┘                       └───────────┘  "Here: 42"            └────────┘
@@ -94,6 +96,39 @@ This hybrid model aims to combine the efficiency of push (no wasted work) with
 the consistency of pull (read current values at a controlled time). The
 trade-off is complexity: the system needs a scheduler to coordinate when pulls
 happen after pushes.
+
+## State vs Change: A Deeper Framing
+
+A fundamental observation: **pull-based systems model state, while push-based
+systems model change.** In each paradigm, one of *state* and *transition* is
+explicit while the other is implicit.
+
+| | State (current value) | Transition (what changed) |
+|---|---|---|
+| **Push** (events) | Implicit — consumer must read or remember it | **Explicit** — the notification IS the change |
+| **Pull** (watchers) | **Explicit** — the consumer always reads current value | Implicit — detected by comparing current to previous |
+| **Hybrid** (signals) | Explicit (signal holds current value) | Explicit (write triggers notification) |
+
+In a push system, you *know something changed* but must take extra steps to know
+the current state. A late subscriber has no state to read. In a pull system, you
+*always know the current state* but must do work to detect that a change
+occurred.
+
+This duality shapes each approach's strengths and failure modes:
+
+- **Events** excel at reacting to transitions ("Pac-Man ate a power pellet")
+  but struggle to represent ongoing state ("What is the score right now?"). Late
+  subscribers miss history.
+- **Watchers** excel at reflecting current state ("The score is 5,000") but
+  require per-tick work to detect transitions. Changes are never missed — the
+  current value is always available.
+- **Signals** aim to be explicit in both dimensions — you can read the current
+  value and react to changes — at the cost of a more complex runtime to
+  coordinate these two responsibilities.
+
+Understanding this duality helps explain why most real systems benefit from
+mixing approaches: events for discrete transitions, watchers (or signals) for
+continuous state.
 
 ## Where Each Approach in This Guide Falls
 
@@ -176,7 +211,9 @@ This shares the same push-pull hybrid model as signals but with **implicit**
 rather than explicit observable declarations. The trade-off: less boilerplate to
 declare observables, but harder to reason about what is and isn't tracked. The
 proxy interception also adds overhead to every property access, not just those
-inside reactive contexts.
+inside reactive contexts. Additionally, the proxy layer creates objects on reads
+(trapped getter results), contributing to **GC pressure** under high-frequency
+access patterns.
 
 ### Dirty Flags / Version Stamps
 
@@ -206,8 +243,9 @@ function refresh() {
 This is technically a variant of the pull model with O(1) comparison cost. It
 requires cooperation from the source (every mutation must bump the version),
 but avoids both the subscription overhead of push models and the per-element
-comparison cost of deep-checking pull models. It is commonly used in game
-engines and ECS (Entity Component System) architectures.
+comparison cost of deep-checking pull models. Because there is no subscription
+graph and comparisons are integer-only, GC pressure is near zero. It is commonly
+used in game engines and ECS (Entity Component System) architectures.
 
 ---
 

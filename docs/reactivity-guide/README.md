@@ -26,10 +26,28 @@ This guide covers three primary approaches and several variants:
 |----------|----------------|---------|
 | **Events** (pub/sub) | Source emits; listeners subscribe | [events.md](events.md) |
 | **Signals** (push-based observables) | Dependency graph auto-tracks reads; triggers on write | [signals.md](signals.md) |
-| **Watchers** (poll-based change detection) | Consumer polls a getter each tick; compares to cached value | [watchers.md](watchers.md) |
+| **Watchers** (poll-based change detection) | Consumer polls a source each tick; compares to cached value | [watchers.md](watchers.md) |
+
+> **A note on terminology:** "watchers" is a pragmatic label for poll-based
+> change detection, not a universally established paradigm name. Vue.js uses the
+> same term for a similar (though push-based) concept; you may also see this
+> approach called *polling*, *dirty-checking*, or *pull-based observation*. This
+> guide uses "watchers" for brevity and because it describes the consumer's role:
+> watching for changes on each tick.
 
 Each section uses the same structure: concept, working code, benefits, drawbacks,
 and situational guidance.
+
+## Table of Contents
+
+| Page | Key Topics |
+|------|------------|
+| [Push vs Pull Reactivity](push-vs-pull.md) | Push model, pull model, hybrids, state-vs-change framing |
+| [Events (Pub/Sub)](events.md) | EventTarget, typed emitters, subscription lifecycle, runtime traceability |
+| [Signals](signals.md) | Dependency tracking, effects, memos, batching, external integration |
+| [Watchers (Poll-Based)](watchers.md) | Poll-based detection, `createWatcher` API, GC-safe lifecycle |
+| [Comparison & Decision Framework](comparison.md) | Side-by-side summary, performance, correctness, decision flowchart |
+| [Worked Examples](examples.md) | Score display, ghost transitions, GSAP integration, asteroid field |
 
 ## How to Read This Guide
 
@@ -50,13 +68,13 @@ and situational guidance.
                                        │
                  ┌─────────────────────┼─────────────────────┐
                  ▼                     ▼                     ▼
-        ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-        │    Events    │     │   Signals    │     │   Watchers   │
-        │ (events.md)  │     │ (signals.md) │     │(watchers.md) │
-        └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-               │                    │                    │
-               └────────────────────┼────────────────────┘
-                                    ▼
+          ┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+          │     Events     │   │    Signals     │   │    Watchers    │
+          │  (events.md)   │   │  (signals.md)  │   │ (watchers.md)  │
+          └───────┬────────┘   └───────┬────────┘   └───────┬────────┘
+                  │                    │                    │
+                  └────────────────────┼────────────────────┘
+                                       ▼
                           ┌──────────────────────────┐
                           │  Comparison & Decision   │
                           │   (comparison.md)        │

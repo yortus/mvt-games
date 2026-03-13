@@ -1,4 +1,4 @@
-# Comparison & Decision Framework
+﻿# Comparison & Decision Framework
 
 A side-by-side comparison of events, signals, and watchers — followed by a
 decision framework to help you choose the right approach for your project.
@@ -15,47 +15,55 @@ decision framework to help you choose the right approach for your project.
 |---|---|---|---|
 | **Model** | Push | Hybrid (push-pull) | Pull |
 | **Source awareness** | Source must emit events | Source must wrap values in signals | Source unaware — any readable value works |
-| **Consumer setup** | Subscribe with `on()` | Read signal inside reactive context | Wrap getter in `createWatch()` |
+| **Consumer setup** | Subscribe with `on()` | Read signal inside reactive context | Wrap getters in `createWatcher()` |
 | **Cleanup required** | Yes — `off()` per subscription | Yes — `dispose()` per ownership scope | No — stop polling, done |
 | **Leak risk** | Real — missed `off()` | Real — missed `dispose()` | None |
 | **Cost when idle** | Zero | Zero (no computations re-run) | O(n) getter calls + comparisons |
 | **Cost when changing** | O(subscribers) per event | Dependency tracking + topological sort + effect re-run | Same O(n) as idle |
 | **Cost predictability** | Variable (depends on subscriber count and cascade depth) | Variable (depends on graph topology) | Constant |
-| **Derived state** | Manual — check condition in every handler | Automatic — `createMemo` | Manual — model-layer computation |
+| **GC pressure** | Low (long-lived callbacks; payload allocation on emit) | Moderate (subscription churn on re-runs; Set entry allocation) | Near zero (long-lived closures; `===` allocates nothing) |
+| **Derived state** | Manual — check condition in every handler | Automatic — `createMemo` | Manual — model-layer computation or getter expressions |
 | **Timing control** | Immediate on emit (or deferred if queued) | Depends on scheduler / batch semantics | Consumer decides — always at poll time |
 | **Consistency guarantee** | None inherent — cascades can read partial state | Requires glitch prevention (scheduler) | Free — reads a post-update snapshot |
-| **Framework dependency** | None (built-in APIs) | Signal runtime (SolidJS, Angular, etc.) | None (~20 lines of code) |
-| **Debugging** | Trace through dispatch + handler chain | Trace through dependency graph + scheduler | Step through `refresh()` top-to-bottom |
+| **Framework dependency** | None (built-in APIs) | Signal runtime (SolidJS, Angular, etc.) | None (~20–30 lines of code) |
+| **Debugging** | Trace through dispatch + handler chain | Trace through dependency graph + scheduler | Step through render callback top-to-bottom |
 
 ## Performance Characteristics
 
 ### Cost Model Comparison
 
-The three approaches have fundamentally different cost profiles:
+The three approaches have fundamentally different cost profiles. The table below
+shows how each behaves across a range of scenarios at 60fps.
 
-```
-Cost per tick
+| Scenario | Events | Signals | Watchers |
+|---|---|---|---|
+| **Nothing changes** (100 bindings) | 0μs | ~0μs | ~0.5μs |
+| **5 of 100 values change** | ~0.5μs (5 emits × ~5 subs) | ~1–5μs (tracking + effects) | ~0.5μs (same as idle) |
+| **All 100 values change** | ~5–10μs (100 emits) | ~20–100μs* (graph flush) | ~0.5μs (same as idle) |
+| **GC pressure per tick** | Low (payload objects on emit) | Moderate (Set churn from subscription updates) | Near zero (no allocation) |
+| **Worst-case spike** | Cascading emits (unbounded) | Deep diamond-graph flush | None — cost is constant |
 
-Events:    ──────/─────────/──────── (zero baseline, spikes on emit)
-Signals:   ──────/─────────/──────── (zero baseline, variable spike on change)
-Watchers:  ════════════════════════ (constant, regardless of changes)
-```
+\*Signal costs vary significantly with implementation and graph topology. These
+values are illustrative; use the benchmarks below to measure your scenario.
 
-- **Events** have zero cost between emissions. When an event fires, the cost is
-  proportional to the number of subscribers. Cascading events (handler A emits
-  event B) multiply this cost unpredictably.
+The key pattern:
 
-- **Signals** have near-zero cost when no signal has changed. When signals
-  change, the cost includes dependency-graph traversal, topological sorting,
-  cleanup of old subscriptions, and effect re-execution. The worst case occurs
-  when many signals change simultaneously (e.g. a state transition), producing
-  a spike proportional to the graph size.
+- **Events** are free when idle but have variable cost proportional to
+  subscriber count and cascade depth when things happen. Cascading events
+  (handler A emits event B) can cause unpredictable spikes.
+
+- **Signals** are free when idle but have per-change overhead that includes
+  dependency-graph traversal, topological sorting, cleanup of old subscriptions,
+  and effect re-execution. The overhead also includes **GC pressure** from
+  subscription churn — each effect re-run cleans up old Set entries and creates
+  new ones. The worst case occurs with many simultaneous changes or deep
+  dependency graphs.
 
 - **Watchers** have a constant cost every tick — N getter evaluations and N
-  comparisons. The cost is the same whether nothing changed, one value changed,
-  or all values changed. This means watchers are less efficient than signals
-  during idle periods, but more efficient (and more predictable) during active
-  periods with many changes.
+  comparisons, regardless of how many values changed. This means watchers are
+  less efficient than signals during fully-idle periods, but more efficient (and
+  more predictable) during active periods with many changes. Their near-zero GC
+  pressure is an additional advantage in latency-sensitive applications.
 
 ### Benchmark Guidance
 
@@ -80,7 +88,8 @@ on state transitions.
 **4. Memory overhead and GC pressure.** Measure heap size after creating N
 bindings. Signals maintain a bidirectional subscription graph (more memory).
 Watchers are closures with a cached value (less memory). Also measure GC
-pause frequency — signal subscription churn can create GC pressure.
+pause frequency — signal subscription churn can create GC pressure that
+causes periodic frame drops.
 
 **5. Scaling with dependency-graph depth.** Create a diamond dependency
 pattern (N signals → M derivations → K effects). Measure flush time as
@@ -94,17 +103,17 @@ For perspective, here are rough estimates at 60fps (16.6ms frame budget):
 | Scenario | Watchers | Signals | Events |
 |---|---|---|---|
 | 50 primitive watches, nothing changes | ~0.25μs | ~0μs | ~0μs |
-| 50 primitive watches, all change | ~0.25μs | ~5-50μs* | ~0μs (no events) |
-| 50 watches, 5 change | ~0.25μs | ~1-5μs | ~0.5μs (5 emits) |
+| 50 primitive watches, all change | ~0.25μs | ~5–50μs* | ~0μs (no events) |
+| 50 watches, 5 change | ~0.25μs | ~1–5μs | ~0.5μs (5 emits) |
 | 200 watches, nothing changes | ~1μs | ~0μs | ~0μs |
-| 200 watches, 50 change | ~1μs | ~20-100μs* | ~5μs (50 emits) |
+| 200 watches, 50 change | ~1μs | ~20–100μs* | ~5μs (50 emits) |
 
 \*Signal costs vary significantly with implementation and graph topology. These
 ranges are illustrative, not measured. Use the benchmarks above to measure your
 specific scenario.
 
 The key takeaway: **for primitive-comparison watchers at game-typical scale
-(50-200 bindings), the absolute cost is a tiny fraction of the frame budget
+(50–200 bindings), the absolute cost is a tiny fraction of the frame budget
 regardless of approach.** The decision should be based on correctness,
 maintainability, and architectural fit — not performance — unless you are at
 extreme scale.
@@ -126,7 +135,7 @@ new state, others still at their old state.
   computation always sees fully-updated upstream values.
 
 - **Watchers:** Glitch-free by construction in a tick-based architecture. All
-  model updates complete before `refresh()` runs. Every getter reads a
+  model updates complete before render callbacks run. Every getter reads a
   consistent post-update snapshot. No scheduler needed.
 
 ### Lifecycle Safety
@@ -138,9 +147,9 @@ new state, others still at their old state.
   detached view, silently consuming resources. Harder to detect than a missing
   event handler because the leaked effect may produce no visible symptom.
 
-- **Watchers:** No cleanup needed. Failure mode: if `changed()` is never called
-  in `refresh()`, the watched feature simply doesn't update — which is *visible*
-  in testing/gameplay.
+- **Watchers:** No cleanup needed. Failure mode: if `poll()` is never called
+  in the render callback, the watched feature simply doesn't update — which is
+  *visible* in testing/gameplay.
 
 ### Accessor Transparency
 
@@ -174,7 +183,8 @@ per-frame state — game over, achievement unlocked, level transition.
 
 **Typical hybrid pattern:**
 ```
-Watchers  → per-frame state (positions, scores, phases, animation states)
+Watchers  → infrequently-changing state (phases, scores, lives)
+Direct reads → per-frame state (positions, velocities, timers)
 Events    → discrete lifecycle events (game over, level start, achievement)
 ```
 
@@ -221,7 +231,21 @@ event contract; consumers subscribe to what they need.
 
 Signals require the consumer to access signal instances from the source, which
 creates tighter coupling. Watchers require the consumer to access readable
-properties, which is even tighter (the consumer must know the property shape).
+properties — though this coupling can be minimised with a **bindings interface**
+pattern: the consumer declares a `Bindings` interface describing only the
+properties it needs, and the source provides an object satisfying that interface.
+With bindings, the consumer and source can vary independently as long as the
+interface contract is met, achieving decoupling comparable to events:
+
+```typescript
+// Consumer defines what it needs — doesn't know or care about the source
+interface HudBindings {
+    getScore(): number;
+    getLives(): number;
+}
+
+function createHudView(bindings: HudBindings): Container { /* ... */ }
+```
 
 ## Decision Framework
 
@@ -251,7 +275,7 @@ update model, not a single global approach.**
 
 | Subsystem | Update model | Good fit |
 |---|---|---|
-| Game entity positions/state | Per-frame tick | Watchers |
+| Game entity positions/state | Per-frame tick | Direct reads (positions) + Watchers (phase changes) |
 | Score display, HUD | Per-frame tick | Watchers |
 | Sound effects | Discrete events | Events |
 | Analytics | Discrete events | Events |
@@ -272,7 +296,7 @@ every component that subscribes. Use disposable/cleanup patterns (see
 
 Watcher getters run every tick. Array traversals, object allocations, and
 string concatenation in getters consume frame budget unnecessarily. Keep
-getters O(1) — see [Watchers § Aggregates](watchers.md#aggregate-values-arrays-and-objects).
+getters O(1) — see [Watchers § Aggregate Values](watchers.md#aggregate-values-arrays-and-objects).
 
 ### 3. Cascading updates (Events, Signals)
 
