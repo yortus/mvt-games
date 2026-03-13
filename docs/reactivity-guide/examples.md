@@ -1,7 +1,7 @@
 ﻿# Worked Examples
 
-Each example implements the same feature using all three approaches — events,
-signals, and watchers — so you can compare them directly. Examples use classic
+Each example implements the same feature using all three approaches - events,
+signals, and watchers - so you can compare them directly. Examples use classic
 arcade games and common interactive patterns that are universally understood.
 
 > **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
@@ -14,7 +14,7 @@ arcade games and common interactive patterns that are universally understood.
 
 **Scenario:** Pac-Man eats dots and moves every tick. The score changes
 infrequently (on dot-eat). The elapsed time changes every tick. The HUD view
-must update both — but the optimal strategy differs for each.
+must update both - but the optimal strategy differs for each.
 
 This tests the fundamental pattern: how does each approach handle a mix of
 infrequently-changing and per-tick state?
@@ -40,7 +40,7 @@ function createScoreModel(emitter: TypedEmitter<ScoreEvents>) {
         },
         update(dt: number) {
             elapsed += dt;
-            // No event for elapsed — it changes every tick.
+            // No event for elapsed - it changes every tick.
             // Emitting 60 times/sec would cost ~3–12μs/sec in dispatch
             // overhead and create payload GC pressure for no benefit.
         },
@@ -58,7 +58,7 @@ function createScoreView(
     timerText.y = 30;
     stage.addChild(scoreText, timerText);
 
-    // Initial sync — events don't carry history
+    // Initial sync - events don't carry history
     scoreText.text = String(model.score);
 
     // Subscribe to infrequent change
@@ -67,7 +67,7 @@ function createScoreView(
 
     return {
         refresh() {
-            // Frequently-changing value — read directly every tick
+            // Frequently-changing value - read directly every tick
             timerText.text = String(Math.floor(model.elapsed));
         },
         destroy() {
@@ -80,11 +80,11 @@ function createScoreView(
 
 **Observations:**
 - Model must know about the emitter and explicitly emit on every mutation.
-- The model intentionally does NOT emit for per-tick values like `elapsed` —
+- The model intentionally does NOT emit for per-tick values like `elapsed` -
   events are a poor fit for high-frequency state.
 - View must manually initialise (read `model.score` after subscribing).
 - View must clean up the subscription.
-- The view still needs a `refresh()` loop for per-tick values — events alone
+- The view still needs a `refresh()` loop for per-tick values - events alone
   are insufficient.
 
 ### Signals
@@ -95,8 +95,8 @@ import { createSignal, createEffect, createRoot } from 'solid-js';
 // --- Model ---
 
 interface ScoreModel {
-    readonly score: () => number;
-    readonly elapsed: () => number;
+    readonly score: number;
+    readonly elapsed: number;
     addPoints(points: number): void;
     update(dt: number): void;
 }
@@ -106,13 +106,13 @@ function createScoreModel(): ScoreModel {
     const [elapsed, setElapsed] = createSignal(0);
 
     return {
-        score,
-        elapsed,
+        get score() { return score(); },
+        get elapsed() { return elapsed(); },
         addPoints(points: number) { setScore(prev => prev + points); },
         update(dt: number) {
             setElapsed(prev => prev + dt);
             // This writes to a signal 60 times/sec, triggering dependency
-            // tracking overhead and GC pressure on every tick — even though
+            // tracking overhead and GC pressure on every tick - even though
             // the consumer would read it every tick anyway.
         },
     };
@@ -127,10 +127,10 @@ function createScoreView(model: ScoreModel, stage: Container): { destroy(): void
 
     const dispose = createRoot((dispose) => {
         createEffect(() => {
-            scoreText.text = String(model.score());  // auto-tracks score signal
+            scoreText.text = String(model.score);  // auto-tracks score signal
         });
         createEffect(() => {
-            timerText.text = String(Math.floor(model.elapsed()));
+            timerText.text = String(Math.floor(model.elapsed));
             // This effect re-runs every tick because elapsed() changes every tick.
             // The dependency tracking overhead is pure waste here.
         });
@@ -147,8 +147,8 @@ function createScoreView(model: ScoreModel, stage: Container): { destroy(): void
 ```
 
 **Observations:**
-- No manual initial sync — the effect runs once on creation.
-- No explicit dependency declaration — auto-tracked.
+- No manual initial sync - the effect runs once on creation.
+- No explicit dependency declaration - auto-tracked.
 - Must manage reactive root lifecycle (`dispose()`).
 - Per-tick values like `elapsed` work but incur signal overhead with no benefit.
 - Requires SolidJS runtime.
@@ -187,7 +187,7 @@ function createScoreView(model: { readonly score: number; readonly elapsed: numb
         if (watched.score.changed) {
             scoreText.text = String(watched.score.value);
         }
-        // Per-tick value — just read directly, no watcher needed
+        // Per-tick value - just read directly, no watcher needed
         timerText.text = String(Math.floor(model.elapsed));
     };
 
@@ -196,8 +196,8 @@ function createScoreView(model: { readonly score: number; readonly elapsed: numb
 ```
 
 **Observations:**
-- Model is a plain object — no emitters, no signal wrappers.
-- No cleanup obligations — removing the container from the stage is sufficient.
+- Model is a plain object - no emitters, no signal wrappers.
+- No cleanup obligations - removing the container from the stage is sufficient.
 - Infrequent changes (score) use a watcher; per-tick values (elapsed) are read
   directly. Both patterns coexist naturally.
 - No framework dependency.
@@ -211,8 +211,8 @@ function createScoreView(model: { readonly score: number; readonly elapsed: numb
 texture, animation speed, colour) must update. Additionally, a sound effect
 plays on certain transitions. The ghost's position changes every tick.
 
-This tests **transition detection** — reacting not just to the new value, but
-to specific from→to transitions — alongside per-tick state.
+This tests **transition detection** - reacting not just to the new value, but
+to specific from→to transitions - alongside per-tick state.
 
 ### Events
 
@@ -239,7 +239,7 @@ function createGhostModel(emitter: TypedEmitter<GhostEvents>) {
             emitter.emit('phase-changed', { from, to: newPhase });
         },
         update(dt: number) {
-            // move ghost — no event (per-tick)
+            // move ghost - no event (per-tick)
             col += dt * 0.01;
         },
     };
@@ -273,7 +273,7 @@ function createGhostView(
 
     return {
         refresh() {
-            // Per-tick position — direct read
+            // Per-tick position - direct read
             sprite.x = model.col * TILE_SIZE;
             sprite.y = model.row * TILE_SIZE;
         },
@@ -286,9 +286,9 @@ function createGhostView(
 ```
 
 **Observations:**
-- Events naturally carry `from`/`to` — the model packages transition data.
+- Events naturally carry `from`/`to` - the model packages transition data.
 - Transition-specific logic is clean and readable.
-- Per-tick position requires a separate `refresh()` loop — events don't help.
+- Per-tick position requires a separate `refresh()` loop - events don't help.
 - Initial sync and cleanup are manual.
 
 ### Signals
@@ -320,7 +320,7 @@ function createGhostModel(): GhostModel {
         setPhase(p: GhostPhase) { setPhase(p); },
         update(dt: number) {
             setCol(prev => prev + dt * 0.01);
-            // Writing to col 60 times/sec — signal overhead with no benefit
+            // Writing to col 60 times/sec - signal overhead with no benefit
         },
     };
 }
@@ -331,7 +331,7 @@ function createGhostView(model: GhostModel, stage: Container): { destroy(): void
     stage.addChild(sprite);
 
     const dispose = createRoot((dispose) => {
-        // Phase changes — with previous value via `on()` helper
+        // Phase changes - with previous value via `on()` helper
         createEffect(on(model.phase, (to, from) => {
             applyPhaseAppearance(sprite, to);
 
@@ -343,7 +343,7 @@ function createGhostView(model: GhostModel, stage: Container): { destroy(): void
             }
         }));
 
-        // Per-tick position — effect re-runs every tick due to signal writes
+        // Per-tick position - effect re-runs every tick due to signal writes
         createEffect(() => {
             sprite.x = model.col() * TILE_SIZE;
             sprite.y = model.row() * TILE_SIZE;
@@ -362,7 +362,7 @@ function createGhostView(model: GhostModel, stage: Container): { destroy(): void
 ```
 
 **Observations:**
-- SolidJS's `on()` helper provides the previous value — clean API for
+- SolidJS's `on()` helper provides the previous value - clean API for
   transitions.
 - Per-tick position values are signals, so the position effect re-runs every
   tick with full dependency-tracking overhead.
@@ -410,7 +410,7 @@ function createGhostView(
             const to = watched.phase.value;
             applyPhaseAppearance(sprite, to);
 
-            // Transition-specific logic — previous is built in
+            // Transition-specific logic - previous is built in
             if (to === 'frightened') {
                 audioManager.play('power-pellet');
             }
@@ -419,7 +419,7 @@ function createGhostView(
             }
         }
 
-        // Per-tick position — direct read, no watcher
+        // Per-tick position - direct read, no watcher
         sprite.x = model.col * TILE_SIZE;
         sprite.y = model.row * TILE_SIZE;
     };
@@ -430,9 +430,9 @@ function createGhostView(
 
 **Observations:**
 - `watched.phase.previous` provides transition data without manual tracking.
-- Per-tick position is a direct read — no watcher overhead.
-- Model is plain — no emitter, no signals.
-- No cleanup — removing container from stage is sufficient.
+- Per-tick position is a direct read - no watcher overhead.
+- Model is plain - no emitter, no signals.
+- No cleanup - removing container from stage is sufficient.
 
 ---
 
@@ -444,7 +444,7 @@ model marks the brick as destroyed; the view must animate the destruction.
 Assume GSAP's ticker has been replaced with Pixi's shared ticker (RAF-based),
 so both run in the same frame loop.
 
-This tests integration with an external animation library — a common real-world
+This tests integration with an external animation library - a common real-world
 pattern that reveals how each approach handles externally-driven state.
 
 ### Events
@@ -503,10 +503,10 @@ function createBrickGridView(
 
 **Observations:**
 - Events are a natural fit here: "brick destroyed" is a discrete, one-off
-  occurrence — exactly the kind of thing events model well.
+  occurrence - exactly the kind of thing events model well.
 - GSAP runs on Pixi's shared ticker; no need to bridge tween values into a
   reactive system.
-- The animation fires directly from the event handler — simple and direct.
+- The animation fires directly from the event handler - simple and direct.
 
 ### Signals
 
@@ -579,7 +579,7 @@ function createBrickGridView(
 ```
 
 **Observations:**
-- Signals are awkward for discrete events. There is no "fire and forget" —
+- Signals are awkward for discrete events. There is no "fire and forget" -
   you must change a value and have the effect detect the change. Using a version
   counter is a workaround that recreates event semantics inside the signal model.
 - An alternative is to use SolidJS stores with array mutations, but the core
@@ -646,7 +646,7 @@ function createBrickGridView(
 ```
 
 **Observations:**
-- Version stamp pattern works similarly to signals' version counter — both
+- Version stamp pattern works similarly to signals' version counter - both
   are working around the fact that poll/signal systems model state, not events.
 - The watcher approach is slightly more direct: poll, check if changed, act.
 - No cleanup needed. No framework dependency.
@@ -662,7 +662,7 @@ with a position updated every tick, each needing a corresponding sprite.
 Asteroids are created (when a large asteroid splits) and destroyed (when hit by
 a bullet) frequently.
 
-This tests **dynamic collections** and **per-frame updates** — a combination
+This tests **dynamic collections** and **per-frame updates** - a combination
 that stresses lifecycle management and per-tick cost. It includes both
 frequently-changing state (positions) and infrequently-changing state (collection
 membership).
@@ -691,7 +691,7 @@ function createAsteroidField(emitter: TypedEmitter<AsteroidFieldEvents>) {
             for (const a of asteroids.values()) {
                 a.x += a.vx * dt;
                 a.y += a.vy * dt;
-                // No event for position — changes every tick
+                // No event for position - changes every tick
             }
         },
         getAll() { return asteroids; },
@@ -724,7 +724,7 @@ function createAsteroidFieldView(
 
     return {
         refresh() {
-            // Per-frame position sync — events don't help here,
+            // Per-frame position sync - events don't help here,
             // so we fall back to direct reads
             for (const [id, a] of field.getAll()) {
                 const s = sprites.get(id);
@@ -741,8 +741,8 @@ function createAsteroidFieldView(
 ```
 
 **Observations:**
-- Events handle add/remove well — discrete occurrences.
-- Per-frame position updates still require direct reads in `refresh()` —
+- Events handle add/remove well - discrete occurrences.
+- Per-frame position updates still require direct reads in `refresh()` -
   events can't/shouldn't fire 60 times per second per asteroid.
 - Cleanup requires two `off()` calls.
 - Initial sync loop is needed for pre-existing asteroids.
@@ -780,7 +780,7 @@ function createAsteroidFieldModel(): AsteroidFieldModel {
                     a.y += a.vy * dt;
                 }
             }));
-            // Triggers store reactivity every tick — all position effects re-run
+            // Triggers store reactivity every tick - all position effects re-run
         },
     };
 }
@@ -824,13 +824,13 @@ function createAsteroidFieldView(
 **Observations:**
 - `update()` triggers the store's reactivity on every tick (positions change
   every frame). The effect re-runs every frame, iterating the full asteroid
-  array — same O(n) cost as the other approaches, plus signal overhead.
+  array - same O(n) cost as the other approaches, plus signal overhead.
 - `produce()` (Immer-like) avoids creating new arrays but adds its own overhead.
 - The `filter` call in `remove()` creates a new array, triggering a full
   re-run.
 - SolidJS excels at list diffing inside JSX with `<For>`, but outside a
   component context (Canvas/WebGL rendering), you are doing the diffing
-  manually — undermining the automatic-reactivity benefit.
+  manually - undermining the automatic-reactivity benefit.
 
 ### Watchers
 
@@ -853,7 +853,7 @@ function createAsteroidField() {
                 asteroids[i].x += asteroids[i].vx * dt;
                 asteroids[i].y += asteroids[i].vy * dt;
             }
-            // No version bump — positions change every tick, no point watching
+            // No version bump - positions change every tick, no point watching
         },
     };
 }
@@ -884,7 +884,7 @@ function createAsteroidFieldView(
             }
         }
 
-        // Per-frame position sync — direct read, no watcher
+        // Per-frame position sync - direct read, no watcher
         for (let i = 0; i < sprites.length; i++) {
             sprites[i].x = field.asteroids[i].x;
             sprites[i].y = field.asteroids[i].y;
@@ -900,7 +900,7 @@ function createAsteroidFieldView(
   infrequent. Sprite creation/destruction only happens when the collection
   changes.
 - Per-frame position sync is a direct indexed loop with no watcher overhead.
-  The watcher system is *not used* for values that change every tick — direct
+  The watcher system is *not used* for values that change every tick - direct
   reads are simpler and cheaper.
 - No cleanup needed. No framework dependency.
 
@@ -920,8 +920,7 @@ handled by direct reads, not any reactive mechanism.** Watchers shine for
 *infrequent* state changes (collection membership, phase transitions); direct
 reads are optimal for *per-frame* values (positions, velocities). Events work
 well for discrete occurrences (add/remove) but offer nothing for per-frame
-updates. Signals handle both but add dependency-tracking overhead for per-frame
-values with no benefit.
+updates. Signals handle both, but for per-frame values they add dependency-tracking overhead with no benefit.
 
 ---
 

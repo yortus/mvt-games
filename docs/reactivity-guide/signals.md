@@ -42,9 +42,9 @@ import { createSignal, createEffect, createMemo, createRoot, batch } from 'solid
 // --- Model ---
 
 interface ScoreModel {
-    readonly score: () => number;
-    readonly lives: () => number;
-    readonly highScoreReached: () => boolean;
+    readonly score: number;
+    readonly lives: number;
+    readonly highScoreReached: boolean;
     addPoints(points: number): void;
     loseLife(): void;
 }
@@ -55,9 +55,9 @@ function createScoreModel(): ScoreModel {
     const highScoreReached = createMemo(() => score() >= 10_000);
 
     return {
-        score,
-        lives,
-        highScoreReached,
+        get score() { return score(); },
+        get lives() { return lives(); },
+        get highScoreReached() { return highScoreReached(); },
         addPoints(points: number) { setScore(prev => prev + points); },
         loseLife() { setLives(prev => prev - 1); },
     };
@@ -72,10 +72,10 @@ function createHudView(model: ScoreModel, stage: Container): { destroy(): void }
     stage.addChild(scoreText, livesText);
 
     const dispose = createRoot((dispose) => {
-        createEffect(() => { scoreText.text = String(model.score()); });
-        createEffect(() => { livesText.text = '♥'.repeat(model.lives()); });
+        createEffect(() => { scoreText.text = String(model.score); });
+        createEffect(() => { livesText.text = '♥'.repeat(model.lives); });
         createEffect(() => {
-            if (model.highScoreReached()) showExtraLifeAnimation();
+            if (model.highScoreReached) showExtraLifeAnimation();
         });
         return dispose;
     });
@@ -92,15 +92,15 @@ function createHudView(model: ScoreModel, stage: Container): { destroy(): void }
 const scoreModel = createScoreModel();
 const hud = createHudView(scoreModel, app.stage);
 
-scoreModel.addPoints(100);   // scoreText updates automatically
-scoreModel.addPoints(9900);  // scoreText updates, PLUS highScoreReached effect fires
-scoreModel.loseLife();        // livesText updates automatically
+scoreModel.addPoints(100);  // scoreText updates automatically
+scoreModel.addPoints(9900); // scoreText updates, PLUS highScoreReached effect fires
+scoreModel.loseLife();      // livesText updates automatically
 
-hud.destroy();                // Disposes reactive root, cleans up effects
+hud.destroy();              // Disposes reactive root, cleans up effects
 ```
 
 Note: the effects discover their dependencies by tracking which signals are
-read during execution — no manual wiring needed. However, disposal **is**
+read during execution - no manual wiring needed. However, disposal **is**
 required. If `hud.destroy()` is never called, the effects remain in the
 signal's subscriber list, preventing the view from being garbage-collected. This
 cleanup obligation is easy to overlook and is discussed in
@@ -113,13 +113,13 @@ cleanup obligation is easy to overlook and is discussed in
 ```typescript
 const [value, setValue] = createSignal(initialValue);
 
-value();          // read — registers dependency if inside a tracking context
-setValue(newVal);  // write — marks all dependents as dirty
+value();          // read - registers dependency if inside a tracking context
+setValue(newVal);  // write - marks all dependents as dirty
 ```
 
 ### Computed / Memo: Derived State
 
-A value derived from other signals. Memoised — only recomputes when
+A value derived from other signals. Memoised - only recomputes when
 dependencies change.
 
 ```typescript
@@ -153,7 +153,7 @@ batch(() => {
 
 ## Benefits
 
-### 1. Automatic dependency tracking — no manual wiring
+### 1. Automatic dependency tracking - no manual wiring
 
 The developer writes `score()` inside a computation, and the system figures out
 the dependency. There is no need to explicitly declare "this computation depends
@@ -168,11 +168,11 @@ createEffect(() => {
 });
 ```
 
-### 2. Precise updates — only affected computations re-run
+### 2. Precise updates - only affected computations re-run
 
 When `setScore(500)` is called, only computations that actually read `score()`
 are re-executed. Computations that depend on `lives()` but not `score()` are
-untouched. This is **granular reactivity** — the system does the minimum work
+untouched. This is **granular reactivity** - the system does the minimum work
 necessary.
 
 In contrast, a poll-based watcher system evaluates *every* watcher on every
@@ -189,13 +189,18 @@ const enemyCount = createMemo(() => activeEnemies().length);
 ```
 
 It is worth noting that a plain model (without signals) can also express
-derived state declaratively — via getter properties that compute on read, or
+derived state declaratively - via getter properties that compute on read, or
 internally-memoised values updated at mutation time. Signals' advantage is that
 the memoisation is automatic and cross-cutting: a `createMemo` can derive from
 any combination of signals, even across model boundaries, without the source
 needing to pre-compute the result.
 
-### 4. Vendored reactivity with cross-framework aspirations
+### 4. Works well with UI rendering models
+
+Signals were designed for UI frameworks. They integrate naturally with component
+rendering: a component reads signals, and re-renders when they change. This is
+why SolidJS, Angular, Vue, and Preact all adopted them as core primitives.
+### 5. Vendored reactivity with cross-framework aspirations
 
 SolidJS, Angular, Vue, and Preact (with signals plugin) all provide signal
 implementations that work within their respective ecosystems. SolidJS signals
@@ -203,7 +208,7 @@ are usable outside of SolidJS components, making them a candidate for shared
 libraries.
 
 The TC39 Signals proposal aims to standardise signals as a language primitive.
-However, it is currently at **Stage 1** — meaning the committee has expressed
+However, it is currently at **Stage 1** - meaning the committee has expressed
 interest in exploring the problem space, not that a solution has been agreed
 upon. Stage 1 proposals can change substantially, stall, or be withdrawn. It is
 prudent to treat TC39 signals as aspirational, not imminent.
@@ -218,14 +223,9 @@ bridging.
 **The honest assessment:** signals are composable *within* a single vendored
 ecosystem. Cross-framework portability is an aspiration that depends on TC39
 progress that may or may not materialise. If avoiding vendored dependencies is a
-project goal, signals are a harder choice than watchers (which require no
+project goal, signals are a harder choice than events or watchers (which require no
 external runtime).
 
-### 5. Works well with UI rendering models
-
-Signals were designed for UI frameworks. They integrate naturally with component
-rendering: a component reads signals, and re-renders when they change. This is
-why SolidJS, Angular, Vue, and Preact all adopted them as core primitives.
 
 ## Drawbacks
 
@@ -239,14 +239,14 @@ is typically small per read, but it adds up.
 In a SolidJS-style implementation, each `score()` call inside a tracked
 context does approximately:
 
-1. **Read the current tracking context** — a global variable read (O(1),
+1. **Read the current tracking context** - a global variable read (O(1),
    ~1ns, no allocation).
-2. **Add this signal to the context's dependency set** — typically a
+2. **Add this signal to the context's dependency set** - typically a
    `Set.add()` (amortised O(1), ~5–20ns, may allocate a hash bucket on the
    heap).
-3. **Add the context to the signal's subscriber set** — another `Set.add()`
+3. **Add the context to the signal's subscriber set** - another `Set.add()`
    (amortised O(1), ~5–20ns, may allocate a hash bucket on the heap).
-4. **Return the value** — O(1), ~1ns, no allocation.
+4. **Return the value** - O(1), ~1ns, no allocation.
 
 Total: ~12–42ns per tracked read, compared to ~1ns for a plain property read
 (`model.score`). The overhead is ~10–40× per access, though the absolute cost
@@ -255,7 +255,7 @@ is small.
 **GC pressure:** Steps 2 and 3 create Set entries on the heap. When effects
 re-run, old subscriptions are cleaned up (Set deletions) and new ones created,
 generating **subscription churn**. In a system with many effects re-running
-frequently, this churn creates GC pressure — short-lived heap objects that the
+frequently, this churn creates GC pressure - short-lived heap objects that the
 garbage collector must reclaim. For UI apps with infrequent updates, this is
 negligible. For a game loop with 100+ signal reads at 60fps, the cumulative
 allocation rate can become a measurable contributor to GC pauses.
@@ -263,7 +263,7 @@ allocation rate can become a measurable contributor to GC pauses.
 For N signal reads per frame, the total overhead is ~N × 30ns of CPU time plus
 ~N × 2 heap allocations for subscription bookkeeping. In a UI app re-rendering
 components on user interaction, this is negligible. For a game loop reading 100+
-values 60 times per second, it is measurable — though whether it is *material*
+values 60 times per second, it is measurable - though whether it is *material*
 depends on the total frame budget. See
 [Comparison § Performance](comparison.md#performance-characteristics) for
 benchmark guidance.
@@ -289,29 +289,29 @@ dispose();  // Must be called, or the effect leaks
 ```
 
 A leaked effect does not throw an error, and its behaviour may not be
-immediately observable — it runs on a detached view, updating a display object
+immediately observable - it runs on a detached view, updating a display object
 that is no longer visible. This silent failure mode makes leaks hard to detect
 during development and testing. They surface as gradual performance degradation
 over time.
 
 **A telling pattern:** the [Minimal Working Example](#minimal-working-example)
-at the top of this page originally omitted disposal in its first draft — and
+at the top of this page originally omitted disposal in its first draft - and
 this is typical. Most signal tutorials, blog posts, and even library
 documentation show the "happy path" (create signals, create effects, marvel at
 automatic updates) without demonstrating cleanup. This subtly trains developers
 to forget about it. In production code, the same pattern occurs: effects are
-created with care, but disposal is an afterthought — if it's thought of at all.
+created with care, but disposal is an afterthought - if it's thought of at all.
 Forgetting to dispose effects is one of the most common bugs in signal-based
 applications.
 
 **Comparison:** In a watcher/poll system, stopping the polling loop (e.g.
-removing a view from the scene graph) is sufficient — there is nothing to
+removing a view from the scene graph) is sufficient - there is nothing to
 dispose. In an event system, each subscription must be individually removed. In
 a signal system, the ownership scope must be explicitly closed.
 
-### 3. Invisible reactivity boundary — signals vs plain functions
+### 3. Invisible reactivity boundary - signals vs plain functions
 
-A critical pitfall: signal accessors and ordinary functions look identical
+Signal accessors and ordinary functions look identical
 at the call site. A developer reading or maintaining an effect must know *which*
 functions are signals to understand what the effect reacts to.
 
@@ -330,7 +330,7 @@ as if it should react to both. This bug is invisible in code review without
 knowledge of each function's implementation.
 
 **This also means the source must pre-decide which values are signals.** A
-signal system does not make *all* state reactive by default — the source must
+signal system does not make *all* state reactive by default - the source must
 explicitly wrap values in signal containers. If the source exposes a value as a
 plain property or getter (not a signal), consumers cannot react to it with
 effects. This mirrors the [pre-declaration limitation of events](events.md#4-source-must-pre-declare-events-of-interest):
@@ -344,7 +344,7 @@ inside. The distinction can only be maintained through naming conventions (e.g.
 all signals are `value()` on a signal object) or runtime dev-mode warnings.
 
 **Comparison:** In a watcher system, every watched value goes through the same
-`watch(() => ...)` mechanism — there is no distinction between "reactive" and
+`watch(() => ...)` mechanism - there is no distinction between "reactive" and
 "non-reactive" reads. Any readable state can be watched, regardless of how the
 source implemented it. In an event system, the subscription is explicit
 (`on('event', handler)`), making the reactive relationship visible.
@@ -353,7 +353,7 @@ source implemented it. In an event system, the subscription is explicit
 
 If multiple signals change, dependents must be executed in topological order to
 avoid seeing inconsistent intermediate state. The signal runtime provides this
-guarantee via a scheduler — but the scheduler's cost is proportional to the
+guarantee via a scheduler - but the scheduler's cost is proportional to the
 dependency graph's depth and branching factor.
 
 ```typescript
@@ -375,7 +375,7 @@ detect and resolve diamond dependencies to avoid double execution. This is
 non-trivial work with worst-case cost proportional to the graph size.
 
 **Comparison:** In a watcher/poll system, glitches are impossible by
-construction — all writes happen before any reads. In an event system, glitches
+construction - all writes happen before any reads. In an event system, glitches
 manifest as cascade ordering issues (see [Events § Drawback 5](events.md#5-ordering-and-cascade-risks)).
 
 ### 5. Dynamic dependencies complicate reasoning
@@ -393,7 +393,7 @@ createEffect(() => {
 
 The system must track which signals were actually read on each run, clean up
 stale subscriptions, and add new ones. This is a source of runtime cost and
-subtle bugs — if `showDetails()` returns `true` for one run and then `false`,
+subtle bugs - if `showDetails()` returns `true` for one run and then `false`,
 the effect stops tracking `details()`, which means a subsequent change to
 `details()` will not trigger the effect even if `showDetails()` returns `true`
 again before the effect has a chance to re-run for a different reason.
@@ -433,56 +433,56 @@ for a detailed comparison of how each approach handles external tween sources.
 
 ### 7. Frequently-changing values negate signal benefits
 
-In games and simulations, many values change on every tick — entity positions,
+In games and simulations, many values change on every tick - entity positions,
 velocities, animation progress, timers. Making these values signals creates
 a problematic trade-off:
 
 - **If they are signals:** every write (60/sec per value) triggers dependency
   tracking, subscriber notification, and effect re-runs. The cost of the signal
-  machinery is pure overhead — you would read these values every frame anyway.
+  machinery is pure overhead - you would read these values every frame anyway.
   The subscription churn also generates GC pressure from short-lived Set entries.
 
 - **If they are NOT signals:** they cannot trigger effects. Consumers must read
   them manually, bypassing the reactive system. This creates a split where some
-  values are reactive and others are not — and the distinction is invisible at
+  values are reactive and others are not - and the distinction is invisible at
   the call site (see [Drawback 3](#3-invisible-reactivity-boundary--signals-vs-plain-functions)).
 
 The result is that signal-based game architectures often end up with a
 two-tier system: signals for infrequent state changes (phase, level, lives),
 and plain reads for per-frame values (positions, velocities). This reduces the
-benefit of automatic dependency tracking — you end up manually managing the
+benefit of automatic dependency tracking - you end up manually managing the
 per-frame reads anyway.
 
 **Comparison:** In a watcher system, the idiom is natural: use watchers for
 infrequent changes, and direct reads for per-frame values. There is no reactive
-system to bypass — both are just property reads, with watchers adding a thin
+system to bypass - both are just property reads, with watchers adding a thin
 change-detection layer for values that benefit from it.
 
 ## When Signals Are a Good Fit
 
 - **UI-driven web applications** where components render in response to state
   changes (forms, dashboards, data grids, SPAs). Signals were designed for this.
-- **Derived state is central** — when many computations depend on combinations
+- **Derived state is central** - when many computations depend on combinations
   of other reactive values, signals' automatic memoisation avoids manual cache
   management.
-- **Your framework already provides signals** — if you are using SolidJS,
+- **Your framework already provides signals** - if you are using SolidJS,
   Angular 16+, or Vue 3, signals are the idiomatic reactivity model. Fighting
   them adds more complexity than using them.
-- **Moderate binding counts with infrequent changes** — signals' zero-cost
+- **Moderate binding counts with infrequent changes** - signals' zero-cost
   idle and precise updates are most advantageous when bindings are numerous but
   changes are sparse (a settings panel, a configuration form).
 
 ## When Signals Are a Poor Fit
 
-- **Tick-based game loops** where many values are read every frame anyway —
+- **Tick-based game loops** where many values are read every frame anyway -
   signals' dependency tracking overhead is pure waste when the answer to "when
   should I re-evaluate?" is always "every tick."
-- **External tween/physics engines own the update** — bridging external values
+- **External tween/physics engines own the update** - bridging external values
   into signals adds friction without benefit.
 - **High-frequency continuous values** (positions, velocities, opacity during
-  animation) — writing to signals 60 times per second triggers 60 dependency
+  animation) - writing to signals 60 times per second triggers 60 dependency
   checks per second per signal, with no advantage over reading a plain property.
-- **Ephemeral view lifecycles** — games and simulations where views are created
+- **Ephemeral view lifecycles** - games and simulations where views are created
   and destroyed rapidly. Each lifecycle boundary is a potential leak if
   ownership disposal is missed. (To be fair, this concern also applies to
   [event subscriptions](events.md#1-subscription-lifecycle-is-manual-and-error-prone).
@@ -490,8 +490,8 @@ change-detection layer for values that benefit from it.
   review practices, and the availability of automated leak detection. Teams with
   strong lifecycle management practices may find the cleanup overhead acceptable
   for either approach.)
-- **Avoiding vendored dependencies** — if the project cannot take a dependency
-  on a signal runtime (SolidJS, Angular, etc.), watchers achieve reactivity with
+- **Avoiding vendored dependencies** - if the project cannot take a dependency
+  on a signal runtime (SolidJS, Angular, etc.), events and watchers achieve reactivity with
   zero external code.
 
 ## Testing Considerations
@@ -531,5 +531,5 @@ the test must be aware of the signal runtime's synchronous/batching semantics.
 
 ---
 
-> **Next:** [Watchers](watchers.md) — poll-based change detection for
+> **Next:** [Watchers](watchers.md) - poll-based change detection for
 > tick-driven architectures.

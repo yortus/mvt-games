@@ -1,6 +1,6 @@
 ﻿# Events (Pub/Sub)
 
-The event pattern — also called publish/subscribe, observer, or event emitter —
+The event pattern - also called publish/subscribe, observer, or event emitter -
 is the oldest and most widely used reactivity mechanism in JavaScript.
 
 > **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
@@ -19,9 +19,9 @@ and unregister with `off()` (or `removeEventListener`).
 ```
 Source                        Subscribers
 ──────                        ───────────
-emit('score-changed', 500) ── handler A(500)
-                           ── handler B(500)
-                           ── handler C(500)
+emit('score-changed', 500) ─► handler A(500)
+                           ─► handler B(500)
+                           ─► handler C(500)
 ```
 
 This is a pure **push** model: the source decides when to notify, and
@@ -151,7 +151,7 @@ Usage:
 const events = createEmitter<TypedEventMap>();
 
 events.on('score-changed', (score) => {
-    // `score` is typed as `number` — no casting needed
+    // `score` is typed as `number` - no casting needed
     scoreText.text = String(score);
 });
 
@@ -165,13 +165,13 @@ events.emit('game-over');           // type-checked: no payload
 
 If no event is emitted, no subscriber code runs. There is no per-tick polling,
 no getter evaluation, no comparison. The system is completely idle between
-events. This is uniquely efficient for **infrequent, discrete state changes** —
+events. This is uniquely efficient for **infrequent, discrete state changes** -
 a game-over event, a level-complete transition, a user clicking a button.
 
 **Approximate cost per emission:** dispatching an event to N subscribers
 involves iterating an array/set and calling N functions. For a typical
 `Set.forEach` dispatch with small payloads, expect ~50–200ns per subscriber on
-modern hardware. With 5 subscribers, a single emit costs ~0.25–1μs — negligible
+modern hardware. With 5 subscribers, a single emit costs ~0.25–1μs - negligible
 in a 16.6ms frame budget. The cost becomes relevant only with very high
 subscriber counts or cascading chains (see [Drawback 5](#5-ordering-and-cascade-risks)).
 
@@ -180,22 +180,22 @@ subscriber counts or cascading chains (see [Drawback 5](#5-ordering-and-cascade-
 In most JS implementations, `emit()` calls subscribers synchronously and
 in-order. The response to an event happens *within the same call stack* as the
 emission. This is useful when the subscriber needs to act before the emitter
-continues — for example, a "will-destroy" event that lets views clean up before
+continues - for example, a "will-destroy" event that lets views clean up before
 a model is removed.
 
 ### 3. Natural fit for discrete, one-off occurrences
 
-Events model **things that happen** — a collision, a keypress, a network
+Events model **things that happen** - a collision, a keypress, a network
 response, a level transition. They are a natural fit for discrete occurrences
 that don't have a persistent "current value." Contrast with signals or watchers,
-which model **ongoing state** — "the score is 500", "the ghost is frightened".
+which model **ongoing state** - "the score is 500", "the ghost is frightened".
 
 ### 4. Decoupling without indirection
 
 The source defines the events it can emit. Consumers subscribe to events they
 care about. Neither needs to know about the other's implementation. This makes
 events a good choice for **plugin architectures** and **loosely-coupled module
-boundaries** — an audio manager subscribes to game events without the game
+boundaries** - an audio manager subscribes to game events without the game
 knowing about audio.
 
 ```typescript
@@ -218,7 +218,7 @@ Every `on()` must be paired with a corresponding `off()`. Forgetting the `off()`
 is the single most common source of memory leaks in event-driven JS code.
 
 ```typescript
-// Pac-Man ghost view — subscribes when created
+// Pac-Man ghost view - subscribes when created
 const onPhaseChanged = (phase: string) => { /* update ghost appearance */ };
 ghostModel.on('phase-changed', onPhaseChanged);
 
@@ -228,8 +228,8 @@ ghostModel.on('phase-changed', onPhaseChanged);
 // The ghost view is never garbage collected.
 ```
 
-In a game where entities are created and destroyed frequently — enemies in
-Space Invaders, asteroids in Asteroids, blocks in Tetris — each lifecycle
+In a game where entities are created and destroyed frequently - enemies in
+Space Invaders, asteroids in Asteroids, blocks in Tetris - each lifecycle
 boundary is a potential leak if cleanup is missed. The failure mode is silent:
 no error is thrown, the handler just keeps firing on a detached view, consuming
 CPU and preventing GC.
@@ -250,14 +250,14 @@ const cleanup = createDisposable();
 cleanup.add(() => model.off('score-changed', onScoreChanged));
 cleanup.add(() => model.off('lives-changed', onLivesChanged));
 // ...
-// On destroy — one call, everything cleaned up
+// On destroy - one call, everything cleaned up
 cleanup.dispose();
 ```
 
 This helps, but the discipline of calling `cleanup.add()` for every subscription
 remains a manual obligation.
 
-### 2. No "current value" — late subscribers miss history
+### 2. No "current value" - late subscribers miss history
 
 An event is a point-in-time notification. If a subscriber registers *after* an
 event was emitted, it never sees it.
@@ -265,7 +265,7 @@ event was emitted, it never sees it.
 ```typescript
 scoreModel.emit('score-changed', 500);
 
-// View subscribes AFTER the event — it has no idea the score is 500
+// View subscribes AFTER the event - it has no idea the score is 500
 scoreModel.on('score-changed', (score) => {
     scoreText.text = String(score);
 });
@@ -290,19 +290,19 @@ Without a typed event map (see above), event names are plain strings. Typos are
 not caught at compile time:
 
 ```typescript
-// Oops — 'socre-changed' will never fire. No error.
+// Oops - 'socre-changed' will never fire. No error.
 model.on('socre-changed', handler);
 ```
 
 Typed event maps solve this but require investment in boilerplate or a
-library. DOM events are particularly bad here — `addEventListener` accepts any
+library. DOM events are particularly bad here - `addEventListener` accepts any
 string.
 
 ### 4. Source must pre-declare events of interest
 
 The source decides which events to emit. If the consumer wants to react to a
 state change that the source doesn't emit an event for, the consumer is stuck.
-Adding a new event requires modifying the source — breaking the decoupling that
+Adding a new event requires modifying the source - breaking the decoupling that
 events were meant to provide.
 
 This is a fundamental constraint worth emphasising: **the consumer's reactivity
@@ -315,7 +315,7 @@ that wants to react when the score exceeds 10,000 must:
 // Option B: check the condition in every 'score-changed' handler (duplicated logic)
 scoreModel.on('score-changed', (score) => {
     if (score >= 10_000) {
-        // high-score logic here — duplicated in every consumer that cares
+        // high-score logic here - duplicated in every consumer that cares
     }
 });
 ```
@@ -342,7 +342,7 @@ levelModel.on('level-changed', () => {
 This ad-hoc coordination is error-prone and scales poorly with more conditions.
 
 Watchers avoid this entirely: consumers define what they watch, and can derive
-any condition from any readable state — including cross-model conditions:
+any condition from any readable state - including cross-model conditions:
 
 ```typescript
 const bonusReady = createWatch(() => model.score >= threshold && model.level > 5);
@@ -351,18 +351,18 @@ const bonusReady = createWatch(() => model.score >= threshold && model.level > 5
 Signals partially avoid this: a consumer can create a `createMemo` over any
 signals it can read. However, the source must still wrap values in signal
 containers for them to be reactive. If the consumer wants to react to a value
-that the source did not expose as a signal, the consumer is stuck — just as with
+that the source did not expose as a signal, the consumer is stuck - just as with
 events. See [Signals § Drawback: Invisible reactivity boundary](signals.md#3-invisible-reactivity-boundary--signals-vs-plain-functions).
 
 ### 5. Ordering and cascade risks
 
-When an event handler emits another event, you get **cascading events** — a
+When an event handler emits another event, you get **cascading events** - a
 chain of synchronous dispatches on the same call stack. This can cause:
 
 - **Stack overflow** if events form a cycle (A → B → A → B → ...).
 - **Out-of-order state** if a handler reads state that hasn't been fully
   updated yet (the emitter is still mid-mutation when the handler runs).
-- **Debugging difficulty** — a single `emit()` call can trigger a deep chain
+- **Debugging difficulty** - a single `emit()` call can trigger a deep chain
   of handlers across multiple modules. Stack traces become hard to follow.
 
 ```typescript
@@ -377,14 +377,14 @@ scoreModel.on('score-changed', (score) => {
 ```
 
 **Mitigation:** Avoid emitting events from within event handlers. If
-unavoidable, defer with `queueMicrotask()` or a deferred dispatch queue — but
+unavoidable, defer with `queueMicrotask()` or a deferred dispatch queue - but
 this introduces asynchrony and ordering complexity.
 
 ### 6. Runtime flow becomes hard to trace
 
 In a system with many event-based connections, the runtime flow of logic becomes
 **implicit and distributed**. Reading the source does not reveal what happens
-when an event fires — you must search the entire codebase for subscribers to
+when an event fires - you must search the entire codebase for subscribers to
 understand the consequences of a single `emit()`.
 
 ```typescript
@@ -392,21 +392,21 @@ understand the consequences of a single `emit()`.
 ghostModel.emit('ghost-eaten', ghost);
 
 // To answer, you must find ALL subscribers:
-//   scoreView.ts:42      — updates score display
-//   audioManager.ts:17   — plays eat sound
-//   comboTracker.ts:88   — increments ghost combo
-//   analytics.ts:55      — logs event
-//   achievementSystem.ts — checks chain-eat achievement
+//   scoreView.ts:42      - updates score display
+//   audioManager.ts:17   - plays eat sound
+//   comboTracker.ts:88   - increments ghost combo
+//   analytics.ts:55      - logs event
+//   achievementSystem.ts - checks chain-eat achievement
 // These are scattered across the codebase with no single point of visibility.
 ```
 
-This is sometimes called **"event spaghetti"** — the decoupling that makes
+This is sometimes called **"event spaghetti"** - the decoupling that makes
 events attractive also makes the system harder to reason about as it grows. The
 execution path through a complex event-driven system is only fully discoverable
 at runtime, not by reading the code.
 
 **Comparison:** In a watcher system, all reactive behaviour is written in the
-`refresh()` method — you can read it top-to-bottom to see everything the view
+`refresh()` method - you can read it top-to-bottom to see everything the view
 does. In a signal system, effects are colocated with the code that reads
 signals, making dependencies more locally visible (though the execution order
 is still determined by the scheduler).
@@ -425,17 +425,17 @@ is still determined by the scheduler).
 ## When Events Are a Poor Fit
 
 - **Continuous or per-frame state** like entity positions, animation progress,
-  or tween values — emitting an event 60 times per second is expensive and
+  or tween values - emitting an event 60 times per second is expensive and
   misuses the abstraction. Expect ~50–200ns per subscriber per emission; at
   60fps with 10 subscribers, that's ~30–120μs/sec of pure dispatch overhead
   per value, plus GC pressure from payload allocation.
-- **State synchronisation** between model and view — events require manual
+- **State synchronisation** between model and view - events require manual
   initial sync and careful lifecycle management, whereas signals and watchers
   handle current-value access natively.
-- **Derived state** — "react when score > 10,000" requires the consumer to
+- **Derived state** - "react when score > 10,000" requires the consumer to
   check the condition on every `score-changed` event. Signals and watchers let
   the consumer express derived conditions directly.
-- **Ephemeral entity lifecycles** — games and simulations where views are
+- **Ephemeral entity lifecycles** - games and simulations where views are
   created and destroyed rapidly (enemies in Space Invaders, asteroids in
   Asteroids). Each lifecycle boundary requires cleanup of all subscriptions.
   The risk of leaks scales with entity churn. Whether this is a serious concern
@@ -460,10 +460,10 @@ assert.deepEqual(received, [100, 300]);
 ```
 
 Testing *subscription lifecycle* is harder. You need to verify that a
-destroyed view actually unsubscribed — which typically means asserting on
+destroyed view actually unsubscribed - which typically means asserting on
 internal state or listener counts, neither of which is ideal.
 
 ---
 
-> **Next:** [Signals](signals.md) — push-pull reactivity with automatic
+> **Next:** [Signals](signals.md) - push-pull reactivity with automatic
 > dependency tracking.

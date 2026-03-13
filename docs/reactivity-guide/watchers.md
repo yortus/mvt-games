@@ -16,9 +16,9 @@ On each tick, the consumer reads a value, compares it to the previously cached
 value, and reacts if the two differ.
 
 ```
-Tick N:   newVal = getVal()  →  'idle'      prevVal: 'idle'      changed? no
-Tick N+1: newVal = getVal()  →  'running'   prevVal: 'idle'      changed? YES
-Tick N+2: newVal = getVal()  →  'running'   prevVal: 'running'   changed? no
+Tick N:   newVal = getValue()  →  'idle'      prevVal: 'idle'      changed? no
+Tick N+1: newVal = getValue()  →  'running'   prevVal: 'idle'      changed? YES
+Tick N+2: newVal = getValue()  →  'running'   prevVal: 'running'   changed? no
 ```
 
 This is a pure **pull** model (see [Push vs Pull](push-vs-pull.md)): the
@@ -27,19 +27,19 @@ There is no subscription, no event, no dependency graph.
 
 ## The Basic Concept
 
-At its simplest, a watcher is just a pair of variables — current and previous —
+At its simplest, a watcher is just a pair of variables - current and previous -
 compared each tick:
 
 ```typescript
-// Bare-bones change detection — no abstraction needed
+// Bare-bones change detection - no abstraction needed
 let prevPhase = model.phase;
 
 function refresh() {
-    const curPhase = model.phase;
-    if (curPhase !== prevPhase) {
-        // phase changed — react
-        phaseText.text = curPhase.toUpperCase();
-        prevPhase = curPhase;
+    const currPhase = model.phase;
+    if (currPhase !== prevPhase) {
+        // phase changed - react
+        phaseText.text = currPhase.toUpperCase();
+        prevPhase = currPhase;
     }
 }
 ```
@@ -47,9 +47,9 @@ function refresh() {
 This works, but repeating the pattern for many values is verbose and
 error-prone. A small abstraction can encapsulate it.
 
-## Reference Implementation: `createWatch`
+## Basic Implementation: `createWatch`
 
-The simplest encapsulation — a single getter with a cached value, in ~20 lines:
+The simplest encapsulation - a single getter with a cached value, in ~20 lines:
 
 ```typescript
 interface Watch<T> {
@@ -128,7 +128,7 @@ function createWatcher<T extends Record<string, () => unknown>>(
 
 - **`poll()` advances all state in one call.** Individual properties are then
   read-only snapshots. This avoids the problem of calling `changed()` multiple
-  times — `poll()` is called once per tick, and `changed` / `value` / `previous`
+  times - `poll()` is called once per tick, and `changed` / `value` / `previous`
   can be read any number of times safely.
 - **`previous` is built in.** Transition detection (from → to) is a common need
   that shouldn't require manual bookkeeping.
@@ -139,7 +139,7 @@ function createWatcher<T extends Record<string, () => unknown>>(
 ## Minimal Working Example
 
 A score and phase display for a Pac-Man-style game. The view returns a
-`Container` — the caller adds it to the stage. The `onRender` callback is
+`Container` - the caller adds it to the stage. The `onRender` callback is
 invoked by Pixi's ticker automatically while the container is on stage.
 
 ```typescript
@@ -149,7 +149,7 @@ interface GameModel {
     readonly score: number;
     readonly phase: 'ready' | 'playing' | 'game-over';
     readonly lives: number;
-    readonly elapsed: number;  // increments every tick — frequently-changing
+    readonly elapsed: number;  // increments every tick - frequently-changing
 }
 
 function createGameModel(): GameModel {
@@ -183,7 +183,7 @@ function createHudView(model: GameModel): Container {
     });
 
     container.onRender = () => {
-        // Poll all watchers — evaluate getters, compare to cache
+        // Poll all watchers - evaluate getters, compare to cache
         watched.poll();
 
         if (watched.score.changed) {
@@ -196,7 +196,7 @@ function createHudView(model: GameModel): Container {
             phaseText.text = watched.phase.value.toUpperCase();
         }
 
-        // Frequently-changing value — just read directly, no watcher needed
+        // Frequently-changing value - just read directly, no watcher needed
         timerText.text = String(Math.floor(model.elapsed));
     };
 
@@ -220,7 +220,7 @@ changes) and direct reads (for per-tick values). No events, no signals, no
 framework.
 
 **An important idiom:** values that change every tick (like `elapsed`) don't
-need a watcher — just read them directly. Watchers are most valuable for
+need a watcher - just read them directly. Watchers are most valuable for
 **infrequently-changing state**, where they avoid redundant view updates. For
 state that changes every frame, a direct read is simpler and cheaper. This means
 watcher systems are cheap for both high- and low-frequency state: direct reads
@@ -283,42 +283,23 @@ reference types:
             get value() { return current; },
         };
     }
-    // Warning: O(n) comparison every tick — only suitable for small arrays
+    // Warning: O(n) comparison every tick - only suitable for small arrays
     ```
 
 **Rule of thumb:** Getter expressions run every tick. Keep them O(1) with zero
 heap allocation. No `array.map()`, `array.filter()`, `array.reduce()`,
 `array.some()`, spread, or template-string composition in getter expressions.
 
-### Multiple Reads After `poll()`
-
-Because `poll()` advances all state atomically, `changed`, `value`, and
-`previous` can be safely read any number of times until the next `poll()`:
-
-```typescript
-watched.poll();
-
-if (watched.score.changed) {
-    updateScoreDisplay(watched.score.value);
-}
-if (watched.score.changed) {
-    playScoringSound(watched.score.value);  // still works — poll() was called once
-}
-```
-
-This is a key advantage of the `poll()` / read split: the advance step is
-separate from the query step.
-
 ## Benefits
 
-### 1. Zero coupling at the source
+### 1. No coupling to sources
 
 The model doesn't need to extend a base class, implement an interface, declare
 events, or wrap values in signal containers. Any readable property or getter is
 watchable:
 
 ```typescript
-// Model is a plain object — no reactivity boilerplate
+// Model is a plain object - no reactivity boilerplate
 const model = { x: 0, y: 0, phase: 'idle' };
 
 // View watches whatever it wants
@@ -333,9 +314,9 @@ reactivity system. This also applies to signals: the source must wrap values in
 signal containers for them to be reactive. If you don't control the source and
 it doesn't use signals, you cannot react to its changes with signal effects.
 
-### 2. No subscription lifecycle management — zero leak risk
+### 2. No subscription lifecycle management - zero leak risk
 
-A watcher is a closure with a cached value. It has no back-references — no
+A watcher is a closure with a cached value. It has no back-references - no
 signal knows about it, no subscriber list holds it. When the view that owns the
 watcher is removed from the scene graph, the watcher becomes unreachable and is
 garbage collected like any other object.
@@ -355,7 +336,7 @@ function createEnemyView(model: EnemyModel): Container {
         if (watched.phase.changed) {
             applyPhaseAppearance(sprite, watched.phase.value);
         }
-        // Per-frame position — direct read, no watcher
+        // Per-frame position - direct read, no watcher
         sprite.x = model.x * TILE_SIZE;
         sprite.y = model.y * TILE_SIZE;
     };
@@ -371,7 +352,7 @@ this to events (55 × `off()` calls) or signals (55 × `dispose()` calls).
 ### 3. Deterministic timing
 
 All watchers evaluate inside the render callback, which is called at a known
-point in the frame loop — after model updates, before rendering. There is no
+point in the frame loop - after model updates, before rendering. There is no
 scheduler, no deferred execution, no asynchronous notification. The order of
 evaluation is the order the code is written in.
 
@@ -388,15 +369,12 @@ container.onRender = () => {
 **Consistency is structural, not algorithmic.** Because all model updates
 happen before render callbacks, every getter reads a consistent snapshot of
 state. There is no possibility of "glitches" (seeing partially-updated state).
-This guarantee comes for free from the tick ordering — no batching or
+This guarantee comes for free from the tick ordering - no batching or
 topological sorting needed.
 
-**On detection latency:** in a well-structured tick loop (model updates → view
+**Low latency:** in a well-structured tick loop (model updates → view
 refreshes), a change made during the model update is detected by watchers in the
-view refresh of the *same tick*. There is no one-tick delay. The latency is only
-relevant if changes can occur outside the normal tick cycle (e.g. asynchronous
-callbacks between ticks), in which case detection is deferred to the next tick —
-at most ~16.6ms at 60fps.
+view refresh of the *same tick*.
 
 ### 4. Any expression can be watched
 
@@ -425,7 +403,7 @@ const watched = createWatcher({
 The consumer defines what is interesting at the point of use. The source need
 not anticipate it. This is a significant advantage over both events and signals.
 With events, the source must pre-declare which events it emits. With signals,
-the source must wrap values in signal containers for them to be tracked — if a
+the source must wrap values in signal containers for them to be tracked - if a
 value isn't a signal, it can't trigger effects.
 
 ### 5. Trivial to implement, no dependencies
@@ -438,7 +416,7 @@ lightweight choice.
 
 ### 6. Uniform treatment of all reads
 
-Every source passed to `createWatcher` is treated identically — whether it reads
+Every source passed to `createWatcher` is treated identically - whether it reads
 a plain property, a signal, a computed value, or a dynamic expression. There is
 no distinction between "reactive" and "non-reactive" reads. This eliminates the
 [invisible reactivity boundary](signals.md#3-invisible-reactivity-boundary--signals-vs-plain-functions)
@@ -447,10 +425,10 @@ that affects signal-based systems.
 ### 7. Cheap for both high- and low-frequency state
 
 For state that changes infrequently (phase, level, lives), watchers detect
-changes with a tiny per-tick cost (~1–5 nanoseconds per check — see
+changes with a tiny per-tick cost (~1–5 nanoseconds per check - see
 [Drawback 1](#1-on-per-tick-cost-regardless-of-changes)). For state that
 changes every tick (positions, velocities, timers), the idiomatic approach is to
-skip the watcher and read the value directly — which is even cheaper.
+skip the watcher and read the value directly - which is even cheaper.
 
 In contrast, events are zero-cost for infrequent changes but expensive for
 high-frequency state (60 emissions per second per value). Signals are zero-cost
@@ -464,7 +442,7 @@ uniform and predictable cost profile across both ends of the spectrum.
 
 Every watcher evaluates its getter every tick, even if nothing changed. For N
 watchers, the per-tick cost is N getter calls + N comparisons. This cost is
-constant — the same whether zero values changed or all of them changed.
+constant - the same whether zero values changed or all of them changed.
 
 **How significant is this?** For primitive property reads and `===`
 comparisons, the per-check cost is approximately **1–5 nanoseconds** on modern
@@ -473,7 +451,7 @@ hardware. At 100 watches:
 $$cost_{per\_tick} \approx 100 \times 5\text{ns} = 500\text{ns} = 0.5\text{μs}$$
 
 A 60fps frame budget is ~16.6ms, so 100 primitive watchers consume
-approximately **0.003%** of the frame budget. GC pressure is near zero — the
+approximately **0.003%** of the frame budget. GC pressure is near zero - the
 getter closures and cached values are long-lived, and `===` comparison allocates
 nothing.
 
@@ -493,7 +471,7 @@ error, no warning. If a developer creates a watcher but forgets to poll it,
 the feature simply doesn't work.
 
 The failure mode is *visible in gameplay* (the feature doesn't work), which
-makes it relatively easy to catch in testing — but it is a manual obligation
+makes it relatively easy to catch in testing - but it is a manual obligation
 that push-based systems (events and signals) avoid.
 
 ### 3. Expensive getters are a hidden hot-path risk
@@ -501,7 +479,7 @@ that push-based systems (events and signals) avoid.
 Because getter expressions run every tick, it is easy for inattentive developers
 to inadvertently place expensive operations on the hot path. Unlike event
 handlers or signal effects (which run only when triggered), watcher getters run
-unconditionally — making the cost less obvious during code review.
+unconditionally - making the cost less obvious during code review.
 
 ```typescript
 // Looks innocent, but runs O(n) EVERY tick:
@@ -512,7 +490,7 @@ const watched = createWatcher({
 
 The `filter()` call creates a new array on every tick, consuming both CPU and
 memory. The fix is to maintain `activeCount` incrementally in the model or watch
-a version stamp — but the risk is that the developer doesn't realise the getter
+a version stamp - but the risk is that the developer doesn't realise the getter
 is called 60 times per second.
 
 **Mitigation:** establish a team convention that all watcher getters must be
@@ -521,7 +499,7 @@ O(1) with zero allocation, and review getter expressions during code review.
 ### 4. No built-in derived state management
 
 Signals provide `createMemo` for automatic, memoised derived state. Watchers
-offer no equivalent — derived state must be maintained at the model layer or
+offer no equivalent - derived state must be maintained at the model layer or
 computed in getter expressions (subject to the O(1) constraint).
 
 However, plain models can express derived state declaratively:
@@ -541,7 +519,7 @@ function createDamageModel() {
 }
 ```
 
-The getter `total` computes derived state on demand — no manual cache
+The getter `total` computes derived state on demand - no manual cache
 invalidation needed. For more expensive computations, the model can internally
 memoise:
 
@@ -571,37 +549,37 @@ An event or signal system would compute the value once and distribute it.
 
 In practice, the cost of 10 redundant property reads is negligible (property
 access is a single pointer dereference), but for expensive getters this could
-matter. The mitigation is the same O(1) getter rule — if the getter is cheap,
+matter. The mitigation is the same O(1) getter rule - if the getter is cheap,
 the fan-out cost is immaterial.
 
 ## When Watchers Are a Good Fit
 
-- **Tick-based game loops** where a render callback runs every frame — the
+- **Tick-based game loops** where a render callback runs every frame - the
   polling model aligns perfectly with the existing update cycle.
 - **Systems with ephemeral views** (enemies, particles, effects) where lifecycle
   cleanup must be trivial.
-- **Architectures that prize simplicity** — no framework, no runtime, no
+- **Architectures that prize simplicity** - no framework, no runtime, no
   ownership model.
-- **Integration with external update engines** (GSAP, physics) — watcher
+- **Integration with external update engines** (GSAP, physics) - watcher
   getters can read any mutable state, regardless of where it was updated.
 - **Small to medium binding counts** (tens to low hundreds per view) where the
   O(n) polling cost is negligible.
-- **Projects that want to avoid vendored dependencies** — watchers are
+- **Projects that want to avoid vendored dependencies** - watchers are
   implementable in ~20–30 lines with no external library, build plugin, or
   runtime framework.
 
 ## When Watchers Are a Poor Fit
 
-- **UI-driven applications** without a tick loop — there is no natural polling
+- **UI-driven applications** without a tick loop - there is no natural polling
   point, so you would need to create one (which replicates what signals do
   automatically).
-- **Very large binding counts** (thousands) with mostly-idle values — the
+- **Very large binding counts** (thousands) with mostly-idle values - the
   fixed O(n) cost per tick becomes wasteful when few values change. Signals'
   zero-cost idle is more efficient here.
-- **Complex derived state graphs** — maintaining derived values manually at the
+- **Complex derived state graphs** - maintaining derived values manually at the
   model layer becomes verbose when the graph is deep or spans many models.
   Signals' automatic memoisation scales better in this scenario.
-- **Asynchronous or event-driven data flows** — watchers detect changes per
+- **Asynchronous or event-driven data flows** - watchers detect changes per
   tick, which adds up to ~16ms latency for external changes that arrive between
   ticks. For cases where immediate response matters (e.g. network message → UI
   update), events or signals react instantly.
@@ -637,5 +615,5 @@ is a simple sequence of mutations and assertions.
 
 ---
 
-> **Next:** [Comparison & Decision Framework](comparison.md) — all three
+> **Next:** [Comparison & Decision Framework](comparison.md) - all three
 > approaches side by side with guidance on choosing.

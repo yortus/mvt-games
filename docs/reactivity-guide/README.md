@@ -1,4 +1,4 @@
-# Reactivity in TypeScript/JavaScript — A Practical Guide
+# Reactivity in TypeScript/JavaScript - A Practical Guide
 
 How to choose and implement a reactivity strategy for interactive TS/JS
 applications: games, web apps, simulations, and visualisations.
@@ -14,8 +14,8 @@ assume prior experience with any particular reactivity paradigm.
 
 ## What This Guide Covers
 
-Reactivity — the mechanism by which one part of a system responds to changes in
-another — is an architectural choice with far-reaching consequences for
+Reactivity - the mechanism by which one part of a system responds to changes in
+another - is an architectural choice with far-reaching consequences for
 performance, correctness, testability, and maintainability. There is no single
 "best" approach. The right choice depends on your project's update model, scale,
 performance profile, and team expertise.
@@ -51,13 +51,13 @@ and situational guidance.
 
 ## How to Read This Guide
 
-1. **Start with the conceptual framing** — [Push vs Pull Reactivity](push-vs-pull.md)
+1. **Start with the conceptual framing** - [Push vs Pull Reactivity](push-vs-pull.md)
    introduces the taxonomy that underpins all three approaches.
-2. **Read the approach(es) relevant to your project** — each is self-contained
+2. **Read the approach(es) relevant to your project** - each is self-contained
    with working examples.
-3. **Use the comparison** — [Comparison & Decision Framework](comparison.md)
+3. **Use the comparison** - [Comparison & Decision Framework](comparison.md)
    places all approaches side by side with a decision flowchart.
-4. **Reference the worked examples** — [Examples](examples.md) shows each
+4. **Reference the worked examples** - [Examples](examples.md) shows each
    approach applied to the same scenarios across different project types.
 
 ```
@@ -90,13 +90,13 @@ and situational guidance.
 
 - **Working code examples** use TypeScript targeting the browser. Game examples
   use [PixiJS](https://pixijs.com/) for rendering and
-  [GSAP](https://gsap.com/) for tweening — both are widely used and
+  [GSAP](https://gsap.com/) for tweening - both are widely used and
   framework-agnostic.
 - **Signal examples** use [SolidJS](https://www.solidjs.com/) APIs as the
   reference implementation, with notes on Angular signals and the TC39 Signals
   proposal where they differ materially.
 - All examples use classic arcade games (Pac-Man, Asteroids, Breakout, Space
-  Invaders, Tetris) as domain references — they are universally understood and
+  Invaders, Tetris) as domain references - they are widely familiar and
   map well to common interactive patterns.
 
 ## Quick Orientation

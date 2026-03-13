@@ -12,8 +12,7 @@ application.
 ## The Core Question
 
 When state changes somewhere in your application, *how does dependent code find
-out?* Every reactivity system answers this question, and the answer falls
-somewhere on a spectrum between two extremes.
+out?* Every reactivity system answers this question, and the answer is some combination of two broad approaches: **push** and **pull**.
 
 ## Push: The Source Notifies
 
@@ -29,7 +28,7 @@ interested parties. The source *pushes* the update outward.
 
 The consumer registers interest in advance (subscribes). When the source
 changes, it iterates its subscriber list and notifies each one. The consumer
-does not need to do anything per-tick — it receives updates automatically.
+does not need to do anything per-tick - it receives updates automatically.
 
 **Canonical examples:** DOM events, Node.js `EventEmitter`, RxJS observables,
 SolidJS/Angular signals (effects are pushed to), the Observer pattern.
@@ -40,7 +39,7 @@ SolidJS/Angular signals (effects are pushed to), the Observer pattern.
 |----------|------|
 | Who initiates propagation? | The source |
 | When does the consumer run? | When notified (asynchronous or synchronous, depending on implementation) |
-| Cost when nothing changes | Zero — no notifications, no consumer work |
+| Cost when nothing changes | Zero - no notifications, no consumer work |
 | Cost when something changes | Proportional to number of subscribers |
 | Consumer setup | Must subscribe (and later unsubscribe) |
 | Timing control | Determined by the source or a scheduler |
@@ -58,7 +57,7 @@ changed. The consumer *pulls* the current state at a time of its choosing.
 └────────┘  "Here's my value"  └────────────┘
 ```
 
-There is no subscription. The consumer reads the source on its own schedule —
+There is no subscription. The consumer reads the source on its own schedule -
 typically on each tick of a loop or in response to a user action. The source
 does not know it is being observed.
 
@@ -72,11 +71,11 @@ described in this guide.
 |----------|------|
 | Who initiates propagation? | The consumer |
 | When does the consumer run? | On its own schedule (e.g. every tick) |
-| Cost when nothing changes | Fixed — consumer always checks |
+| Cost when nothing changes | Fixed - consumer always checks |
 | Cost when something changes | Same as when nothing changes |
-| Consumer setup | Just read — no subscription needed |
+| Consumer setup | Just read - no subscription needed |
 | Timing control | Consumer decides when to check |
-| GC pressure | Minimal — a cached value and a getter closure per watcher; no subscription graph |
+| GC pressure | Minimal - a cached value and a getter closure per watcher; no subscription graph |
 
 ## Hybrid: Push Notification, Pull Value
 
@@ -97,16 +96,16 @@ the consistency of pull (read current values at a controlled time). The
 trade-off is complexity: the system needs a scheduler to coordinate when pulls
 happen after pushes.
 
-## State vs Change: A Deeper Framing
+## State vs Change
 
-A fundamental observation: **pull-based systems model state, while push-based
-systems model change.** In each paradigm, one of *state* and *transition* is
+Pull-based systems model state, while push-based
+systems model change. In each paradigm, one of *state* and *transition* is
 explicit while the other is implicit.
 
 | | State (current value) | Transition (what changed) |
 |---|---|---|
-| **Push** (events) | Implicit — consumer must read or remember it | **Explicit** — the notification IS the change |
-| **Pull** (watchers) | **Explicit** — the consumer always reads current value | Implicit — detected by comparing current to previous |
+| **Push** (events) | Implicit - consumer must read or remember it | Explicit - the notification IS the change |
+| **Pull** (watchers) | Explicit - the consumer always reads current value | Implicit - detected by comparing current to previous |
 | **Hybrid** (signals) | Explicit (signal holds current value) | Explicit (write triggers notification) |
 
 In a push system, you *know something changed* but must take extra steps to know
@@ -117,17 +116,17 @@ occurred.
 This duality shapes each approach's strengths and failure modes:
 
 - **Events** excel at reacting to transitions ("Pac-Man ate a power pellet")
-  but struggle to represent ongoing state ("What is the score right now?"). Late
-  subscribers miss history.
+  but may not make the current state available ("What is the score right now?"). Late
+  subscribers may miss history.
 - **Watchers** excel at reflecting current state ("The score is 5,000") but
-  require per-tick work to detect transitions. Changes are never missed — the
+  require per-tick work to detect transitions ("the score just changed"). Changes are never missed - the
   current value is always available.
-- **Signals** aim to be explicit in both dimensions — you can read the current
-  value and react to changes — at the cost of a more complex runtime to
+- **Signals** aim to be explicit in both dimensions - you can read the current
+  value and react to changes - at the cost of a more complex runtime to
   coordinate these two responsibilities.
 
 Understanding this duality helps explain why most real systems benefit from
-mixing approaches: events for discrete transitions, watchers (or signals) for
+mixing approaches: events for discrete transitions, watchers or signals for
 continuous state.
 
 ## Where Each Approach in This Guide Falls
@@ -139,7 +138,7 @@ continuous state.
 | [Watchers](watchers.md) | Pull | Consumer polls on each tick | Getter evaluated and compared to cache |
 
 Understanding where each approach falls on the push-pull spectrum helps explain
-its performance characteristics, correctness properties, and failure modes —
+its performance characteristics, correctness properties, and failure modes -
 all of which are covered in detail in the individual sections.
 
 ## Other Approaches Worth Knowing
@@ -170,7 +169,7 @@ const subscription = mouseX$.subscribe(x => {
 subscription.unsubscribe();
 ```
 
-RxJS excels at modelling **asynchronous data flows** — HTTP responses, WebSocket
+RxJS excels at modelling **asynchronous data flows** - HTTP responses, WebSocket
 messages, user input sequences, complex event coordination. It is less natural
 for synchronous per-frame state like game entity positions, where the
 stream-of-events model adds indirection over a simple property read.
@@ -249,4 +248,4 @@ used in game engines and ECS (Entity Component System) architectures.
 
 ---
 
-> **Next:** [Events](events.md) — the first of the three primary approaches.
+> **Next:** [Events](events.md) - the first of the three primary approaches.
