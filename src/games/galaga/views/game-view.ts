@@ -25,7 +25,7 @@ export interface GameViewTextures {
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         enemyCount: () => game.enemies.length,
         pBulletCount: () => game.playerBullets.length,
         eBulletCount: () => game.enemyBullets.length,
@@ -103,7 +103,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     // ---- refresh -----------------------------------------------------------
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.enemyCount.changed) buildEnemies();
         if (watched.pBulletCount.changed) buildPlayerBullets();

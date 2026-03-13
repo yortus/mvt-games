@@ -18,7 +18,7 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings, diggerIconTexture: Texture): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         score: bindings.getScore,
         lives: bindings.getLives,
         level: bindings.getLevel,
@@ -52,7 +52,7 @@ export function createHudView(bindings: HudViewBindings, diggerIconTexture: Text
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.score.changed) {
             scoreText.text = `Score: ${watched.score.value}`;

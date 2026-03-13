@@ -17,7 +17,7 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings, shipIconTexture: Texture): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         score: bindings.getScore,
         lives: bindings.getLives,
         stage: bindings.getStage,
@@ -51,7 +51,7 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.score.changed) {
             scoreText.text = `Score: ${watched.score.value}`;

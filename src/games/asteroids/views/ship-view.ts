@@ -18,7 +18,7 @@ export interface ShipViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createShipView(bindings: ShipViewBindings): Container {
-    const watched = createWatcher({ alive: bindings.isAlive });
+    const watcher = createWatcher({ alive: bindings.isAlive });
 
     const view = new Container();
     const bodyGfx = new Graphics();
@@ -35,7 +35,7 @@ export function createShipView(bindings: ShipViewBindings): Container {
         view.position.set(bindings.getX(), bindings.getY());
         view.rotation = bindings.getAngle();
 
-        watched.poll();
+        const watched = watcher.poll();
         if (watched.alive.changed) {
             view.visible = watched.alive.value;
         }

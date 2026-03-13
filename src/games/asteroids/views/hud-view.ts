@@ -17,7 +17,7 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         score: bindings.getScore,
         lives: bindings.getLives,
         wave: bindings.getWave,
@@ -51,7 +51,7 @@ export function createHudView(bindings: HudViewBindings): Container {
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.score.changed) {
             scoreText.text = `Score: ${watched.score.value}`;

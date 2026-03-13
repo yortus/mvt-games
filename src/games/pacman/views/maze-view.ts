@@ -23,7 +23,7 @@ export function createMazeView(bindings: MazeViewBindings): Container {
     let dotEntries: { r: number; c: number; gfx: Graphics }[] = [];
 
     // ---- Change detection ---------------------------------------------------
-    const watched = createWatcher({
+    const watcher = createWatcher({
         rows: bindings.getRows,
         cols: bindings.getCols,
         tileSize: bindings.getTileSize,
@@ -41,7 +41,7 @@ export function createMazeView(bindings: MazeViewBindings): Container {
 
     function refresh(): void {
         // Poll all watches
-        watched.poll();
+        const watched = watcher.poll();
         const dimsChanged = watched.rows.changed || watched.cols.changed || watched.tileSize.changed;
 
         // Full rebuild on dimension change or game reset (phase → playing)
@@ -68,9 +68,9 @@ export function createMazeView(bindings: MazeViewBindings): Container {
 
     function buildWalls(): void {
         wallGfx.clear();
-        const rows = watched.rows.value;
-        const cols = watched.cols.value;
-        const ts = watched.tileSize.value;
+        const rows = bindings.getRows();
+        const cols = bindings.getCols();
+        const ts = bindings.getTileSize();
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 if (bindings.getTileKind(r, c) === 'wall') {
@@ -87,9 +87,9 @@ export function createMazeView(bindings: MazeViewBindings): Container {
         }
         dotEntries = [];
 
-        const rows = watched.rows.value;
-        const cols = watched.cols.value;
-        const ts = watched.tileSize.value;
+        const rows = bindings.getRows();
+        const cols = bindings.getCols();
+        const ts = bindings.getTileSize();
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 if (bindings.isDotAt(r, c)) {

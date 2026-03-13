@@ -23,7 +23,7 @@ export interface GameViewTextures {
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
     // ---- Change detection ---------------------------------------------------
-    const watched = createWatcher({
+    const watcher = createWatcher({
         ghostCount: () => game.ghosts.length,
         phase: () => game.phase,
     });
@@ -97,7 +97,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.ghostCount.changed) buildGhosts();
 

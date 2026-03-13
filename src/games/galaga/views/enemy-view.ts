@@ -32,7 +32,7 @@ export function createEnemyView(
     bindings: EnemyViewBindings,
     textures: EnemyViewTextures,
 ): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         kind: bindings.getKind,
         phase: bindings.getPhase,
     });
@@ -50,7 +50,7 @@ export function createEnemyView(
         view.visible = visible;
         if (!visible) return;
 
-        watched.poll();
+        const watched = watcher.poll();
         view.position.set(bindings.getX(), bindings.getY());
         if (watched.phase.changed || watched.kind.changed) {
             sprite.texture = textures[bindings.getKind()];

@@ -24,7 +24,7 @@ export interface FieldViewBindings {
 const SKY_COLOR = 0x44aaff;
 
 export function createFieldView(bindings: FieldViewBindings): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         rows: bindings.getRows,
         cols: bindings.getCols,
         tileSize: bindings.getTileSize,
@@ -41,7 +41,7 @@ export function createFieldView(bindings: FieldViewBindings): Container {
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
         const dimsChanged = watched.rows.changed || watched.cols.changed || watched.tileSize.changed;
 
         if (dimsChanged || (watched.phase.changed && watched.phase.value === 'playing') || watched.tunnelCount.changed) {

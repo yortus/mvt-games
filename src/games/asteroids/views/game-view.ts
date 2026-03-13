@@ -13,7 +13,7 @@ import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         asteroidCount: () => game.asteroids.length,
         bulletCount: () => game.bullets.length,
         phase: () => game.phase,
@@ -83,7 +83,7 @@ export function createGameView(game: GameModel): Container {
     // ---- refresh -----------------------------------------------------------
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.asteroidCount.changed) buildAsteroids();
         if (watched.bulletCount.changed) buildBullets();

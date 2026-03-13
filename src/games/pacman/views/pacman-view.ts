@@ -31,7 +31,7 @@ export function createPacmanView(
     bindings: PacmanViewBindings,
     textures: PacmanViewTextures,
 ): Container {
-    const watched = createWatcher({ direction: bindings.getDirection });
+    const watcher = createWatcher({ direction: bindings.getDirection });
 
     const view = new Container();
     const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
@@ -40,12 +40,12 @@ export function createPacmanView(
     let prevFrame = -1;
 
     sprite.scale.set(bindings.getTileSize() / 20);
-    view.rotation = directionToRotation(watched.direction.value);
+    view.rotation = directionToRotation(bindings.getDirection());
     view.onRender = refresh;
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         const ts = bindings.getTileSize();
         const col = bindings.getCol();

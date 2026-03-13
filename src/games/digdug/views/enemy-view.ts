@@ -44,7 +44,7 @@ export function createEnemyView(
     bindings: EnemyViewBindings,
     textures: EnemyViewTextures,
 ): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         kind: bindings.getKind,
         phase: bindings.getPhase,
         inflation: bindings.getInflationStage,
@@ -62,13 +62,13 @@ export function createEnemyView(
     view.addChild(telegraphGfx);
     view.addChild(fireGfx);
 
-    sprite.scale.set(watched.tileSize.value / 20);
+    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 
     function refresh(): void {
-        watched.poll();
-        const ts = watched.tileSize.value;
+        const watched = watcher.poll();
+        const ts = bindings.getTileSize();
         const col = bindings.getCol();
         const row = bindings.getRow();
         const x = col * ts + ts / 2;
@@ -146,7 +146,7 @@ export function createEnemyView(
     }
 
     function updateScale(inflation: InflationStage): void {
-        const base = watched.tileSize.value / 20;
+        const base = bindings.getTileSize() / 20;
         const inflScale = 1.0 + inflation * 0.3;
         sprite.scale.set(base * inflScale);
     }

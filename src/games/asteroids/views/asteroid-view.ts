@@ -29,7 +29,7 @@ const SIZE_COLOR: Record<AsteroidSize, number> = {
 const VERTICES = 10;
 
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
-    const watched = createWatcher({ alive: bindings.isAlive });
+    const watcher = createWatcher({ alive: bindings.isAlive });
 
     const view = new Container();
     const bodyGfx = new Graphics();
@@ -41,7 +41,7 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.alive.changed) {
             view.visible = watched.alive.value;

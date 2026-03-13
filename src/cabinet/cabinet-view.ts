@@ -49,7 +49,7 @@ interface Card {
 }
 
 export function createCabinetView(bindings: CabinetViewBindings): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         phase: bindings.getPhase,
         selected: bindings.getSelectedIndex,
         count: bindings.getGameCount,
@@ -137,7 +137,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     // ---- Internals --------------------------------------------------------
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.phase.changed) {
             menuLayer.visible = watched.phase.value === 'menu';

@@ -29,7 +29,7 @@ export function createGhostView(
     bindings: GhostViewBindings,
     textures: GhostViewTextures,
 ): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         color: bindings.getColor,
         tileSize: bindings.getTileSize,
     });
@@ -41,7 +41,7 @@ export function createGhostView(
     view.addChild(bodySprite);
     view.addChild(eyesSprite);
 
-    const s = watched.tileSize.value / 20;
+    const s = bindings.getTileSize() / 20;
     bodySprite.scale.set(s);
     eyesSprite.scale.set(s);
 
@@ -49,7 +49,7 @@ export function createGhostView(
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
         const ts = bindings.getTileSize();
         view.position.set(

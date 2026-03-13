@@ -31,7 +31,7 @@ export function createRockView(
     bindings: RockViewBindings,
     textures: RockViewTextures,
 ): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         phase: bindings.getPhase,
         tileSize: bindings.getTileSize,
     });
@@ -42,7 +42,7 @@ export function createRockView(
 
     let wobbleToggle = false;
 
-    sprite.scale.set(watched.tileSize.value / 20);
+    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 
@@ -55,7 +55,7 @@ export function createRockView(
         const y = bindings.getY() * ts + ts / 2;
         sprite.scale.set(ts / 20);
 
-        watched.poll();
+        const watched = watcher.poll();
         if (watched.phase.changed) {
             sprite.texture = watched.phase.value === 'shattered' ? textures.shattered : textures.rock;
         }

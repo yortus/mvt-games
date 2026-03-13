@@ -35,7 +35,7 @@ export function createDiggerView(
     bindings: DiggerViewBindings,
     textures: DiggerViewTextures,
 ): Container {
-    const watched = createWatcher({
+    const watcher = createWatcher({
         direction: bindings.getDirection,
         tileSize: bindings.getTileSize,
         alive: bindings.isAlive,
@@ -50,14 +50,14 @@ export function createDiggerView(
 
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
-    sprite.scale.set(watched.tileSize.value / 20);
+    sprite.scale.set(bindings.getTileSize() / 20);
     view.onRender = refresh;
     return view;
 
     function refresh(): void {
-        watched.poll();
+        const watched = watcher.poll();
 
-        const ts = watched.tileSize.value;
+        const ts = bindings.getTileSize();
         const col = bindings.getCol();
         const row = bindings.getRow();
         const dir = bindings.getDirection();
