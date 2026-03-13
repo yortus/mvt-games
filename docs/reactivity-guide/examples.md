@@ -170,18 +170,18 @@ function createScoreModel() {
 // --- View ---
 function createScoreView(model: { readonly score: number; readonly elapsed: number }): Container {
     const view = new Container();
-    const scoreText = new Text({ text: '0', style: { fill: 'white' } });
-    const timerText = new Text({ text: '0', style: { fill: 'grey' } });
+    const scoreText = new Text({ style: { fill: 'white' } });
+    const timerText = new Text({ style: { fill: 'grey' } });
     timerText.y = 30;
     view.addChild(scoreText, timerText);
 
     // Watch infrequently-changing state only
-    const watched = createWatcher({
+    const watcher = createWatcher({
         score: () => model.score,
     });
 
     view.onRender = () => {
-        watched.poll();
+        const watched = watcher.poll();
         if (watched.score.changed) {
             scoreText.text = String(watched.score.value);
         }
@@ -397,12 +397,12 @@ function createGhostView(
     const sprite = new Sprite();
     view.addChild(sprite);
 
-    const watched = createWatcher({
+    const watcher = createWatcher({
         phase: () => model.phase,
     });
 
     view.onRender = () => {
-        watched.poll();
+        const watched = watcher.poll();
 
         if (watched.phase.changed) {
             const from = watched.phase.previous;
@@ -615,12 +615,12 @@ function createBrickGridView(
     const brickSprites = new Map<string, Sprite>();
     // ... populate initial sprites ...
 
-    const watched = createWatcher({
+    const watcher = createWatcher({
         destroyVersion: () => model.destroyVersion,
     });
 
     view.onRender = () => {
-        watched.poll();
+        const watched = watcher.poll();
         if (watched.destroyVersion.changed) {
             const { col, row } = model.lastDestroyed!;
             const key = `${col},${row}`;
@@ -864,12 +864,12 @@ function createAsteroidFieldView(
     const view = new Container();
     const sprites = new Map<string, Sprite>();
 
-    const watched = createWatcher({
+    const watcher = createWatcher({
         version: () => field.version,
     });
 
     view.onRender = () => {
-        watched.poll();
+        const watched = watcher.poll();
 
         // Rebuild sprite map only when asteroids are added/removed (infrequent)
         if (watched.version.changed) {

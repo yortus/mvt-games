@@ -355,7 +355,7 @@ Watchers avoid this entirely: consumers define what they watch, and can derive
 any condition from any readable state - including cross-model conditions:
 
 ```typescript
-const watched = createWatcher({
+const watcher = createWatcher({
     dangerClose: () =>
         ghost.phase === 'frightened' && distance(ghost, player) < 3,
 });

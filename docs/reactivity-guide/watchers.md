@@ -47,60 +47,75 @@ function refresh() {
 This works, but repeating the pattern for many values is verbose and
 error-prone. A small abstraction can encapsulate it.
 
-## Implementation: `createWatcher`
+## Implementation: `Watcher`
 
 A view typically watches several values at once. `createWatcher` accepts a
 record of getter functions and provides a single `poll()` call that advances
 all state together:
 
 ```typescript
+interface Watcher<T extends Record<string, () => unknown>> {
+    poll(): WatchedValues<T>;
+}
+
+type WatchedValues<T extends Record<string, () => unknown>> = {
+    readonly [K in keyof T]: WatchedProperty<ReturnType<T[K]>>;
+};
+
 interface WatchedProperty<T> {
     readonly changed: boolean;
     readonly value: T;
-    readonly previous: T;
+    readonly previous: T | undefined;
 }
 
-function createWatcher<T extends Record<string, () => unknown>>(
-    getters: T,
-): { poll(): void } & { readonly [K in keyof T]: WatchedProperty<ReturnType<T[K]>> } {
+function createWatcher<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
     const reads = keys.map(k => getters[k]);
-    const state = reads.map(read => {
-        const initial = read();
-        return { changed: false, value: initial, previous: initial };
-    });
+    const state = reads.map(() => ({
+        changed: false,
+        value: undefined as unknown,
+        previous: undefined as unknown,
+    }));
+    const watched = Object.fromEntries(
+        keys.map((k, i) => [k, state[i]]),
+    ) as WatchedValues<T>;
 
-    const watcher: Record<string, unknown> = {
-        poll() {
-            for (let i = 0; i < keys.length; i++) {
+    return {
+        poll(): WatchedValues<T> {
+            for (let i = 0; i < keys.length; ++i) {
                 const next = reads[i]();
                 const s = state[i];
                 s.previous = s.value;
                 s.changed = next !== s.value;
                 if (s.changed) s.value = next;
             }
+            return watched;
         },
     };
-
-    for (let i = 0; i < keys.length; i++) {
-        Object.defineProperty(watcher, keys[i], {
-            get: () => state[i],
-            enumerable: true,
-        });
-    }
-
-    return watcher as any;
 }
 ```
 
 **Key design choices:**
 
-- **`poll()` advances all state in one call.** Individual properties are then
-  read-only snapshots. This avoids the problem of calling `changed()` multiple
-  times - `poll()` is called once per tick, and `changed` / `value` / `previous`
-  can be read any number of times safely.
-- **`previous` is built in.** Transition detection (from → to) is a common need
-  that shouldn't require manual bookkeeping.
+- **`poll()` advances all state and returns it.** The returned `WatchedValues`
+  object is the only way to access `changed` / `value` / `previous` — forcing
+  consumers to call `poll()` before reading. This makes it impossible to
+  accidentally read stale flags from a previous tick.
+- **First poll detects all values as changed.** Before the first `poll()`,
+  internal values are `undefined`. The first call compares `undefined` to the
+  current getter result, so `changed` is `true` for every non-`undefined` value.
+  This means views can defer all state-dependent setup to `refresh()` — the
+  first render naturally runs every `if (watched.xxx.changed)` branch,
+  eliminating duplication between factory init and refresh logic.
+- **`previous` is `T | undefined`.** On the first poll, `previous` is
+  `undefined` (there was no prior observation). This type signature forces
+  consumers who use `previous` to handle the first-poll edge case — e.g. for
+  side effects that should only fire on actual transitions:
+  ```typescript
+  if (watched.score.changed && watched.score.previous !== undefined) {
+      playScoreChangeSound();  // skipped on first poll
+  }
+  ```
 - **No subscription, no disposal.** When the view that owns the watcher is
   removed from the scene graph, the watcher becomes unreachable and is
   garbage-collected.
@@ -135,9 +150,9 @@ function createGameModel(): GameModel {
 
 function createHudView(model: GameModel): Container {
     const view = new Container();
-    const scoreText = new Text({ text: '0', style: { fill: 'white', fontSize: 24 } });
-    const livesText = new Text({ text: '♥♥♥', style: { fill: 'red', fontSize: 24 } });
-    const phaseText = new Text({ text: 'READY', style: { fill: 'yellow', fontSize: 32 } });
+    const scoreText = new Text({ style: { fill: 'white', fontSize: 24 } });
+    const livesText = new Text({ style: { fill: 'red', fontSize: 24 } });
+    const phaseText = new Text({ style: { fill: 'yellow', fontSize: 32 } });
     const powerBar = new Graphics();
     livesText.y = 30;
     phaseText.y = 60;
@@ -145,15 +160,15 @@ function createHudView(model: GameModel): Container {
     view.addChild(scoreText, livesText, phaseText, powerBar);
 
     // Watch infrequently-changing state
-    const watched = createWatcher({
+    const watcher = createWatcher({
         score: () => model.score,
         lives: () => model.lives,
         phase: () => model.phase,
     });
 
     view.onRender = () => {
-        // Poll all watchers - evaluate getters, compare to cache
-        watched.poll();
+        // Poll all watched values
+        const watched = watcher.poll();
 
         if (watched.score.changed) {
             scoreText.text = String(watched.score.value);
@@ -188,6 +203,12 @@ The model is a plain object. The view reads it through watchers (for infrequent
 changes) and direct reads (for per-tick values). No events, no signals, no
 framework.
 
+Note that the text nodes are created without initial text content — there is no
+`text: '0'` or `text: 'READY'`. The first `poll()` detects all values as
+changed (they transition from `undefined` to their current value), so the
+`if (watched.xxx.changed)` branches run on the first render and set the correct
+text. This eliminates the need to duplicate initial state setup in the factory.
+
 **An important idiom:** values that change every tick (like `power`) don't
 need a watcher - just read them directly. Watchers are most valuable for
 **infrequently-changing state**, where they avoid redundant view updates. For
@@ -211,7 +232,7 @@ reference types:
 
 1. **Watch a scalar property** that captures what you care about:
     ```typescript
-    const watched = createWatcher({
+    const watcher = createWatcher({
         enemyCount: () => model.enemies.length,  // O(1)
     });
     ```
@@ -219,10 +240,10 @@ reference types:
 2. **Use a version stamp** at the model layer:
     ```typescript
     // Model increments a counter on each mutation
-    const watched = createWatcher({
+    const watcher = createWatcher({
         itemsVersion: () => model.itemsVersion,  // O(1)
     });
-    watched.poll();
+    const watched = watcher.poll();
     if (watched.itemsVersion.changed) {
         rebuildItemViews(model.items); // O(n) only when needed
     }
@@ -231,7 +252,7 @@ reference types:
 3. **Compute derived state in the model**, not in the getter:
     ```typescript
     // Model maintains totalScore incrementally
-    const watched = createWatcher({
+    const watcher = createWatcher({
         total: () => model.totalScore,  // O(1) read
     });
     // Instead of:
@@ -272,7 +293,7 @@ watchable:
 const model = { x: 0, y: 0, phase: 'idle' };
 
 // View watches whatever it wants
-const watched = createWatcher({
+const watcher = createWatcher({
     x: () => model.x,
     phase: () => model.phase,
 });
@@ -296,12 +317,12 @@ function createEnemyView(model: EnemyModel): Container {
     const sprite = new Sprite(texture);
     view.addChild(sprite);
 
-    const watched = createWatcher({
+    const watcher = createWatcher({
         phase: () => model.phase,
     });
 
     view.onRender = () => {
-        watched.poll();
+        const watched = watcher.poll();
         if (watched.phase.changed) {
             applyPhaseAppearance(sprite, watched.phase.value);
         }
@@ -327,7 +348,7 @@ evaluation is the order the code is written in.
 
 ```typescript
 view.onRender = () => {
-    watched.poll();
+    const watched = watcher.poll();
     // These run in exactly this order, every frame, predictably
     if (watched.score.changed) { /* ... */ }   // 1st
     if (watched.phase.changed) { /* ... */ }   // 2nd
@@ -352,7 +373,7 @@ values, computed expressions, or conditions without the source declaring
 anything:
 
 ```typescript
-const watched = createWatcher({
+const watcher = createWatcher({
     // Plain property
     score: () => model.score,
 
@@ -377,7 +398,7 @@ value isn't a signal, it can't trigger effects.
 
 ### 5. Trivial to implement, no dependencies
 
-The reference implementation is ~30 lines. There is no external library, no
+The reference implementation is ~25 lines. There is no external library, no
 build-time plugin, no runtime framework.
 The team owns every line of code and can modify it freely. If avoiding vendored
 dependencies on reactivity runtimes is a project goal, watchers are the
@@ -452,7 +473,7 @@ unconditionally - making the cost less obvious during code review.
 
 ```typescript
 // Looks innocent, but runs O(n) EVERY tick:
-const watched = createWatcher({
+const watcher = createWatcher({
     activeCount: () => model.enemies.filter(e => e.alive).length,
 });
 ```
@@ -561,22 +582,31 @@ framework dependencies:
 ```typescript
 // Test: watcher detects change
 const model = { score: 0, phase: 'idle' as string };
-const watched = createWatcher({
+const watcher = createWatcher({
     score: () => model.score,
     phase: () => model.phase,
 });
 
-watched.poll();
-assert.equal(watched.score.changed, false); // no change from initial value
+// First poll — detects initial values as changed (from undefined)
+const first = watcher.poll();
+assert.equal(first.score.changed, true);       // undefined → 0
+assert.equal(first.score.value, 0);
+assert.equal(first.score.previous, undefined);  // no prior observation
 
+// No change — same values
+const second = watcher.poll();
+assert.equal(second.score.changed, false);
+
+// Mutation detected
 model.score = 100;
-watched.poll();
-assert.equal(watched.score.changed, true);  // change detected
-assert.equal(watched.score.value, 100);
-assert.equal(watched.score.previous, 0);
+const third = watcher.poll();
+assert.equal(third.score.changed, true);
+assert.equal(third.score.value, 100);
+assert.equal(third.score.previous, 0);
 
-watched.poll();
-assert.equal(watched.score.changed, false); // no change since last poll
+// Stable again
+const fourth = watcher.poll();
+assert.equal(fourth.score.changed, false);
 ```
 
 No reactive roots, no disposal, no batching semantics to account for. The test
