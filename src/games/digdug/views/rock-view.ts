@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { watch } from '#utils';
+import { watch } from '#common';
 import type { RockPhase } from '../models';
 
 // ---------------------------------------------------------------------------

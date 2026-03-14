@@ -78,5 +78,5 @@ src/
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
 │   └── <name>/          Self-contained game (data/, models/, views/)
-└── utils/               Shared helpers (e.g. change-detection watches)
+└── common/              Shared helpers, views, and models
 ```

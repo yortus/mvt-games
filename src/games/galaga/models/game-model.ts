@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#utils';
+import { watch } from '#common';
 import type { WaveConfig } from '../data';
 import {
     FORMATION_LEFT,

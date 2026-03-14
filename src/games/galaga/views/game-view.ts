@@ -1,12 +1,11 @@
-import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { watch } from '#utils';
+import { Container, Graphics, type Texture } from 'pixi.js';
+import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
 import { createEnemyView, type EnemyViewTextures } from './enemy-view';
 import { createBulletView } from './bullet-view';
 import { createHudView } from './hud-view';
-import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -29,7 +28,6 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         enemyCount: () => game.enemies.length,
         pBulletCount: () => game.playerBullets.length,
         eBulletCount: () => game.enemyBullets.length,
-        phase: () => game.phase,
     });
 
     const enemyTextures: EnemyViewTextures = {
@@ -75,26 +73,22 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     hudContainer.position.set(0, PLAY_HEIGHT);
     view.addChild(hudContainer);
 
-    // Overlay (game over / stage clear)
-    const overlay = new Container();
-    overlay.visible = false;
-    const overlayBg = new Graphics();
-    overlayBg.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill({ color: 0x000000, alpha: 0.6 });
-    overlay.addChild(overlayBg);
-    const overlayText = new Text({
-        text: '',
-        style: { fontFamily: 'monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
+    // Overlay
+    const overlayView = createOverlayView({
+        getWidth: () => SCREEN_WIDTH,
+        getHeight: () => PLAY_HEIGHT,
+        isVisible: () => game.phase === 'game-over' || game.phase === 'stage-clear',
+        getText: () => game.phase === 'game-over'
+            ? 'GAME OVER\n\nPress Enter to restart'
+            : 'STAGE CLEAR!',
     });
-    overlayText.anchor.set(0.5);
-    overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
-    overlay.addChild(overlayText);
-    view.addChild(overlay);
+    view.addChild(overlayView);
 
     // Keyboard input
-    view.addChild(createKeyboardPlayerInputView({
-        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
-        onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
-        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
+    view.addChild(createKeyboardInputView({
+        onXDirectionChanged: (dir) => { game.playerInput.direction = dir;},
+        onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
+        onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
     view.onRender = refresh;
@@ -108,19 +102,6 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         if (watched.enemyCount.changed) buildEnemies();
         if (watched.pBulletCount.changed) buildPlayerBullets();
         if (watched.eBulletCount.changed) buildEnemyBullets();
-
-        if (watched.phase.changed) {
-            const phase = watched.phase.value;
-            if (phase === 'playing' || phase === 'dying') {
-                overlay.visible = false;
-            } else if (phase === 'game-over') {
-                overlay.visible = true;
-                overlayText.text = 'GAME OVER\n\nPress Enter to restart';
-            } else if (phase === 'stage-clear') {
-                overlay.visible = true;
-                overlayText.text = 'STAGE CLEAR!';
-            }
-        }
     }
 
     // ---- builder helpers ---------------------------------------------------

@@ -21,7 +21,7 @@ src/
 ├── games/               Game registry + per-game modules
 │   ├── game-entry.ts    GameEntry & GameSession interfaces
 │   └── pacman/          Pac-Man (data/, models/, views/)
-└── utils/               Shared helpers (e.g. createWatch)
+└── common/              Shared helpers, views, and models (e.g. createWatch, keyboard input)
 ```
 
 ## Code Style

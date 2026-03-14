@@ -23,7 +23,7 @@ src/
 │       ├── data/        Static maze data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
-└── utils/               General helpers (e.g. change-detection watches)
+└── common/              Shared helpers, views, and models (e.g. change-detection watches, keyboard input)
 ```
 
 ## Cabinet Architecture

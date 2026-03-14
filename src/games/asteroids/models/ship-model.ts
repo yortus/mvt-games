@@ -111,9 +111,9 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             const dt = deltaMs * 0.001;
 
             // Rotation
-            if (rotation === 'rotate-left') {
+            if (rotation === 'left') {
                 angle -= rotationSpeed * dt;
-            } else if (rotation === 'rotate-right') {
+            } else if (rotation === 'right') {
                 angle += rotationSpeed * dt;
             }
 

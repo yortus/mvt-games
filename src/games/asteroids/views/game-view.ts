@@ -1,12 +1,11 @@
-import { Container, Graphics, Text } from 'pixi.js';
-import { watch } from '#utils';
+import { Container, Graphics } from 'pixi.js';
+import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
 import { createAsteroidView } from './asteroid-view';
 import { createBulletView } from './bullet-view';
 import { createHudView } from './hud-view';
-import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -16,7 +15,6 @@ export function createGameView(game: GameModel): Container {
     const watcher = watch({
         asteroidCount: () => game.asteroids.length,
         bulletCount: () => game.bullets.length,
-        phase: () => game.phase,
     });
 
     const view = new Container();
@@ -54,27 +52,23 @@ export function createGameView(game: GameModel): Container {
     hudContainer.position.set(0, PLAY_HEIGHT);
     view.addChild(hudContainer);
 
-    // Overlay (game over / wave clear)
-    const overlay = new Container();
-    overlay.visible = false;
-    const overlayBg = new Graphics();
-    overlayBg.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill({ color: 0x000000, alpha: 0.6 });
-    overlay.addChild(overlayBg);
-    const overlayText = new Text({
-        text: '',
-        style: { fontFamily: 'monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
+    // Overlay
+    const overlayView = createOverlayView({
+        getWidth: () => SCREEN_WIDTH,
+        getHeight: () => PLAY_HEIGHT,
+        isVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
+        getText: () => game.phase === 'game-over'
+            ? 'GAME OVER\n\nPress Enter to restart'
+            : 'WAVE CLEAR!',
     });
-    overlayText.anchor.set(0.5);
-    overlayText.position.set(SCREEN_WIDTH / 2, PLAY_HEIGHT / 2);
-    overlay.addChild(overlayText);
-    view.addChild(overlay);
+    view.addChild(overlayView);
 
     // Keyboard input
-    view.addChild(createKeyboardPlayerInputView({
-        onRotationChange: (rot) => { game.playerInput.rotation = rot; },
-        onThrustChange: (pressed) => { game.playerInput.thrustPressed = pressed; },
-        onFireChange: (pressed) => { game.playerInput.firePressed = pressed; },
-        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
+    view.addChild(createKeyboardInputView({
+        onXDirectionChanged: (dir) => { game.playerInput.rotation = dir; },
+        onYDirectionChanged: (dir) => { game.playerInput.thrustPressed = dir === 'up'; },
+        onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
+        onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
     view.onRender = refresh;
@@ -87,19 +81,6 @@ export function createGameView(game: GameModel): Container {
 
         if (watched.asteroidCount.changed) buildAsteroids();
         if (watched.bulletCount.changed) buildBullets();
-
-        if (watched.phase.changed) {
-            const phase = watched.phase.value;
-            if (phase === 'playing' || phase === 'dying') {
-                overlay.visible = false;
-            } else if (phase === 'game-over') {
-                overlay.visible = true;
-                overlayText.text = 'GAME OVER\n\nPress Enter to restart';
-            } else if (phase === 'wave-clear') {
-                overlay.visible = true;
-                overlayText.text = 'WAVE CLEAR!';
-            }
-        }
     }
 
     // ---- builder helpers ---------------------------------------------------

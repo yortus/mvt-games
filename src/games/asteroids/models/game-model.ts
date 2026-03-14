@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#utils';
+import { watch } from '#common';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,

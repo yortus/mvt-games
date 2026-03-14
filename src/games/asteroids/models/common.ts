@@ -2,7 +2,7 @@
 // Rotation
 // ---------------------------------------------------------------------------
 
-export type RotationDirection = 'none' | 'rotate-left' | 'rotate-right';
+export type RotationDirection = 'left' | 'none' | 'right';
 
 // ---------------------------------------------------------------------------
 // Asteroid

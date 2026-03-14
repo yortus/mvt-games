@@ -26,7 +26,7 @@ export default tseslint.config(
                         'gsap',
                         'gsap/**',
                         // Allow project-level import-map aliases
-                        '#utils',
+                        '#common',
                     ],
                 },
             ],

@@ -102,14 +102,14 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Rendering and user-input handling
-└── utils/               General helpers (e.g. change-detection watches)
+└── common/              Shared helpers, views, and models
 ```
 
 | Directory | Contains                                                         | Typical Exports                                           |
 | --------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
 | `data/`   | Constants, configuration, static datasets                        | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
-| `utils/`  | General helpers                                                  | `createWatch`, `Watch`                                    |
+| `common/` | Shared helpers, views, and models                                 | `createWatch`, `Watch`, `createKeyboardPlayerInputView`   |
 | `views/`  | View factory functions, bindings interfaces                      | `createHudView`, `HudViewBindings`                        |
 
 ---

@@ -1,5 +1,5 @@
-import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { watch } from '#utils';
+import { Container, type Texture } from 'pixi.js';
+import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
@@ -7,7 +7,6 @@ import { createDiggerView, type DiggerViewTextures } from './digger-view';
 import { createEnemyView, type EnemyViewTextures } from './enemy-view';
 import { createRockView, type RockViewTextures } from './rock-view';
 import { createHudView } from './hud-view';
-import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -28,7 +27,6 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     const watcher = watch({
         enemyCount: () => game.enemies.length,
         rockCount: () => game.rocks.length,
-        phase: () => game.phase,
     });
 
     const canvasW = FIELD_COLS * TILE_SIZE;
@@ -79,26 +77,39 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     hudContainer.position.set(0, canvasH);
     view.addChild(hudContainer);
 
-    // Overlay (game over / level clear)
-    const overlay = new Container();
-    overlay.visible = false;
-    const overlayBg = new Graphics();
-    overlayBg.rect(0, 0, canvasW, canvasH).fill({ color: 0x000000, alpha: 0.6 });
-    overlay.addChild(overlayBg);
-    const overlayText = new Text({
-        text: '',
-        style: { fontFamily: 'monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
+    // Overlay
+    const overlayView = createOverlayView({
+        getWidth: () => canvasW,
+        getHeight: () => canvasH,
+        isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
+        getText: () => game.phase === 'game-over'
+            ? 'GAME OVER\n\nPress Enter to restart'
+            : 'LEVEL CLEAR!',
     });
-    overlayText.anchor.set(0.5);
-    overlayText.position.set(canvasW / 2, canvasH / 2);
-    overlay.addChild(overlayText);
-    view.addChild(overlay);
+    view.addChild(overlayView);
 
     // Keyboard input
-    view.addChild(createKeyboardPlayerInputView({
-        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
-        onPumpChange: (pressed) => { game.playerInput.pumpPressed = pressed; },
-        onRestartChange: (pressed) => { game.playerInput.restartPressed = pressed; },
+    let lastXDir: 'left' | 'none' | 'right' = 'none';
+    let lastYDir: 'up' | 'none' | 'down' = 'none';
+    view.addChild(createKeyboardInputView({
+        onXDirectionChanged: (dir) => {
+            lastXDir = dir;
+            if (dir === 'left') game.playerInput.direction = 'left';
+            else if (dir === 'right') game.playerInput.direction = 'right';
+            else if (lastYDir === 'up') game.playerInput.direction = 'up';
+            else if (lastYDir === 'down') game.playerInput.direction = 'down';
+            else game.playerInput.direction = 'none';
+        },
+        onYDirectionChanged: (dir) => {
+            lastYDir = dir;
+            if (dir === 'up') game.playerInput.direction = 'up';
+            else if (dir === 'down') game.playerInput.direction = 'down';
+            else if (lastXDir === 'left') game.playerInput.direction = 'left';
+            else if (lastXDir === 'right') game.playerInput.direction = 'right';
+            else game.playerInput.direction = 'none';
+        },
+        onPrimaryButtonChanged: (pressed) => { game.playerInput.pumpPressed = pressed; },
+        onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
     }));
 
     view.onRender = refresh;
@@ -109,19 +120,6 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
 
         if (watched.enemyCount.changed) buildEnemies();
         if (watched.rockCount.changed) buildRocks();
-
-        if (watched.phase.changed) {
-            const phase = watched.phase.value;
-            if (phase === 'playing' || phase === 'dying') {
-                overlay.visible = false;
-            } else if (phase === 'game-over') {
-                overlay.visible = true;
-                overlayText.text = 'GAME OVER\n\nPress Enter to restart';
-            } else if (phase === 'level-clear') {
-                overlay.visible = true;
-                overlayText.text = 'LEVEL CLEAR!';
-            }
-        }
     }
 
     function buildEnemies(): void {

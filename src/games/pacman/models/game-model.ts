@@ -1,4 +1,4 @@
-import { watch } from '#utils';
+import { watch } from '#common';
 import type { TileKind } from '../data';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';

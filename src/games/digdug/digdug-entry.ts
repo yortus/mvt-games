@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpriteTextures, type SpriteTextures } from '#utils';
+import { loadSpriteTextures, type SpriteTextures } from '#common';
 import { createGameModel } from './models';
 import { createGameView, type GameViewTextures } from './views';
 import {

@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '#utils';
+import { watch } from '#common';
 import type { GamePhase, TileKind } from '../models';
 
 // ---------------------------------------------------------------------------
