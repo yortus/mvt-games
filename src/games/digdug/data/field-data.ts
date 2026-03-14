@@ -26,7 +26,7 @@ export interface DepthLayer {
     readonly color: number;
 }
 
-/** Four earth color bands — bright yellow-brown at top, darker reds with depth. */
+/** Four earth color bands - bright yellow-brown at top, darker reds with depth. */
 export const DEPTH_LAYERS: readonly DepthLayer[] = [
     { startRow: 1, endRow: 5, color: 0xe8b830 },  // warm yellow-brown
     { startRow: 6, endRow: 9, color: 0xc87028 },  // orange-brown
@@ -38,7 +38,7 @@ export const DEPTH_LAYERS: readonly DepthLayer[] = [
 // Spawn
 // ---------------------------------------------------------------------------
 
-/** Digger spawn tile [row, col] — surface row, center. */
+/** Digger spawn tile [row, col] - surface row, center. */
 export const DIGGER_SPAWN: [number, number] = [0, 7];
 
 // ---------------------------------------------------------------------------

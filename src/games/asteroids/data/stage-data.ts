@@ -21,7 +21,7 @@ export const SHIP_ROTATION_SPEED = 5;
 /** Ship thrust acceleration in pixels per second². */
 export const SHIP_THRUST = 200;
 
-/** Ship drag factor — multiplied per second (0–1). */
+/** Ship drag factor - multiplied per second (0–1). */
 export const SHIP_DRAG = 0.98;
 
 /** Maximum ship speed in pixels per second. */

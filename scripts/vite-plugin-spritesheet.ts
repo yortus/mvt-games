@@ -7,7 +7,7 @@
  *
  * Sprite source directories: `src/games/<name>/sprites/*.png`
  * Output paths served/emitted: `/sprites/<name>-sprites.json` and
- * `/sprites/<name>-sprites.png` — referenced from game code via
+ * `/sprites/<name>-sprites.png` - referenced from game code via
  * `Assets.load('/sprites/<name>-sprites.json')`.
  */
 
@@ -52,7 +52,7 @@ function packSprites(dir: string, gameName: string): PackedSheet | null {
         images.push({ name: basename(file, '.png'), png });
     }
 
-    // Compute atlas size — simple row layout (all sprites in one row)
+    // Compute atlas size - simple row layout (all sprites in one row)
     const padding = 1;
     let atlasWidth = 0;
     let atlasHeight = 0;
@@ -150,7 +150,7 @@ function discoverGameSpriteDirs(root: string): { gameName: string; dir: string }
                 results.push({ gameName: entry, dir: assetsDir });
             }
         } catch {
-            // no assets directory — skip
+            // no assets directory - skip
         }
     }
 
@@ -184,7 +184,7 @@ export function spritesheetPlugin(): Plugin {
             config = resolved;
         },
 
-        // Dev server — pack on startup and serve via middleware
+        // Dev server - pack on startup and serve via middleware
         configureServer(server) {
             buildSheets();
 
@@ -224,7 +224,7 @@ export function spritesheetPlugin(): Plugin {
                 });
         },
 
-        // Production build — pack and emit
+        // Production build - pack and emit
         generateBundle() {
             buildSheets();
 

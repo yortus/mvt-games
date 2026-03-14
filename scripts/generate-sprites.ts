@@ -4,7 +4,7 @@
  * Usage:  npm run generate-sprites
  *
  * Discovers and executes every `scripts/generate-*-sprites.ts` file.
- * Add a new generator for each game — it will be picked up automatically.
+ * Add a new generator for each game - it will be picked up automatically.
  */
 
 import { globSync } from 'glob';

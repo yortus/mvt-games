@@ -57,7 +57,7 @@ export interface EnemyModelOptions {
     isWalkable: (row: number, col: number) => boolean;
     /** Live reference to the chase target (typically the digger). */
     chaseTarget: { readonly row: number; readonly col: number };
-    /** Called before entering ghosting — return false to deny (e.g. another enemy is already ghosting). */
+    /** Called before entering ghosting - return false to deny (e.g. another enemy is already ghosting). */
     canStartGhosting?: () => boolean;
 }
 
@@ -184,7 +184,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             return;
         }
         if (canStartGhosting && !canStartGhosting()) {
-            // Denied — retry sooner
+            // Denied - retry sooner
             scheduleGhostCountdown(ghostInterval * 0.5);
             return;
         }
@@ -262,7 +262,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 return state.direction;
             }
         } else {
-            // Current direction blocked — pick another
+            // Current direction blocked - pick another
             for (let i = 0; i < ALL_DIRS.length; i++) {
                 const dir = ALL_DIRS[i];
                 if (dir === reverse) continue;
@@ -274,7 +274,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 }
             }
             if (!found) {
-                // Dead end — reverse
+                // Dead end - reverse
                 const rd = DIRECTION_DELTA[reverse];
                 if (isWalkable(state.tileRow + rd[0], state.tileCol + rd[1])) {
                     bestDir = reverse;
@@ -321,14 +321,14 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         const reverse = oppositeDirection(state.direction);
 
         if (state.tileRow === 0) {
-            // On surface — head left toward col 0
+            // On surface - head left toward col 0
             const leftDelta = DIRECTION_DELTA['left'];
             if (isWalkable(state.tileRow + leftDelta[0], state.tileCol + leftDelta[1])) {
                 return 'left';
             }
         }
 
-        // Underground — prioritise moving up
+        // Underground - prioritise moving up
         let bestDir = state.direction;
         let bestScore = Infinity;
 
@@ -440,7 +440,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             const delta = DIRECTION_DELTA[dir];
             const nr = state.tileRow + delta[0];
             const nc = state.tileCol + delta[1];
-            // Ghosting ignores walkability — can move through anything in bounds
+            // Ghosting ignores walkability - can move through anything in bounds
             if (nr < 0 || nr >= fieldRows || nc < 0 || nc >= fieldCols) continue;
             const d = distanceSq(nr, nc, targetRow, targetCol);
             if (d < bestDist) {
@@ -541,7 +541,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             state.fireTelegraph = false;
             fireTimeline.clear().time(0);
 
-            // If currently inflating, let inflation continue — flee after deflation
+            // If currently inflating, let inflation continue - flee after deflation
             if (state.phase === 'inflating') return;
 
             // If trapped in dirt (not on walkable tile), ghost to surface
@@ -553,7 +553,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 return;
             }
 
-            // On surface or in tunnel — flee normally
+            // On surface or in tunnel - flee normally
             state.phase = 'fleeing';
             timeline.clear().time(0);
             ghostTimeline.clear().time(0);

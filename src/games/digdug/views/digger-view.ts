@@ -116,7 +116,7 @@ export function createDiggerView(
             view.rotation = 0;
         }
 
-        // Harpoon line (stays procedural — variable length)
+        // Harpoon line (stays procedural - variable length)
         harpoonGfx.clear();
         if (isHarpoon) {
             const dist = bindings.getHarpoonDistance();

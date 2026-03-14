@@ -98,18 +98,18 @@ function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> 
 **Key design choices:**
 
 - **`poll()` advances all state and returns it.** The returned `WatchedValues`
-  object is the only way to access `changed` / `value` / `previous` — forcing
+  object is the only way to access `changed` / `value` / `previous` - forcing
   consumers to call `poll()` before reading. This makes it impossible to
   accidentally read stale flags from a previous tick.
 - **First poll detects all values as changed.** Before the first `poll()`,
   internal values are `undefined`. The first call compares `undefined` to the
   current getter result, so `changed` is `true` for every non-`undefined` value.
-  This means views can defer all state-dependent setup to `refresh()` — the
+  This means views can defer all state-dependent setup to `refresh()` - the
   first render naturally runs every `if (watched.xxx.changed)` branch,
   eliminating duplication between factory init and refresh logic.
 - **`previous` is `T | undefined`.** On the first poll, `previous` is
   `undefined` (there was no prior observation). This type signature forces
-  consumers who use `previous` to handle the first-poll edge case — e.g. for
+  consumers who use `previous` to handle the first-poll edge case - e.g. for
   side effects that should only fire on actual transitions:
   ```typescript
   if (watched.score.changed && watched.score.previous !== undefined) {
@@ -203,7 +203,7 @@ The model is a plain object. The view reads it through watchers (for infrequent
 changes) and direct reads (for per-tick values). No events, no signals, no
 framework.
 
-Note that the text nodes are created without initial text content — there is no
+Note that the text nodes are created without initial text content - there is no
 `text: '0'` or `text: 'READY'`. The first `poll()` detects all values as
 changed (they transition from `undefined` to their current value), so the
 `if (watched.xxx.changed)` branches run on the first render and set the correct
@@ -587,13 +587,13 @@ const watcher = watch({
     phase: () => model.phase,
 });
 
-// First poll — detects initial values as changed (from undefined)
+// First poll - detects initial values as changed (from undefined)
 const first = watcher.poll();
 assert.equal(first.score.changed, true);       // undefined → 0
 assert.equal(first.score.value, 0);
 assert.equal(first.score.previous, undefined);  // no prior observation
 
-// No change — same values
+// No change - same values
 const second = watcher.poll();
 assert.equal(second.score.changed, false);
 

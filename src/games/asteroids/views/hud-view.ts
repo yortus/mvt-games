@@ -25,7 +25,7 @@ export function createHudView(bindings: HudViewBindings): Container {
 
     const view = new Container();
 
-    // Score — left
+    // Score - left
     const scoreText = new Text({
         text: 'Score: 0',
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
@@ -33,14 +33,14 @@ export function createHudView(bindings: HudViewBindings): Container {
     scoreText.position.set(8, 6);
     view.addChild(scoreText);
 
-    // Wave — right
+    // Wave - right
     const waveText = new Text({
         text: 'Wave 1',
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
     });
     view.addChild(waveText);
 
-    // Lives — centre (ship icons)
+    // Lives - centre (ship icons)
     const livesContainer = new Container();
     view.addChild(livesContainer);
 

@@ -60,11 +60,11 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     }, textures.digger);
     view.addChild(diggerContainer);
 
-    // Enemies — dynamic list
+    // Enemies - dynamic list
     let enemyContainers: Container[] = [];
     buildEnemies();
 
-    // Rocks — dynamic list
+    // Rocks - dynamic list
     let rockContainers: Container[] = [];
     buildRocks();
 

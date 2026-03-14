@@ -86,7 +86,7 @@ export function createRockModel(options: RockModelOptions): RockModel {
         }
 
         if (endRow === startRow) {
-            // Nowhere to fall — shatter immediately
+            // Nowhere to fall - shatter immediately
             scheduleShatter();
             return;
         }

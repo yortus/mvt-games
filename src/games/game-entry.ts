@@ -29,7 +29,7 @@ export interface GameEntry {
     start(stage: Container): GameSession;
 }
 
-/** A running game instance — updated each tick and destroyable. */
+/** A running game instance - updated each tick and destroyable. */
 export interface GameSession {
     /** Advance game state by the given elapsed milliseconds. */
     update(deltaMs: number): void;

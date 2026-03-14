@@ -183,7 +183,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         for (let t = 1; t <= maxRange; t++) {
             const checkRow = fromRow + delta[0] * t;
             const checkCol = fromCol + delta[1] * t;
-            // Out of bounds — stop
+            // Out of bounds - stop
             if (checkRow < 0 || checkRow >= fieldRows || checkCol < 0 || checkCol >= fieldCols) {
                 return t - 0.5;
             }
@@ -285,7 +285,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return;
         }
 
-        // No target yet — scan for enemy near the harpoon tip
+        // No target yet - scan for enemy near the harpoon tip
         if (digger.harpoonDistance < 0.3) return;
 
         const delta = DIRECTION_DELTA[digger.direction];

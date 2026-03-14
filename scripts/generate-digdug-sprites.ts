@@ -126,7 +126,7 @@ const DIGGER_PUMP: string[] = [
     '................',
 ];
 
-/** Digger lives icon — 8×8 */
+/** Digger lives icon - 8×8 */
 const DIGGER_ICON: string[] = [
     '..WW....',
     '.WWWW...',
@@ -472,4 +472,4 @@ for (const [name, rows] of sprites) {
     console.log(`  wrote ${name} (${target}×${target})`);
 }
 
-console.log(`\nDone — ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);

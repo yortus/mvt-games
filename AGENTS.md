@@ -59,6 +59,7 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 
 ## Critical Rules (Do Not Violate)
 
+0. **No em-dashes** - use hyphens instead.
 1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only.
 2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings (leaf views) or model properties (top-level application views), write to the scene graph, nothing else. (Exception: limited presentation-only state like score-counter tweens — see MVT guide.)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`).

@@ -61,7 +61,7 @@ const PALETTE: Record<string, Rgba> = {
 // Sprite definitions (character grids)
 // ---------------------------------------------------------------------------
 
-/** Boss — 16×16 blue/purple beetle commander */
+/** Boss - 16×16 blue/purple beetle commander */
 const BOSS: string[] = [
     '....b..KK..b....',
     '...bB..KK..Bb...',
@@ -81,7 +81,7 @@ const BOSS: string[] = [
     '................',
 ];
 
-/** Butterfly — 16×16 angular wings */
+/** Butterfly - 16×16 angular wings */
 const BUTTERFLY: string[] = [
     '....p....p......',
     '...p......p.....',
@@ -101,7 +101,7 @@ const BUTTERFLY: string[] = [
     '................',
 ];
 
-/** Bee — 16×16 yellow/black */
+/** Bee - 16×16 yellow/black */
 const BEE: string[] = [
     '......KK........',
     '.....KyyK.......',
@@ -121,7 +121,7 @@ const BEE: string[] = [
     '................',
 ];
 
-/** Player ship — 16×16, facing up */
+/** Player ship - 16×16, facing up */
 const SHIP: string[] = [
     '.......WW.......',
     '......WCCW......',
@@ -141,7 +141,7 @@ const SHIP: string[] = [
     '................',
 ];
 
-/** Player bullet — 3×8 white capsule */
+/** Player bullet - 3×8 white capsule */
 const BULLET_PLAYER: string[] = [
     '.W.',
     'WWW',
@@ -153,7 +153,7 @@ const BULLET_PLAYER: string[] = [
     '.W.',
 ];
 
-/** Enemy bullet — 3×8 red capsule */
+/** Enemy bullet - 3×8 red capsule */
 const BULLET_ENEMY: string[] = [
     '.R.',
     'RRR',
@@ -165,7 +165,7 @@ const BULLET_ENEMY: string[] = [
     '.R.',
 ];
 
-/** Ship lives icon — 8×8 tiny ship for HUD */
+/** Ship lives icon - 8×8 tiny ship for HUD */
 const SHIP_ICON: string[] = [
     '...CC...',
     '..CWWC..',
@@ -223,4 +223,4 @@ for (const [name, rows] of sprites) {
     console.log(`  wrote ${name} (${rows[0].length}×${rows.length})`);
 }
 
-console.log(`\nDone — ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);

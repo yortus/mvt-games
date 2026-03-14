@@ -24,7 +24,7 @@ export interface LevelConfig {
 // ---------------------------------------------------------------------------
 
 export const LEVELS: readonly LevelConfig[] = [
-    // Level 1 — easy intro
+    // Level 1 - easy intro
     {
         enemySpawns: [
             { row: 3, col: 3, kind: 'pooka' },
@@ -40,7 +40,7 @@ export const LEVELS: readonly LevelConfig[] = [
         enemySpeed: 2.5,
         ghostInterval: 8,
     },
-    // Level 2 — introduce Fygar
+    // Level 2 - introduce Fygar
     {
         enemySpawns: [
             { row: 3, col: 3, kind: 'pooka' },
@@ -98,7 +98,7 @@ export const LEVELS: readonly LevelConfig[] = [
         enemySpeed: 4,
         ghostInterval: 5,
     },
-    // Level 5 — hard
+    // Level 5 - hard
     {
         enemySpawns: [
             { row: 3, col: 3, kind: 'fygar' },

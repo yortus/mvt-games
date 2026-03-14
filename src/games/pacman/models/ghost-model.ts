@@ -41,9 +41,9 @@ export interface GhostModelOptions {
     isWalkable: (row: number, col: number) => boolean;
     /** Live reference to the primary chase target (typically Pac-Man). */
     chaseTarget: { readonly row: number; readonly col: number; readonly direction: Direction };
-    /** For 'flank' behaviour — the partner ghost whose position is mirrored. */
+    /** For 'flank' behaviour - the partner ghost whose position is mirrored. */
     flankPartner?: { readonly row: number; readonly col: number };
-    /** For 'fickle' behaviour — the tile to retreat to when close to the target. */
+    /** For 'fickle' behaviour - the tile to retreat to when close to the target. */
     scatterTarget?: { readonly row: number; readonly col: number };
 }
 
@@ -66,8 +66,8 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         moving: false,
     };
 
-    // Paused timeline for tile-to-tile movement — advanced only via update().
-    // No autoRemoveChildren — we clear manually before each move to
+    // Paused timeline for tile-to-tile movement - advanced only via update().
+    // No autoRemoveChildren - we clear manually before each move to
     // avoid the mid-iteration removal race (see style-guide GSAP §).
     const timeline = gsap.timeline({ paused: true });
 
@@ -167,7 +167,7 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
 
         const duration = 1 / speed;
 
-        // Fresh timeline for each move — prevents accumulated-time drift.
+        // Fresh timeline for each move - prevents accumulated-time drift.
         timeline.clear().time(0);
         timeline.to(state, { row: nextTileRow, col: nextTileCol, duration, ease: 'none' });
         timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);

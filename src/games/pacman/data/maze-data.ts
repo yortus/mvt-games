@@ -55,7 +55,7 @@ export const MAZE_DATA: TileKind[][] = mazeRows.map((row) =>
     Array.from({ length: MAZE_COLS }, (_, i) => TILE_CHARS[row[i]] ?? 'empty'),
 );
 
-/** Pac-Man spawn tile [row, col] — derived from P in MAZE_STRING. */
+/** Pac-Man spawn tile [row, col] - derived from P in MAZE_STRING. */
 export const PACMAN_SPAWN: [number, number] = (() => {
     for (let r = 0; r < mazeRows.length; r++) {
         const c = mazeRows[r].indexOf(PACMAN_CHAR);
@@ -67,9 +67,9 @@ export const PACMAN_SPAWN: [number, number] = (() => {
     throw new Error('Pac-Man spawn not found in maze');
 })();
 
-/** Ghost spawn tiles [row, col] — Blinky, Pinky, Inky, Clyde. */
+/** Ghost spawn tiles [row, col] - Blinky, Pinky, Inky, Clyde. */
 export const GHOST_SPAWNS: [number, number][] = [
-    [10, 13], // Blinky (red)   — just outside ghost house
+    [10, 13], // Blinky (red)   - just outside ghost house
     [10, 14], // Pinky (pink)
     [10, 15], // Inky (cyan)
     [10, 16], // Clyde (orange)
@@ -80,8 +80,8 @@ export const HUD_HEIGHT = 30;
 
 /** Ghost colors: Blinky, Pinky, Inky, Clyde. */
 export const GHOST_COLORS: number[] = [
-    0xff0000, // Blinky — red
-    0xffb8ff, // Pinky  — pink
-    0x00ffff, // Inky   — cyan
-    0xffb852, // Clyde  — orange
+    0xff0000, // Blinky - red
+    0xffb8ff, // Pinky  - pink
+    0x00ffff, // Inky   - cyan
+    0xffb852, // Clyde  - orange
 ];

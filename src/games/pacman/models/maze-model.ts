@@ -35,7 +35,7 @@ export function createMazeModel(options: MazeModelOptions): MazeModel {
     // Clone the grid so we own the data
     const tiles: TileKind[][] = grid.map((row) => [...row]);
 
-    // Flat boolean array for dot positions — no per-lookup allocation
+    // Flat boolean array for dot positions - no per-lookup allocation
     const dots: boolean[] = new Array(rows * cols).fill(false);
     let dotCount = 0;
     for (let r = 0; r < rows; r++) {
@@ -81,7 +81,7 @@ export function createMazeModel(options: MazeModelOptions): MazeModel {
         },
 
         update(_deltaMs: number): void {
-            // Maze is static — nothing to update
+            // Maze is static - nothing to update
         },
     };
 

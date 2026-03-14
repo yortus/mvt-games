@@ -35,7 +35,7 @@ export interface FieldModelOptions {
 export function createFieldModel(options: FieldModelOptions): FieldModel {
     const { rows, cols } = options;
 
-    // Own the data — clone the input layout
+    // Own the data - clone the input layout
     const tiles: TileKind[] = new Array(rows * cols);
     let tunnels = 0;
 
@@ -96,7 +96,7 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
         },
 
         update(_deltaMs: number): void {
-            // Field is static — mutations happen via dig()
+            // Field is static - mutations happen via dig()
         },
     };
 

@@ -49,7 +49,7 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
         moving: false,
     };
 
-    // Paused timeline — movement tweens, advanced only via update().
+    // Paused timeline - movement tweens, advanced only via update().
     // autoRemoveChildren cleans up completed tweens (see style-guide GSAP §).
     const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
@@ -97,7 +97,7 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
         setDirection(dir: Direction): void {
             state.requestedDirection = dir;
 
-            // Allow instant reversal while moving — keep visual position,
+            // Allow instant reversal while moving - keep visual position,
             // advance logical tile to the one we were heading toward so that
             // scheduleMove naturally targets the tile we came from.
             if (state.moving && dir === oppositeDirection(state.direction)) {

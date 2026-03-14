@@ -45,7 +45,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     view.addChild(starsGfx);
     drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
-    // Enemy views — dynamic list
+    // Enemy views - dynamic list
     let enemyContainers: Container[] = [];
     buildEnemies();
 

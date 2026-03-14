@@ -35,7 +35,7 @@ const PALETTE: Record<string, Rgba> = {
 // Pac-Man mouth frames (16×16, facing right)
 // ---------------------------------------------------------------------------
 
-/** Mouth closed — full yellow circle */
+/** Mouth closed - full yellow circle */
 const PACMAN_CLOSED: string[] = [
     '.....YYYYYY.....',
     '....YYYYYYYY....',
@@ -55,7 +55,7 @@ const PACMAN_CLOSED: string[] = [
     '.....YYYYYY.....',
 ];
 
-/** Mouth half-open — small wedge cut from right */
+/** Mouth half-open - small wedge cut from right */
 const PACMAN_MID: string[] = [
     '.....YYYYYY.....',
     '....YYYYYYYY....',
@@ -75,7 +75,7 @@ const PACMAN_MID: string[] = [
     '.....YYYYYY.....',
 ];
 
-/** Mouth wide open — large wedge cut from right */
+/** Mouth wide open - large wedge cut from right */
 const PACMAN_OPEN: string[] = [
     '.....YYYYYY.....',
     '....YYYYYYYY....',
@@ -99,7 +99,7 @@ const PACMAN_OPEN: string[] = [
 // Ghost sprites (16×16)
 // ---------------------------------------------------------------------------
 
-/** Ghost body — white shape for tinting at runtime */
+/** Ghost body - white shape for tinting at runtime */
 const GHOST_BODY: string[] = [
     '.....WWWWWW.....',
     '....WWWWWWWW....',
@@ -119,7 +119,7 @@ const GHOST_BODY: string[] = [
     '................',
 ];
 
-/** Ghost eyes — transparent with white eyes and blue pupils */
+/** Ghost eyes - transparent with white eyes and blue pupils */
 const GHOST_EYES: string[] = [
     '................',
     '................',
@@ -188,4 +188,4 @@ for (const [name, rows] of sprites) {
     console.log(`  wrote ${name} (${TARGET_TILE}×${TARGET_TILE})`);
 }
 
-console.log(`\nDone — ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);

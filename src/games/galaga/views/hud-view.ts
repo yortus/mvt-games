@@ -25,7 +25,7 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
 
     const view = new Container();
 
-    // Score — left
+    // Score - left
     const scoreText = new Text({
         text: 'Score: 0',
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
@@ -33,14 +33,14 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
     scoreText.position.set(8, 6);
     view.addChild(scoreText);
 
-    // Stage — right
+    // Stage - right
     const stageText = new Text({
         text: 'Stage 1',
         style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
     });
     view.addChild(stageText);
 
-    // Lives — centre (ship icons)
+    // Lives - centre (ship icons)
     const livesContainer = new Container();
     view.addChild(livesContainer);
 

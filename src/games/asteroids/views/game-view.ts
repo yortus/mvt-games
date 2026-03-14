@@ -26,7 +26,7 @@ export function createGameView(game: GameModel): Container {
     view.addChild(starsGfx);
     drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
 
-    // Asteroid views — dynamic list
+    // Asteroid views - dynamic list
     let asteroidContainers: Container[] = [];
     buildAsteroids();
 

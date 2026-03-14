@@ -92,7 +92,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let ghosts = buildGhosts(maze);
     let scoreModel = createScoreModel();
 
-    // Player input — persists across resets (input device outlives a single game)
+    // Player input - persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
 
@@ -163,7 +163,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 }
             }
 
-            // Apply current direction every tick (not via watch — a watch
+            // Apply current direction every tick (not via watch - a watch
             // would "consume" a direction the player repeats after a failed
             // turn attempt, making input feel unresponsive).
             if (gamePhase === 'playing') {

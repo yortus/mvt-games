@@ -82,7 +82,7 @@ async function main(): Promise<void> {
  *
  * Time is advanced in small 16 ms steps (not one giant leap) because
  * models contain multi-phase state machines and GSAP timelines that
- * depend on inter-tick transitions — see the MVT guide § "update(deltaMs)
+ * depend on inter-tick transitions - see the MVT guide § "update(deltaMs)
  * Contract" for details.
  */
 async function generateThumbnails(

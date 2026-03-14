@@ -99,7 +99,7 @@ export function createEnemyView(
         // Direction flip
         view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
 
-        // Fygar fire (stays procedural — variable shape)
+        // Fygar fire (stays procedural - variable shape)
         if (watched.fire.changed || watched.direction.changed || watched.tileSize.changed) {
             fireGfx.clear();
             if (bindings.isFireActive() && bindings.getKind() === 'fygar') {

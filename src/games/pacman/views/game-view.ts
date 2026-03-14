@@ -54,11 +54,11 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     }, textures.pacman);
     view.addChild(pacmanContainer);
 
-    // Ghosts — managed as a dynamic list
+    // Ghosts - managed as a dynamic list
     let ghostContainers: Container[] = [];
     buildGhosts();
 
-    // HUD — positioned below the maze
+    // HUD - positioned below the maze
     const hudContainer = createHudView({
         getScore: () => game.score.score,
     });

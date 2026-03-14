@@ -55,7 +55,7 @@ export function createFieldView(bindings: FieldViewBindings): Container {
         const ts = bindings.getTileSize();
         const layers = bindings.getDepthLayers();
 
-        // Surface row — sky
+        // Surface row - sky
         gfx.rect(0, 0, cols * ts, ts).fill(SKY_COLOR);
 
         // Dirt layers and tunnels
@@ -72,10 +72,10 @@ export function createFieldView(bindings: FieldViewBindings): Container {
             for (let c = 0; c < cols; c++) {
                 const kind = bindings.getTileKind(r, c);
                 if (kind === 'tunnel') {
-                    // Tunnel — black background
+                    // Tunnel - black background
                     gfx.rect(c * ts, r * ts, ts, ts).fill(0x000000);
                 } else {
-                    // Dirt — layered color
+                    // Dirt - layered color
                     gfx.rect(c * ts, r * ts, ts, ts).fill(color);
 
                     // Subtle texture lines at layer boundaries

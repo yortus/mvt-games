@@ -134,11 +134,11 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             diveTimeline.clear().time(0);
 
             let t = 0;
-            // Phase 1 — curve to one side
+            // Phase 1 - curve to one side
             diveTimeline.to(state, { x: curveX, y: midY, duration: d1, ease: 'power1.in' }, t);
             t += d1;
 
-            // Phase 2 — dive toward player, exit bottom
+            // Phase 2 - dive toward player, exit bottom
             diveTimeline.to(
                 state,
                 { x: targetX, y: playHeight + 30, duration: d2, ease: 'none' },
@@ -157,14 +157,14 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             }
             t += d2;
 
-            // Phase 3 — teleport above screen
+            // Phase 3 - teleport above screen
             diveTimeline.set(state, { x: slotX, y: -20 }, t);
 
-            // Phase 4 — return to formation slot
+            // Phase 4 - return to formation slot
             diveTimeline.to(state, { y: slotY, duration: d3, ease: 'power2.out' }, t);
             t += d3;
 
-            // Done — back in formation
+            // Done - back in formation
             diveTimeline.call(
                 () => {
                     state.phase = 'formation';

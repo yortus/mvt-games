@@ -49,7 +49,7 @@ export function createMazeView(bindings: MazeViewBindings): Container {
             return;
         }
 
-        // Normal path — hide eaten dots
+        // Normal path - hide eaten dots
         for (let i = dotEntries.length - 1; i >= 0; i--) {
             const entry = dotEntries[i];
             if (!bindings.isDotAt(entry.r, entry.c)) {
