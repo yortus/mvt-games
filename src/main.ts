@@ -1,4 +1,4 @@
-import { Application, Container, RenderTexture, type Texture } from 'pixi.js';
+import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
 import {
     createAsteroidsEntry,
@@ -15,9 +15,17 @@ import {
 const CABINET_WIDTH = 480;
 const CABINET_HEIGHT = 360;
 
+/** Margin (in CSS pixels) between the scaled canvas and the viewport edges. */
+const SCREEN_MARGIN = 32;
+
 // ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
+
+// Ensure all textures default to nearest-neighbor (blocky pixel-art look).
+// Individual spritesheets already set this, but this covers programmatic
+// textures such as RenderTexture thumbnails.
+TextureSource.defaultOptions.scaleMode = 'nearest';
 
 main();
 
@@ -31,6 +39,30 @@ async function main(): Promise<void> {
         roundPixels: true,
     });
     document.body.appendChild(app.canvas);
+
+    // ---- Responsive scaling ------------------------------------------------
+    function fitCanvasToScreen(): void {
+        const maxW = window.innerWidth - SCREEN_MARGIN * 2;
+        const maxH = window.innerHeight - SCREEN_MARGIN * 2;
+        const logicalW = app.screen.width;
+        const logicalH = app.screen.height;
+        const scale = Math.min(maxW / logicalW, maxH / logicalH);
+        // Round to integer multiple so game pixels stay perfectly aligned
+        const intScale = Math.max(1, Math.floor(scale));
+        const dpr = window.devicePixelRatio || 1;
+
+        // Render at display-pixel resolution so text antialiasing is
+        // invisible. Sprite textures use nearest-neighbor filtering so
+        // they stay blocky despite the high backing-buffer resolution.
+        app.renderer.resolution = intScale * dpr;
+        app.renderer.resize(logicalW, logicalH);
+
+        app.canvas.style.width = `${logicalW * intScale}px`;
+        app.canvas.style.height = `${logicalH * intScale}px`;
+    }
+
+    fitCanvasToScreen();
+    window.addEventListener('resize', fitCanvasToScreen);
 
     // ---- Game registry -----------------------------------------------------
     const games = [createAsteroidsEntry(), createDigdugEntry(), createGalagaEntry(), createPacmanEntry()];
@@ -53,10 +85,12 @@ async function main(): Promise<void> {
             const entry = cabinet.games[cabinet.selectedIndex];
             app.renderer.resize(entry.screenWidth, entry.screenHeight);
             cabinet.launchSelected(app.stage);
+            fitCanvasToScreen();
         },
         onExit: () => {
             cabinet.exitToMenu();
             app.renderer.resize(CABINET_WIDTH, CABINET_HEIGHT);
+            fitCanvasToScreen();
         },
     };
 
