@@ -6,10 +6,10 @@ import type { RotationDirection } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface KeyboardInputBindings {
-    onRotationChange(rot: RotationDirection): void;
-    onThrustChange(pressed: boolean): void;
-    onFireChange(pressed: boolean): void;
-    onRestartChange(pressed: boolean): void;
+    onRotationChange?(rot: RotationDirection): void;
+    onThrustChange?(pressed: boolean): void;
+    onFireChange?(pressed: boolean): void;
+    onRestartChange?(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -46,37 +46,37 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             e.preventDefault();
             heldKeys.add(e.key);
             currentRotation = rot;
-            bindings.onRotationChange(rot);
+            bindings.onRotationChange?.(rot);
             return;
         }
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
-            bindings.onThrustChange(true);
+            bindings.onThrustChange?.(true);
             return;
         }
         if (e.key === ' ') {
             e.preventDefault();
-            bindings.onFireChange(true);
+            bindings.onFireChange?.(true);
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartChange(true);
+            bindings.onRestartChange?.(true);
         }
     }
 
     function onKeyUp(e: KeyboardEvent): void {
         if (e.key === ' ') {
             e.preventDefault();
-            bindings.onFireChange(false);
+            bindings.onFireChange?.(false);
             return;
         }
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
-            bindings.onThrustChange(false);
+            bindings.onThrustChange?.(false);
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartChange(false);
+            bindings.onRestartChange?.(false);
             return;
         }
         const rot = ROTATION_MAP[e.key];
@@ -85,7 +85,7 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             heldKeys.delete(e.key);
             if (currentRotation === rot) {
                 currentRotation = findHeldRotation();
-                bindings.onRotationChange(currentRotation);
+                bindings.onRotationChange?.(currentRotation);
             }
         }
     }

@@ -6,9 +6,9 @@ import type { Direction } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface KeyboardInputBindings {
-    onDirectionChange(dir: Direction): void;
-    onPumpChange(pressed: boolean): void;
-    onRestartChange(pressed: boolean): void;
+    onDirectionChange?(dir: Direction): void;
+    onPumpChange?(pressed: boolean): void;
+    onRestartChange?(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,27 +51,27 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             e.preventDefault();
             heldKeys.add(e.key);
             currentDirection = dir;
-            bindings.onDirectionChange(dir);
+            bindings.onDirectionChange?.(dir);
             return;
         }
         if (e.key === ' ') {
             e.preventDefault();
-            bindings.onPumpChange(true);
+            bindings.onPumpChange?.(true);
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartChange(true);
+            bindings.onRestartChange?.(true);
         }
     }
 
     function onKeyUp(e: KeyboardEvent): void {
         if (e.key === ' ') {
             e.preventDefault();
-            bindings.onPumpChange(false);
+            bindings.onPumpChange?.(false);
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartChange(false);
+            bindings.onRestartChange?.(false);
             return;
         }
         const dir = KEY_MAP[e.key];
@@ -81,7 +81,7 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
             // If this was the active direction, check if another direction key is still held
             if (currentDirection === dir) {
                 currentDirection = findHeldDirection();
-                bindings.onDirectionChange(currentDirection);
+                bindings.onDirectionChange?.(currentDirection);
             }
         }
     }

@@ -478,13 +478,56 @@ sequenceDiagram
 interface ScoreViewBindings {
     getScore(): number;
     getHighScore(): number;
-    onResetClick(): void;
+    onResetClick?(): void;
 }
 ```
 
 The code that constructs both the model and view is responsible for wiring the
 bindings — mapping model properties to `get*()` accessors and model methods to
 `on*()` handlers.
+
+#### Optional bindings
+
+**`on*()` bindings should usually be optional.** A view emits events for user
+input, but the application decides whether and how it responds. Not every
+consumer will use every event. For example, a gamepad input view may report direction and fire events,
+but a simple game might only care about direction.
+Declaring `on*()` members as optional keeps the view usable in more contexts
+without forcing callers to supply no-op handlers.
+
+Inside the view, call optional `on*()` bindings with optional chaining:
+
+```ts
+interface InputViewBindings {
+    onDirectionChange?(dir: Direction): void;
+    onFireChange?(pressed: boolean): void;
+}
+
+// In the view's event handler:
+bindings.onDirectionChange?.(dir);
+bindings.onFireChange?.(true);
+```
+
+**`get*()` bindings may also be optional**, but only when there is one obvious,
+uncontroversial default value. This applies to properties where omission clearly
+means "use the standard value" rather than "the caller forgot to provide it."
+When a `get*()` binding is optional, the view should document the default and
+apply it with a nullish-coalescing fallback:
+
+```ts
+interface PanelViewBindings {
+    getLabel(): string;              // required — no sensible default
+    getOpacity?(): number;           // optional — defaults to 1 (fully opaque)
+    getVisible?(): boolean;          // optional — defaults to true
+}
+
+// In the view's refresh():
+const opacity = bindings.getOpacity?.() ?? 1;
+const visible = bindings.getVisible?.() ?? true;
+```
+
+When in doubt, keep `get*()` bindings required — a missing accessor is usually
+a wiring bug, and TypeScript catching it at the call site is valuable.
 
 ### Reactive Bindings
 

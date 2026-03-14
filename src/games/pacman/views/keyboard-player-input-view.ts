@@ -6,8 +6,8 @@ import type { Direction } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface KeyboardInputBindings {
-    onDirectionChange(dir: Direction): void;
-    onRestartChange(pressed: boolean): void;
+    onDirectionChange?(dir: Direction): void;
+    onRestartChange?(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -22,11 +22,11 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
         const dir = KEY_MAP[e.key];
         if (dir !== undefined) {
             e.preventDefault();
-            bindings.onDirectionChange(dir);
+            bindings.onDirectionChange?.(dir);
             return;
         }
         if (e.key === 'Enter') {
-            bindings.onRestartChange(true);
+            bindings.onRestartChange?.(true);
         }
     }
 
@@ -34,7 +34,7 @@ export function createKeyboardPlayerInputView(bindings: KeyboardInputBindings): 
 
     function onKeyUp(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
-            bindings.onRestartChange(false);
+            bindings.onRestartChange?.(false);
         }
     }
 

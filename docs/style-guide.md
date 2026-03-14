@@ -16,6 +16,7 @@ Coding conventions, naming rules, and project structure for this codebase.
 - [Project Structure](#project-structure)
 - [Modules and Barrel Files](#modules-and-barrel-files)
 - [Enumeration Types](#enumeration-types)
+- [Easily Confused Names](#easily-confused-names)
 - [No `null`](#no-null)
 - [Models](#models)
 - [Views](#views)
@@ -34,6 +35,7 @@ Coding conventions, naming rules, and project structure for this codebase.
 | Factory functions     | `createXxxModel(options)`           | [Models](#models)                                     |
 | Binding accessors     | `getScore()`, `onResetClick()`      | [Views](#views)                                       |
 | Enum-like types       | `type TileKind = 'wall' \| 'empty'` | [Enumeration Types](#enumeration-types)               |
+| Confused names        | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)     |
 | Barrel imports        | `import { Foo } from './module'`    | [Modules and Barrel Files](#modules-and-barrel-files) |
 | Module specifiers     | `'./foo'` not `'./foo.ts'`          | [Modules and Barrel Files](#modules-and-barrel-files) |
 | Indentation           | 4 spaces                            | [Formatting](#formatting)                             |
@@ -56,11 +58,11 @@ All naming rules collected in one place for easy reference.
 | Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`            |
 | Binding event handlers | `on` + description           | `onDirectionChange()`, `onResetClick()` |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌           |
+| Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌ |
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`              |
 
-**Why `Kind` over `Type`?** — The word "type" is heavily overloaded in
-TypeScript (`type` keyword, `typeof`, type parameters). Using `Kind` avoids
-ambiguity in both code and conversation.
+See [Easily Confused Names](#easily-confused-names) for the reasoning
+behind the `Kind`/`Type` and `phase`/`state` rules.
 
 ---
 
@@ -275,6 +277,34 @@ enum TileType {
 
 ---
 
+## Easily Confused Names
+
+Some common English words already carry a well-known meaning in programming.
+When these words appear as identifier names with a _different_ meaning, readers
+have to pause and work out which sense is intended. The words below are
+especially prone to this — avoid them in favour of more precise alternatives.
+
+| Avoid       | Prefer           | Rationale                                                                                                                |
+| ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **`type`**  | `kind`           | Easily confused with the TypeScript concept of a _type_ (`type` keyword, `typeof`, type parameters). Use `kind` instead. |
+| **`state`** | `phase`, `status`, `mode`, or a domain-specific name | Every property on a model is "state." A property _called_ `state` is confusingly meta — `game.state` could mean "all of the game's state" or "one specific enum value." Use a precise name: `phase` for lifecycle stages, `status` for conditions, `mode` for operational modes, or something domain-specific. |
+
+```ts
+type EnemyType = 'pooka' | 'fygar';               // ❌ 'type' clashes with the TS concept of a type
+type EnemyKind = 'pooka' | 'fygar';               // ✅ clearly means which kind of enemy
+
+type GameState = 'idle' | 'playing' | 'gameover'; // ❌ confusingly meta — all properties are "state"
+type GamePhase = 'idle' | 'playing' | 'gameover'; // ✅ clearly means lifecycle stage
+```
+
+**General principle:** if a word already has a common meaning in the codebase
+or language, and your intended meaning is different, choose a word that doesn't
+require the reader to disambiguate. If a name could reasonably describe _all_
+properties on the object (`state`, `data`, `info`, `value`), it's too vague —
+pick something that distinguishes this property from the others.
+
+---
+
 ## No `null`
 
 Prefer `undefined` over `null` throughout the codebase to align with
@@ -405,7 +435,7 @@ interface HudViewBindings {
     getScore(): number;
     getHighScore(): number;
     getLives(): number;
-    onResetClick(): void;
+    onResetClick?(): void;
 }
 
 // ---------------------------------------------------------------------------
