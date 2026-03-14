@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { GameModel } from '../models';
 import { TILE_SIZE, MAZE_ROWS, MAZE_COLS } from '../data';
 import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
@@ -23,7 +23,7 @@ export interface GameViewTextures {
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
     // ---- Change detection ---------------------------------------------------
-    const watcher = createWatcher({
+    const watcher = watch({
         ghostCount: () => game.ghosts.length,
         phase: () => game.phase,
     });

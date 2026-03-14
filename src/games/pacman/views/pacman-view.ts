@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { Direction } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ export function createPacmanView(
     bindings: PacmanViewBindings,
     textures: PacmanViewTextures,
 ): Container {
-    const watcher = createWatcher({ direction: bindings.getDirection });
+    const watcher = watch({ direction: bindings.getDirection });
 
     const view = new Container();
     const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });

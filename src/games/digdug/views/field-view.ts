@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { TileKind, DepthLayer } from '../data';
 import type { GamePhase } from '../models';
 
@@ -24,7 +24,7 @@ export interface FieldViewBindings {
 const SKY_COLOR = 0x44aaff;
 
 export function createFieldView(bindings: FieldViewBindings): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         rows: bindings.getRows,
         cols: bindings.getCols,
         tileSize: bindings.getTileSize,

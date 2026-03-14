@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { GamePhase, TileKind } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ export function createMazeView(bindings: MazeViewBindings): Container {
     let dotEntries: { r: number; c: number; gfx: Graphics }[] = [];
 
     // ---- Change detection ---------------------------------------------------
-    const watcher = createWatcher({
+    const watcher = watch({
         rows: bindings.getRows,
         cols: bindings.getCols,
         tileSize: bindings.getTileSize,

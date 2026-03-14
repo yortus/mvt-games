@@ -45,7 +45,7 @@ and situational guidance.
 | [Push vs Pull Reactivity](push-vs-pull.md) | Push model, pull model, hybrids, state-vs-change framing |
 | [Events (Pub/Sub)](events.md) | EventTarget, typed emitters, subscription lifecycle, runtime traceability |
 | [Signals](signals.md) | Dependency tracking, effects, memos, batching, external integration |
-| [Watchers (Poll-Based)](watchers.md) | Poll-based detection, `createWatcher`, GC-safe lifecycle |
+| [Watchers (Poll-Based)](watchers.md) | Poll-based detection, `watch`, GC-safe lifecycle |
 | [Comparison & Decision Framework](comparison.md) | Side-by-side summary, performance, correctness, testability, maintainability, decision flowchart |
 | [Worked Examples](examples.md) | Score display, ghost transitions, GSAP integration, asteroid field |
 

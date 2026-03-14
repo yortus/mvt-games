@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { RockPhase } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -31,7 +31,7 @@ export function createRockView(
     bindings: RockViewBindings,
     textures: RockViewTextures,
 ): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         phase: bindings.getPhase,
         tileSize: bindings.getTileSize,
     });

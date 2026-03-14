@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Textures
@@ -29,7 +29,7 @@ export function createGhostView(
     bindings: GhostViewBindings,
     textures: GhostViewTextures,
 ): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         color: bindings.getColor,
         tileSize: bindings.getTileSize,
     });

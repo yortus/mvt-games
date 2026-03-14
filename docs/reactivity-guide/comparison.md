@@ -15,7 +15,7 @@ decision framework to help you choose the right approach for your project.
 |---|---|---|---|
 | **Model** | Push | Hybrid (push-pull) | Pull |
 | **Source awareness** | Source must emit events | Source must wrap values in signals | Source unaware - any readable value works |
-| **Consumer setup** | Subscribe with `on()` | Read signal inside reactive context | Wrap getters in `createWatcher()` |
+| **Consumer setup** | Subscribe with `on()` | Read signal inside reactive context | Wrap getters in `watch()` |
 | **Cleanup required** | Yes - `off()` per subscription | Yes - `dispose()` per ownership scope | No - stop polling, done |
 | **Leak risk** | Real - missed `off()` | Real - missed `dispose()` | None |
 | **Cost when idle** | Zero | Zero (no computations re-run) | O(n) getter calls + comparisons |

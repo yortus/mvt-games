@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { WaveConfig } from '../data';
 import {
     FORMATION_LEFT,
@@ -160,7 +160,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    const watcher = createWatcher({ restart: () => playerInput.restartPressed });
+    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Stage management --------------------------------------------------
 

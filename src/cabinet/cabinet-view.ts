@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { CabinetPhase } from './cabinet-model';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ interface Card {
 }
 
 export function createCabinetView(bindings: CabinetViewBindings): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         phase: bindings.getPhase,
         selected: bindings.getSelectedIndex,
         count: bindings.getGameCount,

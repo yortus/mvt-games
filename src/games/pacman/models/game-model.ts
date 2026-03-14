@@ -1,4 +1,4 @@
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { TileKind } from '../data';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';
@@ -94,7 +94,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // Player input — persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
-    const watcher = createWatcher({ restart: () => playerInput.restartPressed });
+    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Collision detection -----------------------------------------------
 

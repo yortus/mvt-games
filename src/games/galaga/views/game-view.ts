@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
@@ -25,7 +25,7 @@ export interface GameViewTextures {
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         enemyCount: () => game.enemies.length,
         pBulletCount: () => game.playerBullets.length,
         eBulletCount: () => game.enemyBullets.length,

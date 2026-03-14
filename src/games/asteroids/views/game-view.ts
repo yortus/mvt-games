@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
@@ -13,7 +13,7 @@ import { createKeyboardPlayerInputView } from './keyboard-player-input-view';
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         asteroidCount: () => game.asteroids.length,
         bulletCount: () => game.bullets.length,
         phase: () => game.phase,

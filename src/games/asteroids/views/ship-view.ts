@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -18,7 +18,7 @@ export interface ShipViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createShipView(bindings: ShipViewBindings): Container {
-    const watcher = createWatcher({ alive: bindings.isAlive });
+    const watcher = watch({ alive: bindings.isAlive });
 
     const view = new Container();
     const bodyGfx = new Graphics();

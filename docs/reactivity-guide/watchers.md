@@ -47,11 +47,11 @@ function refresh() {
 This works, but repeating the pattern for many values is verbose and
 error-prone. A small abstraction can encapsulate it.
 
-## Implementation: `Watcher`
+## Implementing the `watch` helper
 
-A view typically watches several values at once. `createWatcher` accepts a
-record of getter functions and provides a single `poll()` call that advances
-all state together:
+A view typically watches several values at once. `watch()` accepts a
+record of getter functions for values to be watched, and provides a single `poll()` method that re-checks
+each value:
 
 ```typescript
 interface Watcher<T extends Record<string, () => unknown>> {
@@ -68,7 +68,7 @@ interface WatchedProperty<T> {
     readonly previous: T | undefined;
 }
 
-function createWatcher<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
+function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
     const reads = keys.map(k => getters[k]);
     const state = reads.map(() => ({
@@ -160,7 +160,7 @@ function createHudView(model: GameModel): Container {
     view.addChild(scoreText, livesText, phaseText, powerBar);
 
     // Watch infrequently-changing state
-    const watcher = createWatcher({
+    const watcher = watch({
         score: () => model.score,
         lives: () => model.lives,
         phase: () => model.phase,
@@ -232,7 +232,7 @@ reference types:
 
 1. **Watch a scalar property** that captures what you care about:
     ```typescript
-    const watcher = createWatcher({
+    const watcher = watch({
         enemyCount: () => model.enemies.length,  // O(1)
     });
     ```
@@ -240,7 +240,7 @@ reference types:
 2. **Use a version stamp** at the model layer:
     ```typescript
     // Model increments a counter on each mutation
-    const watcher = createWatcher({
+    const watcher = watch({
         itemsVersion: () => model.itemsVersion,  // O(1)
     });
     const watched = watcher.poll();
@@ -252,7 +252,7 @@ reference types:
 3. **Compute derived state in the model**, not in the getter:
     ```typescript
     // Model maintains totalScore incrementally
-    const watcher = createWatcher({
+    const watcher = watch({
         total: () => model.totalScore,  // O(1) read
     });
     // Instead of:
@@ -293,7 +293,7 @@ watchable:
 const model = { x: 0, y: 0, phase: 'idle' };
 
 // View watches whatever it wants
-const watcher = createWatcher({
+const watcher = watch({
     x: () => model.x,
     phase: () => model.phase,
 });
@@ -317,7 +317,7 @@ function createEnemyView(model: EnemyModel): Container {
     const sprite = new Sprite(texture);
     view.addChild(sprite);
 
-    const watcher = createWatcher({
+    const watcher = watch({
         phase: () => model.phase,
     });
 
@@ -373,7 +373,7 @@ values, computed expressions, or conditions without the source declaring
 anything:
 
 ```typescript
-const watcher = createWatcher({
+const watcher = watch({
     // Plain property
     score: () => model.score,
 
@@ -406,7 +406,7 @@ lightweight choice.
 
 ### 6. Uniform treatment of all reads
 
-Every source passed to `createWatcher` is treated identically - whether it reads
+Every source passed to `watch()` is treated identically - whether it reads
 a plain property, a signal, a computed value, or a dynamic expression. There is
 no distinction between "reactive" and "non-reactive" reads. This eliminates the
 [invisible reactivity boundary](signals.md#3-invisible-reactivity-boundary--signals-vs-plain-functions)
@@ -473,7 +473,7 @@ unconditionally - making the cost less obvious during code review.
 
 ```typescript
 // Looks innocent, but runs O(n) EVERY tick:
-const watcher = createWatcher({
+const watcher = watch({
     activeCount: () => model.enemies.filter(e => e.alive).length,
 });
 ```
@@ -582,7 +582,7 @@ framework dependencies:
 ```typescript
 // Test: watcher detects change
 const model = { score: 0, phase: 'idle' as string };
-const watcher = createWatcher({
+const watcher = watch({
     score: () => model.score,
     phase: () => model.phase,
 });

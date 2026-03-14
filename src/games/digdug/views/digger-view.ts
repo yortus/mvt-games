@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { Direction } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export function createDiggerView(
     bindings: DiggerViewBindings,
     textures: DiggerViewTextures,
 ): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         direction: bindings.getDirection,
         tileSize: bindings.getTileSize,
         alive: bindings.isAlive,

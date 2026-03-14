@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
@@ -25,7 +25,7 @@ export interface GameViewTextures {
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel, textures: GameViewTextures): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         enemyCount: () => game.enemies.length,
         rockCount: () => game.rocks.length,
         phase: () => game.phase,

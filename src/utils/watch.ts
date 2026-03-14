@@ -21,7 +21,7 @@ export interface WatchedProperty<T> {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createWatcher<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
+export function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
     const reads = keys.map(k => getters[k]);
     const state = reads.map(() => ({

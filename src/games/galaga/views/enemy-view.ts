@@ -1,5 +1,5 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { EnemyKind, EnemyPhase } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ export function createEnemyView(
     bindings: EnemyViewBindings,
     textures: EnemyViewTextures,
 ): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         kind: bindings.getKind,
         phase: bindings.getPhase,
     });

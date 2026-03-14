@@ -176,7 +176,7 @@ function createScoreView(model: { readonly score: number; readonly elapsed: numb
     view.addChild(scoreText, timerText);
 
     // Watch infrequently-changing state only
-    const watcher = createWatcher({
+    const watcher = watch({
         score: () => model.score,
     });
 
@@ -397,7 +397,7 @@ function createGhostView(
     const sprite = new Sprite();
     view.addChild(sprite);
 
-    const watcher = createWatcher({
+    const watcher = watch({
         phase: () => model.phase,
     });
 
@@ -615,7 +615,7 @@ function createBrickGridView(
     const brickSprites = new Map<string, Sprite>();
     // ... populate initial sprites ...
 
-    const watcher = createWatcher({
+    const watcher = watch({
         destroyVersion: () => model.destroyVersion,
     });
 
@@ -864,7 +864,7 @@ function createAsteroidFieldView(
     const view = new Container();
     const sprites = new Map<string, Sprite>();
 
-    const watcher = createWatcher({
+    const watcher = watch({
         version: () => field.version,
     });
 

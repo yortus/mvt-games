@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,
@@ -178,7 +178,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let asteroids: AsteroidModel[] = [];
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    const watcher = createWatcher({ restart: () => playerInput.restartPressed });
+    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // Spawn first wave
     asteroids = spawnWaveAsteroids(asteroidCountForWave(1));

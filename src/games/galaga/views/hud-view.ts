@@ -1,5 +1,5 @@
 import { Container, Sprite, Text, type Texture } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -17,7 +17,7 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings, shipIconTexture: Texture): Container {
-    const watcher = createWatcher({
+    const watcher = watch({
         score: bindings.getScore,
         lives: bindings.getLives,
         stage: bindings.getStage,

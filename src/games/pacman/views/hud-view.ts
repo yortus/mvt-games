@@ -1,5 +1,5 @@
 import { Container, Text } from 'pixi.js';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -15,7 +15,7 @@ export interface HudViewBindings {
 
 export function createHudView(bindings: HudViewBindings): Container {
     // ---- Change detection -------------------------------------------------------
-    const watcher = createWatcher({ score: bindings.getScore });
+    const watcher = watch({ score: bindings.getScore });
 
     // ---- Scene elements -------------------------------------------------------
     const view = new Container();

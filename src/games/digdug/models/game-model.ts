@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createWatcher } from '#utils';
+import { watch } from '#utils';
 import type { TileKind, DepthLayer, LevelConfig } from '../data';
 import { DEPTH_LAYERS } from '../data';
 import { createFieldModel, type FieldModel } from './field-model';
@@ -162,7 +162,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let rocks = buildRocks(field);
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    const watcher = createWatcher({ restart: () => playerInput.restartPressed });
+    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Helpers -----------------------------------------------------------
 
