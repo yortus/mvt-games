@@ -4,18 +4,6 @@ import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } 
 import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-interface KindTextures {
-    readonly normal: Texture;
-    readonly inflate1: Texture;
-    readonly inflate2: Texture;
-    readonly inflate3: Texture;
-    readonly crushed: Texture;
-}
-
-// ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
@@ -50,8 +38,8 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
     let fireGfx: Graphics;
     let telegraphGfx: Graphics;
 
-    let pookaTextures: KindTextures;
-    let fygarTextures: KindTextures;
+    let pookaTextures: EnemyTextures;
+    let fygarTextures: EnemyTextures;
     let ghostEyesTex: Texture;
 
     const view = new Container();
@@ -143,7 +131,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         }
     }
 
-    function kindTexturesFor(kind: EnemyKind): KindTextures {
+    function kindTexturesFor(kind: EnemyKind): EnemyTextures {
         return kind === 'pooka' ? pookaTextures : fygarTextures;
     }
 
@@ -154,7 +142,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         return inflateTexture(kt, inflation) ?? kt.normal;
     }
 
-    function inflateTexture(kt: KindTextures, stage: InflationStage): Texture | undefined {
+    function inflateTexture(kt: EnemyTextures, stage: InflationStage): Texture | undefined {
         if (stage === 1) return kt.inflate1;
         if (stage === 2) return kt.inflate2;
         if (stage === 3) return kt.inflate3;
@@ -166,4 +154,16 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         const inflScale = 1.0 + inflation * 0.3;
         sprite.scale.set(base * inflScale);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internal types
+// ---------------------------------------------------------------------------
+
+interface EnemyTextures {
+    readonly normal: Texture;
+    readonly inflate1: Texture;
+    readonly inflate2: Texture;
+    readonly inflate3: Texture;
+    readonly crushed: Texture;
 }
