@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpriteTextures, type SpriteTextures } from '#common';
+import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
 import { createGameView, type GameViewTextures } from './views';
 import {
@@ -19,7 +19,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createPacmanEntry(): GameEntry {
-    let textures: SpriteTextures | undefined;
+    let textures: SpritesheetTextures | undefined;
 
     return {
         id: 'pacman',
@@ -28,7 +28,7 @@ export function createPacmanEntry(): GameEntry {
         screenHeight: MAZE_ROWS * TILE_SIZE + HUD_HEIGHT,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('sprites/pacman-sprites.json');
+            textures = await loadSpritesheetTextures('sprites/pacman-sprites.json');
         },
 
         start(stage: Container): GameSession {

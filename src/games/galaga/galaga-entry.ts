@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpriteTextures, type SpriteTextures } from '#common';
+import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
 import { createGameView, type GameViewTextures } from './views';
 import {
@@ -18,7 +18,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createGalagaEntry(): GameEntry {
-    let textures: SpriteTextures | undefined;
+    let textures: SpritesheetTextures | undefined;
 
     return {
         id: 'galaga',
@@ -28,7 +28,7 @@ export function createGalagaEntry(): GameEntry {
         thumbnailAdvanceMs: 2000,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('sprites/galaga-sprites.json');
+            textures = await loadSpritesheetTextures('sprites/galaga-sprites.json');
         },
 
         start(stage: Container): GameSession {

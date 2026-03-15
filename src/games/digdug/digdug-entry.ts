@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpriteTextures, type SpriteTextures } from '#common';
+import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
 import { createGameView, type GameViewTextures } from './views';
 import {
@@ -18,7 +18,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createDigdugEntry(): GameEntry {
-    let textures: SpriteTextures | undefined;
+    let textures: SpritesheetTextures | undefined;
 
     return {
         id: 'digdug',
@@ -27,7 +27,7 @@ export function createDigdugEntry(): GameEntry {
         screenHeight: FIELD_ROWS * TILE_SIZE + HUD_HEIGHT,
 
         async preload(): Promise<void> {
-            textures = await loadSpriteTextures('sprites/digdug-sprites.json');
+            textures = await loadSpritesheetTextures('sprites/digdug-sprites.json');
         },
 
         start(stage: Container): GameSession {
