@@ -3,24 +3,15 @@ import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import type { GameModel } from '../models';
 import { TILE_SIZE, MAZE_ROWS, MAZE_COLS } from '../data';
 import { createMazeView } from './maze-view';
-import { createPacmanView, type PacmanViewTextures } from './pacman-view';
-import { createGhostView, type GhostViewTextures } from './ghost-view';
+import { createPacmanView } from './pacman-view';
+import { createGhostView } from './ghost-view';
 import { createHudView } from './hud-view';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface GameViewTextures {
-    readonly pacman: PacmanViewTextures;
-    readonly ghost: GhostViewTextures;
-}
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel, textures: GameViewTextures): Container {
+export function createGameView(game: GameModel): Container {
     const watcher = watch({
         ghostCount: () => game.ghosts.length,
     });
@@ -52,7 +43,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
             getCol: () => game.pacman.col,
             getDirection: () => game.pacman.direction,
             getTileSize: () => TILE_SIZE,
-        }, textures.pacman);
+        });
         view.addChild(pacmanContainer);
 
         // HUD - positioned below the maze
@@ -101,7 +92,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 getCol: () => game.ghosts[idx].col,
                 getColor: () => game.ghosts[idx].color,
                 getTileSize: () => TILE_SIZE,
-            }, textures.ghost);
+            });
             view.addChild(ghostContainer);
             ghostContainers.push(ghostContainer);
         }

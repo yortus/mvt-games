@@ -59,7 +59,7 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
         async launchSelected(stage: Container): Promise<void> {
             if (phase !== 'menu' || games.length === 0) return;
             const entry = games[selectedIndex];
-            if (entry.preload) await entry.preload();
+            await entry.load?.();
             activeSession = entry.start(stage);
             phase = 'playing';
         },

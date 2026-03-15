@@ -689,7 +689,7 @@ from model properties without an intermediate bindings interface:
 
 ```ts
 // Example: a game's top-level view wires sub-views from the model tree
-function createGameView(game: GameModel, textures: GameViewTextures): Container {
+function createGameView(game: GameModel): Container {
     const hudContainer = createHudView({
         getScore: () => game.score.score,
         getLives: () => game.score.lives,
@@ -725,7 +725,7 @@ only see their own `get*()`/`on*()` bindings:
 
 ```ts
 // Example: a game's top-level view wires sub-view bindings from the model tree
-function createGameView(game: GameModel, textures: Textures): Container {
+function createGameView(game: GameModel): Container {
     const container = new Container();
 
     container.addChild(createGridView({

@@ -1,17 +1,7 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
 import type { Direction } from '../models';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface DiggerViewTextures {
-    readonly idle: Texture;
-    readonly walkA: Texture;
-    readonly walkB: Texture;
-    readonly pump: Texture;
-}
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -31,10 +21,7 @@ export interface DiggerViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createDiggerView(
-    bindings: DiggerViewBindings,
-    textures: DiggerViewTextures,
-): Container {
+export function createDiggerView(bindings: DiggerViewBindings): Container {
     const watcher = watch({
         direction: bindings.getDirection,
         tileSize: bindings.getTileSize,
@@ -46,13 +33,23 @@ export function createDiggerView(
     let harpoonGfx: Graphics;
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
+    let idleTex: Texture;
+    let walkATex: Texture;
+    let walkBTex: Texture;
+    let pumpTex: Texture;
+
     const view = new Container();
     initialiseView();
     view.onRender = refresh;
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures.idle, anchor: 0.5 });
+        idleTex = getTexture('digger-idle');
+        walkATex = getTexture('digger-walk-a');
+        walkBTex = getTexture('digger-walk-b');
+        pumpTex = getTexture('digger-pump');
+
+        sprite = new Sprite({ texture: idleTex, anchor: 0.5 });
         harpoonGfx = new Graphics();
         view.addChild(sprite);
         view.addChild(harpoonGfx);
@@ -99,10 +96,10 @@ export function createDiggerView(
             prevPose = pose;
             // prettier-ignore
             switch (pose) {
-                case 'idle':   sprite.texture = textures.idle;   break;
-                case 'walk-a': sprite.texture = textures.walkA;  break;
-                case 'walk-b': sprite.texture = textures.walkB;  break;
-                case 'pump':   sprite.texture = textures.pump;   break;
+                case 'idle':   sprite.texture = idleTex;   break;
+                case 'walk-a': sprite.texture = walkATex;  break;
+                case 'walk-b': sprite.texture = walkBTex;  break;
+                case 'pump':   sprite.texture = pumpTex;   break;
             }
         }
 

@@ -9,3 +9,4 @@ export {
     GHOST_COLORS,
     HUD_HEIGHT,
 } from './maze-data';
+export { getTexture, textureNames } from './game-textures';

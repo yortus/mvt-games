@@ -1,5 +1,6 @@
-import { Container, Sprite, type Texture } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { watch } from '#common';
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -15,7 +16,7 @@ export interface ShipViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createShipView(bindings: ShipViewBindings, texture: Texture): Container {
+export function createShipView(bindings: ShipViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
     let sprite: Sprite;
 
@@ -25,7 +26,7 @@ export function createShipView(bindings: ShipViewBindings, texture: Texture): Co
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture, anchor: 0.5 });
+        sprite = new Sprite({ texture: getTexture('ship'), anchor: 0.5 });
         view.addChild(sprite);
     }
 

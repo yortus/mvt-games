@@ -1,8 +1,8 @@
+import { preloadTextures } from '#common';
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
-import { createGameView, type GameViewTextures } from './views';
+import { createGameView } from './views';
 import {
     SCREEN_WIDTH,
     PLAY_HEIGHT,
@@ -11,6 +11,7 @@ import {
     SHIP_SPEED,
     SHIP_HALF_WIDTH,
     WAVES,
+    textureNames,
 } from './data';
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createGalagaEntry(): GameEntry {
-    let textures: SpritesheetTextures | undefined;
+    let loaded = false;
 
     return {
         id: 'galaga',
@@ -27,12 +28,13 @@ export function createGalagaEntry(): GameEntry {
         screenHeight: PLAY_HEIGHT + HUD_HEIGHT,
         thumbnailAdvanceMs: 2000,
 
-        async preload(): Promise<void> {
-            textures = await loadSpritesheetTextures('sprites/galaga-sprites.json');
+        async load(): Promise<void> {
+            await preloadTextures('assets/galaga-textures.json', textureNames);
+            loaded = true;
         },
 
         start(stage: Container): GameSession {
-            if (!textures) throw new Error('galaga: preload() must be called before start()');
+            if (!loaded) throw new Error('galaga: preload() must be called before start()');
 
             const gameModel = createGameModel({
                 waves: WAVES,
@@ -44,15 +46,7 @@ export function createGalagaEntry(): GameEntry {
                 shipMaxX: SCREEN_WIDTH - SHIP_HALF_WIDTH,
             });
 
-            const gameTextures: GameViewTextures = {
-                boss: textures['boss'],
-                butterfly: textures['butterfly'],
-                bee: textures['bee'],
-                ship: textures['ship'],
-                'ship-icon': textures['ship-icon'],
-            };
-
-            const gameView = createGameView(gameModel, gameTextures);
+            const gameView = createGameView(gameModel);
             stage.addChild(gameView);
 
             return {

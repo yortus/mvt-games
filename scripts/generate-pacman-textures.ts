@@ -1,9 +1,9 @@
 /**
- * Generate retro pixel-art sprite PNGs for Pac-Man.
+ * Generate retro pixel-art texture PNGs for Pac-Man.
  *
- * Run:  npx tsx scripts/generate-pacman-sprites.ts
+ * Run:  npx tsx scripts/generate-pacman-textures.ts
  *
- * Each sprite is defined as a grid of palette-index characters.
+ * Each texture is defined as a grid of palette-index characters.
  * The script encodes them into tiny PNG files using `pngjs`.
  */
 
@@ -96,7 +96,7 @@ const PACMAN_OPEN: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Ghost sprites (16×16)
+// Ghost textures (16×16)
 // ---------------------------------------------------------------------------
 
 /** Ghost body - white shape for tinting at runtime */
@@ -143,7 +143,7 @@ const GHOST_EYES: string[] = [
 // Encoder
 // ---------------------------------------------------------------------------
 
-/** Tile size the sprites will be displayed at. */
+/** Tile size the textures will be displayed at. */
 const TARGET_TILE = 20;
 
 function encode(rows: string[], targetW: number, targetH: number): Buffer {
@@ -173,7 +173,7 @@ function encode(rows: string[], targetW: number, targetH: number): Buffer {
 // Write files
 // ---------------------------------------------------------------------------
 
-const sprites: Array<[string, string[]]> = [
+const textures: Array<[string, string[]]> = [
     ['pacman-closed.png', PACMAN_CLOSED],
     ['pacman-mid.png', PACMAN_MID],
     ['pacman-open.png', PACMAN_OPEN],
@@ -181,11 +181,11 @@ const sprites: Array<[string, string[]]> = [
     ['ghost-eyes.png', GHOST_EYES],
 ];
 
-for (const [name, rows] of sprites) {
+for (const [name, rows] of textures) {
     const buf = encode(rows, TARGET_TILE, TARGET_TILE);
     const outPath = join(OUT_DIR, name);
     writeFileSync(outPath, buf);
     console.log(`  wrote ${name} (${TARGET_TILE}×${TARGET_TILE})`);
 }
 
-console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${textures.length} textures written to ${OUT_DIR}`);

@@ -1,29 +1,18 @@
-import { Container, type Texture } from 'pixi.js';
+import { Container } from 'pixi.js';
 import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
-import { createDiggerView, type DiggerViewTextures } from './digger-view';
-import { createEnemyView, type EnemyViewTextures } from './enemy-view';
-import { createRockView, type RockViewTextures } from './rock-view';
+import { createDiggerView } from './digger-view';
+import { createEnemyView } from './enemy-view';
+import { createRockView } from './rock-view';
 import { createHudView } from './hud-view';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface GameViewTextures {
-    readonly digger: DiggerViewTextures;
-    readonly enemy: EnemyViewTextures;
-    readonly rock: RockViewTextures;
-    readonly diggerIcon: Texture;
-}
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel, textures: GameViewTextures): Container {
+export function createGameView(game: GameModel): Container {
     const watcher = watch({
         enemyCount: () => game.enemies.length,
         rockCount: () => game.rocks.length,
@@ -65,7 +54,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
             isHarpoonExtended: () => game.digger.harpoonExtended,
             getHarpoonDistance: () => game.digger.harpoonDistance,
             getTileSize: () => TILE_SIZE,
-        }, textures.digger));
+        }));
 
         // Enemy & rock layers (children managed by buildEnemies / buildRocks)
         enemyLayer = new Container();
@@ -82,7 +71,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
             getLevel: () => game.score.level,
             getTileSize: () => TILE_SIZE,
             getCols: () => FIELD_COLS,
-        }, textures.diggerIcon);
+        });
         hudContainer.position.set(0, canvasH);
         view.addChild(hudContainer);
 
@@ -145,7 +134,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isFireActive: () => game.enemies[idx].fireActive,
                 isFireTelegraph: () => game.enemies[idx].fireTelegraph,
                 getTileSize: () => TILE_SIZE,
-            }, textures.enemy);
+            });
             enemyLayer.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
         }
@@ -166,7 +155,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 getPhase: () => game.rocks[idx].phase,
                 isAlive: () => game.rocks[idx].alive,
                 getTileSize: () => TILE_SIZE,
-            }, textures.rock);
+            });
             rockLayer.addChild(rockContainer);
             rockContainers.push(rockContainer);
         }

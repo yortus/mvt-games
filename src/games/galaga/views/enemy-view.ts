@@ -1,6 +1,7 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
 import type { EnemyKind, EnemyPhase } from '../models';
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -15,28 +16,21 @@ export interface EnemyViewBindings {
 }
 
 // ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface EnemyViewTextures {
-    readonly boss: Texture;
-    readonly butterfly: Texture;
-    readonly bee: Texture;
-}
-
-// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createEnemyView(
-    bindings: EnemyViewBindings,
-    textures: EnemyViewTextures,
-): Container {
+export function createEnemyView(bindings: EnemyViewBindings): Container {
     const watcher = watch({
         kind: bindings.getKind,
         phase: bindings.getPhase,
     });
     let sprite: Sprite;
+
+    const kindTextures: Record<EnemyKind, Texture> = {
+        boss: getTexture('boss'),
+        butterfly: getTexture('butterfly'),
+        bee: getTexture('bee'),
+    };
 
     const view = new Container();
     initialiseView();
@@ -44,7 +38,7 @@ export function createEnemyView(
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
+        sprite = new Sprite({ texture: kindTextures[bindings.getKind()], anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -57,7 +51,7 @@ export function createEnemyView(
         const watched = watcher.poll();
         view.position.set(bindings.getX(), bindings.getY());
         if (watched.phase.changed || watched.kind.changed) {
-            sprite.texture = textures[bindings.getKind()];
+            sprite.texture = kindTextures[bindings.getKind()];
         }
     }
 }

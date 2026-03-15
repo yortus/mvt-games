@@ -1,9 +1,9 @@
 /**
- * Generate retro pixel-art sprite PNGs for Galaga.
+ * Generate retro pixel-art texture PNGs for Galaga.
  *
- * Run:  npx tsx scripts/generate-galaga-sprites.ts
+ * Run:  npx tsx scripts/generate-galaga-textures.ts
  *
- * Each sprite is defined as a grid of palette-index characters.
+ * Each texture is defined as a grid of palette-index characters.
  * The script encodes them into tiny PNG files using `pngjs`.
  */
 
@@ -58,7 +58,7 @@ const PALETTE: Record<string, Rgba> = {
 };
 
 // ---------------------------------------------------------------------------
-// Sprite definitions (character grids)
+// Texture definitions (character grids)
 // ---------------------------------------------------------------------------
 
 /** Boss - 16×16 blue/purple beetle commander */
@@ -206,7 +206,7 @@ function encode(rows: string[]): Buffer {
 // Write files
 // ---------------------------------------------------------------------------
 
-const sprites: Array<[string, string[]]> = [
+const textures: Array<[string, string[]]> = [
     ['boss.png', BOSS],
     ['butterfly.png', BUTTERFLY],
     ['bee.png', BEE],
@@ -216,11 +216,11 @@ const sprites: Array<[string, string[]]> = [
     ['ship-icon.png', SHIP_ICON],
 ];
 
-for (const [name, rows] of sprites) {
+for (const [name, rows] of textures) {
     const buf = encode(rows);
     const outPath = join(OUT_DIR, name);
     writeFileSync(outPath, buf);
     console.log(`  wrote ${name} (${rows[0].length}×${rows.length})`);
 }
 
-console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${textures.length} textures written to ${OUT_DIR}`);

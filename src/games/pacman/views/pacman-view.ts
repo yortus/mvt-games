@@ -1,16 +1,7 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
 import type { Direction } from '../models';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface PacmanViewTextures {
-    readonly closed: Texture;
-    readonly mid: Texture;
-    readonly open: Texture;
-}
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -27,13 +18,14 @@ export interface PacmanViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createPacmanView(
-    bindings: PacmanViewBindings,
-    textures: PacmanViewTextures,
-): Container {
+export function createPacmanView(bindings: PacmanViewBindings): Container {
     const watcher = watch({ direction: bindings.getDirection });
     let sprite: Sprite;
     let prevFrame = -1;
+
+    let closedTex: Texture;
+    let midTex: Texture;
+    let openTex: Texture;
 
     const view = new Container();
     initialiseView();
@@ -41,7 +33,11 @@ export function createPacmanView(
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
+        closedTex = getTexture('pacman-closed');
+        midTex = getTexture('pacman-mid');
+        openTex = getTexture('pacman-open');
+
+        sprite = new Sprite({ texture: closedTex, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -64,9 +60,9 @@ export function createPacmanView(
             prevFrame = frame;
             // prettier-ignore
             switch (frame) {
-                case 0: sprite.texture = textures.closed; break;
-                case 1: sprite.texture = textures.mid;    break;
-                case 2: sprite.texture = textures.open;   break;
+                case 0: sprite.texture = closedTex; break;
+                case 1: sprite.texture = midTex;    break;
+                case 2: sprite.texture = openTex;   break;
             }
         }
 

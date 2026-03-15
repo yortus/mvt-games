@@ -24,7 +24,7 @@ export interface GameEntry {
      * Optional async hook called before `start()` to load assets
      * (e.g. sprite sheets). Games without assets may omit this.
      */
-    preload?(): Promise<void>;
+    load?(): Promise<void>;
     /** Create and start a running game session, mounting visuals on `stage`. */
     start(stage: Container): GameSession;
 }

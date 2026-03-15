@@ -13,7 +13,7 @@
         "lint": "eslint src/",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "generate-sprites": "tsx scripts/generate-sprites.ts"
+        "generate-textures": "tsx scripts/generate-textures.ts"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",

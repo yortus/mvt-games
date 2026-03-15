@@ -1,15 +1,7 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
 import type { RockPhase } from '../models';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface RockViewTextures {
-    readonly rock: Texture;
-    readonly shattered: Texture;
-}
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -27,10 +19,7 @@ export interface RockViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createRockView(
-    bindings: RockViewBindings,
-    textures: RockViewTextures,
-): Container {
+export function createRockView(bindings: RockViewBindings): Container {
     const watcher = watch({
         phase: bindings.getPhase,
         tileSize: bindings.getTileSize,
@@ -39,13 +28,19 @@ export function createRockView(
     let sprite: Sprite;
     let wobbleToggle = false;
 
+    let normalTex: Texture;
+    let shatteredTex: Texture;
+
     const view = new Container();
     initialiseView();
     view.onRender = refresh;
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures.rock, anchor: 0.5 });
+        normalTex = getTexture('rock');
+        shatteredTex = getTexture('rock-shattered');
+
+        sprite = new Sprite({ texture: normalTex, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -60,7 +55,7 @@ export function createRockView(
 
         const watched = watcher.poll();
         if (watched.phase.changed) {
-            sprite.texture = watched.phase.value === 'shattered' ? textures.shattered : textures.rock;
+            sprite.texture = watched.phase.value === 'shattered' ? shatteredTex : normalTex;
         }
 
         // Wobble: alternate x offset each frame (presentation-only state)

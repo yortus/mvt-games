@@ -393,8 +393,8 @@ Key points:
 
 - Expose each view as a **factory function** that returns a Pixi.js
   `Container`.
-- **Top-level application views** accept the application model (and textures)
-  directly. They're application-specific and have no reuse scenario.
+- **Top-level application views** accept the application model directly.
+  They're application-specific and have no reuse scenario.
 - **Leaf/reusable views** accept a `bindings` object with `get*()` and `on*()`
   members. This keeps them decoupled from any particular model shape.
 - No view properties or methods need to be exposed beyond what `Container`
@@ -406,7 +406,7 @@ Key points:
 
 ```ts
 // Example: a game's top-level view
-function createGameView(game: GameModel, textures: GameViewTextures): Container {
+function createGameView(game: GameModel): Container {
     const container = new Container();
 
     container.addChild(createHudView({

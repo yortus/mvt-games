@@ -1,8 +1,8 @@
+import { preloadTextures } from '#common';
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
-import { createGameView, type GameViewTextures } from './views';
+import { createGameView } from './views';
 import {
     TILE_SIZE,
     FIELD_ROWS,
@@ -11,6 +11,7 @@ import {
     BASE_FIELD,
     DIGGER_SPAWN,
     LEVELS,
+    textureNames,
 } from './data';
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createDigdugEntry(): GameEntry {
-    let textures: SpritesheetTextures | undefined;
+    let loaded = false;
 
     return {
         id: 'digdug',
@@ -26,12 +27,13 @@ export function createDigdugEntry(): GameEntry {
         screenWidth: FIELD_COLS * TILE_SIZE,
         screenHeight: FIELD_ROWS * TILE_SIZE + HUD_HEIGHT,
 
-        async preload(): Promise<void> {
-            textures = await loadSpritesheetTextures('sprites/digdug-sprites.json');
+        async load(): Promise<void> {
+            await preloadTextures('assets/digdug-textures.json', textureNames);
+            loaded = true;
         },
 
         start(stage: Container): GameSession {
-            if (!textures) throw new Error('digdug: preload() must be called before start()');
+            if (!loaded) throw new Error('digdug: preload() must be called before start()');
 
             const gameModel = createGameModel({
                 levels: LEVELS,
@@ -41,34 +43,7 @@ export function createDigdugEntry(): GameEntry {
                 diggerSpawn: DIGGER_SPAWN,
             });
 
-            const gameTextures: GameViewTextures = {
-                digger: {
-                    idle: textures['digger-idle'],
-                    walkA: textures['digger-walk-a'],
-                    walkB: textures['digger-walk-b'],
-                    pump: textures['digger-pump'],
-                },
-                enemy: {
-                    pooka: textures['pooka'],
-                    'pooka-inflate1': textures['pooka-inflate1'],
-                    'pooka-inflate2': textures['pooka-inflate2'],
-                    'pooka-inflate3': textures['pooka-inflate3'],
-                    'pooka-crushed': textures['pooka-crushed'],
-                    fygar: textures['fygar'],
-                    'fygar-inflate1': textures['fygar-inflate1'],
-                    'fygar-inflate2': textures['fygar-inflate2'],
-                    'fygar-inflate3': textures['fygar-inflate3'],
-                    'fygar-crushed': textures['fygar-crushed'],
-                    'ghost-eyes': textures['ghost-eyes'],
-                },
-                rock: {
-                    rock: textures['rock'],
-                    shattered: textures['rock-shattered'],
-                },
-                diggerIcon: textures['digger-icon'],
-            };
-
-            const gameView = createGameView(gameModel, gameTextures);
+            const gameView = createGameView(gameModel);
             stage.addChild(gameView);
 
             return {

@@ -128,7 +128,7 @@ async function generateThumbnails(
     for (let i = 0; i < games.length; i++) {
         const entry = games[i];
         try {
-            if (entry.preload) await entry.preload();
+            await entry.load?.();
 
             const tempStage = new Container();
             const session = entry.start(tempStage);

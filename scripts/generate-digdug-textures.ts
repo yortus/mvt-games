@@ -1,9 +1,9 @@
 /**
- * Generate retro pixel-art sprite PNGs for Dig Dug.
+ * Generate retro pixel-art texture PNGs for Dig Dug.
  *
- * Run:  npx tsx scripts/generate-digdug-sprites.ts
+ * Run:  npx tsx scripts/generate-digdug-textures.ts
  *
- * Each sprite is defined as a grid of palette-index characters.
+ * Each texture is defined as a grid of palette-index characters.
  * The script encodes them into tiny PNG files using `pngjs`.
  */
 
@@ -47,7 +47,7 @@ const PALETTE: Record<string, Rgba> = {
 };
 
 // ---------------------------------------------------------------------------
-// Digger sprites (16×16, facing right)
+// Digger textures (16×16, facing right)
 // ---------------------------------------------------------------------------
 
 const DIGGER_IDLE: string[] = [
@@ -139,7 +139,7 @@ const DIGGER_ICON: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Pooka sprites (16×16)
+// Pooka textures (16×16)
 // ---------------------------------------------------------------------------
 
 const POOKA: string[] = [
@@ -238,7 +238,7 @@ const POOKA_CRUSHED: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Fygar sprites (16×16)
+// Fygar textures (16×16)
 // ---------------------------------------------------------------------------
 
 const FYGAR: string[] = [
@@ -360,7 +360,7 @@ const GHOST_EYES: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Rock sprites (16×16)
+// Rock textures (16×16)
 // ---------------------------------------------------------------------------
 
 const ROCK: string[] = [
@@ -405,7 +405,7 @@ const ROCK_SHATTERED: string[] = [
 // Encoder
 // ---------------------------------------------------------------------------
 
-/** Tile size the sprites will be displayed at. */
+/** Tile size the textures will be displayed at. */
 const TARGET_TILE = 20;
 /** Icon target size (HUD lives). */
 const TARGET_ICON = 10;
@@ -437,7 +437,7 @@ function encode(rows: string[], targetW: number, targetH: number): Buffer {
 // Write files
 // ---------------------------------------------------------------------------
 
-const sprites: Array<[string, string[]]> = [
+const textures: Array<[string, string[]]> = [
     // Digger
     ['digger-idle.png', DIGGER_IDLE],
     ['digger-walk-a.png', DIGGER_WALK_A],
@@ -463,7 +463,7 @@ const sprites: Array<[string, string[]]> = [
     ['rock-shattered.png', ROCK_SHATTERED],
 ];
 
-for (const [name, rows] of sprites) {
+for (const [name, rows] of textures) {
     const isIcon = name.includes('icon');
     const target = isIcon ? TARGET_ICON : TARGET_TILE;
     const buf = encode(rows, target, target);
@@ -472,4 +472,4 @@ for (const [name, rows] of sprites) {
     console.log(`  wrote ${name} (${target}×${target})`);
 }
 
-console.log(`\nDone - ${sprites.length} sprites written to ${OUT_DIR}`);
+console.log(`\nDone - ${textures.length} textures written to ${OUT_DIR}`);

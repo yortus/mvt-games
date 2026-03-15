@@ -1,14 +1,14 @@
 /**
- * Vite plugin that packs per-game sprite PNGs into Pixi.js-compatible
+ * Vite plugin that packs per-game texture PNGs into Pixi.js-compatible
  * spritesheet atlases (JSON + PNG) at build time.
  *
  * During **dev** the packed sheets are served via middleware.
  * During **build** they are emitted as assets in `generateBundle`.
  *
- * Sprite source directories: `src/games/<name>/sprites/*.png`
- * Output paths served/emitted: `/sprites/<name>-sprites.json` and
- * `/sprites/<name>-sprites.png` - referenced from game code via
- * `Assets.load('/sprites/<name>-sprites.json')`.
+ * Texture asset source directories: `src/games/<name>/assets/*.png`
+ * Output paths served/emitted: `/assets/<name>-textures.json` and
+ * `/assets/<name>-textures.png` - referenced from game code via
+ * `Assets.load('/assets/<name>-textures.json')`.
  */
 
 import { type Plugin, type ResolvedConfig } from 'vite';
@@ -52,7 +52,7 @@ function packSprites(dir: string, gameName: string): PackedSheet | null {
         images.push({ name: basename(file, '.png'), png });
     }
 
-    // Compute atlas size - simple row layout (all sprites in one row)
+    // Compute atlas size - simple row layout (all textures in one row)
     const padding = 1;
     let atlasWidth = 0;
     let atlasHeight = 0;
@@ -77,7 +77,7 @@ function packSprites(dir: string, gameName: string): PackedSheet | null {
     atlasWidth = nextPow2(atlasWidth);
     atlasHeight = nextPow2(atlasHeight);
 
-    // Blit sprites into atlas
+    // Blit textures into atlas
     const atlas = new PNG({ width: atlasWidth, height: atlasHeight });
 
     for (let i = 0; i < images.length; i++) {
@@ -112,7 +112,7 @@ function packSprites(dir: string, gameName: string): PackedSheet | null {
     const json = {
         frames: framesObj,
         meta: {
-            image: `${gameName}-sprites.png`,
+            image: `${gameName}-textures.png`,
             format: 'RGBA8888',
             size: { w: atlasWidth, h: atlasHeight },
             scale: '1',
@@ -132,7 +132,7 @@ function nextPow2(v: number): number {
     return p;
 }
 
-function discoverGameSpriteDirs(root: string): { gameName: string; dir: string }[] {
+function discoverGameTextureDirs(root: string): { gameName: string; dir: string }[] {
     const gamesDir = resolve(root, 'src', 'games');
     const results: { gameName: string; dir: string }[] = [];
 
@@ -167,7 +167,7 @@ export function spritesheetPlugin(): Plugin {
 
     function buildSheets(): void {
         sheets.clear();
-        const dirs = discoverGameSpriteDirs(config.root);
+        const dirs = discoverGameTextureDirs(config.root);
         for (const { gameName, dir } of dirs) {
             const packed = packSprites(dir, gameName);
             if (packed) {
@@ -188,8 +188,8 @@ export function spritesheetPlugin(): Plugin {
         configureServer(server) {
             buildSheets();
 
-            // Watch sprite source directories for changes
-            const dirs = discoverGameSpriteDirs(config.root);
+            // Watch texture source directories for changes
+            const dirs = discoverGameTextureDirs(config.root);
             for (const { dir } of dirs) {
                 server.watcher.add(dir);
             }
@@ -206,7 +206,7 @@ export function spritesheetPlugin(): Plugin {
 
             server.middlewares.use((req, res, next) => {
                     const url = req.url ?? '';
-                    const match = url.match(/^\/sprites\/([a-z0-9-]+)-sprites\.(json|png)$/);
+                    const match = url.match(/^\/assets\/([a-z0-9-]+)-textures\.(json|png)$/);
                     if (!match) return next();
 
                     const gameName = match[1];
@@ -231,12 +231,12 @@ export function spritesheetPlugin(): Plugin {
             for (const [gameName, sheet] of sheets) {
                 this.emitFile({
                     type: 'asset',
-                    fileName: `sprites/${gameName}-sprites.json`,
+                    fileName: `assets/${gameName}-textures.json`,
                     source: sheet.jsonString,
                 });
                 this.emitFile({
                     type: 'asset',
-                    fileName: `sprites/${gameName}-sprites.png`,
+                    fileName: `assets/${gameName}-textures.png`,
                     source: sheet.pngBuffer,
                 });
             }

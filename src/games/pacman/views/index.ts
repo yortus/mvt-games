@@ -1,1 +1,1 @@
-export { createGameView, type GameViewTextures } from './game-view';
+export { createGameView } from './game-view';

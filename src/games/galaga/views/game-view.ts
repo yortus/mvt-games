@@ -1,40 +1,22 @@
-import { Container, Graphics, type Texture } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import type { GameModel } from '../models';
 import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
-import { createEnemyView, type EnemyViewTextures } from './enemy-view';
+import { createEnemyView } from './enemy-view';
 import { createBulletView } from './bullet-view';
 import { createHudView } from './hud-view';
-
-// ---------------------------------------------------------------------------
-// Textures
-// ---------------------------------------------------------------------------
-
-export interface GameViewTextures {
-    readonly boss: Texture;
-    readonly butterfly: Texture;
-    readonly bee: Texture;
-    readonly ship: Texture;
-    readonly 'ship-icon': Texture;
-}
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel, textures: GameViewTextures): Container {
+export function createGameView(game: GameModel): Container {
     const watcher = watch({
         enemyCount: () => game.enemies.length,
         pBulletCount: () => game.playerBullets.length,
         eBulletCount: () => game.enemyBullets.length,
     });
-
-    const enemyTextures: EnemyViewTextures = {
-        boss: textures.boss,
-        butterfly: textures.butterfly,
-        bee: textures.bee,
-    };
 
     let enemyContainers: Container[] = [];
     let pBulletContainers: Container[] = [];
@@ -67,7 +49,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
             getX: () => game.ship.x,
             getY: () => game.ship.y,
             isAlive: () => game.ship.alive,
-        }, textures.ship);
+        });
         view.addChild(shipContainer);
 
         // HUD
@@ -76,7 +58,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
             getLives: () => game.score.lives,
             getStage: () => game.score.stage,
             getScreenWidth: () => SCREEN_WIDTH,
-        }, textures['ship-icon']);
+        });
         hudContainer.position.set(0, PLAY_HEIGHT);
         view.addChild(hudContainer);
 
@@ -126,7 +108,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 getKind: () => game.enemies[idx].kind,
                 getPhase: () => game.enemies[idx].phase,
                 isAlive: () => game.enemies[idx].alive,
-            }, enemyTextures);
+            });
             view.addChild(c);
             enemyContainers.push(c);
         }

@@ -17,3 +17,4 @@ export {
     HIT_RADIUS_SQ,
 } from './stage-data';
 export { type FormationSlot, type WaveConfig, WAVES } from './wave-data';
+export { getTexture, textureNames } from './game-textures';

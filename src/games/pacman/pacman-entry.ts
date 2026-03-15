@@ -1,8 +1,8 @@
+import { preloadTextures } from '#common';
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
-import { loadSpritesheetTextures, type SpritesheetTextures } from '#common';
 import { createGameModel } from './models';
-import { createGameView, type GameViewTextures } from './views';
+import { createGameView } from './views';
 import {
     MAZE_DATA,
     TILE_SIZE,
@@ -12,6 +12,7 @@ import {
     GHOST_SPAWNS,
     GHOST_COLORS,
     HUD_HEIGHT,
+    textureNames,
 } from './data';
 
 // ---------------------------------------------------------------------------
@@ -19,7 +20,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export function createPacmanEntry(): GameEntry {
-    let textures: SpritesheetTextures | undefined;
+    let loaded = false;
 
     return {
         id: 'pacman',
@@ -27,12 +28,13 @@ export function createPacmanEntry(): GameEntry {
         screenWidth: MAZE_COLS * TILE_SIZE,
         screenHeight: MAZE_ROWS * TILE_SIZE + HUD_HEIGHT,
 
-        async preload(): Promise<void> {
-            textures = await loadSpritesheetTextures('sprites/pacman-sprites.json');
+        async load(): Promise<void> {
+            await preloadTextures('assets/pacman-textures.json', textureNames);
+            loaded = true;
         },
 
         start(stage: Container): GameSession {
-            if (!textures) throw new Error('pacman: preload() must be called before start()');
+            if (!loaded) throw new Error('pacman: preload() must be called before start()');
 
             const gameModel = createGameModel({
                 grid: MAZE_DATA,
@@ -41,19 +43,7 @@ export function createPacmanEntry(): GameEntry {
                 ghostColors: GHOST_COLORS,
             });
 
-            const gameTextures: GameViewTextures = {
-                pacman: {
-                    closed: textures['pacman-closed'],
-                    mid: textures['pacman-mid'],
-                    open: textures['pacman-open'],
-                },
-                ghost: {
-                    body: textures['ghost-body'],
-                    eyes: textures['ghost-eyes'],
-                },
-            };
-
-            const gameView = createGameView(gameModel, gameTextures);
+            const gameView = createGameView(gameModel);
             stage.addChild(gameView);
 
             return {

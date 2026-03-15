@@ -1,23 +1,18 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
+import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
-// Textures
+// Internal types
 // ---------------------------------------------------------------------------
 
-export interface EnemyViewTextures {
-    readonly pooka: Texture;
-    readonly 'pooka-inflate1': Texture;
-    readonly 'pooka-inflate2': Texture;
-    readonly 'pooka-inflate3': Texture;
-    readonly 'pooka-crushed': Texture;
-    readonly fygar: Texture;
-    readonly 'fygar-inflate1': Texture;
-    readonly 'fygar-inflate2': Texture;
-    readonly 'fygar-inflate3': Texture;
-    readonly 'fygar-crushed': Texture;
-    readonly 'ghost-eyes': Texture;
+interface KindTextures {
+    readonly normal: Texture;
+    readonly inflate1: Texture;
+    readonly inflate2: Texture;
+    readonly inflate3: Texture;
+    readonly crushed: Texture;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,10 +35,7 @@ export interface EnemyViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createEnemyView(
-    bindings: EnemyViewBindings,
-    textures: EnemyViewTextures,
-): Container {
+export function createEnemyView(bindings: EnemyViewBindings): Container {
     const watcher = watch({
         kind: bindings.getKind,
         phase: bindings.getPhase,
@@ -58,13 +50,34 @@ export function createEnemyView(
     let fireGfx: Graphics;
     let telegraphGfx: Graphics;
 
+    let pookaTextures: KindTextures;
+    let fygarTextures: KindTextures;
+    let ghostEyesTex: Texture;
+
     const view = new Container();
     initialiseView();
     view.onRender = refresh;
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
+        pookaTextures = {
+            normal: getTexture('pooka'),
+            inflate1: getTexture('pooka-inflate1'),
+            inflate2: getTexture('pooka-inflate2'),
+            inflate3: getTexture('pooka-inflate3'),
+            crushed: getTexture('pooka-crushed'),
+        };
+        fygarTextures = {
+            normal: getTexture('fygar'),
+            inflate1: getTexture('fygar-inflate1'),
+            inflate2: getTexture('fygar-inflate2'),
+            inflate3: getTexture('fygar-inflate3'),
+            crushed: getTexture('fygar-crushed'),
+        };
+        ghostEyesTex = getTexture('ghost-eyes');
+
+        const kind = bindings.getKind();
+        sprite = new Sprite({ texture: kindTexturesFor(kind).normal, anchor: 0.5 });
         fireGfx = new Graphics();
         telegraphGfx = new Graphics();
         view.addChild(sprite);
@@ -87,7 +100,7 @@ export function createEnemyView(
 
         if (phase === 'ghosting') {
             if (watched.phase.changed || watched.tileSize.changed) {
-                sprite.texture = textures['ghost-eyes'];
+                sprite.texture = ghostEyesTex;
                 updateScale(0);
             }
             view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
@@ -130,24 +143,21 @@ export function createEnemyView(
         }
     }
 
-    function pickTexture(kind: EnemyKind, phase: EnemyPhase, inflation: InflationStage): Texture {
-        if (phase === 'crushed') {
-            return textures[kind === 'pooka' ? 'pooka-crushed' : 'fygar-crushed'];
-        }
-        if (inflation === 0) return textures[kind];
-        return inflateTexture(kind, inflation) ?? textures[kind];
+    function kindTexturesFor(kind: EnemyKind): KindTextures {
+        return kind === 'pooka' ? pookaTextures : fygarTextures;
     }
 
-    function inflateTexture(kind: EnemyKind, stage: InflationStage): Texture | undefined {
-        if (kind === 'pooka') {
-            if (stage === 1) return textures['pooka-inflate1'];
-            if (stage === 2) return textures['pooka-inflate2'];
-            if (stage === 3) return textures['pooka-inflate3'];
-        } else {
-            if (stage === 1) return textures['fygar-inflate1'];
-            if (stage === 2) return textures['fygar-inflate2'];
-            if (stage === 3) return textures['fygar-inflate3'];
-        }
+    function pickTexture(kind: EnemyKind, phase: EnemyPhase, inflation: InflationStage): Texture {
+        const kt = kindTexturesFor(kind);
+        if (phase === 'crushed') return kt.crushed;
+        if (inflation === 0) return kt.normal;
+        return inflateTexture(kt, inflation) ?? kt.normal;
+    }
+
+    function inflateTexture(kt: KindTextures, stage: InflationStage): Texture | undefined {
+        if (stage === 1) return kt.inflate1;
+        if (stage === 2) return kt.inflate2;
+        if (stage === 3) return kt.inflate3;
         return undefined;
     }
 
