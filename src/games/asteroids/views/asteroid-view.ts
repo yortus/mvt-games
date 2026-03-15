@@ -30,14 +30,18 @@ const VERTICES = 10;
 
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
+    let bodyGfx: Graphics;
 
     const view = new Container();
-    const bodyGfx = new Graphics();
-    view.addChild(bodyGfx);
-
-    drawAsteroid();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        bodyGfx = new Graphics();
+        view.addChild(bodyGfx);
+        drawAsteroid();
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

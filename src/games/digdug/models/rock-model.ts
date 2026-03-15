@@ -64,6 +64,45 @@ export function createRockModel(options: RockModelOptions): RockModel {
 
     const timeline = gsap.timeline({ paused: true });
 
+    // ---- Public record -----------------------------------------------------
+
+    const model: RockModel = {
+        get row() {
+            return state.row;
+        },
+        get col() {
+            return state.col;
+        },
+        get x() {
+            return state.x;
+        },
+        get y() {
+            return state.y;
+        },
+        get phase() {
+            return state.phase;
+        },
+        get progress() {
+            return state.progress;
+        },
+        get alive() {
+            return state.alive;
+        },
+
+        destabilize(): void {
+            if (state.phase !== 'stable') return;
+            timeline.clear().time(0);
+            scheduleWobble();
+        },
+
+        update(deltaMs: number): void {
+            if (!state.alive) return;
+            timeline.time(timeline.time() + 0.001 * deltaMs);
+        },
+    };
+
+    return model;
+
     // ---- Schedule helpers --------------------------------------------------
 
     function scheduleWobble(): void {
@@ -110,43 +149,4 @@ export function createRockModel(options: RockModelOptions): RockModel {
         timeline.to(state, { progress: 1, duration: SHATTER_SECONDS, ease: 'none' }, t);
         timeline.call(() => { state.alive = false; }, undefined, t + SHATTER_SECONDS);
     }
-
-    // ---- Public record -----------------------------------------------------
-
-    const model: RockModel = {
-        get row() {
-            return state.row;
-        },
-        get col() {
-            return state.col;
-        },
-        get x() {
-            return state.x;
-        },
-        get y() {
-            return state.y;
-        },
-        get phase() {
-            return state.phase;
-        },
-        get progress() {
-            return state.progress;
-        },
-        get alive() {
-            return state.alive;
-        },
-
-        destabilize(): void {
-            if (state.phase !== 'stable') return;
-            timeline.clear().time(0);
-            scheduleWobble();
-        },
-
-        update(deltaMs: number): void {
-            if (!state.alive) return;
-            timeline.time(timeline.time() + 0.001 * deltaMs);
-        },
-    };
-
-    return model;
 }

@@ -24,6 +24,7 @@ import {
     SCORE_SMALL,
     WAVE_CLEAR_DELAY_MS,
     DYING_DELAY_MS,
+    RESPAWN_ANIM_MS,
     SPAWN_SAFE_RADIUS,
 } from '../data';
 import type { AsteroidSize, GamePhase } from './common';
@@ -32,6 +33,7 @@ import { createAsteroidModel, type AsteroidModel } from './asteroid-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
 import { createScoreModel, type ScoreModel } from './score-model';
+import { createDebrisModel, type DebrisModel } from './debris-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -42,6 +44,7 @@ export interface GameModel {
     readonly ship: ShipModel;
     readonly asteroids: readonly AsteroidModel[];
     readonly bullets: readonly BulletModel[];
+    readonly debris: DebrisModel;
     readonly score: ScoreModel;
     readonly playerInput: PlayerInput;
     reset(): void;
@@ -87,7 +90,110 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
-    // ---- Random helper -----------------------------------------------------
+    // ---- Initialise --------------------------------------------------------
+
+    const ship = buildShip();
+    let bullets = buildBulletPool();
+    let asteroids: AsteroidModel[] = [];
+    const scoreModel = createScoreModel();
+    const debrisModel = createDebrisModel({ lifetimeMs: DYING_DELAY_MS });
+    const playerInput = createPlayerInput();
+    const watcher = watch({ restart: () => playerInput.restartPressed });
+
+    // Spawn first wave
+    asteroids = spawnWaveAsteroids(asteroidCountForWave(1));
+
+    // ---- Public record -----------------------------------------------------
+
+    const model: GameModel = {
+        get phase() {
+            return gamePhase;
+        },
+        get ship() {
+            return ship;
+        },
+        get asteroids() {
+            return asteroids;
+        },
+        get bullets() {
+            return bullets;
+        },
+        get debris() {
+            return debrisModel;
+        },
+        get score() {
+            return scoreModel;
+        },
+        get playerInput() {
+            return playerInput;
+        },
+
+        reset(): void {
+            scoreModel.reset();
+            loadWave();
+        },
+
+        update(deltaMs: number): void {
+
+            // Restart handling
+            const watched = watcher.poll();
+            if (watched.restart.changed && watched.restart.value) {
+                if (gamePhase === 'game-over') {
+                    model.reset();
+                }
+            }
+
+            // Apply input
+            if (gamePhase === 'playing') {
+                ship.setRotationDirection(playerInput.rotationDirection);
+                ship.setThrust(playerInput.thrustPressed);
+
+                if (playerInput.firePressed) {
+                    tryFire();
+                } else {
+                    fireConsumed = false;
+                }
+            }
+
+            // Advance phase timeline (dying / wave-clear / respawn delays)
+            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
+            debrisModel.update(deltaMs);
+
+            // During dying, respawning, wave-clear, and game-over,
+            // asteroids keep moving but no input or collision checks
+            if (gamePhase !== 'playing' && gamePhase !== 'respawning') {
+                if (gamePhase === 'dying') {
+                    for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+                }
+                return;
+            }
+
+            // During respawning, only advance asteroids (no input or collisions)
+            if (gamePhase === 'respawning') {
+                for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+                return;
+            }
+
+            // Update children
+            ship.update(deltaMs);
+            for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+            for (let i = 0; i < bullets.length; i++) bullets[i].update(deltaMs);
+            scoreModel.update(deltaMs);
+
+            // Collision checks
+            checkBulletsVsAsteroids();
+            if (gamePhase === 'playing') checkShipVsAsteroids();
+
+            // Wave clear
+            if (gamePhase === 'playing' && aliveAsteroidCount() === 0) {
+                scheduleWaveClear();
+            }
+        },
+    };
+
+    return model;
+
+    // ---- Random helpers ----------------------------------------------------
 
     function randomRange(min: number, max: number): number {
         return min + Math.random() * (max - min);
@@ -171,17 +277,37 @@ export function createGameModel(options: GameModelOptions): GameModel {
         return count;
     }
 
-    // ---- Initialise --------------------------------------------------------
+    function findSafeRespawnPosition(): { x: number; y: number } {
+        // Try up to 50 random positions and pick the one farthest from
+        // the nearest asteroid. Fall back to centre if nothing found.
+        const safeRadiusSq = SPAWN_SAFE_RADIUS * SPAWN_SAFE_RADIUS;
+        let bestX = arenaWidth / 2;
+        let bestY = arenaHeight / 2;
+        let bestMinDist = -1;
 
-    const ship = buildShip();
-    let bullets = buildBulletPool();
-    let asteroids: AsteroidModel[] = [];
-    const scoreModel = createScoreModel();
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
+        for (let attempt = 0; attempt < 50; attempt++) {
+            const cx = Math.random() * arenaWidth;
+            const cy = Math.random() * arenaHeight;
 
-    // Spawn first wave
-    asteroids = spawnWaveAsteroids(asteroidCountForWave(1));
+            let minDist = Infinity;
+            for (let a = 0; a < asteroids.length; a++) {
+                if (!asteroids[a].alive) continue;
+                const d = distSq(cx, cy, asteroids[a].x, asteroids[a].y);
+                if (d < minDist) minDist = d;
+            }
+
+            if (minDist > bestMinDist) {
+                bestMinDist = minDist;
+                bestX = cx;
+                bestY = cy;
+            }
+
+            // Good enough - far from all asteroids
+            if (bestMinDist >= safeRadiusSq * 4) break;
+        }
+
+        return { x: bestX, y: bestY };
+    }
 
     // ---- Wave management ---------------------------------------------------
 
@@ -189,6 +315,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         ship.respawn(arenaWidth / 2, arenaHeight / 2);
         bullets = buildBulletPool();
         asteroids = spawnWaveAsteroids(asteroidCountForWave(scoreModel.wave));
+        debrisModel.clear();
         fireConsumed = false;
         gamePhase = 'playing';
         phaseTimeline.clear().time(0);
@@ -196,16 +323,35 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function scheduleDying(): void {
         gamePhase = 'dying';
+        debrisModel.spawn(ship.x, ship.y, ship.angle);
         phaseTimeline.clear().time(0);
+
+        let respawnX = arenaWidth / 2;
+        let respawnY = arenaHeight / 2;
+
         phaseTimeline.call(() => {
+            debrisModel.clear();
             if (scoreModel.loseLife()) {
-                ship.respawn(arenaWidth / 2, arenaHeight / 2);
-                deactivateAllBullets();
-                gamePhase = 'playing';
+                // Find a safe respawn position away from all asteroids
+                const safePos = findSafeRespawnPosition();
+                respawnX = safePos.x;
+                respawnY = safePos.y;
+                // Start reverse-explode animation converging to safe position
+                gamePhase = 'respawning';
+                debrisModel.reverseSpawn(respawnX, respawnY, 0, RESPAWN_ANIM_MS);
             } else {
                 gamePhase = 'game-over';
             }
         }, undefined, DYING_DELAY_MS * 0.001);
+
+        phaseTimeline.call(() => {
+            if (gamePhase === 'respawning') {
+                debrisModel.clear();
+                ship.respawn(respawnX, respawnY);
+                deactivateAllBullets();
+                gamePhase = 'playing';
+            }
+        }, undefined, (DYING_DELAY_MS + RESPAWN_ANIM_MS) * 0.001);
     }
 
     function scheduleWaveClear(): void {
@@ -300,76 +446,4 @@ export function createGameModel(options: GameModelOptions): GameModel {
             asteroids.push(child);
         }
     }
-
-    // ---- Public record -----------------------------------------------------
-
-    const model: GameModel = {
-        get phase() {
-            return gamePhase;
-        },
-        get ship() {
-            return ship;
-        },
-        get asteroids() {
-            return asteroids;
-        },
-        get bullets() {
-            return bullets;
-        },
-        get score() {
-            return scoreModel;
-        },
-        get playerInput() {
-            return playerInput;
-        },
-
-        reset(): void {
-            scoreModel.reset();
-            loadWave();
-        },
-
-        update(deltaMs: number): void {
-
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase === 'game-over') {
-                    model.reset();
-                }
-            }
-
-            // Apply input
-            if (gamePhase === 'playing') {
-                ship.setRotation(playerInput.rotation);
-                ship.setThrust(playerInput.thrustPressed);
-
-                if (playerInput.firePressed) {
-                    tryFire();
-                } else {
-                    fireConsumed = false;
-                }
-            }
-
-            // Advance phase timeline (dying / wave-clear delays)
-            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
-            if (gamePhase !== 'playing') return;
-
-            // Update children
-            ship.update(deltaMs);
-            for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
-            for (let i = 0; i < bullets.length; i++) bullets[i].update(deltaMs);
-            scoreModel.update(deltaMs);
-
-            // Collision checks
-            checkBulletsVsAsteroids();
-            if (gamePhase === 'playing') checkShipVsAsteroids();
-
-            // Wave clear
-            if (gamePhase === 'playing' && aliveAsteroidCount() === 0) {
-                scheduleWaveClear();
-            }
-        },
-    };
-
-    return model;
 }

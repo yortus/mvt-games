@@ -17,13 +17,17 @@ export interface ShipViewBindings {
 
 export function createShipView(bindings: ShipViewBindings, texture: Texture): Container {
     const watcher = watch({ alive: bindings.isAlive });
+    let sprite: Sprite;
 
     const view = new Container();
-    const sprite = new Sprite({ texture, anchor: 0.5 });
-    view.addChild(sprite);
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture, anchor: 0.5 });
+        view.addChild(sprite);
+    }
 
     function refresh(): void {
         view.position.set(bindings.getX(), bindings.getY());

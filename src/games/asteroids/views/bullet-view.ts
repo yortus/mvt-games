@@ -15,13 +15,18 @@ export interface BulletViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createBulletView(bindings: BulletViewBindings): Container {
-    const view = new Container();
-    const gfx = new Graphics();
-    view.addChild(gfx);
+    let gfx: Graphics;
 
-    drawBullet();
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        gfx = new Graphics();
+        view.addChild(gfx);
+        drawBullet();
+    }
 
     function refresh(): void {
         const active = bindings.isActive();

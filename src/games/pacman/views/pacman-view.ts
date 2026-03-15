@@ -32,15 +32,18 @@ export function createPacmanView(
     textures: PacmanViewTextures,
 ): Container {
     const watcher = watch({ direction: bindings.getDirection });
-
-    const view = new Container();
-    const sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
-    view.addChild(sprite);
-
+    let sprite: Sprite;
     let prevFrame = -1;
 
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture: textures.closed, anchor: 0.5 });
+        view.addChild(sprite);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

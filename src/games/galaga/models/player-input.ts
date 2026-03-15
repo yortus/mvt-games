@@ -10,9 +10,11 @@ export interface PlayerInput {
 }
 
 export function createPlayerInput(initialDirection: Direction = 'none'): PlayerInput {
-    return {
+    const input: PlayerInput = {
         direction: initialDirection,
         firePressed: false,
         restartPressed: false,
     };
+
+    return input;
 }

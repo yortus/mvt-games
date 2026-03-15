@@ -32,88 +32,92 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
 
-    const view = new Container();
-
-    // Field
-    const fieldContainer = createFieldView({
-        getTileSize: () => TILE_SIZE,
-        getRows: () => FIELD_ROWS,
-        getCols: () => FIELD_COLS,
-        getTileKind: (r, c) => game.field.tileAt(r, c),
-        getDepthLayers: () => DEPTH_LAYERS,
-        getTunnelCount: () => game.field.tunnelCount,
-        getGamePhase: () => game.phase,
-    });
-    view.addChild(fieldContainer);
-
-    // Digger
-    const diggerContainer = createDiggerView({
-        getRow: () => game.digger.row,
-        getCol: () => game.digger.col,
-        getDirection: () => game.digger.direction,
-        isAlive: () => game.digger.alive,
-        isHarpoonExtended: () => game.digger.harpoonExtended,
-        getHarpoonDistance: () => game.digger.harpoonDistance,
-        getTileSize: () => TILE_SIZE,
-    }, textures.digger);
-    view.addChild(diggerContainer);
-
-    // Enemies - dynamic list
     let enemyContainers: Container[] = [];
-    buildEnemies();
-
-    // Rocks - dynamic list
     let rockContainers: Container[] = [];
-    buildRocks();
-
-    // HUD
-    const hudContainer = createHudView({
-        getScore: () => game.score.score,
-        getLives: () => game.score.lives,
-        getLevel: () => game.score.level,
-        getTileSize: () => TILE_SIZE,
-        getCols: () => FIELD_COLS,
-    }, textures.diggerIcon);
-    hudContainer.position.set(0, canvasH);
-    view.addChild(hudContainer);
-
-    // Overlay
-    const overlayView = createOverlayView({
-        getWidth: () => canvasW,
-        getHeight: () => canvasH,
-        isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
-        getText: () => game.phase === 'game-over'
-            ? 'GAME OVER\n\nPress Enter to restart'
-            : 'LEVEL CLEAR!',
-    });
-    view.addChild(overlayView);
-
-    // Keyboard input
+    let enemyLayer: Container;
+    let rockLayer: Container;
     let lastXDir: 'left' | 'none' | 'right' = 'none';
     let lastYDir: 'up' | 'none' | 'down' = 'none';
-    view.addChild(createKeyboardInputView({
-        onXDirectionChanged: (dir) => {
-            lastXDir = dir;
-            if (dir === 'left') game.playerInput.direction = 'left';
-            else if (dir === 'right') game.playerInput.direction = 'right';
-            else if (lastYDir === 'up') game.playerInput.direction = 'up';
-            else if (lastYDir === 'down') game.playerInput.direction = 'down';
-            else game.playerInput.direction = 'none';
-        },
-        onYDirectionChanged: (dir) => {
-            lastYDir = dir;
-            if (dir === 'up') game.playerInput.direction = 'up';
-            else if (dir === 'down') game.playerInput.direction = 'down';
-            else if (lastXDir === 'left') game.playerInput.direction = 'left';
-            else if (lastXDir === 'right') game.playerInput.direction = 'right';
-            else game.playerInput.direction = 'none';
-        },
-        onPrimaryButtonChanged: (pressed) => { game.playerInput.pumpPressed = pressed; },
-        onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-    }));
 
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        // Field
+        view.addChild(createFieldView({
+            getTileSize: () => TILE_SIZE,
+            getRows: () => FIELD_ROWS,
+            getCols: () => FIELD_COLS,
+            getTileKind: (r, c) => game.field.tileAt(r, c),
+            getDepthLayers: () => DEPTH_LAYERS,
+            getTunnelCount: () => game.field.tunnelCount,
+            getGamePhase: () => game.phase,
+        }));
+
+        // Digger
+        view.addChild(createDiggerView({
+            getRow: () => game.digger.row,
+            getCol: () => game.digger.col,
+            getDirection: () => game.digger.direction,
+            isAlive: () => game.digger.alive,
+            isHarpoonExtended: () => game.digger.harpoonExtended,
+            getHarpoonDistance: () => game.digger.harpoonDistance,
+            getTileSize: () => TILE_SIZE,
+        }, textures.digger));
+
+        // Enemy & rock layers (children managed by buildEnemies / buildRocks)
+        enemyLayer = new Container();
+        view.addChild(enemyLayer);
+        rockLayer = new Container();
+        view.addChild(rockLayer);
+        buildEnemies();
+        buildRocks();
+
+        // HUD
+        const hudContainer = createHudView({
+            getScore: () => game.score.score,
+            getLives: () => game.score.lives,
+            getLevel: () => game.score.level,
+            getTileSize: () => TILE_SIZE,
+            getCols: () => FIELD_COLS,
+        }, textures.diggerIcon);
+        hudContainer.position.set(0, canvasH);
+        view.addChild(hudContainer);
+
+        // Overlay
+        view.addChild(createOverlayView({
+            getWidth: () => canvasW,
+            getHeight: () => canvasH,
+            isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
+            getText: () => game.phase === 'game-over'
+                ? 'GAME OVER\n\nPress Enter to restart'
+                : 'LEVEL CLEAR!',
+        }));
+
+        // Keyboard input
+        view.addChild(createKeyboardInputView({
+            onXDirectionChanged: (dir) => {
+                lastXDir = dir;
+                if (dir === 'left') game.playerInput.direction = 'left';
+                else if (dir === 'right') game.playerInput.direction = 'right';
+                else if (lastYDir === 'up') game.playerInput.direction = 'up';
+                else if (lastYDir === 'down') game.playerInput.direction = 'down';
+                else game.playerInput.direction = 'none';
+            },
+            onYDirectionChanged: (dir) => {
+                lastYDir = dir;
+                if (dir === 'up') game.playerInput.direction = 'up';
+                else if (dir === 'down') game.playerInput.direction = 'down';
+                else if (lastXDir === 'left') game.playerInput.direction = 'left';
+                else if (lastXDir === 'right') game.playerInput.direction = 'right';
+                else game.playerInput.direction = 'none';
+            },
+            onPrimaryButtonChanged: (pressed) => { game.playerInput.pumpPressed = pressed; },
+            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
+        }));
+    }
 
     function refresh(): void {
         const watched = watcher.poll();
@@ -142,7 +146,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isFireTelegraph: () => game.enemies[idx].fireTelegraph,
                 getTileSize: () => TILE_SIZE,
             }, textures.enemy);
-            view.addChild(enemyContainer);
+            enemyLayer.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
         }
     }
@@ -163,7 +167,7 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
                 isAlive: () => game.rocks[idx].alive,
                 getTileSize: () => TILE_SIZE,
             }, textures.rock);
-            view.addChild(rockContainer);
+            rockLayer.addChild(rockContainer);
             rockContainers.push(rockContainer);
         }
     }

@@ -33,15 +33,20 @@ export function createGhostView(
         color: bindings.getColor,
         tileSize: bindings.getTileSize,
     });
+    let bodySprite: Sprite;
+    let eyesSprite: Sprite;
 
     const view = new Container();
-    const bodySprite = new Sprite({ texture: textures.body, anchor: 0.5 });
-    const eyesSprite = new Sprite({ texture: textures.eyes, anchor: 0.5 });
-    view.addChild(bodySprite);
-    view.addChild(eyesSprite);
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        bodySprite = new Sprite({ texture: textures.body, anchor: 0.5 });
+        eyesSprite = new Sprite({ texture: textures.eyes, anchor: 0.5 });
+        view.addChild(bodySprite);
+        view.addChild(eyesSprite);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

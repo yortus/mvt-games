@@ -75,6 +75,33 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
 
     const effectiveTarget = { row: 0, col: 0 };
 
+    // ---- Public record -----------------------------------------------------
+
+    const model: GhostModel = {
+        get row() {
+            return state.row;
+        },
+        get col() {
+            return state.col;
+        },
+        get direction() {
+            return state.direction;
+        },
+        color,
+
+        update(deltaMs: number): void {
+            // Advance the timeline
+            timeline.time(timeline.time() + 0.001 * deltaMs);
+
+            // If idle, schedule the next one-tile move
+            if (!state.moving) scheduleMove();
+        },
+    };
+
+    return model;
+
+    // ---- Helpers -----------------------------------------------------------
+
     /** Compute the effective target tile based on behaviour pattern. */
     function updateEffectiveTarget(): void {
         switch (behavior) {
@@ -172,29 +199,4 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         timeline.to(state, { row: nextTileRow, col: nextTileCol, duration, ease: 'none' });
         timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
-
-    // ---- Public record -----------------------------------------------------
-
-    const model: GhostModel = {
-        get row() {
-            return state.row;
-        },
-        get col() {
-            return state.col;
-        },
-        get direction() {
-            return state.direction;
-        },
-        color,
-
-        update(deltaMs: number): void {
-            // Advance the timeline
-            timeline.time(timeline.time() + 0.001 * deltaMs);
-
-            // If idle, schedule the next one-tile move
-            if (!state.moving) scheduleMove();
-        },
-    };
-
-    return model;
 }

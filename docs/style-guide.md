@@ -498,9 +498,55 @@ dividers for navigability:
 // createXxx() factory function implementation
 ```
 
-The ordering is deliberate — readers see the **public contract** first
+The ordering is deliberate - readers see the **public contract** first
 (interface), then the **configuration surface** (options), then the
 **implementation** (factory).
+
+### Declaration Order Within Functions
+
+Within factory functions and other non-trivial functions, follow a
+**big-picture-first** ordering:
+
+- **Exports and public API** at the top - the returned record, public
+  interface, and main flow.
+- **High-level helpers** in the middle - the major building blocks called by
+  the public API.
+- **Low-level / private helpers** at the bottom - small utilities, math
+  functions, and internal details.
+
+This mirrors the file-level convention (interface before factory) and lets
+readers understand the function's purpose without scrolling. JavaScript's
+function hoisting makes this possible - declare functions in conceptual order,
+not in call-before-definition order.
+
+```ts
+export function createGameModel(options: GameModelOptions): GameModel {
+    const { arenaWidth, arenaHeight } = options;
+
+    // --- Initialise ---------------------------------------------------------
+    const ship = buildShip();
+    let asteroids: AsteroidModel[] = [];
+
+    // --- Public record ------------------------------------------------------
+    const model: GameModel = {
+        get ship() { return ship; },
+        get asteroids() { return asteroids; },
+        update(deltaMs: number): void { /* main loop */ },
+    };
+
+    return model;
+
+    // --- Child construction -------------------------------------------------
+
+    function buildShip(): ShipModel { /* ... */ }
+
+    // --- Helpers ------------------------------------------------------------
+
+    function distSq(x1: number, y1: number, x2: number, y2: number): number {
+        /* ... */
+    }
+}
+```
 
 ---
 

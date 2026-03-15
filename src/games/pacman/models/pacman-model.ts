@@ -53,34 +53,6 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
     // autoRemoveChildren cleans up completed tweens (see style-guide GSAP §).
     const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
-    // Helpers ----------------------------------------------------------------
-
-    function canMove(dir: Direction): boolean {
-        const delta = DIRECTION_DELTA[dir];
-        return isWalkable(state.tileRow + delta[0], state.tileCol + delta[1]);
-    }
-
-    /** Schedule a single one-tile move on the timeline. */
-    function scheduleMove(): void {
-        let dir = state.requestedDirection;
-        if (!canMove(dir)) dir = state.direction;
-        if (!canMove(dir)) return;
-
-        state.direction = dir;
-        state.moving = true;
-
-        const delta = DIRECTION_DELTA[dir];
-        const nextTileRow = state.tileRow + delta[0];
-        const nextTileCol = state.tileCol + delta[1];
-        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001; // prevent zero-duration tween
-        const duration = dist / speed;
-
-        // Position new tweens at current playhead (see style-guide GSAP §).
-        const t = timeline.time();
-        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' }, t);
-        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, t + duration);
-    }
-
     // Public model record ----------------------------------------------------
 
     const model: PacmanModel = {
@@ -119,4 +91,32 @@ export function createPacmanModel(options: PacmanModelOptions): PacmanModel {
     };
 
     return model;
+
+    // Helpers ----------------------------------------------------------------
+
+    function canMove(dir: Direction): boolean {
+        const delta = DIRECTION_DELTA[dir];
+        return isWalkable(state.tileRow + delta[0], state.tileCol + delta[1]);
+    }
+
+    /** Schedule a single one-tile move on the timeline. */
+    function scheduleMove(): void {
+        let dir = state.requestedDirection;
+        if (!canMove(dir)) dir = state.direction;
+        if (!canMove(dir)) return;
+
+        state.direction = dir;
+        state.moving = true;
+
+        const delta = DIRECTION_DELTA[dir];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001; // prevent zero-duration tween
+        const duration = dist / speed;
+
+        // Position new tweens at current playhead (see style-guide GSAP §).
+        const t = timeline.time();
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' }, t);
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, t + duration);
+    }
 }

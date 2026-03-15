@@ -54,16 +54,23 @@ export function createEnemyView(
         telegraph: bindings.isFireTelegraph,
     });
 
-    const view = new Container();
-    const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
-    const fireGfx = new Graphics();
-    const telegraphGfx = new Graphics();
-    view.addChild(sprite);
-    view.addChild(telegraphGfx);
-    view.addChild(fireGfx);
+    let sprite: Sprite;
+    let fireGfx: Graphics;
+    let telegraphGfx: Graphics;
 
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
+        fireGfx = new Graphics();
+        telegraphGfx = new Graphics();
+        view.addChild(sprite);
+        view.addChild(telegraphGfx);
+        view.addChild(fireGfx);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

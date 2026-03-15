@@ -36,63 +36,68 @@ export function createGameView(game: GameModel, textures: GameViewTextures): Con
         bee: textures.bee,
     };
 
-    const view = new Container();
-
-    // Static star backdrop
-    const starsGfx = new Graphics();
-    view.addChild(starsGfx);
-    drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
-
-    // Enemy views - dynamic list
     let enemyContainers: Container[] = [];
-    buildEnemies();
-
-    // Player bullet views
     let pBulletContainers: Container[] = [];
-    buildPlayerBullets();
-
-    // Enemy bullet views
     let eBulletContainers: Container[] = [];
-    buildEnemyBullets();
 
-    // Ship
-    const shipContainer = createShipView({
-        getX: () => game.ship.x,
-        getY: () => game.ship.y,
-        isAlive: () => game.ship.alive,
-    }, textures.ship);
-    view.addChild(shipContainer);
-
-    // HUD
-    const hudContainer = createHudView({
-        getScore: () => game.score.score,
-        getLives: () => game.score.lives,
-        getStage: () => game.score.stage,
-        getScreenWidth: () => SCREEN_WIDTH,
-    }, textures['ship-icon']);
-    hudContainer.position.set(0, PLAY_HEIGHT);
-    view.addChild(hudContainer);
-
-    // Overlay
-    const overlayView = createOverlayView({
-        getWidth: () => SCREEN_WIDTH,
-        getHeight: () => PLAY_HEIGHT,
-        isVisible: () => game.phase === 'game-over' || game.phase === 'stage-clear',
-        getText: () => game.phase === 'game-over'
-            ? 'GAME OVER\n\nPress Enter to restart'
-            : 'STAGE CLEAR!',
-    });
-    view.addChild(overlayView);
-
-    // Keyboard input
-    view.addChild(createKeyboardInputView({
-        onXDirectionChanged: (dir) => { game.playerInput.direction = dir;},
-        onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
-        onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-    }));
-
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    // ---- initialiseView ----------------------------------------------------
+
+    function initialiseView(): void {
+        // Static star backdrop
+        const starsGfx = new Graphics();
+        view.addChild(starsGfx);
+        drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
+
+        // Enemy views - dynamic list
+        buildEnemies();
+
+        // Player bullet views
+        buildPlayerBullets();
+
+        // Enemy bullet views
+        buildEnemyBullets();
+
+        // Ship
+        const shipContainer = createShipView({
+            getX: () => game.ship.x,
+            getY: () => game.ship.y,
+            isAlive: () => game.ship.alive,
+        }, textures.ship);
+        view.addChild(shipContainer);
+
+        // HUD
+        const hudContainer = createHudView({
+            getScore: () => game.score.score,
+            getLives: () => game.score.lives,
+            getStage: () => game.score.stage,
+            getScreenWidth: () => SCREEN_WIDTH,
+        }, textures['ship-icon']);
+        hudContainer.position.set(0, PLAY_HEIGHT);
+        view.addChild(hudContainer);
+
+        // Overlay
+        const overlayView = createOverlayView({
+            getWidth: () => SCREEN_WIDTH,
+            getHeight: () => PLAY_HEIGHT,
+            isVisible: () => game.phase === 'game-over' || game.phase === 'stage-clear',
+            getText: () => game.phase === 'game-over'
+                ? 'GAME OVER\n\nPress Enter to restart'
+                : 'STAGE CLEAR!',
+        });
+        view.addChild(overlayView);
+
+        // Keyboard input
+        view.addChild(createKeyboardInputView({
+            onXDirectionChanged: (dir) => { game.playerInput.direction = dir;},
+            onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
+            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
+        }));
+    }
 
     // ---- refresh -----------------------------------------------------------
 

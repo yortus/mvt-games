@@ -6,8 +6,10 @@ export interface PlayerInput {
 }
 
 export function createPlayerInput(initialDirection: Direction = 'left'): PlayerInput {
-    return {
+    const input: PlayerInput = {
         direction: initialDirection,
         restartPressed: false,
     };
+
+    return input;
 }

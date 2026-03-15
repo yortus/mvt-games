@@ -22,31 +22,35 @@ export function createHudView(bindings: HudViewBindings, shipIconTexture: Textur
         lives: bindings.getLives,
         stage: bindings.getStage,
     });
+    let scoreText: Text;
+    let stageText: Text;
+    let livesContainer: Container;
 
     const view = new Container();
-
-    // Score - left
-    const scoreText = new Text({
-        text: 'Score: 0',
-        style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-    });
-    scoreText.position.set(8, 6);
-    view.addChild(scoreText);
-
-    // Stage - right
-    const stageText = new Text({
-        text: 'Stage 1',
-        style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-    });
-    view.addChild(stageText);
-
-    // Lives - centre (ship icons)
-    const livesContainer = new Container();
-    view.addChild(livesContainer);
-
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        // Score - left
+        scoreText = new Text({
+            text: 'Score: 0',
+            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
+        });
+        scoreText.position.set(8, 6);
+        view.addChild(scoreText);
+
+        // Stage - right
+        stageText = new Text({
+            text: 'Stage 1',
+            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
+        });
+        view.addChild(stageText);
+
+        // Lives - centre (ship icons)
+        livesContainer = new Container();
+        view.addChild(livesContainer);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

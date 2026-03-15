@@ -98,5 +98,8 @@ export const WAVE_CLEAR_DELAY_MS = 1500;
 /** Delay in ms after dying before respawning or game-over. */
 export const DYING_DELAY_MS = 1500;
 
+/** Duration in ms of the reverse-explode respawn animation. */
+export const RESPAWN_ANIM_MS = 1000;
+
 /** Minimum distance from ship centre when spawning asteroids. */
 export const SPAWN_SAFE_RADIUS = 80;

@@ -75,6 +75,100 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
+    // ---- Initialise --------------------------------------------------------
+
+    let field = buildField();
+    let digger = buildDigger(field);
+    let enemies = buildEnemies(field);
+    let rocks = buildRocks(field);
+    const scoreModel = createScoreModel();
+    const playerInput = createPlayerInput();
+    const watcher = watch({ restart: () => playerInput.restartPressed });
+
+    // ---- Public model record -----------------------------------------------
+
+    const model: GameModel = {
+        get phase() {
+            return gamePhase;
+        },
+        get field() {
+            return field;
+        },
+        get digger() {
+            return digger;
+        },
+        get enemies() {
+            return enemies;
+        },
+        get rocks() {
+            return rocks;
+        },
+        get score() {
+            return scoreModel;
+        },
+        get playerInput() {
+            return playerInput;
+        },
+
+        reset(): void {
+            scoreModel.reset();
+            levelIndex = 0;
+            loadLevel();
+        },
+
+        update(deltaMs: number): void {
+
+            // Restart handling
+            const watched = watcher.poll();
+            if (watched.restart.changed && watched.restart.value) {
+                if (gamePhase === 'game-over') {
+                    model.reset();
+                }
+            }
+
+            // Apply input
+            if (gamePhase === 'playing') {
+                digger.setDirection(playerInput.direction);
+                if (playerInput.pumpPressed) {
+                    digger.startPump();
+                } else {
+                    digger.stopPump();
+                }
+            }
+
+            // Advance phase timeline (dying / level-clear delays)
+            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
+            if (gamePhase !== 'playing') return;
+
+            // Update children
+            field.update(deltaMs);
+            digger.update(deltaMs);
+            for (let i = 0; i < enemies.length; i++) {
+                enemies[i].update(deltaMs);
+            }
+            for (let i = 0; i < rocks.length; i++) {
+                rocks[i].update(deltaMs);
+            }
+            scoreModel.update(deltaMs);
+
+            // Collision checks
+            checkDigging();
+            checkHarpoonHits();
+            checkRockDestabilization();
+            checkRockCrush();
+            if (gamePhase === 'playing') checkEnemyDiggerCollision();
+            if (gamePhase === 'playing') checkFygarFire();
+            if (gamePhase === 'playing') checkLastEnemyFlee();
+
+            // Level clear check
+            if (gamePhase === 'playing' && aliveEnemyCount() === 0) {
+                scheduleLevelClear();
+            }
+        },
+    };
+
+    return model;
+
     // ---- Child model construction ------------------------------------------
 
     function currentLevel(): LevelConfig {
@@ -153,16 +247,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         return result;
     }
-
-    // ---- Initialise --------------------------------------------------------
-
-    let field = buildField();
-    let digger = buildDigger(field);
-    let enemies = buildEnemies(field);
-    let rocks = buildRocks(field);
-    const scoreModel = createScoreModel();
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Helpers -----------------------------------------------------------
 
@@ -403,88 +487,4 @@ export function createGameModel(options: GameModelOptions): GameModel {
             }
         }
     }
-
-    // ---- Public model record -----------------------------------------------
-
-    const model: GameModel = {
-        get phase() {
-            return gamePhase;
-        },
-        get field() {
-            return field;
-        },
-        get digger() {
-            return digger;
-        },
-        get enemies() {
-            return enemies;
-        },
-        get rocks() {
-            return rocks;
-        },
-        get score() {
-            return scoreModel;
-        },
-        get playerInput() {
-            return playerInput;
-        },
-
-        reset(): void {
-            scoreModel.reset();
-            levelIndex = 0;
-            loadLevel();
-        },
-
-        update(deltaMs: number): void {
-
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase === 'game-over') {
-                    model.reset();
-                }
-            }
-
-            // Apply input
-            if (gamePhase === 'playing') {
-                digger.setDirection(playerInput.direction);
-                if (playerInput.pumpPressed) {
-                    digger.startPump();
-                } else {
-                    digger.stopPump();
-                }
-            }
-
-            // Advance phase timeline (dying / level-clear delays)
-            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
-            if (gamePhase !== 'playing') return;
-
-            // Update children
-            field.update(deltaMs);
-            digger.update(deltaMs);
-            for (let i = 0; i < enemies.length; i++) {
-                enemies[i].update(deltaMs);
-            }
-            for (let i = 0; i < rocks.length; i++) {
-                rocks[i].update(deltaMs);
-            }
-            scoreModel.update(deltaMs);
-
-            // Collision checks
-            checkDigging();
-            checkHarpoonHits();
-            checkRockDestabilization();
-            checkRockCrush();
-            if (gamePhase === 'playing') checkEnemyDiggerCollision();
-            if (gamePhase === 'playing') checkFygarFire();
-            if (gamePhase === 'playing') checkLastEnemyFlee();
-
-            // Level clear check
-            if (gamePhase === 'playing' && aliveEnemyCount() === 0) {
-                scheduleLevelClear();
-            }
-        },
-    };
-
-    return model;
 }

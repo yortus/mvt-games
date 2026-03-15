@@ -14,24 +14,26 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createHudView(bindings: HudViewBindings): Container {
-    // ---- Change detection -------------------------------------------------------
     const watcher = watch({ score: bindings.getScore });
+    let scoreText: Text;
 
-    // ---- Scene elements -------------------------------------------------------
     const view = new Container();
-    const scoreText = new Text({
-        text: 'Score: 0',
-        style: {
-            fontFamily: 'monospace',
-            fontSize: 18,
-            fill: 0xffffff,
-        },
-    });
-    scoreText.position.set(8, 4);
-    view.addChild(scoreText);
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        scoreText = new Text({
+            text: 'Score: 0',
+            style: {
+                fontFamily: 'monospace',
+                fontSize: 18,
+                fill: 0xffffff,
+            },
+        });
+        scoreText.position.set(8, 4);
+        view.addChild(scoreText);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

@@ -25,5 +25,6 @@ export {
     SCORE_SMALL,
     WAVE_CLEAR_DELAY_MS,
     DYING_DELAY_MS,
+    RESPAWN_ANIM_MS,
     SPAWN_SAFE_RADIUS,
 } from './stage-data';

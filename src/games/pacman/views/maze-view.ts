@@ -21,22 +21,23 @@ export interface MazeViewBindings {
 
 export function createMazeView(bindings: MazeViewBindings): Container {
     let dotEntries: { r: number; c: number; gfx: Graphics }[] = [];
-
-    // ---- Change detection ---------------------------------------------------
     const watcher = watch({
         rows: bindings.getRows,
         cols: bindings.getCols,
         tileSize: bindings.getTileSize,
         phase: bindings.getGamePhase,
     });
+    let wallGfx: Graphics;
 
-    // ---- Scene elements -------------------------------------------------------
     const view = new Container();
-    const wallGfx = new Graphics();
-    view.addChild(wallGfx);
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        wallGfx = new Graphics();
+        view.addChild(wallGfx);
+    }
 
     function refresh(): void {
         // Poll all watches

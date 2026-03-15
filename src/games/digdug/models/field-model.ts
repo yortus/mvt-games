@@ -39,14 +39,6 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
     const tiles: TileKind[] = new Array(rows * cols);
     let tunnels = 0;
 
-    function loadLayout(layout: readonly TileKind[]): void {
-        tunnels = 0;
-        for (let i = 0; i < rows * cols; i++) {
-            tiles[i] = layout[i];
-            if (layout[i] === 'tunnel') tunnels++;
-        }
-    }
-
     loadLayout(options.layout);
 
     const model: FieldModel = {
@@ -101,4 +93,12 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
     };
 
     return model;
+
+    function loadLayout(layout: readonly TileKind[]): void {
+        tunnels = 0;
+        for (let i = 0; i < rows * cols; i++) {
+            tiles[i] = layout[i];
+            if (layout[i] === 'tunnel') tunnels++;
+        }
+    }
 }

@@ -42,16 +42,21 @@ export function createDiggerView(
         harpoon: bindings.isHarpoonExtended,
     });
 
-    const view = new Container();
-    const sprite = new Sprite({ texture: textures.idle, anchor: 0.5 });
-    const harpoonGfx = new Graphics();
-    view.addChild(sprite);
-    view.addChild(harpoonGfx);
-
+    let sprite: Sprite;
+    let harpoonGfx: Graphics;
     let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
 
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture: textures.idle, anchor: 0.5 });
+        harpoonGfx = new Graphics();
+        view.addChild(sprite);
+        view.addChild(harpoonGfx);
+    }
 
     function refresh(): void {
         const watched = watcher.poll();

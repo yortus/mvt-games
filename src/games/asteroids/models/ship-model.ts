@@ -19,7 +19,7 @@ export interface ShipModel {
     readonly alive: boolean;
     /** Whether thrust is currently applied (for view flame). */
     readonly thrusting: boolean;
-    setRotation(dir: RotationDirection): void;
+    setRotationDirection(dir: RotationDirection): void;
     setThrust(on: boolean): void;
     kill(): void;
     respawn(x: number, y: number): void;
@@ -56,7 +56,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     let vy = 0;
     let alive = true;
     let thrusting = false;
-    let rotation: RotationDirection = 'none';
+    let rotationDirection: RotationDirection = 'none';
 
     const model: ShipModel = {
         get x() {
@@ -81,8 +81,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             return thrusting;
         },
 
-        setRotation(dir: RotationDirection): void {
-            rotation = dir;
+        setRotationDirection(dir: RotationDirection): void {
+            rotationDirection = dir;
         },
 
         setThrust(on: boolean): void {
@@ -102,7 +102,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             vy = 0;
             alive = true;
             thrusting = false;
-            rotation = 'none';
+            rotationDirection = 'none';
         },
 
         update(deltaMs: number): void {
@@ -110,10 +110,10 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
 
             const dt = deltaMs * 0.001;
 
-            // Rotation
-            if (rotation === 'left') {
+            // Rotation direction
+            if (rotationDirection === 'left') {
                 angle -= rotationSpeed * dt;
-            } else if (rotation === 'right') {
+            } else if (rotationDirection === 'right') {
                 angle += rotationSpeed * dt;
             }
 

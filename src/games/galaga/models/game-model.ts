@@ -94,6 +94,111 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
+    // ---- Initialise --------------------------------------------------------
+
+    let ship = buildShip();
+    let enemies = buildEnemies();
+    let playerBullets = buildBulletPool(MAX_PLAYER_BULLETS);
+    let enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
+    const scoreModel = createScoreModel();
+    const playerInput = createPlayerInput();
+    const watcher = watch({ restart: () => playerInput.restartPressed });
+
+    // ---- Public record -----------------------------------------------------
+
+    const model: GameModel = {
+        get phase() {
+            return gamePhase;
+        },
+        get ship() {
+            return ship;
+        },
+        get enemies() {
+            return enemies;
+        },
+        get playerBullets() {
+            return playerBullets;
+        },
+        get enemyBullets() {
+            return enemyBullets;
+        },
+        get score() {
+            return scoreModel;
+        },
+        get playerInput() {
+            return playerInput;
+        },
+
+        reset(): void {
+            scoreModel.reset();
+            waveIndex = 0;
+            loadWave();
+        },
+
+        update(deltaMs: number): void {
+
+            // Restart handling
+            const watched = watcher.poll();
+            if (watched.restart.changed && watched.restart.value) {
+                if (gamePhase === 'game-over') {
+                    model.reset();
+                }
+            }
+
+            // Apply input
+            if (gamePhase === 'playing') {
+                ship.setDirection(playerInput.direction);
+
+                if (playerInput.firePressed) {
+                    tryPlayerFire();
+                } else {
+                    fireConsumed = false;
+                }
+            }
+
+            // Advance phase timeline (dying / stage-clear delays)
+            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
+            if (gamePhase !== 'playing') return;
+
+            // Formation breathing
+            breathTimer += deltaMs;
+            formationOffsetX = Math.sin(breathTimer * 0.001) * BREATH_AMP_X;
+            formationOffsetY = Math.cos(breathTimer * 0.0007) * BREATH_AMP_Y;
+
+            // Update children
+            ship.update(deltaMs);
+            for (let i = 0; i < enemies.length; i++) enemies[i].update(deltaMs);
+            for (let i = 0; i < playerBullets.length; i++) playerBullets[i].update(deltaMs);
+            for (let i = 0; i < enemyBullets.length; i++) enemyBullets[i].update(deltaMs);
+            scoreModel.update(deltaMs);
+
+            // Enemy firing (dive callbacks)
+            handleEnemyFiring();
+
+            // Dive timer
+            if (allEnemiesEnteredOrDead()) {
+                diveTimer += deltaMs;
+                const wave = currentWave();
+                if (diveTimer >= wave.diveInterval) {
+                    diveTimer -= wave.diveInterval;
+                    selectAndStartDive();
+                }
+            }
+
+            // Collision checks
+            checkPlayerBulletsVsEnemies();
+            if (gamePhase === 'playing') checkEnemyBulletsVsShip();
+            if (gamePhase === 'playing') checkDivingEnemiesVsShip();
+
+            // Stage clear
+            if (gamePhase === 'playing' && aliveEnemyCount() === 0) {
+                scheduleStageClear();
+            }
+        },
+    };
+
+    return model;
+
     // ---- Helpers -----------------------------------------------------------
 
     function currentWave(): WaveConfig {
@@ -151,16 +256,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         return pool;
     }
-
-    // ---- Initialise --------------------------------------------------------
-
-    let ship = buildShip();
-    let enemies = buildEnemies();
-    let playerBullets = buildBulletPool(MAX_PLAYER_BULLETS);
-    let enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
-    const scoreModel = createScoreModel();
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Stage management --------------------------------------------------
 
@@ -335,99 +430,4 @@ export function createGameModel(options: GameModelOptions): GameModel {
             }
         }
     }
-
-    // ---- Public record -----------------------------------------------------
-
-    const model: GameModel = {
-        get phase() {
-            return gamePhase;
-        },
-        get ship() {
-            return ship;
-        },
-        get enemies() {
-            return enemies;
-        },
-        get playerBullets() {
-            return playerBullets;
-        },
-        get enemyBullets() {
-            return enemyBullets;
-        },
-        get score() {
-            return scoreModel;
-        },
-        get playerInput() {
-            return playerInput;
-        },
-
-        reset(): void {
-            scoreModel.reset();
-            waveIndex = 0;
-            loadWave();
-        },
-
-        update(deltaMs: number): void {
-
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase === 'game-over') {
-                    model.reset();
-                }
-            }
-
-            // Apply input
-            if (gamePhase === 'playing') {
-                ship.setDirection(playerInput.direction);
-
-                if (playerInput.firePressed) {
-                    tryPlayerFire();
-                } else {
-                    fireConsumed = false;
-                }
-            }
-
-            // Advance phase timeline (dying / stage-clear delays)
-            phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
-            if (gamePhase !== 'playing') return;
-
-            // Formation breathing
-            breathTimer += deltaMs;
-            formationOffsetX = Math.sin(breathTimer * 0.001) * BREATH_AMP_X;
-            formationOffsetY = Math.cos(breathTimer * 0.0007) * BREATH_AMP_Y;
-
-            // Update children
-            ship.update(deltaMs);
-            for (let i = 0; i < enemies.length; i++) enemies[i].update(deltaMs);
-            for (let i = 0; i < playerBullets.length; i++) playerBullets[i].update(deltaMs);
-            for (let i = 0; i < enemyBullets.length; i++) enemyBullets[i].update(deltaMs);
-            scoreModel.update(deltaMs);
-
-            // Enemy firing (dive callbacks)
-            handleEnemyFiring();
-
-            // Dive timer
-            if (allEnemiesEnteredOrDead()) {
-                diveTimer += deltaMs;
-                const wave = currentWave();
-                if (diveTimer >= wave.diveInterval) {
-                    diveTimer -= wave.diveInterval;
-                    selectAndStartDive();
-                }
-            }
-
-            // Collision checks
-            checkPlayerBulletsVsEnemies();
-            if (gamePhase === 'playing') checkEnemyBulletsVsShip();
-            if (gamePhase === 'playing') checkDivingEnemiesVsShip();
-
-            // Stage clear
-            if (gamePhase === 'playing' && aliveEnemyCount() === 0) {
-                scheduleStageClear();
-            }
-        },
-    };
-
-    return model;
 }

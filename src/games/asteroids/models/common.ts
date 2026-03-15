@@ -14,4 +14,4 @@ export type AsteroidSize = 'large' | 'medium' | 'small';
 // Game
 // ---------------------------------------------------------------------------
 
-export type GamePhase = 'playing' | 'wave-clear' | 'dying' | 'game-over';
+export type GamePhase = 'playing' | 'wave-clear' | 'dying' | 'respawning' | 'game-over';

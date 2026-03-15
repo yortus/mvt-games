@@ -36,13 +36,17 @@ export function createEnemyView(
         kind: bindings.getKind,
         phase: bindings.getPhase,
     });
+    let sprite: Sprite;
 
     const view = new Container();
-    const sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
-    view.addChild(sprite);
-
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture: textures[bindings.getKind()], anchor: 0.5 });
+        view.addChild(sprite);
+    }
 
     function refresh(): void {
         const phase = bindings.getPhase();

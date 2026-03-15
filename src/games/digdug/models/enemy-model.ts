@@ -101,6 +101,156 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
     const deflateTimeline = gsap.timeline({ paused: true });
     const ghostTimeline = gsap.timeline({ paused: true });
 
+    // ---- Public record -----------------------------------------------------
+
+    const model: EnemyModel = {
+        get col() {
+            return state.col;
+        },
+        get row() {
+            return state.row;
+        },
+        get direction() {
+            return state.direction;
+        },
+        kind,
+        get phase() {
+            return state.phase;
+        },
+        get inflationStage() {
+            return state.inflationStage;
+        },
+        get alive() {
+            return state.alive;
+        },
+        get fireActive() {
+            return state.fireActive;
+        },
+        get fireTelegraph() {
+            return state.fireTelegraph;
+        },
+        get fleeing() {
+            return state.fleeing;
+        },
+
+        inflate(): boolean {
+            if (!state.alive || state.phase === 'popped' || state.phase === 'crushed') return false;
+
+            state.phase = 'inflating';
+            timeline.clear().time(0);
+            fireTimeline.clear().time(0);
+            deflateTimeline.clear().time(0);
+            state.fireTelegraph = false;
+            state.fireActive = false;
+            state.moving = false;
+
+            if (state.inflationStage < 4) {
+                state.inflationStage = NEXT_INFLATION[state.inflationStage];
+            }
+            if (state.inflationStage === 4) {
+                state.phase = 'popped';
+                state.alive = false;
+                return true;
+            }
+            scheduleDeflation();
+            return false;
+        },
+
+        crush(): void {
+            state.phase = 'crushed';
+            state.alive = false;
+            timeline.clear().time(0);
+            fireTimeline.clear().time(0);
+            deflateTimeline.clear().time(0);
+            ghostTimeline.clear().time(0);
+            state.moving = false;
+        },
+
+        startFleeing(): void {
+            if (!state.alive) return;
+            if (state.fleeing) return; // already triggered
+            state.fleeing = true;
+            state.fireActive = false;
+            state.fireTelegraph = false;
+            fireTimeline.clear().time(0);
+
+            // If currently inflating, let inflation continue - flee after deflation
+            if (state.phase === 'inflating') return;
+
+            // If trapped in dirt (not on walkable tile), ghost to surface
+            if (!isWalkable(state.tileRow, state.tileCol)) {
+                state.phase = 'ghosting';
+                timeline.clear().time(0);
+                ghostTimeline.clear().time(0);
+                state.moving = false;
+                return;
+            }
+
+            // On surface or in tunnel - flee normally
+            state.phase = 'fleeing';
+            timeline.clear().time(0);
+            ghostTimeline.clear().time(0);
+            state.moving = false;
+        },
+
+        reset(row: number, col: number): void {
+            timeline.clear().time(0);
+            fireTimeline.clear().time(0);
+            deflateTimeline.clear().time(0);
+            ghostTimeline.clear().time(0);
+            state.col = col;
+            state.row = row;
+            state.tileCol = col;
+            state.tileRow = row;
+            state.direction = 'left';
+            state.moving = false;
+            state.alive = true;
+            state.phase = 'patrol';
+            state.inflationStage = 0;
+            state.ghostMovesRemaining = 0;
+            state.fireActive = false;
+            state.fireTelegraph = false;
+            state.fireReady = false;
+            state.fleeing = false;
+            state.patrolSwitchTimer = 2000;
+            scheduleFireCooldown();
+            scheduleGhostCountdown(ghostInterval);
+        },
+
+        update(deltaMs: number): void {
+            if (!state.alive) return;
+
+            const dt = 0.001 * deltaMs;
+
+            // 1. Advance all timelines
+            timeline.time(timeline.time() + dt);
+            fireTimeline.time(fireTimeline.time() + dt);
+            deflateTimeline.time(deflateTimeline.time() + dt);
+            ghostTimeline.time(ghostTimeline.time() + dt);
+
+            // 2. Phase-specific early returns
+            if (state.phase === 'inflating') return;
+            if (kind === 'fygar' && (state.fireTelegraph || state.fireActive)) return;
+            if (state.phase === 'ghosting') { advanceGhosting(); return; }
+            if (checkFleeEscape()) return;
+
+            // 3. Orchestration
+            if (state.phase === 'patrol') {
+                state.patrolSwitchTimer -= deltaMs;
+                const dist = distanceSq(state.tileRow, state.tileCol, chaseTarget.row, chaseTarget.col);
+                if (dist < 36) state.phase = 'chase';
+            }
+            if (canFireNow()) { scheduleFireSequence(); return; }
+            if (!state.moving) scheduleMove();
+        },
+    };
+
+    // Kick off initial timers
+    scheduleFireCooldown();
+    scheduleGhostCountdown(ghostInterval);
+
+    return model;
+
     // ---- Helpers -----------------------------------------------------------
 
     function distanceSq(r1: number, c1: number, r2: number, c2: number): number {
@@ -467,154 +617,4 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' });
         timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
-
-    // ---- Public record -----------------------------------------------------
-
-    const model: EnemyModel = {
-        get col() {
-            return state.col;
-        },
-        get row() {
-            return state.row;
-        },
-        get direction() {
-            return state.direction;
-        },
-        kind,
-        get phase() {
-            return state.phase;
-        },
-        get inflationStage() {
-            return state.inflationStage;
-        },
-        get alive() {
-            return state.alive;
-        },
-        get fireActive() {
-            return state.fireActive;
-        },
-        get fireTelegraph() {
-            return state.fireTelegraph;
-        },
-        get fleeing() {
-            return state.fleeing;
-        },
-
-        inflate(): boolean {
-            if (!state.alive || state.phase === 'popped' || state.phase === 'crushed') return false;
-
-            state.phase = 'inflating';
-            timeline.clear().time(0);
-            fireTimeline.clear().time(0);
-            deflateTimeline.clear().time(0);
-            state.fireTelegraph = false;
-            state.fireActive = false;
-            state.moving = false;
-
-            if (state.inflationStage < 4) {
-                state.inflationStage = NEXT_INFLATION[state.inflationStage];
-            }
-            if (state.inflationStage === 4) {
-                state.phase = 'popped';
-                state.alive = false;
-                return true;
-            }
-            scheduleDeflation();
-            return false;
-        },
-
-        crush(): void {
-            state.phase = 'crushed';
-            state.alive = false;
-            timeline.clear().time(0);
-            fireTimeline.clear().time(0);
-            deflateTimeline.clear().time(0);
-            ghostTimeline.clear().time(0);
-            state.moving = false;
-        },
-
-        startFleeing(): void {
-            if (!state.alive) return;
-            if (state.fleeing) return; // already triggered
-            state.fleeing = true;
-            state.fireActive = false;
-            state.fireTelegraph = false;
-            fireTimeline.clear().time(0);
-
-            // If currently inflating, let inflation continue - flee after deflation
-            if (state.phase === 'inflating') return;
-
-            // If trapped in dirt (not on walkable tile), ghost to surface
-            if (!isWalkable(state.tileRow, state.tileCol)) {
-                state.phase = 'ghosting';
-                timeline.clear().time(0);
-                ghostTimeline.clear().time(0);
-                state.moving = false;
-                return;
-            }
-
-            // On surface or in tunnel - flee normally
-            state.phase = 'fleeing';
-            timeline.clear().time(0);
-            ghostTimeline.clear().time(0);
-            state.moving = false;
-        },
-
-        reset(row: number, col: number): void {
-            timeline.clear().time(0);
-            fireTimeline.clear().time(0);
-            deflateTimeline.clear().time(0);
-            ghostTimeline.clear().time(0);
-            state.col = col;
-            state.row = row;
-            state.tileCol = col;
-            state.tileRow = row;
-            state.direction = 'left';
-            state.moving = false;
-            state.alive = true;
-            state.phase = 'patrol';
-            state.inflationStage = 0;
-            state.ghostMovesRemaining = 0;
-            state.fireActive = false;
-            state.fireTelegraph = false;
-            state.fireReady = false;
-            state.fleeing = false;
-            state.patrolSwitchTimer = 2000;
-            scheduleFireCooldown();
-            scheduleGhostCountdown(ghostInterval);
-        },
-
-        update(deltaMs: number): void {
-            if (!state.alive) return;
-
-            const dt = 0.001 * deltaMs;
-
-            // 1. Advance all timelines
-            timeline.time(timeline.time() + dt);
-            fireTimeline.time(fireTimeline.time() + dt);
-            deflateTimeline.time(deflateTimeline.time() + dt);
-            ghostTimeline.time(ghostTimeline.time() + dt);
-
-            // 2. Phase-specific early returns
-            if (state.phase === 'inflating') return;
-            if (kind === 'fygar' && (state.fireTelegraph || state.fireActive)) return;
-            if (state.phase === 'ghosting') { advanceGhosting(); return; }
-            if (checkFleeEscape()) return;
-
-            // 3. Orchestration
-            if (state.phase === 'patrol') {
-                state.patrolSwitchTimer -= deltaMs;
-                const dist = distanceSq(state.tileRow, state.tileCol, chaseTarget.row, chaseTarget.col);
-                if (dist < 36) state.phase = 'chase';
-            }
-            if (canFireNow()) { scheduleFireSequence(); return; }
-            if (!state.moving) scheduleMove();
-        },
-    };
-
-    // Kick off initial timers
-    scheduleFireCooldown();
-    scheduleGhostCountdown(ghostInterval);
-
-    return model;
 }

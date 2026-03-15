@@ -90,81 +90,6 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
     const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
     const harpoonTimeline = gsap.timeline({ paused: true });
 
-    // ---- Helpers -----------------------------------------------------------
-
-    function inBounds(row: number, col: number): boolean {
-        return row >= 0 && row < fieldRows && col >= 0 && col < fieldCols;
-    }
-
-    function canMove(dir: Direction): boolean {
-        const delta = DIRECTION_DELTA[dir];
-        const nr = state.tileRow + delta[0];
-        const nc = state.tileCol + delta[1];
-        if (!inBounds(nr, nc)) return false;
-        return isWalkable(nr, nc) || isDirt(nr, nc);
-    }
-
-    function effectiveHarpoonMax(): number {
-        if (getHarpoonMaxDistance) {
-            return getHarpoonMaxDistance(state.direction, state.tileRow, state.tileCol, maxHarpoonRange);
-        }
-        return maxHarpoonRange;
-    }
-
-    function scheduleHarpoonExtend(): void {
-        const max = effectiveHarpoonMax();
-        const remaining = max - state.harpoonDistance;
-        if (remaining <= 0) return;
-        const duration = remaining / HARPOON_SPEED;
-
-        harpoonTimeline.clear().time(0);
-        harpoonTimeline.to(state, { harpoonDistance: max, duration, ease: 'none' });
-    }
-
-    function scheduleHarpoonRetract(): void {
-        const duration = state.harpoonDistance / HARPOON_SPEED;
-        if (duration <= 0) {
-            state.harpoonDistance = 0;
-            state.harpoonExtended = false;
-            return;
-        }
-
-        harpoonTimeline.clear().time(0);
-        harpoonTimeline.to(state, { harpoonDistance: 0, duration, ease: 'none' });
-        harpoonTimeline.call(() => { state.harpoonExtended = false; }, undefined, duration);
-    }
-
-    function scheduleMove(): void {
-        if (!state.alive || state.harpoonExtended) return;
-        if (state.requestedDirection === 'none') return;
-
-        const requested = state.requestedDirection;
-        if (canMove(requested)) {
-            state.direction = requested;
-        } else if (state.direction !== 'none' && canMove(state.direction)) {
-            // Keep current direction
-        } else {
-            return;
-        }
-
-        state.moving = true;
-
-        const delta = DIRECTION_DELTA[state.direction];
-        const nextTileRow = state.tileRow + delta[0];
-        const nextTileCol = state.tileCol + delta[1];
-
-        // Snap perpendicular axis to prevent diagonal sliding on axis switch
-        if (delta[0] !== 0) state.col = state.tileCol;
-        if (delta[1] !== 0) state.row = state.tileRow;
-
-        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
-        const duration = dist / speed;
-
-        const t = timeline.time();
-        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' }, t);
-        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, t + duration);
-    }
-
     // ---- Public record -----------------------------------------------------
 
     const model: DiggerModel = {
@@ -295,4 +220,79 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
     };
 
     return model;
+
+    // ---- Helpers -----------------------------------------------------------
+
+    function inBounds(row: number, col: number): boolean {
+        return row >= 0 && row < fieldRows && col >= 0 && col < fieldCols;
+    }
+
+    function canMove(dir: Direction): boolean {
+        const delta = DIRECTION_DELTA[dir];
+        const nr = state.tileRow + delta[0];
+        const nc = state.tileCol + delta[1];
+        if (!inBounds(nr, nc)) return false;
+        return isWalkable(nr, nc) || isDirt(nr, nc);
+    }
+
+    function effectiveHarpoonMax(): number {
+        if (getHarpoonMaxDistance) {
+            return getHarpoonMaxDistance(state.direction, state.tileRow, state.tileCol, maxHarpoonRange);
+        }
+        return maxHarpoonRange;
+    }
+
+    function scheduleHarpoonExtend(): void {
+        const max = effectiveHarpoonMax();
+        const remaining = max - state.harpoonDistance;
+        if (remaining <= 0) return;
+        const duration = remaining / HARPOON_SPEED;
+
+        harpoonTimeline.clear().time(0);
+        harpoonTimeline.to(state, { harpoonDistance: max, duration, ease: 'none' });
+    }
+
+    function scheduleHarpoonRetract(): void {
+        const duration = state.harpoonDistance / HARPOON_SPEED;
+        if (duration <= 0) {
+            state.harpoonDistance = 0;
+            state.harpoonExtended = false;
+            return;
+        }
+
+        harpoonTimeline.clear().time(0);
+        harpoonTimeline.to(state, { harpoonDistance: 0, duration, ease: 'none' });
+        harpoonTimeline.call(() => { state.harpoonExtended = false; }, undefined, duration);
+    }
+
+    function scheduleMove(): void {
+        if (!state.alive || state.harpoonExtended) return;
+        if (state.requestedDirection === 'none') return;
+
+        const requested = state.requestedDirection;
+        if (canMove(requested)) {
+            state.direction = requested;
+        } else if (state.direction !== 'none' && canMove(state.direction)) {
+            // Keep current direction
+        } else {
+            return;
+        }
+
+        state.moving = true;
+
+        const delta = DIRECTION_DELTA[state.direction];
+        const nextTileRow = state.tileRow + delta[0];
+        const nextTileCol = state.tileCol + delta[1];
+
+        // Snap perpendicular axis to prevent diagonal sliding on axis switch
+        if (delta[0] !== 0) state.col = state.tileCol;
+        if (delta[1] !== 0) state.row = state.tileRow;
+
+        const dist = Math.abs(nextTileCol - state.col) + Math.abs(nextTileRow - state.row) || 0.001;
+        const duration = dist / speed;
+
+        const t = timeline.time();
+        timeline.to(state, { col: nextTileCol, row: nextTileRow, duration, ease: 'none' }, t);
+        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, t + duration);
+    }
 }

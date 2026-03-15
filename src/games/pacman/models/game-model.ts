@@ -49,42 +49,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     let gamePhase: GamePhase = 'playing';
 
-    // ---- Child model construction ------------------------------------------
-
-    function buildMaze(): MazeModel {
-        return createMazeModel({ grid });
-    }
-
-    function buildPacman(maze: MazeModel): PacmanModel {
-        return createPacmanModel({
-            startRow: pacmanSpawn[0],
-            startCol: pacmanSpawn[1],
-            speed: pacmanSpeed,
-            isWalkable: (r, c) => !maze.isWall(r, c),
-        });
-    }
-
-    function buildGhosts(maze: MazeModel): GhostModel[] {
-        const ghosts: GhostModel[] = [];
-        for (let i = 0; i < ghostSpawns.length; i++) {
-            const color = ghostColors[i] ?? 0xff0000;
-            ghosts.push(
-                createGhostModel({
-                    startRow: ghostSpawns[i][0],
-                    startCol: ghostSpawns[i][1],
-                    color,
-                    speed: ghostSpeed,
-                    behavior: GHOST_BEHAVIORS[i] ?? 'chase',
-                    isWalkable: (r, c) => !maze.isWall(r, c),
-                    chaseTarget: pacman,
-                    flankPartner: i === 2 ? ghosts[0] : undefined,
-                    scatterTarget: i === 3 ? { row: grid.length - 1, col: 0 } : undefined,
-                }),
-            );
-        }
-        return ghosts;
-    }
-
     // ---- Initialise child models -------------------------------------------
 
     let maze = buildMaze();
@@ -95,33 +59,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // Player input - persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
-
-    // ---- Collision detection -----------------------------------------------
-
-    function checkCollisions(): void {
-        if (gamePhase !== 'playing') return;
-
-        // Pac-Man eats dots
-        if (maze.eatDot(Math.round(pacman.row), Math.round(pacman.col))) {
-            scoreModel.addPoints(DOT_POINTS);
-        }
-
-        // Win if all dots eaten
-        if (maze.remainingDots === 0) {
-            gamePhase = 'won';
-            return;
-        }
-
-        // Ghost collisions
-        for (let i = 0; i < ghosts.length; i++) {
-            const dr = pacman.row - ghosts[i].row;
-            const dc = pacman.col - ghosts[i].col;
-            if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
-                gamePhase = 'game-over';
-                return;
-            }
-        }
-    }
 
     // ---- Public model record -----------------------------------------------
 
@@ -184,4 +121,67 @@ export function createGameModel(options: GameModelOptions): GameModel {
     };
 
     return model;
+
+    // ---- Child model construction ------------------------------------------
+
+    function buildMaze(): MazeModel {
+        return createMazeModel({ grid });
+    }
+
+    function buildPacman(maze: MazeModel): PacmanModel {
+        return createPacmanModel({
+            startRow: pacmanSpawn[0],
+            startCol: pacmanSpawn[1],
+            speed: pacmanSpeed,
+            isWalkable: (r, c) => !maze.isWall(r, c),
+        });
+    }
+
+    function buildGhosts(maze: MazeModel): GhostModel[] {
+        const ghosts: GhostModel[] = [];
+        for (let i = 0; i < ghostSpawns.length; i++) {
+            const color = ghostColors[i] ?? 0xff0000;
+            ghosts.push(
+                createGhostModel({
+                    startRow: ghostSpawns[i][0],
+                    startCol: ghostSpawns[i][1],
+                    color,
+                    speed: ghostSpeed,
+                    behavior: GHOST_BEHAVIORS[i] ?? 'chase',
+                    isWalkable: (r, c) => !maze.isWall(r, c),
+                    chaseTarget: pacman,
+                    flankPartner: i === 2 ? ghosts[0] : undefined,
+                    scatterTarget: i === 3 ? { row: grid.length - 1, col: 0 } : undefined,
+                }),
+            );
+        }
+        return ghosts;
+    }
+
+    // ---- Collision detection -----------------------------------------------
+
+    function checkCollisions(): void {
+        if (gamePhase !== 'playing') return;
+
+        // Pac-Man eats dots
+        if (maze.eatDot(Math.round(pacman.row), Math.round(pacman.col))) {
+            scoreModel.addPoints(DOT_POINTS);
+        }
+
+        // Win if all dots eaten
+        if (maze.remainingDots === 0) {
+            gamePhase = 'won';
+            return;
+        }
+
+        // Ghost collisions
+        for (let i = 0; i < ghosts.length; i++) {
+            const dr = pacman.row - ghosts[i].row;
+            const dc = pacman.col - ghosts[i].col;
+            if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
+                gamePhase = 'game-over';
+                return;
+            }
+        }
+    }
 }

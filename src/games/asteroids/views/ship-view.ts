@@ -19,17 +19,22 @@ export interface ShipViewBindings {
 
 export function createShipView(bindings: ShipViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
+    let bodyGfx: Graphics;
+    let flameGfx: Graphics;
 
     const view = new Container();
-    const bodyGfx = new Graphics();
-    const flameGfx = new Graphics();
-    view.addChild(bodyGfx);
-    view.addChild(flameGfx);
-
-    drawShip();
-    drawFlame();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        bodyGfx = new Graphics();
+        flameGfx = new Graphics();
+        view.addChild(bodyGfx);
+        view.addChild(flameGfx);
+        drawShip();
+        drawFlame();
+    }
 
     function refresh(): void {
         view.position.set(bindings.getX(), bindings.getY());

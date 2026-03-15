@@ -36,14 +36,18 @@ export function createRockView(
         tileSize: bindings.getTileSize,
     });
 
-    const view = new Container();
-    const sprite = new Sprite({ texture: textures.rock, anchor: 0.5 });
-    view.addChild(sprite);
-
+    let sprite: Sprite;
     let wobbleToggle = false;
 
+    const view = new Container();
+    initialiseView();
     view.onRender = refresh;
     return view;
+
+    function initialiseView(): void {
+        sprite = new Sprite({ texture: textures.rock, anchor: 0.5 });
+        view.addChild(sprite);
+    }
 
     function refresh(): void {
         view.visible = bindings.isAlive();
