@@ -25,7 +25,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         phase: bindings.getPhase,
     });
 
-    const tx = textures.get();
+    const enemyTextures = textures.get().enemy;
     let sprite: Sprite;
 
     const view = new Container();
@@ -34,7 +34,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: tx[bindings.getKind()], anchor: 0.5 });
+        sprite = new Sprite({ texture: enemyTextures[bindings.getKind()], anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -47,7 +47,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         const watched = watcher.poll();
         view.position.set(bindings.getX(), bindings.getY());
         if (watched.phase.changed || watched.kind.changed) {
-            sprite.texture = tx[bindings.getKind()];
+            sprite.texture = enemyTextures[bindings.getKind()];
         }
     }
 }

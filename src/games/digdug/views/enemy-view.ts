@@ -34,8 +34,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         telegraph: bindings.isFireTelegraph,
     });
 
-    const ghostEyesTexture = textures.get().ghostEyes;
-    const enemyTextures = { pooka: getEnemyTextures('pooka'), fygar: getEnemyTextures('fygar') }
+    const tx = textures.get();
     let sprite: Sprite;
     let fireGfx: Graphics;
     let telegraphGfx: Graphics;
@@ -47,7 +46,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
 
     function initialiseView(): void {
         const kind = bindings.getKind();
-        sprite = new Sprite({ texture: enemyTextures[kind].normal, anchor: 0.5 });
+        sprite = new Sprite({ texture: tx[kind].normal, anchor: 0.5 });
         fireGfx = new Graphics();
         telegraphGfx = new Graphics();
         view.addChild(sprite);
@@ -70,7 +69,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
 
         if (phase === 'ghosting') {
             if (watched.phase.changed || watched.tileSize.changed) {
-                sprite.texture = ghostEyesTexture;
+                sprite.texture = tx.ghostEyes;
                 updateScale(0);
             }
             view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
@@ -113,19 +112,8 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         }
     }
 
-    function getEnemyTextures(kind: EnemyKind): EnemyTextures {
-        const tx = textures.get();
-        return {
-            normal: tx[kind],
-            inflate1: tx[`${kind}Inflate1`],
-            inflate2: tx[`${kind}Inflate2`],
-            inflate3: tx[`${kind}Inflate3`],
-            crushed: tx[`${kind}Crushed`],
-        };
-    }
-
     function pickTexture(kind: EnemyKind, phase: EnemyPhase, inflation: InflationStage): Texture {
-        const kt = enemyTextures[kind];
+        const kt = tx[kind];
         if (phase === 'crushed') return kt.crushed;
         if (inflation === 0) return kt.normal;
         return inflateTexture(kt, inflation) ?? kt.normal;

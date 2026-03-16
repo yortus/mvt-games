@@ -79,7 +79,7 @@ export function createHudView(bindings: HudViewBindings): Container {
         livesContainer.removeChildren();
         const lives = bindings.getLives();
         for (let i = 0; i < lives; i++) {
-            const icon = new Sprite({ texture: textures.get().shipIcon });
+            const icon = new Sprite({ texture: textures.get().ship.icon });
             icon.position.set(i * 14, 0);
             livesContainer.addChild(icon);
         }

@@ -32,8 +32,9 @@ export function createGhostView(bindings: GhostViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        bodySprite = new Sprite({ texture: textures.get().ghostBody, anchor: 0.5 });
-        eyesSprite = new Sprite({ texture: textures.get().ghostEyes, anchor: 0.5 });
+        const ghost = textures.get().ghost;
+        bodySprite = new Sprite({ texture: ghost.body, anchor: 0.5 });
+        eyesSprite = new Sprite({ texture: ghost.eyes, anchor: 0.5 });
         view.addChild(bodySprite);
         view.addChild(eyesSprite);
     }

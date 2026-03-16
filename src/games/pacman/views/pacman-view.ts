@@ -21,7 +21,7 @@ export interface PacmanViewBindings {
 export function createPacmanView(bindings: PacmanViewBindings): Container {
     const watcher = watch({ direction: bindings.getDirection });
 
-    const tx = textures.get();
+    const pacmanTextures = textures.get().pacman;
     let sprite: Sprite;
 
     const view = new Container();
@@ -30,7 +30,7 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: tx.pacmanClosed, anchor: 0.5 });
+        sprite = new Sprite({ texture: pacmanTextures.closed, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -47,8 +47,7 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
         // Use fractional distance from nearest tile centre as mouth cycle input
         const frac = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
         const mouth = Math.sin(frac * Math.PI);
-        const frame = mouth < 0.33 ? 'pacmanClosed' : mouth < 0.66 ? 'pacmanMid' : 'pacmanOpen';
-        sprite.texture = tx[frame];
+        sprite.texture = mouth < 0.33 ? pacmanTextures.closed : mouth < 0.66 ? pacmanTextures.mid : pacmanTextures.open;
 
         if (watched.direction.changed) {
             view.rotation = directionToRotation(watched.direction.value);

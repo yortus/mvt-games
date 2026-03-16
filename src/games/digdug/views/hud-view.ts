@@ -80,7 +80,7 @@ export function createHudView(bindings: HudViewBindings): Container {
         livesContainer.removeChildren();
         const lives = bindings.getLives();
         for (let i = 0; i < lives; i++) {
-            const icon = new Sprite({ texture: textures.get().diggerIcon });
+            const icon = new Sprite({ texture: textures.get().digger.icon });
             icon.position.set(i * 16, 0);
             livesContainer.addChild(icon);
         }

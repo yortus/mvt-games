@@ -27,7 +27,7 @@ export function createRockView(bindings: RockViewBindings): Container {
     });
 
     const clock = bindings.getClock ?? (() => Ticker.shared.lastTime);
-    const tx = textures.get();
+    const rockTextures = textures.get().rock;
     let sprite: Sprite;
 
     const view = new Container();
@@ -36,7 +36,7 @@ export function createRockView(bindings: RockViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: tx.rock, anchor: 0.5 });
+        sprite = new Sprite({ texture: rockTextures.normal, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -52,7 +52,7 @@ export function createRockView(bindings: RockViewBindings): Container {
 
         const watched = watcher.poll();
         if (watched.phase.changed) {
-            sprite.texture = watched.phase.value === 'shattered' ? tx.rockShattered : tx.rock;
+            sprite.texture = watched.phase.value === 'shattered' ? rockTextures.shattered : rockTextures.normal;
         }
 
         // Wobble (presentation-only state)

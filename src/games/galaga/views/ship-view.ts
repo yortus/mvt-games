@@ -27,7 +27,7 @@ export function createShipView(bindings: ShipViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: textures.get().ship, anchor: 0.5 });
+        sprite = new Sprite({ texture: textures.get().ship.sprite, anchor: 0.5 });
         view.addChild(sprite);
     }
 
