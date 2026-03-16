@@ -1,7 +1,7 @@
-import { Container, Sprite, type Texture } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { watch } from '#common';
+import { textures } from '../data';
 import type { Direction } from '../models';
-import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -20,12 +20,9 @@ export interface PacmanViewBindings {
 
 export function createPacmanView(bindings: PacmanViewBindings): Container {
     const watcher = watch({ direction: bindings.getDirection });
-    let sprite: Sprite;
-    let prevFrame = -1;
 
-    let closedTex: Texture;
-    let midTex: Texture;
-    let openTex: Texture;
+    const tx = textures.get();
+    let sprite: Sprite;
 
     const view = new Container();
     initialiseView();
@@ -33,11 +30,7 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        closedTex = getTexture('pacman-closed');
-        midTex = getTexture('pacman-mid');
-        openTex = getTexture('pacman-open');
-
-        sprite = new Sprite({ texture: closedTex, anchor: 0.5 });
+        sprite = new Sprite({ texture: tx.pacmanClosed, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -54,17 +47,8 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
         // Use fractional distance from nearest tile centre as mouth cycle input
         const frac = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
         const mouth = Math.sin(frac * Math.PI);
-        const frame = mouth < 0.33 ? 0 : mouth < 0.66 ? 1 : 2;
-
-        if (frame !== prevFrame) {
-            prevFrame = frame;
-            // prettier-ignore
-            switch (frame) {
-                case 0: sprite.texture = closedTex; break;
-                case 1: sprite.texture = midTex;    break;
-                case 2: sprite.texture = openTex;   break;
-            }
-        }
+        const frame = mouth < 0.33 ? 'pacmanClosed' : mouth < 0.66 ? 'pacmanMid' : 'pacmanOpen';
+        sprite.texture = tx[frame];
 
         if (watched.direction.changed) {
             view.rotation = directionToRotation(watched.direction.value);

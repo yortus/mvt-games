@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#common';
+import { textures } from '../data';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
-import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -34,13 +34,11 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         telegraph: bindings.isFireTelegraph,
     });
 
+    const ghostEyesTexture = textures.get().ghostEyes;
+    const enemyTextures = { pooka: getEnemyTextures('pooka'), fygar: getEnemyTextures('fygar') }
     let sprite: Sprite;
     let fireGfx: Graphics;
     let telegraphGfx: Graphics;
-
-    let pookaTextures: EnemyTextures;
-    let fygarTextures: EnemyTextures;
-    let ghostEyesTex: Texture;
 
     const view = new Container();
     initialiseView();
@@ -48,24 +46,8 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        pookaTextures = {
-            normal: getTexture('pooka'),
-            inflate1: getTexture('pooka-inflate1'),
-            inflate2: getTexture('pooka-inflate2'),
-            inflate3: getTexture('pooka-inflate3'),
-            crushed: getTexture('pooka-crushed'),
-        };
-        fygarTextures = {
-            normal: getTexture('fygar'),
-            inflate1: getTexture('fygar-inflate1'),
-            inflate2: getTexture('fygar-inflate2'),
-            inflate3: getTexture('fygar-inflate3'),
-            crushed: getTexture('fygar-crushed'),
-        };
-        ghostEyesTex = getTexture('ghost-eyes');
-
         const kind = bindings.getKind();
-        sprite = new Sprite({ texture: kindTexturesFor(kind).normal, anchor: 0.5 });
+        sprite = new Sprite({ texture: enemyTextures[kind].normal, anchor: 0.5 });
         fireGfx = new Graphics();
         telegraphGfx = new Graphics();
         view.addChild(sprite);
@@ -88,7 +70,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
 
         if (phase === 'ghosting') {
             if (watched.phase.changed || watched.tileSize.changed) {
-                sprite.texture = ghostEyesTex;
+                sprite.texture = ghostEyesTexture;
                 updateScale(0);
             }
             view.scale.x = bindings.getDirection() === 'left' ? -1 : 1;
@@ -131,12 +113,19 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         }
     }
 
-    function kindTexturesFor(kind: EnemyKind): EnemyTextures {
-        return kind === 'pooka' ? pookaTextures : fygarTextures;
+    function getEnemyTextures(kind: EnemyKind): EnemyTextures {
+        const tx = textures.get();
+        return {
+            normal: tx[kind],
+            inflate1: tx[`${kind}Inflate1`],
+            inflate2: tx[`${kind}Inflate2`],
+            inflate3: tx[`${kind}Inflate3`],
+            crushed: tx[`${kind}Crushed`],
+        };
     }
 
     function pickTexture(kind: EnemyKind, phase: EnemyPhase, inflation: InflationStage): Texture {
-        const kt = kindTexturesFor(kind);
+        const kt = enemyTextures[kind];
         if (phase === 'crushed') return kt.crushed;
         if (inflation === 0) return kt.normal;
         return inflateTexture(kt, inflation) ?? kt.normal;

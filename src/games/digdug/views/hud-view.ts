@@ -1,6 +1,6 @@
 import { Container, Sprite, Text } from 'pixi.js';
 import { watch } from '#common';
-import { getTexture } from '../data';
+import { textures } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -80,7 +80,7 @@ export function createHudView(bindings: HudViewBindings): Container {
         livesContainer.removeChildren();
         const lives = bindings.getLives();
         for (let i = 0; i < lives; i++) {
-            const icon = new Sprite({ texture: getTexture('digger-icon') });
+            const icon = new Sprite({ texture: textures.get().diggerIcon });
             icon.position.set(i * 16, 0);
             livesContainer.addChild(icon);
         }

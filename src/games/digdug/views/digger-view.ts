@@ -1,7 +1,7 @@
-import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
 import { watch } from '#common';
+import { textures } from '../data';
 import type { Direction } from '../models';
-import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,14 +29,9 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
         harpoon: bindings.isHarpoonExtended,
     });
 
+    const tx = textures.get();
     let sprite: Sprite;
     let harpoonGfx: Graphics;
-    let prevPose: 'idle' | 'walk-a' | 'walk-b' | 'pump' = 'idle';
-
-    let idleTex: Texture;
-    let walkATex: Texture;
-    let walkBTex: Texture;
-    let pumpTex: Texture;
 
     const view = new Container();
     initialiseView();
@@ -44,12 +39,7 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        idleTex = getTexture('digger-idle');
-        walkATex = getTexture('digger-walk-a');
-        walkBTex = getTexture('digger-walk-b');
-        pumpTex = getTexture('digger-pump');
-
-        sprite = new Sprite({ texture: idleTex, anchor: 0.5 });
+        sprite = new Sprite({ texture: tx.diggerIdle, anchor: 0.5 });
         harpoonGfx = new Graphics();
         view.addChild(sprite);
         view.addChild(harpoonGfx);
@@ -76,32 +66,17 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
         }
 
         // Determine pose
-        const harpoonChanged = watched.harpoon.changed;
-        const dirChanged = watched.direction.changed;
-        const isHarpoon = bindings.isHarpoonExtended();
-
         // Use fractional distance from tile centre as walk cycle input
+        let pose: 'diggerIdle' | 'diggerWalkA' | 'diggerWalkB' | 'diggerPump';
         const progress = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
-
-        let pose: 'idle' | 'walk-a' | 'walk-b' | 'pump';
-        if (isHarpoon) {
-            pose = 'pump';
+        if (bindings.isHarpoonExtended()) {
+            pose = 'diggerPump';
         } else if (progress < 0.01) {
-            pose = 'idle';
+            pose = 'diggerIdle';
         } else {
-            pose = Math.sin(progress * Math.PI * 4) > 0 ? 'walk-b' : 'walk-a';
+            pose = Math.sin(progress * Math.PI * 4) > 0 ? 'diggerWalkB' : 'diggerWalkA';
         }
-
-        if (pose !== prevPose || dirChanged || harpoonChanged) {
-            prevPose = pose;
-            // prettier-ignore
-            switch (pose) {
-                case 'idle':   sprite.texture = idleTex;   break;
-                case 'walk-a': sprite.texture = walkATex;  break;
-                case 'walk-b': sprite.texture = walkBTex;  break;
-                case 'pump':   sprite.texture = pumpTex;   break;
-            }
-        }
+        sprite.texture = tx[pose];
 
         // Direction: flip horizontally for left, rotate for up/down
         if (dir === 'left') {
@@ -120,7 +95,7 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
 
         // Harpoon line (stays procedural - variable length)
         harpoonGfx.clear();
-        if (isHarpoon) {
+        if (bindings.isHarpoonExtended()) {
             const dist = bindings.getHarpoonDistance();
             const harpoonLen = dist * ts;
             if (harpoonLen >= 1) {

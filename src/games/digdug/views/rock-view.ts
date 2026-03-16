@@ -1,7 +1,7 @@
-import { Container, Sprite, type Texture } from 'pixi.js';
+import { Container, Sprite, Ticker } from 'pixi.js';
 import { watch } from '#common';
+import { textures } from '../data';
 import type { RockPhase } from '../models';
-import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -13,6 +13,7 @@ export interface RockViewBindings {
     getPhase(): RockPhase;
     isAlive(): boolean;
     getTileSize(): number;
+    getClock?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -25,11 +26,9 @@ export function createRockView(bindings: RockViewBindings): Container {
         tileSize: bindings.getTileSize,
     });
 
+    const clock = bindings.getClock ?? (() => Ticker.shared.lastTime);
+    const tx = textures.get();
     let sprite: Sprite;
-    let wobbleToggle = false;
-
-    let normalTex: Texture;
-    let shatteredTex: Texture;
 
     const view = new Container();
     initialiseView();
@@ -37,10 +36,7 @@ export function createRockView(bindings: RockViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        normalTex = getTexture('rock');
-        shatteredTex = getTexture('rock-shattered');
-
-        sprite = new Sprite({ texture: normalTex, anchor: 0.5 });
+        sprite = new Sprite({ texture: tx.rock, anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -51,20 +47,19 @@ export function createRockView(bindings: RockViewBindings): Container {
         const ts = bindings.getTileSize();
         const x = bindings.getX() * ts + ts / 2;
         const y = bindings.getY() * ts + ts / 2;
+        view.position.set(x, y);
         sprite.scale.set(ts / 20);
 
         const watched = watcher.poll();
         if (watched.phase.changed) {
-            sprite.texture = watched.phase.value === 'shattered' ? shatteredTex : normalTex;
+            sprite.texture = watched.phase.value === 'shattered' ? tx.rockShattered : tx.rock;
         }
 
-        // Wobble: alternate x offset each frame (presentation-only state)
-        let wobbleOffset = 0;
+        // Wobble (presentation-only state)
         if (watched.phase.value === 'wobbling') {
-            wobbleToggle = !wobbleToggle;
-            wobbleOffset = wobbleToggle ? 2 : -2;
+            const time = clock();
+            const wobbleOffset = Math.sin(time * 0.05) * 2;
+            view.position.x = x + wobbleOffset;
         }
-
-        view.position.set(x + wobbleOffset, y);
     }
 }

@@ -37,6 +37,7 @@ async function main(): Promise<void> {
         backgroundColor: 0x000000,
         antialias: false,
         roundPixels: true,
+        sharedTicker: true,
     });
     document.body.appendChild(app.canvas);
 

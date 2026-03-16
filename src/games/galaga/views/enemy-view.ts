@@ -1,7 +1,7 @@
-import { Container, Sprite, type Texture } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { watch } from '#common';
+import { textures } from '../data';
 import type { EnemyKind, EnemyPhase } from '../models';
-import { getTexture } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -24,13 +24,9 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         kind: bindings.getKind,
         phase: bindings.getPhase,
     });
-    let sprite: Sprite;
 
-    const kindTextures: Record<EnemyKind, Texture> = {
-        boss: getTexture('boss'),
-        butterfly: getTexture('butterfly'),
-        bee: getTexture('bee'),
-    };
+    const tx = textures.get();
+    let sprite: Sprite;
 
     const view = new Container();
     initialiseView();
@@ -38,7 +34,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: kindTextures[bindings.getKind()], anchor: 0.5 });
+        sprite = new Sprite({ texture: tx[bindings.getKind()], anchor: 0.5 });
         view.addChild(sprite);
     }
 
@@ -51,7 +47,7 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
         const watched = watcher.poll();
         view.position.set(bindings.getX(), bindings.getY());
         if (watched.phase.changed || watched.kind.changed) {
-            sprite.texture = kindTextures[bindings.getKind()];
+            sprite.texture = tx[bindings.getKind()];
         }
     }
 }

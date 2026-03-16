@@ -1,6 +1,6 @@
 import { Container, Sprite } from 'pixi.js';
 import { watch } from '#common';
-import { getTexture } from '../data';
+import { textures } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -22,6 +22,7 @@ export function createGhostView(bindings: GhostViewBindings): Container {
         color: bindings.getColor,
         tileSize: bindings.getTileSize,
     });
+
     let bodySprite: Sprite;
     let eyesSprite: Sprite;
 
@@ -31,11 +32,8 @@ export function createGhostView(bindings: GhostViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        const bodyTex = getTexture('ghost-body');
-        const eyesTex = getTexture('ghost-eyes');
-
-        bodySprite = new Sprite({ texture: bodyTex, anchor: 0.5 });
-        eyesSprite = new Sprite({ texture: eyesTex, anchor: 0.5 });
+        bodySprite = new Sprite({ texture: textures.get().ghostBody, anchor: 0.5 });
+        eyesSprite = new Sprite({ texture: textures.get().ghostEyes, anchor: 0.5 });
         view.addChild(bodySprite);
         view.addChild(eyesSprite);
     }

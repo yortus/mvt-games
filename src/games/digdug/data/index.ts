@@ -10,4 +10,4 @@ export {
     BASE_FIELD,
 } from './field-data';
 export { type EnemySpawn, type LevelConfig, LEVELS } from './level-data';
-export { getTexture, textureNames } from './game-textures';
+export { textures } from './textures';

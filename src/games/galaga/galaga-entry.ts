@@ -1,4 +1,3 @@
-import { preloadTextures } from '#common';
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
@@ -11,7 +10,7 @@ import {
     SHIP_SPEED,
     SHIP_HALF_WIDTH,
     WAVES,
-    textureNames,
+    textures,
 } from './data';
 
 // ---------------------------------------------------------------------------
@@ -29,7 +28,7 @@ export function createGalagaEntry(): GameEntry {
         thumbnailAdvanceMs: 2000,
 
         async load(): Promise<void> {
-            await preloadTextures('assets/galaga-textures.json', textureNames);
+            await textures.load();
             loaded = true;
         },
 

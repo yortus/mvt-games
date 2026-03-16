@@ -1,4 +1,3 @@
-import { preloadTextures } from '#common';
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
@@ -11,7 +10,7 @@ import {
     BASE_FIELD,
     DIGGER_SPAWN,
     LEVELS,
-    textureNames,
+    textures,
 } from './data';
 
 // ---------------------------------------------------------------------------
@@ -28,7 +27,7 @@ export function createDigdugEntry(): GameEntry {
         screenHeight: FIELD_ROWS * TILE_SIZE + HUD_HEIGHT,
 
         async load(): Promise<void> {
-            await preloadTextures('assets/digdug-textures.json', textureNames);
+            await textures.load();
             loaded = true;
         },
 
