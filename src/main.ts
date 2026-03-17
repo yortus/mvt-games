@@ -4,6 +4,7 @@ import {
     createAsteroidsEntry,
     createDigdugEntry,
     createGalagaEntry,
+    createIkEntry,
     createPacmanEntry,
     type GameEntry,
 } from './games';
@@ -66,7 +67,7 @@ async function main(): Promise<void> {
     window.addEventListener('resize', fitCanvasToScreen);
 
     // ---- Game registry -----------------------------------------------------
-    const games = [createAsteroidsEntry(), createDigdugEntry(), createGalagaEntry(), createPacmanEntry()];
+    const games = [createAsteroidsEntry(), createDigdugEntry(), createGalagaEntry(), createIkEntry(), createPacmanEntry()];
 
     // ---- Generate thumbnails -----------------------------------------------
     const thumbnails = await generateThumbnails(games, app);
