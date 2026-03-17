@@ -122,7 +122,7 @@ row and cycle through variants for visual variety.
 | 8   | 462     | 5+3   | `turn-1` .. `turn-5`, `block-1` .. `block-3` | Turning + blocking |
 | 9   | 518     | 3+3   | `defeat-a-1` .. `defeat-a-3`, `defeat-b-1` .. `defeat-b-3` | Defeat variants A, B |
 | 10  | 566     | 3+3   | `defeat-c-1` .. `defeat-c-3`, `defeat-d-1` .. `defeat-d-3` | Defeat variants C, D |
-| 11  | 610     | 2+1   | `won-1`, `won-2`, `lost-1` | Won pose (2 frames) + lost pose |
+| 11  | 622     | 2+1   | `won-1`, `won-2`, `lost-1` | Won pose (2 frames) + lost pose |
 
 **Total: 77 individual frame PNGs.** Row 12 (bonus stage) is skipped.
 
@@ -201,10 +201,9 @@ packing it as a frame).
 2. For each frame (using the coordinate table above):
    - Extract a 48x42 region at the computed `(x, y)` position.
    - Replace the **frame background colour** with full transparency.
-     The frame background is a flat grey. To determine the exact RGB value,
-     sample the pixel at a known background position within the first walk
-     frame (e.g. `(5, 15)` of row 0) programmatically, rather than hardcoding.
-     It appears to be approximately `(149, 149, 149)` but must be verified.
+     The frame background is a flat grey `(149, 149, 149)` - verified.
+     The script samples a known background position programmatically to
+     confirm, rather than hardcoding.
    - Write the result as `<frame-name>.png` to the output directory.
 3. Do **not** extract row 12 (bonus stage, starting around y=677).
 4. Log the count of extracted frames and any frames where the background colour
@@ -219,7 +218,11 @@ width = 48
 height = 42
 ```
 
-Where `ROW_Y_STARTS = [14, 70, 126, 182, 238, 294, 350, 406, 462, 518, 566, 610]`.
+Where `ROW_Y_STARTS = [14, 70, 126, 182, 238, 294, 350, 406, 462, 518, 566, 622]`.
+
+> **Note:** Row 11 contains 7 frames total, but only the first 3 (won/lost
+> poses) are fighter frames. The remaining 4 are HUD/bonus indicator elements
+> and are intentionally skipped.
 
 ### Frame naming per row
 
