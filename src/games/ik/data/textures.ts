@@ -1,0 +1,117 @@
+import { createTextureRegistry } from '#common';
+
+export const textures = createTextureRegistry('assets/ik-textures.json', {
+    walk: {
+        1: 'walk-1',
+        2: 'walk-2',
+        3: 'walk-3',
+        4: 'walk-4',
+        5: 'walk-5',
+        6: 'walk-6',
+        7: 'walk-7',
+        8: 'walk-8',
+    },
+    jump: { 1: 'jump-1' },
+    fwdSault: {
+        1: 'fwd-sault-1',
+        2: 'fwd-sault-2',
+        3: 'fwd-sault-3',
+        4: 'fwd-sault-4',
+        5: 'fwd-sault-5',
+        6: 'fwd-sault-6',
+    },
+    backSault: {
+        1: 'back-sault-1',
+        2: 'back-sault-2',
+        3: 'back-sault-3',
+        4: 'back-sault-4',
+        5: 'back-sault-5',
+        6: 'back-sault-6',
+    },
+    kick: {
+        1: 'kick-1',
+        2: 'kick-2',
+        3: 'kick-3',
+        4: 'kick-4',
+        5: 'kick-5',
+        6: 'kick-6',
+        7: 'kick-7',
+    },
+    punch: {
+        1: 'punch-1',
+        2: 'punch-2',
+        3: 'punch-3',
+        4: 'punch-4',
+        5: 'punch-5',
+        6: 'punch-6',
+    },
+    backKick: {
+        1: 'back-kick-1',
+        2: 'back-kick-2',
+        3: 'back-kick-3',
+    },
+    roundhouse: {
+        1: 'roundhouse-1',
+        2: 'roundhouse-2',
+        3: 'roundhouse-3',
+        4: 'roundhouse-4',
+    },
+    footsweep: {
+        1: 'footsweep-1',
+        2: 'footsweep-2',
+        3: 'footsweep-3',
+        4: 'footsweep-4',
+        5: 'footsweep-5',
+        6: 'footsweep-6',
+    },
+    crouchPunch: {
+        1: 'crouch-punch-1',
+        2: 'crouch-punch-2',
+    },
+    flyingKick: {
+        1: 'flying-kick-1',
+        2: 'flying-kick-2',
+        3: 'flying-kick-3',
+        4: 'flying-kick-4',
+        5: 'flying-kick-5',
+    },
+    turn: {
+        1: 'turn-1',
+        2: 'turn-2',
+        3: 'turn-3',
+        4: 'turn-4',
+        5: 'turn-5',
+    },
+    block: {
+        1: 'block-1',
+        2: 'block-2',
+        3: 'block-3',
+    },
+    defeatA: {
+        1: 'defeat-a-1',
+        2: 'defeat-a-2',
+        3: 'defeat-a-3',
+    },
+    defeatB: {
+        1: 'defeat-b-1',
+        2: 'defeat-b-2',
+        3: 'defeat-b-3',
+    },
+    defeatC: {
+        1: 'defeat-c-1',
+        2: 'defeat-c-2',
+        3: 'defeat-c-3',
+    },
+    defeatD: {
+        1: 'defeat-d-1',
+        2: 'defeat-d-2',
+        3: 'defeat-d-3',
+    },
+    won: {
+        1: 'won-1',
+        2: 'won-2',
+    },
+    lost: {
+        1: 'lost-1',
+    },
+});
