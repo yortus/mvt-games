@@ -22,9 +22,10 @@ The design centres on two architectural concerns:
 - [Stage 1: Texture Extraction Script](#stage-1-texture-extraction-script)
 - [Stage 2: Data Layer](#stage-2-data-layer)
 - [Stage 3: Fighter Model](#stage-3-fighter-model)
-- [Stage 4: Game Model and Score](#stage-4-game-model-and-score)
-- [Stage 5: Views](#stage-5-views)
-- [Stage 6: AI, Entry and Registration](#stage-6-ai-entry-and-registration)
+- [Stage 4: Fighter Playtest Harness](#stage-4-fighter-playtest-harness)
+- [Stage 5: Game Model and Score](#stage-5-game-model-and-score)
+- [Stage 6: Full Views](#stage-6-full-views)
+- [Stage 7: AI Model and Polish](#stage-7-ai-model-and-polish)
 - [Open Decisions](#open-decisions)
 - [Verification Checklist](#verification-checklist)
 
@@ -37,12 +38,14 @@ The design centres on two architectural concerns:
 | 1 | Texture extraction script | ~77 individual frame PNGs in `assets/` | Visual inspection |
 | 2 | Data layer (types, constants, move defs) | `data/` module with full type system | Compile check |
 | 3 | Fighter model (state machine, sequences) | `FighterModel` with GSAP-driven moves | Unit tests |
-| 4 | Game model (orchestration, scoring, phases) | `GameModel` composing fighters + score | Unit tests |
-| 5 | Views (fighter, arena, HUD, game) | Full visual rendering | Visual / snapshot |
-| 6 | AI model, entry factory, registration | Playable game in cabinet | Manual play test |
+| 4 | Fighter playtest harness | `FighterView`, `PlayerInput`, minimal `GameEntry` | Manual play test |
+| 5 | Game model (orchestration, scoring, phases) | `GameModel` composing fighters + score | Unit tests |
+| 6 | Full views (arena, HUD, game view) | Full visual rendering | Visual / snapshot |
+| 7 | AI model, entry polish, registration | Playable game in cabinet | Manual play test |
 
-Each stage builds on the previous. Stages 3-4 are independently unit-testable
-without any views.
+Stages 1-3 and 5 are independently unit-testable without any views.
+Stage 4 provides a minimal visual harness for iterating on fighter feel
+before building the full game model or opponent AI.
 
 ---
 
@@ -612,11 +615,18 @@ These build GSAP timeline sequences. Each clears the timeline first.
 
 ---
 
-## Stage 4: Game Model and Score
+## Stage 4: Fighter Playtest Harness
 
-### `player-input.ts`
+**Goal:** Allow human playtesting of the `FighterModel` with keyboard input,
+a rendered sprite, and a minimal game entry - so we can iterate on movement
+feel, animation timing, and frame sequences before building the full game model
+or opponent AI. No opponent, no scoring, no AI at this stage.
 
-Mutable input record (same pattern as Dig Dug):
+### Files
+
+#### `models/player-input.ts` - Mutable input record
+
+Same pattern as Dig Dug:
 
 ```ts
 interface PlayerInput {
@@ -630,7 +640,121 @@ interface PlayerInput {
 Created via `createPlayerInput()` returning the record with all fields
 initialised to neutral/false.
 
-### `score-model.ts`
+#### `views/fighter-view.ts` - Reusable leaf view
+
+Used for both player and opponent (differentiated by `tint` binding).
+
+**Bindings:**
+
+```ts
+interface FighterViewBindings {
+    getX(): number
+    getJumpHeight(): number
+    getFacing(): Facing
+    getPhase(): FighterPhase
+    getMoveKind(): MoveKind | undefined
+    getFrameIndex(): number
+    getDefeatVariant(): DefeatVariant
+    getTint(): number
+}
+```
+
+**Rendering logic:**
+
+A `Sprite` inside a `Container`. Anchor at bottom-centre.
+
+In `refresh()`:
+- **Position:** `sprite.x = getX() * scale` where
+  `scale = SCREEN_WIDTH / ARENA_WIDTH`.
+  `sprite.y = GROUND_Y_PX - getJumpHeight() * scale`.
+- **Facing:** `sprite.scale.x` is positive for right-facing, negative for
+  left-facing. (Verify which direction the source sprites face after texture
+  extraction; invert if needed.)
+- **Tint:** `sprite.tint = getTint()`.
+- **Texture selection:** Map `(phase, moveKind, frameIndex)` to a `Texture`
+  via a lookup structure built at construction from the texture registry:
+  - `phase = 'idle'` -> `walk.1` (neutral standing pose)
+  - `phase = 'walking'` -> `walk[frameIndex + 1]`
+  - `phase = 'turning'` -> `turn[frameIndex + 1]`
+  - `phase = 'blocking'` -> `block[frameIndex + 1]`
+  - `phase = 'attacking'` or `'airborne'` -> resolve from `moveKind` using
+    the MoveKind-to-texture-group mapping
+  - `phase = 'hit-reacting'` -> `walk.1` (or a distinct recoil frame if
+    desired)
+  - `phase = 'defeated'` -> `defeat[variant][frameIndex + 1]`
+  - `phase = 'won'` -> `won[frameIndex + 1]`
+  - `phase = 'lost'` -> `lost.1`
+
+Use `watch()` on the composite of `(phase, moveKind, frameIndex)` so the
+texture is only swapped when the animation state actually changes (avoiding
+per-frame texture assignment on the hot path).
+
+#### `views/arena-view.ts` - Simple background
+
+Minimal background for context during playtesting:
+
+- Solid colour background rectangle (sky blue or similar C64 colour).
+- Ground rectangle at and below `GROUND_Y_PX`.
+- Purely decorative. Accept `width` and `height` as parameters. No bindings.
+
+#### `views/playtest-view.ts` - Temporary top-level harness view
+
+A simplified top-level view that wires one fighter + keyboard input. This file
+is temporary and will be replaced by the full `game-view.ts` in Stage 6.
+
+```ts
+function createPlaytestView(fighter: FighterModel, playerInput: PlayerInput): Container
+```
+
+Composes:
+- `createArenaView(SCREEN_WIDTH, SCREEN_HEIGHT)`
+- `createFighterView({ ... bindings from fighter ... })`
+- `createKeyboardInputView({ ... wires to playerInput ... })`
+- Optional: a debug text overlay showing current `phase`, `moveKind`,
+  `frameIndex`, `facing` for development convenience.
+
+#### `ik-entry.ts` - Minimal game entry (playtest)
+
+A cut-down entry that creates a single fighter, wires keyboard input, and
+runs the update loop. No opponent, no scoring, no game phases.
+
+```ts
+function createIkEntry(): GameEntry
+```
+
+- `load()`: loads textures.
+- `start(stage)`: creates `FighterModel`, `PlayerInput`, `PlaytestView`.
+  Wires the ticker: each frame resolves `resolveInputDirection()` from
+  `PlayerInput`, calls `fighter.applyInput()`, then `fighter.update(deltaMs)`.
+- Returns a `GameSession` with `update()` and `destroy()`.
+
+#### `src/games/ik/index.ts` - Barrel
+
+Re-exports `createIkEntry`.
+
+#### Registration
+
+- `src/games/index.ts` - add `export { createIkEntry } from './ik'`.
+- `src/main.ts` - add `createIkEntry()` to the games array.
+
+### Verification
+
+- [ ] Game appears in the cabinet menu and loads without errors.
+- [ ] Fighter renders at the correct position with the idle sprite.
+- [ ] Arrow keys + spacebar produce all 16 moves with correct animations.
+- [ ] Walk animation cycles frames based on movement.
+- [ ] Jump arcs the fighter up and back down.
+- [ ] Auto-turn moves visually flip the sprite partway through.
+- [ ] Moves complete and return to idle.
+- [ ] Input is ignored during active moves (no move-cancelling).
+- [ ] Fighter is clamped to arena boundaries.
+- [ ] Iterate on frame timing, lunge distances, and jump feel.
+
+---
+
+## Stage 5: Game Model and Score
+
+### `models/score-model.ts`
 
 ```ts
 interface ScoreModel {
@@ -653,7 +777,7 @@ Points per round: first to `POINTS_TO_WIN_ROUND` (3). Match: first to
 `ROUNDS_TO_WIN_MATCH` (2) rounds won. `nextRound()` resets per-round points
 and increments the round counter.
 
-### `game-model.ts`
+### `models/game-model.ts`
 
 **Interface:**
 
@@ -675,7 +799,7 @@ interface GameModel {
 Composes:
 - `player` - `createFighterModel({ startX: FIGHTER_START_LEFT_X, startFacing: 'right', ... })`
 - `opponent` - `createFighterModel({ startX: FIGHTER_START_RIGHT_X, startFacing: 'left', ... })`
-- `ai` - `createAiModel(...)` (Stage 6; use a no-op stub until then so the
+- `ai` - `createAiModel(...)` (Stage 7; use a no-op stub until then so the
   opponent stands idle)
 - `playerInput` - `createPlayerInput()`
 - `score` - `createScoreModel()`
@@ -697,7 +821,7 @@ Composes:
    b. Resolve player input: `resolveInputDirection(playerInput.xDirection,
       playerInput.yDirection, player.facing)` then
       `player.applyInput(inputDir, playerInput.attackPressed)`.
-   c. AI updates and applies input to opponent (Stage 6).
+   c. AI updates and applies input to opponent (Stage 7).
    d. Call `player.update(deltaMs)` and `opponent.update(deltaMs)`.
    e. **Collision detection** (see below).
    f. If `roundTimeRemainingMs <= 0`: timer expired, determine round winner
@@ -755,66 +879,14 @@ countdown in seconds. When it reaches 0:
 
 ---
 
-## Stage 5: Views
+## Stage 6: Full Views
 
 **Directory:** `src/games/ik/views/`
 
-### `fighter-view.ts` - Reusable leaf view
+This stage replaces the temporary `playtest-view.ts` with the full game view
+and adds the HUD and overlay.
 
-Used for both player and opponent (differentiated by `tint` binding).
-
-**Bindings:**
-
-```ts
-interface FighterViewBindings {
-    getX(): number
-    getJumpHeight(): number
-    getFacing(): Facing
-    getPhase(): FighterPhase
-    getMoveKind(): MoveKind | undefined
-    getFrameIndex(): number
-    getDefeatVariant(): DefeatVariant
-    getTint(): number
-}
-```
-
-**Rendering logic:**
-
-A `Sprite` inside a `Container`. Anchor at bottom-centre.
-
-In `refresh()`:
-- **Position:** `sprite.x = getX() * scale` where
-  `scale = SCREEN_WIDTH / ARENA_WIDTH`.
-  `sprite.y = GROUND_Y_PX - getJumpHeight() * scale`.
-- **Facing:** `sprite.scale.x` is positive for right-facing, negative for
-  left-facing. (Verify which direction the source sprites face after texture
-  extraction; invert if needed.)
-- **Tint:** `sprite.tint = getTint()`.
-- **Texture selection:** Map `(phase, moveKind, frameIndex)` to a `Texture`
-  via a lookup structure built at construction from the texture registry:
-  - `phase = 'idle'` -> `walk.1` (neutral standing pose)
-  - `phase = 'walking'` -> `walk[frameIndex + 1]`
-  - `phase = 'turning'` -> `turn[frameIndex + 1]`
-  - `phase = 'blocking'` -> `block[frameIndex + 1]`
-  - `phase = 'attacking'` or `'airborne'` -> resolve from `moveKind` using
-    the MoveKind-to-texture-group mapping
-  - `phase = 'hit-reacting'` -> `walk.1` (or a distinct recoil frame if
-    desired)
-  - `phase = 'defeated'` -> `defeat[variant][frameIndex + 1]`
-  - `phase = 'won'` -> `won[frameIndex + 1]`
-  - `phase = 'lost'` -> `lost.1`
-
-Use `watch()` on the composite of `(phase, moveKind, frameIndex)` so the
-texture is only swapped when the animation state actually changes (avoiding
-per-frame texture assignment on the hot path).
-
-### `arena-view.ts` - Simple background
-
-- Solid colour background rectangle (sky blue or similar C64 colour).
-- Ground rectangle at and below `GROUND_Y_PX`.
-- Purely decorative. Accept `width` and `height` as parameters. No bindings.
-
-### `hud-view.ts` - Score and timer display
+### `views/hud-view.ts` - Score and timer display
 
 **Bindings:**
 
@@ -840,9 +912,10 @@ interface HudViewBindings {
 
 Use `watch()` on each binding to avoid redundant `Text` updates.
 
-### `game-view.ts` - Top-level application view
+### `views/game-view.ts` - Full top-level application view
 
 Accepts `GameModel` directly (application-specific, never reused).
+Replaces the temporary `playtest-view.ts`.
 
 **Composition:**
 
@@ -861,7 +934,7 @@ function createGameView(game: GameModel): Container {
         getPhase: () => game.player.phase,
         getMoveKind: () => game.player.moveKind,
         getFrameIndex: () => game.player.frameIndex,
-        getDefeatVariant: () => playerDefeatVariant,
+        getDefeatVariant: () => game.player.defeatVariant,
         getTint: () => 0xFFFFFF,  // no tint (original colours)
     }))
 
@@ -873,7 +946,7 @@ function createGameView(game: GameModel): Container {
         getPhase: () => game.opponent.phase,
         getMoveKind: () => game.opponent.moveKind,
         getFrameIndex: () => game.opponent.frameIndex,
-        getDefeatVariant: () => opponentDefeatVariant,
+        getDefeatVariant: () => game.opponent.defeatVariant,
         getTint: () => 0xFF6666,  // red tint for opponent
     }))
 
@@ -907,24 +980,32 @@ function createGameView(game: GameModel): Container {
 }
 ```
 
-**Note on defeat variant tracking:** The game model triggers `applyDefeat(variant)`
-on fighters, which sets `moveKind` internally. The game view needs to know
-which variant was selected to pass to the fighter view binding. Two approaches:
-- Expose `defeatVariant` on `FighterModel` interface (simplest).
-- Track in the game view via a `watch()` on `phase` entering `'defeated'`.
+### Update `ik-entry.ts`
 
-Recommendation: expose `defeatVariant` on `FighterModel` - it is part of the
-model's animation state.
+Replace the playtest harness with the full game entry wiring `GameModel` +
+`GameView`. Remove the temporary `playtest-view.ts`.
 
-### `index.ts` - Barrel
+### `views/index.ts` - Barrel
 
-Re-exports `createGameView`.
+Re-exports `createGameView`, `createFighterView`, `createArenaView`,
+`createHudView`.
+
+### Verification
+
+- [ ] Fighters render with correct sprites for every move and phase.
+- [ ] Opponent is visibly tinted a different colour.
+- [ ] Sprite flips correctly for both facing directions.
+- [ ] Jump height offsets sprites vertically.
+- [ ] HUD displays scores, round count, and countdown timer.
+- [ ] Overlay shows appropriate text per game phase.
+- [ ] Keyboard input controls the player fighter.
+- [ ] Full loop: round intro -> fight -> score -> round end -> match end -> restart.
 
 ---
 
-## Stage 6: AI, Entry and Registration
+## Stage 7: AI Model and Polish
 
-### `ai-model.ts`
+### `models/ai-model.ts`
 
 **Interface:**
 
@@ -965,49 +1046,32 @@ Options:
 6. Low-probability wildcard: execute a back-move or somersault.
 7. Set `thinkTimer` to `reactionMs` (with +-50ms jitter for variation).
 
-### `models/index.ts` - Barrel
+### Integration
+
+- Wire `AiModel` into `GameModel` (replace the no-op stub from Stage 5).
+- `GameModel.update()` calls `ai.update(deltaMs, player, opponent)` then
+  applies `ai.inputDirection` and `ai.attackPressed` to the opponent fighter.
+
+### Polish
+
+- Final tuning of frame durations, hitbox sizes, lunge distances, knockback.
+- Defeat variant selection (random or mapped to the killing move type).
+- Optional: scene background changes per round.
+- Optional: AI difficulty progression (tighten `reactionMs` each round).
+
+### `models/index.ts` - Updated barrel
 
 Re-exports: `FighterModel`, `createFighterModel`, `GameModel`,
 `createGameModel`, `AiModel`, `createAiModel`, `PlayerInput`,
-`createPlayerInput`, `ScoreModel`, `createScoreModel`, and all types
-from `common.ts`.
+`createPlayerInput`, `ScoreModel`, `createScoreModel`.
 
-### `ik-entry.ts`
+### Verification
 
-```ts
-export function createIkEntry(): GameEntry {
-    let loaded = false
-    return {
-        id: 'ik',
-        name: 'Intl Karate',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        async load() {
-            await textures.load()
-            loaded = true
-        },
-        start(stage: Container): GameSession {
-            if (!loaded) throw new Error('ik: load() must be called before start()')
-            const gameModel = createGameModel()
-            const gameView = createGameView(gameModel)
-            stage.addChild(gameView)
-            return {
-                update(deltaMs) { gameModel.update(deltaMs) },
-                destroy() {
-                    stage.removeChild(gameView)
-                    gameView.destroy({ children: true })
-                },
-            }
-        },
-    }
-}
-```
-
-### Registration
-
-- `src/games/ik/index.ts` - re-exports `createIkEntry`.
-- `src/games/index.ts` - add `export { createIkEntry } from './ik'`.
-- `src/main.ts` - add `createIkEntry()` to the games array.
+- [ ] AI opponent moves, attacks, and reacts.
+- [ ] Full game loop works end-to-end with AI.
+- [ ] `npm run build` succeeds.
+- [ ] `npm run lint` passes.
+- [ ] Manual play-test: controls feel responsive, AI is a reasonable challenge.
 
 ---
 
@@ -1054,6 +1118,17 @@ during implementation or play-testing:
 - [ ] `applyHit`, `applyBlock`, `applyDefeat` work from relevant phases
 
 ### After Stage 4
+- [ ] Game appears in the cabinet menu and loads without errors
+- [ ] Fighter renders at the correct position with the idle sprite
+- [ ] Arrow keys + spacebar produce all 16 moves with correct animations
+- [ ] Walk animation cycles frames based on movement
+- [ ] Jump arcs the fighter up and back down
+- [ ] Auto-turn moves visually flip the sprite partway through
+- [ ] Moves complete and return to idle
+- [ ] Input is ignored during active moves (no move-cancelling)
+- [ ] Fighter is clamped to arena boundaries
+
+### After Stage 5
 - [ ] Game model unit tests pass
 - [ ] Phase transitions: round-intro -> fighting -> point-scored -> round-over -> match-over
 - [ ] Collision detection identifies overlapping hitbox/bodyBox
@@ -1063,7 +1138,7 @@ during implementation or play-testing:
 - [ ] Draw handling (equal points at timer expiry) works correctly
 - [ ] Restart input resets from any phase
 
-### After Stage 5
+### After Stage 6
 - [ ] Fighters render with correct sprites for every move and phase
 - [ ] Opponent is visibly tinted a different colour
 - [ ] Sprite flips correctly for both facing directions
@@ -1071,11 +1146,11 @@ during implementation or play-testing:
 - [ ] HUD displays scores, round count, and countdown timer
 - [ ] Overlay shows appropriate text per game phase
 - [ ] Keyboard input controls the player fighter
-
-### After Stage 6
-- [ ] AI opponent moves, attacks, and reacts
-- [ ] Game appears in the cabinet menu
 - [ ] Full loop: round intro -> fight -> score -> round end -> match end -> restart
+
+### After Stage 7
+- [ ] AI opponent moves, attacks, and reacts
+- [ ] Full game loop works end-to-end with AI
 - [ ] `npm run build` succeeds
 - [ ] `npm run lint` passes
 - [ ] Manual play-test: controls feel responsive, AI is a reasonable challenge
