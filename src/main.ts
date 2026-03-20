@@ -1,13 +1,20 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
-import { createAsteroidsEntry, createDigdugEntry, createGalagaEntry, createPacmanEntry, type GameEntry } from './games';
+import {
+    createAsteroidsEntry,
+    createDigdugEntry,
+    createGalagaEntry,
+    createIkEntry,
+    createPacmanEntry,
+    type GameEntry,
+} from './games';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
 // ---------------------------------------------------------------------------
 
-const CABINET_WIDTH = 480;
-const CABINET_HEIGHT = 360;
+const CABINET_WIDTH = 960;
+const CABINET_HEIGHT = 540;
 
 /** Margin (in CSS pixels) between the scaled canvas and the viewport edges. */
 const SCREEN_MARGIN = 32;
@@ -37,30 +44,44 @@ async function main(): Promise<void> {
 
     // ---- Responsive scaling ------------------------------------------------
     function fitCanvasToScreen(): void {
-        const maxW = window.innerWidth - SCREEN_MARGIN * 2;
-        const maxH = window.innerHeight - SCREEN_MARGIN * 2;
         const logicalW = app.screen.width;
         const logicalH = app.screen.height;
+        const margin = isCabinetScreen ? 0 : SCREEN_MARGIN;
+        const maxW = window.innerWidth - margin * 2;
+        const maxH = window.innerHeight - margin * 2;
         const scale = Math.min(maxW / logicalW, maxH / logicalH);
-        // Round to integer multiple so game pixels stay perfectly aligned
-        const intScale = Math.max(1, Math.floor(scale));
         const dpr = window.devicePixelRatio || 1;
 
-        // Render at display-pixel resolution so text antialiasing is
-        // invisible. Sprite textures use nearest-neighbor filtering so
-        // they stay blocky despite the high backing-buffer resolution.
-        app.renderer.resolution = intScale * dpr;
-        app.renderer.resize(logicalW, logicalH);
-
-        app.canvas.style.width = `${logicalW * intScale}px`;
-        app.canvas.style.height = `${logicalH * intScale}px`;
+        if (isCabinetScreen) {
+            // Fill viewport with continuous scaling for the menu
+            app.renderer.resolution = scale * dpr;
+            app.renderer.resize(logicalW, logicalH);
+            app.canvas.style.width = `${logicalW * scale}px`;
+            app.canvas.style.height = `${logicalH * scale}px`;
+        }
+        else {
+            // Pixel-perfect integer scaling for games
+            const intScale = Math.max(1, Math.floor(scale));
+            app.renderer.resolution = intScale * dpr;
+            app.renderer.resize(logicalW, logicalH);
+            app.canvas.style.width = `${logicalW * intScale}px`;
+            app.canvas.style.height = `${logicalH * intScale}px`;
+        }
     }
+
+    let isCabinetScreen = true;
 
     fitCanvasToScreen();
     window.addEventListener('resize', fitCanvasToScreen);
 
     // ---- Game registry -----------------------------------------------------
-    const games = [createAsteroidsEntry(), createDigdugEntry(), createGalagaEntry(), createPacmanEntry()];
+    const games = [
+        createAsteroidsEntry(),
+        createDigdugEntry(),
+        createGalagaEntry(),
+        createIkEntry(),
+        createPacmanEntry(),
+    ];
 
     // ---- Generate thumbnails -----------------------------------------------
     const thumbnails = await generateThumbnails(games, app);
@@ -78,12 +99,14 @@ async function main(): Promise<void> {
         onNavigate: (delta) => cabinet.selectByDelta(delta),
         onLaunch: () => {
             const entry = cabinet.games[cabinet.selectedIndex];
+            isCabinetScreen = false;
             app.renderer.resize(entry.screenWidth, entry.screenHeight);
             cabinet.launchSelected(app.stage);
             fitCanvasToScreen();
         },
         onExit: () => {
             cabinet.exitToMenu();
+            isCabinetScreen = true;
             app.renderer.resize(CABINET_WIDTH, CABINET_HEIGHT);
             fitCanvasToScreen();
         },
