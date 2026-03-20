@@ -23,7 +23,12 @@ export default tseslint.config(
             '@stylistic/brace-style': ['error', 'stroustrup', { allowSingleLine: true }],
             '@stylistic/comma-dangle': ['error', 'always-multiline'],
             '@stylistic/no-multi-spaces': 'off',
-            '@stylistic/operator-linebreak': ['error', 'after'],
+            '@stylistic/operator-linebreak': ['error', 'after', {
+                overrides: {
+                    '&': 'before',
+                    '|': 'before',
+                },
+            }],
             '@stylistic/quote-props': ['error', 'consistent'],
             // Allow underscore-prefixed unused parameters
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
