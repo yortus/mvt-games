@@ -1,6 +1,6 @@
 import { Container, Text } from 'pixi.js';
 import { createKeyboardInputView } from '#common';
-import { SCREEN_WIDTH, SCREEN_HEIGHT, resolveInputDirection } from '../data';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, resolveInputDirection, resolveMove } from '../data';
 import type { FighterModel, PlayerInput } from '../models';
 import { createArenaView } from './arena-view';
 import { createFighterView } from './fighter-view';
@@ -27,11 +27,11 @@ export function createPlaytestView(fighter: FighterModel, playerInput: PlayerInp
     view.addChild(
         createFighterView({
             getX: () => fighter.x,
-            getJumpHeight: () => fighter.jumpHeight,
+            getHeight: () => fighter.height,
             getFacing: () => fighter.facing,
             getPhase: () => fighter.phase,
-            getMoveKind: () => fighter.moveKind,
-            getFrameIndex: () => fighter.frameIndex,
+            getMove: () => fighter.move,
+            getProgress: () => fighter.progress,
             getDefeatVariant: () => fighter.defeatVariant,
             getTint: () => 0xffffff, // no tint
         }),
@@ -75,8 +75,9 @@ export function createPlaytestView(fighter: FighterModel, playerInput: PlayerInp
     function refresh(): void {
         // Update debug overlay
         const inputDir = resolveInputDirection(lastXDir, lastYDir, fighter.facing);
+        const move = resolveMove(inputDir, false);
         debugText.text =
-            `phase: ${fighter.phase}  move: ${fighter.moveKind ?? '-'}  frame: ${fighter.frameIndex}\n` +
-            `facing: ${fighter.facing}  input: ${inputDir}  x: ${fighter.x.toFixed(2)}  jump: ${fighter.jumpHeight.toFixed(2)}`;
+            `phase: ${fighter.phase}  move: ${fighter.move ?? '-'}  progress: ${fighter.progress.toFixed(2)}\n` +
+            `facing: ${fighter.facing}  input: ${inputDir}  resolved: ${move}  x: ${fighter.x.toFixed(2)}  h: ${fighter.height.toFixed(2)}`;
     }
 }

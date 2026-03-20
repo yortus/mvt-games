@@ -1,16 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createFighterModel, type FighterModel } from './fighter-model';
-import {
-    type InputDirection,
-    type MoveKind,
-    MOVE_DATA,
-    CROUCH_PUNCH_FRAME_SEQUENCE,
-    ARENA_MIN_X,
-    ARENA_MAX_X,
-    JUMP_DURATION_MS,
-    HIT_REACTION_MS,
-    BLOCK_REACTION_MS,
-} from '../data';
+import { type MoveKind, ARENA_MIN_X, ARENA_MAX_X, JUMP_DURATION_MS, HIT_REACTION_MS, BLOCK_REACTION_MS } from '../data';
 
 // ---------------------------------------------------------------------------
 // Helper: advance a fighter by a given number of ms
@@ -54,210 +44,185 @@ describe('FighterModel', () => {
             expect(f.phase).toBe('idle');
             expect(f.x).toBe(3.0);
             expect(f.facing).toBe('left');
-            expect(f.moveKind).toBeUndefined();
-            expect(f.frameIndex).toBe(0);
+            expect(f.move).toBeUndefined();
+            expect(f.progress).toBe(0);
             expect(f.hitboxActive).toBe(false);
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
         });
     });
 
-    // --- Input handling ---
+    // --- tryMove from idle ---
 
-    describe('applyInput from idle', () => {
-        it('stays idle on no input', () => {
+    describe('tryMove from idle', () => {
+        it('stays idle on idle move', () => {
             const f = makeFighter();
-            f.applyInput('none', false);
+            expect(f.tryMove('idle')).toBe(true);
             expect(f.phase).toBe('idle');
         });
 
         it('starts walking forward', () => {
             const f = makeFighter();
-            f.applyInput('forward', false);
+            expect(f.tryMove('walk-forward')).toBe(true);
             expect(f.phase).toBe('walking');
         });
 
         it('starts walking backward', () => {
             const f = makeFighter();
-            f.applyInput('backward', false);
+            expect(f.tryMove('walk-backward')).toBe(true);
             expect(f.phase).toBe('walking');
         });
 
-        it('initiates jump on up input', () => {
+        it('initiates jump', () => {
             const f = makeFighter();
-            f.applyInput('up', false);
+            expect(f.tryMove('jump')).toBe(true);
             expect(f.phase).toBe('airborne');
-            expect(f.moveKind).toBe('jump');
+            expect(f.move).toBe('jump');
         });
 
-        // Table of all directional moves without attack
-        const noAttackMoves: [InputDirection, MoveKind][] = [
-            ['up-forward', 'high-punch'],
-            ['down-forward', 'high-kick'],
-            ['down', 'foot-sweep'],
-            ['down-backward', 'crouch-punch'],
-            ['up-backward', 'back-lunge-punch'],
+        // Table of all attack moves (non-auto-turn, ground)
+        const groundMoves: MoveKind[] = [
+            'high-punch',
+            'high-kick',
+            'foot-sweep',
+            'crouch-punch',
+            'mid-kick',
+            'low-kick',
+            'roundhouse',
         ];
 
-        for (const [dir, expectedKind] of noAttackMoves) {
-            it(`triggers ${expectedKind} on ${dir} without attack`, () => {
+        for (const moveKind of groundMoves) {
+            it(`triggers ${moveKind} in attacking phase`, () => {
                 const f = makeFighter();
-                f.applyInput(dir, false);
-                // auto-turn moves start in 'turning', others in 'attacking'/'airborne'
-                const md = MOVE_DATA[expectedKind];
-                if (md.autoTurn) {
-                    expect(f.phase).toBe('turning');
-                } else if (md.airborne) {
-                    expect(f.phase).toBe('airborne');
-                } else {
-                    expect(f.phase).toBe('attacking');
-                }
+                expect(f.tryMove(moveKind)).toBe(true);
+                expect(f.phase).toBe('attacking');
+                expect(f.move).toBe(moveKind);
             });
         }
 
-        // Table of all directional moves with attack
-        const withAttackMoves: [InputDirection, MoveKind][] = [
-            ['up', 'flying-kick'],
-            ['up-forward', 'front-somersault'],
-            ['forward', 'mid-kick'],
-            ['down-forward', 'low-kick'],
-            ['down', 'back-crouch-punch'],
-            ['down-backward', 'back-low-kick'],
-            ['backward', 'roundhouse'],
-            ['up-backward', 'back-somersault'],
-        ];
+        // Auto-turn moves start in 'turning'
+        const autoTurnMoves: MoveKind[] = ['back-lunge-punch', 'back-crouch-punch', 'back-low-kick'];
 
-        for (const [dir, expectedKind] of withAttackMoves) {
-            it(`triggers ${expectedKind} on ${dir} with attack`, () => {
+        for (const moveKind of autoTurnMoves) {
+            it(`triggers ${moveKind} in turning phase (auto-turn)`, () => {
                 const f = makeFighter();
-                f.applyInput(dir, true);
-                const md = MOVE_DATA[expectedKind];
-                if (md.autoTurn) {
-                    expect(f.phase).toBe('turning');
-                } else if (md.airborne) {
-                    expect(f.phase).toBe('airborne');
-                } else {
-                    expect(f.phase).toBe('attacking');
-                }
+                expect(f.tryMove(moveKind)).toBe(true);
+                expect(f.phase).toBe('turning');
+            });
+        }
+
+        // Airborne attack moves
+        const airborneMoves: MoveKind[] = ['flying-kick', 'front-somersault', 'back-somersault'];
+
+        for (const moveKind of airborneMoves) {
+            it(`triggers ${moveKind} in airborne phase`, () => {
+                const f = makeFighter();
+                expect(f.tryMove(moveKind)).toBe(true);
+                expect(f.phase).toBe('airborne');
+                expect(f.move).toBe(moveKind);
             });
         }
     });
 
-    // --- Input ignored during active move ---
+    // --- tryMove rejected during active move ---
 
-    describe('input ignored during active move', () => {
-        it('ignores input while attacking', () => {
+    describe('tryMove rejected during active move', () => {
+        it('rejects move while attacking', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep
+            f.tryMove('foot-sweep');
             expect(f.phase).toBe('attacking');
-            f.applyInput('forward', false); // try to walk
-            expect(f.phase).toBe('attacking'); // still attacking
+            expect(f.tryMove('walk-forward')).toBe(false);
+            expect(f.phase).toBe('attacking');
         });
 
-        it('ignores input while airborne', () => {
+        it('rejects move while airborne', () => {
             const f = makeFighter();
-            f.applyInput('up', false); // jump
+            f.tryMove('jump');
             expect(f.phase).toBe('airborne');
-            f.applyInput('forward', false);
+            expect(f.tryMove('walk-forward')).toBe(false);
             expect(f.phase).toBe('airborne');
         });
 
-        it('ignores input while blocking', () => {
+        it('rejects move while blocking', () => {
             const f = makeFighter();
-            f.applyBlock();
+            f.block();
             expect(f.phase).toBe('blocking');
-            f.applyInput('forward', false);
+            expect(f.tryMove('walk-forward')).toBe(false);
             expect(f.phase).toBe('blocking');
         });
 
-        it('ignores input while hit-reacting', () => {
+        it('rejects move while hit-reacting', () => {
             const f = makeFighter();
-            f.applyHit(0.5);
+            f.hit(0.5);
             expect(f.phase).toBe('hit-reacting');
-            f.applyInput('forward', false);
+            expect(f.tryMove('walk-forward')).toBe(false);
             expect(f.phase).toBe('hit-reacting');
         });
     });
 
-    // --- Frame progression for attacks ---
+    // --- Progress advances during moves ---
 
-    describe('frame progression', () => {
-        it('progresses through foot-sweep frames', () => {
+    describe('progress', () => {
+        it('starts at 0 for a new attack', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep: 4 frames at 80ms each
-            expect(f.moveKind).toBe('foot-sweep');
-            expect(f.frameIndex).toBe(0);
-
-            // Advance through each frame
-            const frames: number[] = [f.frameIndex];
-            for (let i = 0; i < 3; i++) {
-                advance(f, 81);
-                frames.push(f.frameIndex);
-            }
-            // Sequential: 0, 1, 2, 3
-            expect(frames).toEqual([0, 1, 2, 3]);
+            f.tryMove('foot-sweep');
+            expect(f.progress).toBe(0);
         });
 
-        it('holds at final frame after ground move completes', () => {
+        it('advances toward 1 during an attack', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep: 4 frames at 80ms each = 320ms
-            expect(f.phase).toBe('attacking');
+            f.tryMove('foot-sweep'); // 4 segments at 80ms = 320ms total
+            advance(f, 160);
+            expect(f.progress).toBeCloseTo(0.5, 1);
+        });
 
-            advance(f, 350); // past end
-            // Ground moves hold at final frame (moveComplete) rather than returning to idle
-            expect(f.phase).toBe('attacking');
-            expect(f.moveKind).toBe('foot-sweep');
+        it('reaches 1 after ground move completes', () => {
+            const f = makeFighter();
+            f.tryMove('foot-sweep'); // 320ms total
+            advance(f, 350);
+            expect(f.progress).toBeCloseTo(1, 1);
+            expect(f.phase).toBe('attacking'); // holds at completion
+        });
 
-            // Releasing input (idle) should return to idle
-            f.applyInput('none', false);
+        it('holds at completion, then idle resets progress', () => {
+            const f = makeFighter();
+            f.tryMove('foot-sweep');
+            advance(f, 350);
+            expect(f.tryMove('idle')).toBe(true);
             expect(f.phase).toBe('idle');
-            expect(f.moveKind).toBeUndefined();
+            expect(f.progress).toBe(0);
         });
 
-        it('progresses through roundhouse frames', () => {
+        it('same move is rejected while holding at completion', () => {
             const f = makeFighter();
-            f.applyInput('backward', true); // roundhouse: 4 frames at 80ms
-            expect(f.moveKind).toBe('roundhouse');
-            expect(f.frameIndex).toBe(0);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(1);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(2);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(3);
+            f.tryMove('foot-sweep');
+            advance(f, 350);
+            expect(f.tryMove('foot-sweep')).toBe(false);
         });
 
-        it('progresses through crouch-punch special sequence', () => {
+        it('different move is accepted from completion', () => {
             const f = makeFighter();
-            f.applyInput('down-backward', false); // crouch-punch
-            expect(f.moveKind).toBe('crouch-punch');
-            // Expected sequence: [0, 1, 0, 0]
-            expect(f.frameIndex).toBe(CROUCH_PUNCH_FRAME_SEQUENCE[0]);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(CROUCH_PUNCH_FRAME_SEQUENCE[1]);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(CROUCH_PUNCH_FRAME_SEQUENCE[2]);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(CROUCH_PUNCH_FRAME_SEQUENCE[3]);
+            f.tryMove('foot-sweep');
+            advance(f, 350);
+            expect(f.tryMove('high-punch')).toBe(true);
+            expect(f.move).toBe('high-punch');
         });
     });
 
     // --- Hitbox activation ---
 
     describe('hitbox activation', () => {
-        it('activates hitbox only on hit frames for foot-sweep', () => {
+        it('activates hitbox only during hit-frame segments for foot-sweep', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep: hit frames at indices 2, 3
-            expect(f.hitboxActive).toBe(false); // frame 0
+            f.tryMove('foot-sweep'); // hit frames at segment indices 2, 3
+            expect(f.hitboxActive).toBe(false); // segment 0
 
-            advance(f, 81); // frame 1
+            advance(f, 81); // segment 1
             expect(f.hitboxActive).toBe(false);
 
-            advance(f, 80); // frame 2 - hit frame
+            advance(f, 80); // segment 2 - hit
             expect(f.hitboxActive).toBe(true);
 
-            advance(f, 80); // frame 3 - hit frame
+            advance(f, 80); // segment 3 - hit
             expect(f.hitboxActive).toBe(true);
         });
 
@@ -275,64 +240,13 @@ describe('FighterModel', () => {
 
         it('hitbox rectangle has real values when active', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
-            f.applyInput('down', false); // foot-sweep
-            // Advance to a hit frame (index 2)
-            advance(f, 81); // frame 1
-            advance(f, 80); // frame 2 - hit
+            f.tryMove('foot-sweep');
+            advance(f, 81); // segment 1
+            advance(f, 80); // segment 2 - hit
             expect(f.hitboxActive).toBe(true);
             const hb = f.hitbox;
             expect(hb.w).toBeGreaterThan(0);
             expect(hb.h).toBeGreaterThan(0);
-        });
-    });
-
-    // --- Explicit frame sequences ---
-
-    describe('explicit frame sequences', () => {
-        it('high-punch uses punch frames [0, 2]', () => {
-            const f = makeFighter();
-            f.applyInput('up-forward', false); // high-punch
-            expect(f.moveKind).toBe('high-punch');
-            expect(f.frameIndex).toBe(0);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(2);
-        });
-
-        it('high-kick uses kick frames [0, 5, 6]', () => {
-            const f = makeFighter();
-            f.applyInput('down-forward', false); // high-kick
-            expect(f.moveKind).toBe('high-kick');
-            expect(f.frameIndex).toBe(0);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(5);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(6);
-        });
-
-        it('mid-kick uses kick frames [0, 1, 2]', () => {
-            const f = makeFighter();
-            f.applyInput('forward', true); // mid-kick
-            expect(f.moveKind).toBe('mid-kick');
-            expect(f.frameIndex).toBe(0);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(1);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(2);
-        });
-
-        it('low-kick uses kick frames [0, 3, 4]', () => {
-            const f = makeFighter();
-            f.applyInput('down-forward', true); // low-kick
-            expect(f.moveKind).toBe('low-kick');
-            expect(f.frameIndex).toBe(0);
-
-            advance(f, 81);
-            expect(f.frameIndex).toBe(3);
-            advance(f, 80);
-            expect(f.frameIndex).toBe(4);
         });
     });
 
@@ -341,19 +255,18 @@ describe('FighterModel', () => {
     describe('auto-turn moves', () => {
         it('back-lunge-punch starts in turning phase then flips facing', () => {
             const f = makeFighter({ startFacing: 'right' });
-            f.applyInput('up-backward', false); // back-lunge-punch (auto-turn)
+            f.tryMove('back-lunge-punch');
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('right'); // not flipped yet
 
-            // Advance through 3 turn frames at 80ms each = 240ms
+            // Advance past 3 turn frames at 80ms each = 240ms
             advance(f, 241);
-            // After turn frames, facing should flip
             expect(f.facing).toBe('left');
         });
 
-        it('back-crouch-punch (attack+down) auto-turns', () => {
+        it('back-crouch-punch auto-turns', () => {
             const f = makeFighter({ startFacing: 'right' });
-            f.applyInput('down', true); // back-crouch-punch (auto-turn)
+            f.tryMove('back-crouch-punch');
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('right');
 
@@ -363,7 +276,7 @@ describe('FighterModel', () => {
 
         it('back-low-kick auto-turns', () => {
             const f = makeFighter({ startFacing: 'left' });
-            f.applyInput('down-backward', true); // back-low-kick (auto-turn)
+            f.tryMove('back-low-kick');
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('left');
 
@@ -373,11 +286,11 @@ describe('FighterModel', () => {
 
         it('returns to idle after auto-turn move completes', () => {
             const f = makeFighter({ startFacing: 'right' });
-            f.applyInput('up-backward', false); // back-lunge-punch
-            // Turn: 3 * 80ms = 240ms, then 2 punch frames * 80ms = 160ms => ~400ms total
+            f.tryMove('back-lunge-punch');
+            // Turn: 3 * 80ms = 240ms, then 2 segments * 80ms = 160ms => ~400ms total
             advance(f, 500);
-            // Auto-turn ground moves hold at final frame
-            f.applyInput('none', false); // release to return to idle
+            // Auto-turn ground moves hold at completion
+            f.tryMove('idle');
             expect(f.phase).toBe('idle');
             expect(f.facing).toBe('left'); // flipped
         });
@@ -386,27 +299,26 @@ describe('FighterModel', () => {
     // --- Jump ---
 
     describe('jump', () => {
-        it('enters airborne phase with jump moveKind', () => {
+        it('enters airborne phase with jump move', () => {
             const f = makeFighter();
-            f.applyInput('up', false);
+            f.tryMove('jump');
             expect(f.phase).toBe('airborne');
-            expect(f.moveKind).toBe('jump');
+            expect(f.move).toBe('jump');
         });
 
-        it('jump height rises and falls', () => {
+        it('height rises and falls', () => {
             const f = makeFighter();
-            f.applyInput('up', false);
+            f.tryMove('jump');
 
-            // At start, jumpHeight is 0
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
 
             // Halfway, should be near peak
             advance(f, JUMP_DURATION_MS / 2);
-            expect(f.jumpHeight).toBeGreaterThan(0);
+            expect(f.height).toBeGreaterThan(0);
 
             // At end, back to 0
             advance(f, JUMP_DURATION_MS / 2 + 10);
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
             expect(f.phase).toBe('idle');
         });
     });
@@ -416,7 +328,7 @@ describe('FighterModel', () => {
     describe('walking', () => {
         it('moves position forward while walking', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
-            f.applyInput('forward', false);
+            f.tryMove('walk-forward');
             const startX = f.x;
             advance(f, 500);
             expect(f.x).toBeGreaterThan(startX);
@@ -424,33 +336,33 @@ describe('FighterModel', () => {
 
         it('moves position backward while walking', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
-            f.applyInput('backward', false);
+            f.tryMove('walk-backward');
             const startX = f.x;
             advance(f, 500);
             expect(f.x).toBeLessThan(startX);
         });
 
-        it('stops walking when input becomes idle', () => {
+        it('stops walking on idle', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
-            f.applyInput('forward', false);
+            f.tryMove('walk-forward');
             advance(f, 200);
             const midX = f.x;
-            f.applyInput('none', false);
+            f.tryMove('idle');
             expect(f.phase).toBe('idle');
             advance(f, 200);
-            // Position should not change while idle
             expect(f.x).toBe(midX);
         });
 
-        it('cycles walk frame index based on distance', () => {
+        it('walk progress cycles based on distance', () => {
             const f = makeFighter({ startX: 2.0, startFacing: 'right' });
-            f.applyInput('forward', false);
-            expect(f.frameIndex).toBe(0);
+            f.tryMove('walk-forward');
+            expect(f.progress).toBe(0);
 
-            // Walk enough to cycle at least one frame
-            // WALK_SPEED = 2.0 wu/s, frame cycle every 0.25 wu => 0.125s = 125ms
+            // WALK_SPEED = 2.0 m/s, WALK_CYCLE_METRES = 2.0 m => full cycle in 1s
+            // After 130ms: distance = 0.26m, progress ~= 0.26/2.0 = 0.13
             advance(f, 130);
-            expect(f.frameIndex).toBeGreaterThan(0);
+            expect(f.progress).toBeGreaterThan(0);
+            expect(f.progress).toBeLessThan(1);
         });
     });
 
@@ -459,14 +371,14 @@ describe('FighterModel', () => {
     describe('position clamping', () => {
         it('clamps position at arena left boundary', () => {
             const f = makeFighter({ startX: ARENA_MIN_X + 0.1, startFacing: 'left' });
-            f.applyInput('forward', false); // left-facing, forward = move left
-            advance(f, 2000); // walk a long time
+            f.tryMove('walk-forward'); // left-facing, forward = move left
+            advance(f, 2000);
             expect(f.x).toBe(ARENA_MIN_X);
         });
 
         it('clamps position at arena right boundary', () => {
             const f = makeFighter({ startX: ARENA_MAX_X - 0.1, startFacing: 'right' });
-            f.applyInput('forward', false);
+            f.tryMove('walk-forward');
             advance(f, 2000);
             expect(f.x).toBe(ARENA_MAX_X);
         });
@@ -508,16 +420,16 @@ describe('FighterModel', () => {
 
     // --- External commands ---
 
-    describe('applyHit', () => {
+    describe('hit', () => {
         it('enters hit-reacting phase', () => {
             const f = makeFighter();
-            f.applyHit(0.5);
+            f.hit(0.5);
             expect(f.phase).toBe('hit-reacting');
         });
 
         it('returns to idle after hit reaction duration', () => {
             const f = makeFighter();
-            f.applyHit(0.5);
+            f.hit(0.5);
             advance(f, HIT_REACTION_MS + 10);
             expect(f.phase).toBe('idle');
         });
@@ -525,89 +437,85 @@ describe('FighterModel', () => {
         it('applies knockback to position', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
             const startX = f.x;
-            f.applyHit(0.5);
+            f.hit(0.5);
             advance(f, HIT_REACTION_MS + 10);
-            // Knockback pushes away from attacker (opposite of facing)
             expect(f.x).toBeLessThan(startX);
         });
     });
 
-    describe('applyBlock', () => {
+    describe('block', () => {
         it('enters blocking phase', () => {
             const f = makeFighter();
-            f.applyBlock();
+            f.block();
             expect(f.phase).toBe('blocking');
         });
 
         it('returns to idle after block duration', () => {
             const f = makeFighter();
-            f.applyBlock();
+            f.block();
             advance(f, BLOCK_REACTION_MS + 10);
             expect(f.phase).toBe('idle');
         });
 
-        it('progresses through 3 block frames', () => {
+        it('progress advances through block', () => {
             const f = makeFighter();
-            f.applyBlock();
-            expect(f.frameIndex).toBe(0);
-            advance(f, BLOCK_REACTION_MS * 0.34 + 1);
-            expect(f.frameIndex).toBe(1);
-            advance(f, BLOCK_REACTION_MS * 0.34);
-            expect(f.frameIndex).toBe(2);
+            f.block();
+            expect(f.progress).toBe(0);
+            advance(f, BLOCK_REACTION_MS * 0.5);
+            expect(f.progress).toBeCloseTo(0.5, 1);
         });
     });
 
-    describe('applyDefeat', () => {
+    describe('defeat', () => {
         it('enters defeated phase with correct variant', () => {
             const f = makeFighter();
-            f.applyDefeat('c');
+            f.defeat('c');
             expect(f.phase).toBe('defeated');
             expect(f.defeatVariant).toBe('c');
         });
 
         it('stays in defeated phase (does not auto-return)', () => {
             const f = makeFighter();
-            f.applyDefeat('a');
+            f.defeat('a');
             advance(f, 2000);
             expect(f.phase).toBe('defeated');
         });
 
-        it('progresses through 3 defeat frames', () => {
+        it('progress advances through defeat', () => {
             const f = makeFighter();
-            f.applyDefeat('b');
-            expect(f.frameIndex).toBe(0);
-            advance(f, 121);
-            expect(f.frameIndex).toBe(1);
-            advance(f, 120);
-            expect(f.frameIndex).toBe(2);
+            f.defeat('b');
+            expect(f.progress).toBe(0);
+            // DEFEAT_TOTAL_MS = 3 * 120 = 360ms
+            advance(f, 180);
+            expect(f.progress).toBeCloseTo(0.5, 1);
         });
     });
 
-    describe('applyWon', () => {
+    describe('won', () => {
         it('enters won phase', () => {
             const f = makeFighter();
-            f.applyWon();
+            f.won();
             expect(f.phase).toBe('won');
         });
 
         it('stays in won phase', () => {
             const f = makeFighter();
-            f.applyWon();
+            f.won();
             advance(f, 5000);
             expect(f.phase).toBe('won');
         });
     });
 
-    describe('applyLost', () => {
+    describe('lost', () => {
         it('enters lost phase', () => {
             const f = makeFighter();
-            f.applyLost();
+            f.lost();
             expect(f.phase).toBe('lost');
         });
 
         it('stays in lost phase', () => {
             const f = makeFighter();
-            f.applyLost();
+            f.lost();
             advance(f, 5000);
             expect(f.phase).toBe('lost');
         });
@@ -618,70 +526,68 @@ describe('FighterModel', () => {
     describe('reset', () => {
         it('returns to idle at new position and facing', () => {
             const f = makeFighter({ startX: 3.0, startFacing: 'right' });
-            f.applyInput('down', false); // start attack
+            f.tryMove('foot-sweep');
             advance(f, 50);
 
             f.reset(7.5, 'left');
             expect(f.phase).toBe('idle');
             expect(f.x).toBe(7.5);
             expect(f.facing).toBe('left');
-            expect(f.moveKind).toBeUndefined();
-            expect(f.frameIndex).toBe(0);
+            expect(f.move).toBeUndefined();
+            expect(f.progress).toBe(0);
             expect(f.hitboxActive).toBe(false);
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
         });
 
         it('clears active timeline so advance does nothing', () => {
             const f = makeFighter();
-            f.applyInput('down', false);
+            f.tryMove('foot-sweep');
             advance(f, 50);
             f.reset(5.0, 'right');
             advance(f, 500);
-            // Should still be idle, timeline cleared
             expect(f.phase).toBe('idle');
         });
     });
 
-    // --- Airborne moves ---
+    // --- Airborne attacks ---
 
     describe('airborne attacks', () => {
         it('flying-kick is a low airborne forward kick', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
-            f.applyInput('up', true); // flying-kick
+            f.tryMove('flying-kick');
             expect(f.phase).toBe('airborne');
-            expect(f.moveKind).toBe('flying-kick');
+            expect(f.move).toBe('flying-kick');
 
-            // Should gain some height (less than full jump) and lunge forward
             const startX = f.x;
             advance(f, 200);
-            expect(f.jumpHeight).toBeGreaterThan(0);
+            expect(f.height).toBeGreaterThan(0);
             expect(f.x).toBeGreaterThan(startX);
 
-            // Returns to idle after completion (doesn't hold)
+            // Returns to idle after completion
             advance(f, 300);
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
             expect(f.phase).toBe('idle');
         });
 
         it('front-somersault is airborne', () => {
             const f = makeFighter();
-            f.applyInput('up-forward', true); // front-somersault
+            f.tryMove('front-somersault');
             expect(f.phase).toBe('airborne');
-            expect(f.moveKind).toBe('front-somersault');
+            expect(f.move).toBe('front-somersault');
         });
 
         it('back-somersault is airborne', () => {
             const f = makeFighter();
-            f.applyInput('up-backward', true); // back-somersault
+            f.tryMove('back-somersault');
             expect(f.phase).toBe('airborne');
-            expect(f.moveKind).toBe('back-somersault');
+            expect(f.move).toBe('back-somersault');
         });
 
         it('airborne moves return to ground after completion', () => {
             const f = makeFighter();
-            f.applyInput('up-forward', true); // front-somersault: 6 frames * 80ms = 480ms
+            f.tryMove('front-somersault'); // 6 segments * 80ms = 480ms
             advance(f, 600);
-            expect(f.jumpHeight).toBe(0);
+            expect(f.height).toBe(0);
             expect(f.phase).toBe('idle');
         });
     });
@@ -689,26 +595,26 @@ describe('FighterModel', () => {
     // --- Edge cases ---
 
     describe('edge cases', () => {
-        it('attack button with no direction is idle', () => {
+        it('idle from idle is accepted', () => {
             const f = makeFighter();
-            f.applyInput('none', true);
+            expect(f.tryMove('idle')).toBe(true);
             expect(f.phase).toBe('idle');
         });
 
         it('can transition from walking to attack', () => {
             const f = makeFighter();
-            f.applyInput('forward', false);
+            f.tryMove('walk-forward');
             expect(f.phase).toBe('walking');
-            f.applyInput('down', false); // foot-sweep
+            f.tryMove('foot-sweep');
             expect(f.phase).toBe('attacking');
-            expect(f.moveKind).toBe('foot-sweep');
+            expect(f.move).toBe('foot-sweep');
         });
 
         it('can transition from walking to idle', () => {
             const f = makeFighter();
-            f.applyInput('forward', false);
+            f.tryMove('walk-forward');
             expect(f.phase).toBe('walking');
-            f.applyInput('none', false);
+            f.tryMove('idle');
             expect(f.phase).toBe('idle');
         });
     });

@@ -2,63 +2,82 @@ import gsap from 'gsap';
 import {
     type DefeatVariant,
     type Facing,
+    type FighterMove,
     type FighterPhase,
-    type InputDirection,
     type MoveKind,
-    resolveMove,
     MOVE_DATA,
-    CROUCH_PUNCH_FRAME_SEQUENCE,
     WALK_SPEED,
-    JUMP_DURATION_MS,
+    WALK_CYCLE_METRES,
     JUMP_HEIGHT,
     FLYING_KICK_HEIGHT,
     HIT_REACTION_MS,
     BLOCK_REACTION_MS,
     FIGHTER_BODY_WIDTH,
+    TURN_TOTAL_MS,
+    DEFEAT_TOTAL_MS,
+    WON_TOTAL_MS,
 } from '../data';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
+/**
+ * Simulates a single fighter's state: position, phase, active move, and
+ * collision boxes. All distances are in **metres** (the arena is 10 m wide).
+ *
+ * The model knows nothing about textures or animation frames. It exposes
+ * `phase` and `progress` (0..1) so the view can derive which visual frame
+ * to display.
+ */
 export interface FighterModel {
-    /** Horizontal position in world units. */
+    /** Horizontal position in metres. */
     readonly x: number;
-    /** Vertical offset above ground in world units (0 = grounded). */
-    readonly jumpHeight: number;
+    /** Vertical offset above ground in metres (0 = grounded). */
+    readonly height: number;
     /** Which direction the fighter faces. */
     readonly facing: Facing;
     /** Current high-level phase. */
     readonly phase: FighterPhase;
-    /** Current move being executed (undefined when idle/walking). */
-    readonly moveKind: MoveKind | undefined;
-    /** Current frame index within the active animation sequence (0-based). */
-    readonly frameIndex: number;
-    /** Whether the move's hitbox is currently active this frame. */
+    /** Active move kind (undefined when idle, walking, turning, or reacting). */
+    readonly move: MoveKind | undefined;
+    /**
+     * Progress through the current phase, 0..1.
+     * - Idle / lost: always 0.
+     * - Walking: cycles 0..1 based on distance covered per walk cycle.
+     * - Attacks / airborne / turning / blocking / reactions / won / defeated:
+     *   0 at phase start, 1 at phase end.
+     */
+    readonly progress: number;
+    /** Whether the move's hitbox is currently active. */
     readonly hitboxActive: boolean;
-    /** World-space hitbox rectangle (only meaningful when hitboxActive). */
+    /** World-space hitbox rectangle in metres (zeroed when inactive). */
     readonly hitbox: { x: number; y: number; w: number; h: number };
-    /** World-space body box (always valid; used for receiving hits). */
+    /** World-space body box in metres (always valid; used for receiving hits). */
     readonly bodyBox: { x: number; y: number; w: number; h: number };
-    /** The defeat variant currently being played (only meaningful in 'defeated' phase). */
+    /** The defeat variant (only meaningful in 'defeated' phase). */
     readonly defeatVariant: DefeatVariant;
     /** Whether this fighter is facing the given x position. */
     isFacing(targetX: number): boolean;
-    /** Apply a directional input + attack state. Called by game model each tick. */
-    applyInput(inputDir: InputDirection, attackPressed: boolean): void;
-    /** External command: take a hit with the given knockback direction. */
-    applyHit(knockback: number): void;
-    /** External command: passively block an incoming attack. */
-    applyBlock(): void;
-    /** External command: play a defeat animation. */
-    applyDefeat(variant: DefeatVariant): void;
-    /** External command: play the round-won pose. */
-    applyWon(): void;
-    /** External command: play the round-lost pose. */
-    applyLost(): void;
+    /**
+     * Attempt a voluntary move. Returns true if the model accepted it.
+     * Moves are rejected while an attack, reaction, or other non-interruptible
+     * phase is in progress. The same move is rejected (held) after completion.
+     */
+    tryMove(move: FighterMove): boolean;
+    /** External: take a hit with the given knockback in metres. */
+    hit(knockbackMetres: number): void;
+    /** External: passively block an incoming attack. */
+    block(): void;
+    /** External: play a defeat animation. */
+    defeat(variant: DefeatVariant): void;
+    /** External: play the round-won pose. */
+    won(): void;
+    /** External: play the round-lost pose. */
+    lost(): void;
     /** Reset to starting position and idle state. */
     reset(startX: number, facing: Facing): void;
-    /** Advance timelines by deltaMs. */
+    /** Advance state by deltaMs. */
     update(deltaMs: number): void;
 }
 
@@ -67,9 +86,12 @@ export interface FighterModel {
 // ---------------------------------------------------------------------------
 
 export interface FighterModelOptions {
+    /** Starting x position in metres. */
     startX: number;
     startFacing: Facing;
+    /** Left arena boundary in metres. */
     arenaMinX: number;
+    /** Right arena boundary in metres. */
     arenaMaxX: number;
 }
 
@@ -77,11 +99,8 @@ export interface FighterModelOptions {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TURN_FRAME_SEQUENCE: readonly number[] = [0, 1, 4];
-const TURN_FRAME_COUNT = TURN_FRAME_SEQUENCE.length;
-const TURN_FRAME_MS = 80;
+/** Fighter body height in metres (for bodyBox). */
 const BODY_HEIGHT = 1.5;
-const WON_FRAME_TOGGLE_MS = 300;
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -93,23 +112,25 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
     // --- Private mutable state ---
     const state = {
         x: options.startX,
-        jumpHeight: 0,
+        height: 0,
         facing: options.startFacing as Facing,
         phase: 'idle' as FighterPhase,
-        moveKind: undefined as MoveKind | undefined,
-        frameIndex: 0,
+        move: undefined as MoveKind | undefined,
         hitboxActive: false,
         defeatVariant: 'a' as DefeatVariant,
         walkDirection: 0, // +1 forward, -1 backward, 0 none
-        walkDistAccum: 0, // accumulated walk distance for frame cycling
-        moveComplete: false, // true when attack animation has finished but input is held
+        walkDistAccum: 0, // accumulated walk distance for progress cycling
+        moveComplete: false, // true when attack anim finished but input held
+        // Phase progress tracking (independent of GSAP timeline)
+        phaseElapsedMs: 0, // ms elapsed since current phase started
+        phaseDurationMs: 0, // total duration of current phase in ms
     };
 
     // Pre-allocated hitbox and bodyBox objects (avoid per-tick allocation)
     const hitboxRect = { x: 0, y: 0, w: 0, h: 0 };
     const bodyBoxRect = { x: 0, y: 0, w: 0, h: 0 };
 
-    // GSAP timeline for sequenced moves
+    // GSAP timeline for sequenced moves (tweens + phase transition callbacks)
     const timeline = gsap.timeline({ paused: true });
 
     // --- Public model record ---
@@ -117,8 +138,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         get x() {
             return state.x;
         },
-        get jumpHeight() {
-            return state.jumpHeight;
+        get height() {
+            return state.height;
         },
         get facing() {
             return state.facing;
@@ -126,31 +147,38 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         get phase() {
             return state.phase;
         },
-        get moveKind() {
-            return state.moveKind;
-        },
-        get frameIndex() {
-            return state.frameIndex;
-        },
-        get hitboxActive() {
-            return state.hitboxActive;
+        get move() {
+            return state.move;
         },
         get defeatVariant() {
             return state.defeatVariant;
         },
 
+        get progress() {
+            if (state.phase === 'walking') {
+                return state.walkDistAccum / WALK_CYCLE_METRES;
+            }
+            if (state.phaseDurationMs <= 0) return 0;
+            const p = state.phaseElapsedMs / state.phaseDurationMs;
+            return p < 0 ? 0 : p > 1 ? 1 : p;
+        },
+
+        get hitboxActive() {
+            return state.hitboxActive;
+        },
+
         get hitbox() {
-            if (!state.hitboxActive || state.moveKind === undefined) {
+            if (!state.hitboxActive || !state.move) {
                 hitboxRect.x = 0;
                 hitboxRect.y = 0;
                 hitboxRect.w = 0;
                 hitboxRect.h = 0;
                 return hitboxRect;
             }
-            const md = MOVE_DATA[state.moveKind];
+            const md = MOVE_DATA[state.move];
             const sign = state.facing === 'right' ? 1 : -1;
             hitboxRect.x = state.x + md.hitbox.dx * sign - md.hitbox.w * 0.5;
-            hitboxRect.y = state.jumpHeight + md.hitbox.dy - md.hitbox.h * 0.5;
+            hitboxRect.y = state.height + md.hitbox.dy - md.hitbox.h * 0.5;
             hitboxRect.w = md.hitbox.w;
             hitboxRect.h = md.hitbox.h;
             return hitboxRect;
@@ -158,7 +186,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
         get bodyBox() {
             bodyBoxRect.x = state.x - FIGHTER_BODY_WIDTH * 0.5;
-            bodyBoxRect.y = state.jumpHeight;
+            bodyBoxRect.y = state.height;
             bodyBoxRect.w = FIGHTER_BODY_WIDTH;
             bodyBoxRect.h = BODY_HEIGHT;
             return bodyBoxRect;
@@ -169,362 +197,345 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             return targetX <= state.x;
         },
 
-        applyInput(inputDir: InputDirection, attackPressed: boolean): void {
-            // Accept input when idle, walking, or holding at end of a completed move
-            const canAcceptInput = state.phase === 'idle' || state.phase === 'walking' || state.moveComplete;
-            if (!canAcceptInput) return;
+        tryMove(move: FighterMove): boolean {
+            const canAccept = state.phase === 'idle' || state.phase === 'walking' || state.moveComplete;
+            if (!canAccept) return false;
 
-            const resolution = resolveMove(inputDir, attackPressed);
-
-            // When holding at end of a completed move, stay if same move requested
+            // When holding at end of a completed move, reject the same move (hold)
             if (state.moveComplete) {
-                if (resolution.action === 'move' && resolution.moveKind === state.moveKind) return;
+                if (move === state.move) return false;
                 enterIdle();
             }
 
-            switch (resolution.action) {
-                case 'idle':
-                    if (state.phase !== 'idle') {
-                        enterIdle();
-                    }
-                    break;
-
-                case 'walk': {
-                    const dir = resolution.direction === 'forward' ? 1 : -1;
-                    if (state.phase !== 'walking' || state.walkDirection !== dir) {
-                        enterWalk(dir);
-                    }
-                    break;
-                }
-
-                case 'jump':
-                    scheduleJump();
-                    break;
-
-                case 'move': {
-                    const moveData = MOVE_DATA[resolution.moveKind];
-                    if (moveData.autoTurn) {
-                        scheduleAutoTurnAttack(resolution.moveKind);
-                    } else {
-                        scheduleAttack(resolution.moveKind);
-                    }
-                    break;
-                }
+            if (move === 'idle') {
+                if (state.phase !== 'idle') enterIdle();
+                return true;
             }
+
+            if (move === 'walk-forward') {
+                if (state.phase === 'walking' && state.walkDirection === 1) return true;
+                enterWalk(1);
+                return true;
+            }
+
+            if (move === 'walk-backward') {
+                if (state.phase === 'walking' && state.walkDirection === -1) return true;
+                enterWalk(-1);
+                return true;
+            }
+
+            // Remaining values are MoveKind
+            const moveData = MOVE_DATA[move];
+            if (moveData.autoTurn) {
+                scheduleAutoTurnAttack(move);
+            } else {
+                scheduleAttack(move);
+            }
+            return true;
         },
 
-        applyHit(knockback: number): void {
-            scheduleHitReaction(knockback);
+        hit(knockbackMetres: number): void {
+            scheduleHitReaction(knockbackMetres);
         },
 
-        applyBlock(): void {
+        block(): void {
             scheduleBlock();
         },
 
-        applyDefeat(variant: DefeatVariant): void {
+        defeat(variant: DefeatVariant): void {
             scheduleDefeat(variant);
         },
 
-        applyWon(): void {
+        won(): void {
             scheduleWon();
         },
 
-        applyLost(): void {
+        lost(): void {
             scheduleLost();
         },
 
         reset(startX: number, facing: Facing): void {
             timeline.clear().time(0);
             state.x = startX;
-            state.jumpHeight = 0;
+            state.height = 0;
             state.facing = facing;
             state.phase = 'idle';
-            state.moveKind = undefined;
-            state.frameIndex = 0;
+            state.move = undefined;
             state.hitboxActive = false;
             state.defeatVariant = 'a';
             state.walkDirection = 0;
             state.walkDistAccum = 0;
             state.moveComplete = false;
+            state.phaseElapsedMs = 0;
+            state.phaseDurationMs = 0;
         },
 
         update(deltaMs: number): void {
-            // 1. Advance timeline
-            const dt = 0.001 * deltaMs;
+            // 1. Accumulate phase elapsed time
+            state.phaseElapsedMs += deltaMs;
+
+            // 2. Advance timeline (triggers callbacks/tweens)
+            const dt = deltaMs * 0.001;
             timeline.time(timeline.time() + dt);
 
-            // 2. Handle walking position update (not timeline-driven)
+            // 3. Handle walking position update (not timeline-driven)
             if (state.phase === 'walking') {
                 const sign = state.facing === 'right' ? 1 : -1;
                 const worldDir = sign * state.walkDirection;
                 const dx = worldDir * WALK_SPEED * dt;
                 state.x += dx;
 
-                // Accumulate distance for frame cycling
+                // Cycle walk distance accumulator
                 const absDx = dx < 0 ? -dx : dx;
                 state.walkDistAccum += absDx;
-
-                // Cycle walk frames based on distance (one full cycle per ~WALK_CYCLE_DIST)
-                const WALK_CYCLE_DIST = 0.25; // world units per frame
-                if (state.walkDistAccum >= WALK_CYCLE_DIST) {
-                    state.walkDistAccum -= WALK_CYCLE_DIST;
-                    state.frameIndex = (state.frameIndex + 1) % 8;
+                if (state.walkDistAccum >= WALK_CYCLE_METRES) {
+                    state.walkDistAccum -= WALK_CYCLE_METRES;
                 }
             }
 
-            // 3. Clamp position
+            // 4. Clamp position
             if (state.x < arenaMinX) state.x = arenaMinX;
             if (state.x > arenaMaxX) state.x = arenaMaxX;
+
+            // 5. Derive hitbox active from progress + move data
+            updateHitboxActive();
         },
     };
 
     return model;
 
     // -----------------------------------------------------------------------
-    // Private helpers
+    // Hitbox derivation
+    // -----------------------------------------------------------------------
+
+    function updateHitboxActive(): void {
+        if (!state.move || (state.phase !== 'attacking' && state.phase !== 'airborne')) {
+            state.hitboxActive = false;
+            return;
+        }
+        if (state.moveComplete) {
+            state.hitboxActive = false;
+            return;
+        }
+        const md = MOVE_DATA[state.move];
+        if (md.hitFrameIndices.length === 0) {
+            state.hitboxActive = false;
+            return;
+        }
+        // Find which animation segment the current progress falls in
+        const durations = md.frameDurationMs;
+        let totalMs = 0;
+        for (let i = 0; i < durations.length; i++) totalMs += durations[i];
+
+        const p = model.progress;
+        const elapsedMs = p * totalMs;
+        let accumulated = 0;
+        for (let i = 0; i < durations.length; i++) {
+            const frameStart = accumulated;
+            accumulated += durations[i];
+            if (elapsedMs >= frameStart && elapsedMs < accumulated) {
+                state.hitboxActive = isInHitFrames(md.hitFrameIndices, i);
+                return;
+            }
+        }
+        state.hitboxActive = false;
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase transitions
     // -----------------------------------------------------------------------
 
     function enterIdle(): void {
         timeline.clear().time(0);
         state.phase = 'idle';
-        state.moveKind = undefined;
-        state.frameIndex = 0;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
-        state.jumpHeight = 0;
+        state.height = 0;
         state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = 0;
     }
 
     function enterWalk(direction: number): void {
         timeline.clear().time(0);
         state.phase = 'walking';
-        state.moveKind = undefined;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = direction;
-        // Keep existing walk frame if already walking, otherwise start at 0
-        if (state.phase !== 'walking') {
-            state.frameIndex = 0;
-            state.walkDistAccum = 0;
-        }
+        state.walkDistAccum = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = 0;
     }
 
     function scheduleAttack(moveKind: MoveKind): void {
         const moveData = MOVE_DATA[moveKind];
-        const frameSequence = resolveFrameSequence(moveKind);
-        const frameCount = frameSequence.length;
+        const totalMs = sumDurationsMs(moveData.frameDurationMs);
+        const totalSec = totalMs * 0.001;
 
         timeline.clear().time(0);
         state.phase = moveData.airborne ? 'airborne' : 'attacking';
-        state.moveKind = moveKind;
-        state.frameIndex = frameSequence[0];
+        state.move = moveKind;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = totalMs;
 
-        // Build the timeline
-        let t = 0;
-        for (let i = 0; i < frameCount; i++) {
-            const fi = frameSequence[i];
-            const isHitFrame = isInHitFrames(moveData.hitFrameIndices, i);
-
-            timeline.call(setFrameState, [fi, isHitFrame], t);
-            t += moveData.frameDurationMs[i] * 0.001;
-        }
-
-        // Lunge: tween x over the move duration (positive = forward, negative = backward)
+        // Lunge tween
         if (moveData.lunge !== 0) {
             const sign = state.facing === 'right' ? 1 : -1;
             const targetX = state.x + moveData.lunge * sign;
-            timeline.to(state, { x: targetX, duration: t, ease: 'none' }, 0);
+            timeline.to(state, { x: targetX, duration: totalSec, ease: 'none' }, 0);
         }
 
-        // Airborne arc: parabolic jump height
+        // Airborne arc
         if (moveData.airborne) {
             const peakHeight = moveKind === 'flying-kick' ? FLYING_KICK_HEIGHT : JUMP_HEIGHT;
-            const halfDuration = t * 0.5;
-            timeline.to(state, { jumpHeight: peakHeight, duration: halfDuration, ease: 'power1.out' }, 0);
-            timeline.to(state, { jumpHeight: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
+            const halfDuration = totalSec * 0.5;
+            timeline.to(state, { height: peakHeight, duration: halfDuration, ease: 'power1.out' }, 0);
+            timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
         }
 
-        // Airborne moves return to idle on landing; ground moves hold final frame
+        // End-of-move callback
         if (moveData.airborne) {
-            timeline.call(enterIdle, undefined, t);
+            timeline.call(enterIdle, undefined, totalSec);
         } else {
-            timeline.call(setMoveComplete, undefined, t);
+            timeline.call(setMoveComplete, undefined, totalSec);
         }
     }
 
     function scheduleAutoTurnAttack(moveKind: MoveKind): void {
+        const turnSec = TURN_TOTAL_MS * 0.001;
+
         timeline.clear().time(0);
         state.phase = 'turning';
-        state.moveKind = undefined;
-        state.frameIndex = 0;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = TURN_TOTAL_MS;
 
-        // Step through turn frames
-        let t = 0;
-        for (let i = 0; i < TURN_FRAME_COUNT; i++) {
-            timeline.call(setTurnFrame, [TURN_FRAME_SEQUENCE[i]], t);
-            t += TURN_FRAME_MS * 0.001;
-        }
+        // Flip facing at end of turn
+        timeline.call(flipFacing, undefined, turnSec);
 
-        // Flip facing at the end of the turn
-        timeline.call(flipFacing, undefined, t);
-
-        // Then chain the attack sequence
+        // Compute attack duration
         const moveData = MOVE_DATA[moveKind];
-        const frameSequence = resolveFrameSequence(moveKind);
-        const frameCount = frameSequence.length;
+        const attackMs = sumDurationsMs(moveData.frameDurationMs);
+        const attackSec = attackMs * 0.001;
+        const endSec = turnSec + attackSec;
 
-        const attackStart = t;
-        for (let i = 0; i < frameCount; i++) {
-            const fi = frameSequence[i];
-            const isHitFrame = isInHitFrames(moveData.hitFrameIndices, i);
-
-            timeline.call(setAttackFrame, [moveKind, fi, isHitFrame, moveData.airborne], t);
-            t += moveData.frameDurationMs[i] * 0.001;
-        }
+        // Transition to attack phase at the boundary
+        timeline.call(transitionToAttack, [moveKind, moveData.airborne, attackMs], turnSec);
 
         // Lunge during attack portion
         if (moveData.lunge !== 0) {
-            // Note: facing has been flipped by this point, so we need the NEW facing
-            // We schedule a call to compute and apply the lunge at attackStart
-            timeline.call(applyLunge, [moveKind, attackStart, t - attackStart], attackStart);
+            timeline.call(applyLunge, [moveKind, attackSec], turnSec);
         }
 
-        // Ground auto-turn moves hold at final frame
-        timeline.call(setMoveComplete, undefined, t);
+        // Airborne arc during attack portion
+        if (moveData.airborne) {
+            const peakHeight = moveKind === 'flying-kick' ? FLYING_KICK_HEIGHT : JUMP_HEIGHT;
+            const halfDuration = attackSec * 0.5;
+            timeline.to(state, { height: peakHeight, duration: halfDuration, ease: 'power1.out' }, turnSec);
+            timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, turnSec + halfDuration);
+        }
+
+        // End of move
+        if (moveData.airborne) {
+            timeline.call(enterIdle, undefined, endSec);
+        } else {
+            timeline.call(setMoveComplete, undefined, endSec);
+        }
     }
 
-    function scheduleJump(): void {
+    function scheduleHitReaction(knockbackMetres: number): void {
+        const totalSec = HIT_REACTION_MS * 0.001;
+
         timeline.clear().time(0);
-        state.phase = 'airborne';
-        state.moveKind = 'jump';
-        state.frameIndex = 0;
+        state.phase = 'hit-reacting';
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
+        state.height = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = HIT_REACTION_MS;
 
-        const halfDuration = JUMP_DURATION_MS * 0.001 * 0.5;
-        timeline.to(state, { jumpHeight: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, 0);
-        timeline.to(state, { jumpHeight: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
-        timeline.call(enterIdle, undefined, JUMP_DURATION_MS * 0.001);
+        // Knockback pushes away from the attacker (opposite of facing)
+        const sign = state.facing === 'right' ? -1 : 1;
+        const targetX = state.x + knockbackMetres * sign;
+        timeline.to(state, { x: targetX, duration: totalSec, ease: 'power2.out' }, 0);
+        timeline.call(enterIdle, undefined, totalSec);
     }
 
     function scheduleBlock(): void {
+        const totalSec = BLOCK_REACTION_MS * 0.001;
+
         timeline.clear().time(0);
         state.phase = 'blocking';
-        state.moveKind = undefined;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = BLOCK_REACTION_MS;
 
-        const frameDuration = (BLOCK_REACTION_MS * 0.001) / 3;
-        for (let i = 0; i < 3; i++) {
-            timeline.call(setBlockFrame, [i], i * frameDuration);
-        }
-        timeline.call(enterIdle, undefined, BLOCK_REACTION_MS * 0.001);
-    }
-
-    function scheduleHitReaction(knockback: number): void {
-        timeline.clear().time(0);
-        state.phase = 'hit-reacting';
-        state.moveKind = undefined;
-        state.frameIndex = 0;
-        state.hitboxActive = false;
-        state.walkDirection = 0;
-        state.walkDistAccum = 0;
-        state.jumpHeight = 0;
-
-        // Knockback direction: pushed away from attacker (opposite of facing)
-        const sign = state.facing === 'right' ? -1 : 1;
-        const targetX = state.x + knockback * sign;
-        timeline.to(state, { x: targetX, duration: HIT_REACTION_MS * 0.001, ease: 'power2.out' }, 0);
-        timeline.call(enterIdle, undefined, HIT_REACTION_MS * 0.001);
+        timeline.call(enterIdle, undefined, totalSec);
     }
 
     function scheduleDefeat(variant: DefeatVariant): void {
         timeline.clear().time(0);
         state.phase = 'defeated';
-        state.moveKind = undefined;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
-        state.jumpHeight = 0;
+        state.height = 0;
         state.defeatVariant = variant;
-
-        const frameDuration = 0.12; // 120ms per defeat frame
-        for (let i = 0; i < 3; i++) {
-            timeline.call(setDefeatFrame, [i], i * frameDuration);
-        }
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = DEFEAT_TOTAL_MS;
         // Remains in 'defeated' phase - does not auto-return
     }
 
     function scheduleWon(): void {
         timeline.clear().time(0);
         state.phase = 'won';
-        state.moveKind = undefined;
-        state.frameIndex = 0;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
-        state.jumpHeight = 0;
-
-        // Toggle between won-1 and won-2
-        const toggleSec = WON_FRAME_TOGGLE_MS * 0.001;
-        timeline.call(setWonFrame, [0], 0);
-        timeline.call(setWonFrame, [1], toggleSec);
-        timeline.call(setWonFrame, [0], toggleSec * 2);
-        timeline.call(setWonFrame, [1], toggleSec * 3);
-        // Remains in 'won' phase
+        state.height = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = WON_TOTAL_MS;
     }
 
     function scheduleLost(): void {
         timeline.clear().time(0);
         state.phase = 'lost';
-        state.moveKind = undefined;
-        state.frameIndex = 0;
+        state.move = undefined;
         state.hitboxActive = false;
         state.walkDirection = 0;
         state.walkDistAccum = 0;
-        state.jumpHeight = 0;
-        // Remains in 'lost' phase - single frame
+        state.height = 0;
+        state.moveComplete = false;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = 0;
+        // Remains in 'lost' phase - single static pose
     }
 
     // -----------------------------------------------------------------------
     // Timeline callback helpers
     // -----------------------------------------------------------------------
-
-    function setFrameState(fi: number, isHit: boolean): void {
-        state.frameIndex = fi;
-        state.hitboxActive = isHit;
-    }
-
-    function setTurnFrame(i: number): void {
-        state.frameIndex = i;
-    }
-
-    function setBlockFrame(i: number): void {
-        state.frameIndex = i;
-    }
-
-    function setDefeatFrame(i: number): void {
-        state.frameIndex = i;
-    }
-
-    function setWonFrame(i: number): void {
-        state.frameIndex = i;
-    }
-
-    function setAttackFrame(moveKind: MoveKind, fi: number, isHit: boolean, airborne: boolean): void {
-        state.phase = airborne ? 'airborne' : 'attacking';
-        state.moveKind = moveKind;
-        state.frameIndex = fi;
-        state.hitboxActive = isHit;
-    }
 
     function flipFacing(): void {
         state.facing = state.facing === 'right' ? 'left' : 'right';
@@ -535,39 +546,18 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         state.moveComplete = true;
     }
 
-    function applyLunge(moveKind: MoveKind, _attackStart: number, attackDuration: number): void {
+    function transitionToAttack(moveKind: MoveKind, airborne: boolean, attackDurationMs: number): void {
+        state.phase = airborne ? 'airborne' : 'attacking';
+        state.move = moveKind;
+        state.phaseElapsedMs = 0;
+        state.phaseDurationMs = attackDurationMs;
+    }
+
+    function applyLunge(moveKind: MoveKind, attackDuration: number): void {
         const md = MOVE_DATA[moveKind];
         const sign = state.facing === 'right' ? 1 : -1;
         const targetX = state.x + md.lunge * sign;
-        // Add a tween to the timeline from the current position
         timeline.to(state, { x: targetX, duration: attackDuration, ease: 'none' }, timeline.time());
-    }
-
-    // -----------------------------------------------------------------------
-    // Frame sequence resolution
-    // -----------------------------------------------------------------------
-
-    function resolveFrameSequence(moveKind: MoveKind): readonly number[] {
-        // Crouch punch (and back-crouch-punch) use a special hardcoded sequence
-        if (moveKind === 'crouch-punch' || moveKind === 'back-crouch-punch') {
-            return CROUCH_PUNCH_FRAME_SEQUENCE;
-        }
-
-        // Use explicit frame sequence from move data when provided
-        const moveData = MOVE_DATA[moveKind];
-        if (moveData.frameSequence) {
-            return moveData.frameSequence;
-        }
-
-        // Default: sequential indices [0, 1, 2, ...]
-        return buildSequentialIndices(moveData.frameDurationMs.length);
-    }
-
-    function isInHitFrames(hitFrameIndices: readonly number[], sequenceIndex: number): boolean {
-        for (let i = 0; i < hitFrameIndices.length; i++) {
-            if (hitFrameIndices[i] === sequenceIndex) return true;
-        }
-        return false;
     }
 }
 
@@ -575,17 +565,16 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 // Utility
 // ---------------------------------------------------------------------------
 
-// Pre-built sequential index arrays for common sizes (avoid per-call allocation)
-const SEQUENTIAL_CACHE: readonly number[][] = [];
-for (let n = 0; n <= 8; n++) {
-    const arr: number[] = [];
-    for (let i = 0; i < n; i++) arr.push(i);
-    (SEQUENTIAL_CACHE as number[][]).push(arr);
+/** Sum an array of frame durations (ms) and return the total in ms. */
+function sumDurationsMs(durations: readonly number[]): number {
+    let total = 0;
+    for (let i = 0; i < durations.length; i++) total += durations[i];
+    return total;
 }
 
-function buildSequentialIndices(count: number): readonly number[] {
-    if (count < SEQUENTIAL_CACHE.length) return SEQUENTIAL_CACHE[count];
-    const arr: number[] = [];
-    for (let i = 0; i < count; i++) arr.push(i);
-    return arr;
+function isInHitFrames(hitFrameIndices: readonly number[], sequenceIndex: number): boolean {
+    for (let i = 0; i < hitFrameIndices.length; i++) {
+        if (hitFrameIndices[i] === sequenceIndex) return true;
+    }
+    return false;
 }

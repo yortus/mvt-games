@@ -3,13 +3,14 @@ import type { GameEntry, GameSession } from '../game-entry';
 import { createFighterModel, createPlayerInput } from './models';
 import { createPlaytestView } from './views';
 import {
-    type InputDirection,
+    type FighterMove,
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     FIGHTER_START_LEFT_X,
     ARENA_MIN_X,
     ARENA_MAX_X,
     resolveInputDirection,
+    resolveMove,
     textures,
 } from './data';
 
@@ -57,47 +58,40 @@ export function createIkEntry(): GameEntry {
             stage.addChild(playtestView);
 
             // --- Input settling state ---
-            let settledDir: InputDirection = 'none';
-            let settledAttack = false;
-            let pendingDir: InputDirection = 'none';
-            let pendingAttack = false;
+            let settledMove: FighterMove = 'idle';
+            let pendingMove: FighterMove = 'idle';
             let settleAccumMs = 0;
 
             return {
                 update(deltaMs: number): void {
-                    // Resolve raw input each tick (facing may change mid-move)
+                    // Resolve raw input to a FighterMove each tick
                     const rawDir = resolveInputDirection(
                         playerInput.xDirection,
                         playerInput.yDirection,
                         fighter.facing,
                     );
-                    const rawAttack = playerInput.attackPressed;
+                    const rawMove = resolveMove(rawDir, playerInput.attackPressed);
 
-                    // Neutral input applies immediately (no delay on release)
-                    if (rawDir === 'none' && !rawAttack) {
-                        settledDir = 'none';
-                        settledAttack = false;
-                        pendingDir = 'none';
-                        pendingAttack = false;
+                    // Neutral move applies immediately (no delay on release)
+                    if (rawMove === 'idle') {
+                        settledMove = 'idle';
+                        pendingMove = 'idle';
                         settleAccumMs = 0;
-                    } else if (rawDir !== pendingDir || rawAttack !== pendingAttack) {
-                        // Input changed - reset settle timer and clear stale settled value
-                        pendingDir = rawDir;
-                        pendingAttack = rawAttack;
+                    } else if (rawMove !== pendingMove) {
+                        // Input changed - reset settle timer
+                        pendingMove = rawMove;
                         settleAccumMs = deltaMs;
-                        settledDir = 'none';
-                        settledAttack = false;
+                        settledMove = 'idle';
                     } else {
                         // Input stable - accumulate
                         settleAccumMs += deltaMs;
                     }
 
                     if (settleAccumMs >= INPUT_SETTLE_MS) {
-                        settledDir = pendingDir;
-                        settledAttack = pendingAttack;
+                        settledMove = pendingMove;
                     }
 
-                    fighter.applyInput(settledDir, settledAttack);
+                    fighter.tryMove(settledMove);
                     fighter.update(deltaMs);
                 },
 

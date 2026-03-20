@@ -5,24 +5,23 @@ import type { MoveKind } from './common';
 // ---------------------------------------------------------------------------
 
 export interface MoveData {
-    /** Duration in ms for each frame in the sequence. */
+    /** Duration in ms for each animation segment. */
     readonly frameDurationMs: readonly number[];
-    /** Explicit 0-based texture indices for each frame (when non-sequential).
+    /** Explicit 0-based texture indices per segment (when non-sequential).
      *  Length must match frameDurationMs. When omitted, uses [0, 1, 2, ...]. */
     readonly frameSequence?: readonly number[];
-    /** Which entries in the frame sequence have an active hitbox (0-based). */
+    /** Which segment indices have an active hitbox (0-based). */
     readonly hitFrameIndices: readonly number[];
     /** Points scored on hit. */
     readonly damage: number;
-    /** Hitbox offset and size relative to fighter centre, in world units.
+    /** Hitbox offset and size relative to fighter centre, in metres.
      *  dx is in the fighter's forward direction (model flips for facing). */
     readonly hitbox: { readonly dx: number; readonly dy: number; readonly w: number; readonly h: number };
-    /** Lunge distance during the move (world units).
-     *  Positive = forward (toward facing), negative = backward. */
+    /** Lunge distance in metres. Positive = forward, negative = backward. */
     readonly lunge: number;
     /** Whether this attack can be passively blocked. */
     readonly blockable: boolean;
-    /** Pushback applied to the defender on hit (world units). */
+    /** Pushback applied to the defender on hit, in metres. */
     readonly knockback: number;
     /** Whether the fighter is airborne during this move. */
     readonly airborne: boolean;
@@ -42,7 +41,7 @@ const FRAME_MS = 80;
 
 export const MOVE_DATA: Record<MoveKind, MoveData> = {
     // --- Jump (non-attacking airborne) ---
-    jump: {
+    'jump': {
         frameDurationMs: [500],
         hitFrameIndices: [],
         damage: 0,
@@ -137,9 +136,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: false,
     },
 
-    // --- Crouch punch (4-frame sequence: [0,1,0,0]) ---
+    // --- Crouch punch (4-segment sequence: strike out then retract) ---
     'crouch-punch': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 1, 0, 0],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.4, dy: -0.2, w: 0.3, h: 0.3 },
@@ -153,6 +153,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     // --- Back crouch punch (auto-turns, same animation as crouch-punch) ---
     'back-crouch-punch': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 1, 0, 0],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.4, dy: -0.2, w: 0.3, h: 0.3 },
@@ -178,7 +179,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     },
 
     // --- Roundhouse (4 frames) ---
-    roundhouse: {
+    'roundhouse': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [2],
         damage: 1,
@@ -229,14 +230,3 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: false,
     },
 };
-
-// ---------------------------------------------------------------------------
-// Crouch Punch Frame Sequence
-// ---------------------------------------------------------------------------
-
-/**
- * The crouch punch uses only 2 source frames but plays as a 4-frame sequence:
- * strike out then retract. Shared by 'crouch-punch' and 'back-crouch-punch'.
- * Indices are 0-based into the crouch-punch texture array.
- */
-export const CROUCH_PUNCH_FRAME_SEQUENCE: readonly number[] = [0, 1, 0, 0];

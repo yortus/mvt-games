@@ -1,7 +1,6 @@
-import { Container, Sprite } from 'pixi.js';
-import { watch } from '#common';
+import { Container, Sprite, type Texture } from 'pixi.js';
 import type { DefeatVariant, Facing, FighterPhase, MoveKind } from '../data';
-import { textures, SCREEN_WIDTH, ARENA_WIDTH, GROUND_Y_PX } from '../data';
+import { textures, SCREEN_WIDTH, ARENA_WIDTH, GROUND_Y_PX, MOVE_DATA, TURN_TEXTURE_SEQUENCE } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -9,11 +8,11 @@ import { textures, SCREEN_WIDTH, ARENA_WIDTH, GROUND_Y_PX } from '../data';
 
 export interface FighterViewBindings {
     getX(): number;
-    getJumpHeight(): number;
+    getHeight(): number;
     getFacing(): Facing;
     getPhase(): FighterPhase;
-    getMoveKind(): MoveKind | undefined;
-    getFrameIndex(): number;
+    getMove(): MoveKind | undefined;
+    getProgress(): number;
     getDefeatVariant(): DefeatVariant;
     getTint(): number;
 }
@@ -26,19 +25,53 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     const scale = SCREEN_WIDTH / ARENA_WIDTH;
     const tex = textures.get();
 
-    const watcher = watch({
-        phase: bindings.getPhase,
-        moveKind: bindings.getMoveKind,
-        frameIndex: bindings.getFrameIndex,
-        defeatVariant: bindings.getDefeatVariant,
-    });
+    // Pre-build 0-based texture arrays for type-safe indexing.
+    // Object.values preserves ascending numeric key order in JS.
+    const walkFrames = Object.values(tex.walk);
+    const punchFrames = Object.values(tex.punch);
+    const kickFrames = Object.values(tex.kick);
+    const footsweepFrames = Object.values(tex.footsweep);
+    const crouchPunchFrames = Object.values(tex.crouchPunch);
+    const roundhouseFrames = Object.values(tex.roundhouse);
+    const flyingKickFrames = Object.values(tex.flyingKick);
+    const fwdSaultFrames = Object.values(tex.fwdSault);
+    const backSaultFrames = Object.values(tex.backSault);
+    const jumpFrames = Object.values(tex.jump);
+    const turnFrames = Object.values(tex.turn);
+    const blockFrames = Object.values(tex.block);
+    const defeatFrames = {
+        a: Object.values(tex.defeatA),
+        b: Object.values(tex.defeatB),
+        c: Object.values(tex.defeatC),
+        d: Object.values(tex.defeatD),
+    };
+    const wonFrames = Object.values(tex.won);
+    const lostFrames = Object.values(tex.lost);
+
+    // Move kind to texture array lookup (shared references, no per-tick alloc)
+    const moveTextureMap: Record<string, Texture[]> = {
+        'high-punch': punchFrames,
+        'back-lunge-punch': punchFrames,
+        'high-kick': kickFrames,
+        'mid-kick': kickFrames,
+        'low-kick': kickFrames,
+        'back-low-kick': kickFrames,
+        'foot-sweep': footsweepFrames,
+        'crouch-punch': crouchPunchFrames,
+        'back-crouch-punch': crouchPunchFrames,
+        'roundhouse': roundhouseFrames,
+        'flying-kick': flyingKickFrames,
+        'front-somersault': fwdSaultFrames,
+        'back-somersault': backSaultFrames,
+        'jump': jumpFrames,
+    };
 
     const view = new Container();
     view.label = 'fighter';
 
     // Sprite anchored at bottom-centre
     const sprite = new Sprite({
-        texture: tex.walk[1],
+        texture: walkFrames[0],
         anchor: { x: 0.5, y: 1 },
     });
     view.addChild(sprite);
@@ -49,88 +82,89 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     function refresh(): void {
         // Position
         const x = bindings.getX() * scale;
-        const jumpPx = bindings.getJumpHeight() * scale;
-        view.position.set(x, GROUND_Y_PX - jumpPx);
+        const heightPx = bindings.getHeight() * scale;
+        view.position.set(x, GROUND_Y_PX - heightPx);
 
         // Facing: source sprites face left; flip for right
-        const facing = bindings.getFacing();
-        view.scale.x = facing === 'right' ? -1 : 1;
+        view.scale.x = bindings.getFacing() === 'right' ? -1 : 1;
 
         // Tint
         sprite.tint = bindings.getTint();
 
-        // Texture (only swap when animation state changes)
-        const watched = watcher.poll();
-        if (
-            watched.phase.changed ||
-            watched.moveKind.changed ||
-            watched.frameIndex.changed ||
-            watched.defeatVariant.changed
-        ) {
-            sprite.texture = resolveTexture(
-                bindings.getPhase(),
-                bindings.getMoveKind(),
-                bindings.getFrameIndex(),
-                bindings.getDefeatVariant(),
-            );
-        }
+        // Texture (derived from phase + progress every frame)
+        sprite.texture = resolveTexture();
     }
 
-    function resolveTexture(
-        phase: FighterPhase,
-        moveKind: MoveKind | undefined,
-        frameIndex: number,
-        defeatVariant: DefeatVariant,
-    ) {
-        // 1-based texture keys from the registry
-        const fi = frameIndex + 1;
+    // -----------------------------------------------------------------------
+    // Texture resolution
+    // -----------------------------------------------------------------------
+
+    function resolveTexture(): Texture {
+        const phase = bindings.getPhase();
+        const progress = bindings.getProgress();
 
         // prettier-ignore
         switch (phase) {
-            case 'idle': return tex.walk[1];
-            case 'walking': return tex.walk[clampKey(fi, 8) as keyof typeof tex.walk];
-            case 'turning': return tex.turn[clampKey(fi, 5) as keyof typeof tex.turn];
-            case 'blocking': return tex.block[clampKey(fi, 3) as keyof typeof tex.block];
-            case 'hit-reacting': return tex.walk[1];
-            case 'defeated': return resolveDefeatTexture(defeatVariant, fi);
-            case 'won': return tex.won[clampKey(fi, 2) as keyof typeof tex.won];
-            case 'lost': return tex.lost[1];
+            case 'idle':         return walkFrames[0];
+            case 'walking':      return walkFrames[progressToIndex(progress, walkFrames.length)];
+            case 'turning':      return resolveTurnTexture(progress);
+            case 'blocking':     return blockFrames[progressToIndex(progress, blockFrames.length)];
+            case 'hit-reacting': return walkFrames[0];
+            case 'defeated':     return resolveDefeatTexture(progress);
+            case 'won':          return resolveWonTexture(progress);
+            case 'lost':         return lostFrames[0];
             case 'attacking':
-            case 'airborne': return resolveMoveTexture(moveKind, fi);
-            default: return tex.walk[1];
+            case 'airborne':     return resolveMoveTexture(progress);
+            default:             return walkFrames[0];
         }
     }
 
-    function resolveMoveTexture(moveKind: MoveKind | undefined, fi: number) {
-        // prettier-ignore
-        switch (moveKind) {
-            case 'high-punch':
-            case 'back-lunge-punch': return tex.punch[clampKey(fi, 6) as keyof typeof tex.punch];
-            case 'high-kick':
-            case 'mid-kick':
-            case 'low-kick': return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
-            case 'foot-sweep': return tex.footsweep[clampKey(fi, 4) as keyof typeof tex.footsweep];
-            case 'crouch-punch':
-            case 'back-crouch-punch': return tex.crouchPunch[clampKey(fi, 2) as keyof typeof tex.crouchPunch];
-            case 'back-low-kick': return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
-            case 'roundhouse': return tex.roundhouse[clampKey(fi, 4) as keyof typeof tex.roundhouse];
-            case 'flying-kick': return tex.flyingKick[clampKey(fi, 5) as keyof typeof tex.flyingKick];
-            case 'front-somersault': return tex.fwdSault[clampKey(fi, 6) as keyof typeof tex.fwdSault];
-            case 'back-somersault': return tex.backSault[clampKey(fi, 6) as keyof typeof tex.backSault];
-            case 'jump': return tex.jump[1];
-            default: return tex.walk[1];
-        }
+    function resolveTurnTexture(progress: number): Texture {
+        const segIdx = progressToIndex(progress, TURN_TEXTURE_SEQUENCE.length);
+        const texIdx = TURN_TEXTURE_SEQUENCE[segIdx];
+        return turnFrames[texIdx];
     }
 
-    function resolveDefeatTexture(variant: DefeatVariant, fi: number) {
-        const key = clampKey(fi, 3);
-        // prettier-ignore
-        switch (variant) {
-            case 'a': return tex.defeatA[key as keyof typeof tex.defeatA];
-            case 'b': return tex.defeatB[key as keyof typeof tex.defeatB];
-            case 'c': return tex.defeatC[key as keyof typeof tex.defeatC];
-            case 'd': return tex.defeatD[key as keyof typeof tex.defeatD];
+    function resolveWonTexture(progress: number): Texture {
+        // 4 toggles over the duration: frame 0, 1, 0, 1
+        const toggle = progressToIndex(progress, 4);
+        return wonFrames[toggle % 2];
+    }
+
+    function resolveDefeatTexture(progress: number): Texture {
+        const frames = defeatFrames[bindings.getDefeatVariant()];
+        return frames[progressToIndex(progress, frames.length)];
+    }
+
+    function resolveMoveTexture(progress: number): Texture {
+        const move = bindings.getMove();
+        if (!move) return walkFrames[0];
+
+        const frames = moveTextureMap[move];
+        if (!frames) return walkFrames[0];
+
+        const md = MOVE_DATA[move];
+        const durations = md.frameDurationMs;
+        const seq = md.frameSequence;
+
+        // Compute total duration and find current segment
+        let totalMs = 0;
+        for (let i = 0; i < durations.length; i++) totalMs += durations[i];
+
+        const elapsedMs = progress * totalMs;
+        let accumulated = 0;
+        let segIdx = durations.length - 1;
+        for (let i = 0; i < durations.length; i++) {
+            accumulated += durations[i];
+            if (elapsedMs < accumulated) {
+                segIdx = i;
+                break;
+            }
         }
+
+        // Map segment index to texture index
+        const texIdx = seq ? seq[segIdx] : segIdx;
+        return frames[texIdx] ?? frames[0];
     }
 }
 
@@ -138,9 +172,8 @@ export function createFighterView(bindings: FighterViewBindings): Container {
 // Utility
 // ---------------------------------------------------------------------------
 
-/** Clamp a 1-based key to [1, max] to avoid out-of-range lookups. */
-function clampKey(fi: number, max: number): number {
-    if (fi < 1) return 1;
-    if (fi > max) return max;
-    return fi;
+/** Map a 0..1 progress to a 0-based index, clamped to [0, count-1]. */
+function progressToIndex(progress: number, count: number): number {
+    const i = Math.floor(progress * count);
+    return i < 0 ? 0 : i >= count ? count - 1 : i;
 }

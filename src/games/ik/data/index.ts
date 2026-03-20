@@ -1,5 +1,6 @@
 export {
     type Facing,
+    type FighterMove,
     type FighterPhase,
     type MoveKind,
     type DefeatVariant,
@@ -7,7 +8,6 @@ export {
     type InputDirection,
     type XDirection,
     type YDirection,
-    type MoveResolution,
     resolveInputDirection,
     resolveMove,
 } from './common';
@@ -28,6 +28,7 @@ export {
     JUMP_DURATION_MS,
     JUMP_HEIGHT,
     FLYING_KICK_HEIGHT,
+    WALK_CYCLE_METRES,
     ROUND_TIMER_MS,
     POINTS_TO_WIN_ROUND,
     ROUNDS_TO_WIN_MATCH,
@@ -36,6 +37,15 @@ export {
     ROUND_OVER_DELAY_MS,
     HIT_REACTION_MS,
     BLOCK_REACTION_MS,
+    TURN_TEXTURE_SEQUENCE,
+    TURN_FRAME_MS,
+    TURN_TOTAL_MS,
+    DEFEAT_FRAME_COUNT,
+    DEFEAT_FRAME_MS,
+    DEFEAT_TOTAL_MS,
+    WON_TOGGLE_MS,
+    WON_TOGGLE_COUNT,
+    WON_TOTAL_MS,
 } from './arena-data';
-export { type MoveData, MOVE_DATA, CROUCH_PUNCH_FRAME_SEQUENCE } from './move-data';
+export { type MoveData, MOVE_DATA } from './move-data';
 export { textures } from './textures';

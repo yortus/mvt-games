@@ -1,23 +1,25 @@
 // ---------------------------------------------------------------------------
 // Arena / World Constants
+//
+// All world-space distances are in metres. The arena is 10 m wide.
 // ---------------------------------------------------------------------------
 
-/** Arena width in world units. */
+/** Arena width in metres. */
 export const ARENA_WIDTH = 10.0;
 
-/** Left boundary (centre of leftmost fighter position). */
+/** Left boundary in metres (centre of leftmost fighter position). */
 export const ARENA_MIN_X = 0.5;
 
-/** Right boundary (centre of rightmost fighter position). */
+/** Right boundary in metres (centre of rightmost fighter position). */
 export const ARENA_MAX_X = 9.5;
 
-/** Fighter hittable body width in world units. */
+/** Fighter hittable body width in metres. */
 export const FIGHTER_BODY_WIDTH = 0.8;
 
-/** Player starting position (world units). */
+/** Player starting position in metres. */
 export const FIGHTER_START_LEFT_X = 2.5;
 
-/** Opponent starting position (world units). */
+/** Opponent starting position in metres. */
 export const FIGHTER_START_RIGHT_X = 7.5;
 
 // ---------------------------------------------------------------------------
@@ -46,17 +48,20 @@ export const FRAME_HEIGHT = 42;
 // Movement
 // ---------------------------------------------------------------------------
 
-/** Walk speed in world units per second. */
+/** Walk speed in metres per second. */
 export const WALK_SPEED = 2.0;
 
 /** Full jump arc duration in ms. */
 export const JUMP_DURATION_MS = 500;
 
-/** Peak jump height in world units. */
+/** Peak jump height in metres. */
 export const JUMP_HEIGHT = 2.5;
 
-/** Flying kick peak height in world units (about half a sprite height). */
+/** Flying kick peak height in metres (about half a sprite height). */
 export const FLYING_KICK_HEIGHT = 0.55;
+
+/** Distance in metres for one complete walk animation cycle. */
+export const WALK_CYCLE_METRES = 2.0;
 
 // ---------------------------------------------------------------------------
 // Timing
@@ -85,3 +90,36 @@ export const HIT_REACTION_MS = 400;
 
 /** Duration of block animation (ms). */
 export const BLOCK_REACTION_MS = 300;
+
+// ---------------------------------------------------------------------------
+// Phase Animation Timing
+//
+// Shared between model (total duration for progress) and view (frame mapping).
+// ---------------------------------------------------------------------------
+
+/** Turn animation: 0-based texture indices into the turn texture array. */
+export const TURN_TEXTURE_SEQUENCE: readonly number[] = [0, 1, 4];
+
+/** Duration of each turn frame in ms. */
+export const TURN_FRAME_MS = 80;
+
+/** Total turn animation duration in ms. */
+export const TURN_TOTAL_MS = TURN_TEXTURE_SEQUENCE.length * TURN_FRAME_MS;
+
+/** Number of defeat animation frames. */
+export const DEFEAT_FRAME_COUNT = 3;
+
+/** Duration of each defeat frame in ms. */
+export const DEFEAT_FRAME_MS = 120;
+
+/** Total defeat animation duration in ms. */
+export const DEFEAT_TOTAL_MS = DEFEAT_FRAME_COUNT * DEFEAT_FRAME_MS;
+
+/** Duration of each won-pose toggle in ms. */
+export const WON_TOGGLE_MS = 300;
+
+/** Number of won-pose toggles before holding. */
+export const WON_TOGGLE_COUNT = 4;
+
+/** Total won-pose animation duration in ms. */
+export const WON_TOTAL_MS = WON_TOGGLE_COUNT * WON_TOGGLE_MS;
