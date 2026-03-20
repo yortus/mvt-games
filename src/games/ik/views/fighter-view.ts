@@ -72,7 +72,7 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     // Sprite anchored at bottom-centre
     const sprite = new Sprite({
         texture: walkFrames[0],
-        anchor: { x: 0.5, y: 1 },
+        anchor: { x: 0.5, y: 0.8 },
     });
     view.addChild(sprite);
 

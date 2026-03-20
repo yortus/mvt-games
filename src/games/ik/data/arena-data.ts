@@ -36,7 +36,7 @@ export const SCREEN_HEIGHT = 270;
 export const HUD_HEIGHT = 30;
 
 /** Pixel Y for ground line. */
-export const GROUND_Y_PX = 210;
+export const GROUND_Y_PX = 160;
 
 /** Sprite frame pixel width. */
 export const FRAME_WIDTH = 48;
