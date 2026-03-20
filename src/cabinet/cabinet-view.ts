@@ -98,20 +98,25 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             if (e.key === 'ArrowLeft' || e.key === 'a') {
                 e.preventDefault();
                 bindings.onNavigate(-1);
-            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+            }
+            else if (e.key === 'ArrowRight' || e.key === 'd') {
                 e.preventDefault();
                 bindings.onNavigate(1);
-            } else if (e.key === 'ArrowUp' || e.key === 'w') {
+            }
+            else if (e.key === 'ArrowUp' || e.key === 'w') {
                 e.preventDefault();
                 bindings.onNavigate(-GRID_COLS);
-            } else if (e.key === 'ArrowDown' || e.key === 's') {
+            }
+            else if (e.key === 'ArrowDown' || e.key === 's') {
                 e.preventDefault();
                 bindings.onNavigate(GRID_COLS);
-            } else if (e.key === 'Enter') {
+            }
+            else if (e.key === 'Enter') {
                 e.preventDefault();
                 bindings.onLaunch();
             }
-        } else if (phase === 'playing') {
+        }
+        else if (phase === 'playing') {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 bindings.onExit();
@@ -223,7 +228,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             card.border.clear();
             if (selected) {
                 card.border.roundRect(0, 0, CARD_W, CARD_H, 4).stroke({ color: COLOR_BORDER_SELECTED, width: 2 });
-            } else {
+            }
+            else {
                 card.border.roundRect(0, 0, CARD_W, CARD_H, 4).stroke({ color: COLOR_BORDER_NORMAL, width: 1 });
             }
 

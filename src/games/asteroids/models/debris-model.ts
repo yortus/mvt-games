@@ -164,7 +164,8 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
 
                 if (p.timer >= activeLifetimeMs) {
                     p.active = false;
-                } else {
+                }
+                else {
                     stillActive = true;
                 }
             }

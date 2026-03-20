@@ -55,7 +55,6 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
     }
 
     function directionToRotation(dir: Direction): number {
-        // prettier-ignore
         switch (dir) {
             case 'right': return 0;
             case 'down':  return Math.PI / 2;

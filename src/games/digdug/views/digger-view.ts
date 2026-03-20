@@ -70,9 +70,11 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
         const progress = Math.abs(col - Math.round(col)) + Math.abs(row - Math.round(row));
         if (bindings.isHarpoonExtended()) {
             sprite.texture = digger.pump;
-        } else if (progress < 0.01) {
+        }
+        else if (progress < 0.01) {
             sprite.texture = digger.idle;
-        } else {
+        }
+        else {
             sprite.texture = Math.sin(progress * Math.PI * 4) > 0 ? digger.walkB : digger.walkA;
         }
 
@@ -80,13 +82,16 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
         if (dir === 'left') {
             view.scale.x = -1;
             view.rotation = 0;
-        } else if (dir === 'up') {
+        }
+        else if (dir === 'up') {
             view.scale.x = 1;
             view.rotation = -Math.PI / 2;
-        } else if (dir === 'down') {
+        }
+        else if (dir === 'down') {
             view.scale.x = 1;
             view.rotation = Math.PI / 2;
-        } else {
+        }
+        else {
             view.scale.x = 1;
             view.rotation = 0;
         }

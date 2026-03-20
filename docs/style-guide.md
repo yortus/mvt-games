@@ -82,8 +82,8 @@ score_model.ts    ❌
 ## Formatting
 
 - Use **4 spaces** for indentation (no tabs).
-- Formatting is enforced by Prettier — run `npm run format` to auto-fix, or
-  `npm run format:check` to verify.
+- Formatting is enforced by ESLint Stylistic - run `npm run lint:fix` to auto-fix, or
+  `npm run lint` to verify without fixing.
 
 ---
 

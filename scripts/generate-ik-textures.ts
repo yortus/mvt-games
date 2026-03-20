@@ -210,7 +210,8 @@ function main(): void {
                     out.data[di + 2] = 0;
                     out.data[di + 3] = 0;
                     frameBgFound = true;
-                } else {
+                }
+                else {
                     out.data[di] = r;
                     out.data[di + 1] = g;
                     out.data[di + 2] = b;
@@ -231,7 +232,7 @@ function main(): void {
 
     console.log(
         `\nDone - ${extracted} frames extracted to ${OUT_DIR}` +
-            (bgMissing > 0 ? ` (${bgMissing} frames had no background pixels)` : ''),
+        (bgMissing > 0 ? ` (${bgMissing} frames had no background pixels)` : ''),
     );
 }
 

@@ -112,7 +112,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             // Rotation direction
             if (rotationDirection === 'left') {
                 angle -= rotationSpeed * dt;
-            } else if (rotationDirection === 'right') {
+            }
+            else if (rotationDirection === 'right') {
                 angle += rotationSpeed * dt;
             }
 

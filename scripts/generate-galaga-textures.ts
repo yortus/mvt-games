@@ -26,35 +26,35 @@ type Rgba = [number, number, number, number];
 
 const PALETTE: Record<string, Rgba> = {
     '.': [0, 0, 0, 0], // transparent
-    K: [0, 0, 0, 255], // black
-    W: [255, 255, 255, 255], // white
+    'K': [0, 0, 0, 255], // black
+    'W': [255, 255, 255, 255], // white
     // Boss colours
-    B: [68, 68, 204, 255], // boss body blue
-    b: [102, 102, 255, 255], // boss crown blue-light
-    P: [85, 85, 221, 255], // boss face plate
-    R: [255, 0, 0, 255], // red (eyes)
-    D: [51, 51, 170, 255], // boss jaw dark
-    S: [85, 85, 204, 255], // boss wing side
+    'B': [68, 68, 204, 255], // boss body blue
+    'b': [102, 102, 255, 255], // boss crown blue-light
+    'P': [85, 85, 221, 255], // boss face plate
+    'R': [255, 0, 0, 255], // red (eyes)
+    'D': [51, 51, 170, 255], // boss jaw dark
+    'S': [85, 85, 204, 255], // boss wing side
     // Butterfly colours
-    r: [204, 51, 68, 255], // butterfly body
-    F: [255, 68, 102, 255], // butterfly wing bright
-    f: [221, 51, 85, 255], // butterfly lower wing
-    O: [255, 170, 136, 255], // butterfly wing spot
-    p: [255, 102, 136, 255], // butterfly antenna tip
+    'r': [204, 51, 68, 255], // butterfly body
+    'F': [255, 68, 102, 255], // butterfly wing bright
+    'f': [221, 51, 85, 255], // butterfly lower wing
+    'O': [255, 170, 136, 255], // butterfly wing spot
+    'p': [255, 102, 136, 255], // butterfly antenna tip
     // Bee colours
-    Y: [255, 204, 0, 255], // bee body yellow
-    y: [255, 221, 68, 255], // bee head lighter yellow
-    s: [34, 34, 0, 255], // bee stripe dark
-    A: [170, 221, 255, 128], // bee wing translucent blue
-    d: [221, 170, 0, 255], // bee stinger
+    'Y': [255, 204, 0, 255], // bee body yellow
+    'y': [255, 221, 68, 255], // bee head lighter yellow
+    's': [34, 34, 0, 255], // bee stripe dark
+    'A': [170, 221, 255, 128], // bee wing translucent blue
+    'd': [221, 170, 0, 255], // bee stinger
     // Ship colours
-    C: [136, 204, 255, 255], // ship cyan highlight
-    c: [204, 204, 255, 255], // ship wing
-    L: [68, 136, 255, 255], // ship wing tip blue
-    G: [255, 102, 0, 255], // engine glow orange
-    g: [255, 204, 0, 255], // engine glow yellow
+    'C': [136, 204, 255, 255], // ship cyan highlight
+    'c': [204, 204, 255, 255], // ship wing
+    'L': [68, 136, 255, 255], // ship wing tip blue
+    'G': [255, 102, 0, 255], // engine glow orange
+    'g': [255, 204, 0, 255], // engine glow yellow
     // Ship lives icon colour
-    I: [136, 204, 255, 255], // icon cyan
+    'I': [136, 204, 255, 255], // icon cyan
 };
 
 // ---------------------------------------------------------------------------

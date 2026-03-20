@@ -77,7 +77,8 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
             const py = Math.sin(angle) * r;
             if (i === 0) {
                 bodyGfx.moveTo(px, py);
-            } else {
+            }
+            else {
                 bodyGfx.lineTo(px, py);
             }
         }

@@ -228,7 +228,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             const moveData = MOVE_DATA[move];
             if (moveData.autoTurn) {
                 scheduleAutoTurnAttack(move);
-            } else {
+            }
+            else {
                 scheduleAttack(move);
             }
             return true;
@@ -403,7 +404,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         // End-of-move callback
         if (moveData.airborne) {
             timeline.call(enterIdle, undefined, totalSec);
-        } else {
+        }
+        else {
             timeline.call(setMoveComplete, undefined, totalSec);
         }
     }
@@ -449,7 +451,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         // End of move
         if (moveData.airborne) {
             timeline.call(enterIdle, undefined, endSec);
-        } else {
+        }
+        else {
             timeline.call(setMoveComplete, undefined, endSec);
         }
     }

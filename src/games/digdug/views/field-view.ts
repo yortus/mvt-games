@@ -83,7 +83,8 @@ export function createFieldView(bindings: FieldViewBindings): Container {
                 if (kind === 'tunnel') {
                     // Tunnel - black background
                     gfx.rect(c * ts, r * ts, ts, ts).fill(0x000000);
-                } else {
+                }
+                else {
                     // Dirt - layered color
                     gfx.rect(c * ts, r * ts, ts, ts).fill(color);
 

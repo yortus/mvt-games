@@ -142,7 +142,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
                 if (playerInput.firePressed) {
                     tryPlayerFire();
-                } else {
+                }
+                else {
                     fireConsumed = false;
                 }
             }
@@ -272,7 +273,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     ship.respawn(shipStartX);
                     deactivateAllBullets();
                     gamePhase = 'playing';
-                } else {
+                }
+                else {
                     gamePhase = 'game-over';
                 }
             },

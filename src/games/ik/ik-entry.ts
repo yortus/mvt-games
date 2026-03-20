@@ -77,12 +77,14 @@ export function createIkEntry(): GameEntry {
                         settledMove = 'idle';
                         pendingMove = 'idle';
                         settleAccumMs = 0;
-                    } else if (rawMove !== pendingMove) {
+                    }
+                    else if (rawMove !== pendingMove) {
                         // Input changed - reset settle timer
                         pendingMove = rawMove;
                         settleAccumMs = deltaMs;
                         settledMove = 'idle';
-                    } else {
+                    }
+                    else {
                         // Input stable - accumulate
                         settleAccumMs += deltaMs;
                     }

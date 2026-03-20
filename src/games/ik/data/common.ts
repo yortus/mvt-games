@@ -91,7 +91,8 @@ export function resolveInputDirection(xDir: XDirection, yDir: YDirection, facing
     let relX: 'forward' | 'backward' | 'none' = 'none';
     if (xDir === 'left') {
         relX = facing === 'left' ? 'forward' : 'backward';
-    } else if (xDir === 'right') {
+    }
+    else if (xDir === 'right') {
         relX = facing === 'right' ? 'forward' : 'backward';
     }
 
@@ -136,7 +137,8 @@ export function resolveMove(inputDir: InputDirection, attackPressed: boolean): F
             case 'backward':      return 'walk-backward';
             case 'up-backward':   return 'back-lunge-punch';
         }
-    } else {
+    }
+    else {
         // prettier-ignore
         switch (inputDir) {
             case 'up':            return 'flying-kick';

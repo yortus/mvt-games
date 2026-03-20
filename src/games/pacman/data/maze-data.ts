@@ -6,7 +6,7 @@ const TILE_CHARS: Record<string, TileKind> = {
     '#': 'wall',
     '.': 'dot',
     ' ': 'empty',
-    G: 'ghost-house',
+    'G': 'ghost-house',
     [PACMAN_CHAR]: 'dot',
 };
 
@@ -15,7 +15,6 @@ const TILE_CHARS: Record<string, TileKind> = {
  *
  * Legend:  # = Wall   . = Dot   (space) = Empty   G = Ghost-house   P = Pac-Man spawn
  */
-// prettier-ignore
 const MAZE_STRING = `\
 ############################
 #............##............#

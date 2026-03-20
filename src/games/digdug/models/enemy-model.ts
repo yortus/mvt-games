@@ -350,7 +350,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                     state.phase = 'ghosting';
                     timeline.clear().time(0);
                     state.moving = false;
-                } else {
+                }
+                else {
                     state.phase = 'chase';
                 }
                 if (kind === 'fygar') scheduleFireCooldown();
@@ -398,7 +399,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         state.ghostMovesRemaining--;
         if (state.fleeing) {
             scheduleFleeGhostMove();
-        } else {
+        }
+        else {
             scheduleGhostMove();
         }
     }
@@ -445,10 +447,12 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 }
                 if (!found) bestDir = state.direction;
                 state.patrolSwitchTimer = 2000 + Math.random() * 3000;
-            } else {
+            }
+            else {
                 return state.direction;
             }
-        } else {
+        }
+        else {
             // Current direction blocked - pick another
             for (let i = 0; i < ALL_DIRS.length; i++) {
                 const dir = ALL_DIRS[i];
@@ -550,9 +554,11 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         let dir: Direction;
         if (state.phase === 'fleeing') {
             dir = chooseFleeDirection();
-        } else if (state.phase === 'chase') {
+        }
+        else if (state.phase === 'chase') {
             dir = chooseChaseDirection();
-        } else {
+        }
+        else {
             dir = choosePatrolDirection();
         }
 

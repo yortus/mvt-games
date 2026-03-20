@@ -158,7 +158,8 @@ async function generateThumbnails(games: GameEntry[], app: Application): Promise
             tempStage.destroy();
 
             thumbnails.push(renderTexture);
-        } catch {
+        }
+        catch {
             thumbnails.push(undefined);
         }
     }

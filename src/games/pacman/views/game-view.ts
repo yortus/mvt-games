@@ -59,9 +59,9 @@ export function createGameView(game: GameModel): Container {
             getHeight: () => canvasH,
             isVisible: () => game.phase !== 'playing',
             getText: () =>
-                game.phase === 'game-over'
-                    ? 'GAME OVER\n\nPress Enter to restart'
-                    : 'YOU WIN!\n\nPress Enter to restart',
+                game.phase === 'game-over' ?
+                    'GAME OVER\n\nPress Enter to restart' :
+                    'YOU WIN!\n\nPress Enter to restart',
         });
         view.addChild(overlayView);
 

@@ -130,7 +130,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 digger.setDirection(playerInput.direction);
                 if (playerInput.pumpPressed) {
                     digger.startPump();
-                } else {
+                }
+                else {
                     digger.stopPump();
                 }
             }
@@ -301,7 +302,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             () => {
                 if (scoreModel.loseLife()) {
                     loadLevel();
-                } else {
+                }
+                else {
                     gamePhase = 'game-over';
                 }
             },

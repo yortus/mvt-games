@@ -149,7 +149,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
                 if (playerInput.firePressed) {
                     tryFire();
-                } else {
+                }
+                else {
                     fireConsumed = false;
                 }
             }
@@ -339,7 +340,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     // Start reverse-explode animation converging to safe position
                     gamePhase = 'respawning';
                     debrisModel.reverseSpawn(respawnX, respawnY, 0, RESPAWN_ANIM_MS);
-                } else {
+                }
+                else {
                     gamePhase = 'game-over';
                 }
             },

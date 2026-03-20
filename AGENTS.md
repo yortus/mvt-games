@@ -53,9 +53,8 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 | ---------------------- | ----------------------------- |
 | `npm run dev`          | Start Vite dev server         |
 | `npm run build`        | Type-check + production build |
-| `npm run lint`         | ESLint on `src/`              |
-| `npm run format`       | Prettier format all files     |
-| `npm run format:check` | Check formatting              |
+| `npm run lint`         | Check lint and formatting     |
+| `npm run lint:fix`     | ESLint auto-fix pass          |
 
 ## Critical Rules (Do Not Violate)
 
@@ -84,4 +83,4 @@ Each model/view file follows this internal ordering:
 
 ## Tech Stack
 
-TypeScript 5.9 · Pixi.js 8 · GSAP 3 · Vite 7 · ESLint 9 · Prettier 3
+TypeScript 5.9 · Pixi.js 8 · GSAP 3 · Vite 7 · ESLint 9 · ESLint Stylistic
