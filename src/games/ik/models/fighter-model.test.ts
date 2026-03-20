@@ -211,18 +211,18 @@ describe('FighterModel', () => {
     // --- Hitbox activation ---
 
     describe('hitbox activation', () => {
-        it('activates hitbox only during hit-frame segments for foot-sweep', () => {
+        it('activates hitbox during the active window for foot-sweep', () => {
             const f = makeFighter();
-            f.tryMove('foot-sweep'); // hit frames at segment indices 2, 3
-            expect(f.hitboxActive).toBe(false); // segment 0
+            f.tryMove('foot-sweep'); // hitbox active 160-320ms
+            expect(f.hitboxActive).toBe(false); // t=0: before window
 
-            advance(f, 81); // segment 1
+            advance(f, 81); // t=81ms: before window
             expect(f.hitboxActive).toBe(false);
 
-            advance(f, 80); // segment 2 - hit
+            advance(f, 80); // t=161ms: inside window
             expect(f.hitboxActive).toBe(true);
 
-            advance(f, 80); // segment 3 - hit
+            advance(f, 80); // t=241ms: inside window
             expect(f.hitboxActive).toBe(true);
         });
 
@@ -241,8 +241,8 @@ describe('FighterModel', () => {
         it('hitbox rectangle has real values when active', () => {
             const f = makeFighter({ startX: 5.0, startFacing: 'right' });
             f.tryMove('foot-sweep');
-            advance(f, 81); // segment 1
-            advance(f, 80); // segment 2 - hit
+            advance(f, 81); // t=81ms: before window
+            advance(f, 80); // t=161ms: inside window
             expect(f.hitboxActive).toBe(true);
             const hb = f.hitbox;
             expect(hb.w).toBeGreaterThan(0);

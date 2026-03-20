@@ -5,13 +5,15 @@ import type { MoveKind } from './common';
 // ---------------------------------------------------------------------------
 
 export interface MoveData {
-    /** Duration in ms for each animation segment. */
-    readonly frameDurationMs: readonly number[];
-    /** Explicit 0-based texture indices per segment (when non-sequential).
-     *  Length must match frameDurationMs. When omitted, uses [0, 1, 2, ...]. */
-    readonly frameSequence?: readonly number[];
-    /** Which segment indices have an active hitbox (0-based). */
-    readonly hitFrameIndices: readonly number[];
+    /** Total duration of the move animation in ms. */
+    readonly durationMs: number;
+    /** 0-based texture indices per segment. Defines the number of
+     *  equal-duration segments and the texture index for each. */
+    readonly frameSequence: readonly number[];
+    /** Ms after move start when hitbox becomes active (omit if no hitbox). */
+    readonly hitboxActiveFromMs?: number;
+    /** Ms after move start when hitbox deactivates (omit if no hitbox). */
+    readonly hitboxActiveToMs?: number;
     /** Points scored on hit. */
     readonly damage: number;
     /** Hitbox offset and size relative to fighter centre, in metres.
@@ -42,8 +44,8 @@ const FRAME_MS = 80;
 export const MOVE_DATA: Record<MoveKind, MoveData> = {
     // --- Jump (non-attacking airborne) ---
     'jump': {
-        frameDurationMs: [500],
-        hitFrameIndices: [],
+        durationMs: 500,
+        frameSequence: [0],
         damage: 0,
         hitbox: { dx: 0, dy: 0, w: 0, h: 0 },
         lunge: 0,
@@ -55,9 +57,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- High punch: punch frames 1,3 (0-based: [0, 2]) ---
     'high-punch': {
-        frameDurationMs: [FRAME_MS, FRAME_MS],
+        durationMs: 2 * FRAME_MS,
         frameSequence: [0, 2],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -69,9 +72,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Back lunge punch (auto-turns, punch frames 1,3) ---
     'back-lunge-punch': {
-        frameDurationMs: [FRAME_MS, FRAME_MS],
+        durationMs: 2 * FRAME_MS,
         frameSequence: [0, 2],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -83,9 +87,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- High kick: kick frames 1,6,7 (0-based: [0, 5, 6]) ---
     'high-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 3 * FRAME_MS,
         frameSequence: [0, 5, 6],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -97,9 +102,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Mid kick: kick frames 1,2,3 (0-based: [0, 1, 2]) ---
     'mid-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 3 * FRAME_MS,
         frameSequence: [0, 1, 2],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -111,9 +117,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Low kick: kick frames 1,4,5 (0-based: [0, 3, 4]) ---
     'low-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 3 * FRAME_MS,
         frameSequence: [0, 3, 4],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -125,8 +132,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Foot sweep (4 frames) ---
     'foot-sweep': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [2, 3],
+        durationMs: 4 * FRAME_MS,
+        frameSequence: [0, 1, 2, 3],
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 4 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.5, dy: -0.3, w: 0.5, h: 0.3 },
         lunge: 0.3,
@@ -138,9 +147,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Crouch punch (4-segment sequence: strike out then retract) ---
     'crouch-punch': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 4 * FRAME_MS,
         frameSequence: [0, 1, 0, 0],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.4, dy: -0.2, w: 0.3, h: 0.3 },
         lunge: 0.3,
@@ -152,9 +162,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Back crouch punch (auto-turns, same animation as crouch-punch) ---
     'back-crouch-punch': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 4 * FRAME_MS,
         frameSequence: [0, 1, 0, 0],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.4, dy: -0.2, w: 0.3, h: 0.3 },
         lunge: 0.3,
@@ -166,9 +177,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Back low kick (auto-turns, kick frames 1,4,5) ---
     'back-low-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        durationMs: 3 * FRAME_MS,
         frameSequence: [0, 3, 4],
-        hitFrameIndices: [1],
+        hitboxActiveFromMs: FRAME_MS,
+        hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
         lunge: 0.3,
@@ -180,8 +192,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Roundhouse (4 frames) ---
     'roundhouse': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [2],
+        durationMs: 4 * FRAME_MS,
+        frameSequence: [0, 1, 2, 3],
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.5, h: 0.4 },
         lunge: 0.3,
@@ -193,8 +207,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Flying kick (5 frames, low airborne forward kick) ---
     'flying-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [2, 3],
+        durationMs: 5 * FRAME_MS,
+        frameSequence: [2, 3, 4, 4, 4, 3],
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 5 * FRAME_MS,
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.5, h: 0.3 },
         lunge: 1.0,
@@ -206,8 +222,8 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Front somersault (6 frames, airborne, moves forward) ---
     'front-somersault': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [3, 4],
+        durationMs: 6 * FRAME_MS,
+        frameSequence: [0, 1, 2, 3, 4, 5],
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.5, h: 0.4 },
         lunge: 2.0,
@@ -219,8 +235,8 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
 
     // --- Back somersault (6 frames, airborne, moves backward) ---
     'back-somersault': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [3, 4],
+        durationMs: 6 * FRAME_MS,
+        frameSequence: [0, 1, 2, 3, 4, 5],
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.5, h: 0.4 },
         lunge: -2.0,

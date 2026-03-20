@@ -144,26 +144,8 @@ export function createFighterView(bindings: FighterViewBindings): Container {
         if (!frames) return walkFrames[0];
 
         const md = MOVE_DATA[move];
-        const durations = md.frameDurationMs;
-        const seq = md.frameSequence;
-
-        // Compute total duration and find current segment
-        let totalMs = 0;
-        for (let i = 0; i < durations.length; i++) totalMs += durations[i];
-
-        const elapsedMs = progress * totalMs;
-        let accumulated = 0;
-        let segIdx = durations.length - 1;
-        for (let i = 0; i < durations.length; i++) {
-            accumulated += durations[i];
-            if (elapsedMs < accumulated) {
-                segIdx = i;
-                break;
-            }
-        }
-
-        // Map segment index to texture index
-        const texIdx = seq ? seq[segIdx] : segIdx;
+        const segIdx = progressToIndex(progress, md.frameSequence.length);
+        const texIdx = md.frameSequence[segIdx];
         return frames[texIdx] ?? frames[0];
     }
 }

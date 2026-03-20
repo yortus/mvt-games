@@ -9,7 +9,6 @@ import {
     WALK_SPEED,
     WALK_CYCLE_METRES,
     JUMP_HEIGHT,
-    FLYING_KICK_HEIGHT,
     HIT_REACTION_MS,
     BLOCK_REACTION_MS,
     FIGHTER_BODY_WIDTH,
@@ -319,27 +318,12 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             return;
         }
         const md = MOVE_DATA[state.move];
-        if (md.hitFrameIndices.length === 0) {
+        if (md.hitboxActiveFromMs === undefined || md.hitboxActiveToMs === undefined) {
             state.hitboxActive = false;
             return;
         }
-        // Find which animation segment the current progress falls in
-        const durations = md.frameDurationMs;
-        let totalMs = 0;
-        for (let i = 0; i < durations.length; i++) totalMs += durations[i];
-
-        const p = model.progress;
-        const elapsedMs = p * totalMs;
-        let accumulated = 0;
-        for (let i = 0; i < durations.length; i++) {
-            const frameStart = accumulated;
-            accumulated += durations[i];
-            if (elapsedMs >= frameStart && elapsedMs < accumulated) {
-                state.hitboxActive = isInHitFrames(md.hitFrameIndices, i);
-                return;
-            }
-        }
-        state.hitboxActive = false;
+        const elapsed = state.phaseElapsedMs;
+        state.hitboxActive = elapsed >= md.hitboxActiveFromMs && elapsed < md.hitboxActiveToMs;
     }
 
     // -----------------------------------------------------------------------
@@ -373,7 +357,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
     function scheduleAttack(moveKind: MoveKind): void {
         const moveData = MOVE_DATA[moveKind];
-        const totalMs = sumDurationsMs(moveData.frameDurationMs);
+        const totalMs = moveData.durationMs;
         const totalSec = totalMs * 0.001;
 
         timeline.clear().time(0);
@@ -395,9 +379,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
         // Airborne arc
         if (moveData.airborne) {
-            const peakHeight = moveKind === 'flying-kick' ? FLYING_KICK_HEIGHT : JUMP_HEIGHT;
             const halfDuration = totalSec * 0.5;
-            timeline.to(state, { height: peakHeight, duration: halfDuration, ease: 'power1.out' }, 0);
+            timeline.to(state, { height: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, 0);
             timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
         }
 
@@ -428,7 +411,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
         // Compute attack duration
         const moveData = MOVE_DATA[moveKind];
-        const attackMs = sumDurationsMs(moveData.frameDurationMs);
+        const attackMs = moveData.durationMs;
         const attackSec = attackMs * 0.001;
         const endSec = turnSec + attackSec;
 
@@ -442,9 +425,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
         // Airborne arc during attack portion
         if (moveData.airborne) {
-            const peakHeight = moveKind === 'flying-kick' ? FLYING_KICK_HEIGHT : JUMP_HEIGHT;
             const halfDuration = attackSec * 0.5;
-            timeline.to(state, { height: peakHeight, duration: halfDuration, ease: 'power1.out' }, turnSec);
+            timeline.to(state, { height: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, turnSec);
             timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, turnSec + halfDuration);
         }
 
@@ -567,17 +549,3 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
-
-/** Sum an array of frame durations (ms) and return the total in ms. */
-function sumDurationsMs(durations: readonly number[]): number {
-    let total = 0;
-    for (let i = 0; i < durations.length; i++) total += durations[i];
-    return total;
-}
-
-function isInHitFrames(hitFrameIndices: readonly number[], sequenceIndex: number): boolean {
-    for (let i = 0; i < hitFrameIndices.length; i++) {
-        if (hitFrameIndices[i] === sequenceIndex) return true;
-    }
-    return false;
-}

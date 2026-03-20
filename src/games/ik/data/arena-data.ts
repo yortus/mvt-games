@@ -55,10 +55,7 @@ export const WALK_SPEED = 2.0;
 export const JUMP_DURATION_MS = 500;
 
 /** Peak jump height in metres. */
-export const JUMP_HEIGHT = 2.5;
-
-/** Flying kick peak height in metres (about half a sprite height). */
-export const FLYING_KICK_HEIGHT = 0.55;
+export const JUMP_HEIGHT = 0.55;
 
 /** Distance in metres for one complete walk animation cycle. */
 export const WALK_CYCLE_METRES = 2.0;
@@ -98,7 +95,7 @@ export const BLOCK_REACTION_MS = 300;
 // ---------------------------------------------------------------------------
 
 /** Turn animation: 0-based texture indices into the turn texture array. */
-export const TURN_TEXTURE_SEQUENCE: readonly number[] = [0, 1, 4];
+export const TURN_TEXTURE_SEQUENCE: readonly number[] = [0];
 
 /** Duration of each turn frame in ms. */
 export const TURN_FRAME_MS = 80;
