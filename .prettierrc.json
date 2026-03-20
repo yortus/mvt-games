@@ -3,5 +3,6 @@
     "tabWidth": 4,
     "singleQuote": true,
     "trailingComma": "all",
-    "endOfLine": "lf"
+    "endOfLine": "lf",
+    "quoteProps": "consistent"
 }
