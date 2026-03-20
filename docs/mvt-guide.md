@@ -118,16 +118,16 @@ terms; views describe _how it looks_ on screen.** Anything that could change
 if you swapped the renderer (e.g. Pixi.js → terminal, 2D → 3D) belongs in
 the view, not the model.
 
-| Concern | Model | View |
-| --- | --- | --- |
-| Position | `row`, `col`, `heading`, world-units | Pixel coordinates, screen offsets |
-| Speed | tiles/s, world-units/s | — (derives from model position each frame) |
-| Size / extents | grid cells, world-unit radius | Pixel dimensions, sprite scale |
-| Colours & textures | Named state: `color: 'red'`, `phase: 'inflating'` | Actual hex values, texture lookups, tint |
-| Animation progress | Sequence order and progress: `inflationStage: 2`, `progress: 0.3` | Sprite frame, alpha tween, particle burst |
-| Layout | Count of items, grid dimensions | Pixel spacing, margins, font size |
-| Audio | Named events: `'pelletEaten'`, `'levelClear'` | Sound file, volume, pan |
-| Timing | Internal timers via `update(deltaMs)` | Frame-synced presentation tweens (see [Presentation State](#presentation-state)) |
+| Concern            | Model                                                             | View                                                                             |
+| ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Position           | `row`, `col`, `heading`, world-units                              | Pixel coordinates, screen offsets                                                |
+| Speed              | tiles/s, world-units/s                                            | — (derives from model position each frame)                                       |
+| Size / extents     | grid cells, world-unit radius                                     | Pixel dimensions, sprite scale                                                   |
+| Colours & textures | Named state: `color: 'red'`, `phase: 'inflating'`                 | Actual hex values, texture lookups, tint                                         |
+| Animation progress | Sequence order and progress: `inflationStage: 2`, `progress: 0.3` | Sprite frame, alpha tween, particle burst                                        |
+| Layout             | Count of items, grid dimensions                                   | Pixel spacing, margins, font size                                                |
+| Audio              | Named events: `'pelletEaten'`, `'levelClear'`                     | Sound file, volume, pan                                                          |
+| Timing             | Internal timers via `update(deltaMs)`                             | Frame-synced presentation tweens (see [Presentation State](#presentation-state)) |
 
 **Why this split matters:**
 
@@ -176,13 +176,13 @@ the view apply a scale factor to reach pixels.
 
 #### Signs of presentation leakage
 
-| Smell | Remedy |
-| --- | --- |
-| Properties documented "in pixels" | Switch to domain units (grid cells, world-units, normalised 0–1) |
-| Velocities in "pixels per second" | Express in domain units per second (tiles/s, world-units/s) |
-| Model constants defined in pixel terms (e.g., `CELL_SIZE = 24`) | Define grid counts/slots; let the view compute pixel spacing |
-| Redundant `x`/`y` alongside `row`/`col` on grid entities | Remove from the interface; let `row`/`col` be fractional |
-| Hex colour values or texture names in model state | Use named domain states; let the view map to visual assets |
+| Smell                                                           | Remedy                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Properties documented "in pixels"                               | Switch to domain units (grid cells, world-units, normalised 0–1) |
+| Velocities in "pixels per second"                               | Express in domain units per second (tiles/s, world-units/s)      |
+| Model constants defined in pixel terms (e.g., `CELL_SIZE = 24`) | Define grid counts/slots; let the view compute pixel spacing     |
+| Redundant `x`/`y` alongside `row`/`col` on grid entities        | Remove from the interface; let `row`/`col` be fractional         |
+| Hex colour values or texture names in model state               | Use named domain states; let the view map to visual assets       |
 
 ### The `update(deltaMs)` Contract
 
@@ -516,9 +516,9 @@ apply it with a nullish-coalescing fallback:
 
 ```ts
 interface PanelViewBindings {
-    getLabel(): string;              // required — no sensible default
-    getOpacity?(): number;           // optional — defaults to 1 (fully opaque)
-    getVisible?(): boolean;          // optional — defaults to true
+    getLabel(): string; // required — no sensible default
+    getOpacity?(): number; // optional — defaults to 1 (fully opaque)
+    getVisible?(): boolean; // optional — defaults to true
 }
 
 // In the view's refresh():
@@ -669,11 +669,11 @@ three access patterns — choose by reuse potential and data-source complexity.
 
 #### Decision criteria
 
-| View kind | Access pattern | Rationale |
-| --- | --- | --- |
-| **Top-level application view** | Accept model(s) + config directly | Application-specific by definition; biggest bindings savings; no reuse scenario; eliminates collection verbosity |
-| **Reusable leaf view** | `get*()`/`on*()` bindings interface | Small interface cost; genuine reuse across applications; adapter layer absorbs model-shape mismatches at the wiring site |
-| **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or receive as a plain parameter (reusable) | Never changes at runtime; not reactive state; avoids polluting bindings interfaces |
+| View kind                                        | Access pattern                                                                              | Rationale                                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Top-level application view**                   | Accept model(s) + config directly                                                           | Application-specific by definition; biggest bindings savings; no reuse scenario; eliminates collection verbosity         |
+| **Reusable leaf view**                           | `get*()`/`on*()` bindings interface                                                         | Small interface cost; genuine reuse across applications; adapter layer absorbs model-shape mismatches at the wiring site |
+| **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or receive as a plain parameter (reusable) | Never changes at runtime; not reactive state; avoids polluting bindings interfaces                                       |
 
 #### Why top-level views skip bindings
 
@@ -728,20 +728,30 @@ only see their own `get*()`/`on*()` bindings:
 function createGameView(game: GameModel): Container {
     const container = new Container();
 
-    container.addChild(createGridView({
-        getRows: () => game.grid.rows,
-        getCols: () => game.grid.cols,
-        getTileKind: (r, c) => game.grid.tileAt(r, c),
-    }));
+    container.addChild(
+        createGridView({
+            getRows: () => game.grid.rows,
+            getCols: () => game.grid.cols,
+            getTileKind: (r, c) => game.grid.tileAt(r, c),
+        }),
+    );
 
-    container.addChild(createHudView({
-        getScore: () => game.score.score,
-    }));
+    container.addChild(
+        createHudView({
+            getScore: () => game.score.score,
+        }),
+    );
 
-    container.addChild(createKeyboardInputView({
-        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
-        onRestartRequest: () => { game.playerInput.restartRequested = true; },
-    }));
+    container.addChild(
+        createKeyboardInputView({
+            onDirectionChange: (dir) => {
+                game.playerInput.direction = dir;
+            },
+            onRestartRequest: () => {
+                game.playerInput.restartRequested = true;
+            },
+        }),
+    );
 
     return container;
 }

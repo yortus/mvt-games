@@ -39,8 +39,12 @@ class ScoreModel extends EventTarget {
     #score = 0;
     #lives = 3;
 
-    get score() { return this.#score; }
-    get lives() { return this.#lives; }
+    get score() {
+        return this.#score;
+    }
+    get lives() {
+        return this.#lives;
+    }
 
     addPoints(points: number): void {
         this.#score += points;
@@ -91,20 +95,20 @@ const score = new ScoreModel();
 const hud = createHudView(score);
 app.stage.addChild(hud);
 
-score.addPoints(100);  // HUD updates immediately
-score.loseLife();       // HUD updates immediately
-hud.destroy();          // Cleans up subscriptions
+score.addPoints(100); // HUD updates immediately
+score.loseLife(); // HUD updates immediately
+hud.destroy(); // Cleans up subscriptions
 ```
 
 ## Common Implementations in TS/JS
 
-| Implementation | Environment | Notes |
-|---|---|---|
-| `EventTarget` / `addEventListener` | Browser DOM | Built-in; verbose with `CustomEvent`; no type safety for event names or payloads |
-| Node.js `EventEmitter` | Node.js | String-keyed events; `on`/`off`/`emit`; supports `once()` |
-| [mitt](https://github.com/developit/mitt) | Universal | ~200 bytes; typed event map; `on`/`off`/`emit` |
-| [eventemitter3](https://github.com/primus/eventemitter3) | Universal | Fast; Node-style API; works in browsers |
-| Custom typed emitter | Universal | Common in large codebases; see typed example below |
+| Implementation                                           | Environment | Notes                                                                            |
+| -------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `EventTarget` / `addEventListener`                       | Browser DOM | Built-in; verbose with `CustomEvent`; no type safety for event names or payloads |
+| Node.js `EventEmitter`                                   | Node.js     | String-keyed events; `on`/`off`/`emit`; supports `once()`                        |
+| [mitt](https://github.com/developit/mitt)                | Universal   | ~200 bytes; typed event map; `on`/`off`/`emit`                                   |
+| [eventemitter3](https://github.com/primus/eventemitter3) | Universal   | Fast; Node-style API; works in browsers                                          |
+| Custom typed emitter                                     | Universal   | Common in large codebases; see typed example below                               |
 
 ### Typed Event Emitter Pattern
 
@@ -132,7 +136,10 @@ function createEmitter<TMap>(): TypedEmitter<TMap> {
     return {
         on(event, handler) {
             let set = handlers.get(event);
-            if (!set) { set = new Set(); handlers.set(event, set); }
+            if (!set) {
+                set = new Set();
+                handlers.set(event, set);
+            }
             set.add(handler);
         },
         off(event, handler) {
@@ -140,7 +147,9 @@ function createEmitter<TMap>(): TypedEmitter<TMap> {
         },
         emit(event, ...args) {
             const set = handlers.get(event);
-            if (set) { for (const fn of set) fn(...args); }
+            if (set) {
+                for (const fn of set) fn(...args);
+            }
         },
     };
 }
@@ -157,7 +166,7 @@ events.on('score-changed', (score) => {
 });
 
 events.emit('score-changed', 500); // type-checked: must be number
-events.emit('game-over');           // type-checked: no payload
+events.emit('game-over'); // type-checked: no payload
 ```
 
 ## Benefits
@@ -179,7 +188,7 @@ subscriber counts or cascading chains (see [Drawback 5](#5-ordering-and-cascade-
 ### 2. Immediate, synchronous propagation
 
 In most JS implementations, `emit()` calls subscribers synchronously and
-in-order. The response to an event happens *within the same call stack* as the
+in-order. The response to an event happens _within the same call stack_ as the
 emission. This is useful when the subscriber needs to act before the emitter
 continues - for example, a "will-destroy" event that lets views clean up before
 a model is removed.
@@ -220,7 +229,9 @@ is the single most common source of memory leaks in event-driven JS code.
 
 ```typescript
 // Pac-Man ghost view - subscribes when created
-const onPhaseChanged = (phase: string) => { /* update ghost appearance */ };
+const onPhaseChanged = (phase: string) => {
+    /* update ghost appearance */
+};
 ghostModel.on('phase-changed', onPhaseChanged);
 
 // If the ghost is destroyed but we forget to call off()...
@@ -241,8 +252,13 @@ CPU and preventing GC.
 function createDisposable(): { add(fn: () => void): void; dispose(): void } {
     const cleanups: (() => void)[] = [];
     return {
-        add(fn) { cleanups.push(fn); },
-        dispose() { for (const fn of cleanups) fn(); cleanups.length = 0; },
+        add(fn) {
+            cleanups.push(fn);
+        },
+        dispose() {
+            for (const fn of cleanups) fn();
+            cleanups.length = 0;
+        },
     };
 }
 
@@ -260,7 +276,7 @@ remains a manual obligation.
 
 ### 2. No "current value" - late subscribers miss history
 
-An event is a point-in-time notification. If a subscriber registers *after* an
+An event is a point-in-time notification. If a subscriber registers _after_ an
 event was emitted, it never sees it.
 
 ```typescript
@@ -278,7 +294,9 @@ after the model has already been initialised, and misses the first state. The
 typical workaround is to manually read the current value after subscribing:
 
 ```typescript
-scoreModel.on('score-changed', (score) => { scoreText.text = String(score); });
+scoreModel.on('score-changed', (score) => {
+    scoreText.text = String(score);
+});
 scoreText.text = String(scoreModel.score); // manual initial sync
 ```
 
@@ -330,7 +348,7 @@ the consumer is stuck.
 
 A closely related limitation: **consumers cannot easily express conditions that
 span multiple sources.** If a view should flash a warning when a ghost is
-*frightened* (phase) AND *near the player* (position from two models), it must
+_frightened_ (phase) AND _near the player_ (position from two models), it must
 subscribe to phase events and then independently check position on each tick -
 mixing two paradigms:
 
@@ -356,8 +374,7 @@ any condition from any readable state - including cross-model conditions:
 
 ```typescript
 const watcher = watch({
-    dangerClose: () =>
-        ghost.phase === 'frightened' && distance(ghost, player) < 3,
+    dangerClose: () => ghost.phase === 'frightened' && distance(ghost, player) < 3,
 });
 ```
 
@@ -382,7 +399,7 @@ chain of synchronous dispatches on the same call stack. This can cause:
 // Cascade example
 scoreModel.on('score-changed', (score) => {
     if (score >= 10000) {
-        livesModel.addLife();  // This emits 'lives-changed'...
+        livesModel.addLife(); // This emits 'lives-changed'...
         // ...which triggers the lives handler synchronously,
         // before this score handler has returned.
     }
@@ -432,11 +449,11 @@ Dynamic collections - enemy lists, inventory arrays, particle pools - require
 careful event design. The source must decide what events to emit and at what
 granularity:
 
-| Strategy | Trade-off |
-|----------|----------|
-| Per-item events (`'enemy-added'`, `'enemy-removed'`) | Clean for add/remove; does not help with property changes on existing items |
-| Bulk-change event (`'enemies-changed'`) | Consumer must diff or rebuild; simple to implement |
-| Versioned event (`'enemies-changed'` + version counter) | Consumer uses version to skip redundant rebuilds |
+| Strategy                                                | Trade-off                                                                   |
+| ------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Per-item events (`'enemy-added'`, `'enemy-removed'`)    | Clean for add/remove; does not help with property changes on existing items |
+| Bulk-change event (`'enemies-changed'`)                 | Consumer must diff or rebuild; simple to implement                          |
+| Versioned event (`'enemies-changed'` + version counter) | Consumer uses version to skip redundant rebuilds                            |
 
 **Per-item events** are the most common choice: they map well to discrete
 collection mutations and let the view handle each add/remove individually.
@@ -498,7 +515,7 @@ model.addPoints(200);
 assert.deepEqual(received, [100, 300]);
 ```
 
-Testing *subscription lifecycle* is harder. You need to verify that a
+Testing _subscription lifecycle_ is harder. You need to verify that a
 destroyed view actually unsubscribed - which typically means asserting on
 internal state or listener counts, neither of which is ideal.
 

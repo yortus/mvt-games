@@ -1,8 +1,4 @@
-export {
-    type RotationDirection,
-    type AsteroidSize,
-    type GamePhase,
-} from './common';
+export { type RotationDirection, type AsteroidSize, type GamePhase } from './common';
 export { createPlayerInput, type PlayerInput } from './player-input';
 export { createScoreModel, type ScoreModel, type ScoreModelOptions } from './score-model';
 export { createShipModel, type ShipModel, type ShipModelOptions } from './ship-model';

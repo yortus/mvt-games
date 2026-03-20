@@ -61,7 +61,12 @@ export function createFighterView(bindings: FighterViewBindings): Container {
 
         // Texture (only swap when animation state changes)
         const watched = watcher.poll();
-        if (watched.phase.changed || watched.moveKind.changed || watched.frameIndex.changed || watched.defeatVariant.changed) {
+        if (
+            watched.phase.changed ||
+            watched.moveKind.changed ||
+            watched.frameIndex.changed ||
+            watched.defeatVariant.changed
+        ) {
             sprite.texture = resolveTexture(
                 bindings.getPhase(),
                 bindings.getMoveKind(),
@@ -80,82 +85,46 @@ export function createFighterView(bindings: FighterViewBindings): Container {
         // 1-based texture keys from the registry
         const fi = frameIndex + 1;
 
+        // prettier-ignore
         switch (phase) {
-            case 'idle':
-                return tex.walk[1];
-
-            case 'walking':
-                return tex.walk[clampKey(fi, 8) as keyof typeof tex.walk];
-
-            case 'turning':
-                return tex.turn[clampKey(fi, 5) as keyof typeof tex.turn];
-
-            case 'blocking':
-                return tex.block[clampKey(fi, 3) as keyof typeof tex.block];
-
-            case 'hit-reacting':
-                return tex.walk[1];
-
-            case 'defeated':
-                return resolveDefeatTexture(defeatVariant, fi);
-
-            case 'won':
-                return tex.won[clampKey(fi, 2) as keyof typeof tex.won];
-
-            case 'lost':
-                return tex.lost[1];
-
+            case 'idle': return tex.walk[1];
+            case 'walking': return tex.walk[clampKey(fi, 8) as keyof typeof tex.walk];
+            case 'turning': return tex.turn[clampKey(fi, 5) as keyof typeof tex.turn];
+            case 'blocking': return tex.block[clampKey(fi, 3) as keyof typeof tex.block];
+            case 'hit-reacting': return tex.walk[1];
+            case 'defeated': return resolveDefeatTexture(defeatVariant, fi);
+            case 'won': return tex.won[clampKey(fi, 2) as keyof typeof tex.won];
+            case 'lost': return tex.lost[1];
             case 'attacking':
-            case 'airborne':
-                return resolveMoveTexture(moveKind, fi);
+            case 'airborne': return resolveMoveTexture(moveKind, fi);
+            default: return tex.walk[1];
         }
-
-        return tex.walk[1];
     }
 
     function resolveMoveTexture(moveKind: MoveKind | undefined, fi: number) {
+        // prettier-ignore
         switch (moveKind) {
             case 'high-punch':
-            case 'back-lunge-punch':
-                return tex.punch[clampKey(fi, 6) as keyof typeof tex.punch];
-
+            case 'back-lunge-punch': return tex.punch[clampKey(fi, 6) as keyof typeof tex.punch];
             case 'high-kick':
             case 'mid-kick':
-            case 'low-kick':
-                return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
-
-            case 'foot-sweep':
-                return tex.footsweep[clampKey(fi, 4) as keyof typeof tex.footsweep];
-
+            case 'low-kick': return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
+            case 'foot-sweep': return tex.footsweep[clampKey(fi, 4) as keyof typeof tex.footsweep];
             case 'crouch-punch':
-            case 'back-crouch-punch':
-                return tex.crouchPunch[clampKey(fi, 2) as keyof typeof tex.crouchPunch];
-
-            case 'back-low-kick':
-                return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
-
-            case 'roundhouse':
-                return tex.roundhouse[clampKey(fi, 4) as keyof typeof tex.roundhouse];
-
-            case 'flying-kick':
-                return tex.flyingKick[clampKey(fi, 5) as keyof typeof tex.flyingKick];
-
-            case 'front-somersault':
-                return tex.fwdSault[clampKey(fi, 6) as keyof typeof tex.fwdSault];
-
-            case 'back-somersault':
-                return tex.backSault[clampKey(fi, 6) as keyof typeof tex.backSault];
-
-            case 'jump':
-                return tex.jump[1];
-
-            default:
-                return tex.walk[1];
+            case 'back-crouch-punch': return tex.crouchPunch[clampKey(fi, 2) as keyof typeof tex.crouchPunch];
+            case 'back-low-kick': return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
+            case 'roundhouse': return tex.roundhouse[clampKey(fi, 4) as keyof typeof tex.roundhouse];
+            case 'flying-kick': return tex.flyingKick[clampKey(fi, 5) as keyof typeof tex.flyingKick];
+            case 'front-somersault': return tex.fwdSault[clampKey(fi, 6) as keyof typeof tex.fwdSault];
+            case 'back-somersault': return tex.backSault[clampKey(fi, 6) as keyof typeof tex.backSault];
+            case 'jump': return tex.jump[1];
+            default: return tex.walk[1];
         }
     }
 
     function resolveDefeatTexture(variant: DefeatVariant, fi: number) {
         const key = clampKey(fi, 3);
+        // prettier-ignore
         switch (variant) {
             case 'a': return tex.defeatA[key as keyof typeof tex.defeatA];
             case 'b': return tex.defeatB[key as keyof typeof tex.defeatB];

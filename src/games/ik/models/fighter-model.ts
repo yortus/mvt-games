@@ -114,14 +114,30 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
     // --- Public model record ---
     const model: FighterModel = {
-        get x() { return state.x; },
-        get jumpHeight() { return state.jumpHeight; },
-        get facing() { return state.facing; },
-        get phase() { return state.phase; },
-        get moveKind() { return state.moveKind; },
-        get frameIndex() { return state.frameIndex; },
-        get hitboxActive() { return state.hitboxActive; },
-        get defeatVariant() { return state.defeatVariant; },
+        get x() {
+            return state.x;
+        },
+        get jumpHeight() {
+            return state.jumpHeight;
+        },
+        get facing() {
+            return state.facing;
+        },
+        get phase() {
+            return state.phase;
+        },
+        get moveKind() {
+            return state.moveKind;
+        },
+        get frameIndex() {
+            return state.frameIndex;
+        },
+        get hitboxActive() {
+            return state.hitboxActive;
+        },
+        get defeatVariant() {
+            return state.defeatVariant;
+        },
 
         get hitbox() {
             if (!state.hitboxActive || state.moveKind === undefined) {
@@ -406,7 +422,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         state.walkDirection = 0;
         state.walkDistAccum = 0;
 
-        const frameDuration = BLOCK_REACTION_MS * 0.001 / 3;
+        const frameDuration = (BLOCK_REACTION_MS * 0.001) / 3;
         for (let i = 0; i < 3; i++) {
             timeline.call(setBlockFrame, [i], i * frameDuration);
         }

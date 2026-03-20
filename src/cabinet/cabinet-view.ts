@@ -185,10 +185,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
                 const scale = Math.min(THUMB_W / tex.width, THUMB_H / tex.height);
                 thumb.width = tex.width * scale;
                 thumb.height = tex.height * scale;
-                thumb.position.set(
-                    THUMB_PAD + (THUMB_W - thumb.width) / 2,
-                    THUMB_PAD + (THUMB_H - thumb.height) / 2,
-                );
+                thumb.position.set(THUMB_PAD + (THUMB_W - thumb.width) / 2, THUMB_PAD + (THUMB_H - thumb.height) / 2);
                 cardContainer.addChild(thumb);
             }
 
@@ -225,11 +222,9 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
 
             card.border.clear();
             if (selected) {
-                card.border.roundRect(0, 0, CARD_W, CARD_H, 4)
-                    .stroke({ color: COLOR_BORDER_SELECTED, width: 2 });
+                card.border.roundRect(0, 0, CARD_W, CARD_H, 4).stroke({ color: COLOR_BORDER_SELECTED, width: 2 });
             } else {
-                card.border.roundRect(0, 0, CARD_W, CARD_H, 4)
-                    .stroke({ color: COLOR_BORDER_NORMAL, width: 1 });
+                card.border.roundRect(0, 0, CARD_W, CARD_H, 4).stroke({ color: COLOR_BORDER_NORMAL, width: 1 });
             }
 
             card.name.style.fill = selected ? COLOR_SELECTED : COLOR_NAME_NORMAL;

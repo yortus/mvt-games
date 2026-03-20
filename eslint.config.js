@@ -1,6 +1,7 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
+import prettierRecommended from 'eslint-plugin-prettier/recommended';
 
 export default tseslint.config(
     eslint.configs.recommended,
@@ -39,6 +40,8 @@ export default tseslint.config(
             },
         },
     },
+    // Enables prettier/prettier rule and disables conflicting ESLint rules
+    prettierRecommended,
     {
         ignores: ['dist/**', 'node_modules/**'],
     },

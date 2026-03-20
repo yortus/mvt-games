@@ -91,7 +91,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-
             // Process restart request (allowed from any non-playing phase)
             const watched = watcher.poll();
             if (watched.restart.changed && watched.restart.value) {

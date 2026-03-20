@@ -50,12 +50,7 @@ export type DefeatVariant = 'a' | 'b' | 'c' | 'd';
 // Game Phase
 // ---------------------------------------------------------------------------
 
-export type GamePhase =
-    | 'round-intro'
-    | 'fighting'
-    | 'point-scored'
-    | 'round-over'
-    | 'match-over';
+export type GamePhase = 'round-intro' | 'fighting' | 'point-scored' | 'round-over' | 'match-over';
 
 // ---------------------------------------------------------------------------
 // Input
@@ -94,11 +89,7 @@ export type MoveResolution =
  * Converts raw axis directions + current facing into a relative InputDirection.
  * "Forward" = toward the direction the fighter faces.
  */
-export function resolveInputDirection(
-    xDir: XDirection,
-    yDir: YDirection,
-    facing: Facing,
-): InputDirection {
+export function resolveInputDirection(xDir: XDirection, yDir: YDirection, facing: Facing): InputDirection {
     // Determine forward/backward from raw left/right relative to facing
     let relX: 'forward' | 'backward' | 'none' = 'none';
     if (xDir === 'left') {
@@ -158,26 +149,42 @@ export function resolveMove(inputDir: InputDirection, attackPressed: boolean): M
     if (!attackPressed) {
         // Without attack button
         switch (inputDir) {
-            case 'up':           return RESULT_JUMP;
-            case 'up-forward':   return RESULT_HIGH_PUNCH;
-            case 'forward':      return RESULT_WALK_FWD;
-            case 'down-forward': return RESULT_HIGH_KICK;
-            case 'down':         return RESULT_FOOT_SWEEP;
-            case 'down-backward':return RESULT_CROUCH_PUNCH;
-            case 'backward':     return RESULT_WALK_BWD;
-            case 'up-backward':  return RESULT_BACK_LUNGE_PUNCH;
+            case 'up':
+                return RESULT_JUMP;
+            case 'up-forward':
+                return RESULT_HIGH_PUNCH;
+            case 'forward':
+                return RESULT_WALK_FWD;
+            case 'down-forward':
+                return RESULT_HIGH_KICK;
+            case 'down':
+                return RESULT_FOOT_SWEEP;
+            case 'down-backward':
+                return RESULT_CROUCH_PUNCH;
+            case 'backward':
+                return RESULT_WALK_BWD;
+            case 'up-backward':
+                return RESULT_BACK_LUNGE_PUNCH;
         }
     } else {
         // With attack button
         switch (inputDir) {
-            case 'up':           return RESULT_FLYING_KICK;
-            case 'up-forward':   return RESULT_FRONT_SOMERSAULT;
-            case 'forward':      return RESULT_MID_KICK;
-            case 'down-forward': return RESULT_LOW_KICK;
-            case 'down':         return RESULT_BACK_CROUCH_PUNCH;
-            case 'down-backward':return RESULT_BACK_LOW_KICK;
-            case 'backward':     return RESULT_ROUNDHOUSE;
-            case 'up-backward':  return RESULT_BACK_SOMERSAULT;
+            case 'up':
+                return RESULT_FLYING_KICK;
+            case 'up-forward':
+                return RESULT_FRONT_SOMERSAULT;
+            case 'forward':
+                return RESULT_MID_KICK;
+            case 'down-forward':
+                return RESULT_LOW_KICK;
+            case 'down':
+                return RESULT_BACK_CROUCH_PUNCH;
+            case 'down-backward':
+                return RESULT_BACK_LOW_KICK;
+            case 'backward':
+                return RESULT_ROUNDHOUSE;
+            case 'up-backward':
+                return RESULT_BACK_SOMERSAULT;
         }
     }
 

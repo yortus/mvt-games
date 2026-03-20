@@ -42,7 +42,7 @@ const FRAME_MS = 80;
 
 export const MOVE_DATA: Record<MoveKind, MoveData> = {
     // --- Jump (non-attacking airborne) ---
-    'jump': {
+    jump: {
         frameDurationMs: [500],
         hitFrameIndices: [],
         damage: 0,
@@ -178,7 +178,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     },
 
     // --- Roundhouse (4 frames) ---
-    'roundhouse': {
+    roundhouse: {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [2],
         damage: 1,

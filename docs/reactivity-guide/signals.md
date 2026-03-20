@@ -29,8 +29,8 @@ dependents as "dirty"           └─► scoreText.text = score()
 ```
 
 This is a **push-pull hybrid** (see [Push vs Pull](push-vs-pull.md)):
-notification of a change is *pushed* through the dependency graph, but the
-actual value is *pulled* (re-read) when the dependent computation re-runs.
+notification of a change is _pushed_ through the dependency graph, but the
+actual value is _pulled_ (re-read) when the dependent computation re-runs.
 
 ## Minimal Working Example
 
@@ -55,11 +55,21 @@ function createScoreModel(): ScoreModel {
     const highScoreReached = createMemo(() => score() >= 10_000);
 
     return {
-        get score() { return score(); },
-        get lives() { return lives(); },
-        get highScoreReached() { return highScoreReached(); },
-        addPoints(points: number) { setScore(prev => prev + points); },
-        loseLife() { setLives(prev => prev - 1); },
+        get score() {
+            return score();
+        },
+        get lives() {
+            return lives();
+        },
+        get highScoreReached() {
+            return highScoreReached();
+        },
+        addPoints(points: number) {
+            setScore((prev) => prev + points);
+        },
+        loseLife() {
+            setLives((prev) => prev - 1);
+        },
     };
 }
 
@@ -73,8 +83,12 @@ function createHudView(model: ScoreModel): Container {
     view.addChild(scoreText, livesText);
 
     const dispose = createRoot((dispose) => {
-        createEffect(() => { scoreText.text = String(model.score); });
-        createEffect(() => { livesText.text = '♥'.repeat(model.lives); });
+        createEffect(() => {
+            scoreText.text = String(model.score);
+        });
+        createEffect(() => {
+            livesText.text = '♥'.repeat(model.lives);
+        });
         createEffect(() => {
             if (model.highScoreReached) showExtraLifeAnimation();
         });
@@ -92,11 +106,11 @@ const scoreModel = createScoreModel();
 const hud = createHudView(scoreModel);
 app.stage.addChild(hud);
 
-scoreModel.addPoints(100);  // scoreText updates automatically
+scoreModel.addPoints(100); // scoreText updates automatically
 scoreModel.addPoints(9900); // scoreText updates, PLUS highScoreReached effect fires
-scoreModel.loseLife();      // livesText updates automatically
+scoreModel.loseLife(); // livesText updates automatically
 
-hud.destroy();              // Disposes reactive root, cleans up effects
+hud.destroy(); // Disposes reactive root, cleans up effects
 ```
 
 Note: the effects discover their dependencies by tracking which signals are
@@ -113,8 +127,8 @@ cleanup obligation is easy to overlook and is discussed in
 ```typescript
 const [value, setValue] = createSignal(initialValue);
 
-value();          // read - registers dependency if inside a tracking context
-setValue(newVal);  // write - marks all dependents as dirty
+value(); // read - registers dependency if inside a tracking context
+setValue(newVal); // write - marks all dependents as dirty
 ```
 
 ### Computed / Memo: Derived State
@@ -175,7 +189,7 @@ are re-executed. Computations that depend on `lives()` but not `score()` are
 untouched. This is **granular reactivity** - the system does the minimum work
 necessary.
 
-In contrast, a poll-based watcher system evaluates *every* watcher on every
+In contrast, a poll-based watcher system evaluates _every_ watcher on every
 tick, even if only one value changed.
 
 ### 3. Derived state is declarative and memoised
@@ -184,7 +198,7 @@ tick, even if only one value changed.
 result:
 
 ```typescript
-const activeEnemies = createMemo(() => enemies().filter(e => e.alive));
+const activeEnemies = createMemo(() => enemies().filter((e) => e.alive));
 const enemyCount = createMemo(() => activeEnemies().length);
 ```
 
@@ -200,6 +214,7 @@ needing to pre-compute the result.
 Signals were designed for UI frameworks. They integrate naturally with component
 rendering: a component reads signals, and re-renders when they change. This is
 why SolidJS, Angular, Vue, and Preact all adopted them as core primitives.
+
 ### 5. Vendored reactivity with cross-framework aspirations
 
 SolidJS, Angular, Vue, and Preact (with signals plugin) all provide signal
@@ -220,12 +235,11 @@ versa. If your library uses SolidJS signals and a consumer uses Angular signals,
 the two systems are separate dependency graphs that do not interoperate without
 bridging.
 
-**The honest assessment:** signals are composable *within* a single vendored
+**The honest assessment:** signals are composable _within_ a single vendored
 ecosystem. Cross-framework portability is an aspiration that depends on TC39
 progress that may or may not materialise. If avoiding vendored dependencies is a
 project goal, signals are a harder choice than events or watchers (which require no
 external runtime).
-
 
 ## Drawbacks
 
@@ -263,14 +277,14 @@ allocation rate can become a measurable contributor to GC pauses.
 For N signal reads per frame, the total overhead is ~N × 30ns of CPU time plus
 ~N × 2 heap allocations for subscription bookkeeping. In a UI app re-rendering
 components on user interaction, this is negligible. For a game loop reading 100+
-values 60 times per second, it is measurable - though whether it is *material*
+values 60 times per second, it is measurable - though whether it is _material_
 depends on the total frame budget. See
 [Comparison § Performance](comparison.md#performance-characteristics) for
 benchmark guidance.
 
 ### 2. Effect cleanup and ownership must be managed
 
-Signals automate *what* depends on *what*, but lifecycle management is still
+Signals automate _what_ depends on _what_, but lifecycle management is still
 required. Effects that reference signals must be disposed when they are no
 longer needed, otherwise the signal's subscriber list retains a reference to the
 effect's closure.
@@ -285,7 +299,7 @@ const dispose = createRoot((dispose) => {
 });
 
 // When the ghost view is destroyed:
-dispose();  // Must be called, or the effect leaks
+dispose(); // Must be called, or the effect leaks
 ```
 
 A leaked effect does not throw an error, and its behaviour may not be
@@ -312,7 +326,7 @@ a signal system, the ownership scope must be explicitly closed.
 ### 3. Invisible reactivity boundary - signals vs plain functions
 
 Signal accessors and ordinary functions look identical
-at the call site. A developer reading or maintaining an effect must know *which*
+at the call site. A developer reading or maintaining an effect must know _which_
 functions are signals to understand what the effect reacts to.
 
 ```typescript
@@ -331,7 +345,7 @@ code review and may go unnoticed in testing if difficulty rarely changes
 independently.
 
 **This also means the source must pre-decide which values are signals.** A
-signal system does not make *all* state reactive by default - the source must
+signal system does not make _all_ state reactive by default - the source must
 explicitly wrap values in signal containers. If the source exposes a value as a
 plain property or getter (not a signal), consumers cannot react to it with
 effects. This mirrors the [pre-declaration limitation of events](events.md#4-source-must-pre-declare-events-of-interest):
@@ -351,8 +365,8 @@ closure bodies to enforce constraints on what functions are called inside. The
 distinction can only be maintained through naming conventions (e.g. all signals
 are `value()` on a signal object) or careful manual review. Some signal
 runtimes offer dev-mode warnings when an effect runs without tracking any
-signals, but these only catch the case where *no* dependencies are tracked -
-not when *some* dependencies are missed.
+signals, but these only catch the case where _no_ dependencies are tracked -
+not when _some_ dependencies are missed.
 
 **Comparison:** In a watcher system, every watched value goes through the same
 `watch(() => ...)` mechanism - there is no distinction between "reactive" and
@@ -397,7 +411,7 @@ graph changes on each execution:
 ```typescript
 createEffect(() => {
     if (showDetails()) {
-        console.log(details());  // dependency only when showDetails() is true
+        console.log(details()); // dependency only when showDetails() is true
     }
 });
 ```
@@ -427,7 +441,7 @@ const [posY, setPosY] = createSignal(0);
 
 // In your tick callback (runs every frame via Pixi's shared ticker):
 app.ticker.add(() => {
-    setPosY(tweenTarget.y);  // write every frame, even if unchanged
+    setPosY(tweenTarget.y); // write every frame, even if unchanged
     // Effects that read posY() fire synchronously here
 });
 
@@ -474,14 +488,14 @@ change-detection layer for values that benefit from it.
 ### Aggregate Values (Arrays and Objects)
 
 Dynamic collections are one of signals' more complex areas. The challenge is
-tracking changes to collection *membership* (items added/removed) and to
-individual item *properties* (positions, state).
+tracking changes to collection _membership_ (items added/removed) and to
+individual item _properties_ (positions, state).
 
-| Strategy | Trade-off |
-|----------|----------|
+| Strategy                                          | Trade-off                                                               |
+| ------------------------------------------------- | ----------------------------------------------------------------------- |
 | Stores with deep tracking (SolidJS `createStore`) | Automatic granular reactivity; framework-specific; complex mental model |
-| Signal holding an array + version counter | Simple; loses granularity (entire array is "one signal") |
-| Map of signals (one signal per item property) | Granular; verbose; lifecycle management for each signal |
+| Signal holding an array + version counter         | Simple; loses granularity (entire array is "one signal")                |
+| Map of signals (one signal per item property)     | Granular; verbose; lifecycle management for each signal                 |
 
 **SolidJS stores** with `produce` provide the most ergonomic solution: mutations
 to individual items trigger only effects that read those items. However, stores
@@ -559,7 +573,9 @@ after the test:
 ```typescript
 let captured = '';
 const dispose = createRoot((dispose) => {
-    createEffect(() => { captured = `Score: ${score()}`; });
+    createEffect(() => {
+        captured = `Score: ${score()}`;
+    });
     return dispose;
 });
 

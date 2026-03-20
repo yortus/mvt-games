@@ -137,7 +137,13 @@ export function createRockModel(options: RockModelOptions): RockModel {
         const t = timeline.time();
         timeline.to(state, { y: endRow, duration, ease: 'power1.in' }, t);
         timeline.to(state, { progress: 1, duration, ease: 'none' }, t);
-        timeline.call(() => { state.row = endRow; }, undefined, t + duration);
+        timeline.call(
+            () => {
+                state.row = endRow;
+            },
+            undefined,
+            t + duration,
+        );
         timeline.call(scheduleShatter, undefined, t + duration);
     }
 
@@ -147,6 +153,12 @@ export function createRockModel(options: RockModelOptions): RockModel {
 
         const t = timeline.time();
         timeline.to(state, { progress: 1, duration: SHATTER_SECONDS, ease: 'none' }, t);
-        timeline.call(() => { state.alive = false; }, undefined, t + SHATTER_SECONDS);
+        timeline.call(
+            () => {
+                state.alive = false;
+            },
+            undefined,
+            t + SHATTER_SECONDS,
+        );
     }
 }

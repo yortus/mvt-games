@@ -46,8 +46,7 @@ export interface ShipModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createShipModel(options: ShipModelOptions): ShipModel {
-    const { startX, startY, rotationSpeed, thrust, drag, maxSpeed, arenaWidth, arenaHeight } =
-        options;
+    const { startX, startY, rotationSpeed, thrust, drag, maxSpeed, arenaWidth, arenaHeight } = options;
 
     let x = startX;
     let y = startY;

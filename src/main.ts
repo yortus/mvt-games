@@ -67,7 +67,13 @@ async function main(): Promise<void> {
     window.addEventListener('resize', fitCanvasToScreen);
 
     // ---- Game registry -----------------------------------------------------
-    const games = [createAsteroidsEntry(), createDigdugEntry(), createGalagaEntry(), createIkEntry(), createPacmanEntry()];
+    const games = [
+        createAsteroidsEntry(),
+        createDigdugEntry(),
+        createGalagaEntry(),
+        createIkEntry(),
+        createPacmanEntry(),
+    ];
 
     // ---- Generate thumbnails -----------------------------------------------
     const thumbnails = await generateThumbnails(games, app);
@@ -121,10 +127,7 @@ async function main(): Promise<void> {
  * depend on inter-tick transitions - see the MVT guide § "update(deltaMs)
  * Contract" for details.
  */
-async function generateThumbnails(
-    games: GameEntry[],
-    app: Application,
-): Promise<(Texture | undefined)[]> {
+async function generateThumbnails(games: GameEntry[], app: Application): Promise<(Texture | undefined)[]> {
     const TICK_MS = 16;
     const thumbnails: (Texture | undefined)[] = [];
     for (let i = 0; i < games.length; i++) {

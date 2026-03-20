@@ -53,7 +53,7 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
 
         selectByDelta(delta: number): void {
             if (phase !== 'menu' || games.length === 0) return;
-            selectedIndex = ((selectedIndex + delta) % games.length + games.length) % games.length;
+            selectedIndex = (((selectedIndex + delta) % games.length) + games.length) % games.length;
         },
 
         async launchSelected(stage: Container): Promise<void> {

@@ -29,11 +29,15 @@ interface ScoreEvents {
 
 function createScoreModel(emitter: TypedEmitter<ScoreEvents>) {
     let score = 0;
-    let elapsed = 0;  // changes every tick
+    let elapsed = 0; // changes every tick
 
     return {
-        get score() { return score; },
-        get elapsed() { return elapsed; },
+        get score() {
+            return score;
+        },
+        get elapsed() {
+            return elapsed;
+        },
         addPoints(points: number) {
             score += points;
             emitter.emit('score-changed', score);
@@ -48,10 +52,7 @@ function createScoreModel(emitter: TypedEmitter<ScoreEvents>) {
 }
 
 // --- View ---
-function createScoreView(
-    model: { score: number; elapsed: number },
-    emitter: TypedEmitter<ScoreEvents>,
-): Container {
+function createScoreView(model: { score: number; elapsed: number }, emitter: TypedEmitter<ScoreEvents>): Container {
     const view = new Container();
     const scoreText = new Text({ text: '0', style: { fill: 'white' } });
     const timerText = new Text({ text: '0', style: { fill: 'grey' } });
@@ -62,7 +63,9 @@ function createScoreView(
     scoreText.text = String(model.score);
 
     // Subscribe to infrequent change
-    const onScoreChanged = (score: number) => { scoreText.text = String(score); };
+    const onScoreChanged = (score: number) => {
+        scoreText.text = String(score);
+    };
     emitter.on('score-changed', onScoreChanged);
 
     view.onRender = () => {
@@ -71,7 +74,7 @@ function createScoreView(
     };
 
     view.on('destroyed', () => {
-        emitter.off('score-changed', onScoreChanged);  // Must clean up
+        emitter.off('score-changed', onScoreChanged); // Must clean up
     });
 
     return view;
@@ -79,6 +82,7 @@ function createScoreView(
 ```
 
 **Observations:**
+
 - Model must know about the emitter and explicitly emit on every mutation.
 - The model intentionally does NOT emit for per-tick values like `elapsed` -
   events are a poor fit for high-frequency state.
@@ -106,11 +110,17 @@ function createScoreModel(): ScoreModel {
     const [elapsed, setElapsed] = createSignal(0);
 
     return {
-        get score() { return score(); },
-        get elapsed() { return elapsed(); },
-        addPoints(points: number) { setScore(prev => prev + points); },
+        get score() {
+            return score();
+        },
+        get elapsed() {
+            return elapsed();
+        },
+        addPoints(points: number) {
+            setScore((prev) => prev + points);
+        },
         update(dt: number) {
-            setElapsed(prev => prev + dt);
+            setElapsed((prev) => prev + dt);
             // This writes to a signal 60 times/sec, triggering dependency
             // tracking overhead and GC pressure on every tick - even though
             // the consumer would read it every tick anyway.
@@ -128,7 +138,7 @@ function createScoreView(model: ScoreModel): Container {
 
     const dispose = createRoot((dispose) => {
         createEffect(() => {
-            scoreText.text = String(model.score);  // auto-tracks score signal
+            scoreText.text = String(model.score); // auto-tracks score signal
         });
         createEffect(() => {
             timerText.text = String(Math.floor(model.elapsed));
@@ -138,13 +148,14 @@ function createScoreView(model: ScoreModel): Container {
         return dispose;
     });
 
-    view.on('destroyed', dispose);  // Must clean up reactive root
+    view.on('destroyed', dispose); // Must clean up reactive root
 
     return view;
 }
 ```
 
 **Observations:**
+
 - No manual initial sync - the effect runs once on creation.
 - No explicit dependency declaration - auto-tracked.
 - Must manage reactive root lifecycle (disposed on view destroy).
@@ -160,10 +171,18 @@ function createScoreModel() {
     let elapsed = 0;
 
     return {
-        get score() { return score; },
-        get elapsed() { return elapsed; },
-        addPoints(points: number) { score += points; },
-        update(dt: number) { elapsed += dt; },
+        get score() {
+            return score;
+        },
+        get elapsed() {
+            return elapsed;
+        },
+        addPoints(points: number) {
+            score += points;
+        },
+        update(dt: number) {
+            elapsed += dt;
+        },
     };
 }
 
@@ -194,6 +213,7 @@ function createScoreView(model: { readonly score: number; readonly elapsed: numb
 ```
 
 **Observations:**
+
 - Model is a plain object - no emitters, no signal wrappers.
 - No cleanup obligations - removing the view from the stage is sufficient.
 - Infrequent changes (score) use a watcher; per-tick values (elapsed) are read
@@ -227,9 +247,15 @@ function createGhostModel(emitter: TypedEmitter<GhostEvents>) {
     let row = 0;
 
     return {
-        get phase() { return phase; },
-        get col() { return col; },
-        get row() { return row; },
+        get phase() {
+            return phase;
+        },
+        get col() {
+            return col;
+        },
+        get row() {
+            return row;
+        },
         setPhase(newPhase: GhostPhase) {
             if (newPhase === phase) return;
             const from = phase;
@@ -284,6 +310,7 @@ function createGhostView(
 ```
 
 **Observations:**
+
 - Events naturally carry `from`/`to` - the model packages transition data.
 - Transition-specific logic is clean and readable.
 - Per-tick position requires an `onRender` loop - events don't help.
@@ -312,12 +339,20 @@ function createGhostModel(): GhostModel {
     const [row, setRow] = createSignal(0);
 
     return {
-        get phase() { return phase(); },
-        get col() { return col(); },
-        get row() { return row(); },
-        setPhase(p: GhostPhase) { setPhase(p); },
+        get phase() {
+            return phase();
+        },
+        get col() {
+            return col();
+        },
+        get row() {
+            return row();
+        },
+        setPhase(p: GhostPhase) {
+            setPhase(p);
+        },
         update(dt: number) {
-            setCol(prev => prev + dt * 0.01);
+            setCol((prev) => prev + dt * 0.01);
             // Writing to col 60 times/sec - signal overhead with no benefit
         },
     };
@@ -362,6 +397,7 @@ function createGhostView(model: GhostModel): Container {
 ```
 
 **Observations:**
+
 - With a property-based interface, the view must track previous state manually.
   SolidJS's `on()` helper could provide previous values, but requires exposing
   raw signal accessors in the interface (breaking consistency with events/watchers).
@@ -381,18 +417,26 @@ function createGhostModel() {
     let row = 0;
 
     return {
-        get phase() { return phase; },
-        get col() { return col; },
-        get row() { return row; },
-        setPhase(p: GhostPhase) { phase = p; },
-        update(dt: number) { col += dt * 0.01; },
+        get phase() {
+            return phase;
+        },
+        get col() {
+            return col;
+        },
+        get row() {
+            return row;
+        },
+        setPhase(p: GhostPhase) {
+            phase = p;
+        },
+        update(dt: number) {
+            col += dt * 0.01;
+        },
     };
 }
 
 // --- View ---
-function createGhostView(
-    model: { readonly phase: GhostPhase; readonly col: number; readonly row: number },
-): Container {
+function createGhostView(model: { readonly phase: GhostPhase; readonly col: number; readonly row: number }): Container {
     const view = new Container();
     const sprite = new Sprite();
     view.addChild(sprite);
@@ -428,6 +472,7 @@ function createGhostView(
 ```
 
 **Observations:**
+
 - `watched.phase.previous` provides transition data without manual tracking.
 - Per-tick position is a direct read - no watcher overhead.
 - Model is plain - no emitter, no signals.
@@ -455,9 +500,13 @@ interface BrickEvents {
 }
 
 function createBrickGridModel(emitter: TypedEmitter<BrickEvents>) {
-    const bricks: boolean[][] = [/* initial grid */];
+    const bricks: boolean[][] = [
+        /* initial grid */
+    ];
     return {
-        isBrick(col: number, row: number) { return bricks[row][col]; },
+        isBrick(col: number, row: number) {
+            return bricks[row][col];
+        },
         destroyBrick(col: number, row: number) {
             bricks[row][col] = false;
             emitter.emit('brick-destroyed', { col, row });
@@ -466,10 +515,7 @@ function createBrickGridModel(emitter: TypedEmitter<BrickEvents>) {
 }
 
 // --- View ---
-function createBrickGridView(
-    emitter: TypedEmitter<BrickEvents>,
-    brickSprites: Map<string, Sprite>,
-): Container {
+function createBrickGridView(emitter: TypedEmitter<BrickEvents>, brickSprites: Map<string, Sprite>): Container {
     const view = new Container();
     // ... populate initial sprites into view ...
 
@@ -503,6 +549,7 @@ function createBrickGridView(
 ```
 
 **Observations:**
+
 - Events are a natural fit here: "brick destroyed" is a discrete, one-off
   occurrence - exactly the kind of thing events model well.
 - GSAP runs on Pixi's shared ticker; no need to bridge tween values into a
@@ -524,35 +571,40 @@ interface BrickGridModel {
 }
 
 function createBrickGridModel(): BrickGridModel {
-    const bricks: boolean[][] = [/* initial grid */];
+    const bricks: boolean[][] = [
+        /* initial grid */
+    ];
     const [lastDestroyed, setLastDestroyed] = createSignal<{ col: number; row: number } | null>(null);
     const [destroyVersion, setDestroyVersion] = createSignal(0);
 
     return {
-        isBrick(col: number, row: number) { return bricks[row][col]; },
-        get lastDestroyed() { return lastDestroyed(); },
-        get destroyVersion() { return destroyVersion(); },
+        isBrick(col: number, row: number) {
+            return bricks[row][col];
+        },
+        get lastDestroyed() {
+            return lastDestroyed();
+        },
+        get destroyVersion() {
+            return destroyVersion();
+        },
         destroyBrick(col: number, row: number) {
             bricks[row][col] = false;
             batch(() => {
                 setLastDestroyed({ col, row });
-                setDestroyVersion(v => v + 1);
+                setDestroyVersion((v) => v + 1);
             });
         },
     };
 }
 
 // --- View ---
-function createBrickGridView(
-    model: BrickGridModel,
-    brickSprites: Map<string, Sprite>,
-): Container {
+function createBrickGridView(model: BrickGridModel, brickSprites: Map<string, Sprite>): Container {
     const view = new Container();
     // ... populate initial sprites into view ...
 
     const dispose = createRoot((dispose) => {
         createEffect(() => {
-            model.destroyVersion;  // track the version signal via getter
+            model.destroyVersion; // track the version signal via getter
             const brick = model.lastDestroyed;
             if (!brick) return;
 
@@ -561,7 +613,10 @@ function createBrickGridView(
             if (!sprite) return;
 
             gsap.to(sprite, {
-                alpha: 0, scaleX: 1.5, scaleY: 1.5, duration: 0.3,
+                alpha: 0,
+                scaleX: 1.5,
+                scaleY: 1.5,
+                duration: 0.3,
                 ease: 'power2.out',
                 onComplete: () => {
                     view.removeChild(sprite);
@@ -579,11 +634,12 @@ function createBrickGridView(
 ```
 
 **Observations:**
+
 - Signals are a poor fit for discrete events. There is no "fire and forget" -
   you must change a value and have the effect detect the change. The version
   counter workaround recreates event semantics inside the signal model.
 - An alternative is to use SolidJS stores with array mutations, but the core
-  issue remains: signals model *state*, not *events*.
+  issue remains: signals model _state_, not _events_.
 - For truly discrete events, an event emitter is more natural.
 
 ### Watchers
@@ -591,14 +647,22 @@ function createBrickGridView(
 ```typescript
 // --- Model ---
 function createBrickGridModel() {
-    const bricks: boolean[][] = [/* initial grid */];
+    const bricks: boolean[][] = [
+        /* initial grid */
+    ];
     let lastDestroyed: { col: number; row: number } | undefined;
     let destroyVersion = 0;
 
     return {
-        isBrick(col: number, row: number) { return bricks[row][col]; },
-        get destroyVersion() { return destroyVersion; },
-        get lastDestroyed() { return lastDestroyed; },
+        isBrick(col: number, row: number) {
+            return bricks[row][col];
+        },
+        get destroyVersion() {
+            return destroyVersion;
+        },
+        get lastDestroyed() {
+            return lastDestroyed;
+        },
         destroyBrick(col: number, row: number) {
             bricks[row][col] = false;
             lastDestroyed = { col, row };
@@ -608,9 +672,7 @@ function createBrickGridModel() {
 }
 
 // --- View ---
-function createBrickGridView(
-    model: ReturnType<typeof createBrickGridModel>,
-): Container {
+function createBrickGridView(model: ReturnType<typeof createBrickGridModel>): Container {
     const view = new Container();
     const brickSprites = new Map<string, Sprite>();
     // ... populate initial sprites ...
@@ -628,7 +690,10 @@ function createBrickGridView(
             if (!sprite) return;
 
             gsap.to(sprite, {
-                alpha: 0, scaleX: 1.5, scaleY: 1.5, duration: 0.3,
+                alpha: 0,
+                scaleX: 1.5,
+                scaleY: 1.5,
+                duration: 0.3,
                 ease: 'power2.out',
                 onComplete: () => {
                     view.removeChild(sprite);
@@ -643,6 +708,7 @@ function createBrickGridView(
 ```
 
 **Observations:**
+
 - Version stamp pattern works similarly to signals' version counter - both
   are working around the fact that poll/signal systems model state, not events.
 - The watcher approach is slightly more direct: poll, check if changed, act.
@@ -670,7 +736,7 @@ membership).
 // --- Model ---
 interface AsteroidFieldEvents {
     'asteroid-added': Asteroid;
-    'asteroid-removed': string;  // asteroid ID
+    'asteroid-removed': string; // asteroid ID
 }
 
 function createAsteroidField(emitter: TypedEmitter<AsteroidFieldEvents>) {
@@ -691,7 +757,9 @@ function createAsteroidField(emitter: TypedEmitter<AsteroidFieldEvents>) {
                 // No event for position - changes every tick
             }
         },
-        getAll() { return asteroids; },
+        getAll() {
+            return asteroids;
+        },
     };
 }
 
@@ -710,7 +778,10 @@ function createAsteroidFieldView(
     };
     const onRemoved = (id: string) => {
         const s = sprites.get(id);
-        if (s) { view.removeChild(s); sprites.delete(id); }
+        if (s) {
+            view.removeChild(s);
+            sprites.delete(id);
+        }
     };
 
     emitter.on('asteroid-added', onAdded);
@@ -724,7 +795,10 @@ function createAsteroidFieldView(
         // so we fall back to direct reads
         for (const [id, a] of field.getAll()) {
             const s = sprites.get(id);
-            if (s) { s.x = a.x; s.y = a.y; }
+            if (s) {
+                s.x = a.x;
+                s.y = a.y;
+            }
         }
     };
 
@@ -738,6 +812,7 @@ function createAsteroidFieldView(
 ```
 
 **Observations:**
+
 - Events handle add/remove well - discrete occurrences.
 - Per-frame position updates still require direct reads in `onRender` -
   events can't/shouldn't fire 60 times per second per asteroid.
@@ -763,29 +838,31 @@ function createAsteroidFieldModel(): AsteroidFieldModel {
     const [asteroids, setAsteroids] = createStore<Asteroid[]>([]);
 
     return {
-        get asteroids() { return asteroids; },
+        get asteroids() {
+            return asteroids;
+        },
         add(a: Asteroid) {
-            setAsteroids(produce(list => list.push(a)));
+            setAsteroids(produce((list) => list.push(a)));
         },
         remove(id: string) {
-            setAsteroids(list => list.filter(a => a.id !== id));
+            setAsteroids((list) => list.filter((a) => a.id !== id));
         },
         update(dt: number) {
-            setAsteroids(produce(list => {
-                for (const a of list) {
-                    a.x += a.vx * dt;
-                    a.y += a.vy * dt;
-                }
-            }));
+            setAsteroids(
+                produce((list) => {
+                    for (const a of list) {
+                        a.x += a.vx * dt;
+                        a.y += a.vy * dt;
+                    }
+                }),
+            );
             // Triggers store reactivity every tick - all position effects re-run
         },
     };
 }
 
 // --- View ---
-function createAsteroidFieldView(
-    model: AsteroidFieldModel,
-): Container {
+function createAsteroidFieldView(model: AsteroidFieldModel): Container {
     const view = new Container();
     const sprites = new Map<string, Sprite>();
 
@@ -821,6 +898,7 @@ function createAsteroidFieldView(
 ```
 
 **Observations:**
+
 - `update()` triggers the store's reactivity on every tick (positions change
   every frame). The effect re-runs every frame, iterating the full asteroid
   array - same O(n) cost as the other approaches, plus signal overhead.
@@ -837,15 +915,25 @@ function createAsteroidFieldView(
 // --- Model (plain) ---
 function createAsteroidField() {
     const asteroids: Asteroid[] = [];
-    let version = 0;  // bumped on add/remove, NOT on position updates
+    let version = 0; // bumped on add/remove, NOT on position updates
 
     return {
-        get version() { return version; },
-        get asteroids() { return asteroids; },
-        add(a: Asteroid) { asteroids.push(a); version++; },
+        get version() {
+            return version;
+        },
+        get asteroids() {
+            return asteroids;
+        },
+        add(a: Asteroid) {
+            asteroids.push(a);
+            version++;
+        },
         remove(id: string) {
-            const idx = asteroids.findIndex(a => a.id === id);
-            if (idx >= 0) { asteroids.splice(idx, 1); version++; }
+            const idx = asteroids.findIndex((a) => a.id === id);
+            if (idx >= 0) {
+                asteroids.splice(idx, 1);
+                version++;
+            }
         },
         update(dt: number) {
             for (let i = 0; i < asteroids.length; i++) {
@@ -858,9 +946,7 @@ function createAsteroidField() {
 }
 
 // --- View ---
-function createAsteroidFieldView(
-    field: ReturnType<typeof createAsteroidField>,
-): Container {
+function createAsteroidFieldView(field: ReturnType<typeof createAsteroidField>): Container {
     const view = new Container();
     const sprites = new Map<string, Sprite>();
 
@@ -895,7 +981,10 @@ function createAsteroidFieldView(
         for (let i = 0; i < field.asteroids.length; i++) {
             const a = field.asteroids[i];
             const s = sprites.get(a.id);
-            if (s) { s.x = a.x; s.y = a.y; }
+            if (s) {
+                s.x = a.x;
+                s.y = a.y;
+            }
         }
     };
 
@@ -904,30 +993,31 @@ function createAsteroidFieldView(
 ```
 
 **Observations:**
+
 - Version stamp watches collection membership changes (add/remove), which are
   infrequent. Sprite creation/destruction only happens when the collection
   changes - same ID-based diffing as the signals approach, but triggered
   explicitly by the version stamp.
 - Per-frame position sync is a direct indexed loop with no watcher overhead.
-  The watcher system is *not used* for values that change every tick - direct
+  The watcher system is _not used_ for values that change every tick - direct
   reads are simpler and cheaper.
 - No cleanup needed. No framework dependency.
 
 ### Summary
 
-| Concern | Events | Signals | Watchers |
-|---------|--------|---------|----------|
-| Collection add/remove | Clean (discrete events) | Verbose (store + produce) | Version stamp |
-| Per-frame position sync | Direct read (events don't help) | Effect re-runs (overhead) | Direct read |
-| Sprite lifecycle | Event handlers | Manual diffing | Version-triggered diffing |
-| Cleanup | `off()` on destroy | `dispose()` on destroy | None |
-| Initial sync | Manual loop | Automatic (effect) | Automatic (first poll) |
-| Per-tick state handling | Separate `onRender` loop | 60 signal writes/sec | Direct read |
+| Concern                 | Events                          | Signals                   | Watchers                  |
+| ----------------------- | ------------------------------- | ------------------------- | ------------------------- |
+| Collection add/remove   | Clean (discrete events)         | Verbose (store + produce) | Version stamp             |
+| Per-frame position sync | Direct read (events don't help) | Effect re-runs (overhead) | Direct read               |
+| Sprite lifecycle        | Event handlers                  | Manual diffing            | Version-triggered diffing |
+| Cleanup                 | `off()` on destroy              | `dispose()` on destroy    | None                      |
+| Initial sync            | Manual loop                     | Automatic (effect)        | Automatic (first poll)    |
+| Per-tick state handling | Separate `onRender` loop        | 60 signal writes/sec      | Direct read               |
 
 This example illustrates a key insight: **per-frame continuous values are best
 handled by direct reads, not any reactive mechanism.** Watchers shine for
-*infrequent* state changes (collection membership, phase transitions); direct
-reads are optimal for *per-frame* values (positions, velocities). Events work
+_infrequent_ state changes (collection membership, phase transitions); direct
+reads are optimal for _per-frame_ values (positions, velocities). Events work
 well for discrete occurrences (add/remove) but offer nothing for per-frame
 updates. Signals handle both, but for per-frame values they add dependency-tracking overhead with no benefit.
 
@@ -935,16 +1025,16 @@ updates. Signals handle both, but for per-frame values they add dependency-track
 
 ## Quick-Reference: Which Approach for Which Pattern?
 
-| Pattern | Events | Signals | Watchers |
-|---------|--------|---------|----------|
-| Scalar state → view sync | ⚠️ Manual init sync | ✅ Automatic | ✅ Automatic (with poll) |
-| State transitions (from → to) | ✅ Payload includes both | ⚠️ Manual previous tracking | ✅ `previous` built into watcher |
-| Discrete one-off events | ✅ Natural fit | ⚠️ Version counter workaround | ⚠️ Version stamp workaround |
-| Per-frame continuous values | ❌ 60 emits/sec wasteful | ⚠️ 60 signal writes/sec | ✅ Direct read (no watcher needed) |
-| Dynamic collections | ✅ Add/remove events | ⚠️ Store-based, verbose | ✅ Version stamp |
-| External tween integration | ✅ Tween → event on complete | ⚠️ Bridge values to signals | ✅ Read tween target directly |
-| Derived / computed values | ❌ Manual in every handler | ✅ `createMemo` | ⚠️ Model-layer derivation / getter |
-| Cross-cutting (audio, analytics) | ✅ Loose coupling | ⚠️ Signal access = coupling | ⚠️ Readable via bindings |
+| Pattern                          | Events                       | Signals                       | Watchers                           |
+| -------------------------------- | ---------------------------- | ----------------------------- | ---------------------------------- |
+| Scalar state → view sync         | ⚠️ Manual init sync          | ✅ Automatic                  | ✅ Automatic (with poll)           |
+| State transitions (from → to)    | ✅ Payload includes both     | ⚠️ Manual previous tracking   | ✅ `previous` built into watcher   |
+| Discrete one-off events          | ✅ Natural fit               | ⚠️ Version counter workaround | ⚠️ Version stamp workaround        |
+| Per-frame continuous values      | ❌ 60 emits/sec wasteful     | ⚠️ 60 signal writes/sec       | ✅ Direct read (no watcher needed) |
+| Dynamic collections              | ✅ Add/remove events         | ⚠️ Store-based, verbose       | ✅ Version stamp                   |
+| External tween integration       | ✅ Tween → event on complete | ⚠️ Bridge values to signals   | ✅ Read tween target directly      |
+| Derived / computed values        | ❌ Manual in every handler   | ✅ `createMemo`               | ⚠️ Model-layer derivation / getter |
+| Cross-cutting (audio, analytics) | ✅ Loose coupling            | ⚠️ Signal access = coupling   | ⚠️ Readable via bindings           |
 
 ---
 

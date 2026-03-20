@@ -68,8 +68,15 @@ const HARPOON_SPEED = 12; // tiles per second (extend/retract)
 
 export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
     const {
-        startRow, startCol, speed, maxHarpoonRange = 4,
-        isWalkable, isDirt, fieldRows, fieldCols, getHarpoonMaxDistance,
+        startRow,
+        startCol,
+        speed,
+        maxHarpoonRange = 4,
+        isWalkable,
+        isDirt,
+        fieldRows,
+        fieldCols,
+        getHarpoonMaxDistance,
     } = options;
 
     const state = {
@@ -262,7 +269,13 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
 
         harpoonTimeline.clear().time(0);
         harpoonTimeline.to(state, { harpoonDistance: 0, duration, ease: 'none' });
-        harpoonTimeline.call(() => { state.harpoonExtended = false; }, undefined, duration);
+        harpoonTimeline.call(
+            () => {
+                state.harpoonExtended = false;
+            },
+            undefined,
+            duration,
+        );
     }
 
     function scheduleMove(): void {

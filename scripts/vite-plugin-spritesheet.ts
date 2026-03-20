@@ -205,23 +205,23 @@ export function spritesheetPlugin(): Plugin {
             });
 
             server.middlewares.use((req, res, next) => {
-                    const url = req.url ?? '';
-                    const match = url.match(/^\/assets\/([a-z0-9-]+)-textures\.(json|png)$/);
-                    if (!match) return next();
+                const url = req.url ?? '';
+                const match = url.match(/^\/assets\/([a-z0-9-]+)-textures\.(json|png)$/);
+                if (!match) return next();
 
-                    const gameName = match[1];
-                    const ext = match[2];
-                    const sheet = sheets.get(gameName);
-                    if (!sheet) return next();
+                const gameName = match[1];
+                const ext = match[2];
+                const sheet = sheets.get(gameName);
+                if (!sheet) return next();
 
-                    if (ext === 'json') {
-                        res.setHeader('Content-Type', 'application/json');
-                        res.end(sheet.jsonString);
-                    } else {
-                        res.setHeader('Content-Type', 'image/png');
-                        res.end(sheet.pngBuffer);
-                    }
-                });
+                if (ext === 'json') {
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(sheet.jsonString);
+                } else {
+                    res.setHeader('Content-Type', 'image/png');
+                    res.end(sheet.pngBuffer);
+                }
+            });
         },
 
         // Production build - pack and emit

@@ -16,11 +16,7 @@ export type TextureNameMap = { [key: string]: string | TextureNameMap };
 
 /** Recursively maps a TextureNameMap shape, replacing leaf strings with Texture. */
 export type TextureRecord<T extends TextureNameMap> = {
-    [K in keyof T]: T[K] extends string
-        ? Texture
-        : T[K] extends TextureNameMap
-          ? TextureRecord<T[K]>
-          : never;
+    [K in keyof T]: T[K] extends string ? Texture : T[K] extends TextureNameMap ? TextureRecord<T[K]> : never;
 };
 
 // ---------------------------------------------------------------------------

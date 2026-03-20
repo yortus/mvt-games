@@ -37,9 +37,5 @@ export {
     HIT_REACTION_MS,
     BLOCK_REACTION_MS,
 } from './arena-data';
-export {
-    type MoveData,
-    MOVE_DATA,
-    CROUCH_PUNCH_FRAME_SEQUENCE,
-} from './move-data';
+export { type MoveData, MOVE_DATA, CROUCH_PUNCH_FRAME_SEQUENCE } from './move-data';
 export { textures } from './textures';

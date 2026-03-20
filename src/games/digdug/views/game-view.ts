@@ -35,26 +35,30 @@ export function createGameView(game: GameModel): Container {
 
     function initialiseView(): void {
         // Field
-        view.addChild(createFieldView({
-            getTileSize: () => TILE_SIZE,
-            getRows: () => FIELD_ROWS,
-            getCols: () => FIELD_COLS,
-            getTileKind: (r, c) => game.field.tileAt(r, c),
-            getDepthLayers: () => DEPTH_LAYERS,
-            getTunnelCount: () => game.field.tunnelCount,
-            getGamePhase: () => game.phase,
-        }));
+        view.addChild(
+            createFieldView({
+                getTileSize: () => TILE_SIZE,
+                getRows: () => FIELD_ROWS,
+                getCols: () => FIELD_COLS,
+                getTileKind: (r, c) => game.field.tileAt(r, c),
+                getDepthLayers: () => DEPTH_LAYERS,
+                getTunnelCount: () => game.field.tunnelCount,
+                getGamePhase: () => game.phase,
+            }),
+        );
 
         // Digger
-        view.addChild(createDiggerView({
-            getRow: () => game.digger.row,
-            getCol: () => game.digger.col,
-            getDirection: () => game.digger.direction,
-            isAlive: () => game.digger.alive,
-            isHarpoonExtended: () => game.digger.harpoonExtended,
-            getHarpoonDistance: () => game.digger.harpoonDistance,
-            getTileSize: () => TILE_SIZE,
-        }));
+        view.addChild(
+            createDiggerView({
+                getRow: () => game.digger.row,
+                getCol: () => game.digger.col,
+                getDirection: () => game.digger.direction,
+                isAlive: () => game.digger.alive,
+                isHarpoonExtended: () => game.digger.harpoonExtended,
+                getHarpoonDistance: () => game.digger.harpoonDistance,
+                getTileSize: () => TILE_SIZE,
+            }),
+        );
 
         // Enemy & rock layers (children managed by buildEnemies / buildRocks)
         enemyLayer = new Container();
@@ -76,36 +80,42 @@ export function createGameView(game: GameModel): Container {
         view.addChild(hudContainer);
 
         // Overlay
-        view.addChild(createOverlayView({
-            getWidth: () => canvasW,
-            getHeight: () => canvasH,
-            isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
-            getText: () => game.phase === 'game-over'
-                ? 'GAME OVER\n\nPress Enter to restart'
-                : 'LEVEL CLEAR!',
-        }));
+        view.addChild(
+            createOverlayView({
+                getWidth: () => canvasW,
+                getHeight: () => canvasH,
+                isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
+                getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'LEVEL CLEAR!'),
+            }),
+        );
 
         // Keyboard input
-        view.addChild(createKeyboardInputView({
-            onXDirectionChanged: (dir) => {
-                lastXDir = dir;
-                if (dir === 'left') game.playerInput.direction = 'left';
-                else if (dir === 'right') game.playerInput.direction = 'right';
-                else if (lastYDir === 'up') game.playerInput.direction = 'up';
-                else if (lastYDir === 'down') game.playerInput.direction = 'down';
-                else game.playerInput.direction = 'none';
-            },
-            onYDirectionChanged: (dir) => {
-                lastYDir = dir;
-                if (dir === 'up') game.playerInput.direction = 'up';
-                else if (dir === 'down') game.playerInput.direction = 'down';
-                else if (lastXDir === 'left') game.playerInput.direction = 'left';
-                else if (lastXDir === 'right') game.playerInput.direction = 'right';
-                else game.playerInput.direction = 'none';
-            },
-            onPrimaryButtonChanged: (pressed) => { game.playerInput.pumpPressed = pressed; },
-            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-        }));
+        view.addChild(
+            createKeyboardInputView({
+                onXDirectionChanged: (dir) => {
+                    lastXDir = dir;
+                    if (dir === 'left') game.playerInput.direction = 'left';
+                    else if (dir === 'right') game.playerInput.direction = 'right';
+                    else if (lastYDir === 'up') game.playerInput.direction = 'up';
+                    else if (lastYDir === 'down') game.playerInput.direction = 'down';
+                    else game.playerInput.direction = 'none';
+                },
+                onYDirectionChanged: (dir) => {
+                    lastYDir = dir;
+                    if (dir === 'up') game.playerInput.direction = 'up';
+                    else if (dir === 'down') game.playerInput.direction = 'down';
+                    else if (lastXDir === 'left') game.playerInput.direction = 'left';
+                    else if (lastXDir === 'right') game.playerInput.direction = 'right';
+                    else game.playerInput.direction = 'none';
+                },
+                onPrimaryButtonChanged: (pressed) => {
+                    game.playerInput.pumpPressed = pressed;
+                },
+                onRestartButtonChanged: (pressed) => {
+                    game.playerInput.restartPressed = pressed;
+                },
+            }),
+        );
     }
 
     function refresh(): void {

@@ -1,10 +1,6 @@
 import { Container, Text } from 'pixi.js';
 import { createKeyboardInputView } from '#common';
-import {
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT,
-    resolveInputDirection,
-} from '../data';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, resolveInputDirection } from '../data';
 import type { FighterModel, PlayerInput } from '../models';
 import { createArenaView } from './arena-view';
 import { createFighterView } from './fighter-view';
@@ -28,16 +24,18 @@ export function createPlaytestView(fighter: FighterModel, playerInput: PlayerInp
     view.addChild(createArenaView(SCREEN_WIDTH, SCREEN_HEIGHT));
 
     // Fighter view (player, no tint)
-    view.addChild(createFighterView({
-        getX: () => fighter.x,
-        getJumpHeight: () => fighter.jumpHeight,
-        getFacing: () => fighter.facing,
-        getPhase: () => fighter.phase,
-        getMoveKind: () => fighter.moveKind,
-        getFrameIndex: () => fighter.frameIndex,
-        getDefeatVariant: () => fighter.defeatVariant,
-        getTint: () => 0xffffff, // no tint
-    }));
+    view.addChild(
+        createFighterView({
+            getX: () => fighter.x,
+            getJumpHeight: () => fighter.jumpHeight,
+            getFacing: () => fighter.facing,
+            getPhase: () => fighter.phase,
+            getMoveKind: () => fighter.moveKind,
+            getFrameIndex: () => fighter.frameIndex,
+            getDefeatVariant: () => fighter.defeatVariant,
+            getTint: () => 0xffffff, // no tint
+        }),
+    );
 
     // Debug overlay
     const debugText = new Text({
@@ -52,22 +50,24 @@ export function createPlaytestView(fighter: FighterModel, playerInput: PlayerInp
     view.addChild(debugText);
 
     // Keyboard input
-    view.addChild(createKeyboardInputView({
-        onXDirectionChanged: (dir) => {
-            lastXDir = dir;
-            playerInput.xDirection = dir;
-        },
-        onYDirectionChanged: (dir) => {
-            lastYDir = dir;
-            playerInput.yDirection = dir;
-        },
-        onPrimaryButtonChanged: (pressed) => {
-            playerInput.attackPressed = pressed;
-        },
-        onRestartButtonChanged: (pressed) => {
-            playerInput.restartPressed = pressed;
-        },
-    }));
+    view.addChild(
+        createKeyboardInputView({
+            onXDirectionChanged: (dir) => {
+                lastXDir = dir;
+                playerInput.xDirection = dir;
+            },
+            onYDirectionChanged: (dir) => {
+                lastYDir = dir;
+                playerInput.yDirection = dir;
+            },
+            onPrimaryButtonChanged: (pressed) => {
+                playerInput.attackPressed = pressed;
+            },
+            onRestartButtonChanged: (pressed) => {
+                playerInput.restartPressed = pressed;
+            },
+        }),
+    );
 
     view.onRender = refresh;
     return view;

@@ -48,7 +48,11 @@ export function createFieldView(bindings: FieldViewBindings): Container {
         const watched = watcher.poll();
         const dimsChanged = watched.rows.changed || watched.cols.changed || watched.tileSize.changed;
 
-        if (dimsChanged || (watched.phase.changed && watched.phase.value === 'playing') || watched.tunnelCount.changed) {
+        if (
+            dimsChanged ||
+            (watched.phase.changed && watched.phase.value === 'playing') ||
+            watched.tunnelCount.changed
+        ) {
             buildField();
         }
     }

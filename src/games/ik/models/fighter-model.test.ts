@@ -24,12 +24,14 @@ function advance(fighter: FighterModel, ms: number): void {
 // Helper: create a fighter with sensible defaults
 // ---------------------------------------------------------------------------
 
-function makeFighter(overrides?: Partial<{
-    startX: number;
-    startFacing: 'left' | 'right';
-    arenaMinX: number;
-    arenaMaxX: number;
-}>): FighterModel {
+function makeFighter(
+    overrides?: Partial<{
+        startX: number;
+        startFacing: 'left' | 'right';
+        arenaMinX: number;
+        arenaMaxX: number;
+    }>,
+): FighterModel {
     return createFighterModel({
         startX: overrides?.startX ?? 5.0,
         startFacing: overrides?.startFacing ?? 'right',
@@ -44,7 +46,6 @@ function makeFighter(overrides?: Partial<{
 // ---------------------------------------------------------------------------
 
 describe('FighterModel', () => {
-
     // --- Initial state ---
 
     describe('initial state', () => {
@@ -63,7 +64,6 @@ describe('FighterModel', () => {
     // --- Input handling ---
 
     describe('applyInput from idle', () => {
-
         it('stays idle on no input', () => {
             const f = makeFighter();
             f.applyInput('none', false);

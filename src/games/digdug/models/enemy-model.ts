@@ -76,7 +76,18 @@ const FIRE_RANGE = 3; // tiles
 const NEXT_INFLATION: readonly InflationStage[] = [1, 2, 3, 4, 4];
 
 export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
-    const { startRow, startCol, kind, speed, ghostInterval, fieldRows, fieldCols, isWalkable, chaseTarget, canStartGhosting } = options;
+    const {
+        startRow,
+        startCol,
+        kind,
+        speed,
+        ghostInterval,
+        fieldRows,
+        fieldCols,
+        isWalkable,
+        chaseTarget,
+        canStartGhosting,
+    } = options;
 
     const state = {
         col: startCol,
@@ -231,7 +242,10 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             // 2. Phase-specific early returns
             if (state.phase === 'inflating') return;
             if (kind === 'fygar' && (state.fireTelegraph || state.fireActive)) return;
-            if (state.phase === 'ghosting') { advanceGhosting(); return; }
+            if (state.phase === 'ghosting') {
+                advanceGhosting();
+                return;
+            }
             if (checkFleeEscape()) return;
 
             // 3. Orchestration
@@ -240,7 +254,10 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 const dist = distanceSq(state.tileRow, state.tileCol, chaseTarget.row, chaseTarget.col);
                 if (dist < 36) state.phase = 'chase';
             }
-            if (canFireNow()) { scheduleFireSequence(); return; }
+            if (canFireNow()) {
+                scheduleFireSequence();
+                return;
+            }
             if (!state.moving) scheduleMove();
         },
     };
@@ -280,26 +297,42 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
         fireTimeline.clear().time(0);
         // Telegraph → fire
-        fireTimeline.call(() => {
-            state.fireTelegraph = false;
-            state.fireActive = true;
-        }, undefined, telegraphEnd);
+        fireTimeline.call(
+            () => {
+                state.fireTelegraph = false;
+                state.fireActive = true;
+            },
+            undefined,
+            telegraphEnd,
+        );
         // Fire → cooldown
-        fireTimeline.call(() => {
-            state.fireActive = false;
-        }, undefined, fireEnd);
+        fireTimeline.call(
+            () => {
+                state.fireActive = false;
+            },
+            undefined,
+            fireEnd,
+        );
         // Cooldown → ready
-        fireTimeline.call(() => {
-            state.fireReady = true;
-        }, undefined, cooldownEnd);
+        fireTimeline.call(
+            () => {
+                state.fireReady = true;
+            },
+            undefined,
+            cooldownEnd,
+        );
     }
 
     function scheduleFireCooldown(): void {
         state.fireReady = false;
         fireTimeline.clear().time(0);
-        fireTimeline.call(() => {
-            state.fireReady = true;
-        }, undefined, FIRE_COOLDOWN_MS * 0.001);
+        fireTimeline.call(
+            () => {
+                state.fireReady = true;
+            },
+            undefined,
+            FIRE_COOLDOWN_MS * 0.001,
+        );
     }
 
     function scheduleDeflation(): void {
@@ -309,18 +342,22 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
         deflateTimeline.clear().time(0);
         deflateTimeline.to(state, { inflationStage: 0, duration, ease: 'none', roundProps: 'inflationStage' });
-        deflateTimeline.call(() => {
-            state.inflationStage = 0;
-            if (state.fleeing) {
-                // Resume flee: ghost through dirt to surface
-                state.phase = 'ghosting';
-                timeline.clear().time(0);
-                state.moving = false;
-            } else {
-                state.phase = 'chase';
-            }
-            if (kind === 'fygar') scheduleFireCooldown();
-        }, undefined, duration);
+        deflateTimeline.call(
+            () => {
+                state.inflationStage = 0;
+                if (state.fleeing) {
+                    // Resume flee: ghost through dirt to surface
+                    state.phase = 'ghosting';
+                    timeline.clear().time(0);
+                    state.moving = false;
+                } else {
+                    state.phase = 'chase';
+                }
+                if (kind === 'fygar') scheduleFireCooldown();
+            },
+            undefined,
+            duration,
+        );
     }
 
     function scheduleGhostCountdown(delaySec: number): void {

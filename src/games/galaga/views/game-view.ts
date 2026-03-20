@@ -67,18 +67,24 @@ export function createGameView(game: GameModel): Container {
             getWidth: () => SCREEN_WIDTH,
             getHeight: () => PLAY_HEIGHT,
             isVisible: () => game.phase === 'game-over' || game.phase === 'stage-clear',
-            getText: () => game.phase === 'game-over'
-                ? 'GAME OVER\n\nPress Enter to restart'
-                : 'STAGE CLEAR!',
+            getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'STAGE CLEAR!'),
         });
         view.addChild(overlayView);
 
         // Keyboard input
-        view.addChild(createKeyboardInputView({
-            onXDirectionChanged: (dir) => { game.playerInput.direction = dir;},
-            onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
-            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-        }));
+        view.addChild(
+            createKeyboardInputView({
+                onXDirectionChanged: (dir) => {
+                    game.playerInput.direction = dir;
+                },
+                onPrimaryButtonChanged: (pressed) => {
+                    game.playerInput.firePressed = pressed;
+                },
+                onRestartButtonChanged: (pressed) => {
+                    game.playerInput.restartPressed = pressed;
+                },
+            }),
+        );
     }
 
     // ---- refresh -----------------------------------------------------------

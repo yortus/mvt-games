@@ -27,19 +27,19 @@ Coding conventions, naming rules, and project structure for this codebase.
 
 ## Quick Reference
 
-| Convention            | Example                             | Section                                               |
-| --------------------- | ----------------------------------- | ----------------------------------------------------- |
-| File names            | `score-model.ts`                    | [File Naming](#file-naming)                           |
-| Types / interfaces    | `ScoreModel`, `TileKind`            | [Naming Conventions](#naming-conventions)             |
-| Functions / variables | `createScoreModel`, `deltaMs`       | [Naming Conventions](#naming-conventions)             |
-| Factory functions     | `createXxxModel(options)`           | [Models](#models)                                     |
-| Binding accessors     | `getScore()`, `onResetClick()`      | [Views](#views)                                       |
-| Enum-like types       | `type TileKind = 'wall' \| 'empty'` | [Enumeration Types](#enumeration-types)               |
-| Confused names        | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)     |
-| Barrel imports        | `import { Foo } from './module'`    | [Modules and Barrel Files](#modules-and-barrel-files) |
-| Module specifiers     | `'./foo'` not `'./foo.ts'`          | [Modules and Barrel Files](#modules-and-barrel-files) |
-| Indentation           | 4 spaces                            | [Formatting](#formatting)                             |
-| Unused parameters     | `_deltaMs`                          | [Naming Conventions](#naming-conventions)             |
+| Convention            | Example                                | Section                                               |
+| --------------------- | -------------------------------------- | ----------------------------------------------------- |
+| File names            | `score-model.ts`                       | [File Naming](#file-naming)                           |
+| Types / interfaces    | `ScoreModel`, `TileKind`               | [Naming Conventions](#naming-conventions)             |
+| Functions / variables | `createScoreModel`, `deltaMs`          | [Naming Conventions](#naming-conventions)             |
+| Factory functions     | `createXxxModel(options)`              | [Models](#models)                                     |
+| Binding accessors     | `getScore()`, `onResetClick()`         | [Views](#views)                                       |
+| Enum-like types       | `type TileKind = 'wall' \| 'empty'`    | [Enumeration Types](#enumeration-types)               |
+| Confused names        | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)       |
+| Barrel imports        | `import { Foo } from './module'`       | [Modules and Barrel Files](#modules-and-barrel-files) |
+| Module specifiers     | `'./foo'` not `'./foo.ts'`             | [Modules and Barrel Files](#modules-and-barrel-files) |
+| Indentation           | 4 spaces                               | [Formatting](#formatting)                             |
+| Unused parameters     | `_deltaMs`                             | [Naming Conventions](#naming-conventions)             |
 
 ---
 
@@ -47,19 +47,19 @@ Coding conventions, naming rules, and project structure for this codebase.
 
 All naming rules collected in one place for easy reference.
 
-| Element                | Convention                   | Example                                 |
-| ---------------------- | ---------------------------- | --------------------------------------- |
-| Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`        |
-| Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`        |
-| Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`        |
-| View types             | Suffix with `View`           | `MazeView`, `KeyboardPlayerInputView`   |
-| Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`           |
-| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`     |
-| Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`            |
-| Binding event handlers | `on` + description           | `onDirectionChange()`, `onResetClick()` |
-| Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌           |
+| Element                | Convention                   | Example                                       |
+| ---------------------- | ---------------------------- | --------------------------------------------- |
+| Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`              |
+| Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`              |
+| Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`              |
+| View types             | Suffix with `View`           | `MazeView`, `KeyboardPlayerInputView`         |
+| Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
+| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
+| Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`                  |
+| Binding event handlers | `on` + description           | `onDirectionChange()`, `onResetClick()`       |
+| Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                 |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌ |
-| Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`              |
+| Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |
 
 See [Easily Confused Names](#easily-confused-names) for the reasoning
 behind the `Kind`/`Type` and `phase`/`state` rules.
@@ -109,7 +109,7 @@ src/
 | --------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
 | `data/`   | Constants, configuration, static datasets                        | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
-| `common/` | Shared helpers, views, and models                                 | `createWatch`, `Watch`, `createKeyboardPlayerInputView`   |
+| `common/` | Shared helpers, views, and models                                | `createWatch`, `Watch`, `createKeyboardPlayerInputView`   |
 | `views/`  | View factory functions, bindings interfaces                      | `createHudView`, `HudViewBindings`                        |
 
 ---
@@ -183,7 +183,9 @@ export type { TimerModel } from './timer-model';
 
 ```ts
 // index.ts — ❌ wrong: barrel contains a declaration
-export function createFooEntry(): FooEntry { /* ... */ }
+export function createFooEntry(): FooEntry {
+    /* ... */
+}
 export { createHelperModel } from './helper-model';
 ```
 
@@ -192,7 +194,9 @@ them instead:
 
 ```ts
 // foo-entry.ts          ← declaration lives here
-export function createFooEntry(): FooEntry { /* ... */ }
+export function createFooEntry(): FooEntry {
+    /* ... */
+}
 
 // index.ts              ← barrel re-exports it
 export { createFooEntry } from './foo-entry';
@@ -225,8 +229,8 @@ Files inside a directory module must **never** import from their own barrel
 import { type Direction } from './common';
 
 // ❌ Wrong — importing from own barrel creates a cycle
-import { type Direction } from '.';          // resolves to ./index.ts
-import { type Direction } from './index';    // same problem, explicit
+import { type Direction } from '.'; // resolves to ./index.ts
+import { type Direction } from './index'; // same problem, explicit
 ```
 
 **Why?** Importing from your own barrel creates a circular dependency: the
@@ -284,14 +288,14 @@ When these words appear as identifier names with a _different_ meaning, readers
 have to pause and work out which sense is intended. The words below are
 especially prone to this — avoid them in favour of more precise alternatives.
 
-| Avoid       | Prefer           | Rationale                                                                                                                |
-| ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **`type`**  | `kind`           | Easily confused with the TypeScript concept of a _type_ (`type` keyword, `typeof`, type parameters). Use `kind` instead. |
+| Avoid       | Prefer                                               | Rationale                                                                                                                                                                                                                                                                                                      |
+| ----------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`type`**  | `kind`                                               | Easily confused with the TypeScript concept of a _type_ (`type` keyword, `typeof`, type parameters). Use `kind` instead.                                                                                                                                                                                       |
 | **`state`** | `phase`, `status`, `mode`, or a domain-specific name | Every property on a model is "state." A property _called_ `state` is confusingly meta — `game.state` could mean "all of the game's state" or "one specific enum value." Use a precise name: `phase` for lifecycle stages, `status` for conditions, `mode` for operational modes, or something domain-specific. |
 
 ```ts
-type EnemyType = 'pooka' | 'fygar';               // ❌ 'type' clashes with the TS concept of a type
-type EnemyKind = 'pooka' | 'fygar';               // ✅ clearly means which kind of enemy
+type EnemyType = 'pooka' | 'fygar'; // ❌ 'type' clashes with the TS concept of a type
+type EnemyKind = 'pooka' | 'fygar'; // ✅ clearly means which kind of enemy
 
 type GameState = 'idle' | 'playing' | 'gameover'; // ❌ confusingly meta — all properties are "state"
 type GamePhase = 'idle' | 'playing' | 'gameover'; // ✅ clearly means lifecycle stage
@@ -409,13 +413,19 @@ Key points:
 function createGameView(game: GameModel): Container {
     const container = new Container();
 
-    container.addChild(createHudView({
-        getScore: () => game.score.score,
-    }));
+    container.addChild(
+        createHudView({
+            getScore: () => game.score.score,
+        }),
+    );
 
-    container.addChild(createKeyboardInputView({
-        onDirectionChange: (dir) => { game.playerInput.direction = dir; },
-    }));
+    container.addChild(
+        createKeyboardInputView({
+            onDirectionChange: (dir) => {
+                game.playerInput.direction = dir;
+            },
+        }),
+    );
 
     // ... sub-views ...
 
@@ -529,16 +539,24 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // --- Public record ------------------------------------------------------
     const model: GameModel = {
-        get ship() { return ship; },
-        get asteroids() { return asteroids; },
-        update(deltaMs: number): void { /* main loop */ },
+        get ship() {
+            return ship;
+        },
+        get asteroids() {
+            return asteroids;
+        },
+        update(deltaMs: number): void {
+            /* main loop */
+        },
     };
 
     return model;
 
     // --- Child construction -------------------------------------------------
 
-    function buildShip(): ShipModel { /* ... */ }
+    function buildShip(): ShipModel {
+        /* ... */
+    }
 
     // --- Helpers ------------------------------------------------------------
 

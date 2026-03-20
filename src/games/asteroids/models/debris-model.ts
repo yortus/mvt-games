@@ -60,20 +60,21 @@ interface MutableParticle {
 }
 
 export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel {
-    const {
-        count = 8,
-        minSpeed = 30,
-        maxSpeed = 120,
-        lifetimeMs = 1500,
-    } = options;
+    const { count = 8, minSpeed = 30, maxSpeed = 120, lifetimeMs = 1500 } = options;
 
     // Pre-allocate particle pool
     const pool: MutableParticle[] = [];
     for (let i = 0; i < count; i++) {
         pool.push({
-            x: 0, y: 0, vx: 0, vy: 0,
-            angle: 0, rotationSpeed: 0, length: 4,
-            active: false, timer: 0,
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            angle: 0,
+            rotationSpeed: 0,
+            length: 4,
+            active: false,
+            timer: 0,
         });
     }
 
