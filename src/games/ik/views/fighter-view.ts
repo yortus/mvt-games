@@ -52,9 +52,9 @@ export function createFighterView(bindings: FighterViewBindings): Container {
         const jumpPx = bindings.getJumpHeight() * scale;
         view.position.set(x, GROUND_Y_PX - jumpPx);
 
-        // Facing: source sprites face right; flip for left
+        // Facing: source sprites face left; flip for right
         const facing = bindings.getFacing();
-        view.scale.x = facing === 'right' ? 1 : -1;
+        view.scale.x = facing === 'right' ? -1 : 1;
 
         // Tint
         sprite.tint = bindings.getTint();
@@ -115,24 +115,24 @@ export function createFighterView(bindings: FighterViewBindings): Container {
 
     function resolveMoveTexture(moveKind: MoveKind | undefined, fi: number) {
         switch (moveKind) {
-            case 'front-lunge-punch':
+            case 'high-punch':
             case 'back-lunge-punch':
                 return tex.punch[clampKey(fi, 6) as keyof typeof tex.punch];
 
-            case 'chest-kick':
-            case 'front-kick':
+            case 'high-kick':
+            case 'mid-kick':
+            case 'low-kick':
                 return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
 
             case 'foot-sweep':
-                return tex.footsweep[clampKey(fi, 6) as keyof typeof tex.footsweep];
+                return tex.footsweep[clampKey(fi, 4) as keyof typeof tex.footsweep];
 
             case 'crouch-punch':
             case 'back-crouch-punch':
                 return tex.crouchPunch[clampKey(fi, 2) as keyof typeof tex.crouchPunch];
 
-            case 'front-side-kick':
-            case 'back-side-kick':
-                return tex.backKick[clampKey(fi, 3) as keyof typeof tex.backKick];
+            case 'back-low-kick':
+                return tex.kick[clampKey(fi, 7) as keyof typeof tex.kick];
 
             case 'roundhouse':
                 return tex.roundhouse[clampKey(fi, 4) as keyof typeof tex.roundhouse];

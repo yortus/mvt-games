@@ -7,6 +7,9 @@ import type { MoveKind } from './common';
 export interface MoveData {
     /** Duration in ms for each frame in the sequence. */
     readonly frameDurationMs: readonly number[];
+    /** Explicit 0-based texture indices for each frame (when non-sequential).
+     *  Length must match frameDurationMs. When omitted, uses [0, 1, 2, ...]. */
+    readonly frameSequence?: readonly number[];
     /** Which entries in the frame sequence have an active hitbox (0-based). */
     readonly hitFrameIndices: readonly number[];
     /** Points scored on hit. */
@@ -14,7 +17,8 @@ export interface MoveData {
     /** Hitbox offset and size relative to fighter centre, in world units.
      *  dx is in the fighter's forward direction (model flips for facing). */
     readonly hitbox: { readonly dx: number; readonly dy: number; readonly w: number; readonly h: number };
-    /** Forward lunge distance during the move (world units). */
+    /** Lunge distance during the move (world units).
+     *  Positive = forward (toward facing), negative = backward. */
     readonly lunge: number;
     /** Whether this attack can be passively blocked. */
     readonly blockable: boolean;
@@ -24,12 +28,6 @@ export interface MoveData {
     readonly airborne: boolean;
     /** Whether the fighter auto-turns before executing (moves 8, 13, 14). */
     readonly autoTurn: boolean;
-}
-
-export interface MoveVariants {
-    /** One frame-index sequence per variant. Indices are 0-based into the
-     *  animation source's texture array (e.g. kick-1 through kick-7). */
-    readonly sequences: readonly (readonly number[])[];
 }
 
 // ---------------------------------------------------------------------------
@@ -56,9 +54,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: false,
     },
 
-    // --- Punches (variant cycling, 2 frames per variant) ---
-    'front-lunge-punch': {
+    // --- High punch: punch frames 1,3 (0-based: [0, 2]) ---
+    'high-punch': {
         frameDurationMs: [FRAME_MS, FRAME_MS],
+        frameSequence: [0, 2],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.4, h: 0.3 },
@@ -68,8 +67,11 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         airborne: false,
         autoTurn: false,
     },
+
+    // --- Back lunge punch (auto-turns, punch frames 1,3) ---
     'back-lunge-punch': {
         frameDurationMs: [FRAME_MS, FRAME_MS],
+        frameSequence: [0, 2],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.4, h: 0.3 },
@@ -80,20 +82,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: true,
     },
 
-    // --- Kicks (variant cycling, 3 frames per variant) ---
-    'chest-kick': {
+    // --- High kick: kick frames 1,6,7 (0-based: [0, 5, 6]) ---
+    'high-kick': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [1],
-        damage: 1,
-        hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
-        lunge: 0.3,
-        blockable: true,
-        knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
-    },
-    'front-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 5, 6],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
@@ -104,9 +96,37 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: false,
     },
 
-    // --- Foot sweep (6 frames) ---
+    // --- Mid kick: kick frames 1,2,3 (0-based: [0, 1, 2]) ---
+    'mid-kick': {
+        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 1, 2],
+        hitFrameIndices: [1],
+        damage: 1,
+        hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
+        lunge: 0.3,
+        blockable: true,
+        knockback: 0.5,
+        airborne: false,
+        autoTurn: false,
+    },
+
+    // --- Low kick: kick frames 1,4,5 (0-based: [0, 3, 4]) ---
+    'low-kick': {
+        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 3, 4],
+        hitFrameIndices: [1],
+        damage: 1,
+        hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
+        lunge: 0.3,
+        blockable: true,
+        knockback: 0.5,
+        airborne: false,
+        autoTurn: false,
+    },
+
+    // --- Foot sweep (4 frames) ---
     'foot-sweep': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
+        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [2, 3],
         damage: 1,
         hitbox: { dx: 0.5, dy: -0.3, w: 0.5, h: 0.3 },
@@ -143,22 +163,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: true,
     },
 
-    // --- Front side kick (3 frames, back-kick sprites) ---
-    'front-side-kick': {
+    // --- Back low kick (auto-turns, kick frames 1,4,5) ---
+    'back-low-kick': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
-        hitFrameIndices: [1],
-        damage: 1,
-        hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
-        lunge: 0.3,
-        blockable: true,
-        knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
-    },
-
-    // --- Back side kick (auto-turns, 3 frames, back-kick sprites) ---
-    'back-side-kick': {
-        frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS],
+        frameSequence: [0, 3, 4],
         hitFrameIndices: [1],
         damage: 1,
         hitbox: { dx: 0.6, dy: 0, w: 0.4, h: 0.3 },
@@ -182,85 +190,44 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         autoTurn: false,
     },
 
-    // --- Flying kick (5 frames, airborne) ---
+    // --- Flying kick (5 frames, low airborne forward kick) ---
     'flying-kick': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [2, 3],
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.5, h: 0.3 },
-        lunge: 0,
+        lunge: 1.0,
         blockable: false,
         knockback: 0.5,
         airborne: true,
         autoTurn: false,
     },
 
-    // --- Front somersault (6 frames, airborne) ---
+    // --- Front somersault (6 frames, airborne, moves forward) ---
     'front-somersault': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [3, 4],
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.5, h: 0.4 },
-        lunge: 0,
+        lunge: 2.0,
         blockable: false,
         knockback: 0.5,
         airborne: true,
         autoTurn: false,
     },
 
-    // --- Back somersault (6 frames, airborne) ---
+    // --- Back somersault (6 frames, airborne, moves backward) ---
     'back-somersault': {
         frameDurationMs: [FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS, FRAME_MS],
         hitFrameIndices: [3, 4],
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.5, h: 0.4 },
-        lunge: 0,
+        lunge: -2.0,
         blockable: false,
         knockback: 0.5,
         airborne: true,
         autoTurn: false,
     },
-};
-
-// ---------------------------------------------------------------------------
-// Variant Cycling
-// ---------------------------------------------------------------------------
-
-/**
- * Kick variants (row 3, 7 total frames).
- * Shared by 'chest-kick' and 'front-kick'.
- */
-const KICK_VARIANTS: MoveVariants = {
-    sequences: [
-        [0, 1, 2],  // Variant A: windup, strike A, follow-through A
-        [0, 3, 4],  // Variant B: windup, strike B, follow-through B
-        [0, 5, 6],  // Variant C: windup, strike C, follow-through C
-    ],
-};
-
-/**
- * Punch variants (row 4, 6 total frames).
- * Shared by 'front-lunge-punch' and 'back-lunge-punch'.
- */
-const PUNCH_VARIANTS: MoveVariants = {
-    sequences: [
-        [0, 1],  // Variant A: windup-high, strike A
-        [0, 2],  // Variant B: windup-high, strike B
-        [3, 4],  // Variant C: windup-low, strike C
-        [3, 5],  // Variant D: windup-low, strike D
-    ],
-};
-
-/**
- * Variant data for moves that cycle through multiple frame sequences.
- * Only moves with variant cycling have entries here. Other moves use their
- * full frame list in order.
- */
-export const MOVE_VARIANTS: Partial<Record<MoveKind, MoveVariants>> = {
-    'chest-kick': KICK_VARIANTS,
-    'front-kick': KICK_VARIANTS,
-    'front-lunge-punch': PUNCH_VARIANTS,
-    'back-lunge-punch': PUNCH_VARIANTS,
 };
 
 // ---------------------------------------------------------------------------

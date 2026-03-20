@@ -57,29 +57,29 @@ into forward/backward based on the fighter's `facing` property.
 
 ### Without attack button
 
-| Direction   | # | Move              | Notes                        |
-|-------------|---|-------------------|------------------------------|
-| Up          | 1 | Jump              | Vertical arc, no attack      |
-| Up-Forward  | 2 | Front Lunge Punch | Punch variant, cycles        |
-| Forward     | 3 | Walk Forward      | 8-frame walk cycle           |
-| Down-Forward| 4 | Chest Kick        | Kick variant, cycles         |
-| Down        | 5 | Foot Sweep        | Low attack                   |
-| Down-Back   | 6 | Crouch Punch      | Low punch                    |
-| Backward    | 7 | Walk Backward     | 8-frame walk cycle, reversed |
-| Up-Back     | 8 | Back Lunge Punch  | **Auto-turns**, punch variant|
+| Direction   | # | Move                  | Notes                        |
+|-------------|---|-----------------------|------------------------------|
+| Up          | 1 | Jump                  | Vertical arc, no attack      |
+| Up-Forward  | 2 | High Punch (1,3)      |                              |
+| Forward     | 3 | Walk Forward          | 8-frame walk cycle           |
+| Down-Forward| 4 | High Kick (1,6,7)     |                              |
+| Down        | 5 | Foot Sweep            | Low attack                   |
+| Down-Back   | 6 | Crouch Punch          | Low punch                    |
+| Backward    | 7 | Walk Backward         | 8-frame walk cycle, reversed |
+| Up-Back     | 8 | Back High Punch (1,3) | **Auto-turns** then punches  |
 
 ### With attack button
 
-| Direction   | # | Move               | Notes                        |
-|-------------|---|--------------------|------------------------------|
-| Up          | 9 | Flying Kick        | Airborne kick                |
-| Up-Forward  |10 | Front Somersault   | Airborne flip-kick           |
-| Forward     |11 | Front Kick         | Kick variant, cycles         |
-| Down-Forward|12 | Front Side Kick    | Distinct kick animation      |
-| Down        |13 | Back Crouch Punch  | **Auto-turns**, low punch    |
-| Down-Back   |14 | Back Side Kick     | **Auto-turns**, back-kick    |
-| Backward    |15 | Roundhouse         | Spinning back kick           |
-| Up-Back     |16 | Back Somersault    | Airborne back flip           |
+| Direction   | # | Move                  | Notes                        |
+|-------------|---|-----------------------|------------------------------|
+| Up          | 9 | Flying Kick           | Airborne kick                |
+| Up-Forward  |10 | Front Somersault      | Airborne flip-kick           |
+| Forward     |11 | Mid Kick (1,2,3)      |                              |
+| Down-Forward|12 | Low Kick (1,4,5)      |                              |
+| Down        |13 | Back Crouch Punch     | **Auto-turns**, low punch    |
+| Down-Back   |14 | Back Low Kick (1,4,5) | **Auto-turns**, back-kick    |
+| Backward    |15 | Roundhouse            | Spinning back kick           |
+| Up-Back     |16 | Back Somersault       | Airborne back flip           |
 
 ### Neutral input
 

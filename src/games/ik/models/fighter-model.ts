@@ -7,11 +7,11 @@ import {
     type MoveKind,
     resolveMove,
     MOVE_DATA,
-    MOVE_VARIANTS,
     CROUCH_PUNCH_FRAME_SEQUENCE,
     WALK_SPEED,
     JUMP_DURATION_MS,
     JUMP_HEIGHT,
+    FLYING_KICK_HEIGHT,
     HIT_REACTION_MS,
     BLOCK_REACTION_MS,
     FIGHTER_BODY_WIDTH,
@@ -77,7 +77,8 @@ export interface FighterModelOptions {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TURN_FRAME_COUNT = 5;
+const TURN_FRAME_SEQUENCE: readonly number[] = [0, 1, 4];
+const TURN_FRAME_COUNT = TURN_FRAME_SEQUENCE.length;
 const TURN_FRAME_MS = 80;
 const BODY_HEIGHT = 1.5;
 const WON_FRAME_TOGGLE_MS = 300;
@@ -101,11 +102,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         defeatVariant: 'a' as DefeatVariant,
         walkDirection: 0, // +1 forward, -1 backward, 0 none
         walkDistAccum: 0, // accumulated walk distance for frame cycling
+        moveComplete: false, // true when attack animation has finished but input is held
     };
-
-    // Variant cycling indices (persist across moves, wrap around)
-    let kickVariantIndex = 0;
-    let punchVariantIndex = 0;
 
     // Pre-allocated hitbox and bodyBox objects (avoid per-tick allocation)
     const hitboxRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -156,10 +154,17 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         },
 
         applyInput(inputDir: InputDirection, attackPressed: boolean): void {
-            // Only accept input when idle or walking
-            if (state.phase !== 'idle' && state.phase !== 'walking') return;
+            // Accept input when idle, walking, or holding at end of a completed move
+            const canAcceptInput = state.phase === 'idle' || state.phase === 'walking' || state.moveComplete;
+            if (!canAcceptInput) return;
 
             const resolution = resolveMove(inputDir, attackPressed);
+
+            // When holding at end of a completed move, stay if same move requested
+            if (state.moveComplete) {
+                if (resolution.action === 'move' && resolution.moveKind === state.moveKind) return;
+                enterIdle();
+            }
 
             switch (resolution.action) {
                 case 'idle':
@@ -224,6 +229,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             state.defeatVariant = 'a';
             state.walkDirection = 0;
             state.walkDistAccum = 0;
+            state.moveComplete = false;
         },
 
         update(deltaMs: number): void {
@@ -271,6 +277,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         state.walkDirection = 0;
         state.walkDistAccum = 0;
         state.jumpHeight = 0;
+        state.moveComplete = false;
     }
 
     function enterWalk(direction: number): void {
@@ -309,8 +316,8 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             t += moveData.frameDurationMs[i] * 0.001;
         }
 
-        // Lunge: tween x forwards over the move duration
-        if (moveData.lunge > 0) {
+        // Lunge: tween x over the move duration (positive = forward, negative = backward)
+        if (moveData.lunge !== 0) {
             const sign = state.facing === 'right' ? 1 : -1;
             const targetX = state.x + moveData.lunge * sign;
             timeline.to(state, { x: targetX, duration: t, ease: 'none' }, 0);
@@ -318,13 +325,18 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
         // Airborne arc: parabolic jump height
         if (moveData.airborne) {
+            const peakHeight = moveKind === 'flying-kick' ? FLYING_KICK_HEIGHT : JUMP_HEIGHT;
             const halfDuration = t * 0.5;
-            timeline.to(state, { jumpHeight: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, 0);
+            timeline.to(state, { jumpHeight: peakHeight, duration: halfDuration, ease: 'power1.out' }, 0);
             timeline.to(state, { jumpHeight: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
         }
 
-        // On completion: return to idle
-        timeline.call(enterIdle, undefined, t);
+        // Airborne moves return to idle on landing; ground moves hold final frame
+        if (moveData.airborne) {
+            timeline.call(enterIdle, undefined, t);
+        } else {
+            timeline.call(setMoveComplete, undefined, t);
+        }
     }
 
     function scheduleAutoTurnAttack(moveKind: MoveKind): void {
@@ -336,10 +348,10 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         state.walkDirection = 0;
         state.walkDistAccum = 0;
 
-        // Step through 5 turn frames
+        // Step through turn frames
         let t = 0;
         for (let i = 0; i < TURN_FRAME_COUNT; i++) {
-            timeline.call(setTurnFrame, [i], t);
+            timeline.call(setTurnFrame, [TURN_FRAME_SEQUENCE[i]], t);
             t += TURN_FRAME_MS * 0.001;
         }
 
@@ -361,14 +373,14 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         }
 
         // Lunge during attack portion
-        if (moveData.lunge > 0) {
+        if (moveData.lunge !== 0) {
             // Note: facing has been flipped by this point, so we need the NEW facing
             // We schedule a call to compute and apply the lunge at attackStart
             timeline.call(applyLunge, [moveKind, attackStart, t - attackStart], attackStart);
         }
 
-        // On completion: return to idle
-        timeline.call(enterIdle, undefined, t);
+        // Ground auto-turn moves hold at final frame
+        timeline.call(setMoveComplete, undefined, t);
     }
 
     function scheduleJump(): void {
@@ -502,6 +514,11 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         state.facing = state.facing === 'right' ? 'left' : 'right';
     }
 
+    function setMoveComplete(): void {
+        state.hitboxActive = false;
+        state.moveComplete = true;
+    }
+
     function applyLunge(moveKind: MoveKind, _attackStart: number, attackDuration: number): void {
         const md = MOVE_DATA[moveKind];
         const sign = state.facing === 'right' ? 1 : -1;
@@ -520,27 +537,13 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             return CROUCH_PUNCH_FRAME_SEQUENCE;
         }
 
-        // Check for variant cycling
-        const variants = MOVE_VARIANTS[moveKind];
-        if (variants !== undefined) {
-            // The move has variants - resolve which one to use
-            const isKick = moveKind === 'chest-kick' || moveKind === 'front-kick';
-            const isPunch = moveKind === 'front-lunge-punch' || moveKind === 'back-lunge-punch';
-
-            if (isKick) {
-                const idx = kickVariantIndex % variants.sequences.length;
-                kickVariantIndex++;
-                return variants.sequences[idx];
-            }
-            if (isPunch) {
-                const idx = punchVariantIndex % variants.sequences.length;
-                punchVariantIndex++;
-                return variants.sequences[idx];
-            }
+        // Use explicit frame sequence from move data when provided
+        const moveData = MOVE_DATA[moveKind];
+        if (moveData.frameSequence) {
+            return moveData.frameSequence;
         }
 
-        // Non-cycling moves: use sequential indices [0, 1, 2, ...]
-        const moveData = MOVE_DATA[moveKind];
+        // Default: sequential indices [0, 1, 2, ...]
         return buildSequentialIndices(moveData.frameDurationMs.length);
     }
 

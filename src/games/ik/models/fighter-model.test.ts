@@ -4,7 +4,6 @@ import {
     type InputDirection,
     type MoveKind,
     MOVE_DATA,
-    MOVE_VARIANTS,
     CROUCH_PUNCH_FRAME_SEQUENCE,
     ARENA_MIN_X,
     ARENA_MAX_X,
@@ -92,8 +91,8 @@ describe('FighterModel', () => {
 
         // Table of all directional moves without attack
         const noAttackMoves: [InputDirection, MoveKind][] = [
-            ['up-forward', 'front-lunge-punch'],
-            ['down-forward', 'chest-kick'],
+            ['up-forward', 'high-punch'],
+            ['down-forward', 'high-kick'],
             ['down', 'foot-sweep'],
             ['down-backward', 'crouch-punch'],
             ['up-backward', 'back-lunge-punch'],
@@ -119,10 +118,10 @@ describe('FighterModel', () => {
         const withAttackMoves: [InputDirection, MoveKind][] = [
             ['up', 'flying-kick'],
             ['up-forward', 'front-somersault'],
-            ['forward', 'front-kick'],
-            ['down-forward', 'front-side-kick'],
+            ['forward', 'mid-kick'],
+            ['down-forward', 'low-kick'],
             ['down', 'back-crouch-punch'],
-            ['down-backward', 'back-side-kick'],
+            ['down-backward', 'back-low-kick'],
             ['backward', 'roundhouse'],
             ['up-backward', 'back-somersault'],
         ];
@@ -184,26 +183,32 @@ describe('FighterModel', () => {
     describe('frame progression', () => {
         it('progresses through foot-sweep frames', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep: 6 frames at 80ms each
+            f.applyInput('down', false); // foot-sweep: 4 frames at 80ms each
             expect(f.moveKind).toBe('foot-sweep');
             expect(f.frameIndex).toBe(0);
 
             // Advance through each frame
             const frames: number[] = [f.frameIndex];
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 3; i++) {
                 advance(f, 81);
                 frames.push(f.frameIndex);
             }
-            // Sequential: 0, 1, 2, 3, 4, 5
-            expect(frames).toEqual([0, 1, 2, 3, 4, 5]);
+            // Sequential: 0, 1, 2, 3
+            expect(frames).toEqual([0, 1, 2, 3]);
         });
 
-        it('returns to idle after move completes', () => {
+        it('holds at final frame after ground move completes', () => {
             const f = makeFighter();
-            f.applyInput('down', false); // foot-sweep: 6 frames at 80ms each = 480ms
+            f.applyInput('down', false); // foot-sweep: 4 frames at 80ms each = 320ms
             expect(f.phase).toBe('attacking');
 
-            advance(f, 500); // past end
+            advance(f, 350); // past end
+            // Ground moves hold at final frame (moveComplete) rather than returning to idle
+            expect(f.phase).toBe('attacking');
+            expect(f.moveKind).toBe('foot-sweep');
+
+            // Releasing input (idle) should return to idle
+            f.applyInput('none', false);
             expect(f.phase).toBe('idle');
             expect(f.moveKind).toBeUndefined();
         });
@@ -254,9 +259,6 @@ describe('FighterModel', () => {
 
             advance(f, 80); // frame 3 - hit frame
             expect(f.hitboxActive).toBe(true);
-
-            advance(f, 80); // frame 4
-            expect(f.hitboxActive).toBe(false);
         });
 
         it('hitboxActive is false when idle', () => {
@@ -284,78 +286,53 @@ describe('FighterModel', () => {
         });
     });
 
-    // --- Variant cycling ---
+    // --- Explicit frame sequences ---
 
-    describe('kick variant cycling', () => {
-        it('cycles through 3 kick variants', () => {
+    describe('explicit frame sequences', () => {
+        it('high-punch uses punch frames [0, 2]', () => {
             const f = makeFighter();
-            const kickVariants = MOVE_VARIANTS['chest-kick']!;
-            const variants: number[][] = [];
+            f.applyInput('up-forward', false); // high-punch
+            expect(f.moveKind).toBe('high-punch');
+            expect(f.frameIndex).toBe(0);
 
-            for (let v = 0; v < 3; v++) {
-                f.applyInput('down-forward', false); // chest-kick
-                expect(f.moveKind).toBe('chest-kick');
-                // Record the first frame index (it identifies the variant)
-                variants.push([f.frameIndex]);
-                // Complete the move
-                advance(f, 500);
-                expect(f.phase).toBe('idle');
-            }
-
-            // First frames should match the variant sequences
-            expect(variants[0][0]).toBe(kickVariants.sequences[0][0]);
-            expect(variants[1][0]).toBe(kickVariants.sequences[1][0]);
-            expect(variants[2][0]).toBe(kickVariants.sequences[2][0]);
+            advance(f, 81);
+            expect(f.frameIndex).toBe(2);
         });
 
-        it('wraps around after all kick variants used', () => {
+        it('high-kick uses kick frames [0, 5, 6]', () => {
             const f = makeFighter();
-            const kickVariants = MOVE_VARIANTS['chest-kick']!;
+            f.applyInput('down-forward', false); // high-kick
+            expect(f.moveKind).toBe('high-kick');
+            expect(f.frameIndex).toBe(0);
 
-            // Use all 3 variants
-            for (let v = 0; v < 3; v++) {
-                f.applyInput('down-forward', false);
-                advance(f, 500);
-            }
-
-            // 4th use should wrap to variant 0
-            f.applyInput('down-forward', false);
-            expect(f.frameIndex).toBe(kickVariants.sequences[0][0]);
-        });
-    });
-
-    describe('punch variant cycling', () => {
-        it('cycles through 4 punch variants', () => {
-            const f = makeFighter();
-            const punchVariants = MOVE_VARIANTS['front-lunge-punch']!;
-            const firstFrames: number[] = [];
-
-            for (let v = 0; v < 4; v++) {
-                f.applyInput('up-forward', false); // front-lunge-punch
-                expect(f.moveKind).toBe('front-lunge-punch');
-                firstFrames.push(f.frameIndex);
-                advance(f, 500);
-                expect(f.phase).toBe('idle');
-            }
-
-            // Match expected variant first frames
-            for (let v = 0; v < 4; v++) {
-                expect(firstFrames[v]).toBe(punchVariants.sequences[v][0]);
-            }
+            advance(f, 81);
+            expect(f.frameIndex).toBe(5);
+            advance(f, 80);
+            expect(f.frameIndex).toBe(6);
         });
 
-        it('wraps around after all punch variants used', () => {
+        it('mid-kick uses kick frames [0, 1, 2]', () => {
             const f = makeFighter();
-            const punchVariants = MOVE_VARIANTS['front-lunge-punch']!;
+            f.applyInput('forward', true); // mid-kick
+            expect(f.moveKind).toBe('mid-kick');
+            expect(f.frameIndex).toBe(0);
 
-            for (let v = 0; v < 4; v++) {
-                f.applyInput('up-forward', false);
-                advance(f, 500);
-            }
+            advance(f, 81);
+            expect(f.frameIndex).toBe(1);
+            advance(f, 80);
+            expect(f.frameIndex).toBe(2);
+        });
 
-            // 5th use wraps to variant 0
-            f.applyInput('up-forward', false);
-            expect(f.frameIndex).toBe(punchVariants.sequences[0][0]);
+        it('low-kick uses kick frames [0, 3, 4]', () => {
+            const f = makeFighter();
+            f.applyInput('down-forward', true); // low-kick
+            expect(f.moveKind).toBe('low-kick');
+            expect(f.frameIndex).toBe(0);
+
+            advance(f, 81);
+            expect(f.frameIndex).toBe(3);
+            advance(f, 80);
+            expect(f.frameIndex).toBe(4);
         });
     });
 
@@ -368,8 +345,8 @@ describe('FighterModel', () => {
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('right'); // not flipped yet
 
-            // Advance through 5 turn frames at 80ms each = 400ms
-            advance(f, 401);
+            // Advance through 3 turn frames at 80ms each = 240ms
+            advance(f, 241);
             // After turn frames, facing should flip
             expect(f.facing).toBe('left');
         });
@@ -380,25 +357,27 @@ describe('FighterModel', () => {
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('right');
 
-            advance(f, 401);
+            advance(f, 241);
             expect(f.facing).toBe('left');
         });
 
-        it('back-side-kick auto-turns', () => {
+        it('back-low-kick auto-turns', () => {
             const f = makeFighter({ startFacing: 'left' });
-            f.applyInput('down-backward', true); // back-side-kick (auto-turn)
+            f.applyInput('down-backward', true); // back-low-kick (auto-turn)
             expect(f.phase).toBe('turning');
             expect(f.facing).toBe('left');
 
-            advance(f, 401);
+            advance(f, 241);
             expect(f.facing).toBe('right');
         });
 
         it('returns to idle after auto-turn move completes', () => {
             const f = makeFighter({ startFacing: 'right' });
             f.applyInput('up-backward', false); // back-lunge-punch
-            // Turn: 5 * 80ms = 400ms, then 2 punch frames * 80ms = 160ms => ~560ms total
-            advance(f, 700);
+            // Turn: 3 * 80ms = 240ms, then 2 punch frames * 80ms = 160ms => ~400ms total
+            advance(f, 500);
+            // Auto-turn ground moves hold at final frame
+            f.applyInput('none', false); // release to return to idle
             expect(f.phase).toBe('idle');
             expect(f.facing).toBe('left'); // flipped
         });
@@ -666,15 +645,22 @@ describe('FighterModel', () => {
     // --- Airborne moves ---
 
     describe('airborne attacks', () => {
-        it('flying-kick is airborne with jump height arc', () => {
-            const f = makeFighter();
+        it('flying-kick is a low airborne forward kick', () => {
+            const f = makeFighter({ startX: 5.0, startFacing: 'right' });
             f.applyInput('up', true); // flying-kick
             expect(f.phase).toBe('airborne');
             expect(f.moveKind).toBe('flying-kick');
 
-            // Should gain height
-            advance(f, 100);
+            // Should gain some height (less than full jump) and lunge forward
+            const startX = f.x;
+            advance(f, 200);
             expect(f.jumpHeight).toBeGreaterThan(0);
+            expect(f.x).toBeGreaterThan(startX);
+
+            // Returns to idle after completion (doesn't hold)
+            advance(f, 300);
+            expect(f.jumpHeight).toBe(0);
+            expect(f.phase).toBe('idle');
         });
 
         it('front-somersault is airborne', () => {
@@ -693,8 +679,8 @@ describe('FighterModel', () => {
 
         it('airborne moves return to ground after completion', () => {
             const f = makeFighter();
-            f.applyInput('up', true); // flying-kick: 5 frames * 80ms = 400ms
-            advance(f, 500);
+            f.applyInput('up-forward', true); // front-somersault: 6 frames * 80ms = 480ms
+            advance(f, 600);
             expect(f.jumpHeight).toBe(0);
             expect(f.phase).toBe('idle');
         });

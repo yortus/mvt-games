@@ -55,6 +55,9 @@ export const JUMP_DURATION_MS = 500;
 /** Peak jump height in world units. */
 export const JUMP_HEIGHT = 2.5;
 
+/** Flying kick peak height in world units (about half a sprite height). */
+export const FLYING_KICK_HEIGHT = 0.55;
+
 // ---------------------------------------------------------------------------
 // Timing
 // ---------------------------------------------------------------------------

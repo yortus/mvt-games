@@ -27,6 +27,7 @@ export {
     WALK_SPEED,
     JUMP_DURATION_MS,
     JUMP_HEIGHT,
+    FLYING_KICK_HEIGHT,
     ROUND_TIMER_MS,
     POINTS_TO_WIN_ROUND,
     ROUNDS_TO_WIN_MATCH,
@@ -38,9 +39,7 @@ export {
 } from './arena-data';
 export {
     type MoveData,
-    type MoveVariants,
     MOVE_DATA,
-    MOVE_VARIANTS,
     CROUCH_PUNCH_FRAME_SEQUENCE,
 } from './move-data';
 export { textures } from './textures';

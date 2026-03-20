@@ -25,17 +25,17 @@ export type FighterPhase =
 // ---------------------------------------------------------------------------
 
 export type MoveKind =
-    | 'front-lunge-punch'
-    | 'chest-kick'
+    | 'high-punch'
+    | 'high-kick'
     | 'foot-sweep'
     | 'crouch-punch'
     | 'back-lunge-punch'
     | 'flying-kick'
     | 'front-somersault'
-    | 'front-kick'
-    | 'front-side-kick'
+    | 'mid-kick'
+    | 'low-kick'
     | 'back-crouch-punch'
-    | 'back-side-kick'
+    | 'back-low-kick'
     | 'roundhouse'
     | 'back-somersault'
     | 'jump';
@@ -134,17 +134,17 @@ const RESULT_IDLE: MoveResolution = { action: 'idle' };
 const RESULT_JUMP: MoveResolution = { action: 'jump' };
 const RESULT_WALK_FWD: MoveResolution = { action: 'walk', direction: 'forward' };
 const RESULT_WALK_BWD: MoveResolution = { action: 'walk', direction: 'backward' };
-const RESULT_FRONT_LUNGE_PUNCH: MoveResolution = { action: 'move', moveKind: 'front-lunge-punch' };
-const RESULT_CHEST_KICK: MoveResolution = { action: 'move', moveKind: 'chest-kick' };
+const RESULT_HIGH_PUNCH: MoveResolution = { action: 'move', moveKind: 'high-punch' };
+const RESULT_HIGH_KICK: MoveResolution = { action: 'move', moveKind: 'high-kick' };
 const RESULT_FOOT_SWEEP: MoveResolution = { action: 'move', moveKind: 'foot-sweep' };
 const RESULT_CROUCH_PUNCH: MoveResolution = { action: 'move', moveKind: 'crouch-punch' };
 const RESULT_BACK_LUNGE_PUNCH: MoveResolution = { action: 'move', moveKind: 'back-lunge-punch' };
 const RESULT_FLYING_KICK: MoveResolution = { action: 'move', moveKind: 'flying-kick' };
 const RESULT_FRONT_SOMERSAULT: MoveResolution = { action: 'move', moveKind: 'front-somersault' };
-const RESULT_FRONT_KICK: MoveResolution = { action: 'move', moveKind: 'front-kick' };
-const RESULT_FRONT_SIDE_KICK: MoveResolution = { action: 'move', moveKind: 'front-side-kick' };
+const RESULT_MID_KICK: MoveResolution = { action: 'move', moveKind: 'mid-kick' };
+const RESULT_LOW_KICK: MoveResolution = { action: 'move', moveKind: 'low-kick' };
 const RESULT_BACK_CROUCH_PUNCH: MoveResolution = { action: 'move', moveKind: 'back-crouch-punch' };
-const RESULT_BACK_SIDE_KICK: MoveResolution = { action: 'move', moveKind: 'back-side-kick' };
+const RESULT_BACK_LOW_KICK: MoveResolution = { action: 'move', moveKind: 'back-low-kick' };
 const RESULT_ROUNDHOUSE: MoveResolution = { action: 'move', moveKind: 'roundhouse' };
 const RESULT_BACK_SOMERSAULT: MoveResolution = { action: 'move', moveKind: 'back-somersault' };
 
@@ -159,9 +159,9 @@ export function resolveMove(inputDir: InputDirection, attackPressed: boolean): M
         // Without attack button
         switch (inputDir) {
             case 'up':           return RESULT_JUMP;
-            case 'up-forward':   return RESULT_FRONT_LUNGE_PUNCH;
+            case 'up-forward':   return RESULT_HIGH_PUNCH;
             case 'forward':      return RESULT_WALK_FWD;
-            case 'down-forward': return RESULT_CHEST_KICK;
+            case 'down-forward': return RESULT_HIGH_KICK;
             case 'down':         return RESULT_FOOT_SWEEP;
             case 'down-backward':return RESULT_CROUCH_PUNCH;
             case 'backward':     return RESULT_WALK_BWD;
@@ -172,10 +172,10 @@ export function resolveMove(inputDir: InputDirection, attackPressed: boolean): M
         switch (inputDir) {
             case 'up':           return RESULT_FLYING_KICK;
             case 'up-forward':   return RESULT_FRONT_SOMERSAULT;
-            case 'forward':      return RESULT_FRONT_KICK;
-            case 'down-forward': return RESULT_FRONT_SIDE_KICK;
+            case 'forward':      return RESULT_MID_KICK;
+            case 'down-forward': return RESULT_LOW_KICK;
             case 'down':         return RESULT_BACK_CROUCH_PUNCH;
-            case 'down-backward':return RESULT_BACK_SIDE_KICK;
+            case 'down-backward':return RESULT_BACK_LOW_KICK;
             case 'backward':     return RESULT_ROUNDHOUSE;
             case 'up-backward':  return RESULT_BACK_SOMERSAULT;
         }
