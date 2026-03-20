@@ -16,6 +16,7 @@ export function createIkEntry(): GameEntry {
         name: 'International Karate',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        thumbnailAdvanceMs: 2000,
 
         async load(): Promise<void> {
             await textures.load();

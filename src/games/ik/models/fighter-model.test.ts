@@ -411,9 +411,9 @@ describe('FighterModel', () => {
         it('is centred on fighter position', () => {
             const f = makeFighter({ startX: 5.0 });
             const bb = f.bodyBox;
-            expect(bb.x).toBeCloseTo(5.0 - 0.8 / 2);
+            expect(bb.x).toBeCloseTo(5.0 - 0.5 / 2);
             expect(bb.y).toBe(0);
-            expect(bb.w).toBe(0.8);
+            expect(bb.w).toBe(0.5);
             expect(bb.h).toBe(1.5);
         });
     });

@@ -29,7 +29,7 @@ export interface AiModelOptions {
 // ---------------------------------------------------------------------------
 
 /** Maximum distance (metres) at which the AI considers itself in attack range. */
-const ATTACK_RANGE = 1.8;
+const ATTACK_RANGE = 1.3;
 
 /** Distance below which the AI prefers to create a bit of space. */
 const MIN_COMFORT_RANGE = 0.3;

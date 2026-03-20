@@ -27,7 +27,7 @@ export function createFighterView(bindings: FighterViewBindings): Container {
 
     // Pre-build 0-based texture arrays for type-safe indexing.
     // Object.values preserves ascending numeric key order in JS.
-    const walkFrames = Object.values(tex.walk);
+    const walkFrames = Object.values(tex.walk).filter((_, i) => [0, 4, 5].includes(i));
     const punchFrames = Object.values(tex.punch);
     const kickFrames = Object.values(tex.kick);
     const footsweepFrames = Object.values(tex.footsweep);

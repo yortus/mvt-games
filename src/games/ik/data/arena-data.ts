@@ -14,7 +14,7 @@ export const ARENA_MIN_X = 0.5;
 export const ARENA_MAX_X = 9.5;
 
 /** Fighter hittable body width in metres. */
-export const FIGHTER_BODY_WIDTH = 0.8;
+export const FIGHTER_BODY_WIDTH = 0.5;
 
 /** Player starting position in metres. */
 export const FIGHTER_START_LEFT_X = 2.5;
@@ -58,7 +58,7 @@ export const JUMP_DURATION_MS = 500;
 export const JUMP_HEIGHT = 0.55;
 
 /** Distance in metres for one complete walk animation cycle. */
-export const WALK_CYCLE_METRES = 2.0;
+export const WALK_CYCLE_METRES = 0.8;
 
 // ---------------------------------------------------------------------------
 // Timing
