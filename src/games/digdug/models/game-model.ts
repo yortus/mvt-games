@@ -117,7 +117,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-
             // Restart handling
             const watched = watcher.poll();
             if (watched.restart.changed && watched.restart.value) {
@@ -298,23 +297,31 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function scheduleDying(): void {
         gamePhase = 'dying';
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(() => {
-            if (scoreModel.loseLife()) {
-                loadLevel();
-            } else {
-                gamePhase = 'game-over';
-            }
-        }, undefined, DYING_DELAY_MS * 0.001);
+        phaseTimeline.call(
+            () => {
+                if (scoreModel.loseLife()) {
+                    loadLevel();
+                } else {
+                    gamePhase = 'game-over';
+                }
+            },
+            undefined,
+            DYING_DELAY_MS * 0.001,
+        );
     }
 
     function scheduleLevelClear(): void {
         gamePhase = 'level-clear';
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(() => {
-            scoreModel.advanceLevel();
-            levelIndex++;
-            loadLevel();
-        }, undefined, LEVEL_CLEAR_DELAY_MS * 0.001);
+        phaseTimeline.call(
+            () => {
+                scoreModel.advanceLevel();
+                levelIndex++;
+                loadLevel();
+            },
+            undefined,
+            LEVEL_CLEAR_DELAY_MS * 0.001,
+        );
     }
 
     // ---- Collision detection -----------------------------------------------

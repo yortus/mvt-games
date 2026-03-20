@@ -28,8 +28,8 @@ export interface DepthLayer {
 
 /** Four earth color bands - bright yellow-brown at top, darker reds with depth. */
 export const DEPTH_LAYERS: readonly DepthLayer[] = [
-    { startRow: 1, endRow: 5, color: 0xe8b830 },  // warm yellow-brown
-    { startRow: 6, endRow: 9, color: 0xc87028 },  // orange-brown
+    { startRow: 1, endRow: 5, color: 0xe8b830 }, // warm yellow-brown
+    { startRow: 6, endRow: 9, color: 0xc87028 }, // orange-brown
     { startRow: 10, endRow: 13, color: 0xb04020 }, // burnt red-brown
     { startRow: 14, endRow: 17, color: 0x882218 }, // deep red
 ];

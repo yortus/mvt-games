@@ -74,15 +74,7 @@ const BREATH_AMP_X = 5;
 const BREATH_AMP_Y = 3;
 
 export function createGameModel(options: GameModelOptions): GameModel {
-    const {
-        waves,
-        playHeight,
-        shipStartX,
-        shipStartY,
-        shipSpeed,
-        shipMinX,
-        shipMaxX,
-    } = options;
+    const { waves, playHeight, shipStartX, shipStartY, shipSpeed, shipMinX, shipMaxX } = options;
 
     let gamePhase: GamePhase = 'playing';
     let waveIndex = 0;
@@ -136,7 +128,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-
             // Restart handling
             const watched = watcher.poll();
             if (watched.restart.changed && watched.restart.value) {
@@ -274,26 +265,34 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function scheduleDying(): void {
         gamePhase = 'dying';
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(() => {
-            if (scoreModel.loseLife()) {
-                // Respawn ship, continue same wave
-                ship.respawn(shipStartX);
-                deactivateAllBullets();
-                gamePhase = 'playing';
-            } else {
-                gamePhase = 'game-over';
-            }
-        }, undefined, DYING_DELAY_MS * 0.001);
+        phaseTimeline.call(
+            () => {
+                if (scoreModel.loseLife()) {
+                    // Respawn ship, continue same wave
+                    ship.respawn(shipStartX);
+                    deactivateAllBullets();
+                    gamePhase = 'playing';
+                } else {
+                    gamePhase = 'game-over';
+                }
+            },
+            undefined,
+            DYING_DELAY_MS * 0.001,
+        );
     }
 
     function scheduleStageClear(): void {
         gamePhase = 'stage-clear';
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(() => {
-            scoreModel.advanceStage();
-            waveIndex++;
-            loadWave();
-        }, undefined, STAGE_CLEAR_DELAY_MS * 0.001);
+        phaseTimeline.call(
+            () => {
+                scoreModel.advanceStage();
+                waveIndex++;
+                loadWave();
+            },
+            undefined,
+            STAGE_CLEAR_DELAY_MS * 0.001,
+        );
     }
 
     function deactivateAllBullets(): void {
@@ -383,9 +382,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 const dy = bullet.y - enemy.y;
                 if (dx * dx + dy * dy < HIT_RADIUS_SQ) {
                     const points =
-                        enemy.phase === 'diving'
-                            ? SCORE_WHILE_DIVING[enemy.kind]
-                            : SCORE_IN_FORMATION[enemy.kind];
+                        enemy.phase === 'diving' ? SCORE_WHILE_DIVING[enemy.kind] : SCORE_IN_FORMATION[enemy.kind];
                     scoreModel.addPoints(points);
                     enemy.kill();
                     bullet.deactivate();

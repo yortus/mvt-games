@@ -43,10 +43,7 @@ export function createGhostView(bindings: GhostViewBindings): Container {
         const watched = watcher.poll();
 
         const ts = bindings.getTileSize();
-        view.position.set(
-            bindings.getCol() * ts + ts / 2,
-            bindings.getRow() * ts + ts / 2,
-        );
+        view.position.set(bindings.getCol() * ts + ts / 2, bindings.getRow() * ts + ts / 2);
 
         if (watched.color.changed) {
             bodySprite.tint = watched.color.value;

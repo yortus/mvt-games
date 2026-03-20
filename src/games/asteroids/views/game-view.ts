@@ -69,19 +69,27 @@ export function createGameView(game: GameModel): Container {
             getWidth: () => SCREEN_WIDTH,
             getHeight: () => PLAY_HEIGHT,
             isVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
-            getText: () => game.phase === 'game-over'
-                ? 'GAME OVER\n\nPress Enter to restart'
-                : 'WAVE CLEAR!',
+            getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'WAVE CLEAR!'),
         });
         view.addChild(overlayView);
 
         // Keyboard input
-        view.addChild(createKeyboardInputView({
-            onXDirectionChanged: (dir) => { game.playerInput.rotationDirection = dir; },
-            onYDirectionChanged: (dir) => { game.playerInput.thrustPressed = dir === 'up'; },
-            onPrimaryButtonChanged: (pressed) => { game.playerInput.firePressed = pressed; },
-            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-        }));
+        view.addChild(
+            createKeyboardInputView({
+                onXDirectionChanged: (dir) => {
+                    game.playerInput.rotationDirection = dir;
+                },
+                onYDirectionChanged: (dir) => {
+                    game.playerInput.thrustPressed = dir === 'up';
+                },
+                onPrimaryButtonChanged: (pressed) => {
+                    game.playerInput.firePressed = pressed;
+                },
+                onRestartButtonChanged: (pressed) => {
+                    game.playerInput.restartPressed = pressed;
+                },
+            }),
+        );
     }
 
     function refresh(): void {

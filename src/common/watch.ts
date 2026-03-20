@@ -23,7 +23,7 @@ export interface WatchedProperty<T> {
 
 export function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
-    const reads = keys.map(k => getters[k]);
+    const reads = keys.map((k) => getters[k]);
     const state = reads.map(() => ({
         changed: false,
         value: undefined as unknown,

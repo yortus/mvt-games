@@ -58,18 +58,27 @@ export function createGameView(game: GameModel): Container {
             getWidth: () => canvasW,
             getHeight: () => canvasH,
             isVisible: () => game.phase !== 'playing',
-            getText: () => game.phase === 'game-over'
-                ? 'GAME OVER\n\nPress Enter to restart'
-                : 'YOU WIN!\n\nPress Enter to restart',
+            getText: () =>
+                game.phase === 'game-over'
+                    ? 'GAME OVER\n\nPress Enter to restart'
+                    : 'YOU WIN!\n\nPress Enter to restart',
         });
         view.addChild(overlayView);
 
         // Player input
-        view.addChild(createKeyboardInputView({
-            onXDirectionChanged: (dir) => { if (dir !== 'none') game.playerInput.direction = dir; },
-            onYDirectionChanged: (dir) => { if (dir !== 'none') game.playerInput.direction = dir; },
-            onRestartButtonChanged: (pressed) => { game.playerInput.restartPressed = pressed; },
-        }));
+        view.addChild(
+            createKeyboardInputView({
+                onXDirectionChanged: (dir) => {
+                    if (dir !== 'none') game.playerInput.direction = dir;
+                },
+                onYDirectionChanged: (dir) => {
+                    if (dir !== 'none') game.playerInput.direction = dir;
+                },
+                onRestartButtonChanged: (pressed) => {
+                    game.playerInput.restartPressed = pressed;
+                },
+            }),
+        );
     }
 
     function refresh(): void {

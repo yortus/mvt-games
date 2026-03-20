@@ -38,7 +38,7 @@ export function createKeyboardInputView(bindings: KeyboardInputBindings): Contai
         if (e.key !== 'Enter' && e.key !== 'Shift') e.preventDefault();
         const keyFlag = keyFlags[e.key as keyof typeof keyFlags] ?? 0;
         const oldPressedKeys = pressedKeys;
-        pressedKeys = isDown ? (pressedKeys | keyFlag) : (pressedKeys & ~keyFlag);
+        pressedKeys = isDown ? pressedKeys | keyFlag : pressedKeys & ~keyFlag;
 
         const oldLeft = oldPressedKeys & (keyFlags.ArrowLeft | keyFlags.a);
         const newLeft = pressedKeys & (keyFlags.ArrowLeft | keyFlags.a);
@@ -49,10 +49,10 @@ export function createKeyboardInputView(bindings: KeyboardInputBindings): Contai
         const oldDown = oldPressedKeys & (keyFlags.ArrowDown | keyFlags.s);
         const newDown = pressedKeys & (keyFlags.ArrowDown | keyFlags.s);
 
-        if (oldLeft !== newLeft) bindings.onXDirectionChanged?.(newLeft ? 'left' : (newRight ? 'right' : 'none'));
-        if (oldRight !== newRight) bindings.onXDirectionChanged?.(newRight ? 'right' : (newLeft ? 'left' : 'none'));
-        if (oldUp !== newUp) bindings.onYDirectionChanged?.(newUp ? 'up' : (newDown ? 'down' : 'none'));
-        if (oldDown !== newDown) bindings.onYDirectionChanged?.(newDown ? 'down' : (newUp ? 'up' : 'none'));
+        if (oldLeft !== newLeft) bindings.onXDirectionChanged?.(newLeft ? 'left' : newRight ? 'right' : 'none');
+        if (oldRight !== newRight) bindings.onXDirectionChanged?.(newRight ? 'right' : newLeft ? 'left' : 'none');
+        if (oldUp !== newUp) bindings.onYDirectionChanged?.(newUp ? 'up' : newDown ? 'down' : 'none');
+        if (oldDown !== newDown) bindings.onYDirectionChanged?.(newDown ? 'down' : newUp ? 'up' : 'none');
         if (e.key === ' ') bindings.onPrimaryButtonChanged?.(isDown);
         if (e.key === 'Shift') bindings.onSecondaryButtonChanged?.(isDown);
         if (e.key === 'Enter') bindings.onRestartButtonChanged?.(isDown);

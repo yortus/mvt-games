@@ -139,11 +139,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             t += d1;
 
             // Phase 2 - dive toward player, exit bottom
-            diveTimeline.to(
-                state,
-                { x: targetX, y: playHeight + 30, duration: d2, ease: 'none' },
-                t,
-            );
+            diveTimeline.to(state, { x: targetX, y: playHeight + 30, duration: d2, ease: 'none' }, t);
 
             // Maybe fire during the dive
             if (Math.random() < fireChance) {

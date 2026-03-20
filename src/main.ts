@@ -1,12 +1,6 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
-import {
-    createAsteroidsEntry,
-    createDigdugEntry,
-    createGalagaEntry,
-    createPacmanEntry,
-    type GameEntry,
-} from './games';
+import { createAsteroidsEntry, createDigdugEntry, createGalagaEntry, createPacmanEntry, type GameEntry } from './games';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -120,10 +114,7 @@ async function main(): Promise<void> {
  * depend on inter-tick transitions - see the MVT guide § "update(deltaMs)
  * Contract" for details.
  */
-async function generateThumbnails(
-    games: GameEntry[],
-    app: Application,
-): Promise<(Texture | undefined)[]> {
+async function generateThumbnails(games: GameEntry[], app: Application): Promise<(Texture | undefined)[]> {
     const TICK_MS = 16;
     const thumbnails: (Texture | undefined)[] = [];
     for (let i = 0; i < games.length; i++) {

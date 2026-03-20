@@ -43,8 +43,7 @@ export function createDebrisView(bindings: DebrisViewBindings): Container {
             const dx = cos * p.length;
             const dy = sin * p.length;
 
-            gfx
-                .moveTo(p.x - dx, p.y - dy)
+            gfx.moveTo(p.x - dx, p.y - dy)
                 .lineTo(p.x + dx, p.y + dy)
                 .stroke({ color: 0xffffff, width: 1.5 });
         }

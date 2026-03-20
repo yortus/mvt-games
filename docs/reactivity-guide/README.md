@@ -22,16 +22,16 @@ performance profile, and team expertise.
 
 This guide covers three primary approaches and several variants:
 
-| Approach | Core Mechanism | Section |
-|----------|----------------|---------|
-| **Events** (pub/sub) | Source emits; listeners subscribe | [events.md](events.md) |
-| **Signals** (push-based observables) | Dependency graph auto-tracks reads; triggers on write | [signals.md](signals.md) |
+| Approach                                   | Core Mechanism                                              | Section                    |
+| ------------------------------------------ | ----------------------------------------------------------- | -------------------------- |
+| **Events** (pub/sub)                       | Source emits; listeners subscribe                           | [events.md](events.md)     |
+| **Signals** (push-based observables)       | Dependency graph auto-tracks reads; triggers on write       | [signals.md](signals.md)   |
 | **Watchers** (poll-based change detection) | Consumer polls a source each tick; compares to cached value | [watchers.md](watchers.md) |
 
 > **A note on terminology:** "watchers" is a pragmatic label for poll-based
 > change detection, not a universally established paradigm name. Vue.js uses the
 > same term for a similar (though push-based) concept; you may also see this
-> approach called *polling*, *dirty-checking*, or *pull-based observation*. This
+> approach called _polling_, _dirty-checking_, or _pull-based observation_. This
 > guide uses "watchers" for brevity and because it describes the consumer's role:
 > watching for changes on each tick.
 
@@ -40,14 +40,14 @@ and situational guidance.
 
 ## Table of Contents
 
-| Page | Key Topics |
-|------|------------|
-| [Push vs Pull Reactivity](push-vs-pull.md) | Push model, pull model, hybrids, state-vs-change framing |
-| [Events (Pub/Sub)](events.md) | EventTarget, typed emitters, subscription lifecycle, runtime traceability |
-| [Signals](signals.md) | Dependency tracking, effects, memos, batching, external integration |
-| [Watchers (Poll-Based)](watchers.md) | Poll-based detection, `watch`, GC-safe lifecycle |
+| Page                                             | Key Topics                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| [Push vs Pull Reactivity](push-vs-pull.md)       | Push model, pull model, hybrids, state-vs-change framing                                         |
+| [Events (Pub/Sub)](events.md)                    | EventTarget, typed emitters, subscription lifecycle, runtime traceability                        |
+| [Signals](signals.md)                            | Dependency tracking, effects, memos, batching, external integration                              |
+| [Watchers (Poll-Based)](watchers.md)             | Poll-based detection, `watch`, GC-safe lifecycle                                                 |
 | [Comparison & Decision Framework](comparison.md) | Side-by-side summary, performance, correctness, testability, maintainability, decision flowchart |
-| [Worked Examples](examples.md) | Score display, ghost transitions, GSAP integration, asteroid field |
+| [Worked Examples](examples.md)                   | Score display, ghost transitions, GSAP integration, asteroid field                               |
 
 ## How to Read This Guide
 
@@ -103,19 +103,19 @@ and situational guidance.
 
 If you already know what you're looking for:
 
-- *"I'm building a UI-driven web app with forms and data grids"* →
+- _"I'm building a UI-driven web app with forms and data grids"_ →
   [Signals](signals.md) are likely your best fit; see also
   [Comparison § UI Apps](comparison.md#ui-driven-web-applications).
-- *"I'm building a game or real-time simulation with a tick loop"* →
+- _"I'm building a game or real-time simulation with a tick loop"_ →
   [Watchers](watchers.md) are worth serious consideration; see also
   [Comparison § Tick-Based](comparison.md#tick-based-games-and-simulations).
-- *"I'm building a loosely-coupled system with decoupled components"* →
+- _"I'm building a loosely-coupled system with decoupled components"_ →
   [Events](events.md) may be the right foundation; see also
   [Comparison § Decoupled Systems](comparison.md#loosely-coupled-and-plugin-architectures).
-- *"I need to decide between approaches for a new project"* →
+- _"I need to decide between approaches for a new project"_ →
   Go straight to the [Decision Framework](comparison.md#decision-framework).
 
 ---
 
-*This guide is a living document. Contributions, corrections, and additional
-worked examples are welcome.*
+_This guide is a living document. Contributions, corrections, and additional
+worked examples are welcome._

@@ -25,10 +25,10 @@ mkdirSync(OUT_DIR, { recursive: true });
 type Rgba = [number, number, number, number];
 
 const PALETTE: Record<string, Rgba> = {
-    '.': [0, 0, 0, 0],           // transparent
-    Y: [255, 255, 0, 255],       // yellow (Pac-Man body)
-    W: [255, 255, 255, 255],     // white (ghost body / eye whites)
-    B: [0, 0, 170, 255],         // blue (ghost pupils)
+    '.': [0, 0, 0, 0], // transparent
+    Y: [255, 255, 0, 255], // yellow (Pac-Man body)
+    W: [255, 255, 255, 255], // white (ghost body / eye whites)
+    B: [0, 0, 170, 255], // blue (ghost pupils)
 };
 
 // ---------------------------------------------------------------------------
@@ -152,10 +152,10 @@ function encode(rows: string[], targetW: number, targetH: number): Buffer {
     const png = new PNG({ width: targetW, height: targetH });
 
     for (let oy = 0; oy < targetH; oy++) {
-        const sy = Math.floor(oy * srcH / targetH);
+        const sy = Math.floor((oy * srcH) / targetH);
         const row = rows[sy];
         for (let ox = 0; ox < targetW; ox++) {
-            const sx = Math.floor(ox * srcW / targetW);
+            const sx = Math.floor((ox * srcW) / targetW);
             const ch = sx < row.length ? row[sx] : '.';
             const [r, g, b, a] = PALETTE[ch] ?? PALETTE['.'];
             const idx = (oy * targetW + ox) * 4;

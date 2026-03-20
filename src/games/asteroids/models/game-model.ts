@@ -134,7 +134,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-
             // Restart handling
             const watched = watcher.poll();
             if (watched.restart.changed && watched.restart.value) {
@@ -329,38 +328,50 @@ export function createGameModel(options: GameModelOptions): GameModel {
         let respawnX = arenaWidth / 2;
         let respawnY = arenaHeight / 2;
 
-        phaseTimeline.call(() => {
-            debrisModel.clear();
-            if (scoreModel.loseLife()) {
-                // Find a safe respawn position away from all asteroids
-                const safePos = findSafeRespawnPosition();
-                respawnX = safePos.x;
-                respawnY = safePos.y;
-                // Start reverse-explode animation converging to safe position
-                gamePhase = 'respawning';
-                debrisModel.reverseSpawn(respawnX, respawnY, 0, RESPAWN_ANIM_MS);
-            } else {
-                gamePhase = 'game-over';
-            }
-        }, undefined, DYING_DELAY_MS * 0.001);
-
-        phaseTimeline.call(() => {
-            if (gamePhase === 'respawning') {
+        phaseTimeline.call(
+            () => {
                 debrisModel.clear();
-                ship.respawn(respawnX, respawnY);
-                deactivateAllBullets();
-                gamePhase = 'playing';
-            }
-        }, undefined, (DYING_DELAY_MS + RESPAWN_ANIM_MS) * 0.001);
+                if (scoreModel.loseLife()) {
+                    // Find a safe respawn position away from all asteroids
+                    const safePos = findSafeRespawnPosition();
+                    respawnX = safePos.x;
+                    respawnY = safePos.y;
+                    // Start reverse-explode animation converging to safe position
+                    gamePhase = 'respawning';
+                    debrisModel.reverseSpawn(respawnX, respawnY, 0, RESPAWN_ANIM_MS);
+                } else {
+                    gamePhase = 'game-over';
+                }
+            },
+            undefined,
+            DYING_DELAY_MS * 0.001,
+        );
+
+        phaseTimeline.call(
+            () => {
+                if (gamePhase === 'respawning') {
+                    debrisModel.clear();
+                    ship.respawn(respawnX, respawnY);
+                    deactivateAllBullets();
+                    gamePhase = 'playing';
+                }
+            },
+            undefined,
+            (DYING_DELAY_MS + RESPAWN_ANIM_MS) * 0.001,
+        );
     }
 
     function scheduleWaveClear(): void {
         gamePhase = 'wave-clear';
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(() => {
-            scoreModel.advanceWave();
-            loadWave();
-        }, undefined, WAVE_CLEAR_DELAY_MS * 0.001);
+        phaseTimeline.call(
+            () => {
+                scoreModel.advanceWave();
+                loadWave();
+            },
+            undefined,
+            WAVE_CLEAR_DELAY_MS * 0.001,
+        );
     }
 
     function deactivateAllBullets(): void {

@@ -70,15 +70,13 @@ interface WatchedProperty<T> {
 
 function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
-    const reads = keys.map(k => getters[k]);
+    const reads = keys.map((k) => getters[k]);
     const state = reads.map(() => ({
         changed: false,
         value: undefined as unknown,
         previous: undefined as unknown,
     }));
-    const watched = Object.fromEntries(
-        keys.map((k, i) => [k, state[i]]),
-    ) as WatchedValues<T>;
+    const watched = Object.fromEntries(keys.map((k, i) => [k, state[i]])) as WatchedValues<T>;
 
     return {
         poll(): WatchedValues<T> {
@@ -111,11 +109,11 @@ function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> 
   `undefined` (there was no prior observation). This type signature forces
   consumers who use `previous` to handle the first-poll edge case - e.g. for
   side effects that should only fire on actual transitions:
-  ```typescript
-  if (watched.score.changed && watched.score.previous !== undefined) {
-      playScoreChangeSound();  // skipped on first poll
-  }
-  ```
+    ```typescript
+    if (watched.score.changed && watched.score.previous !== undefined) {
+        playScoreChangeSound(); // skipped on first poll
+    }
+    ```
 - **No subscription, no disposal.** When the view that owns the watcher is
   removed from the scene graph, the watcher becomes unreachable and is
   garbage-collected.
@@ -133,7 +131,7 @@ interface GameModel {
     readonly score: number;
     readonly phase: 'ready' | 'playing' | 'game-over';
     readonly lives: number;
-    readonly power: number;  // 0..1, changes every tick when charging
+    readonly power: number; // 0..1, changes every tick when charging
 }
 
 function createGameModel(): GameModel {
@@ -181,7 +179,10 @@ function createHudView(model: GameModel): Container {
         }
 
         // Frequently-changing value - just read directly, no watcher needed
-        powerBar.clear().rect(0, 0, model.power * 100, 8).fill('lime');
+        powerBar
+            .clear()
+            .rect(0, 0, model.power * 100, 8)
+            .fill('lime');
     };
 
     return view;
@@ -223,25 +224,27 @@ for hot values, watched reads for cold values.
 The default `===` comparison works for primitives but has known issues with
 reference types:
 
-| Scenario | Problem |
-|----------|---------|
-| Array mutated in place (`items.push(x)`) | Same reference → `===` says unchanged → change **missed** |
+| Scenario                                                 | Problem                                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------- |
+| Array mutated in place (`items.push(x)`)                 | Same reference → `===` says unchanged → change **missed**           |
 | Getter returns new array each call (`items.filter(...)`) | New reference each tick → `===` says changed → fires **every tick** |
 
 **Recommended approaches, in order of preference:**
 
 1. **Watch a scalar property** that captures what you care about:
+
     ```typescript
     const watcher = watch({
-        enemyCount: () => model.enemies.length,  // O(1)
+        enemyCount: () => model.enemies.length, // O(1)
     });
     ```
 
 2. **Use a version stamp** at the model layer:
+
     ```typescript
     // Model increments a counter on each mutation
     const watcher = watch({
-        itemsVersion: () => model.itemsVersion,  // O(1)
+        itemsVersion: () => model.itemsVersion, // O(1)
     });
     const watched = watcher.poll();
     if (watched.itemsVersion.changed) {
@@ -250,10 +253,11 @@ reference types:
     ```
 
 3. **Compute derived state in the model**, not in the getter:
+
     ```typescript
     // Model maintains totalScore incrementally
     const watcher = watch({
-        total: () => model.totalScore,  // O(1) read
+        total: () => model.totalScore, // O(1) read
     });
     // Instead of:
     // total: () => items.reduce((s, i) => s + i.score, 0)  // O(n) every tick!
@@ -270,7 +274,9 @@ reference types:
                 current = next;
                 return true;
             },
-            get value() { return current; },
+            get value() {
+                return current;
+            },
         };
     }
     // Warning: O(n) comparison every tick - only suitable for small arrays
@@ -350,9 +356,15 @@ evaluation is the order the code is written in.
 view.onRender = () => {
     const watched = watcher.poll();
     // These run in exactly this order, every frame, predictably
-    if (watched.score.changed) { /* ... */ }   // 1st
-    if (watched.phase.changed) { /* ... */ }   // 2nd
-    if (watched.lives.changed) { /* ... */ }   // 3rd
+    if (watched.score.changed) {
+        /* ... */
+    } // 1st
+    if (watched.phase.changed) {
+        /* ... */
+    } // 2nd
+    if (watched.lives.changed) {
+        /* ... */
+    } // 3rd
 };
 ```
 
@@ -364,7 +376,7 @@ topological sorting needed.
 
 **Low latency:** in a well-structured tick loop (model updates → view
 refreshes), a change made during the model update is detected by watchers in the
-view refresh of the *same tick*.
+view refresh of the _same tick_.
 
 ### 4. Any expression can be watched
 
@@ -384,9 +396,7 @@ const watcher = watch({
     gridSize: () => model.rows * model.cols,
 
     // Cross-model boundary
-    enemyNearPlayer: () =>
-        Math.abs(enemy.col - player.col) <= 1 &&
-        Math.abs(enemy.row - player.row) <= 1,
+    enemyNearPlayer: () => Math.abs(enemy.col - player.col) <= 1 && Math.abs(enemy.row - player.row) <= 1,
 });
 ```
 
@@ -446,6 +456,7 @@ getter closures and cached values are long-lived, and `===` comparison allocates
 nothing.
 
 The cost becomes meaningful only when:
+
 - Getter expressions are expensive (violating the O(1) rule)
 - Watcher count is very high (thousands)
 - The application has an extremely tight frame budget
@@ -460,7 +471,7 @@ A watcher whose `poll()` is never called silently does nothing. There is no
 error, no warning. If a developer creates a watcher but forgets to poll it,
 the feature simply doesn't work.
 
-The failure mode is *visible in gameplay* (the feature doesn't work), which
+The failure mode is _visible in gameplay_ (the feature doesn't work), which
 makes it relatively easy to catch in testing - but it is a manual obligation
 that push-based systems (events and signals) avoid.
 
@@ -474,7 +485,7 @@ unconditionally - making the cost less obvious during code review.
 ```typescript
 // Looks innocent, but runs O(n) EVERY tick:
 const watcher = watch({
-    activeCount: () => model.enemies.filter(e => e.alive).length,
+    activeCount: () => model.enemies.filter((e) => e.alive).length,
 });
 ```
 
@@ -501,10 +512,18 @@ function createDamageModel() {
     let critMult = 1.0;
 
     return {
-        get total() { return base + bonus * critMult; },  // computed on read
-        setBase(v: number) { base = v; },
-        setBonus(v: number) { bonus = v; },
-        setCritMult(v: number) { critMult = v; },
+        get total() {
+            return base + bonus * critMult;
+        }, // computed on read
+        setBase(v: number) {
+            base = v;
+        },
+        setBonus(v: number) {
+            bonus = v;
+        },
+        setCritMult(v: number) {
+            critMult = v;
+        },
     };
 }
 ```
@@ -520,9 +539,15 @@ function createLeaderboardModel() {
     let dirty = false;
 
     return {
-        addScore(s: number) { scores.push(s); dirty = true; },
+        addScore(s: number) {
+            scores.push(s);
+            dirty = true;
+        },
         get topScores() {
-            if (dirty) { sorted = [...scores].sort((a, b) => b - a); dirty = false; }
+            if (dirty) {
+                sorted = [...scores].sort((a, b) => b - a);
+                dirty = false;
+            }
             return sorted;
         },
     };
@@ -589,9 +614,9 @@ const watcher = watch({
 
 // First poll - detects initial values as changed (from undefined)
 const first = watcher.poll();
-assert.equal(first.score.changed, true);       // undefined → 0
+assert.equal(first.score.changed, true); // undefined → 0
 assert.equal(first.score.value, 0);
-assert.equal(first.score.previous, undefined);  // no prior observation
+assert.equal(first.score.previous, undefined); // no prior observation
 
 // No change - same values
 const second = watcher.poll();

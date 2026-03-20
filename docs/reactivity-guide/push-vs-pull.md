@@ -11,13 +11,13 @@ application.
 
 ## The Core Question
 
-When state changes somewhere in your application, *how does dependent code find
-out?* Every reactivity system answers this question, and the answer is some combination of two broad approaches: **push** and **pull**.
+When state changes somewhere in your application, _how does dependent code find
+out?_ Every reactivity system answers this question, and the answer is some combination of two broad approaches: **push** and **pull**.
 
 ## Push: The Source Notifies
 
 In a **push** model, the thing that changed is responsible for telling
-interested parties. The source *pushes* the update outward.
+interested parties. The source _pushes_ the update outward.
 
 ```
 ┌────────┐  "I changed!"   ┌────────────┐
@@ -35,20 +35,20 @@ SolidJS/Angular signals (effects are pushed to), the Observer pattern.
 
 **Key characteristics:**
 
-| Property | Push |
-|----------|------|
-| Who initiates propagation? | The source |
-| When does the consumer run? | When notified (asynchronous or synchronous, depending on implementation) |
-| Cost when nothing changes | Zero - no notifications, no consumer work |
-| Cost when something changes | Proportional to number of subscribers |
-| Consumer setup | Must subscribe (and later unsubscribe) |
-| Timing control | Determined by the source or a scheduler |
-| GC pressure | Subscriber list and callback closures are long-lived; low churn unless subscriptions change frequently |
+| Property                    | Push                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Who initiates propagation?  | The source                                                                                             |
+| When does the consumer run? | When notified (asynchronous or synchronous, depending on implementation)                               |
+| Cost when nothing changes   | Zero - no notifications, no consumer work                                                              |
+| Cost when something changes | Proportional to number of subscribers                                                                  |
+| Consumer setup              | Must subscribe (and later unsubscribe)                                                                 |
+| Timing control              | Determined by the source or a scheduler                                                                |
+| GC pressure                 | Subscriber list and callback closures are long-lived; low churn unless subscriptions change frequently |
 
 ## Pull: The Consumer Checks
 
 In a **pull** model, the consumer is responsible for checking whether something
-changed. The consumer *pulls* the current state at a time of its choosing.
+changed. The consumer _pulls_ the current state at a time of its choosing.
 
 ```
 ┌────────┐  "Did you change?"  ┌────────────┐
@@ -67,21 +67,21 @@ described in this guide.
 
 **Key characteristics:**
 
-| Property | Pull |
-|----------|------|
-| Who initiates propagation? | The consumer |
-| When does the consumer run? | On its own schedule (e.g. every tick) |
-| Cost when nothing changes | Fixed - consumer always checks |
-| Cost when something changes | Same as when nothing changes |
-| Consumer setup | Just read - no subscription needed |
-| Timing control | Consumer decides when to check |
-| GC pressure | Minimal - a cached value and a getter closure per watcher; no subscription graph |
+| Property                    | Pull                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| Who initiates propagation?  | The consumer                                                                     |
+| When does the consumer run? | On its own schedule (e.g. every tick)                                            |
+| Cost when nothing changes   | Fixed - consumer always checks                                                   |
+| Cost when something changes | Same as when nothing changes                                                     |
+| Consumer setup              | Just read - no subscription needed                                               |
+| Timing control              | Consumer decides when to check                                                   |
+| GC pressure                 | Minimal - a cached value and a getter closure per watcher; no subscription graph |
 
 ## Hybrid: Push Notification, Pull Value
 
 Most real systems are hybrids. Signals, for example, are often described as
-"push-pull": notification of a change is *pushed* (the dependency graph triggers
-re-evaluation), but the actual value is *pulled* (the computation reads the
+"push-pull": notification of a change is _pushed_ (the dependency graph triggers
+re-evaluation), but the actual value is _pulled_ (the computation reads the
 signal's current value when it runs).
 
 ```
@@ -99,18 +99,18 @@ happen after pushes.
 ## State vs Change
 
 Pull-based systems model state, while push-based
-systems model change. In each paradigm, one of *state* and *transition* is
+systems model change. In each paradigm, one of _state_ and _transition_ is
 explicit while the other is implicit.
 
-| | State (current value) | Transition (what changed) |
-|---|---|---|
-| **Push** (events) | Implicit - consumer must read or remember it | Explicit - the notification IS the change |
-| **Pull** (watchers) | Explicit - the consumer always reads current value | Implicit - detected by comparing current to previous |
-| **Hybrid** (signals) | Explicit (signal holds current value) | Explicit (write triggers notification) |
+|                      | State (current value)                              | Transition (what changed)                            |
+| -------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| **Push** (events)    | Implicit - consumer must read or remember it       | Explicit - the notification IS the change            |
+| **Pull** (watchers)  | Explicit - the consumer always reads current value | Implicit - detected by comparing current to previous |
+| **Hybrid** (signals) | Explicit (signal holds current value)              | Explicit (write triggers notification)               |
 
-In a push system, you *know something changed* but must take extra steps to know
+In a push system, you _know something changed_ but must take extra steps to know
 the current state. A late subscriber has no state to read. In a pull system, you
-*always know the current state* but must do work to detect that a change
+_always know the current state_ but must do work to detect that a change
 occurred.
 
 This duality shapes each approach's strengths and failure modes:
@@ -131,11 +131,11 @@ continuous state.
 
 ## Where Each Approach in This Guide Falls
 
-| Approach | Model | Notification | Value retrieval |
-|----------|-------|-------------|-----------------|
-| [Events](events.md) | Push | Source emits to subscriber list | Payload delivered with the notification |
-| [Signals](signals.md) | Hybrid (push-pull) | Dependency graph marks computations dirty | Computation re-reads signals when it runs |
-| [Watchers](watchers.md) | Pull | Consumer polls on each tick | Getter evaluated and compared to cache |
+| Approach                | Model              | Notification                              | Value retrieval                           |
+| ----------------------- | ------------------ | ----------------------------------------- | ----------------------------------------- |
+| [Events](events.md)     | Push               | Source emits to subscriber list           | Payload delivered with the notification   |
+| [Signals](signals.md)   | Hybrid (push-pull) | Dependency graph marks computations dirty | Computation re-reads signals when it runs |
+| [Watchers](watchers.md) | Pull               | Consumer polls on each tick               | Getter evaluated and compared to cache    |
 
 Understanding where each approach falls on the push-pull spectrum helps explain
 its performance characteristics, correctness properties, and failure modes -
@@ -158,11 +158,11 @@ import { fromEvent, map, throttleTime } from 'rxjs';
 
 const mouseX$ = fromEvent<MouseEvent>(document, 'mousemove').pipe(
     throttleTime(16),
-    map(e => e.clientX),
+    map((e) => e.clientX),
 );
 
-const subscription = mouseX$.subscribe(x => {
-    paddle.position.x = x;  // Breakout paddle follows mouse
+const subscription = mouseX$.subscribe((x) => {
+    paddle.position.x = x; // Breakout paddle follows mouse
 });
 
 // Cleanup:
@@ -192,7 +192,9 @@ import { makeAutoObservable, autorun } from 'mobx';
 class ScoreModel {
     score = 0;
     lives = 3;
-    constructor() { makeAutoObservable(this); }
+    constructor() {
+        makeAutoObservable(this);
+    }
 }
 
 const model = new ScoreModel();

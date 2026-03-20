@@ -2,16 +2,7 @@ import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { createGameView } from './views';
-import {
-    TILE_SIZE,
-    FIELD_ROWS,
-    FIELD_COLS,
-    HUD_HEIGHT,
-    BASE_FIELD,
-    DIGGER_SPAWN,
-    LEVELS,
-    textures,
-} from './data';
+import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, HUD_HEIGHT, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
