@@ -2,7 +2,6 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 /** Returns the opposite direction. */
 export function oppositeDirection(dir: Direction): Direction {
-    // prettier-ignore
     switch (dir) {
         case 'up':    return 'down';
         case 'down':  return 'up';

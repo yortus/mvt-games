@@ -26,24 +26,24 @@ type Rgba = [number, number, number, number];
 
 const PALETTE: Record<string, Rgba> = {
     '.': [0, 0, 0, 0], // transparent
-    K: [0, 0, 0, 255], // black
-    W: [255, 255, 255, 255], // white (suit, helmet)
-    H: [252, 228, 184, 255], // skin
-    B: [68, 136, 255, 255], // blue (visor)
-    b: [51, 102, 204, 255], // dark blue (belt, boots)
+    'K': [0, 0, 0, 255], // black
+    'W': [255, 255, 255, 255], // white (suit, helmet)
+    'H': [252, 228, 184, 255], // skin
+    'B': [68, 136, 255, 255], // blue (visor)
+    'b': [51, 102, 204, 255], // dark blue (belt, boots)
     // Pooka colours
-    R: [255, 68, 68, 255], // pooka body red
-    r: [255, 120, 120, 255], // pooka inflate-1 lighter red
-    P: [255, 170, 170, 255], // pooka inflate-2/3 pink
+    'R': [255, 68, 68, 255], // pooka body red
+    'r': [255, 120, 120, 255], // pooka inflate-1 lighter red
+    'P': [255, 170, 170, 255], // pooka inflate-2/3 pink
     // Fygar colours
-    G: [68, 204, 68, 255], // fygar body green
-    g: [136, 255, 136, 255], // fygar inflate lighter green
-    V: [204, 238, 136, 255], // fygar belly
-    D: [34, 102, 34, 255], // dark green (wings)
+    'G': [68, 204, 68, 255], // fygar body green
+    'g': [136, 255, 136, 255], // fygar inflate lighter green
+    'V': [204, 238, 136, 255], // fygar belly
+    'D': [34, 102, 34, 255], // dark green (wings)
     // Rock colours
-    N: [139, 115, 85, 255], // brown
-    n: [92, 74, 50, 255], // dark brown (cracks)
-    L: [170, 145, 110, 255], // light brown
+    'N': [139, 115, 85, 255], // brown
+    'n': [92, 74, 50, 255], // dark brown (cracks)
+    'L': [170, 145, 110, 255], // light brown
 };
 
 // ---------------------------------------------------------------------------

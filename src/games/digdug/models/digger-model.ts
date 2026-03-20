@@ -285,9 +285,11 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         const requested = state.requestedDirection;
         if (canMove(requested)) {
             state.direction = requested;
-        } else if (state.direction !== 'none' && canMove(state.direction)) {
+        }
+        else if (state.direction !== 'none' && canMove(state.direction)) {
             // Keep current direction
-        } else {
+        }
+        else {
             return;
         }
 

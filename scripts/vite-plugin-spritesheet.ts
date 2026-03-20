@@ -139,7 +139,8 @@ function discoverGameTextureDirs(root: string): { gameName: string; dir: string 
     let entries: string[];
     try {
         entries = readdirSync(gamesDir);
-    } catch {
+    }
+    catch {
         return results;
     }
 
@@ -149,7 +150,8 @@ function discoverGameTextureDirs(root: string): { gameName: string; dir: string 
             if (statSync(assetsDir).isDirectory()) {
                 results.push({ gameName: entry, dir: assetsDir });
             }
-        } catch {
+        }
+        catch {
             // no assets directory - skip
         }
     }
@@ -217,7 +219,8 @@ export function spritesheetPlugin(): Plugin {
                 if (ext === 'json') {
                     res.setHeader('Content-Type', 'application/json');
                     res.end(sheet.jsonString);
-                } else {
+                }
+                else {
                     res.setHeader('Content-Type', 'image/png');
                     res.end(sheet.pngBuffer);
                 }

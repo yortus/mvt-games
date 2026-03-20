@@ -26,7 +26,7 @@ the active game session.
 | Animation  | GSAP                       |
 | Build      | Vite                       |
 | Linting    | ESLint + TypeScript ESLint |
-| Formatting | Prettier                   |
+| Formatting | ESLint Stylistic           |
 
 ## Quickstart
 
@@ -42,9 +42,8 @@ npm run dev
 | `npm run dev`          | Start the Vite dev server with hot reload        |
 | `npm run build`        | Type-check with `tsc` then bundle for production |
 | `npm run preview`      | Preview the production build locally             |
-| `npm run lint`         | Lint `src/` with ESLint                          |
-| `npm run format`       | Format all files with Prettier                   |
-| `npm run format:check` | Check formatting without writing changes         |
+| `npm run lint`         | Check lint and formatting rules                  |
+| `npm run lint:fix`     | Apply ESLint and ESLint Stylistic auto-fixes     |
 
 ## Architecture
 

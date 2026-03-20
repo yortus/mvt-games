@@ -122,7 +122,8 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
                 if (flankPartner) {
                     effectiveTarget.row = aheadR + (aheadR - flankPartner.row);
                     effectiveTarget.col = aheadC + (aheadC - flankPartner.col);
-                } else {
+                }
+                else {
                     effectiveTarget.row = chaseTarget.row;
                     effectiveTarget.col = chaseTarget.col;
                 }
@@ -133,7 +134,8 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
                 if (dist > FICKLE_SCATTER_DIST) {
                     effectiveTarget.row = chaseTarget.row;
                     effectiveTarget.col = chaseTarget.col;
-                } else {
+                }
+                else {
                     effectiveTarget.row = scatterTarget?.row ?? 0;
                     effectiveTarget.col = scatterTarget?.col ?? 0;
                 }

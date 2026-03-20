@@ -26,9 +26,9 @@ type Rgba = [number, number, number, number];
 
 const PALETTE: Record<string, Rgba> = {
     '.': [0, 0, 0, 0], // transparent
-    Y: [255, 255, 0, 255], // yellow (Pac-Man body)
-    W: [255, 255, 255, 255], // white (ghost body / eye whites)
-    B: [0, 0, 170, 255], // blue (ghost pupils)
+    'Y': [255, 255, 0, 255], // yellow (Pac-Man body)
+    'W': [255, 255, 255, 255], // white (ghost body / eye whites)
+    'B': [0, 0, 170, 255], // blue (ghost pupils)
 };
 
 // ---------------------------------------------------------------------------

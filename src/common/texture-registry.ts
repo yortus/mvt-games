@@ -55,7 +55,8 @@ function buildRecord(map: TextureNameMap, spritesheetUrl: string): Record<string
             const texture = Assets.get<Texture>(value);
             if (!texture) throw new Error(`Texture '${value}' not found after loading '${spritesheetUrl}'`);
             result[key] = texture;
-        } else {
+        }
+        else {
             result[key] = buildRecord(value, spritesheetUrl);
         }
     }

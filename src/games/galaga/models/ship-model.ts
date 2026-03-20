@@ -77,7 +77,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             const deltaSec = deltaMs * 0.001;
             if (direction === 'left') {
                 x -= speed * deltaSec;
-            } else if (direction === 'right') {
+            }
+            else if (direction === 'right') {
                 x += speed * deltaSec;
             }
 
