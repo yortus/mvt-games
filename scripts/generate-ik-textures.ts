@@ -163,6 +163,8 @@ const FRAME_DEFS: ReadonlyArray<readonly [number, number, string]> = [
 // Extraction
 // ---------------------------------------------------------------------------
 
+main();
+
 function main(): void {
     // Read source spritesheet
     const srcBuf = readFileSync(SRC_PATH);
@@ -225,6 +227,12 @@ function main(): void {
             bgMissing++;
         }
 
+        // Defeat-C frames face right in the source spritesheet (all others
+        // face left). Flip them horizontally so every frame is uniform.
+        if (name.startsWith('defeat-c-')) {
+            flipHorizontal(out);
+        }
+
         const outPath = join(OUT_DIR, `${name}.png`);
         writeFileSync(outPath, PNG.sync.write(out));
         extracted++;
@@ -236,4 +244,25 @@ function main(): void {
     );
 }
 
-main();
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Flip a PNG image horizontally in place. */
+function flipHorizontal(png: PNG): void {
+    const w = png.width;
+    const h = png.height;
+    const half = w >> 1;
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < half; x++) {
+            const li = (y * w + x) * 4;
+            const ri = (y * w + (w - 1 - x)) * 4;
+            // Swap RGBA
+            for (let c = 0; c < 4; c++) {
+                const tmp = png.data[li + c];
+                png.data[li + c] = png.data[ri + c];
+                png.data[ri + c] = tmp;
+            }
+        }
+    }
+}

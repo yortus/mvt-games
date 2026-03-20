@@ -4,6 +4,7 @@ import {
     type DefeatVariant,
     type FighterMove,
     type GamePhase,
+    type MoveKind,
     MOVE_DATA,
     FIGHTER_START_LEFT_X,
     FIGHTER_START_RIGHT_X,
@@ -16,6 +17,7 @@ import {
     resolveInputDirection,
     resolveMove,
 } from '../data';
+import { createAiModel, type AiModel } from './ai-model';
 import { createFighterModel, type FighterModel } from './fighter-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
 import { createScoreModel, type ScoreModel } from './score-model';
@@ -36,36 +38,45 @@ export interface GameModel {
 }
 
 // ---------------------------------------------------------------------------
-// AI stub (Stage 7 placeholder)
+// Defeat variant mapping
 // ---------------------------------------------------------------------------
 
-interface AiStub {
-    update(deltaMs: number, opponent: FighterModel, self: FighterModel): void;
-    readonly inputDirection: 'none';
-    readonly attackPressed: false;
-}
+/** Maps an attacking move to the most appropriate defeat animation.
+ *  a = falling forward (low hits, back-attacks)
+ *  b = falling backward (mid-height)
+ *  c = falling backward (high / flying)
+ *  d = curling up forward (crouch punch from front) */
+function defeatVariantForMove(moveKind: MoveKind): DefeatVariant {
+    switch (moveKind) {
+        // Low hits / back-attacks -> falling forward
+        case 'foot-sweep':
+        case 'low-kick':
+        case 'back-lunge-punch':
+        case 'back-crouch-punch':
+        case 'back-low-kick':
+        case 'back-somersault':
+            return 'a';
 
-function createAiStub(): AiStub {
-    return {
-        update(_deltaMs: number, _opponent: FighterModel, _self: FighterModel): void {
-            // No-op until Stage 7
-        },
-        inputDirection: 'none',
-        attackPressed: false,
-    };
-}
+        // Mid-height -> falling backward
+        case 'mid-kick':
+        case 'high-punch':
+        case 'roundhouse':
+            return 'b';
 
-// ---------------------------------------------------------------------------
-// Defeat variant helpers
-// ---------------------------------------------------------------------------
+        // High or flying -> falling backward (variant c)
+        case 'high-kick':
+        case 'flying-kick':
+        case 'front-somersault':
+            return 'c';
 
-const DEFEAT_VARIANTS: readonly DefeatVariant[] = ['a', 'b', 'c', 'd'];
-let defeatVariantIndex = 0;
+        // Crouch punch from front -> curling up
+        case 'crouch-punch':
+            return 'd';
 
-function nextDefeatVariant(): DefeatVariant {
-    const variant = DEFEAT_VARIANTS[defeatVariantIndex];
-    defeatVariantIndex = (defeatVariantIndex + 1) % DEFEAT_VARIANTS.length;
-    return variant;
+        // Fallback
+        default:
+            return 'b';
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -89,7 +100,7 @@ export function createGameModel(): GameModel {
 
     const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
-    const ai = createAiStub();
+    const ai: AiModel = createAiModel();
 
     let gamePhase: GamePhase = 'round-intro';
     let roundTimeRemainingMs = ROUND_TIMER_MS;
@@ -162,15 +173,9 @@ export function createGameModel(): GameModel {
                 // Resolve and apply player input with settle logic
                 applyPlayerInput(deltaMs);
 
-                // AI updates and applies input to opponent
+                // AI updates and applies move to opponent
                 ai.update(deltaMs, player, opponent);
-                const aiDir = resolveInputDirection(
-                    ai.inputDirection === 'none' ? 'none' : ai.inputDirection,
-                    'none',
-                    opponent.facing,
-                );
-                const aiMove = resolveMove(aiDir, ai.attackPressed);
-                opponent.tryMove(aiMove);
+                opponent.tryMove(ai.move);
 
                 // Update fighters
                 player.update(deltaMs);
@@ -302,9 +307,9 @@ export function createGameModel(): GameModel {
             return;
         }
 
-        // Hit connects
+        // Hit connects - opponent is knocked down
         scoreModel.scorePoint(attackerSide);
-        defender.hit(moveData.knockback);
+        defender.defeat(defeatVariantForMove(moveKind));
 
         // Transition to point-scored if the game was fighting
         if (gamePhase === 'fighting') {
@@ -364,11 +369,11 @@ export function createGameModel(): GameModel {
         const roundWinner = scoreModel.getRoundWinner();
         if (roundWinner === 'player') {
             player.won();
-            opponent.defeat(nextDefeatVariant());
+            opponent.lost();
         }
         else if (roundWinner === 'opponent') {
             opponent.won();
-            player.defeat(nextDefeatVariant());
+            player.lost();
         }
 
         phaseTimeline.call(
