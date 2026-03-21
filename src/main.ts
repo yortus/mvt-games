@@ -6,6 +6,7 @@ import {
     createGalagaEntry,
     createIkEntry,
     createPacmanEntry,
+    createScrambleEntry,
     type GameEntry,
 } from './games';
 
@@ -81,6 +82,7 @@ async function main(): Promise<void> {
         createGalagaEntry(),
         createIkEntry(),
         createPacmanEntry(),
+        createScrambleEntry(),
     ];
 
     // ---- Generate thumbnails -----------------------------------------------
