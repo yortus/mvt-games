@@ -64,6 +64,15 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
         const scrollCol = bindings.getScrollCol();
         const targetLeftCol = Math.floor(scrollCol) - 1;
 
+        // Detect discontinuous scroll jump (e.g. loop reset) and rebuild buffer
+        if (targetLeftCol < leftWorldCol || targetLeftCol > leftWorldCol + BUFFER_SIZE) {
+            leftWorldCol = targetLeftCol;
+            ringStart = 0;
+            for (let i = 0; i < BUFFER_SIZE; i++) {
+                drawColumn(columnGfx[i], leftWorldCol + i);
+            }
+        }
+
         // Recycle columns that scrolled off the left
         while (leftWorldCol < targetLeftCol) {
             const newWorldCol = leftWorldCol + BUFFER_SIZE;

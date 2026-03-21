@@ -83,6 +83,9 @@ export interface GameModel {
     readonly scrollSpeed: number;
     readonly playerInput: PlayerInput;
     readonly baseAlive: boolean;
+    readonly baseWorldCol: number;
+    readonly baseWorldRow: number;
+    readonly scrollClamped: boolean;
     reset(): void;
     update(deltaMs: number): void;
 }
@@ -109,6 +112,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let bombConsumed = false;
     let baseAlive = false;
     let baseActive = false;
+    let baseFuelTankIndex = -1;
+    let scrollClamped = false;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -179,6 +184,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get baseAlive() {
             return baseAlive;
         },
+        get baseWorldCol() {
+            return baseFuelTankIndex >= 0 ? fuelTanks[baseFuelTankIndex].worldCol : -1;
+        },
+        get baseWorldRow() {
+            return baseFuelTankIndex >= 0 ? fuelTanks[baseFuelTankIndex].worldRow : -1;
+        },
+        get scrollClamped() {
+            return scrollClamped;
+        },
 
         reset(): void {
             scrollCol = 0;
@@ -186,6 +200,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             spawnCursor = 0;
             baseAlive = false;
             baseActive = false;
+            baseFuelTankIndex = -1;
+            scrollClamped = false;
             scoreModel.reset();
             ship = buildShip();
             bullets = buildBulletPool();
@@ -433,6 +449,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let i = 0; i < fuelTanks.length; i++) {
                 if (!fuelTanks[i].active) {
                     fuelTanks[i].activate(worldCol, groundRow);
+                    baseFuelTankIndex = i;
                     baseAlive = true;
                     baseActive = true;
                     return;
@@ -712,6 +729,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             tank.kill();
             baseAlive = false;
             baseActive = false;
+            baseFuelTankIndex = -1;
             scoreModel.addPoints(SCORE_BASE);
         }
         else {
@@ -738,8 +756,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (baseActive && baseAlive) {
                 // Base not destroyed yet - clamp scroll
                 scrollCol = terrain.totalCols - VISIBLE_COLS;
+                scrollClamped = true;
                 return;
             }
+            scrollClamped = false;
             scheduleSectionClear();
         }
     }
@@ -756,6 +776,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 spawnCursor = 0;
                 baseAlive = false;
                 baseActive = false;
+                baseFuelTankIndex = -1;
                 deactivateAllEntities();
                 ship.respawn(
                     SHIP_START_COL,

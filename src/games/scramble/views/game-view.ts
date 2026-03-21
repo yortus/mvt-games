@@ -12,6 +12,8 @@ import { createFuelTankView } from './fuel-tank-view';
 import { createExplosionView } from './explosion-view';
 import { createSectionAnnouncementView } from './section-announcement-view';
 import { createDeathFlashView } from './death-flash-view';
+import { createBaseAlertView } from './base-alert-view';
+import { createBaseTargetView } from './base-target-view';
 import { createHudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
@@ -118,6 +120,16 @@ export function createGameView(game: GameModel): Container {
             fuelTankContainers.push(c);
         }
 
+        // Base target (large distinct structure at end of section 3)
+        view.addChild(
+            createBaseTargetView({
+                getScreenX: () => (game.baseWorldCol - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => game.baseWorldRow * TILE_SIZE,
+                isBaseAlive: () => game.baseAlive,
+                getTileSize: () => TILE_SIZE,
+            }),
+        );
+
         // Explosion views (fixed pool)
         for (let i = 0; i < game.explosions.length; i++) {
             const idx = i;
@@ -171,6 +183,16 @@ export function createGameView(game: GameModel): Container {
                 getScreenWidth: () => SCREEN_WIDTH,
                 getScreenHeight: () => PLAY_HEIGHT,
                 isDying: () => game.phase === 'dying',
+            }),
+        );
+
+        // Base alert (flashing "DESTROY THE BASE!" when scroll is clamped)
+        view.addChild(
+            createBaseAlertView({
+                isScrollClamped: () => game.scrollClamped,
+                isBaseAlive: () => game.baseAlive,
+                getScreenWidth: () => SCREEN_WIDTH,
+                getScreenHeight: () => PLAY_HEIGHT,
             }),
         );
 
