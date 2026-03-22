@@ -20,7 +20,7 @@ import {
 import { createAiModel, type AiModel } from './ai-model';
 import { createFighterModel, type FighterModel } from './fighter-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
-import { createScoreModel, type ScoreModel } from './score-model';
+import { createMatchModel, type MatchModel } from './match-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -30,7 +30,7 @@ export interface GameModel {
     readonly phase: GamePhase;
     readonly player: FighterModel;
     readonly opponent: FighterModel;
-    readonly score: ScoreModel;
+    readonly match: MatchModel;
     readonly playerInput: PlayerInput;
     readonly roundTimeRemainingMs: number;
     reset(): void;
@@ -98,7 +98,7 @@ export function createGameModel(): GameModel {
         arenaMaxX: ARENA_MAX_X,
     });
 
-    const scoreModel = createScoreModel();
+    const matchModel = createMatchModel();
     const playerInput = createPlayerInput();
     const ai: AiModel = createAiModel();
 
@@ -130,8 +130,8 @@ export function createGameModel(): GameModel {
         get opponent() {
             return opponent;
         },
-        get score() {
-            return scoreModel;
+        get match() {
+            return matchModel;
         },
         get playerInput() {
             return playerInput;
@@ -141,7 +141,7 @@ export function createGameModel(): GameModel {
         },
 
         reset(): void {
-            scoreModel.reset();
+            matchModel.reset();
             resetFighters();
             resetInputSettle();
             roundTimeRemainingMs = ROUND_TIMER_MS;
@@ -308,7 +308,7 @@ export function createGameModel(): GameModel {
         }
 
         // Hit connects - opponent is knocked down
-        scoreModel.scorePoint(attackerSide);
+        matchModel.scorePoint(attackerSide);
         defender.defeat(defeatVariantForMove(moveKind));
 
         // Transition to point-scored if the game was fighting
@@ -345,7 +345,7 @@ export function createGameModel(): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                if (scoreModel.isRoundOver()) {
+                if (matchModel.isRoundOver()) {
                     scheduleRoundOver();
                 }
                 else {
@@ -366,7 +366,7 @@ export function createGameModel(): GameModel {
         phaseTimeline.clear().time(0);
 
         // Play won/lost poses
-        const roundWinner = scoreModel.getRoundWinner();
+        const roundWinner = matchModel.getRoundWinner();
         if (roundWinner === 'player') {
             player.won();
             opponent.lost();
@@ -378,8 +378,8 @@ export function createGameModel(): GameModel {
 
         phaseTimeline.call(
             () => {
-                scoreModel.nextRound();
-                if (scoreModel.isMatchOver()) {
+                matchModel.nextRound();
+                if (matchModel.isMatchOver()) {
                     scheduleMatchOver();
                 }
                 else {
@@ -400,23 +400,23 @@ export function createGameModel(): GameModel {
     }
 
     function handleTimerExpiry(): void {
-        if (scoreModel.playerPoints > scoreModel.opponentPoints) {
+        if (matchModel.playerPoints > matchModel.opponentPoints) {
             // Player wins the round by points
             // Award enough points to trigger round-over
-            while (!scoreModel.isRoundOver()) {
-                scoreModel.scorePoint('player');
+            while (!matchModel.isRoundOver()) {
+                matchModel.scorePoint('player');
             }
             scheduleRoundOver();
         }
-        else if (scoreModel.opponentPoints > scoreModel.playerPoints) {
-            while (!scoreModel.isRoundOver()) {
-                scoreModel.scorePoint('opponent');
+        else if (matchModel.opponentPoints > matchModel.playerPoints) {
+            while (!matchModel.isRoundOver()) {
+                matchModel.scorePoint('opponent');
             }
             scheduleRoundOver();
         }
         else {
             // Draw - no round point, start new round
-            scoreModel.nextRound();
+            matchModel.nextRound();
             resetFighters();
             resetInputSettle();
             scheduleRoundIntro();

@@ -17,11 +17,11 @@ export function createGameView(game: GameModel): Container {
     // HUD at top
     view.addChild(
         createHudView({
-            getPlayerPoints: () => game.score.playerPoints,
-            getOpponentPoints: () => game.score.opponentPoints,
-            getPlayerRounds: () => game.score.playerRounds,
-            getOpponentRounds: () => game.score.opponentRounds,
-            getRound: () => game.score.round,
+            getPlayerPoints: () => game.match.playerPoints,
+            getOpponentPoints: () => game.match.opponentPoints,
+            getPlayerRounds: () => game.match.playerRounds,
+            getOpponentRounds: () => game.match.opponentRounds,
+            getRound: () => game.match.round,
             getRoundTimeRemainingMs: () => game.roundTimeRemainingMs,
             getGamePhase: () => game.phase,
         }),
@@ -105,10 +105,10 @@ export function createGameView(game: GameModel): Container {
 
 function resolveOverlayText(game: GameModel): string {
     if (game.phase === 'round-intro') {
-        return `Round ${game.score.round}`;
+        return `Round ${game.match.round}`;
     }
     if (game.phase === 'match-over') {
-        const winner = game.score.getMatchWinner();
+        const winner = game.match.getMatchWinner();
         const winnerLabel = winner === 'player' ? 'You win!' : 'You lose!';
         return `GAME OVER\n\n${winnerLabel}\n\nPress Enter to restart`;
     }

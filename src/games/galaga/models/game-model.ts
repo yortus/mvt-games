@@ -16,7 +16,6 @@ import { createShipModel, type ShipModel } from './ship-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
-import { createScoreModel, type ScoreModel } from './score-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -28,7 +27,9 @@ export interface GameModel {
     readonly enemies: readonly EnemyModel[];
     readonly playerBullets: readonly BulletModel[];
     readonly enemyBullets: readonly BulletModel[];
-    readonly score: ScoreModel;
+    readonly score: number;
+    readonly lives: number;
+    readonly stage: number;
     readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
@@ -83,6 +84,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let formationOffsetY = 0;
     let diveTimer = 0;
     let fireConsumed = false;
+    let score = 0;
+    let lives = 3;
+    let stage = 1;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -92,7 +96,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let enemies = buildEnemies();
     let playerBullets = buildBulletPool(MAX_PLAYER_BULLETS);
     let enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
-    const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
 
@@ -115,14 +118,22 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return enemyBullets;
         },
         get score() {
-            return scoreModel;
+            return score;
+        },
+        get lives() {
+            return lives;
+        },
+        get stage() {
+            return stage;
         },
         get playerInput() {
             return playerInput;
         },
 
         reset(): void {
-            scoreModel.reset();
+            score = 0;
+            lives = 3;
+            stage = 1;
             waveIndex = 0;
             loadWave();
         },
@@ -162,7 +173,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let i = 0; i < enemies.length; i++) enemies[i].update(deltaMs);
             for (let i = 0; i < playerBullets.length; i++) playerBullets[i].update(deltaMs);
             for (let i = 0; i < enemyBullets.length; i++) enemyBullets[i].update(deltaMs);
-            scoreModel.update(deltaMs);
 
             // Enemy firing (dive callbacks)
             handleEnemyFiring();
@@ -268,7 +278,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                if (scoreModel.loseLife()) {
+                lives--;
+                if (lives > 0) {
                     // Respawn ship, continue same wave
                     ship.respawn(shipStartX);
                     deactivateAllBullets();
@@ -288,7 +299,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                scoreModel.advanceStage();
+                stage++;
                 waveIndex++;
                 loadWave();
             },
@@ -385,7 +396,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 if (dx * dx + dy * dy < HIT_RADIUS_SQ) {
                     const points =
                         enemy.phase === 'diving' ? SCORE_WHILE_DIVING[enemy.kind] : SCORE_IN_FORMATION[enemy.kind];
-                    scoreModel.addPoints(points);
+                    score += points;
                     enemy.kill();
                     bullet.deactivate();
                     break;

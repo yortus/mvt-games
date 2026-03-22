@@ -4,7 +4,7 @@ import { POINTS_TO_WIN_ROUND, ROUNDS_TO_WIN_MATCH } from '../data';
 // Interface
 // ---------------------------------------------------------------------------
 
-export interface ScoreModel {
+export interface MatchModel {
     readonly playerPoints: number;
     readonly opponentPoints: number;
     readonly playerRounds: number;
@@ -23,14 +23,14 @@ export interface ScoreModel {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createScoreModel(): ScoreModel {
+export function createMatchModel(): MatchModel {
     let playerPoints = 0;
     let opponentPoints = 0;
     let playerRounds = 0;
     let opponentRounds = 0;
     let round = 1;
 
-    const model: ScoreModel = {
+    const model: MatchModel = {
         get playerPoints() {
             return playerPoints;
         },

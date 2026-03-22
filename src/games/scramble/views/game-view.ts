@@ -145,11 +145,11 @@ export function createGameView(game: GameModel): Container {
 
         // HUD
         const hudContainer = createHudView({
-            getScore: () => game.score.score,
-            getLives: () => game.score.lives,
-            getFuel: () => game.score.fuel,
-            getSectionIndex: () => game.score.sectionIndex,
-            getLoop: () => game.score.loop,
+            getScore: () => game.score,
+            getLives: () => game.lives,
+            getFuel: () => game.fuel.fuel,
+            getSectionIndex: () => game.sectionIndex,
+            getLoop: () => game.loop,
             getScreenWidth: () => SCREEN_WIDTH,
         });
         hudContainer.position.set(0, PLAY_HEIGHT);
@@ -171,7 +171,7 @@ export function createGameView(game: GameModel): Container {
         // Section announcement (shows section name on entry)
         view.addChild(
             createSectionAnnouncementView({
-                getSectionIndex: () => game.score.sectionIndex,
+                getSectionIndex: () => game.sectionIndex,
                 getScreenWidth: () => SCREEN_WIDTH,
                 getScreenHeight: () => PLAY_HEIGHT,
             }),

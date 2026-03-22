@@ -56,9 +56,9 @@ export function createGameView(game: GameModel): Container {
 
         // HUD
         const hudContainer = createHudView({
-            getScore: () => game.score.score,
-            getLives: () => game.score.lives,
-            getWave: () => game.score.wave,
+            getScore: () => game.score,
+            getLives: () => game.lives,
+            getWave: () => game.wave,
             getScreenWidth: () => SCREEN_WIDTH,
         });
         hudContainer.position.set(0, PLAY_HEIGHT);

@@ -124,10 +124,10 @@ describe('GameModel', () => {
     describe('fuel depletion', () => {
         it('fuel depletes during play', () => {
             const g = makeGame();
-            const initialFuel = g.score.fuel;
+            const initialFuel = g.fuel.fuel;
             // Advance 10 seconds
             for (let i = 0; i < 100; i++) g.update(100);
-            expect(g.score.fuel).toBeLessThan(initialFuel);
+            expect(g.fuel.fuel).toBeLessThan(initialFuel);
         });
     });
 
@@ -138,7 +138,7 @@ describe('GameModel', () => {
             g.reset();
             expect(g.phase).toBe('playing');
             expect(g.scrollCol).toBe(0);
-            expect(g.score.score).toBe(0);
+            expect(g.score).toBe(0);
             expect(g.ship.alive).toBe(true);
         });
     });

@@ -7,6 +7,6 @@ export { createBombModel, type BombModel, type BombModelOptions } from './bomb-m
 export { createRocketModel, type RocketModel, type RocketModelOptions } from './rocket-model';
 export { createUfoModel, type UfoModel, type UfoModelOptions } from './ufo-model';
 export { createFuelTankModel, type FuelTankModel } from './fuel-tank-model';
-export { createScoreModel, type ScoreModel, type ScoreModelOptions } from './score-model';
+export { createFuelModel, type FuelModel, type FuelModelOptions } from './fuel-model';
 export { createExplosionModel, type ExplosionModel, type ExplosionModelOptions } from './explosion-model';
 export { createGameModel, type GameModel, type GameModelOptions } from './game-model';

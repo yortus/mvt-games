@@ -48,7 +48,7 @@ export function createGameView(game: GameModel): Container {
 
         // HUD - positioned below the maze
         const hudContainer = createHudView({
-            getScore: () => game.score.score,
+            getScore: () => game.score,
         });
         hudContainer.position.set(0, canvasH);
         view.addChild(hudContainer);

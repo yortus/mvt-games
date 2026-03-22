@@ -7,7 +7,6 @@ import { createDiggerModel, type DiggerModel } from './digger-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createRockModel, type RockModel } from './rock-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
-import { createScoreModel, type ScoreModel } from './score-model';
 import type { GamePhase, Direction } from './common';
 import { DIRECTION_DELTA } from './common';
 
@@ -21,7 +20,9 @@ export interface GameModel {
     readonly digger: DiggerModel;
     readonly enemies: readonly EnemyModel[];
     readonly rocks: readonly RockModel[];
-    readonly score: ScoreModel;
+    readonly score: number;
+    readonly lives: number;
+    readonly level: number;
     readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
@@ -67,6 +68,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     let gamePhase: GamePhase = 'playing';
     let levelIndex = 0;
+    let score = 0;
+    let lives = 3;
+    let level = 1;
 
     /** Index of the enemy currently attached to the harpoon, or -1. */
     let harpoonTarget = -1;
@@ -81,7 +85,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let digger = buildDigger(field);
     let enemies = buildEnemies(field);
     let rocks = buildRocks(field);
-    const scoreModel = createScoreModel();
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
 
@@ -104,14 +107,22 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return rocks;
         },
         get score() {
-            return scoreModel;
+            return score;
+        },
+        get lives() {
+            return lives;
+        },
+        get level() {
+            return level;
         },
         get playerInput() {
             return playerInput;
         },
 
         reset(): void {
-            scoreModel.reset();
+            score = 0;
+            lives = 3;
+            level = 1;
             levelIndex = 0;
             loadLevel();
         },
@@ -149,7 +160,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let i = 0; i < rocks.length; i++) {
                 rocks[i].update(deltaMs);
             }
-            scoreModel.update(deltaMs);
 
             // Collision checks
             checkDigging();
@@ -300,7 +310,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                if (scoreModel.loseLife()) {
+                lives--;
+                if (lives > 0) {
                     loadLevel();
                 }
                 else {
@@ -317,7 +328,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                scoreModel.advanceLevel();
+                level++;
                 levelIndex++;
                 loadLevel();
             },
@@ -370,7 +381,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     if (target.kind === 'fygar' && (digger.direction === 'left' || digger.direction === 'right')) {
                         points *= 2;
                     }
-                    scoreModel.addPoints(points);
+                    score += points;
                     harpoonTarget = -1;
                     digger.lockHarpoon(false);
                 }
@@ -402,7 +413,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     if (enemy.kind === 'fygar' && (digger.direction === 'left' || digger.direction === 'right')) {
                         points *= 2;
                     }
-                    scoreModel.addPoints(points);
+                    score += points;
                     harpoonTarget = -1;
                     digger.lockHarpoon(false);
                 }
@@ -435,7 +446,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 const dc = rock.x - enemy.col;
                 if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
                     enemy.crush();
-                    scoreModel.addPoints(ROCK_CRUSH_POINTS);
+                    score += ROCK_CRUSH_POINTS;
                 }
             }
 

@@ -70,9 +70,9 @@ export function createGameView(game: GameModel): Container {
 
         // HUD
         const hudContainer = createHudView({
-            getScore: () => game.score.score,
-            getLives: () => game.score.lives,
-            getLevel: () => game.score.level,
+            getScore: () => game.score,
+            getLives: () => game.lives,
+            getLevel: () => game.level,
             getTileSize: () => TILE_SIZE,
             getCols: () => FIELD_COLS,
         });

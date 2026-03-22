@@ -51,7 +51,7 @@ import { createPlayerInput, type PlayerInput } from './player-input';
 import { createRocketModel, type RocketModel } from './rocket-model';
 import { createUfoModel, type UfoModel } from './ufo-model';
 import { createFuelTankModel, type FuelTankModel } from './fuel-tank-model';
-import { createScoreModel, type ScoreModel } from './score-model';
+import { createFuelModel, type FuelModel } from './fuel-model';
 import { createExplosionModel, type ExplosionModel } from './explosion-model';
 
 // ---------------------------------------------------------------------------
@@ -78,7 +78,11 @@ export interface GameModel {
     readonly fuelTanks: readonly FuelTankModel[];
     readonly explosions: readonly ExplosionModel[];
     readonly terrain: TerrainModel;
-    readonly score: ScoreModel;
+    readonly score: number;
+    readonly lives: number;
+    readonly fuel: FuelModel;
+    readonly sectionIndex: number;
+    readonly loop: number;
     readonly scrollCol: number;
     readonly scrollSpeed: number;
     readonly playerInput: PlayerInput;
@@ -114,6 +118,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let baseActive = false;
     let baseFuelTankIndex = -1;
     let scrollClamped = false;
+    let score = 0;
+    let lives = INITIAL_LIVES;
+    let sectionIndex = 0;
+    let loop = 0;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -125,8 +133,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Initialise --------------------------------------------------------
 
     const terrain = createTerrainModel({ sections, rows: VISIBLE_ROWS });
-    const scoreModel = createScoreModel({
-        initialLives: INITIAL_LIVES,
+    const fuelModel = createFuelModel({
         fuelDepletionRate: FUEL_DEPLETION_RATE,
     });
     let ship = buildShip();
@@ -170,7 +177,19 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return terrain;
         },
         get score() {
-            return scoreModel;
+            return score;
+        },
+        get lives() {
+            return lives;
+        },
+        get fuel() {
+            return fuelModel;
+        },
+        get sectionIndex() {
+            return sectionIndex;
+        },
+        get loop() {
+            return loop;
         },
         get scrollCol() {
             return scrollCol;
@@ -202,7 +221,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
             baseActive = false;
             baseFuelTankIndex = -1;
             scrollClamped = false;
-            scoreModel.reset();
+            score = 0;
+            lives = INITIAL_LIVES;
+            sectionIndex = 0;
+            loop = 0;
+            fuelModel.reset();
             ship = buildShip();
             bullets = buildBulletPool();
             bombs = buildBombPool();
@@ -234,7 +257,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             scrollCol += currentScrollSpeed * deltaMs * 0.001;
 
             // Update section index
-            scoreModel.setSectionIndex(terrain.getSectionIndex(Math.floor(scrollCol)));
+            sectionIndex = terrain.getSectionIndex(Math.floor(scrollCol));
 
             // Route input
             ship.setXDirection(playerInput.xDirection);
@@ -273,7 +296,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let i = 0; i < ufos.length; i++) ufos[i].update(deltaMs);
             for (let i = 0; i < fuelTanks.length; i++) fuelTanks[i].update(deltaMs);
             for (let i = 0; i < explosions.length; i++) explosions[i].update(deltaMs);
-            scoreModel.update(deltaMs);
+            fuelModel.update(deltaMs);
 
             // Deactivate off-screen entities
             deactivateOffscreenBullets();
@@ -290,7 +313,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             checkBombsVsEnemies();
 
             // Fuel death
-            if (gamePhase === 'playing' && scoreModel.fuelEmpty) {
+            if (gamePhase === 'playing' && fuelModel.fuelEmpty) {
                 shipDied();
             }
 
@@ -629,7 +652,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     spawnExplosion(r.worldCol, r.worldRow);
                     r.kill();
                     bullet.deactivate();
-                    scoreModel.addPoints(SCORE_ROCKET);
+                    score += SCORE_ROCKET;
                     break;
                 }
             }
@@ -645,7 +668,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     spawnExplosion(u.worldCol, u.worldRow);
                     u.kill();
                     bullet.deactivate();
-                    scoreModel.addPoints(SCORE_UFO);
+                    score += SCORE_UFO;
                     break;
                 }
             }
@@ -685,7 +708,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     spawnExplosion(r.worldCol, r.worldRow);
                     r.kill();
                     bomb.deactivate();
-                    scoreModel.addPoints(SCORE_ROCKET);
+                    score += SCORE_ROCKET;
                     break;
                 }
             }
@@ -701,7 +724,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     spawnExplosion(u.worldCol, u.worldRow);
                     u.kill();
                     bomb.deactivate();
-                    scoreModel.addPoints(SCORE_UFO);
+                    score += SCORE_UFO;
                     break;
                 }
             }
@@ -730,12 +753,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
             baseAlive = false;
             baseActive = false;
             baseFuelTankIndex = -1;
-            scoreModel.addPoints(SCORE_BASE);
+            score += SCORE_BASE;
         }
         else {
             tank.kill();
-            scoreModel.addPoints(SCORE_FUEL_TANK);
-            scoreModel.addFuel(FUEL_REFILL_AMOUNT);
+            score += SCORE_FUEL_TANK;
+            fuelModel.addFuel(FUEL_REFILL_AMOUNT);
         }
     }
 
@@ -770,8 +793,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.call(
             () => {
                 // Completed all 3 sections - start new loop
-                scoreModel.advanceLoop();
-                currentScrollSpeed = SCROLL_SPEED + scoreModel.loop * SPEED_INCREASE_PER_LOOP;
+                loop++;
+                currentScrollSpeed = SCROLL_SPEED + loop * SPEED_INCREASE_PER_LOOP;
                 scrollCol = 0;
                 spawnCursor = 0;
                 baseAlive = false;
@@ -782,7 +805,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     SHIP_START_COL,
                     SHIP_START_ROW,
                 );
-                scoreModel.setSectionIndex(0);
+                sectionIndex = 0;
                 gamePhase = 'playing';
             },
             undefined,
@@ -799,7 +822,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                if (scoreModel.loseLife()) {
+                lives--;
+                if (lives > 0) {
                     // Respawn with brief delay
                     gamePhase = 'respawning';
                     phaseTimeline.clear().time(0);
@@ -810,7 +834,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                             const safeRow = findSafeRow(safeCol);
                             ship.respawn(safeCol, safeRow);
                             deactivateAllProjectiles();
-                            scoreModel.addFuel(0.25);
+                            fuelModel.addFuel(0.25);
                             gamePhase = 'playing';
                         },
                         undefined,

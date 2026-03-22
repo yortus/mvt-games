@@ -66,10 +66,10 @@ describe('GameModel', () => {
             expect(game.opponent.x).toBe(FIGHTER_START_RIGHT_X);
         });
 
-        it('creates score model at zero', () => {
+        it('creates match model at zero', () => {
             const game = createGameModel();
-            expect(game.score.playerPoints).toBe(0);
-            expect(game.score.opponentPoints).toBe(0);
+            expect(game.match.playerPoints).toBe(0);
+            expect(game.match.opponentPoints).toBe(0);
         });
 
         it('has full round timer', () => {
@@ -164,8 +164,8 @@ describe('GameModel', () => {
     describe('scoring integration', () => {
         it('score starts at zero for both sides', () => {
             const game = makeGameInFighting();
-            expect(game.score.playerPoints).toBe(0);
-            expect(game.score.opponentPoints).toBe(0);
+            expect(game.match.playerPoints).toBe(0);
+            expect(game.match.opponentPoints).toBe(0);
         });
     });
 
@@ -174,7 +174,7 @@ describe('GameModel', () => {
             const game = makeGameInFighting();
 
             // Manually score a point for the player
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
 
             // Advance past the timer
             advance(game, ROUND_TIMER_MS + 1);
@@ -186,7 +186,7 @@ describe('GameModel', () => {
         it('handles timer expiry with opponent leading in points', () => {
             const game = makeGameInFighting();
 
-            game.score.scorePoint('opponent');
+            game.match.scorePoint('opponent');
 
             advance(game, ROUND_TIMER_MS + 1);
 
@@ -201,20 +201,20 @@ describe('GameModel', () => {
 
             // Draw: new round begins via round-intro
             expect(game.phase).toBe('round-intro');
-            expect(game.score.round).toBe(2);
+            expect(game.match.round).toBe(2);
         });
 
         it('handles draw with both sides having scored', () => {
             const game = makeGameInFighting();
 
-            game.score.scorePoint('player');
-            game.score.scorePoint('opponent');
+            game.match.scorePoint('player');
+            game.match.scorePoint('opponent');
             // Both at 1
 
             advance(game, ROUND_TIMER_MS + 1);
 
             expect(game.phase).toBe('round-intro');
-            expect(game.score.round).toBe(2);
+            expect(game.match.round).toBe(2);
         });
     });
 
@@ -223,9 +223,9 @@ describe('GameModel', () => {
             const game = makeGameInFighting();
 
             // Score 3 points for player to win the round via timer
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
 
             // Expire the timer to trigger round-over
             advance(game, ROUND_TIMER_MS + 1);
@@ -236,8 +236,8 @@ describe('GameModel', () => {
 
             // Should move to next round (round-intro) since match isn't over
             expect(game.phase).toBe('round-intro');
-            expect(game.score.round).toBe(2);
-            expect(game.score.playerRounds).toBe(1);
+            expect(game.match.round).toBe(2);
+            expect(game.match.playerRounds).toBe(1);
         });
     });
 
@@ -246,9 +246,9 @@ describe('GameModel', () => {
             const game = makeGameInFighting();
 
             // Win round 1
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
             advance(game, ROUND_TIMER_MS + 1);
             expect(game.phase).toBe('round-over');
             advance(game, ROUND_OVER_DELAY_MS + 1);
@@ -258,16 +258,16 @@ describe('GameModel', () => {
             advanceToFighting(game);
 
             // Win round 2
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
             advance(game, ROUND_TIMER_MS + 1);
             expect(game.phase).toBe('round-over');
             advance(game, ROUND_OVER_DELAY_MS + 1);
 
             // Match should be over
             expect(game.phase).toBe('match-over');
-            expect(game.score.getMatchWinner()).toBe('player');
+            expect(game.match.getMatchWinner()).toBe('player');
         });
     });
 
@@ -276,17 +276,17 @@ describe('GameModel', () => {
             const game = makeGameInFighting();
 
             // Win round 1
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
             advance(game, ROUND_TIMER_MS + 1);
             advance(game, ROUND_OVER_DELAY_MS + 1);
             advanceToFighting(game);
 
             // Win round 2
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
+            game.match.scorePoint('player');
             advance(game, ROUND_TIMER_MS + 1);
             advance(game, ROUND_OVER_DELAY_MS + 1);
 
@@ -297,9 +297,9 @@ describe('GameModel', () => {
             advance(game, 16);
 
             expect(game.phase).toBe('round-intro');
-            expect(game.score.playerPoints).toBe(0);
-            expect(game.score.playerRounds).toBe(0);
-            expect(game.score.round).toBe(1);
+            expect(game.match.playerPoints).toBe(0);
+            expect(game.match.playerRounds).toBe(0);
+            expect(game.match.round).toBe(1);
         });
 
         it('does not reset during fighting phase', () => {
@@ -318,7 +318,7 @@ describe('GameModel', () => {
             const game = makeGameInFighting();
 
             // Manually score a point (simulating a hit)
-            game.score.scorePoint('player');
+            game.match.scorePoint('player');
 
             // Force transition to point-scored by expiring with player leading
             // then resetting to continue testing

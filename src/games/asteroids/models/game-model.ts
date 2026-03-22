@@ -32,7 +32,6 @@ import { createShipModel, type ShipModel } from './ship-model';
 import { createAsteroidModel, type AsteroidModel } from './asteroid-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
-import { createScoreModel, type ScoreModel } from './score-model';
 import { createDebrisModel, type DebrisModel } from './debris-model';
 
 // ---------------------------------------------------------------------------
@@ -45,7 +44,9 @@ export interface GameModel {
     readonly asteroids: readonly AsteroidModel[];
     readonly bullets: readonly BulletModel[];
     readonly debris: DebrisModel;
-    readonly score: ScoreModel;
+    readonly score: number;
+    readonly lives: number;
+    readonly wave: number;
     readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
@@ -87,6 +88,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     let gamePhase: GamePhase = 'playing';
     let fireConsumed = false;
+    let score = 0;
+    let lives = 3;
+    let wave = 1;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -95,7 +99,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const ship = buildShip();
     let bullets = buildBulletPool();
     let asteroids: AsteroidModel[] = [];
-    const scoreModel = createScoreModel();
     const debrisModel = createDebrisModel({ lifetimeMs: DYING_DELAY_MS });
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
@@ -122,14 +125,22 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return debrisModel;
         },
         get score() {
-            return scoreModel;
+            return score;
+        },
+        get lives() {
+            return lives;
+        },
+        get wave() {
+            return wave;
         },
         get playerInput() {
             return playerInput;
         },
 
         reset(): void {
-            scoreModel.reset();
+            score = 0;
+            lives = 3;
+            wave = 1;
             loadWave();
         },
 
@@ -178,7 +189,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             ship.update(deltaMs);
             for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
             for (let i = 0; i < bullets.length; i++) bullets[i].update(deltaMs);
-            scoreModel.update(deltaMs);
 
             // Collision checks
             checkBulletsVsAsteroids();
@@ -314,7 +324,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function loadWave(): void {
         ship.respawn(arenaWidth / 2, arenaHeight / 2);
         bullets = buildBulletPool();
-        asteroids = spawnWaveAsteroids(asteroidCountForWave(scoreModel.wave));
+        asteroids = spawnWaveAsteroids(asteroidCountForWave(wave));
         debrisModel.clear();
         fireConsumed = false;
         gamePhase = 'playing';
@@ -332,7 +342,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.call(
             () => {
                 debrisModel.clear();
-                if (scoreModel.loseLife()) {
+                lives--;
+                if (lives > 0) {
                     // Find a safe respawn position away from all asteroids
                     const safePos = findSafeRespawnPosition();
                     respawnX = safePos.x;
@@ -368,7 +379,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
-                scoreModel.advanceWave();
+                wave++;
                 loadWave();
             },
             undefined,
@@ -410,7 +421,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
                 const hitDist = ast.radius + BULLET_RADIUS;
                 if (distSq(bullet.x, bullet.y, ast.x, ast.y) < hitDist * hitDist) {
-                    scoreModel.addPoints(SCORE_BY_SIZE[ast.size]);
+                    score += SCORE_BY_SIZE[ast.size];
                     bullet.deactivate();
                     splitAsteroid(a);
                     break;

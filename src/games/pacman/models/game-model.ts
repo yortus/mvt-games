@@ -4,7 +4,6 @@ import { createMazeModel, type MazeModel } from './maze-model';
 import { createPacmanModel, type PacmanModel } from './pacman-model';
 import { createGhostModel, type GhostModel, type GhostBehavior } from './ghost-model';
 import { createPlayerInput, type PlayerInput } from './player-input';
-import { createScoreModel, type ScoreModel } from './score-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -15,7 +14,7 @@ export interface GameModel {
     readonly maze: MazeModel;
     readonly pacman: PacmanModel;
     readonly ghosts: readonly GhostModel[];
-    readonly score: ScoreModel;
+    readonly score: number;
     readonly playerInput: PlayerInput;
     reset(): void;
     update(deltaMs: number): void;
@@ -54,7 +53,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let maze = buildMaze();
     let pacman = buildPacman(maze);
     let ghosts = buildGhosts(maze);
-    let scoreModel = createScoreModel();
+    let score = 0;
 
     // Player input - persists across resets (input device outlives a single game)
     const playerInput = createPlayerInput();
@@ -76,7 +75,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return ghosts;
         },
         get score() {
-            return scoreModel;
+            return score;
         },
         get playerInput() {
             return playerInput;
@@ -86,7 +85,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             maze = buildMaze();
             pacman = buildPacman(maze);
             ghosts = buildGhosts(maze);
-            scoreModel = createScoreModel();
+            score = 0;
             gamePhase = 'playing';
         },
 
@@ -113,7 +112,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let i = 0; i < ghosts.length; i++) {
                 ghosts[i].update(deltaMs);
             }
-            scoreModel.update(deltaMs);
 
             checkCollisions();
         },
@@ -164,7 +162,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         // Pac-Man eats dots
         if (maze.eatDot(Math.round(pacman.row), Math.round(pacman.col))) {
-            scoreModel.addPoints(DOT_POINTS);
+            score += DOT_POINTS;
         }
 
         // Win if all dots eaten
