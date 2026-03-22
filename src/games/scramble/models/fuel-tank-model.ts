@@ -8,9 +8,9 @@ export interface FuelTankModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether the fuel tank is alive (active and not destroyed). */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether the fuel tank is currently in use (placed in the world). */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Place the fuel tank in the world at the given position. */
     activate(worldCol: number, worldRow: number): void;
     /** Remove the fuel tank from the world. */
@@ -38,10 +38,10 @@ export function createFuelTankModel(): FuelTankModel {
         get worldRow() {
             return worldRow;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
-        get active() {
+        get isActive() {
             return active;
         },
 

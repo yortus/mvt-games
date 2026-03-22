@@ -45,6 +45,13 @@ export const DIGGER_SPAWN: [number, number] = [0, 7];
 // Base Field Layout
 // ---------------------------------------------------------------------------
 
+/** Base field layout (flat array, indexed by row * FIELD_COLS + col). */
+export const BASE_FIELD: readonly TileKind[] = buildBaseField();
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
 /**
  * Build the base field layout as a flat TileKind array (FIELD_ROWS × FIELD_COLS).
  * Top row is surface, rest is dirt with pre-carved starter tunnels.
@@ -85,6 +92,3 @@ function buildBaseField(): TileKind[] {
 
     return field;
 }
-
-/** Base field layout (flat array, indexed by row * FIELD_COLS + col). */
-export const BASE_FIELD: readonly TileKind[] = buildBaseField();

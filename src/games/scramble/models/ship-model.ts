@@ -10,7 +10,7 @@ export interface ShipModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether the ship is alive. */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     setXDirection(dir: XDirection): void;
     setYDirection(dir: YDirection): void;
     kill(): void;
@@ -63,7 +63,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         get worldRow() {
             return worldRow;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
 

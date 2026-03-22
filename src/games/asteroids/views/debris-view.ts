@@ -36,7 +36,7 @@ export function createDebrisView(bindings: DebrisViewBindings): Container {
         const particles = bindings.getParticles();
         for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
-            if (!p.active) continue;
+            if (!p.isActive) continue;
 
             const cos = Math.cos(p.angle);
             const sin = Math.sin(p.angle);

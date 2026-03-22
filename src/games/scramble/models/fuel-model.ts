@@ -6,7 +6,7 @@ export interface FuelModel {
     /** Current fuel level (0.0 to 1.0). */
     readonly fuel: number;
     /** Whether fuel has been depleted to zero. */
-    readonly fuelEmpty: boolean;
+    readonly isFuelEmpty: boolean;
     /** Add fuel, capped at 1.0. */
     addFuel(amount: number): void;
     reset(): void;
@@ -37,7 +37,7 @@ export function createFuelModel(options: FuelModelOptions = {}): FuelModel {
         get fuel() {
             return fuel;
         },
-        get fuelEmpty() {
+        get isFuelEmpty() {
             return fuelEmpty;
         },
 

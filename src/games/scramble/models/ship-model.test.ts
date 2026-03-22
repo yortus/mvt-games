@@ -29,7 +29,7 @@ describe('ShipModel', () => {
             const s = makeShip({ startWorldCol: 5, startWorldRow: 7 });
             expect(s.worldCol).toBe(5);
             expect(s.worldRow).toBe(7);
-            expect(s.alive).toBe(true);
+            expect(s.isAlive).toBe(true);
         });
     });
 
@@ -108,7 +108,7 @@ describe('ShipModel', () => {
         it('kill sets alive to false', () => {
             const s = makeShip();
             s.kill();
-            expect(s.alive).toBe(false);
+            expect(s.isAlive).toBe(false);
         });
 
         it('dead ship does not move', () => {
@@ -123,7 +123,7 @@ describe('ShipModel', () => {
             const s = makeShip();
             s.kill();
             s.respawn(20, 5);
-            expect(s.alive).toBe(true);
+            expect(s.isAlive).toBe(true);
             expect(s.worldCol).toBe(20);
             expect(s.worldRow).toBe(5);
         });

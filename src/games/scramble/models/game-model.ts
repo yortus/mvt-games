@@ -55,16 +55,6 @@ import { createFuelModel, type FuelModel } from './fuel-model';
 import { createExplosionModel, type ExplosionModel } from './explosion-model';
 
 // ---------------------------------------------------------------------------
-// Spawn list entry (absolute world column)
-// ---------------------------------------------------------------------------
-
-interface AbsoluteSpawn {
-    readonly worldCol: number;
-    readonly row: number;
-    readonly kind: SpawnKind;
-}
-
-// ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
@@ -86,10 +76,10 @@ export interface GameModel {
     readonly scrollCol: number;
     readonly scrollSpeed: number;
     readonly playerInput: PlayerInput;
-    readonly baseAlive: boolean;
+    readonly isBaseAlive: boolean;
     readonly baseWorldCol: number;
     readonly baseWorldRow: number;
-    readonly scrollClamped: boolean;
+    readonly isScrollClamped: boolean;
     reset(): void;
     update(deltaMs: number): void;
 }
@@ -200,7 +190,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get playerInput() {
             return playerInput;
         },
-        get baseAlive() {
+        get isBaseAlive() {
             return baseAlive;
         },
         get baseWorldCol() {
@@ -209,7 +199,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get baseWorldRow() {
             return baseFuelTankIndex >= 0 ? fuelTanks[baseFuelTankIndex].worldRow : -1;
         },
-        get scrollClamped() {
+        get isScrollClamped() {
             return scrollClamped;
         },
 
@@ -313,7 +303,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             checkBombsVsEnemies();
 
             // Fuel death
-            if (gamePhase === 'playing' && fuelModel.fuelEmpty) {
+            if (gamePhase === 'playing' && fuelModel.isFuelEmpty) {
                 shipDied();
             }
 
@@ -420,7 +410,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function spawnExplosion(worldCol: number, worldRow: number): void {
         for (let i = 0; i < explosions.length; i++) {
-            if (!explosions[i].active) {
+            if (!explosions[i].isActive) {
                 explosions[i].spawn(worldCol, worldRow);
                 return;
             }
@@ -445,7 +435,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         if (kind === 'rocket') {
             for (let i = 0; i < rockets.length; i++) {
-                if (!rockets[i].active) {
+                if (!rockets[i].isActive) {
                     rockets[i].activate(worldCol, groundRow);
                     return;
                 }
@@ -453,7 +443,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         else if (kind === 'ufo') {
             for (let i = 0; i < ufos.length; i++) {
-                if (!ufos[i].active) {
+                if (!ufos[i].isActive) {
                     ufos[i].activate(worldCol, row);
                     return;
                 }
@@ -461,7 +451,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         else if (kind === 'fuel-tank') {
             for (let i = 0; i < fuelTanks.length; i++) {
-                if (!fuelTanks[i].active) {
+                if (!fuelTanks[i].isActive) {
                     fuelTanks[i].activate(worldCol, groundRow);
                     return;
                 }
@@ -470,7 +460,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         else if (kind === 'base') {
             // Use a fuel tank slot for the base, track it specially
             for (let i = 0; i < fuelTanks.length; i++) {
-                if (!fuelTanks[i].active) {
+                if (!fuelTanks[i].isActive) {
                     fuelTanks[i].activate(worldCol, groundRow);
                     baseFuelTankIndex = i;
                     baseAlive = true;
@@ -484,9 +474,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Firing ------------------------------------------------------------
 
     function tryFireBullet(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
         for (let i = 0; i < bullets.length; i++) {
-            if (!bullets[i].active) {
+            if (!bullets[i].isActive) {
                 bullets[i].fire(ship.worldCol + 0.5, ship.worldRow, BULLET_SPEED);
                 break;
             }
@@ -494,9 +484,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function tryDropBomb(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
         for (let i = 0; i < bombs.length; i++) {
-            if (!bombs[i].active) {
+            if (!bombs[i].isActive) {
                 bombs[i].fire(
                     ship.worldCol,
                     ship.worldRow + 0.5,
@@ -512,7 +502,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function deactivateOffscreenBullets(): void {
         const rightEdge = scrollCol + VISIBLE_COLS + 1;
         for (let i = 0; i < bullets.length; i++) {
-            if (bullets[i].active && bullets[i].worldCol > rightEdge) {
+            if (bullets[i].isActive && bullets[i].worldCol > rightEdge) {
                 bullets[i].deactivate();
             }
         }
@@ -520,7 +510,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function deactivateOffscreenBombs(): void {
         for (let i = 0; i < bombs.length; i++) {
-            if (bombs[i].active && bombs[i].worldRow > VISIBLE_ROWS) {
+            if (bombs[i].isActive && bombs[i].worldRow > VISIBLE_ROWS) {
                 bombs[i].deactivate();
             }
         }
@@ -529,17 +519,17 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function deactivateOffscreenEnemies(): void {
         const leftEdge = scrollCol - 2;
         for (let i = 0; i < rockets.length; i++) {
-            if (rockets[i].active && rockets[i].worldCol < leftEdge) {
+            if (rockets[i].isActive && rockets[i].worldCol < leftEdge) {
                 rockets[i].deactivate();
             }
         }
         for (let i = 0; i < ufos.length; i++) {
-            if (ufos[i].active && ufos[i].worldCol < leftEdge) {
+            if (ufos[i].isActive && ufos[i].worldCol < leftEdge) {
                 ufos[i].deactivate();
             }
         }
         for (let i = 0; i < fuelTanks.length; i++) {
-            if (fuelTanks[i].active && fuelTanks[i].worldCol < leftEdge) {
+            if (fuelTanks[i].isActive && fuelTanks[i].worldCol < leftEdge) {
                 fuelTanks[i].deactivate();
             }
         }
@@ -548,7 +538,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Collision detection -----------------------------------------------
 
     function checkShipTerrainCollision(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
 
         const col = ship.worldCol;
         const row = ship.worldRow;
@@ -570,14 +560,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkShipVsRockets(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
         const shipCol = ship.worldCol;
         const shipRow = ship.worldRow;
         const hitDist = SHIP_HALF_SIZE + ENEMY_HALF_SIZE;
 
         for (let i = 0; i < rockets.length; i++) {
             const r = rockets[i];
-            if (!r.active || !r.alive) continue;
+            if (!r.isActive || !r.isAlive) continue;
             const dc = shipCol - r.worldCol;
             const dr = shipRow - r.worldRow;
             if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -590,14 +580,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkShipVsUfos(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
         const shipCol = ship.worldCol;
         const shipRow = ship.worldRow;
         const hitDist = SHIP_HALF_SIZE + ENEMY_HALF_SIZE;
 
         for (let i = 0; i < ufos.length; i++) {
             const u = ufos[i];
-            if (!u.active || !u.alive) continue;
+            if (!u.isActive || !u.isAlive) continue;
             const dc = shipCol - u.worldCol;
             const dr = shipRow - u.worldRow;
             if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -612,7 +602,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkBulletsTerrainCollision(): void {
         for (let i = 0; i < bullets.length; i++) {
             const b = bullets[i];
-            if (!b.active) continue;
+            if (!b.isActive) continue;
             const col = Math.floor(b.worldCol);
             const row = Math.floor(b.worldRow);
             if (terrain.isSolid(col, row)) {
@@ -624,7 +614,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkBombsTerrainCollision(): void {
         for (let i = 0; i < bombs.length; i++) {
             const b = bombs[i];
-            if (!b.active) continue;
+            if (!b.isActive) continue;
             const col = Math.floor(b.worldCol);
             const row = Math.floor(b.worldRow);
             if (terrain.isSolid(col, row)) {
@@ -636,7 +626,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkBulletsVsEnemies(): void {
         for (let b = 0; b < bullets.length; b++) {
             const bullet = bullets[b];
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             const bCol = bullet.worldCol;
             const bRow = bullet.worldRow;
@@ -645,7 +635,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // vs rockets
             for (let i = 0; i < rockets.length; i++) {
                 const r = rockets[i];
-                if (!r.active || !r.alive) continue;
+                if (!r.isActive || !r.isAlive) continue;
                 const dc = bCol - r.worldCol;
                 const dr = bRow - r.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -656,12 +646,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     break;
                 }
             }
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             // vs UFOs
             for (let i = 0; i < ufos.length; i++) {
                 const u = ufos[i];
-                if (!u.active || !u.alive) continue;
+                if (!u.isActive || !u.isAlive) continue;
                 const dc = bCol - u.worldCol;
                 const dr = bRow - u.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -672,12 +662,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     break;
                 }
             }
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             // vs fuel tanks
             for (let i = 0; i < fuelTanks.length; i++) {
                 const f = fuelTanks[i];
-                if (!f.active || !f.alive) continue;
+                if (!f.isActive || !f.isAlive) continue;
                 const dc = bCol - f.worldCol;
                 const dr = bRow - f.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -692,7 +682,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkBombsVsEnemies(): void {
         for (let b = 0; b < bombs.length; b++) {
             const bomb = bombs[b];
-            if (!bomb.active) continue;
+            if (!bomb.isActive) continue;
 
             const bCol = bomb.worldCol;
             const bRow = bomb.worldRow;
@@ -701,7 +691,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // vs rockets
             for (let i = 0; i < rockets.length; i++) {
                 const r = rockets[i];
-                if (!r.active || !r.alive) continue;
+                if (!r.isActive || !r.isAlive) continue;
                 const dc = bCol - r.worldCol;
                 const dr = bRow - r.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -712,12 +702,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     break;
                 }
             }
-            if (!bomb.active) continue;
+            if (!bomb.isActive) continue;
 
             // vs UFOs
             for (let i = 0; i < ufos.length; i++) {
                 const u = ufos[i];
-                if (!u.active || !u.alive) continue;
+                if (!u.isActive || !u.isAlive) continue;
                 const dc = bCol - u.worldCol;
                 const dr = bRow - u.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -728,12 +718,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     break;
                 }
             }
-            if (!bomb.active) continue;
+            if (!bomb.isActive) continue;
 
             // vs fuel tanks (including base)
             for (let i = 0; i < fuelTanks.length; i++) {
                 const f = fuelTanks[i];
-                if (!f.active || !f.alive) continue;
+                if (!f.isActive || !f.isAlive) continue;
                 const dc = bCol - f.worldCol;
                 const dr = bRow - f.worldRow;
                 if (dc * dc + dr * dr < hitDist * hitDist) {
@@ -878,4 +868,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         return SHIP_START_ROW;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+interface AbsoluteSpawn {
+    readonly worldCol: number;
+    readonly row: number;
+    readonly kind: SpawnKind;
 }

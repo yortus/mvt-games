@@ -2,8 +2,6 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-type EnemyKind = 'pooka' | 'fygar';
-
 export interface EnemySpawn {
     readonly row: number;
     readonly col: number;
@@ -122,3 +120,9 @@ export const LEVELS: readonly LevelConfig[] = [
         ghostInterval: 4,
     },
 ];
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+type EnemyKind = 'pooka' | 'fygar';

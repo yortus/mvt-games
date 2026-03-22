@@ -10,9 +10,9 @@ export interface RocketModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether the rocket is alive (active and not destroyed). */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether the rocket is currently in use (placed in the world). */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Current phase of the rocket. */
     readonly phase: RocketPhase;
     /** Place the rocket in the world at the given position. */
@@ -57,10 +57,10 @@ export function createRocketModel(options: RocketModelOptions): RocketModel {
         get worldRow() {
             return worldRow;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
-        get active() {
+        get isActive() {
             return active;
         },
         get phase() {

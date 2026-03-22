@@ -8,9 +8,9 @@ export interface UfoModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether the UFO is alive (active and not destroyed). */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether the UFO is currently in use (placed in the world). */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Place the UFO in the world at the given position. */
     activate(worldCol: number, worldRow: number): void;
     /** Remove the UFO from the world. */
@@ -54,10 +54,10 @@ export function createUfoModel(options: UfoModelOptions): UfoModel {
         get worldRow() {
             return baseRow + Math.sin(elapsed * oscillationFreq * Math.PI * 2) * oscillationAmp;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
-        get active() {
+        get isActive() {
             return active;
         },
 

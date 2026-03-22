@@ -8,7 +8,7 @@ export interface BulletModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether this bullet is currently in flight. */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Activate the bullet at a position, traveling rightward at the given speed. */
     fire(worldCol: number, worldRow: number, speed: number): void;
     /** Deactivate the bullet immediately. */
@@ -33,7 +33,7 @@ export function createBulletModel(): BulletModel {
         get worldRow() {
             return worldRow;
         },
-        get active() {
+        get isActive() {
             return active;
         },
 

@@ -42,15 +42,15 @@ export function createGameView(game: GameModel): Container {
             getX: () => game.ship.x,
             getY: () => game.ship.y,
             getAngle: () => game.ship.angle,
-            isAlive: () => game.ship.alive,
-            isThrusting: () => game.ship.thrusting,
+            isAlive: () => game.ship.isAlive,
+            isThrusting: () => game.ship.isThrusting,
         });
         view.addChild(shipContainer);
 
         // Debris (rendered above ship layer)
         const debrisContainer = createDebrisView({
             getParticles: () => game.debris.particles,
-            isActive: () => game.debris.active,
+            isActive: () => game.debris.isActive,
         });
         view.addChild(debrisContainer);
 
@@ -114,7 +114,7 @@ export function createGameView(game: GameModel): Container {
                 getAngle: () => game.asteroids[idx].angle,
                 getSize: () => game.asteroids[idx].size,
                 getRadius: () => game.asteroids[idx].radius,
-                isAlive: () => game.asteroids[idx].alive,
+                isAlive: () => game.asteroids[idx].isAlive,
                 getShapeSeed: () => game.asteroids[idx].shapeSeed,
             });
             view.addChild(c);
@@ -134,7 +134,7 @@ export function createGameView(game: GameModel): Container {
             const c = createBulletView({
                 getX: () => game.bullets[idx].x,
                 getY: () => game.bullets[idx].y,
-                isActive: () => game.bullets[idx].active,
+                isActive: () => game.bullets[idx].isActive,
             });
             view.addChild(c);
             bulletContainers.push(c);

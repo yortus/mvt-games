@@ -2,16 +2,6 @@ import gsap from 'gsap';
 import { type Direction, DIRECTION_DELTA, oppositeDirection } from './common';
 
 // ---------------------------------------------------------------------------
-// Behaviour
-// ---------------------------------------------------------------------------
-
-export type GhostBehavior = 'chase' | 'ambush' | 'flank' | 'fickle';
-
-const AMBUSH_LOOK_AHEAD = 4;
-const FLANK_LOOK_AHEAD = 2;
-const FICKLE_SCATTER_DIST = 8;
-
-// ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
@@ -24,6 +14,8 @@ export interface GhostModel {
     readonly color: number;
     update(deltaMs: number): void;
 }
+
+export type GhostBehavior = 'chase' | 'ambush' | 'flank' | 'fickle';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -50,8 +42,6 @@ export interface GhostModelOptions {
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
-
-const ALL_DIRS: Direction[] = ['up', 'down', 'left', 'right'];
 
 export function createGhostModel(options: GhostModelOptions): GhostModel {
     const { startRow, startCol, color, speed, behavior, isWalkable, chaseTarget, flankPartner, scatterTarget } =
@@ -202,3 +192,12 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const ALL_DIRS: Direction[] = ['up', 'down', 'left', 'right'];
+const AMBUSH_LOOK_AHEAD = 4;
+const FLANK_LOOK_AHEAD = 2;
+const FICKLE_SCATTER_DIST = 8;

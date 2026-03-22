@@ -5,8 +5,8 @@ describe('FuelTankModel', () => {
     describe('initial state', () => {
         it('starts inactive and dead', () => {
             const f = createFuelTankModel();
-            expect(f.active).toBe(false);
-            expect(f.alive).toBe(false);
+            expect(f.isActive).toBe(false);
+            expect(f.isAlive).toBe(false);
         });
     });
 
@@ -16,8 +16,8 @@ describe('FuelTankModel', () => {
             f.activate(10, 8);
             expect(f.worldCol).toBe(10);
             expect(f.worldRow).toBe(8);
-            expect(f.alive).toBe(true);
-            expect(f.active).toBe(true);
+            expect(f.isAlive).toBe(true);
+            expect(f.isActive).toBe(true);
         });
     });
 
@@ -26,8 +26,8 @@ describe('FuelTankModel', () => {
             const f = createFuelTankModel();
             f.activate(10, 8);
             f.kill();
-            expect(f.alive).toBe(false);
-            expect(f.active).toBe(false);
+            expect(f.isAlive).toBe(false);
+            expect(f.isActive).toBe(false);
         });
     });
 
@@ -36,8 +36,8 @@ describe('FuelTankModel', () => {
             const f = createFuelTankModel();
             f.activate(10, 8);
             f.deactivate();
-            expect(f.alive).toBe(false);
-            expect(f.active).toBe(false);
+            expect(f.isAlive).toBe(false);
+            expect(f.isActive).toBe(false);
         });
     });
 

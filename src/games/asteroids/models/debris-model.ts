@@ -1,4 +1,21 @@
 // ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+export interface DebrisModel {
+    readonly particles: readonly DebrisParticle[];
+    /** Whether any particles are currently active. */
+    readonly isActive: boolean;
+    /** Spawn debris at the given position, spreading outward. */
+    spawn(x: number, y: number, shipAngle: number): void;
+    /** Spawn debris that converges inward to the given position. */
+    reverseSpawn(targetX: number, targetY: number, shipAngle: number, durationMs?: number): void;
+    /** Deactivate all particles. */
+    clear(): void;
+    update(deltaMs: number): void;
+}
+
+// ---------------------------------------------------------------------------
 // Particle
 // ---------------------------------------------------------------------------
 
@@ -8,24 +25,7 @@ export interface DebrisParticle {
     readonly angle: number;
     /** Half-length of the line segment in pixels. */
     readonly length: number;
-    readonly active: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
-export interface DebrisModel {
-    readonly particles: readonly DebrisParticle[];
-    /** Whether any particles are currently active. */
-    readonly active: boolean;
-    /** Spawn debris at the given position, spreading outward. */
-    spawn(x: number, y: number, shipAngle: number): void;
-    /** Spawn debris that converges inward to the given position. */
-    reverseSpawn(targetX: number, targetY: number, shipAngle: number, durationMs?: number): void;
-    /** Deactivate all particles. */
-    clear(): void;
-    update(deltaMs: number): void;
+    readonly isActive: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,18 +47,6 @@ export interface DebrisModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-interface MutableParticle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    angle: number;
-    rotationSpeed: number;
-    length: number;
-    active: boolean;
-    timer: number;
-}
-
 export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel {
     const { count = 8, minSpeed = 30, maxSpeed = 120, lifetimeMs = 1500 } = options;
 
@@ -73,7 +61,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
             angle: 0,
             rotationSpeed: 0,
             length: 4,
-            active: false,
+            isActive: false,
             timer: 0,
         });
     }
@@ -85,7 +73,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
         get particles() {
             return pool;
         },
-        get active() {
+        get isActive() {
             return anyActive;
         },
 
@@ -106,7 +94,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
                 p.angle = dir + Math.random() * Math.PI;
                 p.rotationSpeed = (Math.random() - 0.5) * 8;
                 p.length = 3 + Math.random() * 5;
-                p.active = true;
+                p.isActive = true;
                 p.timer = 0;
             }
             anyActive = true;
@@ -134,7 +122,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
                 p.angle = dir + Math.random() * Math.PI;
                 p.rotationSpeed = (Math.random() - 0.5) * 8;
                 p.length = 3 + Math.random() * 5;
-                p.active = true;
+                p.isActive = true;
                 p.timer = 0;
             }
             anyActive = true;
@@ -142,7 +130,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
 
         clear(): void {
             for (let i = 0; i < count; i++) {
-                pool[i].active = false;
+                pool[i].isActive = false;
             }
             anyActive = false;
         },
@@ -155,7 +143,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
 
             for (let i = 0; i < count; i++) {
                 const p = pool[i];
-                if (!p.active) continue;
+                if (!p.isActive) continue;
 
                 p.x += p.vx * dt;
                 p.y += p.vy * dt;
@@ -163,7 +151,7 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
                 p.timer += deltaMs;
 
                 if (p.timer >= activeLifetimeMs) {
-                    p.active = false;
+                    p.isActive = false;
                 }
                 else {
                     stillActive = true;
@@ -175,4 +163,20 @@ export function createDebrisModel(options: DebrisModelOptions = {}): DebrisModel
     };
 
     return model;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+interface MutableParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    angle: number;
+    rotationSpeed: number;
+    length: number;
+    isActive: boolean;
+    timer: number;
 }

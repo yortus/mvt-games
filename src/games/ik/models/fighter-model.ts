@@ -49,7 +49,7 @@ export interface FighterModel {
      */
     readonly progress: number;
     /** Whether the move's hitbox is currently active. */
-    readonly hitboxActive: boolean;
+    readonly isHitboxActive: boolean;
     /** World-space hitbox rectangle in metres (zeroed when inactive). */
     readonly hitbox: { x: number; y: number; w: number; h: number };
     /** World-space body box in metres (always valid; used for receiving hits). */
@@ -162,7 +162,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
             return p < 0 ? 0 : p > 1 ? 1 : p;
         },
 
-        get hitboxActive() {
+        get isHitboxActive() {
             return state.hitboxActive;
         },
 
@@ -225,7 +225,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
 
             // Remaining values are MoveKind
             const moveData = MOVE_DATA[move];
-            if (moveData.autoTurn) {
+            if (moveData.hasAutoTurn) {
                 scheduleAutoTurnAttack(move);
             }
             else {
@@ -361,7 +361,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         const totalSec = totalMs * 0.001;
 
         timeline.clear().time(0);
-        state.phase = moveData.airborne ? 'airborne' : 'attacking';
+        state.phase = moveData.isAirborne ? 'airborne' : 'attacking';
         state.move = moveKind;
         state.hitboxActive = false;
         state.walkDirection = 0;
@@ -378,14 +378,14 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         }
 
         // Airborne arc
-        if (moveData.airborne) {
+        if (moveData.isAirborne) {
             const halfDuration = totalSec * 0.5;
             timeline.to(state, { height: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, 0);
             timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, halfDuration);
         }
 
         // End-of-move callback
-        if (moveData.airborne) {
+        if (moveData.isAirborne) {
             timeline.call(enterIdle, undefined, totalSec);
         }
         else {
@@ -416,7 +416,7 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         const endSec = turnSec + attackSec;
 
         // Transition to attack phase at the boundary
-        timeline.call(transitionToAttack, [moveKind, moveData.airborne, attackMs], turnSec);
+        timeline.call(transitionToAttack, [moveKind, moveData.isAirborne, attackMs], turnSec);
 
         // Lunge during attack portion
         if (moveData.lunge !== 0) {
@@ -424,14 +424,14 @@ export function createFighterModel(options: FighterModelOptions): FighterModel {
         }
 
         // Airborne arc during attack portion
-        if (moveData.airborne) {
+        if (moveData.isAirborne) {
             const halfDuration = attackSec * 0.5;
             timeline.to(state, { height: JUMP_HEIGHT, duration: halfDuration, ease: 'power1.out' }, turnSec);
             timeline.to(state, { height: 0, duration: halfDuration, ease: 'power1.in' }, turnSec + halfDuration);
         }
 
         // End of move
-        if (moveData.airborne) {
+        if (moveData.isAirborne) {
             timeline.call(enterIdle, undefined, endSec);
         }
         else {

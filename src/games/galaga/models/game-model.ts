@@ -53,27 +53,6 @@ export interface GameModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-const STAGE_CLEAR_DELAY_MS = 1500;
-const DYING_DELAY_MS = 1500;
-
-/** Points for destroying an enemy while it sits in formation. */
-const SCORE_IN_FORMATION: Record<EnemyKind, number> = {
-    bee: 50,
-    butterfly: 80,
-    boss: 150,
-};
-
-/** Points for destroying an enemy while it is diving. */
-const SCORE_WHILE_DIVING: Record<EnemyKind, number> = {
-    bee: 100,
-    butterfly: 160,
-    boss: 400,
-};
-
-/** Amplitude of the formation breathing in pixels. */
-const BREATH_AMP_X = 5;
-const BREATH_AMP_Y = 3;
-
 export function createGameModel(options: GameModelOptions): GameModel {
     const { waves, playHeight, shipStartX, shipStartY, shipSpeed, shipMinX, shipMaxX } = options;
 
@@ -318,14 +297,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function aliveEnemyCount(): number {
         let count = 0;
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive) count++;
+            if (enemies[i].isAlive) count++;
         }
         return count;
     }
 
     function allEnemiesEnteredOrDead(): boolean {
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive && enemies[i].phase === 'entering') return false;
+            if (enemies[i].isAlive && enemies[i].phase === 'entering') return false;
         }
         return true;
     }
@@ -333,13 +312,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function selectAndStartDive(): void {
         let candidateCount = 0;
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive && enemies[i].phase === 'formation') candidateCount++;
+            if (enemies[i].isAlive && enemies[i].phase === 'formation') candidateCount++;
         }
         if (candidateCount === 0) return;
 
         let pick = (Math.random() * candidateCount) | 0;
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive && enemies[i].phase === 'formation') {
+            if (enemies[i].isAlive && enemies[i].phase === 'formation') {
                 if (pick === 0) {
                     const curveDir = Math.random() > 0.5 ? 1 : -1;
                     enemies[i].startDive(ship.x, curveDir);
@@ -353,11 +332,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Firing ------------------------------------------------------------
 
     function tryPlayerFire(): void {
-        if (!ship.alive || !playerInput.firePressed) return;
+        if (!ship.isAlive || !playerInput.firePressed) return;
         if (!fireConsumed) {
             fireConsumed = true;
             for (let b = 0; b < playerBullets.length; b++) {
-                if (!playerBullets[b].active) {
+                if (!playerBullets[b].isActive) {
                     playerBullets[b].fire(ship.x, ship.y - 8, -BULLET_SPEED);
                     break;
                 }
@@ -372,7 +351,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             enemy.consumeFire();
 
             for (let b = 0; b < enemyBullets.length; b++) {
-                if (!enemyBullets[b].active) {
+                if (!enemyBullets[b].isActive) {
                     enemyBullets[b].fire(enemy.x, enemy.y + 8, ENEMY_BULLET_SPEED);
                     break;
                 }
@@ -385,11 +364,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkPlayerBulletsVsEnemies(): void {
         for (let b = 0; b < playerBullets.length; b++) {
             const bullet = playerBullets[b];
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             for (let e = 0; e < enemies.length; e++) {
                 const enemy = enemies[e];
-                if (!enemy.alive || enemy.phase === 'entering') continue;
+                if (!enemy.isAlive || enemy.phase === 'entering') continue;
 
                 const dx = bullet.x - enemy.x;
                 const dy = bullet.y - enemy.y;
@@ -406,11 +385,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkEnemyBulletsVsShip(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
 
         for (let b = 0; b < enemyBullets.length; b++) {
             const bullet = enemyBullets[b];
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             const dx = bullet.x - ship.x;
             const dy = bullet.y - ship.y;
@@ -424,11 +403,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkDivingEnemiesVsShip(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
 
         for (let e = 0; e < enemies.length; e++) {
             const enemy = enemies[e];
-            if (!enemy.alive || enemy.phase !== 'diving') continue;
+            if (!enemy.isAlive || enemy.phase !== 'diving') continue;
 
             const dx = enemy.x - ship.x;
             const dy = enemy.y - ship.y;
@@ -441,3 +420,28 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const STAGE_CLEAR_DELAY_MS = 1500;
+const DYING_DELAY_MS = 1500;
+
+/** Points for destroying an enemy while it sits in formation. */
+const SCORE_IN_FORMATION: Record<EnemyKind, number> = {
+    bee: 50,
+    butterfly: 80,
+    boss: 150,
+};
+
+/** Points for destroying an enemy while it is diving. */
+const SCORE_WHILE_DIVING: Record<EnemyKind, number> = {
+    bee: 100,
+    butterfly: 160,
+    boss: 400,
+};
+
+/** Amplitude of the formation breathing in pixels. */
+const BREATH_AMP_X = 5;
+const BREATH_AMP_Y = 3;

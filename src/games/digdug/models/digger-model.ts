@@ -13,9 +13,9 @@ export interface DiggerModel {
     /** Current movement direction. */
     readonly direction: Direction;
     /** Whether the player is alive. */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether the pump harpoon is currently extended. */
-    readonly harpoonExtended: boolean;
+    readonly isHarpoonExtended: boolean;
     /** How far the harpoon extends (0→maxRange, in tiles). */
     readonly harpoonDistance: number;
     /** Request a direction change ('none' = stop). */
@@ -109,10 +109,10 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         get direction() {
             return state.direction;
         },
-        get alive() {
+        get isAlive() {
             return state.alive;
         },
-        get harpoonExtended() {
+        get isHarpoonExtended() {
             return state.harpoonExtended;
         },
         get harpoonDistance() {

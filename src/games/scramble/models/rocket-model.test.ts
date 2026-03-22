@@ -9,8 +9,8 @@ describe('RocketModel', () => {
     describe('initial state', () => {
         it('starts inactive', () => {
             const r = makeRocket();
-            expect(r.active).toBe(false);
-            expect(r.alive).toBe(false);
+            expect(r.isActive).toBe(false);
+            expect(r.isAlive).toBe(false);
             expect(r.phase).toBe('idle');
         });
     });
@@ -19,8 +19,8 @@ describe('RocketModel', () => {
         it('sets position and idle phase', () => {
             const r = makeRocket();
             r.activate(20, 10);
-            expect(r.active).toBe(true);
-            expect(r.alive).toBe(true);
+            expect(r.isActive).toBe(true);
+            expect(r.isAlive).toBe(true);
             expect(r.worldCol).toBe(20);
             expect(r.worldRow).toBe(10);
             expect(r.phase).toBe('idle');
@@ -76,8 +76,8 @@ describe('RocketModel', () => {
             const r = makeRocket();
             r.activate(20, 10);
             r.kill();
-            expect(r.alive).toBe(false);
-            expect(r.active).toBe(false);
+            expect(r.isAlive).toBe(false);
+            expect(r.isActive).toBe(false);
         });
 
         it('deactivate clears both and resets phase', () => {
@@ -85,8 +85,8 @@ describe('RocketModel', () => {
             r.activate(20, 10);
             r.update(16, 18); // trigger launch
             r.deactivate();
-            expect(r.active).toBe(false);
-            expect(r.alive).toBe(false);
+            expect(r.isActive).toBe(false);
+            expect(r.isAlive).toBe(false);
             expect(r.phase).toBe('idle');
         });
 

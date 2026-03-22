@@ -22,51 +22,6 @@ export interface CabinetViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-const MENU_WIDTH = 960;
-const MENU_HEIGHT = 540;
-const TITLE_Y = 24;
-
-// Carousel geometry
-const CAROUSEL_CENTER_Y = 258;
-const CARD_W = 220;
-const CARD_H = 160;
-const CARD_STRIDE = 250;
-const CARD_RADIUS = 6;
-const THUMB_PAD = 6;
-const NAME_H = 24;
-const THUMB_W = CARD_W - THUMB_PAD * 2;
-const THUMB_H = CARD_H - NAME_H - THUMB_PAD * 2;
-
-// Depth-based visual falloff
-const SCALE_FALLOFF = 0.14;
-const SCALE_MIN = 0.55;
-const ALPHA_FALLOFF = 0.25;
-const ALPHA_MIN = 0.15;
-const MAX_VISIBLE_DISTANCE = 3.5;
-
-// Smooth scroll interpolation
-const LERP_SPEED = 0.15;
-const LERP_SNAP = 0.01;
-
-// Zoom transition
-const ZOOM_DURATION = 0.4;
-const ZOOM_TARGET_SCALE = Math.max(MENU_WIDTH / CARD_W, MENU_HEIGHT / CARD_H) * 1.15;
-
-// Colors
-const COLOR_TITLE = 0xffff00;
-const COLOR_CARD_BG = 0x111122;
-const COLOR_BORDER_SELECTED = 0xffff00;
-const COLOR_BORDER_NORMAL = 0x333344;
-const COLOR_NAME_SELECTED = 0xffffff;
-const COLOR_NAME_NORMAL = 0xaaaaaa;
-
-interface Card {
-    container: Container;
-    border: Graphics;
-    thumb: Sprite | undefined;
-    name: Text;
-}
-
 export function createCabinetView(bindings: CabinetViewBindings): Container {
     const watcher = watch({
         phase: bindings.getPhase,
@@ -408,4 +363,53 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             highlightedIndex = nearestIndex;
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const MENU_WIDTH = 960;
+const MENU_HEIGHT = 540;
+const TITLE_Y = 24;
+
+// Carousel geometry
+const CAROUSEL_CENTER_Y = 258;
+const CARD_W = 220;
+const CARD_H = 160;
+const CARD_STRIDE = 250;
+const CARD_RADIUS = 6;
+const THUMB_PAD = 6;
+const NAME_H = 24;
+const THUMB_W = CARD_W - THUMB_PAD * 2;
+const THUMB_H = CARD_H - NAME_H - THUMB_PAD * 2;
+
+// Depth-based visual falloff
+const SCALE_FALLOFF = 0.14;
+const SCALE_MIN = 0.55;
+const ALPHA_FALLOFF = 0.25;
+const ALPHA_MIN = 0.15;
+const MAX_VISIBLE_DISTANCE = 3.5;
+
+// Smooth scroll interpolation
+const LERP_SPEED = 0.15;
+const LERP_SNAP = 0.01;
+
+// Zoom transition
+const ZOOM_DURATION = 0.4;
+const ZOOM_TARGET_SCALE = Math.max(MENU_WIDTH / CARD_W, MENU_HEIGHT / CARD_H) * 1.15;
+
+// Colors
+const COLOR_TITLE = 0xffff00;
+const COLOR_CARD_BG = 0x111122;
+const COLOR_BORDER_SELECTED = 0xffff00;
+const COLOR_BORDER_NORMAL = 0x333344;
+const COLOR_NAME_SELECTED = 0xffffff;
+const COLOR_NAME_NORMAL = 0xaaaaaa;
+
+interface Card {
+    container: Container;
+    border: Graphics;
+    thumb: Sprite | undefined;
+    name: Text;
 }

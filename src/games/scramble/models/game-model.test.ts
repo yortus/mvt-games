@@ -40,7 +40,7 @@ describe('GameModel', () => {
 
         it('ship starts alive', () => {
             const g = makeGame();
-            expect(g.ship.alive).toBe(true);
+            expect(g.ship.isAlive).toBe(true);
         });
     });
 
@@ -57,7 +57,7 @@ describe('GameModel', () => {
             const g = makeGame();
             g.playerInput.firePressed = true;
             g.update(16);
-            const activeBullets = g.bullets.filter((b) => b.active);
+            const activeBullets = g.bullets.filter((b) => b.isActive);
             expect(activeBullets.length).toBe(1);
         });
 
@@ -66,7 +66,7 @@ describe('GameModel', () => {
             g.playerInput.firePressed = true;
             g.update(16);
             g.update(16); // same press held
-            const activeBullets = g.bullets.filter((b) => b.active);
+            const activeBullets = g.bullets.filter((b) => b.isActive);
             expect(activeBullets.length).toBe(1);
         });
 
@@ -78,7 +78,7 @@ describe('GameModel', () => {
             g.update(16);
             g.playerInput.firePressed = true;
             g.update(16);
-            const activeBullets = g.bullets.filter((b) => b.active);
+            const activeBullets = g.bullets.filter((b) => b.isActive);
             expect(activeBullets.length).toBe(2);
         });
 
@@ -86,7 +86,7 @@ describe('GameModel', () => {
             const g = makeGame();
             g.playerInput.bombPressed = true;
             g.update(16);
-            const activeBombs = g.bombs.filter((b) => b.active);
+            const activeBombs = g.bombs.filter((b) => b.isActive);
             expect(activeBombs.length).toBe(1);
         });
     });
@@ -114,9 +114,9 @@ describe('GameModel', () => {
             // Spawns at cols ~10-90 in section 1, spawn edge = scrollCol + 28 + 2
             for (let i = 0; i < 100; i++) g.update(100); // 10 seconds of scroll at speed 3 -> scrollCol ~30
             // At least some rockets or UFOs should be active by now
-            const activeRockets = g.rockets.filter((r) => r.active);
-            const activeUfos = g.ufos.filter((u) => u.active);
-            const activeFuel = g.fuelTanks.filter((f) => f.active);
+            const activeRockets = g.rockets.filter((r) => r.isActive);
+            const activeUfos = g.ufos.filter((u) => u.isActive);
+            const activeFuel = g.fuelTanks.filter((f) => f.isActive);
             expect(activeRockets.length + activeUfos.length + activeFuel.length).toBeGreaterThan(0);
         });
     });
@@ -139,7 +139,7 @@ describe('GameModel', () => {
             expect(g.phase).toBe('playing');
             expect(g.scrollCol).toBe(0);
             expect(g.score).toBe(0);
-            expect(g.ship.alive).toBe(true);
+            expect(g.ship.isAlive).toBe(true);
         });
     });
 });

@@ -48,7 +48,7 @@ export function createGameView(game: GameModel): Container {
         const shipContainer = createShipView({
             getX: () => game.ship.x,
             getY: () => game.ship.y,
-            isAlive: () => game.ship.alive,
+            isAlive: () => game.ship.isAlive,
         });
         view.addChild(shipContainer);
 
@@ -113,7 +113,7 @@ export function createGameView(game: GameModel): Container {
                 getY: () => game.enemies[idx].y,
                 getKind: () => game.enemies[idx].kind,
                 getPhase: () => game.enemies[idx].phase,
-                isAlive: () => game.enemies[idx].alive,
+                isAlive: () => game.enemies[idx].isAlive,
             });
             view.addChild(c);
             enemyContainers.push(c);
@@ -132,7 +132,7 @@ export function createGameView(game: GameModel): Container {
             const c = createBulletView({
                 getX: () => game.playerBullets[idx].x,
                 getY: () => game.playerBullets[idx].y,
-                isActive: () => game.playerBullets[idx].active,
+                isActive: () => game.playerBullets[idx].isActive,
                 getColor: () => 0xffffff,
             });
             view.addChild(c);
@@ -152,7 +152,7 @@ export function createGameView(game: GameModel): Container {
             const c = createBulletView({
                 getX: () => game.enemyBullets[idx].x,
                 getY: () => game.enemyBullets[idx].y,
-                isActive: () => game.enemyBullets[idx].active,
+                isActive: () => game.enemyBullets[idx].isActive,
                 getColor: () => 0xff4444,
             });
             view.addChild(c);

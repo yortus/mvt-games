@@ -46,7 +46,7 @@ describe('FighterModel', () => {
             expect(f.facing).toBe('left');
             expect(f.move).toBeUndefined();
             expect(f.progress).toBe(0);
-            expect(f.hitboxActive).toBe(false);
+            expect(f.isHitboxActive).toBe(false);
             expect(f.height).toBe(0);
         });
     });
@@ -214,21 +214,21 @@ describe('FighterModel', () => {
         it('activates hitbox during the active window for foot-sweep', () => {
             const f = makeFighter();
             f.tryMove('foot-sweep'); // hitbox active 160-320ms
-            expect(f.hitboxActive).toBe(false); // t=0: before window
+            expect(f.isHitboxActive).toBe(false); // t=0: before window
 
             advance(f, 81); // t=81ms: before window
-            expect(f.hitboxActive).toBe(false);
+            expect(f.isHitboxActive).toBe(false);
 
             advance(f, 80); // t=161ms: inside window
-            expect(f.hitboxActive).toBe(true);
+            expect(f.isHitboxActive).toBe(true);
 
             advance(f, 80); // t=241ms: inside window
-            expect(f.hitboxActive).toBe(true);
+            expect(f.isHitboxActive).toBe(true);
         });
 
         it('hitboxActive is false when idle', () => {
             const f = makeFighter();
-            expect(f.hitboxActive).toBe(false);
+            expect(f.isHitboxActive).toBe(false);
         });
 
         it('hitbox rectangle is zeroed when not active', () => {
@@ -243,7 +243,7 @@ describe('FighterModel', () => {
             f.tryMove('foot-sweep');
             advance(f, 81); // t=81ms: before window
             advance(f, 80); // t=161ms: inside window
-            expect(f.hitboxActive).toBe(true);
+            expect(f.isHitboxActive).toBe(true);
             const hb = f.hitbox;
             expect(hb.w).toBeGreaterThan(0);
             expect(hb.h).toBeGreaterThan(0);
@@ -535,7 +535,7 @@ describe('FighterModel', () => {
             expect(f.facing).toBe('left');
             expect(f.move).toBeUndefined();
             expect(f.progress).toBe(0);
-            expect(f.hitboxActive).toBe(false);
+            expect(f.isHitboxActive).toBe(false);
             expect(f.height).toBe(0);
         });
 

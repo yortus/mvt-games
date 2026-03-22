@@ -13,7 +13,7 @@ export interface RockModel {
     readonly phase: RockPhase;
     /** 0..1 progress within the current phase. */
     readonly progress: number;
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Mark as destabilized (dirt below removed). */
     destabilize(): void;
     update(deltaMs: number): void;
@@ -85,7 +85,7 @@ export function createRockModel(options: RockModelOptions): RockModel {
         get progress() {
             return state.progress;
         },
-        get alive() {
+        get isAlive() {
             return state.alive;
         },
 

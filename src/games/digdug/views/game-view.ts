@@ -53,8 +53,8 @@ export function createGameView(game: GameModel): Container {
                 getRow: () => game.digger.row,
                 getCol: () => game.digger.col,
                 getDirection: () => game.digger.direction,
-                isAlive: () => game.digger.alive,
-                isHarpoonExtended: () => game.digger.harpoonExtended,
+                isAlive: () => game.digger.isAlive,
+                isHarpoonExtended: () => game.digger.isHarpoonExtended,
                 getHarpoonDistance: () => game.digger.harpoonDistance,
                 getTileSize: () => TILE_SIZE,
             }),
@@ -141,8 +141,8 @@ export function createGameView(game: GameModel): Container {
                 getPhase: () => game.enemies[idx].phase,
                 getInflationStage: () => game.enemies[idx].inflationStage,
                 getDirection: () => game.enemies[idx].direction,
-                isFireActive: () => game.enemies[idx].fireActive,
-                isFireTelegraph: () => game.enemies[idx].fireTelegraph,
+                isFireActive: () => game.enemies[idx].isFireActive,
+                isFireTelegraph: () => game.enemies[idx].isFireTelegraph,
                 getTileSize: () => TILE_SIZE,
             });
             enemyLayer.addChild(enemyContainer);
@@ -163,7 +163,7 @@ export function createGameView(game: GameModel): Container {
                 getX: () => game.rocks[idx].x,
                 getY: () => game.rocks[idx].y,
                 getPhase: () => game.rocks[idx].phase,
-                isAlive: () => game.rocks[idx].alive,
+                isAlive: () => game.rocks[idx].isAlive,
                 getTileSize: () => TILE_SIZE,
             });
             rockLayer.addChild(rockContainer);

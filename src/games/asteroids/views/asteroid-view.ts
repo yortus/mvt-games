@@ -20,14 +20,6 @@ export interface AsteroidViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-const SIZE_COLOR: Record<AsteroidSize, number> = {
-    large: 0x888888,
-    medium: 0xaaaaaa,
-    small: 0xcccccc,
-};
-
-const VERTICES = 10;
-
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
     let bodyGfx: Graphics;
@@ -87,3 +79,15 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
         bodyGfx.fill({ color, alpha: 0.15 });
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const SIZE_COLOR: Record<AsteroidSize, number> = {
+    large: 0x888888,
+    medium: 0xaaaaaa,
+    small: 0xcccccc,
+};
+
+const VERTICES = 10;

@@ -12,7 +12,7 @@ export interface EnemyModel {
     readonly y: number;
     readonly kind: EnemyKind;
     readonly phase: EnemyPhase;
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     readonly formationRow: number;
     readonly formationCol: number;
     /** True when the enemy wants to fire during a dive (polled by game model). */
@@ -100,7 +100,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         get phase() {
             return state.phase;
         },
-        get alive() {
+        get isAlive() {
             return state.alive;
         },
         get formationRow() {

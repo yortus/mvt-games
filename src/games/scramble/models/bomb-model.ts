@@ -8,7 +8,7 @@ export interface BombModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether this bomb is currently in flight. */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Drop the bomb from a position with a given horizontal velocity. */
     fire(worldCol: number, worldRow: number, vCol: number): void;
     /** Deactivate the bomb immediately. */
@@ -45,7 +45,7 @@ export function createBombModel(options: BombModelOptions): BombModel {
         get worldRow() {
             return worldRow;
         },
-        get active() {
+        get isActive() {
             return active;
         },
 

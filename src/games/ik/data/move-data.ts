@@ -22,13 +22,13 @@ export interface MoveData {
     /** Lunge distance in metres. Positive = forward, negative = backward. */
     readonly lunge: number;
     /** Whether this attack can be passively blocked. */
-    readonly blockable: boolean;
+    readonly isBlockable: boolean;
     /** Pushback applied to the defender on hit, in metres. */
     readonly knockback: number;
     /** Whether the fighter is airborne during this move. */
-    readonly airborne: boolean;
+    readonly isAirborne: boolean;
     /** Whether the fighter auto-turns before executing (moves 8, 13, 14). */
-    readonly autoTurn: boolean;
+    readonly hasAutoTurn: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,10 +49,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 0,
         hitbox: { dx: 0, dy: 0, w: 0, h: 0 },
         lunge: 0,
-        blockable: false,
+        isBlockable: false,
         knockback: 0,
-        airborne: true,
-        autoTurn: false,
+        isAirborne: true,
+        hasAutoTurn: false,
     },
 
     // --- High punch: punch frames 1,3 (0-based: [0, 2]) ---
@@ -64,10 +64,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Back lunge punch (auto-turns, punch frames 1,3) ---
@@ -79,10 +79,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: true,
+        isAirborne: false,
+        hasAutoTurn: true,
     },
 
     // --- High kick: kick frames 1,6,7 (0-based: [0, 5, 6]) ---
@@ -94,10 +94,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Mid kick: kick frames 1,2,3 (0-based: [0, 1, 2]) ---
@@ -109,10 +109,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Low kick: kick frames 1,4,5 (0-based: [0, 3, 4]) ---
@@ -124,10 +124,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Foot sweep (4 frames) ---
@@ -139,10 +139,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.4, dy: 0.15, w: 0.4, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Crouch punch (4-segment sequence: strike out then retract) ---
@@ -154,10 +154,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.3, dy: 0.3, w: 0.2, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Back crouch punch (auto-turns, same animation as crouch-punch) ---
@@ -169,10 +169,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.3, dy: 0.3, w: 0.2, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: true,
+        isAirborne: false,
+        hasAutoTurn: true,
     },
 
     // --- Back low kick (auto-turns, kick frames 1,4,5) ---
@@ -184,10 +184,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: true,
+        isAirborne: false,
+        hasAutoTurn: true,
     },
 
     // --- Roundhouse (4 frames) ---
@@ -199,10 +199,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.4, h: 0.4 },
         lunge: 0.3,
-        blockable: true,
+        isBlockable: true,
         knockback: 0.5,
-        airborne: false,
-        autoTurn: false,
+        isAirborne: false,
+        hasAutoTurn: false,
     },
 
     // --- Flying kick (5 frames, low airborne forward kick) ---
@@ -214,10 +214,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.4, dy: 0, w: 0.4, h: 0.3 },
         lunge: 1.0,
-        blockable: false,
+        isBlockable: false,
         knockback: 0.5,
-        airborne: true,
-        autoTurn: false,
+        isAirborne: true,
+        hasAutoTurn: false,
     },
 
     // --- Front somersault (6 frames, airborne, moves forward) ---
@@ -227,10 +227,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.3, dy: 0, w: 0.4, h: 0.4 },
         lunge: 2.0,
-        blockable: false,
+        isBlockable: false,
         knockback: 0.5,
-        airborne: true,
-        autoTurn: false,
+        isAirborne: true,
+        hasAutoTurn: false,
     },
 
     // --- Back somersault (6 frames, airborne, moves backward) ---
@@ -240,9 +240,9 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         damage: 1,
         hitbox: { dx: 0.3, dy: 0, w: 0.4, h: 0.4 },
         lunge: -2.0,
-        blockable: false,
+        isBlockable: false,
         knockback: 0.5,
-        airborne: true,
-        autoTurn: false,
+        isAirborne: true,
+        hasAutoTurn: false,
     },
 };

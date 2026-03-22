@@ -13,7 +13,7 @@ export interface AsteroidModel {
     readonly angle: number;
     readonly size: AsteroidSize;
     readonly radius: number;
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Shape seed for deterministic outline in the view. */
     readonly shapeSeed: number;
     kill(): void;
@@ -38,8 +38,6 @@ export interface AsteroidModelOptions {
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
-
-let nextSeed = 1;
 
 export function createAsteroidModel(options: AsteroidModelOptions): AsteroidModel {
     const { startX, startY, vx, vy, size, radius, arenaWidth, arenaHeight } = options;
@@ -68,7 +66,7 @@ export function createAsteroidModel(options: AsteroidModelOptions): AsteroidMode
         get radius() {
             return radius;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
         get shapeSeed() {
@@ -97,3 +95,9 @@ export function createAsteroidModel(options: AsteroidModelOptions): AsteroidMode
 
     return model;
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+let nextSeed = 1;

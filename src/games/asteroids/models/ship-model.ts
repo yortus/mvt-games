@@ -16,9 +16,9 @@ export interface ShipModel {
     /** Velocity Y in pixels per second. */
     readonly vy: number;
     /** Whether the ship is alive. */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether thrust is currently applied (for view flame). */
-    readonly thrusting: boolean;
+    readonly isThrusting: boolean;
     setRotationDirection(dir: RotationDirection): void;
     setThrust(on: boolean): void;
     kill(): void;
@@ -73,10 +73,10 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         get vy() {
             return vy;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
-        get thrusting() {
+        get isThrusting() {
             return thrusting;
         },
 

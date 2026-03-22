@@ -19,13 +19,13 @@ export interface EnemyModel {
     readonly kind: EnemyKind;
     readonly phase: EnemyPhase;
     readonly inflationStage: InflationStage;
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Whether this Fygar is currently breathing fire. */
-    readonly fireActive: boolean;
+    readonly isFireActive: boolean;
     /** Whether this Fygar is telegraphing an imminent fire attack. */
-    readonly fireTelegraph: boolean;
+    readonly isFireTelegraph: boolean;
     /** Whether this enemy has been told to flee (last enemy alive). */
-    readonly fleeing: boolean;
+    readonly isFleeing: boolean;
     /** Advance inflation by one stage. Returns true if enemy popped. */
     inflate(): boolean;
     /** Called by game-model when crushed by a rock. */
@@ -131,16 +131,16 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         get inflationStage() {
             return state.inflationStage;
         },
-        get alive() {
+        get isAlive() {
             return state.alive;
         },
-        get fireActive() {
+        get isFireActive() {
             return state.fireActive;
         },
-        get fireTelegraph() {
+        get isFireTelegraph() {
             return state.fireTelegraph;
         },
-        get fleeing() {
+        get isFleeing() {
             return state.fleeing;
         },
 

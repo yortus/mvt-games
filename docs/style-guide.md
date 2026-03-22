@@ -55,14 +55,43 @@ All naming rules collected in one place for easy reference.
 | View types             | Suffix with `View`           | `MazeView`, `KeyboardPlayerInputView`         |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
+| Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
 | Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`                  |
 | Binding event handlers | `on` + description           | `onDirectionChange()`, `onResetClick()`       |
-| Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                 |
-| Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌ |
+| Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                |
+| Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌|
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |
 
 See [Easily Confused Names](#easily-confused-names) for the reasoning
 behind the `Kind`/`Type` and `phase`/`state` rules.
+
+### Boolean Properties
+
+Boolean properties and accessors should read as yes/no questions. Prefer the
+`is` prefix as the default; use `has` or `can` when they fit the semantics
+better:
+
+| Prefix   | When to use                                     | Example                               |
+| -------- | ----------------------------------------------- | ------------------------------------- |
+| **`is`** | State or condition (default choice)              | `isAlive`, `isActive`, `isThrusting` |
+| **`has`** | Ownership / presence of something               | `hasAutoTurn`, `hasShield`           |
+| **`can`** | Capability or permission                        | `canFire`, `canClick`, `canMove`     |
+
+When in doubt, try rewording the property name so that `is` works - it's the
+strongest preference. For example, prefer `isAlive` over `alive`,
+`isFuelEmpty` over `fuelEmpty`.
+
+```ts
+// ✅ Preferred - reads as a question
+readonly isAlive: boolean;
+readonly hasAutoTurn: boolean;
+readonly canFire: boolean;
+
+// ❌ Avoid - bare adjective / noun
+readonly alive: boolean;
+readonly autoTurn: boolean;
+readonly fuelEmpty: boolean;
+```
 
 ---
 
@@ -506,11 +535,46 @@ dividers for navigability:
 // ---------------------------------------------------------------------------
 
 // createXxx() factory function implementation
+
+// ---------------------------------------------------------------------------
+// Internals (if needed)
+// ---------------------------------------------------------------------------
+
+// Internal types, constants, and helpers used only inside this file
 ```
 
 The ordering is deliberate - readers see the **public contract** first
 (interface), then the **configuration surface** (options), then the
-**implementation** (factory).
+**implementation** (factory), and finally **internals** at the bottom.
+
+All exports (types, interfaces, factory functions) go above all internals.
+Internal declarations - both types and runtime values (constants, helper
+functions) - belong at the bottom, below every exported symbol.
+
+**Type ordering within exported sections:**
+
+- **Main types before helper types.** If an exported type references another
+  exported helper type (e.g. `GameModel.particles: DebrisParticle[]`), the
+  main type appears first, then the helper type it composes.
+
+```ts
+// ✅ Correct - main interface first, helper type second, internal type last
+export interface DebrisModel {
+    readonly particles: readonly DebrisParticle[];
+    /* ... */
+}
+
+export interface DebrisParticle {
+    readonly x: number;
+    /* ... */
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+interface MutableParticle { /* ... used only inside the factory ... */ }
+```
 
 ### Declaration Order Within Functions
 

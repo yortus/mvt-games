@@ -10,7 +10,7 @@ export interface ShipModel {
     /** Visual y position in pixels. */
     readonly y: number;
     /** Whether the ship is alive. */
-    readonly alive: boolean;
+    readonly isAlive: boolean;
     /** Current movement direction. */
     readonly direction: Direction;
     setDirection(dir: Direction): void;
@@ -50,7 +50,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         get y() {
             return y;
         },
-        get alive() {
+        get isAlive() {
             return alive;
         },
         get direction() {

@@ -9,8 +9,8 @@ describe('UfoModel', () => {
     describe('initial state', () => {
         it('starts inactive', () => {
             const u = makeUfo();
-            expect(u.active).toBe(false);
-            expect(u.alive).toBe(false);
+            expect(u.isActive).toBe(false);
+            expect(u.isAlive).toBe(false);
         });
     });
 
@@ -18,8 +18,8 @@ describe('UfoModel', () => {
         it('sets position and active state', () => {
             const u = makeUfo();
             u.activate(30, 5);
-            expect(u.active).toBe(true);
-            expect(u.alive).toBe(true);
+            expect(u.isActive).toBe(true);
+            expect(u.isAlive).toBe(true);
             expect(u.worldCol).toBe(30);
             // worldRow starts at baseRow since sin(0) = 0
             expect(u.worldRow).toBeCloseTo(5, 1);
@@ -61,16 +61,16 @@ describe('UfoModel', () => {
             const u = makeUfo();
             u.activate(30, 5);
             u.kill();
-            expect(u.alive).toBe(false);
-            expect(u.active).toBe(false);
+            expect(u.isAlive).toBe(false);
+            expect(u.isActive).toBe(false);
         });
 
         it('deactivate clears alive and active', () => {
             const u = makeUfo();
             u.activate(30, 5);
             u.deactivate();
-            expect(u.alive).toBe(false);
-            expect(u.active).toBe(false);
+            expect(u.isAlive).toBe(false);
+            expect(u.isActive).toBe(false);
         });
 
         it('does not update after kill', () => {

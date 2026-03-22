@@ -8,7 +8,7 @@ export interface ExplosionModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Whether this explosion is currently active (animating). */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Progress from 0 (just started) to 1 (finished). */
     readonly progress: number;
     /** Trigger an explosion at the given position. */
@@ -45,7 +45,7 @@ export function createExplosionModel(options: ExplosionModelOptions): ExplosionM
         get worldRow() {
             return worldRow;
         },
-        get active() {
+        get isActive() {
             return active;
         },
         get progress() {

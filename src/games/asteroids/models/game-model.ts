@@ -65,24 +65,6 @@ export interface GameModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-const SCORE_BY_SIZE: Record<AsteroidSize, number> = {
-    large: SCORE_LARGE,
-    medium: SCORE_MEDIUM,
-    small: SCORE_SMALL,
-};
-
-const RADIUS_BY_SIZE: Record<AsteroidSize, number> = {
-    large: ASTEROID_RADIUS_LARGE,
-    medium: ASTEROID_RADIUS_MEDIUM,
-    small: ASTEROID_RADIUS_SMALL,
-};
-
-const CHILD_SIZE: Record<AsteroidSize, AsteroidSize | undefined> = {
-    large: 'medium',
-    medium: 'small',
-    small: undefined,
-};
-
 export function createGameModel(options: GameModelOptions): GameModel {
     const { arenaWidth, arenaHeight } = options;
 
@@ -282,7 +264,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function aliveAsteroidCount(): number {
         let count = 0;
         for (let i = 0; i < asteroids.length; i++) {
-            if (asteroids[i].alive) count++;
+            if (asteroids[i].isAlive) count++;
         }
         return count;
     }
@@ -301,7 +283,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             let minDist = Infinity;
             for (let a = 0; a < asteroids.length; a++) {
-                if (!asteroids[a].alive) continue;
+                if (!asteroids[a].isAlive) continue;
                 const d = distSq(cx, cy, asteroids[a].x, asteroids[a].y);
                 if (d < minDist) minDist = d;
             }
@@ -394,11 +376,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Firing ------------------------------------------------------------
 
     function tryFire(): void {
-        if (!ship.alive || !playerInput.firePressed) return;
+        if (!ship.isAlive || !playerInput.firePressed) return;
         if (!fireConsumed) {
             fireConsumed = true;
             for (let b = 0; b < bullets.length; b++) {
-                if (!bullets[b].active) {
+                if (!bullets[b].isActive) {
                     const bvx = Math.sin(ship.angle) * BULLET_SPEED;
                     const bvy = -Math.cos(ship.angle) * BULLET_SPEED;
                     bullets[b].fire(ship.x, ship.y, bvx, bvy);
@@ -413,11 +395,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkBulletsVsAsteroids(): void {
         for (let b = 0; b < bullets.length; b++) {
             const bullet = bullets[b];
-            if (!bullet.active) continue;
+            if (!bullet.isActive) continue;
 
             for (let a = 0; a < asteroids.length; a++) {
                 const ast = asteroids[a];
-                if (!ast.alive) continue;
+                if (!ast.isAlive) continue;
 
                 const hitDist = ast.radius + BULLET_RADIUS;
                 if (distSq(bullet.x, bullet.y, ast.x, ast.y) < hitDist * hitDist) {
@@ -431,11 +413,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkShipVsAsteroids(): void {
-        if (!ship.alive) return;
+        if (!ship.isAlive) return;
 
         for (let a = 0; a < asteroids.length; a++) {
             const ast = asteroids[a];
-            if (!ast.alive) continue;
+            if (!ast.isAlive) continue;
 
             const hitDist = ast.radius + SHIP_RADIUS;
             if (distSq(ship.x, ship.y, ast.x, ast.y) < hitDist * hitDist) {
@@ -471,3 +453,25 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const SCORE_BY_SIZE: Record<AsteroidSize, number> = {
+    large: SCORE_LARGE,
+    medium: SCORE_MEDIUM,
+    small: SCORE_SMALL,
+};
+
+const RADIUS_BY_SIZE: Record<AsteroidSize, number> = {
+    large: ASTEROID_RADIUS_LARGE,
+    medium: ASTEROID_RADIUS_MEDIUM,
+    small: ASTEROID_RADIUS_SMALL,
+};
+
+const CHILD_SIZE: Record<AsteroidSize, AsteroidSize | undefined> = {
+    large: 'medium',
+    medium: 'small',
+    small: undefined,
+};

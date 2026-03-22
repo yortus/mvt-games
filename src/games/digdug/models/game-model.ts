@@ -44,25 +44,6 @@ export interface GameModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-const COLLISION_THRESHOLD_SQ = 0.5 * 0.5;
-const FIRE_RANGE = 3; // tiles
-const LEVEL_CLEAR_DELAY_MS = 1000;
-const DYING_DELAY_MS = 1000;
-
-/** Points for pumping an enemy, indexed by depth layer (0–3). */
-const PUMP_POINTS = [200, 300, 400, 500];
-
-/** Points for each enemy crushed by a rock. */
-const ROCK_CRUSH_POINTS = 1000;
-
-function depthLayerIndex(row: number): number {
-    for (let i = 0; i < DEPTH_LAYERS.length; i++) {
-        const layer: DepthLayer = DEPTH_LAYERS[i];
-        if (row >= layer.startRow && row <= layer.endRow) return i;
-    }
-    return 0;
-}
-
 export function createGameModel(options: GameModelOptions): GameModel {
     const { levels, fieldCols, fieldRows, baseLayout, diggerSpawn } = options;
 
@@ -213,7 +194,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function isAnyEnemyGhosting(): boolean {
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive && enemies[i].phase === 'ghosting') return true;
+            if (enemies[i].isAlive && enemies[i].phase === 'ghosting') return true;
         }
         return false;
     }
@@ -263,7 +244,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function aliveEnemyCount(): number {
         let count = 0;
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive) count++;
+            if (enemies[i].isAlive) count++;
         }
         return count;
     }
@@ -349,7 +330,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkHarpoonHits(): void {
-        if (!digger.harpoonExtended) {
+        if (!digger.isHarpoonExtended) {
             harpoonTarget = -1;
             pumpConsumed = false;
             digger.lockHarpoon(false);
@@ -364,7 +345,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         // If we already have a target, keep pumping that one
         if (harpoonTarget >= 0) {
             const target = enemies[harpoonTarget];
-            if (!target.alive || target.phase === 'popped' || target.phase === 'crushed') {
+            if (!target.isAlive || target.phase === 'popped' || target.phase === 'crushed') {
                 harpoonTarget = -1;
                 digger.lockHarpoon(false);
                 return;
@@ -398,7 +379,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         for (let i = 0; i < enemies.length; i++) {
             const enemy = enemies[i];
-            if (!enemy.alive || enemy.phase === 'popped' || enemy.phase === 'crushed') continue;
+            if (!enemy.isAlive || enemy.phase === 'popped' || enemy.phase === 'crushed') continue;
 
             const dist = (enemy.col - tipCol) ** 2 + (enemy.row - tipRow) ** 2;
             if (dist < COLLISION_THRESHOLD_SQ) {
@@ -425,7 +406,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkRockDestabilization(): void {
         for (let i = 0; i < rocks.length; i++) {
             const rock = rocks[i];
-            if (!rock.alive || rock.phase !== 'stable') continue;
+            if (!rock.isAlive || rock.phase !== 'stable') continue;
             // Check if tile below rock is now a tunnel
             if (field.isWalkable(rock.row + 1, rock.col)) {
                 rock.destabilize();
@@ -436,12 +417,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkRockCrush(): void {
         for (let i = 0; i < rocks.length; i++) {
             const rock = rocks[i];
-            if (!rock.alive || rock.phase !== 'falling') continue;
+            if (!rock.isAlive || rock.phase !== 'falling') continue;
 
             // Check collision with enemies
             for (let j = 0; j < enemies.length; j++) {
                 const enemy = enemies[j];
-                if (!enemy.alive) continue;
+                if (!enemy.isAlive) continue;
                 const dr = rock.y - enemy.row;
                 const dc = rock.x - enemy.col;
                 if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
@@ -463,7 +444,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkEnemyDiggerCollision(): void {
         for (let i = 0; i < enemies.length; i++) {
             const enemy = enemies[i];
-            if (!enemy.alive) continue;
+            if (!enemy.isAlive) continue;
             if (enemy.phase === 'inflating' || enemy.phase === 'popped' || enemy.phase === 'crushed') continue;
             const dr = digger.row - enemy.row;
             const dc = digger.col - enemy.col;
@@ -478,7 +459,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkFygarFire(): void {
         for (let i = 0; i < enemies.length; i++) {
             const enemy = enemies[i];
-            if (!enemy.alive || enemy.kind !== 'fygar' || !enemy.fireActive) continue;
+            if (!enemy.isAlive || enemy.kind !== 'fygar' || !enemy.isFireActive) continue;
 
             // Fire extends horizontally from fygar in its facing direction
             const dir = enemy.direction;
@@ -502,9 +483,32 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkLastEnemyFlee(): void {
         if (aliveEnemyCount() !== 1) return;
         for (let i = 0; i < enemies.length; i++) {
-            if (enemies[i].alive && !enemies[i].fleeing) {
+            if (enemies[i].isAlive && !enemies[i].isFleeing) {
                 enemies[i].startFleeing();
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const COLLISION_THRESHOLD_SQ = 0.5 * 0.5;
+const FIRE_RANGE = 3; // tiles
+const LEVEL_CLEAR_DELAY_MS = 1000;
+const DYING_DELAY_MS = 1000;
+
+/** Points for pumping an enemy, indexed by depth layer (0–3). */
+const PUMP_POINTS = [200, 300, 400, 500];
+
+/** Points for each enemy crushed by a rock. */
+const ROCK_CRUSH_POINTS = 1000;
+
+function depthLayerIndex(row: number): number {
+    for (let i = 0; i < DEPTH_LAYERS.length; i++) {
+        const layer: DepthLayer = DEPTH_LAYERS[i];
+        if (row >= layer.startRow && row <= layer.endRow) return i;
+    }
+    return 0;
 }

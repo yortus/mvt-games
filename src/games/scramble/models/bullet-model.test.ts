@@ -5,7 +5,7 @@ describe('BulletModel', () => {
     describe('initial state', () => {
         it('starts inactive at origin', () => {
             const b = createBulletModel();
-            expect(b.active).toBe(false);
+            expect(b.isActive).toBe(false);
             expect(b.worldCol).toBe(0);
             expect(b.worldRow).toBe(0);
         });
@@ -15,7 +15,7 @@ describe('BulletModel', () => {
         it('activates at given position with speed', () => {
             const b = createBulletModel();
             b.fire(5, 3, 15);
-            expect(b.active).toBe(true);
+            expect(b.isActive).toBe(true);
             expect(b.worldCol).toBe(5);
             expect(b.worldRow).toBe(3);
         });
@@ -41,9 +41,9 @@ describe('BulletModel', () => {
         it('sets inactive', () => {
             const b = createBulletModel();
             b.fire(5, 3, 10);
-            expect(b.active).toBe(true);
+            expect(b.isActive).toBe(true);
             b.deactivate();
-            expect(b.active).toBe(false);
+            expect(b.isActive).toBe(false);
         });
     });
 });

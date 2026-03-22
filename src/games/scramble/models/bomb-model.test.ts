@@ -9,7 +9,7 @@ describe('BombModel', () => {
     describe('initial state', () => {
         it('starts inactive at origin', () => {
             const b = makeBomb();
-            expect(b.active).toBe(false);
+            expect(b.isActive).toBe(false);
             expect(b.worldCol).toBe(0);
             expect(b.worldRow).toBe(0);
         });
@@ -19,7 +19,7 @@ describe('BombModel', () => {
         it('activates at given position with horizontal speed', () => {
             const b = makeBomb();
             b.fire(5, 3, 4);
-            expect(b.active).toBe(true);
+            expect(b.isActive).toBe(true);
             expect(b.worldCol).toBe(5);
             expect(b.worldRow).toBe(3);
         });
@@ -61,7 +61,7 @@ describe('BombModel', () => {
             const b = makeBomb();
             b.fire(5, 3, 4);
             b.deactivate();
-            expect(b.active).toBe(false);
+            expect(b.isActive).toBe(false);
         });
     });
 });

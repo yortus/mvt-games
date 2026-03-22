@@ -52,7 +52,7 @@ export function createGameView(game: GameModel): Container {
             createShipView({
                 getScreenX: () => (game.ship.worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.ship.worldRow * TILE_SIZE,
-                isAlive: () => game.ship.alive,
+                isAlive: () => game.ship.isAlive,
             }),
         );
 
@@ -62,7 +62,7 @@ export function createGameView(game: GameModel): Container {
             const c = createBulletView({
                 getScreenX: () => (game.bullets[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.bullets[idx].worldRow * TILE_SIZE,
-                isActive: () => game.bullets[idx].active,
+                isActive: () => game.bullets[idx].isActive,
             });
             view.addChild(c);
             bulletContainers.push(c);
@@ -74,7 +74,7 @@ export function createGameView(game: GameModel): Container {
             const c = createBombView({
                 getScreenX: () => (game.bombs[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.bombs[idx].worldRow * TILE_SIZE,
-                isActive: () => game.bombs[idx].active,
+                isActive: () => game.bombs[idx].isActive,
             });
             view.addChild(c);
             bombContainers.push(c);
@@ -86,8 +86,8 @@ export function createGameView(game: GameModel): Container {
             const c = createRocketView({
                 getScreenX: () => (game.rockets[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.rockets[idx].worldRow * TILE_SIZE,
-                isActive: () => game.rockets[idx].active,
-                isAlive: () => game.rockets[idx].alive,
+                isActive: () => game.rockets[idx].isActive,
+                isAlive: () => game.rockets[idx].isAlive,
                 getPhase: () => game.rockets[idx].phase,
             });
             view.addChild(c);
@@ -100,8 +100,8 @@ export function createGameView(game: GameModel): Container {
             const c = createUfoView({
                 getScreenX: () => (game.ufos[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.ufos[idx].worldRow * TILE_SIZE,
-                isActive: () => game.ufos[idx].active,
-                isAlive: () => game.ufos[idx].alive,
+                isActive: () => game.ufos[idx].isActive,
+                isAlive: () => game.ufos[idx].isAlive,
             });
             view.addChild(c);
             ufoContainers.push(c);
@@ -113,8 +113,8 @@ export function createGameView(game: GameModel): Container {
             const c = createFuelTankView({
                 getScreenX: () => (game.fuelTanks[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.fuelTanks[idx].worldRow * TILE_SIZE,
-                isActive: () => game.fuelTanks[idx].active,
-                isAlive: () => game.fuelTanks[idx].alive,
+                isActive: () => game.fuelTanks[idx].isActive,
+                isAlive: () => game.fuelTanks[idx].isAlive,
             });
             view.addChild(c);
             fuelTankContainers.push(c);
@@ -125,7 +125,7 @@ export function createGameView(game: GameModel): Container {
             createBaseTargetView({
                 getScreenX: () => (game.baseWorldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.baseWorldRow * TILE_SIZE,
-                isBaseAlive: () => game.baseAlive,
+                isBaseAlive: () => game.isBaseAlive,
                 getTileSize: () => TILE_SIZE,
             }),
         );
@@ -136,7 +136,7 @@ export function createGameView(game: GameModel): Container {
             const c = createExplosionView({
                 getScreenX: () => (game.explosions[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.explosions[idx].worldRow * TILE_SIZE,
-                isActive: () => game.explosions[idx].active,
+                isActive: () => game.explosions[idx].isActive,
                 getProgress: () => game.explosions[idx].progress,
             });
             view.addChild(c);
@@ -189,8 +189,8 @@ export function createGameView(game: GameModel): Container {
         // Base alert (flashing "DESTROY THE BASE!" when scroll is clamped)
         view.addChild(
             createBaseAlertView({
-                isScrollClamped: () => game.scrollClamped,
-                isBaseAlive: () => game.baseAlive,
+                isScrollClamped: () => game.isScrollClamped,
+                isBaseAlive: () => game.isBaseAlive,
                 getScreenWidth: () => SCREEN_WIDTH,
                 getScreenHeight: () => PLAY_HEIGHT,
             }),

@@ -9,6 +9,8 @@ import { createPlayerInput, type PlayerInput } from './player-input';
 // Interface
 // ---------------------------------------------------------------------------
 
+export type GamePhase = 'playing' | 'game-over' | 'won';
+
 export interface GameModel {
     readonly phase: GamePhase;
     readonly maze: MazeModel;
@@ -33,15 +35,9 @@ export interface GameModelOptions {
     ghostSpeed?: number;
 }
 
-export type GamePhase = 'playing' | 'game-over' | 'won';
-
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
-
-const DOT_POINTS = 10;
-const COLLISION_THRESHOLD_SQ = 0.5 * 0.5; // half a tile
-const GHOST_BEHAVIORS: GhostBehavior[] = ['chase', 'ambush', 'flank', 'fickle'];
 
 export function createGameModel(options: GameModelOptions): GameModel {
     const { grid, pacmanSpawn, ghostSpawns, ghostColors, pacmanSpeed = 5, ghostSpeed = 4 } = options;
@@ -182,3 +178,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const DOT_POINTS = 10;
+const COLLISION_THRESHOLD_SQ = 0.5 * 0.5; // half a tile
+const GHOST_BEHAVIORS: GhostBehavior[] = ['chase', 'ambush', 'flank', 'fickle'];

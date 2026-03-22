@@ -1,12 +1,6 @@
 import { FORMATION_COLS } from './stage-data';
 
 // ---------------------------------------------------------------------------
-// Types (local to data layer - mirrors models/common.ts structurally)
-// ---------------------------------------------------------------------------
-
-type EnemyKind = 'boss' | 'butterfly' | 'bee';
-
-// ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
@@ -24,43 +18,6 @@ export interface WaveConfig {
     readonly diveSpeedFactor: number;
     /** Probability (0–1) that a diving enemy fires a bullet. */
     readonly enemyFireChance: number;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function buildFormation(
-    bossCount: number,
-    butterflyRows: number,
-    butterflyCols: number,
-    beeRows: number,
-): FormationSlot[] {
-    const slots: FormationSlot[] = [];
-
-    // Bosses - centred in row 0
-    const bossStart = Math.floor((FORMATION_COLS - bossCount) / 2);
-    for (let c = 0; c < bossCount; c++) {
-        slots.push({ row: 0, col: bossStart + c, kind: 'boss' });
-    }
-
-    // Butterflies - centred rows starting at row 1
-    const bfStart = Math.floor((FORMATION_COLS - butterflyCols) / 2);
-    for (let r = 0; r < butterflyRows; r++) {
-        for (let c = 0; c < butterflyCols; c++) {
-            slots.push({ row: 1 + r, col: bfStart + c, kind: 'butterfly' });
-        }
-    }
-
-    // Bees - full-width rows at the bottom
-    const beeRowStart = 1 + butterflyRows;
-    for (let r = 0; r < beeRows; r++) {
-        for (let c = 0; c < FORMATION_COLS; c++) {
-            slots.push({ row: beeRowStart + r, col: c, kind: 'bee' });
-        }
-    }
-
-    return slots;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,3 +61,42 @@ export const WAVES: readonly WaveConfig[] = [
         enemyFireChance: 0.65,
     },
 ];
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+type EnemyKind = 'boss' | 'butterfly' | 'bee';
+
+function buildFormation(
+    bossCount: number,
+    butterflyRows: number,
+    butterflyCols: number,
+    beeRows: number,
+): FormationSlot[] {
+    const slots: FormationSlot[] = [];
+
+    // Bosses - centred in row 0
+    const bossStart = Math.floor((FORMATION_COLS - bossCount) / 2);
+    for (let c = 0; c < bossCount; c++) {
+        slots.push({ row: 0, col: bossStart + c, kind: 'boss' });
+    }
+
+    // Butterflies - centred rows starting at row 1
+    const bfStart = Math.floor((FORMATION_COLS - butterflyCols) / 2);
+    for (let r = 0; r < butterflyRows; r++) {
+        for (let c = 0; c < butterflyCols; c++) {
+            slots.push({ row: 1 + r, col: bfStart + c, kind: 'butterfly' });
+        }
+    }
+
+    // Bees - full-width rows at the bottom
+    const beeRowStart = 1 + butterflyRows;
+    for (let r = 0; r < beeRows; r++) {
+        for (let c = 0; c < FORMATION_COLS; c++) {
+            slots.push({ row: beeRowStart + r, col: c, kind: 'bee' });
+        }
+    }
+
+    return slots;
+}

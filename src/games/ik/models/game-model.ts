@@ -38,48 +38,6 @@ export interface GameModel {
 }
 
 // ---------------------------------------------------------------------------
-// Defeat variant mapping
-// ---------------------------------------------------------------------------
-
-/** Maps an attacking move to the most appropriate defeat animation.
- *  a = falling forward (low hits, back-attacks)
- *  b = falling backward (mid-height)
- *  c = falling backward (high / flying)
- *  d = curling up forward (crouch punch from front) */
-function defeatVariantForMove(moveKind: MoveKind): DefeatVariant {
-    switch (moveKind) {
-        // Low hits / back-attacks -> falling forward
-        case 'foot-sweep':
-        case 'low-kick':
-        case 'back-lunge-punch':
-        case 'back-crouch-punch':
-        case 'back-low-kick':
-        case 'back-somersault':
-            return 'a';
-
-        // Mid-height -> falling backward
-        case 'mid-kick':
-        case 'high-punch':
-        case 'roundhouse':
-            return 'b';
-
-        // High or flying -> falling backward (variant c)
-        case 'high-kick':
-        case 'flying-kick':
-        case 'front-somersault':
-            return 'c';
-
-        // Crouch punch from front -> curling up
-        case 'crouch-punch':
-            return 'd';
-
-        // Fallback
-        default:
-            return 'b';
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
@@ -287,7 +245,7 @@ export function createGameModel(): GameModel {
         defender: FighterModel,
         attackerSide: 'player' | 'opponent',
     ): void {
-        if (!attacker.hitboxActive) return;
+        if (!attacker.isHitboxActive) return;
 
         const hitbox = attacker.hitbox;
         const bodyBox = defender.bodyBox;
@@ -301,7 +259,7 @@ export function createGameModel(): GameModel {
 
         // Check for passive block
         const defenderCanBlock = defender.phase === 'idle' || defender.phase === 'walking';
-        if (defenderCanBlock && defender.isFacing(attacker.x) && moveData.blockable) {
+        if (defenderCanBlock && defender.isFacing(attacker.x) && moveData.isBlockable) {
             defender.block();
             // Clear hitbox to prevent re-triggering (fighter returns to idle from block)
             return;
@@ -421,5 +379,47 @@ export function createGameModel(): GameModel {
             resetInputSettle();
             scheduleRoundIntro();
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** Maps an attacking move to the most appropriate defeat animation.
+ *  a = falling forward (low hits, back-attacks)
+ *  b = falling backward (mid-height)
+ *  c = falling backward (high / flying)
+ *  d = curling up forward (crouch punch from front) */
+function defeatVariantForMove(moveKind: MoveKind): DefeatVariant {
+    switch (moveKind) {
+        // Low hits / back-attacks -> falling forward
+        case 'foot-sweep':
+        case 'low-kick':
+        case 'back-lunge-punch':
+        case 'back-crouch-punch':
+        case 'back-low-kick':
+        case 'back-somersault':
+            return 'a';
+
+        // Mid-height -> falling backward
+        case 'mid-kick':
+        case 'high-punch':
+        case 'roundhouse':
+            return 'b';
+
+        // High or flying -> falling backward (variant c)
+        case 'high-kick':
+        case 'flying-kick':
+        case 'front-somersault':
+            return 'c';
+
+        // Crouch punch from front -> curling up
+        case 'crouch-punch':
+            return 'd';
+
+        // Fallback
+        default:
+            return 'b';
     }
 }

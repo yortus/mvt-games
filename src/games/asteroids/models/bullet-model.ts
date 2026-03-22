@@ -8,7 +8,7 @@ export interface BulletModel {
     /** Y position in pixels. */
     readonly y: number;
     /** Whether this bullet is currently in flight. */
-    readonly active: boolean;
+    readonly isActive: boolean;
     /** Activate the bullet at a position with a given velocity. */
     fire(x: number, y: number, vx: number, vy: number): void;
     /** Deactivate the bullet immediately. */
@@ -48,7 +48,7 @@ export function createBulletModel(options: BulletModelOptions): BulletModel {
         get y() {
             return y;
         },
-        get active() {
+        get isActive() {
             return active;
         },
 
