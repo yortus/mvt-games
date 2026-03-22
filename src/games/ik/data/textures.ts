@@ -1,6 +1,6 @@
 import { createTextureRegistry } from '#common';
 
-export const textures = createTextureRegistry('assets/ik-textures.json', {
+export const textures = createTextureRegistry(`${import.meta.env.BASE_URL}assets/ik-textures.json`, {
     walk: {
         1: 'walk-1',
         2: 'walk-2',

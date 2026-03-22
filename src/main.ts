@@ -20,6 +20,9 @@ const CABINET_HEIGHT = 540;
 /** Margin (in CSS pixels) between the scaled canvas and the viewport edges. */
 const SCREEN_MARGIN = 32;
 
+/** Height of the site navigation bar (must match --site-nav-height in nav.css). */
+const NAV_HEIGHT = 48;
+
 // ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
@@ -49,7 +52,7 @@ async function main(): Promise<void> {
         const logicalH = app.screen.height;
         const margin = isCabinetScreen ? 0 : SCREEN_MARGIN;
         const maxW = window.innerWidth - margin * 2;
-        const maxH = window.innerHeight - margin * 2;
+        const maxH = window.innerHeight - NAV_HEIGHT - margin * 2;
         const scale = Math.min(maxW / logicalW, maxH / logicalH);
         const dpr = window.devicePixelRatio || 1;
 

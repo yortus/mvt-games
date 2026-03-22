@@ -12,7 +12,7 @@ combination works.
 
 > **Related:** [MVT Architecture Guide](mvt-guide.md) for usage and rules
 > · [TypeScript Style Guide](style-guide.md) for coding conventions
-> · [Documentation Hub](README.md) for glossary and orientation
+> · [Documentation Hub](index.md) for glossary and orientation
 
 ---
 

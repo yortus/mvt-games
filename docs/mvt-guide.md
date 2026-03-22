@@ -5,7 +5,7 @@ separation of concerns, deterministic state, and smooth frame-based animation.
 
 > **Related:** [MVT Foundations](mvt-foundations.md) for the proven patterns
 > behind the architecture · [TypeScript Style Guide](style-guide.md) for coding
-> conventions · [Documentation Hub](README.md) for glossary and orientation
+> conventions · [Documentation Hub](index.md) for glossary and orientation
 
 ---
 

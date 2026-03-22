@@ -3,17 +3,36 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>MVT Playground</title>
+        <title>MVT Games - Arcade Cabinet</title>
         <link rel="stylesheet" href="/site/nav.css" />
-        <link rel="stylesheet" href="/src/playground/playground.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: #000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            /* Push canvas area below the fixed nav bar */
+            body {
+                padding-top: var(--site-nav-height, 48px);
+            }
+        </style>
     </head>
     <body>
         <nav class="site-nav">
             <a class="site-nav-brand" href="../">MVT Games</a>
             <ul class="site-nav-links">
-                <li><a href="../games/">Games</a></li>
+                <li><a class="active" href="./">Games</a></li>
                 <li><a href="../docs/">Docs</a></li>
-                <li><a class="active" href="./">Playground</a></li>
+                <li><a href="../playground/">Playground</a></li>
             </ul>
             <div class="site-nav-spacer"></div>
             <a class="site-nav-github" href="https://github.com/yortus/mvt-games" target="_blank" rel="noopener" title="GitHub repository">
@@ -21,7 +40,6 @@
             </a>
         </nav>
 
-        <div id="playground-root"></div>
-        <script type="module" src="/src/playground/index.ts"></script>
+        <script type="module" src="/src/main.ts"></script>
     </body>
 </html>

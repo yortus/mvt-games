@@ -66,7 +66,7 @@ function buildLayout(root: HTMLElement): {
 
     const title = document.createElement('div');
     title.className = 'pg-header-title';
-    title.innerHTML = 'MVT Playground <a href="/">&#8592; Back to Games</a>';
+    title.innerHTML = 'MVT Playground';
     header.appendChild(title);
 
     // Preset selector

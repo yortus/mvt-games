@@ -46,7 +46,8 @@ html, body {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr auto;
     width: 100%;
-    height: 100%;
+    height: calc(100% - var(--site-nav-height, 48px));
+    margin-top: var(--site-nav-height, 48px);
     gap: 1px;
     background: var(--pg-border);
 }

@@ -1,0 +1,100 @@
+/* ==========================================================================
+   Shared site navigation bar
+   ========================================================================== */
+
+:root {
+    --site-bg: #0d1117;
+    --site-nav-bg: #161b22;
+    --site-nav-border: #30363d;
+    --site-text: #c9d1d9;
+    --site-text-muted: #8b949e;
+    --site-accent: #58a6ff;
+    --site-accent-hover: #79c0ff;
+    --site-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --site-nav-height: 48px;
+}
+
+.site-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    height: var(--site-nav-height);
+    background: var(--site-nav-bg);
+    border-bottom: 1px solid var(--site-nav-border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 8px;
+    font-family: var(--site-font-ui);
+    font-size: 14px;
+    color: var(--site-text);
+}
+
+.site-nav-brand {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--site-text);
+    text-decoration: none;
+    margin-right: 16px;
+    white-space: nowrap;
+}
+
+.site-nav-brand:hover {
+    color: var(--site-accent);
+}
+
+.site-nav-links {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.site-nav-links a {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    color: var(--site-text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+    font-size: 14px;
+}
+
+.site-nav-links a:hover {
+    color: var(--site-text);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.site-nav-links a.active {
+    color: var(--site-accent);
+    background: rgba(88, 166, 255, 0.1);
+}
+
+.site-nav-spacer {
+    flex: 1;
+}
+
+.site-nav-github {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px;
+    color: var(--site-text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.site-nav-github:hover {
+    color: var(--site-text);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.site-nav-github svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}

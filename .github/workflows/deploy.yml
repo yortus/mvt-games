@@ -26,7 +26,10 @@ jobs:
                   cache: npm
 
             - run: npm ci
-            - run: npm run build
+            - run: npm run build:site
+              env:
+                  BASE_URL: /${{ github.event.repository.name }}/
+            - run: npm run build:docs
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
 

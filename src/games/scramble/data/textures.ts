@@ -1,6 +1,6 @@
 import { createTextureRegistry } from '#common';
 
-export const textures = createTextureRegistry('assets/scramble-textures.json', {
+export const textures = createTextureRegistry(`${import.meta.env.BASE_URL}assets/scramble-textures.json`, {
     ship: {
         sprite: 'ship',
         icon: 'ship-icon',

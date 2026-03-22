@@ -3,7 +3,7 @@
 Coding conventions, naming rules, and project structure for this codebase.
 
 > **Related:** [MVT Architecture Guide](mvt-guide.md) for the architectural
-> pattern · [Documentation Hub](README.md) for glossary and orientation
+> pattern · [Documentation Hub](index.md) for glossary and orientation
 
 ---
 
