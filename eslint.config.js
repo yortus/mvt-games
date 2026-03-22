@@ -52,6 +52,10 @@ export default tseslint.config(
                         'pixi.js/**',
                         'gsap',
                         'gsap/**',
+                        'codemirror',
+                        '@codemirror/**',
+                        'sucrase',
+                        'lz-string',
                         // Allow project-level import-map aliases
                         '#common',
                     ],
