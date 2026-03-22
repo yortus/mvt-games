@@ -25,7 +25,11 @@ jobs:
                   node-version: 22
                   cache: npm
 
-            - run: npm ci
+            # Using `npm install` instead of `npm ci` because the lockfile is
+            # generated on Windows and lacks resolved entries for Linux-only
+            # optional deps like @rollup/rollup-linux-x64-gnu. `npm ci` would
+            # skip them, causing the build to fail. See npm/cli#4828.
+            - run: npm install
             - run: npm run build:site
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
