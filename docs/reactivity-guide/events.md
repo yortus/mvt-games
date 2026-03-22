@@ -179,10 +179,11 @@ events. This is uniquely efficient for **infrequent, discrete state changes** -
 a game-over event, a level-complete transition, a user clicking a button.
 
 **Approximate cost per emission:** dispatching an event to N subscribers
-involves iterating an array/set and calling N functions. For a typical
-`Set.forEach` dispatch with small payloads, expect ~50–200ns per subscriber on
-modern hardware. With 5 subscribers, a single emit costs ~0.25–1μs - negligible
-in a 16.6ms frame budget. The cost becomes relevant only with very high
+involves iterating an array/set and calling N functions. The per-subscriber
+cost is small - on the order of tens to low hundreds of nanoseconds depending
+on payload and handler complexity. At typical game subscriber counts, emission
+cost is a negligible fraction of the 16.6ms frame budget. The cost becomes
+relevant only with very high
 subscriber counts or cascading chains (see [Drawback 5](#5-ordering-and-cascade-risks)).
 
 ### 2. Immediate, synchronous propagation
@@ -481,10 +482,10 @@ for this pattern in practice.
 ## When Events Are a Poor Fit
 
 - **Continuous or per-frame state** like entity positions, animation progress,
-  or tween values - emitting an event 60 times per second is expensive and
-  misuses the abstraction. Expect ~50–200ns per subscriber per emission; at
-  60fps with 10 subscribers, that's ~30–120μs/sec of pure dispatch overhead
-  per value, plus GC pressure from payload allocation.
+  or tween values - emitting an event 60 times per second misuses the
+  abstraction. 60 emissions/sec per value creates dispatch overhead that,
+  while still small in absolute terms, is unnecessary when the consumer would
+  read the value every frame anyway.
 - **State synchronisation** between model and view - events require manual
   initial sync and careful lifecycle management, whereas signals and watchers
   handle current-value access natively.

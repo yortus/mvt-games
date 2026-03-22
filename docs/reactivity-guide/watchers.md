@@ -430,11 +430,12 @@ changes with a tiny per-tick cost (~1–5 nanoseconds per check - see
 changes every tick (positions, velocities, timers), the idiomatic approach is to
 skip the watcher and read the value directly - which is even cheaper.
 
-In contrast, events are zero-cost for infrequent changes but expensive for
-high-frequency state (60 emissions per second per value). Signals are zero-cost
-when idle but add dependency-tracking overhead and GC pressure for
-high-frequency writes. Watchers (combined with direct reads) have the most
-uniform and predictable cost profile across both ends of the spectrum.
+In contrast, events are zero-cost for infrequent changes but require an
+emission per value per tick for high-frequency state. Signals are zero-cost
+when idle but add dependency-tracking overhead for high-frequency writes.
+All three approaches are negligible in the frame budget at game-typical scale.
+Watchers combined with direct reads have the most uniform and predictable
+cost profile across both ends of the spectrum.
 
 ## Drawbacks
 
@@ -461,9 +462,9 @@ The cost becomes meaningful only when:
 - Watcher count is very high (thousands)
 - The application has an extremely tight frame budget
 
-For comparison, see the cost estimates for [events](events.md#1-zero-cost-when-nothing-happens)
-(~50–200ns per subscriber per emission) and [signals](signals.md#1-dependency-tracking-has-per-read-overhead)
-(~12–42ns per tracked read, plus heap allocations for subscription bookkeeping).
+For comparison, see the discussion of event and signal overhead in the
+[Comparison § Performance Characteristics](comparison.md#performance-characteristics)
+section - all approaches are negligible at game-typical scale.
 
 ### 2. Developer must remember to poll
 
