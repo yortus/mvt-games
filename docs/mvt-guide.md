@@ -20,7 +20,7 @@ separation of concerns, deterministic state, and smooth frame-based animation.
     - [Model Hierarchy and Composition](#model-hierarchy-and-composition)
     - [Time Management](#time-management)
     - [GSAP Timeline Recipe](#gsap-timeline-recipe)
-    - [Structuring update() — Advance then Orchestrate](#structuring-update--advance-then-orchestrate)
+    - [Structuring update() - Advance then Orchestrate](#structuring-update--advance-then-orchestrate)
 - [Views](#views)
     - [Responsibilities](#view-responsibilities)
     - [The refresh() Contract](#the-refresh-contract)
@@ -43,11 +43,11 @@ separation of concerns, deterministic state, and smooth frame-based animation.
 MVT (Model-View-Ticker) structures an application into three layers:
 
 - **Models** own all state and domain logic.
-- **Views** render the current state to the screen — nothing more.
+- **Views** render the current state to the screen - nothing more.
 - **Ticker** drives the frame loop, advancing models then refreshing views.
 
 The pattern is particularly suited to applications with continuous animation,
-frame-based updates, and interactive user input — games, simulations, data
+frame-based updates, and interactive user input - games, simulations, data
 visualisations, and creative-coding projects.
 
 ---
@@ -107,7 +107,7 @@ enforce domain rules, and define how the application evolves over time.
 - Any rendering or presentation logic
 - Any dependency on wall-clock time (see [Time Management](#time-management))
 
-Models can be organised hierarchically — a parent model composes child models,
+Models can be organised hierarchically - a parent model composes child models,
 delegating `update(deltaMs)` calls down the tree. This allows complex domains
 to be broken into focused, independently testable units.
 
@@ -121,7 +121,7 @@ the view, not the model.
 | Concern            | Model                                                             | View                                                                             |
 | ------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Position           | `row`, `col`, `heading`, world-units                              | Pixel coordinates, screen offsets                                                |
-| Speed              | tiles/s, world-units/s                                            | — (derives from model position each frame)                                       |
+| Speed              | tiles/s, world-units/s                                            | - (derives from model position each frame)                                       |
 | Size / extents     | grid cells, world-unit radius                                     | Pixel dimensions, sprite scale                                                   |
 | Colours & textures | Named state: `color: 'red'`, `phase: 'inflating'`                 | Actual hex values, texture lookups, tint                                         |
 | Animation progress | Sequence order and progress: `inflationStage: 2`, `progress: 0.3` | Sprite frame, alpha tween, particle burst                                        |
@@ -131,24 +131,24 @@ the view, not the model.
 
 **Why this split matters:**
 
-- **Presentation independence** — models work unchanged regardless of tile
+- **Presentation independence** - models work unchanged regardless of tile
   size, screen resolution, or rendering technology.
-- **Testability** — domain-level tests don't break when visuals change.
-- **Clarity** — `row: 5, col: 3` is unambiguous; `x: 60, y: 100` depends
+- **Testability** - domain-level tests don't break when visuals change.
+- **Clarity** - `row: 5, col: 3` is unambiguous; `x: 60, y: 100` depends
   on knowing the tile size and coordinate origin.
 
 #### In-depth example: coordinates
 
 For grid-based entities that move tile-to-tile, the model exposes **fractional
-`row`/`col`** — an integer means "centred on that tile"; a fraction means
+`row`/`col`** - an integer means "centred on that tile"; a fraction means
 "between tiles." Combined with `direction`, this tells the view everything it
 needs without pixels ever entering the model's interface.
 
 ```ts
 interface EntityModel {
-    /** Row position — fractional while moving between tiles. */
+    /** Row position - fractional while moving between tiles. */
     readonly row: number;
-    /** Column position — fractional while moving between tiles. */
+    /** Column position - fractional while moving between tiles. */
     readonly col: number;
     /** Current movement direction. */
     readonly direction: Direction;
@@ -167,7 +167,7 @@ container.position.set(pixelX, pixelY);
 
 Internally, the model may keep separate integer `tileRow`/`tileCol` fields
 for tile-level decisions (pathfinding, wall checks, dot eating) while GSAP
-tweens the public `row`/`col` between integers — but those are private
+tweens the public `row`/`col` between integers - but those are private
 implementation details inside the factory closure.
 
 For continuous-space games (e.g. asteroids floating in open space), the same
@@ -201,11 +201,11 @@ interface EntityModel {
 
 The contract guarantees:
 
-- **Determinism** — same sequence of `update(deltaMs)` calls → same state.
+- **Determinism** - same sequence of `update(deltaMs)` calls → same state.
   Unit tests can replay exact frame sequences.
-- **Ticker control** — the ticker can pause, slow down, speed up, or
+- **Ticker control** - the ticker can pause, slow down, speed up, or
   single-step time. Models stay in sync because they only ever see `deltaMs`.
-- **Consistent snapshots** — between `update()` and `refresh()`, model state
+- **Consistent snapshots** - between `update()` and `refresh()`, model state
   is stable. No background timer can mutate it mid-frame.
 
 > **No large time leaps.** Model `update()` implementations typically contain
@@ -213,13 +213,13 @@ The contract guarantees:
 > inter-tick transitions. A single `update(5000)` call will _not_ produce the
 > same result as 312 × `update(16)` calls, because:
 >
-> 1. **Early returns after phase changes** — a phase-guarded block may
+> 1. **Early returns after phase changes** - a phase-guarded block may
 >    transition to a new phase and then `return`, so the new phase's logic
 >    only runs on the _next_ tick.
-> 2. **GSAP timelines with callbacks** — a huge time jump can overshoot a
+> 2. **GSAP timelines with callbacks** - a huge time jump can overshoot a
 >    timeline's total duration, skipping `set()` / `call()` triggers that
 >    schedule the next sequence.
-> 3. **Orchestration guards** — patterns like
+> 3. **Orchestration guards** - patterns like
 >    `if (!state.moving) scheduleMove()` depend on intermediate ticks to
 >    observe the completed-move flag and enqueue the next one.
 >
@@ -259,7 +259,7 @@ function createRootModel(): RootModel {
 }
 ```
 
-Each child model is independently testable — pass in `update(deltaMs)` calls
+Each child model is independently testable - pass in `update(deltaMs)` calls
 directly, assert on public state. The parent model orchestrates them and handles
 cross-cutting concerns (collisions, phase transitions, scoring).
 
@@ -283,7 +283,7 @@ below).
 ### GSAP Timeline Recipe
 
 Using GSAP inside a model is a **convenience, not a requirement**. A model can
-advance state with plain arithmetic in `update()` — GSAP simply offers a
+advance state with plain arithmetic in `update()` - GSAP simply offers a
 concise API for easing, sequencing, and multi-property transitions. The timeline
 is a hidden implementation detail inside the factory closure; it is never
 exposed on the model's public interface.
@@ -291,7 +291,7 @@ exposed on the model's public interface.
 When a model needs to tween state over time (smooth movement, oscillations,
 sequenced transitions), use a **paused GSAP timeline** advanced manually:
 
-**Step 1 — Create once at construction time:**
+**Step 1 - Create once at construction time:**
 
 ```ts
 const timeline = gsap.timeline({
@@ -300,7 +300,7 @@ const timeline = gsap.timeline({
 });
 ```
 
-**Step 2 — Append tweens as transitions are scheduled:**
+**Step 2 - Append tweens as transitions are scheduled:**
 
 ```ts
 function scheduleMove(targetX: number, targetY: number): void {
@@ -319,7 +319,7 @@ function scheduleMove(targetX: number, targetY: number): void {
 }
 ```
 
-**Step 3 — Advance in `update()`:**
+**Step 3 - Advance in `update()`:**
 
 ```ts
 update(deltaMs) {
@@ -333,20 +333,20 @@ This gives you the expressiveness of GSAP's timeline API while keeping all state
 advancement under the ticker's explicit control. The single long-lived timeline
 instance with `autoRemoveChildren` keeps memory tidy without manual cleanup.
 
-### Structuring `update()` — Advance then Orchestrate
+### Structuring `update()` - Advance then Orchestrate
 
 When a model uses GSAP timelines, `update()` should follow a strict two-phase
 pattern:
 
-1. **Advance** — unconditionally advance every timeline.
-2. **Orchestrate** — check current state and trigger new sequences as needed.
+1. **Advance** - unconditionally advance every timeline.
+2. **Orchestrate** - check current state and trigger new sequences as needed.
 
 `update()` must _not_ contain detailed sequencing logic (manual timer
 arithmetic, multi-step state machines). That work belongs in `schedule*()`
 helpers that build timeline sequences.
 
 ```ts
-// ✅ Good — advance + orchestrate
+// ✅ Good - advance + orchestrate
 update(deltaMs) {
     const dt = 0.001 * deltaMs;
     moveTimeline.time(moveTimeline.time() + dt);
@@ -356,7 +356,7 @@ update(deltaMs) {
     if (!state.moving) scheduleMove();
 }
 
-// ❌ Bad — manual sequencing inside update()
+// ❌ Bad - manual sequencing inside update()
 update(deltaMs) {
     if (state.phase === 'windup') {
         state.windupTimer -= deltaMs;
@@ -366,7 +366,7 @@ update(deltaMs) {
         }
     } else if (state.phase === 'attack') {
         state.attackTimer -= deltaMs;
-        // ...etc — increasingly tangled branches
+        // ...etc - increasingly tangled branches
     }
 }
 ```
@@ -374,7 +374,7 @@ update(deltaMs) {
 **Why this matters:**
 
 - `schedule*()` helpers describe sequences _declaratively_ using the timeline
-  API — durations, easing, callbacks — in one place you can read top-to-bottom.
+  API - durations, easing, callbacks - in one place you can read top-to-bottom.
 - `update()` stays short, flat, and easy to audit. Each frame it does the same
   thing: advance clocks, check a few predicates, maybe kick off new sequences.
 - Multiple timelines (movement, attack, cooldown) advance independently,
@@ -387,7 +387,7 @@ update(deltaMs) {
 ### View Responsibilities
 
 Views render the visual representation of the current model state. They are
-**stateless** and **timeless** — they don't track what happened before, and they
+**stateless** and **timeless** - they don't track what happened before, and they
 don't decide what happens next.
 
 **Views should have:**
@@ -425,14 +425,14 @@ function createScoreView(bindings: ScoreViewBindings): Container {
 
 Key principles:
 
-- **Reactive** — all binding values a view depends on must be re-read in
+- **Reactive** - all binding values a view depends on must be re-read in
   `refresh()`, never cached at construction. See [Reactive Bindings](#reactive-bindings).
-- **Minimise work** — only update what changed. Use change detection for
+- **Minimise work** - only update what changed. Use change detection for
   infrequent changes to avoid unnecessary rebuilds. See
   [Change Detection](#change-detection).
-- **No side effects** — `refresh()` reads state and writes to the scene graph.
+- **No side effects** - `refresh()` reads state and writes to the scene graph.
   It does not mutate models, emit events, or trigger transitions.
-- **Idempotent** — calling `refresh()` twice with the same model state produces
+- **Idempotent** - calling `refresh()` twice with the same model state produces
   the same visual result.
 
 ### The Bindings Pattern
@@ -467,11 +467,11 @@ sequenceDiagram
 
 **Why bindings?**
 
-- **Decoupling** — the view doesn't know which model (or mock) provides the
+- **Decoupling** - the view doesn't know which model (or mock) provides the
   data. Swap implementations freely.
-- **Testability** — pass mock bindings returning fixed values; assert the view
+- **Testability** - pass mock bindings returning fixed values; assert the view
   renders correctly without needing a real model.
-- **Explicit dependencies** — the bindings type declaration is a complete list
+- **Explicit dependencies** - the bindings type declaration is a complete list
   of everything the view needs. No hidden coupling.
 
 ```ts
@@ -483,7 +483,7 @@ interface ScoreViewBindings {
 ```
 
 The code that constructs both the model and view is responsible for wiring the
-bindings — mapping model properties to `get*()` accessors and model methods to
+bindings - mapping model properties to `get*()` accessors and model methods to
 `on*()` handlers.
 
 #### Optional bindings
@@ -516,9 +516,9 @@ apply it with a nullish-coalescing fallback:
 
 ```ts
 interface PanelViewBindings {
-    getLabel(): string; // required — no sensible default
-    getOpacity?(): number; // optional — defaults to 1 (fully opaque)
-    getVisible?(): boolean; // optional — defaults to true
+    getLabel(): string; // required - no sensible default
+    getOpacity?(): number; // optional - defaults to 1 (fully opaque)
+    getVisible?(): boolean; // optional - defaults to true
 }
 
 // In the view's refresh():
@@ -526,25 +526,25 @@ const opacity = bindings.getOpacity?.() ?? 1;
 const visible = bindings.getVisible?.() ?? true;
 ```
 
-When in doubt, keep `get*()` bindings required — a missing accessor is usually
+When in doubt, keep `get*()` bindings required - a missing accessor is usually
 a wiring bug, and TypeScript catching it at the call site is valuable.
 
 ### Reactive Bindings
 
-Bindings are **reactive** — their values may change between frames. A view must
+Bindings are **reactive** - their values may change between frames. A view must
 never cache a binding's return value at construction time and assume it will
 stay the same. Every value a view depends on must be re-evaluated in
 `refresh()`, either by calling the binding directly or through change
 detection (see below).
 
 ```ts
-// ❌ Wrong — cached at construction, never re-evaluated
+// ❌ Wrong - cached at construction, never re-evaluated
 function createBadView(bindings: MyBindings): Container {
     const rows = bindings.getRows(); // frozen forever
     // ...
 }
 
-// ✅ Correct — re-evaluated every frame
+// ✅ Correct - re-evaluated every frame
 function createGoodView(bindings: MyBindings): Container {
     const container = new Container();
     // ...
@@ -619,7 +619,7 @@ const watchRows = createWatch(bindings.getRows);
 const watchCols = createWatch(bindings.getCols);
 
 function refresh(): void {
-    // Bitwise OR ensures every watch polls — no short-circuit skipping
+    // Bitwise OR ensures every watch polls - no short-circuit skipping
     if (watchRows.changed() | watchCols.changed()) {
         rebuildGrid();
     }
@@ -633,15 +633,15 @@ only on change**.
 
 | Situation                                                              | Approach                                                |
 | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| Value changes most frames (entity x/y)                                 | Read binding directly — change detection has no benefit |
-| Value changes rarely, reaction is cheap (text label)                   | Compare previous value — skip redundant updates         |
-| Value change triggers expensive rebuild (scene graph teardown/rebuild) | Essential — avoid rebuilding every frame                |
+| Value changes most frames (entity x/y)                                 | Read binding directly - change detection has no benefit |
+| Value changes rarely, reaction is cheap (text label)                   | Compare previous value - skip redundant updates         |
+| Value change triggers expensive rebuild (scene graph teardown/rebuild) | Essential - avoid rebuilding every frame                |
 
 #### Change detection as consumer-defined events
 
 Another way to think of change detection is as **consumer-defined events**.
 Traditional event systems require the producer to decide what constitutes an
-event and emit it — consumers must subscribe, unsubscribe, and hope the
+event and emit it - consumers must subscribe, unsubscribe, and hope the
 producer fires at the right granularity. With change detection, the consumer
 defines what matters by choosing which bindings to watch and what to do when
 they change. The model doesn't need to know anyone is listening:
@@ -651,21 +651,21 @@ const watchPhase = createWatch(bindings.getGamePhase);
 
 function refresh(): void {
     if (watchPhase.changed()) {
-        // This view decided phase transitions matter — the model
+        // This view decided phase transitions matter - the model
         // didn't need an "onPhaseChange" event for this to work.
         rebuildOverlay(watchPhase.value);
     }
 }
 ```
 
-A second view can watch the same binding and react differently — or ignore it
+A second view can watch the same binding and react differently - or ignore it
 entirely. No event registration, no coupling to the producer's event API, and
 no risk of missing or double-handling an event.
 
 ### Choosing How Views Access State
 
 Not every view needs a full `get*()`/`on*()` bindings interface. MVT recognises
-three access patterns — choose by reuse potential and data-source complexity.
+three access patterns - choose by reuse potential and data-source complexity.
 
 #### Decision criteria
 
@@ -678,7 +678,7 @@ three access patterns — choose by reuse potential and data-source complexity.
 #### Why top-level views skip bindings
 
 An application's top-level view (the one that orchestrates all sub-views) is the
-**least** likely to be reused elsewhere — it exists to wire this application's
+**least** likely to be reused elsewhere - it exists to wire this application's
 specific sub-views together. It is also the view with the **largest** bindings
 surface: every property in every collection must be projected through indexed
 accessors. Letting it read model properties directly eliminates that entire
@@ -707,10 +707,10 @@ function createGameView(game: GameModel): Container {
 
 #### Why leaf views use bindings
 
-Smaller, focused views — entity renderers, HUD panels, overlays — are natural
+Smaller, focused views - entity renderers, HUD panels, overlays - are natural
 candidates for reuse as the application library grows. The `get*()`/`on*()`
 bindings interface gives them an adapter layer: if a model's property is named
-`posX` but the view expects `getX()`, only the wiring changes — neither the
+`posX` but the view expects `getX()`, only the wiring changes - neither the
 model nor the view needs modifying. With direct structural access, one or both
 would need to change.
 
@@ -720,7 +720,7 @@ Like models, views compose hierarchically. A parent view creates child views,
 each with its own bindings, and adds them to the scene graph.
 
 The top-level application view typically receives model(s) directly and wires
-bindings for each child. Child views know nothing about the model tree — they
+bindings for each child. Child views know nothing about the model tree - they
 only see their own `get*()`/`on*()` bindings:
 
 ```ts
@@ -757,14 +757,14 @@ function createGameView(game: GameModel): Container {
 }
 ```
 
-Child views are independent — each only knows about the `get*()` and `on*()`
+Child views are independent - each only knows about the `get*()` and `on*()`
 members it needs.
 
 ### Multiple Views, One Model
 
 Because models are the single source of truth and views only read state through
 bindings, multiple views can project from the same model data and are
-guaranteed to be perfectly in sync — without any coordination code between them.
+guaranteed to be perfectly in sync - without any coordination code between them.
 
 The ticker enforces this: all models update first, then all views refresh. By
 the time any view reads a binding, every model has finished advancing. No view
@@ -773,14 +773,14 @@ something changed.
 
 Consider a game phase property read by both a grid view (which rebuilds tiles
 on reset) and an overlay view (which shows a game-over message). The same model
-property drives two independent visual responses — no event wiring, no shared
+property drives two independent visual responses - no event wiring, no shared
 mutable flag, no risk of one view seeing `'playing'` while the other sees
 `'game-over'`. Similarly, a shared `getTileSize()` binding can flow to entity,
 grid, and HUD views, keeping all visual layers scaled identically.
 
 This extends to different facets of the same event: when an entity consumes a
 tile item, the grid view sees the item disappear (via a tile-state binding) and
-the HUD sees the score increase (via a score binding) — two views projecting
+the HUD sees the score increase (via a score binding) - two views projecting
 different consequences of the same model change, always consistent because they
 read from the same post-`update()` snapshot.
 
@@ -817,7 +817,7 @@ sequenceDiagram
 - Compute `deltaMs` as the difference between the current and previous
   timestamps. Cap it to a maximum (e.g., 100ms) to prevent spiral-of-death
   when the tab was backgrounded.
-- The ticker should support **pausing** and **resuming** — when paused, stop
+- The ticker should support **pausing** and **resuming** - when paused, stop
   calling `update()` but optionally continue rendering (e.g., to show a pause
   overlay).
 - The ticker contains no domain logic and no rendering code. It is purely a
@@ -860,11 +860,11 @@ current score each frame. The model is unaware of this; it only knows the
 ## Hot Paths
 
 Any code invoked every tick is on a **hot path**. In practice, `update()` in
-models and `refresh()` in views are hot-path roots — everything they call is
+models and `refresh()` in views are hot-path roots - everything they call is
 also hot.
 
 Avoid unnecessary computation and heap allocations on hot paths while keeping
-code clear. These are guidelines, not absolute rules — apply them where the
+code clear. These are guidelines, not absolute rules - apply them where the
 allocation or computation is genuinely per-tick.
 
 ### Patterns to Avoid on Hot Paths
@@ -885,7 +885,7 @@ allocation or computation is genuinely per-tick.
 ### Quick Test
 
 > "Does this line allocate a new object, array, string, or closure, and is it
-> called every frame?" — if yes, consider refactoring.
+> called every frame?" - if yes, consider refactoring.
 
 ---
 
@@ -894,12 +894,12 @@ allocation or computation is genuinely per-tick.
 | Concern                    | How MVT Addresses It                                                                                                                                             |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Separation of concerns** | Models own state, views own presentation, ticker owns timing. No layer reaches into another.                                                                     |
-| **Testability**            | Models are deterministic — replay `update()` calls and assert state. Views accept mock bindings — assert rendering without real models.                          |
+| **Testability**            | Models are deterministic - replay `update()` calls and assert state. Views accept mock bindings - assert rendering without real models.                          |
 | **Scalability**            | Hierarchical models and views compose naturally. Add new features as new model/view pairs without touching existing ones.                                        |
 | **Performance**            | A single ticker loop ensures consistent frame pacing. Hot-path guidelines prevent per-tick waste.                                                                |
 | **Debugging**              | Deterministic models can be stepped frame-by-frame. No hidden timers or async state mutations to chase.                                                          |
-| **Flexibility**            | The ticker can pause, slow-mo, fast-forward, or record/replay. Models don't care — they only see `deltaMs`.                                                      |
-| **Multi-view consistency** | Multiple views can project from the same model state, guaranteed in sync — the ticker updates all models before any view refreshes. No coordination code needed. |
+| **Flexibility**            | The ticker can pause, slow-mo, fast-forward, or record/replay. Models don't care - they only see `deltaMs`.                                                      |
+| **Multi-view consistency** | Multiple views can project from the same model state, guaranteed in sync - the ticker updates all models before any view refreshes. No coordination code needed. |
 
 ---
 

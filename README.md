@@ -47,7 +47,7 @@ npm run dev
 
 ## Architecture
 
-The project follows the **MVT (Model-View-Ticker)** pattern — an architectural
+The project follows the **MVT (Model-View-Ticker)** pattern - an architectural
 approach designed for visual/interactive applications with frame-based animation:
 
 - **Models** own all state and domain logic, advancing only through explicit
@@ -64,10 +64,10 @@ See the [MVT Architecture Guide](docs/mvt-guide.md) for full details.
 
 | Document                                      | Description                                                   |
 | --------------------------------------------- | ------------------------------------------------------------- |
-| [Documentation Hub](docs/README.md)           | Start here — index of all guides with glossary                |
+| [Documentation Hub](docs/README.md)           | Start here - index of all guides with glossary                |
 | [MVT Architecture Guide](docs/mvt-guide.md)   | Full MVT pattern reference with diagrams                      |
 | [TypeScript Style Guide](docs/style-guide.md) | Coding conventions, naming, project structure                 |
-| [AGENTS.md](AGENTS.md)                        | AI agent orientation — architecture & conventions at a glance |
+| [AGENTS.md](AGENTS.md)                        | AI agent orientation - architecture & conventions at a glance |
 
 ## Project Structure
 

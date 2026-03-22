@@ -117,10 +117,10 @@ src/
 ## Modules and Barrel Files
 
 - Every directory under `src/` must provide a barrel file (`index.ts`).
-- All imports from **outside** a directory must go through the barrel — never
+- All imports from **outside** a directory must go through the barrel - never
   reach past it into individual files.
 - Imports **within** the same directory use direct relative paths (`./foo`).
-- **Never include `.ts` extensions** in module specifiers — write `'./foo'`, not
+- **Never include `.ts` extensions** in module specifiers - write `'./foo'`, not
   `'./foo.ts'`. The importer should not know or care whether a module resolves
   to a file or a directory; that detail can change without breaking the import.
 - A barrel file defines the **public API** of the module. Internal-only files
@@ -158,23 +158,23 @@ flowchart LR
 ```
 
 ```ts
-// ✅ Correct — importing from the barrel
+// ✅ Correct - importing from the barrel
 import { createScoreModel } from './models';
 import type { Direction } from '../models';
 
-// ❌ Wrong — reaching past the barrel into a specific file
+// ❌ Wrong - reaching past the barrel into a specific file
 import { createScoreModel } from './models/score-model';
 import type { Direction } from '../models/common';
 ```
 
 ### Barrel File Contents
 
-Barrel files (`index.ts`) contain **only re-exports** — no declarations, no
+Barrel files (`index.ts`) contain **only re-exports** - no declarations, no
 logic, no side effects. They define which symbols are part of the module's
 public API:
 
 ```ts
-// index.ts — ✅ correct: re-exports only
+// index.ts - ✅ correct: re-exports only
 export { createCounterModel } from './counter-model';
 export type { CounterModel, CounterModelOptions } from './counter-model';
 export { createTimerModel } from './timer-model';
@@ -182,7 +182,7 @@ export type { TimerModel } from './timer-model';
 ```
 
 ```ts
-// index.ts — ❌ wrong: barrel contains a declaration
+// index.ts - ❌ wrong: barrel contains a declaration
 export function createFooEntry(): FooEntry {
     /* ... */
 }
@@ -204,17 +204,17 @@ export { createFooEntry } from './foo-entry';
 
 **Why no declarations in barrels?**
 
-- **Locatability** — definitions in an `index.ts` are hard to find because every
+- **Locatability** - definitions in an `index.ts` are hard to find because every
   directory has one and editors highlight them all. A dedicated file gives the
   definition a clear, searchable name.
-- **Cyclic-import safety** — when a barrel both declares code and re-exports
+- **Cyclic-import safety** - when a barrel both declares code and re-exports
   sibling modules, those siblings may try to import the barrel-declared symbol.
   This creates a cycle through the barrel, which can cause subtle runtime
   errors (e.g. accessing an import before its module has finished executing).
   Keeping barrels declaration-free eliminates this risk entirely.
 
 Internal-only files (helpers, constants used only within the module) are **not**
-re-exported. This keeps the public surface intentional — consumers can only
+re-exported. This keeps the public surface intentional - consumers can only
 depend on what you explicitly choose to expose.
 
 ### No Self-Imports Through the Barrel
@@ -225,10 +225,10 @@ Files inside a directory module must **never** import from their own barrel
 ```ts
 // Inside models/score-model.ts
 
-// ✅ Correct — direct relative import to sibling
+// ✅ Correct - direct relative import to sibling
 import { type Direction } from './common';
 
-// ❌ Wrong — importing from own barrel creates a cycle
+// ❌ Wrong - importing from own barrel creates a cycle
 import { type Direction } from '.'; // resolves to ./index.ts
 import { type Direction } from './index'; // same problem, explicit
 ```
@@ -241,12 +241,12 @@ the exporting module hasn't finished initializing.
 
 **Why barrel files?**
 
-- **Encapsulation** — internal implementation files can be renamed, split, or
+- **Encapsulation** - internal implementation files can be renamed, split, or
   restructured without breaking consumers. Only the barrel's exports are the
   contract.
-- **Discoverability** — one file lists everything a module offers. No need to
+- **Discoverability** - one file lists everything a module offers. No need to
   hunt through individual files.
-- **Enforceability** — the `import/no-internal-modules` ESLint rule makes this
+- **Enforceability** - the `import/no-internal-modules` ESLint rule makes this
   a hard constraint, not just a guideline.
 
 ---
@@ -258,14 +258,14 @@ the exporting module hasn't finished initializing.
 - Use `Kind` in type names, not `Type`.
 
 ```ts
-// ✅ Preferred — string-literal union
+// ✅ Preferred - string-literal union
 type TileKind = 'empty' | 'wall' | 'dot' | 'spawn-point';
 
-// ❌ Avoid — const-object enum pattern
+// ❌ Avoid - const-object enum pattern
 const TileType = { Empty: 0, Wall: 1, Dot: 2 } as const;
 type TileType = (typeof TileType)[keyof typeof TileType];
 
-// ❌ Avoid — TypeScript enum
+// ❌ Avoid - TypeScript enum
 enum TileType {
     Empty,
     Wall,
@@ -286,25 +286,25 @@ enum TileType {
 Some common English words already carry a well-known meaning in programming.
 When these words appear as identifier names with a _different_ meaning, readers
 have to pause and work out which sense is intended. The words below are
-especially prone to this — avoid them in favour of more precise alternatives.
+especially prone to this - avoid them in favour of more precise alternatives.
 
 | Avoid       | Prefer                                               | Rationale                                                                                                                                                                                                                                                                                                      |
 | ----------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`type`**  | `kind`                                               | Easily confused with the TypeScript concept of a _type_ (`type` keyword, `typeof`, type parameters). Use `kind` instead.                                                                                                                                                                                       |
-| **`state`** | `phase`, `status`, `mode`, or a domain-specific name | Every property on a model is "state." A property _called_ `state` is confusingly meta — `game.state` could mean "all of the game's state" or "one specific enum value." Use a precise name: `phase` for lifecycle stages, `status` for conditions, `mode` for operational modes, or something domain-specific. |
+| **`state`** | `phase`, `status`, `mode`, or a domain-specific name | Every property on a model is "state." A property _called_ `state` is confusingly meta - `game.state` could mean "all of the game's state" or "one specific enum value." Use a precise name: `phase` for lifecycle stages, `status` for conditions, `mode` for operational modes, or something domain-specific. |
 
 ```ts
 type EnemyType = 'pooka' | 'fygar'; // ❌ 'type' clashes with the TS concept of a type
 type EnemyKind = 'pooka' | 'fygar'; // ✅ clearly means which kind of enemy
 
-type GameState = 'idle' | 'playing' | 'gameover'; // ❌ confusingly meta — all properties are "state"
+type GameState = 'idle' | 'playing' | 'gameover'; // ❌ confusingly meta - all properties are "state"
 type GamePhase = 'idle' | 'playing' | 'gameover'; // ✅ clearly means lifecycle stage
 ```
 
 **General principle:** if a word already has a common meaning in the codebase
 or language, and your intended meaning is different, choose a word that doesn't
 require the reader to disambiguate. If a name could reasonably describe _all_
-properties on the object (`state`, `data`, `info`, `value`), it's too vague —
+properties on the object (`state`, `data`, `info`, `value`), it's too vague -
 pick something that distinguishes this property from the others.
 
 ---
@@ -332,10 +332,10 @@ let selected: Item | null = null;
 - Expose a **factory function** (`createXxx`) that accepts an options object and
   returns an instance of the interface type.
 - Implement models as **plain records** satisfying the interface. Use closure
-  scope for private state — no classes.
+  scope for private state - no classes.
 - Include an `update(deltaMs)` method for time-based state advancement (see
-  [MVT Guide — Models](mvt-guide.md#models)). When using GSAP timelines,
-  structure `update()` as _advance then orchestrate_ — see
+  [MVT Guide - Models](mvt-guide.md#models)). When using GSAP timelines,
+  structure `update()` as _advance then orchestrate_ - see
   [Structuring update()](mvt-guide.md#structuring-update--advance-then-orchestrate).
 
 ```ts
@@ -385,7 +385,7 @@ function createCounterModel(options: CounterModelOptions = {}): CounterModel {
 
 Key points:
 
-- The **interface** is the public contract — this is what gets exported and
+- The **interface** is the public contract - this is what gets exported and
   referenced by other code.
 - The **options object** makes factories extensible without breaking call sites.
 - **Private state** (`elapsed`) lives in the closure, invisible to consumers.
@@ -403,7 +403,7 @@ Key points:
   members. This keeps them decoupled from any particular model shape.
 - No view properties or methods need to be exposed beyond what `Container`
   already provides.
-- Use Pixi's `onRender` property to schedule the internal `refresh` function —
+- Use Pixi's `onRender` property to schedule the internal `refresh` function -
   set it once at construction time so rendering is automatic.
 
 **Top-level application view** (accepts model directly, wires sub-view bindings):
@@ -474,7 +474,7 @@ Key points:
 
 - The **bindings interface** is a complete manifest of everything the view needs.
   `get*()` for reading state, `on*()` for relaying user input.
-- **`refresh()`** is internal — it's called automatically by the renderer via
+- **`refresh()`** is internal - it's called automatically by the renderer via
   `onRender`, not exposed publicly.
 - The view creates the scene graph once at construction time, then updates it
   incrementally in `refresh()`.
@@ -590,14 +590,14 @@ function scheduleMove(): void {
 
 Benefits:
 
-- **Scales to complex models** — multiple overlapping tweens can coexist on one
+- **Scales to complex models** - multiple overlapping tweens can coexist on one
   timeline. New tweens are added without disturbing in-progress ones.
-- **Explicit positioning** — every tween states exactly where it sits on the
+- **Explicit positioning** - every tween states exactly where it sits on the
   timeline. No implicit assumptions about the playhead being at 0.
-- **Automatic cleanup** — completed tweens are removed by GSAP without manual
+- **Automatic cleanup** - completed tweens are removed by GSAP without manual
   intervention. (GSAP’s child-iteration captures `_next` before rendering each
   child, so mid-iteration removal is safe.)
-- **Cancellation is just `clear()`** — to abort in-progress tweens (e.g.
+- **Cancellation is just `clear()`** - to abort in-progress tweens (e.g.
   direction reversal), call `timeline.clear()`. No `time(0)` reset needed.
 
 > **Simple alternative:** for very simple timelines that only ever run one
@@ -610,11 +610,11 @@ Benefits:
 `timeline.set()` is more declarative and compact than `onComplete` callbacks:
 
 ```ts
-// ✅ Declarative — intent is clear in the timeline layout
+// ✅ Declarative - intent is clear in the timeline layout
 timeline.to(state, { x: 5, duration: 0.2 });
 timeline.set(state, { arrived: true }, 0.2);
 
-// ❌ Imperative — harder to read
+// ❌ Imperative - harder to read
 timeline.to(state, {
     x: 5,
     duration: 0.2,
@@ -636,7 +636,7 @@ passed" and skips them on the next `time()` advance.
 A common way this arises is computing `duration = distance / speed` where the
 distance can be zero. In tile-based movement, a direction reversal that
 coincides with arriving at a tile boundary advances the logical position to the
-destination while the visual position is already there — producing a
+destination while the visual position is already there - producing a
 zero-distance, and therefore zero-duration, tween.
 
 ```ts
@@ -647,7 +647,7 @@ const duration = dist / speed;
 // ✅ Floor the distance so the tween always has positive duration
 const dist = Math.abs(nextCol - state.x) + Math.abs(nextRow - state.y) || 0.001;
 const duration = dist / speed;
-// At speed = 8, 0.001 / 8 = 0.000125 s ≈ 0.1 ms — completes within one frame.
+// At speed = 8, 0.001 / 8 = 0.000125 s ≈ 0.1 ms - completes within one frame.
 ```
 
 The `|| 0.001` idiom is preferable to early-return snapping because it stays on
@@ -659,14 +659,14 @@ imperceptible.
 All GSAP timelines in models must be created `paused: true` and advanced only
 inside `update(deltaMs)`. Auto-playing would couple model state to wall-clock
 time, violating the MVT contract. See
-[MVT Guide — Models](mvt-guide.md#models).
+[MVT Guide - Models](mvt-guide.md#models).
 
 ```ts
-// ✅ Correct — manual advancement
+// ✅ Correct - manual advancement
 const tl = gsap.timeline({ paused: true });
 // in update():
 tl.time(tl.time() + 0.001 * deltaMs);
 
-// ❌ Wrong — auto-plays on wall-clock time
+// ❌ Wrong - auto-plays on wall-clock time
 const tl = gsap.timeline();
 ```

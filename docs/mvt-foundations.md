@@ -1,4 +1,4 @@
-# MVT Foundations — Proven Patterns Behind the Architecture
+# MVT Foundations - Proven Patterns Behind the Architecture
 
 MVT is not a novel invention. It assembles a small set of well-established,
 battle-tested architectural patterns into a single coherent framework for
@@ -37,7 +37,7 @@ combination works.
 **MVT concept:** The Ticker calls `model.update(deltaMs)` → `view.refresh()` →
 renderer draws, once per frame, continuously.
 
-**Established pattern:** The **Game Loop** — a fixed-structure frame loop that
+**Established pattern:** The **Game Loop** - a fixed-structure frame loop that
 drives simulation and rendering in lockstep. Described in Robert Nystrom's
 _Game Programming Patterns_ (2014) as a core architectural pattern, and
 standard practice in every major game engine:
@@ -53,7 +53,7 @@ applications since the earliest video games. It provides predictable frame
 pacing, a clear place for each concern (simulate, then render), and a single
 point of control for time flow (pause, slow-motion, fast-forward). In a canvas
 application where entities move every frame, a continuous loop is the natural
-fit — every frame reads current state and renders directly.
+fit - every frame reads current state and renders directly.
 
 ### Deterministic Simulation (Models)
 
@@ -62,19 +62,19 @@ No `setTimeout`, no `Date.now()`, no auto-playing animations. Time only enters
 through the ticker's `deltaMs` parameter.
 
 **Established pattern:** The **Update Method** pattern (Nystrom, 2014) and
-**deterministic simulation** — a foundational technique in game engineering
+**deterministic simulation** - a foundational technique in game engineering
 where identical inputs always produce identical outputs.
 
 **Why it's proven:** Deterministic simulation is the basis for:
 
-- **Replay systems** — record inputs and `deltaMs` values, replay them to
+- **Replay systems** - record inputs and `deltaMs` values, replay them to
   reproduce exact state sequences (used in every competitive game).
-- **Lockstep networking** — synchronise multiplayer state by sharing only
+- **Lockstep networking** - synchronise multiplayer state by sharing only
   inputs, not full state (standard since _Age of Empires_, 1997).
-- **Time manipulation** — pause, slow-motion, fast-forward, and frame-stepping
+- **Time manipulation** - pause, slow-motion, fast-forward, and frame-stepping
   all work by controlling what `deltaMs` the ticker provides. The model doesn't
   know or care.
-- **Testing** — feed a known sequence of `update()` calls, assert exact state.
+- **Testing** - feed a known sequence of `update()` calls, assert exact state.
   No timing uncertainty, no flaky tests.
 
 ### Passive View (Bindings)
@@ -85,22 +85,22 @@ import or reference models directly.
 
 **Established pattern:** The **Passive View** variant of Model-View-Presenter
 (Martin Fowler, 2006) and the **ViewModel** concept from MVVM (John Gossman,
-2005). In both patterns, the view has zero knowledge of the model — it
+2005). In both patterns, the view has zero knowledge of the model - it
 interacts only through an intermediary interface that exposes exactly the data
 and actions the view needs.
 
 **Why it's proven:** Passive View and MVVM are the standard decoupling patterns
-for UI architecture across platforms — WPF, Android (Jetpack), iOS (SwiftUI),
+for UI architecture across platforms - WPF, Android (Jetpack), iOS (SwiftUI),
 and web frameworks all use variations. The benefits are well-documented:
 
-- **Substitutability** — swap the real model for a mock; the view doesn't know
+- **Substitutability** - swap the real model for a mock; the view doesn't know
   the difference. Enables isolated view testing.
-- **Explicit surface area** — the bindings type is a complete manifest of every
+- **Explicit surface area** - the bindings type is a complete manifest of every
   dependency the view has. No hidden coupling.
-- **Independent development** — model and view can evolve separately as long as
+- **Independent development** - model and view can evolve separately as long as
   the bindings contract is maintained.
 
-If you've used React, this will feel familiar — a component that receives data
+If you've used React, this will feel familiar - a component that receives data
 via props and reports input via callback props is the same structural idea.
 
 ### Stateless Rendering (Views)
@@ -109,19 +109,19 @@ via props and reports input via callback props is the same structural idea.
 bindings and updates the scene graph to match. No domain state, no memory of
 previous frames, no autonomous behaviour.
 
-**Established pattern:** **UI as a function of state** — the core insight
+**Established pattern:** **UI as a function of state** - the core insight
 behind React (2013), Elm (2012), and immediate-mode GUI libraries like Dear
 ImGui (2014). The view is a pure transformation: `state → visual output`.
 
 **Why it's proven:** Stateless rendering eliminates an entire category of bugs
-— stale state, inconsistent UI, missed update notifications, event ordering
+- stale state, inconsistent UI, missed update notifications, event ordering
 problems. When the view always reads current state and produces corresponding
 output, the display is guaranteed to be consistent with the model after every
 frame.
 
 **How MVT applies it:** Views update a persistent scene graph in `refresh()`.
 The scene graph is retained (not rebuilt) for performance, but the _logic_ is
-stateless — `refresh()` is idempotent, and calling it twice with the same
+stateless - `refresh()` is idempotent, and calling it twice with the same
 model state produces the same visual.
 
 ### Dirty Checking (Watch)
@@ -130,17 +130,17 @@ model state produces the same visual.
 whether the value changed. Views use it to skip expensive scene-graph rebuilds
 when infrequently-changing values haven't moved.
 
-**Established pattern:** **Dirty checking** — polling for changes rather than
+**Established pattern:** **Dirty checking** - polling for changes rather than
 relying on push notifications. The most prominent example is Angular 1's
 digest cycle (2010), which checked all watched expressions every cycle and
 updated the DOM only for those that changed.
 
 **Why it's proven:** Dirty checking trades a small per-frame polling cost for
-architectural simplicity — no observer subscriptions to manage, no event
+architectural simplicity - no observer subscriptions to manage, no event
 listener cleanup, no risk of forgotten unsubscriptions or stale closures. In a
 frame-loop context where `refresh()` already runs every tick, the polling cost
 is near zero because you're already executing code every frame. (React's
-`React.memo` and `useMemo` serve the same purpose — skip work when inputs are
+`React.memo` and `useMemo` serve the same purpose - skip work when inputs are
 unchanged.)
 
 ### Hierarchical Composition
@@ -150,7 +150,7 @@ children). Views compose into trees (parent creates child views, each with own
 bindings). The hierarchies mirror each other.
 
 **Established pattern:** The **Composite** pattern (Gamma et al., _Design
-Patterns_, 1994) — treating individual objects and compositions uniformly
+Patterns_, 1994) - treating individual objects and compositions uniformly
 through a shared interface. Every UI framework uses this: React's component
 tree, the browser DOM, Unity's `GameObject` hierarchy, and Pixi.js's own
 `Container` parent–child structure.
@@ -164,7 +164,7 @@ single entity to arbitrarily complex applications.
 
 ## Why These Patterns Fit Together
 
-These aren't arbitrary choices — each pattern enables and reinforces the others:
+These aren't arbitrary choices - each pattern enables and reinforces the others:
 
 ```mermaid
 flowchart TD
@@ -186,11 +186,11 @@ flowchart TD
     HC -- "scales" --> SR
 ```
 
-The game loop requires models to be deterministic — if models used their own
+The game loop requires models to be deterministic - if models used their own
 timers, the ticker couldn't pause or control time.
 
 Deterministic models provide a single source of truth, which makes stateless
-views viable — there's no stale cache to invalidate, just read current state
+views viable - there's no stale cache to invalidate, just read current state
 every frame.
 
 Because every view reads from the same post-`update()` snapshot, multiple views
@@ -199,7 +199,7 @@ coordination code between them.
 
 Stateless views need explicit bindings so they don't create hidden dependencies
 on specific model implementations. Explicit bindings enable testing both sides
-in isolation — mock the bindings to test views, call `update()` directly to
+in isolation - mock the bindings to test views, call `update()` directly to
 test models.
 
 Dirty checking slots cleanly into the frame-loop lifecycle since `refresh()`
@@ -215,15 +215,15 @@ conflicting. Learn one, and the next follows naturally.
 
 ## Further Reading
 
-- Robert Nystrom, _Game Programming Patterns_ (2014) — **Game Loop** and
+- Robert Nystrom, _Game Programming Patterns_ (2014) - **Game Loop** and
   **Update Method** chapters. The definitive reference for the Ticker and Model
   `update()` patterns. Freely available at gameprogrammingpatterns.com.
-- Martin Fowler, "Passive View" (2006) — the decoupling pattern behind
+- Martin Fowler, "Passive View" (2006) - the decoupling pattern behind
   MVT's bindings. Part of Fowler's catalogue of UI architectural patterns.
-- John Gossman, "Introduction to Model/View/ViewModel" (2005) — the ViewModel
+- John Gossman, "Introduction to Model/View/ViewModel" (2005) - the ViewModel
   concept, structurally identical to MVT's bindings object.
-- Gamma, Helm, Johnson, Vlissides, _Design Patterns_ (1994) — the Composite
+- Gamma, Helm, Johnson, Vlissides, _Design Patterns_ (1994) - the Composite
   pattern used by both model and view hierarchies.
-- Evan Czaplicki, "Elm Architecture" (2012) — Model → update → view as a
+- Evan Czaplicki, "Elm Architecture" (2012) - Model → update → view as a
   functional loop. MVT is a continuous-time, imperative-rendering adaptation
   of the same idea.

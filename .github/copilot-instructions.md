@@ -5,12 +5,12 @@ Pixi.js, and GSAP. Follow these conventions when generating code.
 
 ## Architecture
 
-- **Models** own state and logic; advance via `update(deltaMs)` only — never wall-clock time.
+- **Models** own state and logic; advance via `update(deltaMs)` only - never wall-clock time.
 - **Views** are stateless; read via `bindings` object, write to Pixi scene graph.
 - **Ticker** loop: `model.update(deltaMs)` → `view.refresh()` → render.
 - **Cabinet** manages game selection; each game is a self-contained module under `src/games/<name>/`.
-- **GameEntry** — descriptor: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
-- **GameSession** — running instance: `{ update(deltaMs), destroy() }`
+- **GameEntry** - descriptor: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
+- **GameSession** - running instance: `{ update(deltaMs), destroy() }`
 
 ## Project Structure
 
@@ -42,8 +42,8 @@ src/
 ## Bindings
 
 - **Reusable leaf views** accept a `bindings` object with:
-    - `get*()` — read-only state accessors (e.g. `getScore(): number`)
-    - `on*()` — user-input event handlers (e.g. `onDirectionChange(dir: Direction): void`)
+    - `get*()` - read-only state accessors (e.g. `getScore(): number`)
+    - `on*()` - user-input event handlers (e.g. `onDirectionChange(dir: Direction): void`)
 - **Top-level application views** accept the model directly (application-specific, never reused)
 
 ## Hot Paths
@@ -58,4 +58,4 @@ src/
 
 - [MVT Architecture Guide](docs/mvt-guide.md)
 - [TypeScript Style Guide](docs/style-guide.md)
-- [AGENTS.md](AGENTS.md) — Full AI agent orientation
+- [AGENTS.md](AGENTS.md) - Full AI agent orientation
