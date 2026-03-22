@@ -23,7 +23,7 @@ export interface DebrisParticle {
     readonly x: number;
     readonly y: number;
     readonly angle: number;
-    /** Half-length of the line segment in pixels. */
+    /** Half-length of the line segment in world-units. */
     readonly length: number;
     readonly isActive: boolean;
 }
@@ -35,9 +35,9 @@ export interface DebrisParticle {
 export interface DebrisModelOptions {
     /** Number of debris particles to allocate. */
     readonly count?: number;
-    /** Minimum outward speed in pixels per second. */
+    /** Minimum outward speed in world-units per second. */
     readonly minSpeed?: number;
-    /** Maximum outward speed in pixels per second. */
+    /** Maximum outward speed in world-units per second. */
     readonly maxSpeed?: number;
     /** Lifetime of each particle in milliseconds. */
     readonly lifetimeMs?: number;

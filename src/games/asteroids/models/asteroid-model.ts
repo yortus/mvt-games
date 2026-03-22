@@ -5,9 +5,9 @@ import type { AsteroidSize } from './common';
 // ---------------------------------------------------------------------------
 
 export interface AsteroidModel {
-    /** X position in pixels. */
+    /** X position in world-units. */
     readonly x: number;
-    /** Y position in pixels. */
+    /** Y position in world-units. */
     readonly y: number;
     /** Visual rotation angle in radians. */
     readonly angle: number;

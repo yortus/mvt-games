@@ -5,15 +5,15 @@ import type { RotationDirection } from './common';
 // ---------------------------------------------------------------------------
 
 export interface ShipModel {
-    /** X position in pixels. */
+    /** X position in world-units. */
     readonly x: number;
-    /** Y position in pixels. */
+    /** Y position in world-units. */
     readonly y: number;
     /** Rotation angle in radians (0 = facing up). */
     readonly angle: number;
-    /** Velocity X in pixels per second. */
+    /** Velocity X in world-units per second. */
     readonly vx: number;
-    /** Velocity Y in pixels per second. */
+    /** Velocity Y in world-units per second. */
     readonly vy: number;
     /** Whether the ship is alive. */
     readonly isAlive: boolean;

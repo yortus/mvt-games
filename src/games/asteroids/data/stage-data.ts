@@ -1,14 +1,18 @@
 // ---------------------------------------------------------------------------
-// Screen Constants
+// Arena Constants (world-units)
 // ---------------------------------------------------------------------------
 
-/** Width of the play area in pixels. */
-export const SCREEN_WIDTH = 400;
+/** Width of the play area in world-units. */
+export const ARENA_WIDTH = 400;
 
-/** Height of the play area (above HUD) in pixels. */
-export const PLAY_HEIGHT = 400;
+/** Height of the play area (above HUD) in world-units. */
+export const ARENA_HEIGHT = 400;
 
-/** Height of the HUD bar at the bottom. */
+// ---------------------------------------------------------------------------
+// Screen Constants (view-layer only)
+// ---------------------------------------------------------------------------
+
+/** Height of the HUD bar at the bottom in pixels. */
 export const HUD_HEIGHT = 30;
 
 // ---------------------------------------------------------------------------
@@ -18,16 +22,16 @@ export const HUD_HEIGHT = 30;
 /** Ship rotation speed in radians per second. */
 export const SHIP_ROTATION_SPEED = 5;
 
-/** Ship thrust acceleration in pixels per second². */
+/** Ship thrust acceleration in world-units per second². */
 export const SHIP_THRUST = 200;
 
 /** Ship drag factor - multiplied per second (0–1). */
 export const SHIP_DRAG = 0.98;
 
-/** Maximum ship speed in pixels per second. */
+/** Maximum ship speed in world-units per second. */
 export const SHIP_MAX_SPEED = 250;
 
-/** Ship collision radius in pixels. */
+/** Ship collision radius in world-units. */
 export const SHIP_RADIUS = 10;
 
 // ---------------------------------------------------------------------------
@@ -37,7 +41,7 @@ export const SHIP_RADIUS = 10;
 /** Maximum simultaneous player bullets. */
 export const MAX_BULLETS = 6;
 
-/** Bullet speed in pixels per second. */
+/** Bullet speed in world-units per second. */
 export const BULLET_SPEED = 400;
 
 /** Bullet lifetime in milliseconds. */
@@ -50,12 +54,12 @@ export const BULLET_RADIUS = 2;
 // Asteroid Constants
 // ---------------------------------------------------------------------------
 
-/** Collision radii per asteroid size. */
+/** Collision radii per asteroid size in world-units. */
 export const ASTEROID_RADIUS_LARGE = 30;
 export const ASTEROID_RADIUS_MEDIUM = 16;
 export const ASTEROID_RADIUS_SMALL = 8;
 
-/** Speed range for large asteroids (pixels per second). */
+/** Speed range for large asteroids in world-units per second. */
 export const ASTEROID_MIN_SPEED = 30;
 export const ASTEROID_MAX_SPEED = 70;
 
@@ -101,5 +105,5 @@ export const DYING_DELAY_MS = 1500;
 /** Duration in ms of the reverse-explode respawn animation. */
 export const RESPAWN_ANIM_MS = 1000;
 
-/** Minimum distance from ship centre when spawning asteroids. */
+/** Minimum distance from ship centre when spawning asteroids (world-units). */
 export const SPAWN_SAFE_RADIUS = 80;

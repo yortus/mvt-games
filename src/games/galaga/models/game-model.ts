@@ -186,11 +186,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         return waves[Math.min(waveIndex, waves.length - 1)];
     }
 
-    function slotPixelX(col: number): number {
+    function slotX(col: number): number {
         return FORMATION_LEFT + col * CELL_SIZE + CELL_SIZE / 2;
     }
 
-    function slotPixelY(row: number): number {
+    function slotY(row: number): number {
         return FORMATION_TOP + row * CELL_SIZE + CELL_SIZE / 2;
     }
 
@@ -213,8 +213,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const slot = wave.slots[i];
             result.push(
                 createEnemyModel({
-                    slotX: slotPixelX(slot.col),
-                    slotY: slotPixelY(slot.row),
+                    slotX: slotX(slot.col),
+                    slotY: slotY(slot.row),
                     formationRow: slot.row,
                     formationCol: slot.col,
                     kind: slot.kind,
@@ -442,6 +442,6 @@ const SCORE_WHILE_DIVING: Record<EnemyKind, number> = {
     boss: 400,
 };
 
-/** Amplitude of the formation breathing in pixels. */
+/** Amplitude of the formation breathing in world-units. */
 const BREATH_AMP_X = 5;
 const BREATH_AMP_Y = 3;

@@ -160,8 +160,8 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < count; i++) {
             const idx = i;
             const rockContainer = createRockView({
-                getX: () => game.rocks[idx].x,
-                getY: () => game.rocks[idx].y,
+                getCol: () => game.rocks[idx].smoothCol,
+                getRow: () => game.rocks[idx].smoothRow,
                 getPhase: () => game.rocks[idx].phase,
                 isAlive: () => game.rocks[idx].isAlive,
                 getTileSize: () => TILE_SIZE,

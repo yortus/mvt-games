@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { createKeyboardInputView, createOverlayView, watch } from '#common';
 import type { GameModel } from '../models';
-import { SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
+import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
 import { createEnemyView } from './enemy-view';
 import { createBulletView } from './bullet-view';
@@ -33,7 +33,7 @@ export function createGameView(game: GameModel): Container {
         // Static star backdrop
         const starsGfx = new Graphics();
         view.addChild(starsGfx);
-        drawStars(starsGfx, SCREEN_WIDTH, PLAY_HEIGHT);
+        drawStars(starsGfx, ARENA_WIDTH, ARENA_HEIGHT);
 
         // Enemy views - dynamic list
         buildEnemies();
@@ -57,15 +57,15 @@ export function createGameView(game: GameModel): Container {
             getScore: () => game.score,
             getLives: () => game.lives,
             getStage: () => game.stage,
-            getScreenWidth: () => SCREEN_WIDTH,
+            getScreenWidth: () => ARENA_WIDTH,
         });
-        hudContainer.position.set(0, PLAY_HEIGHT);
+        hudContainer.position.set(0, ARENA_HEIGHT);
         view.addChild(hudContainer);
 
         // Overlay
         const overlayView = createOverlayView({
-            getWidth: () => SCREEN_WIDTH,
-            getHeight: () => PLAY_HEIGHT,
+            getWidth: () => ARENA_WIDTH,
+            getHeight: () => ARENA_HEIGHT,
             isVisible: () => game.phase === 'game-over' || game.phase === 'stage-clear',
             getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'STAGE CLEAR!'),
         });

@@ -6,9 +6,9 @@ import type { EnemyKind, EnemyPhase } from './common';
 // ---------------------------------------------------------------------------
 
 export interface EnemyModel {
-    /** Visual x position in pixels. */
+    /** Visual x position in world-units. */
     readonly x: number;
-    /** Visual y position in pixels. */
+    /** Visual y position in world-units. */
     readonly y: number;
     readonly kind: EnemyKind;
     readonly phase: EnemyPhase;

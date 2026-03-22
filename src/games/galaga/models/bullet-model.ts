@@ -3,9 +3,9 @@
 // ---------------------------------------------------------------------------
 
 export interface BulletModel {
-    /** X position in pixels. */
+    /** X position in world-units. */
     readonly x: number;
-    /** Y position in pixels. */
+    /** Y position in world-units. */
     readonly y: number;
     /** Whether this bullet is currently in flight. */
     readonly isActive: boolean;

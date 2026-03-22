@@ -8,8 +8,10 @@ import type { RockPhase } from './common';
 export interface RockModel {
     readonly row: number;
     readonly col: number;
-    readonly x: number;
-    readonly y: number;
+    /** Smooth column position (fractional while falling). */
+    readonly smoothCol: number;
+    /** Smooth row position (fractional while falling). */
+    readonly smoothRow: number;
     readonly phase: RockPhase;
     /** 0..1 progress within the current phase. */
     readonly progress: number;
@@ -47,16 +49,16 @@ export function createRockModel(options: RockModelOptions): RockModel {
     const state: {
         row: number;
         col: number;
-        x: number;
-        y: number;
+        smoothCol: number;
+        smoothRow: number;
         phase: RockPhase;
         progress: number;
         alive: boolean;
     } = {
         row: initRow,
         col: initCol,
-        x: initCol,
-        y: initRow,
+        smoothCol: initCol,
+        smoothRow: initRow,
         phase: 'stable',
         progress: 0,
         alive: true,
@@ -73,11 +75,11 @@ export function createRockModel(options: RockModelOptions): RockModel {
         get col() {
             return state.col;
         },
-        get x() {
-            return state.x;
+        get smoothCol() {
+            return state.smoothCol;
         },
-        get y() {
-            return state.y;
+        get smoothRow() {
+            return state.smoothRow;
         },
         get phase() {
             return state.phase;
@@ -135,7 +137,7 @@ export function createRockModel(options: RockModelOptions): RockModel {
         const duration = distance / fallSpeed;
 
         const t = timeline.time();
-        timeline.to(state, { y: endRow, duration, ease: 'power1.in' }, t);
+        timeline.to(state, { smoothRow: endRow, duration, ease: 'power1.in' }, t);
         timeline.to(state, { progress: 1, duration, ease: 'none' }, t);
         timeline.call(
             () => {

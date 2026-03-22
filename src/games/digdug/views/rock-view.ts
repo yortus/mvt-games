@@ -8,8 +8,8 @@ import type { RockPhase } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface RockViewBindings {
-    getX(): number;
-    getY(): number;
+    getCol(): number;
+    getRow(): number;
     getPhase(): RockPhase;
     isAlive(): boolean;
     getTileSize(): number;
@@ -45,8 +45,8 @@ export function createRockView(bindings: RockViewBindings): Container {
         if (!bindings.isAlive()) return;
 
         const ts = bindings.getTileSize();
-        const x = bindings.getX() * ts + ts / 2;
-        const y = bindings.getY() * ts + ts / 2;
+        const x = bindings.getCol() * ts + ts / 2;
+        const y = bindings.getRow() * ts + ts / 2;
         view.position.set(x, y);
         sprite.scale.set(ts / 20);
 

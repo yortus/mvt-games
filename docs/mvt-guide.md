@@ -137,7 +137,36 @@ the view, not the model.
 - **Clarity** - `row: 5, col: 3` is unambiguous; `x: 60, y: 100` depends
   on knowing the tile size and coordinate origin.
 
-#### In-depth example: coordinates
+#### Choosing domain units
+
+Models must define positions, distances, and velocities in units that are
+meaningful to the game domain - never in pixels, points, or any other
+presentation-layer measure. The right unit depends on the kind of game:
+
+| Game style | Natural unit | Examples |
+| --- | --- | --- |
+| **Tile/grid-based** | Tiles (fractional) | Pac-Man, Dig Dug, Tetris, match-3 |
+| **Continuous open-world** | Metres (or other real-world measure) | Platformers, fighting games, racing |
+| **Fixed-arena action** | Abstract world-units (wu) | Asteroids, Galaga, shoot-'em-ups |
+| **Board/card** | Slots / indices | Chess squares, card positions |
+
+This mirrors the approach taken by major game engines, all of which use
+abstract or real-world units in their physics/logic layer and leave pixel
+mapping to rendering:
+
+- **Unity** - 1 unit = 1 metre by convention; cameras and Canvas Scalers
+  map world-units to screen pixels.
+- **Unreal Engine** - 1 unit = 1 centimetre; world positions in cm, rendering
+  handles resolution scaling.
+- **Godot** - 2D uses a configurable "pixels per unit" scale; physics and
+  scripts operate in world-units.
+
+The core insight is the same at every scale: **the model defines the _world_;
+the view decides how to _draw_ it.** Even if the current view happens to map
+1 world-unit to 1 pixel, that is a view-layer decision - the model should
+document its coordinates as world-units, not pixels.
+
+#### In-depth example: grid-based coordinates
 
 For grid-based entities that move tile-to-tile, the model exposes **fractional
 `row`/`col`** - an integer means "centred on that tile"; a fraction means
@@ -170,9 +199,30 @@ for tile-level decisions (pathfinding, wall checks, dot eating) while GSAP
 tweens the public `row`/`col` between integers - but those are private
 implementation details inside the factory closure.
 
-For continuous-space games (e.g. asteroids floating in open space), the same
-principle applies: use abstract world-units or normalised 0–1 space, and let
-the view apply a scale factor to reach pixels.
+#### In-depth example: continuous-space coordinates
+
+For continuous-space games (e.g. asteroids floating in open space, a fighting
+game arena, or a shoot-'em-up play field), the same principle applies. Define
+an abstract world-coordinate system - metres, world-units, or whatever fits
+the domain - and let the view apply a scale factor to reach pixels.
+
+```ts
+// Model: arena and entities defined in world-units
+const ARENA_WIDTH  = 400;  // world-units
+const ARENA_HEIGHT = 400;  // world-units
+const SHIP_RADIUS  = 10;   // world-units
+const THRUST       = 200;  // world-units per second squared
+
+// View: one-time scale factor from world-units to pixels
+const SCALE = screenWidthPx / ARENA_WIDTH;
+container.position.set(bindings.getX() * SCALE, bindings.getY() * SCALE);
+```
+
+Even when the scale factor happens to be 1 (i.e. the world-unit size was
+chosen to match the initial pixel layout), the conceptual separation matters.
+The model documents `ARENA_WIDTH = 400` as "400 world-units", not
+"400 pixels." If the game later renders at 2x resolution or on a larger
+screen, only the view's scale factor changes - the model stays untouched.
 
 #### Signs of presentation leakage
 

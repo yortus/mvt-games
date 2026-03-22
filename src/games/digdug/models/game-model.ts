@@ -423,8 +423,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let j = 0; j < enemies.length; j++) {
                 const enemy = enemies[j];
                 if (!enemy.isAlive) continue;
-                const dr = rock.y - enemy.row;
-                const dc = rock.x - enemy.col;
+                const dr = rock.smoothRow - enemy.row;
+                const dc = rock.smoothCol - enemy.col;
                 if (dr * dr + dc * dc < COLLISION_THRESHOLD_SQ) {
                     enemy.crush();
                     score += ROCK_CRUSH_POINTS;
@@ -432,8 +432,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             }
 
             // Check collision with digger
-            const ddr = rock.y - digger.row;
-            const ddc = rock.x - digger.col;
+            const ddr = rock.smoothRow - digger.row;
+            const ddc = rock.smoothCol - digger.col;
             if (ddr * ddr + ddc * ddc < COLLISION_THRESHOLD_SQ) {
                 digger.kill();
                 scheduleDying();
