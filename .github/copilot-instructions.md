@@ -56,6 +56,8 @@ src/
 
 ## Full Documentation
 
-- [MVT Architecture Guide](docs/mvt-guide.md)
-- [TypeScript Style Guide](docs/style-guide.md)
+- [Documentation Home](docs/index.md) - Landing page and reading paths
 - [AGENTS.md](AGENTS.md) - Full AI agent orientation
+- [Architecture Rules](docs/reference/architecture-rules.md)
+- [Style Guide](docs/reference/style-guide.md)
+- [Project Structure](docs/reference/project-structure.md)

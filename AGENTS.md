@@ -1,15 +1,18 @@
 # AGENTS.md - AI Agent Orientation
 
-> Terse, structured reference for AI coding agents. See linked docs for full details.
+> Terse, structured reference for AI coding agents. For expanded orientation,
+> see [docs/ai-agents/](docs/ai-agents/index.md). For task-specific
+> instructions, load the relevant [skills file](#skills).
 
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - stateless renderers; read state through a `bindings` interface; refresh every frame via `refresh()`
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` → `view.refresh()` → renderer draws
-- **Bindings** - plain object bridging view↔model: `get*()` methods read state, `on*()` methods relay user input
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.refresh()` then renderer draws
+- **Bindings** - plain object bridging view and model: `get*()` methods read state, `on*()` methods relay user input
 
-Full reference: [docs/mvt-guide.md](docs/mvt-guide.md)
+Full reference: [Architecture Overview](docs/learn/architecture-overview.md) -
+[Architecture Rules](docs/reference/architecture-rules.md)
 
 ## Project Structure
 
@@ -19,20 +22,22 @@ src/
 ├── cabinet/             Cabinet (game-selection) model & view
 ├── games/               Game registry + per-game modules
 │   ├── game-entry.ts    GameEntry & GameSession interfaces
-│   └── pacman/          Pac-Man game (self-contained)
-│       ├── data/        Static maze data and configuration constants
+│   └── <name>/          Self-contained game module
+│       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
 └── common/              Shared helpers, views, and models (e.g. change-detection watches, keyboard input)
 ```
 
+Full reference: [Project Structure](docs/reference/project-structure.md)
+
 ## Cabinet Architecture
 
-- **GameEntry** - descriptor for a game registered in the cabinet: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
+- **GameEntry** - descriptor for a game registered in the cabinet: `{ id, name, screenWidth, screenHeight, start(stage) -> GameSession }`
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`
+- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](docs/guide/adding-a-game.md).
 
 ## Key Conventions
 
@@ -45,7 +50,7 @@ src/
 - **`_` prefix** for intentionally unused parameters
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
-Full reference: [docs/style-guide.md](docs/style-guide.md)
+Full reference: [Style Guide](docs/reference/style-guide.md)
 
 ## Commands
 
@@ -59,12 +64,14 @@ Full reference: [docs/style-guide.md](docs/style-guide.md)
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead.
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only.
-2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings (leaf views) or model properties (top-level application views), write to the scene graph, nothing else. (Exception: limited presentation-only state like score-counter tweens - see MVT guide.)
-3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`).
-4. **No classes.** Use factory functions returning plain records that satisfy an interface.
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures.
-6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. See MVT guide § "What Belongs in a Model vs a View".
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/guide/time-management.md)
+2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output, nothing else. Exception: limited presentation-only state. [Presentation State](docs/guide/presentation-state.md)
+3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
+4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/guide/hot-paths.md)
+6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/learn/models.md)
+
+Full rules: [Architecture Rules](docs/reference/architecture-rules.md)
 
 ## File Organisation Within a Module
 
@@ -79,8 +86,33 @@ Each model/view file follows this internal ordering:
 
 // --- Factory ---
 // createXxx() factory function implementation
+
+// --- Internals (if needed) ---
+// Internal types, constants, and helpers used only inside this file
 ```
+
+## Skills
+
+Load the relevant skills file for task-specific instructions:
+
+| Task                       | Skills file                                              |
+| -------------------------- | -------------------------------------------------------- |
+| Writing a new model        | [docs/ai-agents/skill-mvt-model.md](docs/ai-agents/skill-mvt-model.md) |
+| Writing a new view         | [docs/ai-agents/skill-mvt-view.md](docs/ai-agents/skill-mvt-view.md)   |
+| Following code conventions | [docs/ai-agents/skill-code-style.md](docs/ai-agents/skill-code-style.md) |
+| Updating documentation     | [docs/ai-agents/skill-documentation.md](docs/ai-agents/skill-documentation.md) |
+
+## Documentation
+
+| Section          | Content                                   |
+| ---------------- | ----------------------------------------- |
+| [Learn](docs/learn/what-is-mvt.md) | Sequential introduction to MVT  |
+| [Guide](docs/guide/time-management.md) | In-depth topic pages      |
+| [Reference](docs/reference/architecture-rules.md) | Rules, style, glossary |
+| [Foundations](docs/foundations/proven-patterns.md) | Pattern heritage      |
+| [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
+| [Contributing](docs/contributing.md) | Documentation maintenance guide |
 
 ## Tech Stack
 
-TypeScript 5.9 · Pixi.js 8 · GSAP 3 · Vite 7 · ESLint 9 · ESLint Stylistic
+TypeScript 5.9 - Pixi.js 8 - GSAP 3 - Vite 7 - ESLint 9 - ESLint Stylistic

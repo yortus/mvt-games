@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import { defineConfig, type Plugin } from 'vite';
@@ -58,6 +59,14 @@ export default defineConfig({
                 'playground': resolve(__dirname, 'playground/index.html'),
                 'playground-sandbox': resolve(__dirname, 'playground/sandbox.html'),
             },
+        },
+    },
+    // Vitest resolves solid-js to the SSR build (Node export condition) where
+    // effects and memos are inert. Alias to the client runtime so benchmarks
+    // measure real reactive propagation.
+    test: {
+        alias: {
+            'solid-js': resolve(__dirname, 'node_modules/solid-js/dist/solid.js'),
         },
     },
 });

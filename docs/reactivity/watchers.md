@@ -4,7 +4,7 @@ Watchers are a lightweight pull-based reactivity mechanism: a consumer polls a
 source on each tick and compares the result to a cached value. If the value
 differs, a change is reported.
 
-> **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
+> **Navigation:** [Overview](./) · [Push vs Pull](push-vs-pull.md) ·
 > [Events](events.md) · [Signals](signals.md) · Watchers ·
 > [Comparison](comparison.md) · [Examples](examples.md)
 

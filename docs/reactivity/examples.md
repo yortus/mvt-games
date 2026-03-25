@@ -4,7 +4,7 @@ Each example implements the same feature using all three approaches - events,
 signals, and watchers - so you can compare them directly. Examples use classic
 arcade games and common interactive patterns that are universally understood.
 
-> **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
+> **Navigation:** [Overview](./) · [Push vs Pull](push-vs-pull.md) ·
 > [Events](events.md) · [Signals](signals.md) · [Watchers](watchers.md) ·
 > [Comparison](comparison.md) · Examples
 
@@ -1038,4 +1038,4 @@ updates. Signals handle both, but for per-frame values they add dependency-track
 
 ---
 
-> **Back to:** [README](README.md) · [Comparison](comparison.md)
+> **Back to:** [Overview](./) · [Comparison](comparison.md)

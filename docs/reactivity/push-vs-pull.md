@@ -3,7 +3,7 @@
 A conceptual framework for understanding how state changes propagate through an
 application.
 
-> **Navigation:** [README](README.md) · Push vs Pull ·
+> **Navigation:** [Overview](./) · Push vs Pull ·
 > [Events](events.md) · [Signals](signals.md) · [Watchers](watchers.md) ·
 > [Comparison](comparison.md) · [Examples](examples.md)
 

@@ -5,7 +5,7 @@ propagate changes through a computation graph. They are the reactivity
 foundation in SolidJS, Angular (since v16), Vue 3 (via `ref`/`computed`), and
 the [TC39 Signals proposal](https://github.com/tc39/proposal-signals).
 
-> **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
+> **Navigation:** [Overview](./) · [Push vs Pull](push-vs-pull.md) ·
 > [Events](events.md) · Signals · [Watchers](watchers.md) ·
 > [Comparison](comparison.md) · [Examples](examples.md)
 
@@ -247,8 +247,9 @@ external runtime).
 
 Every signal read inside a reactive context performs bookkeeping: checking the
 current tracking context, registering the dependency, and registering the
-subscriber. This overhead is small per read and, at game-typical scale
-(50-200 bindings), is a negligible fraction of the frame budget.
+subscriber. Every signal write marks dependents dirty and schedules effect
+re-execution. This overhead is measurable and, at game-typical scale, makes
+signals significantly slower than watchers or events for per-tick state.
 
 **What the bookkeeping involves:**
 
@@ -261,22 +262,30 @@ context does approximately:
 3. **Add the context to the signal's subscriber set** - another `Set.add()`.
 4. **Return the value.**
 
-In practice, modern JS engines (V8/TurboFan) optimise these internal
-structures aggressively in hot code, and the per-read cost is much lower than
-a naive analysis of the steps would suggest. See the project's
-[benchmarks](comparison.md#benchmarks) for empirical measurements.
+Each signal write (`setScore(v)`) performs:
 
-**GC pressure:** Steps 2 and 3 create Set entries on the heap. When effects
-re-run, old subscriptions are cleaned up and new ones created. At game-typical
-scale this is negligible, though it could become relevant at very high
-binding counts or in extremely GC-sensitive scenarios.
+1. **Compare new value to old** (`Object.is()`).
+2. **Mark all subscribers as dirty.**
+3. **At batch boundary:** re-execute effects in topological order, which
+   involves re-running the dependency tracking for each effect body.
 
-The practical takeaway: at the scale of a typical game (50-200 reactive
-bindings), signal overhead - including dependency tracking and subscription
-bookkeeping - consumes well under 0.01% of the frame budget. The decision to
-use or avoid signals should be based on architectural fit, not performance. See
-[Comparison § Performance](comparison.md#performance-characteristics) for
-further discussion and benchmarks.
+**Measured cost:** Benchmarks (`benchmarks/reactivity.bench.ts`) show signals
+running 9-12x slower than watchers at game-typical scale (50-200 values), and
+up to 60x slower in diamond dependency graphs. The overhead comes from the full
+reactive pipeline: signal writes, dirty-marking, batch scheduling, effect
+re-execution with dependency re-tracking, and subscription cleanup/recreation.
+
+**GC pressure:** Steps 2 and 3 of the read path create Set entries on the heap.
+When effects re-run, old subscriptions are cleaned up and new ones created. At
+game-typical scale this is negligible, though it could become relevant at very
+high binding counts or in extremely GC-sensitive scenarios.
+
+**The practical takeaway:** at the scale of a typical game (50-200 reactive
+bindings), signals cost roughly 10x more per tick than watchers. However, even
+the signal overhead is small in absolute terms - well under 0.1% of the 16.6ms
+frame budget. The performance difference is real but unlikely to be the deciding
+factor. See [Comparison § Performance](comparison.md#performance-characteristics)
+for further discussion and benchmarks.
 
 ### 2. Effect cleanup and ownership must be managed
 

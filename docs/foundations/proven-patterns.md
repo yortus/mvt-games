@@ -1,32 +1,23 @@
-# MVT Foundations - Proven Patterns Behind the Architecture
+# Proven Patterns Behind MVT
+
+> You don't need to read this to use MVT. It's here for those who want to
+> understand the engineering heritage behind the architecture.
+
+**Related:** [Architecture Overview](../learn/architecture-overview.md) ·
+[Architecture Rules](../reference/architecture-rules.md) ·
+[Glossary](../reference/glossary.md)
+
+---
 
 MVT is not a novel invention. It assembles a small set of well-established,
 battle-tested architectural patterns into a single coherent framework for
 frame-based interactive applications. Every piece has decades of proven use in
 game engines, UI frameworks, and software engineering at large. MVT's
 contribution is combining them into a consistent, easy-to-learn architecture
-suited to TypeScript canvas applications.
+for frame-based interactive applications.
 
 This document maps each MVT concept to its roots and explains why the
 combination works.
-
-> **Related:** [MVT Architecture Guide](mvt-guide.md) for usage and rules
-> · [TypeScript Style Guide](style-guide.md) for coding conventions
-> · [Documentation Hub](index.md) for glossary and orientation
-
----
-
-## Table of Contents
-
-- [The Patterns Behind MVT](#the-patterns-behind-mvt)
-    - [The Game Loop (Ticker)](#the-game-loop-ticker)
-    - [Deterministic Simulation (Models)](#deterministic-simulation-models)
-    - [Passive View (Bindings)](#passive-view-bindings)
-    - [Stateless Rendering (Views)](#stateless-rendering-views)
-    - [Dirty Checking (Watch)](#dirty-checking-watch)
-    - [Hierarchical Composition](#hierarchical-composition)
-- [Why These Patterns Fit Together](#why-these-patterns-fit-together)
-- [Further Reading](#further-reading)
 
 ---
 
@@ -34,13 +25,14 @@ combination works.
 
 ### The Game Loop (Ticker)
 
-**MVT concept:** The Ticker calls `model.update(deltaMs)` → `view.refresh()` →
-renderer draws, once per frame, continuously.
+**MVT concept:** The Ticker calls `model.update(deltaMs)` then `view.refresh()`
+then renderer draws, once per frame, continuously.
 
 **Established pattern:** The **Game Loop** - a fixed-structure frame loop that
-drives simulation and rendering in lockstep. Described in Robert Nystrom's
-_Game Programming Patterns_ (2014) as a core architectural pattern, and
-standard practice in every major game engine:
+drives simulation and rendering in lockstep. Described in
+_Game Programming Patterns_ as a core architectural pattern, and
+standard practice in every major game engine (see
+[Further Reading](#further-reading)):
 
 | Engine | Equivalent                        |
 | ------ | --------------------------------- |
@@ -55,15 +47,18 @@ point of control for time flow (pause, slow-motion, fast-forward). In a canvas
 application where entities move every frame, a continuous loop is the natural
 fit - every frame reads current state and renders directly.
 
+**Learn more:** [The Ticker](../learn/ticker.md)
+
 ### Deterministic Simulation (Models)
 
 **MVT concept:** Models advance state exclusively through `update(deltaMs)`.
 No `setTimeout`, no `Date.now()`, no auto-playing animations. Time only enters
 through the ticker's `deltaMs` parameter.
 
-**Established pattern:** The **Update Method** pattern (Nystrom, 2014) and
-**deterministic simulation** - a foundational technique in game engineering
-where identical inputs always produce identical outputs.
+**Established pattern:** The **Update Method** pattern
+(see [Further Reading](#further-reading)) and **deterministic simulation** -
+a foundational technique in game engineering where identical inputs always
+produce identical outputs.
 
 **Why it's proven:** Deterministic simulation is the basis for:
 
@@ -77,6 +72,9 @@ where identical inputs always produce identical outputs.
 - **Testing** - feed a known sequence of `update()` calls, assert exact state.
   No timing uncertainty, no flaky tests.
 
+**Learn more:** [Models](../learn/models.md) ·
+[Time Management](../guide/time-management.md)
+
 ### Passive View (Bindings)
 
 **MVT concept:** Views receive a `bindings` object at construction.
@@ -84,8 +82,9 @@ where identical inputs always produce identical outputs.
 import or reference models directly.
 
 **Established pattern:** The **Passive View** variant of Model-View-Presenter
-(Martin Fowler, 2006) and the **ViewModel** concept from MVVM (John Gossman,
-2005). In both patterns, the view has zero knowledge of the model - it
+and the **ViewModel** concept from MVVM (see
+[Further Reading](#further-reading)). In both patterns, the view has zero
+knowledge of the model - it
 interacts only through an intermediary interface that exposes exactly the data
 and actions the view needs.
 
@@ -103,15 +102,19 @@ and web frameworks all use variations. The benefits are well-documented:
 If you've used React, this will feel familiar - a component that receives data
 via props and reports input via callback props is the same structural idea.
 
+**Learn more:** [Bindings](../learn/bindings.md) ·
+[Bindings in Depth](../guide/bindings-in-depth.md)
+
 ### Stateless Rendering (Views)
 
 **MVT concept:** A view's `refresh()` function reads current state from
-bindings and updates the scene graph to match. No domain state, no memory of
+bindings and updates the presentation to match. No domain state, no memory of
 previous frames, no autonomous behaviour.
 
 **Established pattern:** **UI as a function of state** - the core insight
-behind React (2013), Elm (2012), and immediate-mode GUI libraries like Dear
-ImGui (2014). The view is a pure transformation: `state → visual output`.
+behind React, Elm, and immediate-mode GUI libraries like Dear ImGui
+(see [Further Reading](#further-reading)). The view is a pure transformation:
+`state -> presentation`.
 
 **Why it's proven:** Stateless rendering eliminates an entire category of bugs
 - stale state, inconsistent UI, missed update notifications, event ordering
@@ -122,12 +125,15 @@ frame.
 **How MVT applies it:** Views update a persistent scene graph in `refresh()`.
 The scene graph is retained (not rebuilt) for performance, but the _logic_ is
 stateless - `refresh()` is idempotent, and calling it twice with the same
-model state produces the same visual.
+model state produces the same result.
+
+**Learn more:** [Views](../learn/views.md) ·
+[Presentation State](../guide/presentation-state.md) (the exception)
 
 ### Dirty Checking (Watch)
 
-**MVT concept:** The `Watch<T>` helper polls a binding every frame and reports
-whether the value changed. Views use it to skip expensive scene-graph rebuilds
+**MVT concept:** The `watch` helper polls a binding every frame and reports
+whether the value changed. Views use it to skip expensive presentation rebuilds
 when infrequently-changing values haven't moved.
 
 **Established pattern:** **Dirty checking** - polling for changes rather than
@@ -143,22 +149,29 @@ is near zero because you're already executing code every frame. (React's
 `React.memo` and `useMemo` serve the same purpose - skip work when inputs are
 unchanged.)
 
+**Learn more:** [Change Detection](../guide/change-detection.md)
+
 ### Hierarchical Composition
 
 **MVT concept:** Models compose into trees (parent delegates `update()` to
-children). Views compose into trees (parent creates child views, each with own
-bindings). The hierarchies mirror each other.
+children). Views compose into trees (parent creates child views, each with its
+own bindings). The two hierarchies are decoupled through bindings and do not
+need to mirror each other.
 
-**Established pattern:** The **Composite** pattern (Gamma et al., _Design
-Patterns_, 1994) - treating individual objects and compositions uniformly
-through a shared interface. Every UI framework uses this: React's component
+**Established pattern:** The **Composite** pattern from _Design Patterns_
+(see [Further Reading](#further-reading)) - treating individual objects and
+compositions uniformly through a shared interface. Every UI framework uses
+this: React's component
 tree, the browser DOM, Unity's `GameObject` hierarchy, and Pixi.js's own
-`Container` parent–child structure.
+`Container` parent-child structure.
 
 **Why it's proven:** Hierarchical composition allows complex systems to be built
 from small, independently testable units. Add a new feature as a new
 model/view pair without touching existing ones. The pattern scales from a
 single entity to arbitrarily complex applications.
+
+**Learn more:** [Model Composition](../guide/model-composition.md) ·
+[View Composition](../guide/view-composition.md)
 
 ---
 
@@ -215,15 +228,17 @@ conflicting. Learn one, and the next follows naturally.
 
 ## Further Reading
 
-- Robert Nystrom, _Game Programming Patterns_ (2014) - **Game Loop** and
-  **Update Method** chapters. The definitive reference for the Ticker and Model
-  `update()` patterns. Freely available at gameprogrammingpatterns.com.
-- Martin Fowler, "Passive View" (2006) - the decoupling pattern behind
-  MVT's bindings. Part of Fowler's catalogue of UI architectural patterns.
-- John Gossman, "Introduction to Model/View/ViewModel" (2005) - the ViewModel
-  concept, structurally identical to MVT's bindings object.
-- Gamma, Helm, Johnson, Vlissides, _Design Patterns_ (1994) - the Composite
-  pattern used by both model and view hierarchies.
-- Evan Czaplicki, "Elm Architecture" (2012) - Model → update → view as a
-  functional loop. MVT is a continuous-time, imperative-rendering adaptation
-  of the same idea.
+- Robert Nystrom, [_Game Programming Patterns_](https://gameprogrammingpatterns.com/)
+  (2014) - **Game Loop** and **Update Method** chapters. The definitive
+  reference for the Ticker and Model `update()` patterns.
+- Martin Fowler, ["Passive View"](https://martinfowler.com/eaaDev/PassiveScreen.html)
+  (2006) - the decoupling pattern behind MVT's bindings. Part of Fowler's
+  catalogue of UI architectural patterns.
+- John Gossman, ["Introduction to Model/View/ViewModel"](https://learn.microsoft.com/en-us/archive/blogs/johngossman/introduction-to-modelviewviewmodel-pattern-for-building-wpf-apps)
+  (2005) - the ViewModel concept, structurally identical to MVT's bindings
+  object.
+- Gamma, Helm, Johnson, Vlissides, [_Design Patterns_](https://en.wikipedia.org/wiki/Design_Patterns)
+  (1994) - the Composite pattern used by both model and view hierarchies.
+- Evan Czaplicki, ["The Elm Architecture"](https://guide.elm-lang.org/architecture/)
+  (2012) - Model, update, view as a functional loop. MVT is a
+  continuous-time, imperative-rendering adaptation of the same idea.

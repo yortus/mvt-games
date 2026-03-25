@@ -3,7 +3,7 @@
 The event pattern - also called publish/subscribe, observer, or event emitter -
 is the oldest and most widely used reactivity mechanism in JavaScript.
 
-> **Navigation:** [README](README.md) · [Push vs Pull](push-vs-pull.md) ·
+> **Navigation:** [Overview](./) · [Push vs Pull](push-vs-pull.md) ·
 > Events · [Signals](signals.md) · [Watchers](watchers.md) ·
 > [Comparison](comparison.md) · [Examples](examples.md)
 
