@@ -98,3 +98,66 @@
     height: 20px;
     fill: currentColor;
 }
+
+/* --------------------------------------------------------------------------
+   Hamburger toggle (hidden by default, shown on narrow screens)
+   -------------------------------------------------------------------------- */
+
+.site-nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--site-text);
+    cursor: pointer;
+    padding: 8px;
+    margin-left: -8px;
+    line-height: 0;
+}
+
+.site-nav-toggle svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive: collapse nav links on narrow screens
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    .site-nav {
+        padding: 0 12px;
+        flex-wrap: wrap;
+    }
+
+    .site-nav-toggle {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .site-nav-links {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        gap: 0;
+        padding: 4px 0 8px;
+        order: 10;
+    }
+
+    .site-nav-links a {
+        padding: 10px 12px;
+        font-size: 15px;
+    }
+
+    .site-nav.site-nav--open .site-nav-links {
+        display: flex;
+    }
+
+    .site-nav.site-nav--open {
+        height: auto;
+    }
+
+    .site-nav-github {
+        padding: 12px 6px;
+    }
+}

@@ -31,3 +31,32 @@
 .site-cross-link.active {
     color: var(--vp-c-brand-1);
 }
+
+/* Collapse cross-site links on small screens */
+@media (max-width: 640px) {
+    .site-cross-nav {
+        gap: 2px;
+        margin-right: 4px;
+    }
+
+    .site-cross-link {
+        padding: 0 6px;
+        font-size: 12px;
+    }
+}
+
+/* Ensure wide tables and code blocks scroll horizontally on small screens */
+.vp-doc table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.vp-doc div[class*="language-"] {
+    overflow-x: auto;
+}
+
+/* Prevent Mermaid diagrams from overflowing */
+.vp-doc .mermaid {
+    overflow-x: auto;
+}
