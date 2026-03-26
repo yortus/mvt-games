@@ -1,0 +1,39 @@
+name: Deploy test branch to Surge
+
+on:
+    push:
+        branches: [test]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: test-deploy
+    cancel-in-progress: true
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run test
+            - run: npm run build:site
+              env:
+                  BASE_URL: /
+            - run: npm run build:docs
+              env:
+                  BASE_URL: /
+
+            - run: npx surge dist/ mvt-games-test.surge.sh
+              env:
+                  SURGE_LOGIN: ${{ secrets.SURGE_LOGIN }}
+                  SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
