@@ -19,6 +19,7 @@ export default tseslint.config(
             'import': importPlugin,
         },
         rules: {
+            '@stylistic/quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: 'always' }],
             '@stylistic/arrow-parens': ['error', 'always'],
             '@stylistic/brace-style': ['error', 'stroustrup', { allowSingleLine: true }],
             '@stylistic/comma-dangle': ['error', 'always-multiline'],
