@@ -57,6 +57,10 @@ function buildLayout(root: HTMLElement): {
     canvasPlaceholder: HTMLElement;
     consoleContainer: HTMLElement;
     footer: HTMLElement;
+    modelTab: HTMLButtonElement;
+    viewTab: HTMLButtonElement;
+    canvasTab: HTMLButtonElement;
+    setActivePanel: (panel: 'model' | 'view' | 'canvas') => void;
 } {
     root.className = 'pg-root';
 
@@ -105,6 +109,42 @@ function buildLayout(root: HTMLElement): {
 
     root.appendChild(header);
 
+    // Panel toggle tabs (visible on narrow screens via CSS)
+    // Replaces the editor's own Model/View tabs in portrait layout
+    const panelTabs = document.createElement('div');
+    panelTabs.className = 'pg-panel-tabs';
+
+    const modelTab = document.createElement('button');
+    modelTab.className = 'pg-panel-tab active';
+    modelTab.textContent = 'Model';
+    panelTabs.appendChild(modelTab);
+
+    const viewTab = document.createElement('button');
+    viewTab.className = 'pg-panel-tab';
+    viewTab.textContent = 'View';
+    panelTabs.appendChild(viewTab);
+
+    const canvasTab = document.createElement('button');
+    canvasTab.className = 'pg-panel-tab';
+    canvasTab.textContent = 'Canvas';
+    panelTabs.appendChild(canvasTab);
+
+    function setActivePanel(panel: 'model' | 'view' | 'canvas'): void {
+        modelTab.classList.toggle('active', panel === 'model');
+        viewTab.classList.toggle('active', panel === 'view');
+        canvasTab.classList.toggle('active', panel === 'canvas');
+        if (panel === 'model' || panel === 'view') {
+            editorContainer.classList.remove('pg-panel-hidden');
+            rightPanel.classList.add('pg-panel-hidden');
+        }
+        else {
+            rightPanel.classList.remove('pg-panel-hidden');
+            editorContainer.classList.add('pg-panel-hidden');
+        }
+    }
+
+    root.appendChild(panelTabs);
+
     // Left column: editor
     const editorContainer = document.createElement('div');
     editorContainer.className = 'pg-editor-panel';
@@ -135,11 +175,11 @@ function buildLayout(root: HTMLElement): {
     // Footer
     const footer = document.createElement('div');
     footer.className = 'pg-footer';
-    footer.innerHTML = '<span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>'
-        + '<span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> Reset</span>';
+    footer.innerHTML = '<span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>' +
+        '<span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> Reset</span>';
     root.appendChild(footer);
 
-    return { header, presetSelect, shareBtn, editorContainer, controlsContainer, canvasContainer, canvasPlaceholder: placeholder, consoleContainer, footer };
+    return { header, presetSelect, shareBtn, editorContainer, controlsContainer, canvasContainer, canvasPlaceholder: placeholder, consoleContainer, footer, modelTab, viewTab, canvasTab, setActivePanel };
 }
 
 // ---------------------------------------------------------------------------
@@ -163,6 +203,25 @@ function main(): void {
     controls.mount(layout.controlsContainer);
     consolePanel.mount(layout.consoleContainer);
     sandbox.mount(layout.canvasContainer);
+
+    // ---- Panel tab wiring (narrow-screen Model/View/Canvas toggle) ---------
+
+    layout.modelTab.addEventListener('click', () => {
+        layout.setActivePanel('model');
+        editor.setActiveTab('model');
+    });
+    layout.viewTab.addEventListener('click', () => {
+        layout.setActivePanel('view');
+        editor.setActiveTab('view');
+    });
+    layout.canvasTab.addEventListener('click', () => {
+        layout.setActivePanel('canvas');
+    });
+
+    // Set initial state for narrow screens
+    if (window.matchMedia('(max-width: 768px)').matches) {
+        layout.setActivePanel('model');
+    }
 
     // ---- Custom code persistence -------------------------------------------
 
@@ -188,7 +247,8 @@ function main(): void {
             if (data.w) controls.setCanvasWidth(data.w);
             if (data.h) controls.setCanvasHeight(data.h);
             return true;
-        } catch {
+        }
+        catch {
             return false;
         }
     }
@@ -291,6 +351,7 @@ function main(): void {
         editor.setModelCode(preset.modelCode);
         editor.setViewCode(preset.viewCode);
         editor.setActiveTab('model');
+        layout.setActivePanel('model');
         if (preset.canvasWidth) controls.setCanvasWidth(preset.canvasWidth);
         if (preset.canvasHeight) controls.setCanvasHeight(preset.canvasHeight);
         layout.presetSelect.value = preset.id;
@@ -312,6 +373,7 @@ function main(): void {
                 controls.setCanvasHeight(400);
             }
             editor.setActiveTab('model');
+            layout.setActivePanel('model');
             isCustom = true;
             pushState({});
             return;
@@ -381,7 +443,8 @@ function main(): void {
             loadPreset(preset);
             pendingAutoRun = true;
         }
-    } else if (initialState.modelCode || initialState.viewCode) {
+    }
+    else if (initialState.modelCode || initialState.viewCode) {
         // Shared custom code - load into editor but do NOT auto-run.
         // Auto-running untrusted code from a shared URL would be a security
         // risk because the sandbox iframe shares the page origin.
@@ -392,11 +455,13 @@ function main(): void {
         layout.presetSelect.value = '__custom__';
         isCustom = true;
         saveCustomCode();
-    } else if (loadCustomCode()) {
+    }
+    else if (loadCustomCode()) {
         // Restored saved custom code from localStorage
         layout.presetSelect.value = '__custom__';
         isCustom = true;
-    } else {
+    }
+    else {
         // Default: load the first preset
         const defaultPreset = presets[0];
         if (defaultPreset) {

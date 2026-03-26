@@ -29,7 +29,10 @@ export function createConsolePanel(): ConsolePanel {
     let logContainer: HTMLElement | undefined;
     let clearBtn: HTMLButtonElement | undefined;
     let headerEl: HTMLElement | undefined;
-    let collapsed = false;
+    // Start collapsed on touch-only / narrow devices
+    const isTouchOnly = window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+    const isNarrow = window.innerWidth <= 768;
+    let collapsed = isTouchOnly || isNarrow;
 
     function buildDOM(container: HTMLElement): void {
         // Header with title and clear button
@@ -70,6 +73,7 @@ export function createConsolePanel(): ConsolePanel {
         mount(container) {
             containerEl = container;
             buildDOM(container);
+            updateCollapsed();
         },
 
         log(level, message, source) {

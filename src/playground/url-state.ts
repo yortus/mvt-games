@@ -69,7 +69,8 @@ export function decodeState(hash: string): PlaygroundState {
                 canvasWidth: data.w,
                 canvasHeight: data.h,
             };
-        } catch {
+        }
+        catch {
             return {};
         }
     }

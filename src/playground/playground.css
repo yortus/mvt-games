@@ -218,7 +218,8 @@ html, body {
 /* Buttons */
 
 .pg-btn {
-    padding: 4px 12px;
+    padding: 6px 14px;
+    min-height: 36px;
     border: 1px solid var(--pg-border);
     border-radius: 6px;
     background: var(--pg-btn-bg);
@@ -260,7 +261,10 @@ html, body {
 /* Speed slider */
 
 .pg-speed-slider {
+    min-width: 80px;
     width: 100px;
+    max-width: 160px;
+    flex: 1;
     accent-color: var(--pg-accent);
 }
 
@@ -423,22 +427,146 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
+   Panel toggle tabs (narrow screens) - Model / View / Canvas switcher
+   -------------------------------------------------------------------------- */
+
+.pg-panel-tabs {
+    display: none;
+    grid-column: 1 / -1;
+    background: var(--pg-bg);
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.pg-panel-tab {
+    padding: 8px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--pg-text-muted);
+    font-family: var(--pg-font-ui);
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.pg-panel-tab:hover {
+    color: var(--pg-text);
+}
+
+.pg-panel-tab.active {
+    color: var(--pg-accent);
+    border-bottom-color: var(--pg-accent);
+}
+
+/* --------------------------------------------------------------------------
    Responsive: stack vertically on narrow viewports
    -------------------------------------------------------------------------- */
 
 @media (max-width: 768px) {
     .pg-root {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr 1fr auto;
+        grid-template-rows: auto auto 1fr 1fr auto;
+    }
+
+    .pg-panel-tabs {
+        display: flex;
+        grid-row: 2;
+    }
+
+    /* Hide editor's own Model/View tabs - panel tabs replace them */
+    .pg-editor-tabs {
+        display: none;
     }
 
     .pg-editor-panel {
         grid-column: 1;
-        grid-row: 2;
+        grid-row: 3;
     }
 
     .pg-right-panel {
         grid-column: 1;
-        grid-row: 3;
+        grid-row: 4;
+    }
+
+    /* When a panel is toggled off */
+    .pg-editor-panel.pg-panel-hidden {
+        display: none;
+    }
+
+    .pg-right-panel.pg-panel-hidden {
+        display: none;
+    }
+
+    /* When one panel is hidden, let the visible one fill both row slots */
+    .pg-editor-panel:not(.pg-panel-hidden) {
+        grid-row: 3 / 5;
+    }
+
+    .pg-right-panel:not(.pg-panel-hidden) {
+        grid-row: 3 / 5;
+    }
+
+    .pg-canvas-area {
+        min-height: 150px;
+    }
+
+    .pg-console {
+        max-height: min(200px, 30vh);
+    }
+}
+
+@media (max-width: 480px) {
+    .pg-header {
+        gap: 8px;
+        padding: 6px 10px;
+    }
+
+    .pg-header-title {
+        font-size: 14px;
+    }
+
+    .pg-controls {
+        padding: 6px 8px;
+    }
+
+    .pg-btn {
+        min-height: 40px;
+        padding: 8px 12px;
+    }
+
+    /* Icon-only control buttons */
+    .pg-btn-label {
+        display: none;
+    }
+
+    .pg-footer {
+        gap: 8px;
+        padding: 4px 10px;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-height: 400px) {
+    .pg-header {
+        padding: 4px 10px;
+    }
+
+    .pg-canvas-area {
+        min-height: 120px;
+    }
+
+    .pg-console {
+        max-height: min(100px, 20vh);
+    }
+}
+
+/* Hide keyboard shortcut hints on touch-only devices */
+@media (pointer: coarse) and (hover: none) {
+    .pg-footer {
+        display: none;
+    }
+
+    .pg-root {
+        grid-template-rows: auto auto 1fr auto;
     }
 }

@@ -75,21 +75,31 @@ export function createControlsPanel(): ControlsPanel {
         }
     }
 
+    function setBtnHtml(btn: HTMLButtonElement, icon: string, label: string): void {
+        btn.innerHTML = icon + ' <span class="pg-btn-label">' + label + '</span>';
+    }
+
     function updateButtons(): void {
         if (!runBtn || !pauseBtn || !stepBtn || !resetBtn) return;
 
         if (running) {
-            runBtn.textContent = 'Run';
+            setBtnHtml(runBtn, '\u25B6', 'Run');
             runBtn.disabled = false;
             pauseBtn.disabled = false;
-            pauseBtn.textContent = paused ? '\u25B6 Resume' : '\u23F8 Pause';
+            if (paused) {
+                setBtnHtml(pauseBtn, '\u25B6', 'Resume');
+            }
+            else {
+                setBtnHtml(pauseBtn, '\u23F8', 'Pause');
+            }
             stepBtn.disabled = !paused;
             resetBtn.disabled = false;
-        } else {
-            runBtn.textContent = '\u25B6 Run';
+        }
+        else {
+            setBtnHtml(runBtn, '\u25B6', 'Run');
             runBtn.disabled = false;
             pauseBtn.disabled = true;
-            pauseBtn.textContent = '\u23F8 Pause';
+            setBtnHtml(pauseBtn, '\u23F8', 'Pause');
             stepBtn.disabled = true;
             resetBtn.disabled = true;
         }
@@ -102,7 +112,7 @@ export function createControlsPanel(): ControlsPanel {
         // Run button
         runBtn = document.createElement('button');
         runBtn.className = 'pg-btn pg-btn-primary';
-        runBtn.textContent = '\u25B6 Run';
+        setBtnHtml(runBtn, '\u25B6', 'Run');
         runBtn.title = 'Run (Ctrl+Enter)';
         runBtn.addEventListener('click', () => emit({ kind: 'run' }));
         toolbar.appendChild(runBtn);
@@ -110,12 +120,13 @@ export function createControlsPanel(): ControlsPanel {
         // Pause/Resume button
         pauseBtn = document.createElement('button');
         pauseBtn.className = 'pg-btn';
-        pauseBtn.textContent = '\u23F8 Pause';
+        setBtnHtml(pauseBtn, '\u23F8', 'Pause');
         pauseBtn.disabled = true;
         pauseBtn.addEventListener('click', () => {
             if (paused) {
                 emit({ kind: 'resume' });
-            } else {
+            }
+            else {
                 emit({ kind: 'pause' });
             }
         });
@@ -124,7 +135,7 @@ export function createControlsPanel(): ControlsPanel {
         // Step button
         stepBtn = document.createElement('button');
         stepBtn.className = 'pg-btn';
-        stepBtn.textContent = '\u23ED Step';
+        setBtnHtml(stepBtn, '\u23ED', 'Step');
         stepBtn.title = 'Advance one frame (16.67ms)';
         stepBtn.disabled = true;
         stepBtn.addEventListener('click', () => emit({ kind: 'step' }));
@@ -133,7 +144,7 @@ export function createControlsPanel(): ControlsPanel {
         // Reset button
         resetBtn = document.createElement('button');
         resetBtn.className = 'pg-btn';
-        resetBtn.textContent = '\u21BB Reset';
+        setBtnHtml(resetBtn, '\u21BB', 'Reset');
         resetBtn.title = 'Destroy and re-run';
         resetBtn.disabled = true;
         resetBtn.addEventListener('click', () => emit({ kind: 'reset' }));

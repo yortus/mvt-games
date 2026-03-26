@@ -110,7 +110,8 @@ export function createEditorPanel(): EditorPanel {
             viewEditorContainer.style.display = 'none';
             modelTab.classList.add('active');
             viewTab.classList.remove('active');
-        } else {
+        }
+        else {
             modelEditorContainer.style.display = 'none';
             viewEditorContainer.style.display = 'block';
             modelTab.classList.remove('active');

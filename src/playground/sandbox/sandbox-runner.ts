@@ -33,7 +33,8 @@ function transpile(code: string, label: string): string | undefined {
             disableESTransforms: true,
         });
         return result.code;
-    } catch (err: unknown) {
+    }
+    catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         // Try to extract line number from Sucrase error
         const lineMatch = msg.match(/\((\d+):\d+\)/);
@@ -84,7 +85,8 @@ return (function(${globalNames.join(', ')}) {
         const fn = new Function(wrapped);
         const result = fn(...globalValues) as Record<string, unknown>;
         return result;
-    } catch (err: unknown) {
+    }
+    catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         sendToHost({
             kind: 'error',
@@ -126,7 +128,8 @@ function interceptConsole(): void {
                 args: args.map((a) => {
                     try {
                         return typeof a === 'string' ? a : JSON.stringify(a);
-                    } catch {
+                    }
+                    catch {
                         return String(a);
                     }
                 }),
@@ -303,7 +306,8 @@ async function runCode(
     let model: { update?: (deltaMs: number) => void };
     try {
         model = createModelFn() as { update?: (deltaMs: number) => void };
-    } catch (err: unknown) {
+    }
+    catch (err: unknown) {
         sendToHost({
             kind: 'error',
             message: `createModel() threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -315,7 +319,8 @@ async function runCode(
     let view: Container;
     try {
         view = createViewFn(model) as Container;
-    } catch (err: unknown) {
+    }
+    catch (err: unknown) {
         sendToHost({
             kind: 'error',
             message: `createView() threw: ${err instanceof Error ? err.message : String(err)}`,
@@ -342,7 +347,8 @@ async function runCode(
             if (typeof model.update === 'function') {
                 model.update(ticker.deltaMS * speedMultiplier);
             }
-        } catch (err: unknown) {
+        }
+        catch (err: unknown) {
             sendToHost({
                 kind: 'error',
                 message: `Runtime error in model.update(): ${err instanceof Error ? err.message : String(err)}`,
