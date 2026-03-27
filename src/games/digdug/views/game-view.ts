@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createKeyboardInputView, createOverlayView, watch } from '#common';
+import { createOverlayView, isTouchDevice, watch } from '#common';
 import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
@@ -25,8 +25,6 @@ export function createGameView(game: GameModel): Container {
     let rockContainers: Container[] = [];
     let enemyLayer: Container;
     let rockLayer: Container;
-    let lastXDir: 'left' | 'none' | 'right' = 'none';
-    let lastYDir: 'up' | 'none' | 'down' = 'none';
 
     const view = new Container();
     initialiseView();
@@ -80,38 +78,14 @@ export function createGameView(game: GameModel): Container {
         view.addChild(hudContainer);
 
         // Overlay
+        const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
         view.addChild(
             createOverlayView({
                 getWidth: () => canvasW,
                 getHeight: () => canvasH,
-                isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
-                getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'LEVEL CLEAR!'),
-            }),
-        );
-
-        // Keyboard input
-        view.addChild(
-            createKeyboardInputView({
-                onXDirectionChanged: (dir) => {
-                    lastXDir = dir;
-                    if (dir === 'left') game.playerInput.direction = 'left';
-                    else if (dir === 'right') game.playerInput.direction = 'right';
-                    else if (lastYDir === 'up') game.playerInput.direction = 'up';
-                    else if (lastYDir === 'down') game.playerInput.direction = 'down';
-                    else game.playerInput.direction = 'none';
-                },
-                onYDirectionChanged: (dir) => {
-                    lastYDir = dir;
-                    if (dir === 'up') game.playerInput.direction = 'up';
-                    else if (dir === 'down') game.playerInput.direction = 'down';
-                    else if (lastXDir === 'left') game.playerInput.direction = 'left';
-                    else if (lastXDir === 'right') game.playerInput.direction = 'right';
-                    else game.playerInput.direction = 'none';
-                },
-                onPrimaryButtonChanged: (pressed) => {
-                    game.playerInput.pumpPressed = pressed;
-                },
-                onRestartButtonChanged: (pressed) => {
+                getVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
+                getText: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'LEVEL CLEAR!'),
+                onRestartPressed: (pressed) => {
                     game.playerInput.restartPressed = pressed;
                 },
             }),

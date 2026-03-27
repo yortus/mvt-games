@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { watch } from '#common';
+import { isTouchDevice, watch } from '#common';
 import type { CabinetPhase } from './cabinet-model';
 
 // ---------------------------------------------------------------------------
@@ -13,20 +13,28 @@ export interface CabinetViewBindings {
     getGameName(index: number): string;
     getGameThumbnail(index: number): Texture | undefined;
     getSelectedIndex(): number;
-    onNavigate(delta: number): void;
-    onLaunch(): void;
-    onExit(): void;
+    getCanvasWidth(): number;
+    getCanvasHeight(): number;
+    onMovePressed(direction: 'left' | 'right'): void;
+    onLaunchPressed(): void;
+    onExitPressed(): void;
+}
+
+export interface CabinetView extends Container {
+    requestExit(): void;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createCabinetView(bindings: CabinetViewBindings): Container {
+export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     const watcher = watch({
         phase: bindings.getPhase,
         selected: bindings.getSelectedIndex,
         count: bindings.getGameCount,
+        canvasW: bindings.getCanvasWidth,
+        canvasH: bindings.getCanvasHeight,
     });
 
     // Presentation-only state
@@ -36,6 +44,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     let lastNavDelta = 0;
     let transitioning = false;
     let zoomTimeline: gsap.core.Timeline | undefined;
+    let canvasW = bindings.getCanvasWidth();
+    let canvasH = bindings.getCanvasHeight();
 
     // ---- Scene elements ---------------------------------------------------
     const view = new Container();
@@ -53,7 +63,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         },
     });
     title.anchor.set(0.5, 0);
-    title.position.set(MENU_WIDTH / 2, TITLE_Y);
+    title.position.set(canvasW / 2, TITLE_Y);
     menuLayer.addChild(title);
 
     const carousel = new Container();
@@ -61,7 +71,9 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     menuLayer.addChild(carousel);
 
     const hint = new Text({
-        text: '\u2190\u2192 Browse   \u2502   Enter Play   \u2502   Esc Back',
+        text: isTouchDevice() ?
+            '\u2190\u2192 Swipe   \u2502   Tap Play' :
+            '\u2190\u2192 Browse   \u2502   Enter Play',
         style: {
             fontFamily: 'monospace',
             fontSize: 13,
@@ -70,7 +82,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         },
     });
     hint.anchor.set(0.5, 1);
-    hint.position.set(MENU_WIDTH / 2, MENU_HEIGHT - 16);
+    hint.position.set(canvasW / 2, canvasH - 16);
     menuLayer.addChild(hint);
 
     let cards: Card[] = [];
@@ -85,27 +97,91 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowUp' || e.key === 'w') {
                 e.preventDefault();
                 lastNavDelta = -1;
-                bindings.onNavigate(-1);
+                bindings.onMovePressed('left');
             }
             else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'ArrowDown' || e.key === 's') {
                 e.preventDefault();
                 lastNavDelta = 1;
-                bindings.onNavigate(1);
+                bindings.onMovePressed('right');
             }
             else if (e.key === 'Enter') {
                 e.preventDefault();
                 startZoomIn(bindings.getSelectedIndex());
             }
         }
-        else if (phase === 'playing') {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                startZoomOut(bindings.getSelectedIndex());
-            }
-        }
     }
 
     window.addEventListener('keydown', onKeyDown);
+
+    // ---- Touch / pointer input --------------------------------------------
+
+    let swipeStartX = 0;
+    let swipePointerId: number | undefined;
+    let swipeScrollAnchor = 0;
+    let swiped = false;
+
+    menuLayer.eventMode = 'static';
+    menuLayer.hitArea = { contains: () => true };
+
+    menuLayer.on('pointerdown', (e) => {
+        if (transitioning || bindings.getPhase() !== 'menu') return;
+        if (swipePointerId !== undefined) return;
+        swipePointerId = e.pointerId;
+        swipeStartX = e.globalX;
+        swipeScrollAnchor = scrollCurrent;
+        swiped = false;
+    });
+
+    menuLayer.on('pointermove', (e) => {
+        if (e.pointerId !== swipePointerId) return;
+        const dx = e.globalX - swipeStartX;
+        if (!swiped && Math.abs(dx) > SWIPE_DEAD_ZONE) {
+            swiped = true;
+        }
+        if (swiped) {
+            scrollCurrent = swipeScrollAnchor - dx / CARD_STRIDE;
+            scrollTarget = scrollCurrent;
+        }
+    });
+
+    const releaseSwipe = (e: { pointerId: number; globalX: number; globalY: number }): void => {
+        if (e.pointerId !== swipePointerId) return;
+        swipePointerId = undefined;
+        if (!swiped) {
+            const selectedIdx = bindings.getSelectedIndex();
+            const card = cards[selectedIdx];
+            if (card) {
+                const b = card.container.getBounds();
+                if (e.globalX >= b.minX && e.globalX <= b.maxX &&
+                    e.globalY >= b.minY && e.globalY <= b.maxY) {
+                    startZoomIn(selectedIdx);
+                }
+            }
+        }
+        else {
+            // Snap to nearest card and sync the model's selected index
+            const nearest = Math.round(scrollCurrent);
+            scrollTarget = nearest;
+            const count = bindings.getGameCount();
+            if (count > 0) {
+                const targetIndex = ((nearest % count) + count) % count;
+                const currentIndex = bindings.getSelectedIndex();
+                if (targetIndex !== currentIndex) {
+                    let delta = targetIndex - currentIndex;
+                    if (delta > count / 2) delta -= count;
+                    else if (delta < -count / 2) delta += count;
+                    lastNavDelta = 0;
+                    bindings.onMovePressed(delta > 0 ? 'right' : 'left');
+                }
+            }
+        }
+    };
+
+    menuLayer.on('pointerup', releaseSwipe);
+    menuLayer.on('pointerupoutside', releaseSwipe);
+    menuLayer.on('pointercancel', () => {
+        swipePointerId = undefined;
+    });
 
     // ---- Lifecycle --------------------------------------------------------
 
@@ -118,7 +194,14 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         originalDestroy(options);
     };
 
-    return view;
+    /** Trigger the zoom-out exit animation (called from the pause menu). */
+    const requestExit = (): void => {
+        if (!transitioning && bindings.getPhase() === 'playing') {
+            startZoomOut(bindings.getSelectedIndex());
+        }
+    };
+
+    return Object.assign(view, { requestExit });
 
     // ---- Internals --------------------------------------------------------
 
@@ -127,6 +210,14 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
 
         if (watched.phase.changed && !transitioning) {
             menuLayer.visible = watched.phase.value === 'menu';
+        }
+
+        if (watched.canvasW.changed || watched.canvasH.changed) {
+            canvasW = bindings.getCanvasWidth();
+            canvasH = bindings.getCanvasHeight();
+            title.position.set(canvasW / 2, TITLE_Y);
+            hint.position.set(canvasW / 2, canvasH - 16);
+            highlightedIndex = -1;
         }
 
         if (watched.count.changed) {
@@ -159,12 +250,13 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     function startZoomIn(cardIndex: number): void {
         transitioning = true;
         const card = cards[cardIndex];
+        const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
             onComplete() {
                 menuLayer.visible = false;
                 resetAllCards();
-                bindings.onLaunch();
+                bindings.onLaunchPressed();
                 transitioning = false;
                 zoomTimeline = undefined;
             },
@@ -182,8 +274,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         }
 
         // Zoom the selected card to fill the screen
-        tl.to(card.container.scale, { x: ZOOM_TARGET_SCALE, y: ZOOM_TARGET_SCALE, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-        tl.to(card.container.position, { y: MENU_HEIGHT / 2, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
+        tl.to(card.container.scale, { x: zoomScale, y: zoomScale, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
+        tl.to(card.container.position, { y: canvasH / 2, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
 
         // Fade out card chrome (border, name, thumbnail)
         tl.to(card.border, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
@@ -196,7 +288,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
     function startZoomOut(cardIndex: number): void {
         transitioning = true;
 
-        bindings.onExit();
+        bindings.onExitPressed();
         menuLayer.visible = true;
 
         // Position all cards at their normal carousel positions
@@ -206,6 +298,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         positionCards();
 
         const card = cards[cardIndex];
+        const carouselY = canvasH * 0.45;
+        const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
             onComplete() {
@@ -228,8 +322,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         }
 
         // Selected card shrinks from zoomed to normal
-        tl.fromTo(card.container.scale, { x: ZOOM_TARGET_SCALE, y: ZOOM_TARGET_SCALE }, { x: 1, y: 1, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-        tl.fromTo(card.container.position, { y: MENU_HEIGHT / 2 }, { y: CAROUSEL_CENTER_Y, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
+        tl.fromTo(card.container.scale, { x: zoomScale, y: zoomScale }, { x: 1, y: 1, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
+        tl.fromTo(card.container.position, { y: canvasH / 2 }, { y: carouselY, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
 
         // Card chrome fades in
         tl.fromTo(card.border, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
@@ -309,7 +403,8 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
         const count = bindings.getGameCount();
         if (count === 0) return;
 
-        const centerX = MENU_WIDTH / 2;
+        const centerX = canvasW / 2;
+        const carouselY = canvasH * 0.45;
         const half = count / 2;
 
         let nearestIndex = 0;
@@ -336,7 +431,7 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
             const scale = Math.max(SCALE_MIN, 1 - absRel * SCALE_FALLOFF);
             const alpha = Math.max(ALPHA_MIN, 1 - absRel * ALPHA_FALLOFF);
 
-            card.container.position.set(centerX + rel * CARD_STRIDE, CAROUSEL_CENTER_Y);
+            card.container.position.set(centerX + rel * CARD_STRIDE, carouselY);
             card.container.scale.set(scale);
             card.container.alpha = alpha;
 
@@ -369,12 +464,9 @@ export function createCabinetView(bindings: CabinetViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const MENU_WIDTH = 960;
-const MENU_HEIGHT = 540;
 const TITLE_Y = 24;
 
 // Carousel geometry
-const CAROUSEL_CENTER_Y = 258;
 const CARD_W = 220;
 const CARD_H = 160;
 const CARD_STRIDE = 250;
@@ -397,7 +489,10 @@ const LERP_SNAP = 0.01;
 
 // Zoom transition
 const ZOOM_DURATION = 0.4;
-const ZOOM_TARGET_SCALE = Math.max(MENU_WIDTH / CARD_W, MENU_HEIGHT / CARD_H) * 1.15;
+
+// Touch / pointer
+/** Minimum pointer distance (logical px) to distinguish swipe from tap. */
+const SWIPE_DEAD_ZONE = 8;
 
 // Colors
 const COLOR_TITLE = 0xffff00;

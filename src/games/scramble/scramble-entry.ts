@@ -41,6 +41,18 @@ export function createScrambleEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: true,
+                    showPrimary: true,
+                    showSecondary: true,
+                    primaryLabel: 'Fire',
+                    secondaryLabel: 'Bomb',
+                    onXDirectionChanged: (dir) => { gameModel.playerInput.xDirection = dir; },
+                    onYDirectionChanged: (dir) => { gameModel.playerInput.yDirection = dir; },
+                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
+                    onSecondaryButtonChanged: (pressed) => { gameModel.playerInput.bombPressed = pressed; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                },
             };
         },
     };

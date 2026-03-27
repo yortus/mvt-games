@@ -53,6 +53,12 @@ export function createPacmanEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: true,
+                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
+                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                },
             };
         },
     };

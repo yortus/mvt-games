@@ -8,8 +8,9 @@ import { watch } from './watch';
 export interface OverlayViewBindings {
     getWidth(): number;
     getHeight(): number;
-    isVisible(): boolean;
+    getVisible(): boolean;
     getText(): string;
+    onRestartPressed?(pressed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ export function createOverlayView(bindings: OverlayViewBindings): Container {
     view.label = 'overlay';
 
     const watcher = watch({
-        visible: bindings.isVisible,
+        visible: bindings.getVisible,
         text: bindings.getText,
     });
 
@@ -39,6 +40,23 @@ export function createOverlayView(bindings: OverlayViewBindings): Container {
     label.anchor.set(0.5);
     label.position.set(w / 2, h / 2);
     view.addChild(label);
+
+    if (bindings.onRestartPressed) {
+        bg.eventMode = 'static';
+        bg.cursor = 'pointer';
+        const onRestartPressed = bindings.onRestartPressed;
+        bg.on('pointerdown', () => onRestartPressed(true));
+        const delayedRelease = (): void => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    onRestartPressed(false);
+                });
+            });
+        };
+        bg.on('pointerup', delayedRelease);
+        bg.on('pointerupoutside', delayedRelease);
+        bg.on('pointercancel', delayedRelease);
+    }
 
     view.visible = false;
 

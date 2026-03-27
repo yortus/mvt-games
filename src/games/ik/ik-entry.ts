@@ -26,18 +26,28 @@ export function createIkEntry(): GameEntry {
         start(stage: Container): GameSession {
             if (!loaded) throw new Error('ik: load() must be called before start()');
 
-            const game = createGameModel();
-            const gameView = createGameView(game);
+            const gameModel = createGameModel();
+            const gameView = createGameView(gameModel);
             stage.addChild(gameView);
 
             return {
                 update(deltaMs: number): void {
-                    game.update(deltaMs);
+                    gameModel.update(deltaMs);
                 },
 
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
+                },
+
+                inputConfig: {
+                    showDpad: true,
+                    showPrimary: true,
+                    primaryLabel: 'Atk',
+                    onXDirectionChanged: (dir) => { gameModel.playerInput.xDirection = dir; },
+                    onYDirectionChanged: (dir) => { gameModel.playerInput.yDirection = dir; },
+                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.attackPressed = pressed; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
                 },
             };
         },

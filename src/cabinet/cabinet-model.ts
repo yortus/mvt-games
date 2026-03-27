@@ -14,6 +14,7 @@ export interface CabinetModel {
     readonly activeSession: GameSession | undefined;
     selectByDelta(delta: number): void;
     launchSelected(stage: Container): Promise<void>;
+    restartSession(stage: Container): void;
     exitToMenu(): void;
     update(deltaMs: number): void;
 }
@@ -62,6 +63,13 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
             await entry.load?.();
             activeSession = entry.start(stage);
             phase = 'playing';
+        },
+
+        restartSession(stage: Container): void {
+            if (phase !== 'playing' || !activeSession) return;
+            activeSession.destroy();
+            const entry = games[selectedIndex];
+            activeSession = entry.start(stage);
         },
 
         exitToMenu(): void {

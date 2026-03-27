@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createKeyboardInputView, createOverlayView, watch } from '#common';
+import { createOverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { TILE_SIZE, MAZE_ROWS, MAZE_COLS } from '../data';
 import { createMazeView } from './maze-view';
@@ -54,31 +54,20 @@ export function createGameView(game: GameModel): Container {
         view.addChild(hudContainer);
 
         // Overlay
+        const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
         const overlayView = createOverlayView({
             getWidth: () => canvasW,
             getHeight: () => canvasH,
-            isVisible: () => game.phase !== 'playing',
+            getVisible: () => game.phase !== 'playing',
             getText: () =>
                 game.phase === 'game-over' ?
-                    'GAME OVER\n\nPress Enter to restart' :
-                    'YOU WIN!\n\nPress Enter to restart',
+                    `GAME OVER\n\n${restartHint}` :
+                    `YOU WIN!\n\n${restartHint}`,
+            onRestartPressed: (pressed) => {
+                game.playerInput.restartPressed = pressed;
+            },
         });
         view.addChild(overlayView);
-
-        // Player input
-        view.addChild(
-            createKeyboardInputView({
-                onXDirectionChanged: (dir) => {
-                    if (dir !== 'none') game.playerInput.direction = dir;
-                },
-                onYDirectionChanged: (dir) => {
-                    if (dir !== 'none') game.playerInput.direction = dir;
-                },
-                onRestartButtonChanged: (pressed) => {
-                    game.playerInput.restartPressed = pressed;
-                },
-            }),
-        );
     }
 
     function refresh(): void {

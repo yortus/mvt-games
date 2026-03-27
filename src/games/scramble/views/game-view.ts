@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createKeyboardInputView, createOverlayView } from '#common';
+import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
 import { TILE_SIZE, VISIBLE_COLS, VISIBLE_ROWS, SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
 import { createTerrainView } from './terrain-view';
@@ -156,14 +156,18 @@ export function createGameView(game: GameModel): Container {
         view.addChild(hudContainer);
 
         // Overlay (section clear + game over)
+        const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
         view.addChild(
             createOverlayView({
                 getWidth: () => SCREEN_WIDTH,
                 getHeight: () => PLAY_HEIGHT,
-                isVisible: () => game.phase === 'game-over' || game.phase === 'section-clear',
+                getVisible: () => game.phase === 'game-over' || game.phase === 'section-clear',
                 getText: () => {
                     if (game.phase === 'section-clear') return 'SECTION CLEAR!';
-                    return 'GAME OVER\n\nPress Enter to restart';
+                    return `GAME OVER\n\n${restartHint}`;
+                },
+                onRestartPressed: (pressed) => {
+                    game.playerInput.restartPressed = pressed;
                 },
             }),
         );
@@ -193,27 +197,6 @@ export function createGameView(game: GameModel): Container {
                 isBaseAlive: () => game.isBaseAlive,
                 getScreenWidth: () => SCREEN_WIDTH,
                 getScreenHeight: () => PLAY_HEIGHT,
-            }),
-        );
-
-        // Keyboard input
-        view.addChild(
-            createKeyboardInputView({
-                onXDirectionChanged: (dir) => {
-                    game.playerInput.xDirection = dir;
-                },
-                onYDirectionChanged: (dir) => {
-                    game.playerInput.yDirection = dir;
-                },
-                onPrimaryButtonChanged: (pressed) => {
-                    game.playerInput.firePressed = pressed;
-                },
-                onSecondaryButtonChanged: (pressed) => {
-                    game.playerInput.bombPressed = pressed;
-                },
-                onRestartButtonChanged: (pressed) => {
-                    game.playerInput.restartPressed = pressed;
-                },
             }),
         );
     }

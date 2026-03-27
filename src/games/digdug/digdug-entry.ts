@@ -36,6 +36,9 @@ export function createDigdugEntry(): GameEntry {
             const gameView = createGameView(gameModel);
             stage.addChild(gameView);
 
+            let lastXDir: 'left' | 'none' | 'right' = 'none';
+            let lastYDir: 'up' | 'none' | 'down' = 'none';
+
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
@@ -43,6 +46,29 @@ export function createDigdugEntry(): GameEntry {
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
+                },
+                inputConfig: {
+                    showDpad: true,
+                    showPrimary: true,
+                    primaryLabel: 'Pump',
+                    onXDirectionChanged: (dir) => {
+                        lastXDir = dir;
+                        if (dir === 'left') gameModel.playerInput.direction = 'left';
+                        else if (dir === 'right') gameModel.playerInput.direction = 'right';
+                        else if (lastYDir === 'up') gameModel.playerInput.direction = 'up';
+                        else if (lastYDir === 'down') gameModel.playerInput.direction = 'down';
+                        else gameModel.playerInput.direction = 'none';
+                    },
+                    onYDirectionChanged: (dir) => {
+                        lastYDir = dir;
+                        if (dir === 'up') gameModel.playerInput.direction = 'up';
+                        else if (dir === 'down') gameModel.playerInput.direction = 'down';
+                        else if (lastXDir === 'left') gameModel.playerInput.direction = 'left';
+                        else if (lastXDir === 'right') gameModel.playerInput.direction = 'right';
+                        else gameModel.playerInput.direction = 'none';
+                    },
+                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.pumpPressed = pressed; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
                 },
             };
         },

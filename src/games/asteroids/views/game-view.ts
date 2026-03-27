@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createKeyboardInputView, createOverlayView, watch } from '#common';
+import { createOverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { createShipView } from './ship-view';
@@ -65,31 +65,17 @@ export function createGameView(game: GameModel): Container {
         view.addChild(hudContainer);
 
         // Overlay
+        const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
         const overlayView = createOverlayView({
             getWidth: () => ARENA_WIDTH,
             getHeight: () => ARENA_HEIGHT,
-            isVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
-            getText: () => (game.phase === 'game-over' ? 'GAME OVER\n\nPress Enter to restart' : 'WAVE CLEAR!'),
+            getVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
+            getText: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'WAVE CLEAR!'),
+            onRestartPressed: (pressed) => {
+                game.playerInput.restartPressed = pressed;
+            },
         });
         view.addChild(overlayView);
-
-        // Keyboard input
-        view.addChild(
-            createKeyboardInputView({
-                onXDirectionChanged: (dir) => {
-                    game.playerInput.rotationDirection = dir;
-                },
-                onYDirectionChanged: (dir) => {
-                    game.playerInput.thrustPressed = dir === 'up';
-                },
-                onPrimaryButtonChanged: (pressed) => {
-                    game.playerInput.firePressed = pressed;
-                },
-                onRestartButtonChanged: (pressed) => {
-                    game.playerInput.restartPressed = pressed;
-                },
-            }),
-        );
     }
 
     function refresh(): void {

@@ -32,6 +32,15 @@ export function createAsteroidsEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: true,
+                    showPrimary: true,
+                    primaryLabel: 'Fire',
+                    onXDirectionChanged: (dir) => { gameModel.playerInput.rotationDirection = dir; },
+                    onYDirectionChanged: (dir) => { gameModel.playerInput.thrustPressed = dir === 'up'; },
+                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                },
             };
         },
     };

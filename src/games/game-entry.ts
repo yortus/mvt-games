@@ -29,10 +29,27 @@ export interface GameEntry {
     start(stage: Container): GameSession;
 }
 
+/** Input configuration provided by a game session. */
+export interface GameInputConfig {
+    showDpad?: boolean;
+    showPrimary?: boolean;
+    showSecondary?: boolean;
+    primaryLabel?: string;
+    secondaryLabel?: string;
+    floatingJoystick?: boolean;
+    onXDirectionChanged?(direction: 'left' | 'none' | 'right'): void;
+    onYDirectionChanged?(direction: 'up' | 'none' | 'down'): void;
+    onPrimaryButtonChanged?(pressed: boolean): void;
+    onSecondaryButtonChanged?(pressed: boolean): void;
+    onRestartButtonChanged?(pressed: boolean): void;
+}
+
 /** A running game instance - updated each tick and destroyable. */
 export interface GameSession {
     /** Advance game state by the given elapsed milliseconds. */
     update(deltaMs: number): void;
     /** Tear down the game session and remove visuals from the stage. */
     destroy(): void;
+    /** Input control configuration for the game. */
+    inputConfig?: GameInputConfig;
 }

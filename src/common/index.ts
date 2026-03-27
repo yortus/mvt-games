@@ -1,4 +1,7 @@
-export { createKeyboardInputView, type KeyboardInputBindings } from './keyboard-input-view';
+export { isTouchDevice } from './is-touch-device';
+export { createKeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
 export { createOverlayView, type OverlayViewBindings } from './overlay-view';
+export { createPauseMenuView, type PauseMenuViewBindings } from './pause-menu-view';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
+export { createTouchInputView, type TouchInputViewBindings } from './touch-input-view';
 export { watch } from './watch';

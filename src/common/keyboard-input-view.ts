@@ -4,7 +4,7 @@ import { Container } from 'pixi.js';
 // Bindings
 // ---------------------------------------------------------------------------
 
-export interface KeyboardInputBindings {
+export interface KeyboardInputViewBindings {
     onXDirectionChanged?(direction: 'left' | 'none' | 'right'): void;
     onYDirectionChanged?(direction: 'up' | 'none' | 'down'): void;
     onPrimaryButtonChanged?(pressed: boolean): void;
@@ -16,7 +16,7 @@ export interface KeyboardInputBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createKeyboardInputView(bindings: KeyboardInputBindings): Container {
+export function createKeyboardInputView(bindings: KeyboardInputViewBindings): Container {
     const view = new Container();
     view.label = 'keyboard-input';
 

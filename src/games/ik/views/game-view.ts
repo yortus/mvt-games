@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createKeyboardInputView, createOverlayView } from '#common';
+import { createOverlayView, isTouchDevice } from '#common';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT } from '../data';
 import type { GameModel } from '../models';
 import { createArenaView } from './arena-view';
@@ -68,29 +68,15 @@ export function createGameView(game: GameModel): Container {
     );
 
     // Overlay
+    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     view.addChild(
         createOverlayView({
             getWidth: () => SCREEN_WIDTH,
             getHeight: () => SCREEN_HEIGHT,
-            isVisible: () => game.phase === 'round-intro' ||
+            getVisible: () => game.phase === 'round-intro' ||
                 game.phase === 'match-over',
-            getText: () => resolveOverlayText(game),
-        }),
-    );
-
-    // Keyboard input
-    view.addChild(
-        createKeyboardInputView({
-            onXDirectionChanged: (dir) => {
-                game.playerInput.xDirection = dir;
-            },
-            onYDirectionChanged: (dir) => {
-                game.playerInput.yDirection = dir;
-            },
-            onPrimaryButtonChanged: (pressed) => {
-                game.playerInput.attackPressed = pressed;
-            },
-            onRestartButtonChanged: (pressed) => {
+            getText: () => resolveOverlayText(game, restartHint),
+            onRestartPressed: (pressed) => {
                 game.playerInput.restartPressed = pressed;
             },
         }),
@@ -103,14 +89,14 @@ export function createGameView(game: GameModel): Container {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function resolveOverlayText(game: GameModel): string {
+function resolveOverlayText(game: GameModel, restartHint: string): string {
     if (game.phase === 'round-intro') {
         return `Round ${game.match.round}`;
     }
     if (game.phase === 'match-over') {
         const winner = game.match.getMatchWinner();
         const winnerLabel = winner === 'player' ? 'You win!' : 'You lose!';
-        return `GAME OVER\n\n${winnerLabel}\n\nPress Enter to restart`;
+        return `GAME OVER\n\n${winnerLabel}\n\n${restartHint}`;
     }
     return '';
 }

@@ -47,6 +47,14 @@ export function createGalagaEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: true,
+                    showPrimary: true,
+                    primaryLabel: 'Fire',
+                    onXDirectionChanged: (dir) => { gameModel.playerInput.direction = dir; },
+                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                },
             };
         },
     };
