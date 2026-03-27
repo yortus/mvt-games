@@ -12,7 +12,7 @@ function trailingSlashPlugin(): Plugin {
         name: 'trailing-slash-rewrite',
         configureServer(server) {
             server.middlewares.use((req, res, next) => {
-                if (req.url === '/playground' || req.url === '/games') {
+                if (req.url === '/playground' || req.url === '/games' || req.url === '/demos') {
                     res.writeHead(302, { 'Location': req.url + '/' });
                     res.end();
                     return;
@@ -58,6 +58,7 @@ export default defineConfig({
                 'games': resolve(__dirname, 'games/index.html'),
                 'playground': resolve(__dirname, 'playground/index.html'),
                 'playground-sandbox': resolve(__dirname, 'playground/sandbox.html'),
+                'demos-tsx-pixi': resolve(__dirname, 'demos/tsx-pixi.html'),
             },
         },
     },
