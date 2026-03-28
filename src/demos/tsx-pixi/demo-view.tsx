@@ -2,8 +2,7 @@
 
 import { Container, Graphics } from 'pixi.js';
 import type { CoinModel, StarModel } from './demo-model';
-import { List } from './list';
-import { memo } from './memo';
+import { List, memo } from '#pixi-jsx';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -27,7 +26,7 @@ export interface DemoViewBindings {
 export function createDemoView(bindings: DemoViewBindings): Container {
     const { getMessage, getPlayerX, getPlayerY, getPlayerAngle, getCoins, getStars } = bindings;
 
-    const getScoreText = memo(bindings, b => `Score: ${b.getScore()}`);
+    const getScoreText = memo(bindings, (b) => `Score: ${b.getScore()}`);
 
     // ref captures the player container for imperative access (debug bounds)
     let playerRef: Container | undefined;
@@ -57,7 +56,7 @@ export function createDemoView(bindings: DemoViewBindings): Container {
             {/* ---- Stars (dynamic list) ---- */}
             <List
                 of={getStars}
-                to={star => (
+                to={(star) => (
                     <container x={() => star.x} y={() => star.y} alpha={() => star.alpha}>
                         <graphics ref={drawStar} />
                     </container>

@@ -58,7 +58,7 @@ export default defineConfig({
                 'games': resolve(__dirname, 'games/index.html'),
                 'playground': resolve(__dirname, 'playground/index.html'),
                 'playground-sandbox': resolve(__dirname, 'playground/sandbox.html'),
-                'demos-tsx-pixi': resolve(__dirname, 'demos/tsx-pixi.html'),
+                'demos': resolve(__dirname, 'demos/index.html'),
             },
         },
     },

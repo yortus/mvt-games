@@ -14,9 +14,8 @@
         "moduleDetection": "force",
         "noEmit": true,
 
-        /* JSX (for demos/tsx-pixi POC) */
+        /* JSX - enable react-jsx mode; each .tsx file declares its runtime via pragma */
         "jsx": "react-jsx",
-        "jsxImportSource": "#pixi-jsx",
 
         /* Linting */
         "strict": true,

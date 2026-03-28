@@ -13,7 +13,7 @@ export default tseslint.config(
         jsx: true,
     }),
     {
-        files: ['**/*.{ts,js,mjs,cjs}'],
+        files: ['**/*.{ts,tsx,js,mjs,cjs}'],
         plugins: {
             '@stylistic': stylistic,
             'import': importPlugin,
@@ -36,7 +36,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['src/**/*.ts'],
+        files: ['src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -59,6 +59,7 @@ export default tseslint.config(
                         'lz-string',
                         // Allow project-level import-map aliases
                         '#common',
+                        '#pixi-jsx',
                     ],
                 },
             ],

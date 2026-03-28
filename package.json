@@ -5,8 +5,9 @@
     "type": "module",
     "imports": {
         "#common": "./src/common/index.ts",
-        "#pixi-jsx/jsx-runtime": "./src/demos/tsx-pixi/jsx-runtime.ts",
-        "#pixi-jsx/jsx-dev-runtime": "./src/demos/tsx-pixi/jsx-runtime.ts"
+        "#pixi-jsx": "./src/pixi-jsx/index.ts",
+        "#pixi-jsx/jsx-runtime": "./src/pixi-jsx/jsx-runtime.ts",
+        "#pixi-jsx/jsx-dev-runtime": "./src/pixi-jsx/jsx-runtime.ts"
     },
     "scripts": {
         "dev": "vite --host",

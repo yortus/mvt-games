@@ -14,7 +14,7 @@
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
             }
             .landing {
-                max-width: 800px;
+                max-width: 960px;
                 margin: 0 auto;
                 padding: calc(var(--site-nav-height, 48px) + 64px) 24px 48px;
                 text-align: center;
@@ -33,9 +33,15 @@
             }
             .cards {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                grid-template-columns: 1fr;
                 gap: 20px;
                 margin-bottom: 48px;
+            }
+            @media (min-width: 520px) {
+                .cards { grid-template-columns: repeat(2, 1fr); }
+            }
+            @media (min-width: 900px) {
+                .cards { grid-template-columns: repeat(4, 1fr); }
             }
             .card {
                 display: flex;
@@ -91,6 +97,7 @@
             <a class="site-nav-brand" href="./">MVT Games</a>
             <ul class="site-nav-links">
                 <li><a href="./games/">Games</a></li>
+                <li><a href="./demos/">Demos</a></li>
                 <li><a href="./docs/">Docs</a></li>
                 <li><a href="./playground/">Playground</a></li>
             </ul>
@@ -104,8 +111,8 @@
         <main class="landing">
             <h1>MVT Games</h1>
             <p class="subtitle">
-                Classic arcade games built with modern web technologies,
-                demonstrating the Model-View-Ticker architecture.
+                An exploration of <a href="./docs/" style="color: #58a6ff; text-decoration: none;">Model-View-Ticker</a> -
+                an architecture for building games and interactive apps.
             </p>
 
             <div class="cards">
@@ -113,6 +120,11 @@
                     <div class="card-icon">&#127918;</div>
                     <div class="card-title">Games</div>
                     <div class="card-desc">Play Asteroids, Pac-Man, Dig Dug, Galaga, and more in the arcade cabinet.</div>
+                </a>
+                <a class="card" href="./demos/">
+                    <div class="card-icon">&#128300;</div>
+                    <div class="card-title">Demos</div>
+                    <div class="card-desc">Interactive showcases of techniques and patterns used in MVT.</div>
                 </a>
                 <a class="card" href="./docs/">
                     <div class="card-icon">&#128214;</div>
