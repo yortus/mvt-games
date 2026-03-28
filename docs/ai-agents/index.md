@@ -144,6 +144,7 @@ For task-specific guidance, load the relevant skills file before starting work:
 | Writing a new model        | [skill-mvt-model.md](skill-mvt-model.md)           |
 | Writing a new view         | [skill-mvt-view.md](skill-mvt-view.md)             |
 | Following code conventions | [skill-code-style.md](skill-code-style.md)         |
+| Reviewing code             | [skill-code-review.md](skill-code-review.md)       |
 | Updating documentation     | [skill-documentation.md](skill-documentation.md)   |
 
 Each skills file is self-contained and combines both MVT architectural rules

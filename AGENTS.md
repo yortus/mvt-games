@@ -100,6 +100,7 @@ Load the relevant skills file for task-specific instructions:
 | Writing a new model        | [docs/ai-agents/skill-mvt-model.md](docs/ai-agents/skill-mvt-model.md) |
 | Writing a new view         | [docs/ai-agents/skill-mvt-view.md](docs/ai-agents/skill-mvt-view.md)   |
 | Following code conventions | [docs/ai-agents/skill-code-style.md](docs/ai-agents/skill-code-style.md) |
+| Reviewing code             | [docs/ai-agents/skill-code-review.md](docs/ai-agents/skill-code-review.md) |
 | Updating documentation     | [docs/ai-agents/skill-documentation.md](docs/ai-agents/skill-documentation.md) |
 
 ## Documentation
