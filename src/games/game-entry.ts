@@ -21,6 +21,11 @@ export interface GameEntry {
      */
     readonly thumbnailAdvanceMs?: number;
     /**
+     * Optional play instructions shown via the pause menu's
+     * "How to Play" button. Games without instructions may omit this.
+     */
+    readonly instructions?: string;
+    /**
      * Optional async hook called before `start()` to load assets
      * (e.g. sprite sheets). Games without assets may omit this.
      */

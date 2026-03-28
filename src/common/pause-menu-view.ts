@@ -10,6 +10,7 @@ export interface PauseMenuViewBindings {
     getCanvasHeight(): number;
     getScale(): number;
     getVisible(): boolean;
+    getHowToPlayText?(): string;
     onResumePressed(): void;
     onRestartPressed(): void;
     onExitPressed(): void;
@@ -49,9 +50,56 @@ export function createPauseMenuView(
     title.anchor.set(0.5, 0.5);
     content.addChild(title);
 
-    // Buttons - drawn at CSS-pixel size, positioned and scaled in refresh
-    const actions = [bindings.onResumePressed, bindings.onRestartPressed, bindings.onExitPressed];
-    const labels = ['Resume', 'Restart', 'Exit to Cabinet'];
+    // "How to Play" panel - shown when the user taps the button
+    let showingHowToPlay = false;
+
+    const howToPlayPanel = new Container();
+    howToPlayPanel.visible = false;
+    content.addChild(howToPlayPanel);
+
+    const howToPlayBackdrop = new Graphics();
+    howToPlayPanel.addChild(howToPlayBackdrop);
+
+    const howToPlayBody = new Text({
+        text: '',
+        style: {
+            fontFamily: 'monospace',
+            fontSize: HOW_TO_PLAY_CSS_FONT,
+            fill: 0xdddddd,
+            align: 'center',
+            wordWrap: true,
+            wordWrapWidth: HOW_TO_PLAY_WRAP_WIDTH,
+        },
+    });
+    howToPlayBody.anchor.set(0.5, 0);
+    howToPlayPanel.addChild(howToPlayBody);
+
+    const howToPlayBackBtn = createButton('Back', () => {
+        showingHowToPlay = false;
+        howToPlayPanel.visible = false;
+        selectedIndex = 0;
+        highlightButtons(buttons, selectedIndex);
+    });
+    drawButtonBg(howToPlayBackBtn.bg, false);
+    howToPlayPanel.addChild(howToPlayBackBtn.container);
+
+    // Buttons - drawn at CSS-pixel size, positioned and scaled in refresh.
+    // "How to Play" is always in the list but hidden when no instructions.
+    const HOW_TO_PLAY_INDEX = 1;
+    let hasHowToPlay = false;
+    const actions: (() => void)[] = [];
+    const labels: string[] = [];
+    actions.push(bindings.onResumePressed);
+    labels.push('Resume');
+    actions.push(() => {
+        showingHowToPlay = true;
+        howToPlayPanel.visible = true;
+    });
+    labels.push('How to Play');
+    actions.push(bindings.onRestartPressed);
+    labels.push('Restart');
+    actions.push(bindings.onExitPressed);
+    labels.push('Exit to Cabinet');
     const buttons: ButtonEntry[] = [];
     for (let i = 0; i < labels.length; i++) {
         const entry = createButton(labels[i], actions[i]);
@@ -86,11 +134,19 @@ export function createPauseMenuView(
         content.visible = visible.value;
         if (!visible.value) return;
 
-        // Reset selection on fresh open
+        // Reset selection and hide how-to-play on fresh open
         if (visible.changed) {
             selectedIndex = 0;
+            showingHowToPlay = false;
+            howToPlayPanel.visible = false;
             highlightButtons(buttons, selectedIndex);
+
+            // Update instructions text each time the menu opens
+            const text = bindings.getHowToPlayText?.() ?? '';
+            howToPlayBody.text = text;
         }
+
+        hasHowToPlay = howToPlayBody.text.length > 0;
 
         const invScale = 1 / bindings.getScale();
 
@@ -105,15 +161,37 @@ export function createPauseMenuView(
         title.position.set(canvasWidth.value / 2, canvasHeight.value * 0.35);
         title.scale.set(invScale);
 
-        // Button positions and scale
+        // Button positions and scale - skip How to Play when no instructions
         const btnStep = (BTN_CSS_HEIGHT + BTN_CSS_GAP) * invScale;
         const startY = canvasHeight.value * 0.45;
+        let visibleIdx = 0;
         for (let i = 0; i < buttons.length; i++) {
-            buttons[i].container.position.set(
+            const isHtp = i === HOW_TO_PLAY_INDEX;
+            const hidden = showingHowToPlay || (isHtp && !hasHowToPlay);
+            buttons[i].container.visible = !hidden;
+            if (!hidden) {
+                buttons[i].container.position.set(
+                    canvasWidth.value / 2,
+                    startY + visibleIdx * btnStep,
+                );
+                buttons[i].container.scale.set(invScale);
+                visibleIdx++;
+            }
+        }
+
+        // How to Play panel positioning
+        title.visible = !showingHowToPlay;
+        if (showingHowToPlay) {
+            howToPlayBackdrop.clear();
+            howToPlayBackdrop.rect(0, 0, canvasWidth.value, canvasHeight.value)
+                .fill({ color: 0x000000, alpha: 0.85 });
+            howToPlayBody.position.set(canvasWidth.value / 2, canvasHeight.value * 0.15);
+            howToPlayBody.scale.set(invScale);
+            howToPlayBackBtn.container.position.set(
                 canvasWidth.value / 2,
-                startY + i * btnStep,
+                canvasHeight.value * 0.85,
             );
-            buttons[i].container.scale.set(invScale);
+            howToPlayBackBtn.container.scale.set(invScale);
         }
     }
 
@@ -122,14 +200,29 @@ export function createPauseMenuView(
     function onKeyDown(e: KeyboardEvent): void {
         if (!bindings.getVisible()) return;
 
+        if (showingHowToPlay) {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === 'Backspace') {
+                e.preventDefault();
+                showingHowToPlay = false;
+                howToPlayPanel.visible = false;
+                selectedIndex = 0;
+                highlightButtons(buttons, selectedIndex);
+            }
+            return;
+        }
+
         if (e.key === 'ArrowUp' || e.key === 'w') {
             e.preventDefault();
-            selectedIndex = (selectedIndex - 1 + buttons.length) % buttons.length;
+            do {
+                selectedIndex = (selectedIndex - 1 + buttons.length) % buttons.length;
+            } while (!hasHowToPlay && selectedIndex === HOW_TO_PLAY_INDEX);
             highlightButtons(buttons, selectedIndex);
         }
         else if (e.key === 'ArrowDown' || e.key === 's') {
             e.preventDefault();
-            selectedIndex = (selectedIndex + 1) % buttons.length;
+            do {
+                selectedIndex = (selectedIndex + 1) % buttons.length;
+            } while (!hasHowToPlay && selectedIndex === HOW_TO_PLAY_INDEX);
             highlightButtons(buttons, selectedIndex);
         }
         else if (e.key === 'Enter') {
@@ -144,6 +237,8 @@ export function createPauseMenuView(
 // ---------------------------------------------------------------------------
 
 const TITLE_CSS_SIZE = 32;
+const HOW_TO_PLAY_CSS_FONT = 14;
+const HOW_TO_PLAY_WRAP_WIDTH = 360;
 const BTN_CSS_WIDTH = 200;
 const BTN_CSS_HEIGHT = 48;
 const BTN_CSS_GAP = 12;

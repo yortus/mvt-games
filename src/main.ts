@@ -8,6 +8,7 @@ import {
 } from '#common';
 import {
     createAsteroidsEntry,
+    createCupcakesEntry,
     createDigdugEntry,
     createGalagaEntry,
     createIkEntry,
@@ -86,6 +87,7 @@ async function main(): Promise<void> {
     // ---- Game registry -----------------------------------------------------
     const games = [
         createAsteroidsEntry(),
+        createCupcakesEntry(),
         createDigdugEntry(),
         createGalagaEntry(),
         createIkEntry(),
@@ -211,6 +213,7 @@ async function main(): Promise<void> {
         onResumePressed: togglePause,
         onRestartPressed: restartGame,
         onExitPressed: exitToCabinet,
+        getHowToPlayText: () => currentEntry?.instructions ?? '',
     }));
     app.stage.addChild(pauseMenuContainer);
 
