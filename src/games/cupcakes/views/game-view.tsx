@@ -1,3 +1,5 @@
+/** @jsxImportSource #pixi-jsx */
+
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel, Position } from '../models';
@@ -22,52 +24,53 @@ export function createGameView(game: GameModel): Container {
         committedSwap: false,
     };
 
-    const view = new Container();
-    initialiseView();
+    const board = game.board;
+    const boardView = createBoardView({
+        getClockMs: () => game.clockMs,
+        getPhase: () => board.phase,
+        getCells: () => board.cells,
+        getSwapPos1: () => board.swapPos1,
+        getSwapPos2: () => board.swapPos2,
+        getSwapProgress: () => board.swapProgress,
+        getSettleOrigins: () => board.settleOrigins,
+        getSettleProgress: () => board.settleProgress,
+        getMatchedIndices: () => board.matchedIndices,
+        getMatchProgress: () => board.matchProgress,
+    }, drag);
+
+    const hudView = createHudView({
+        getScore: () => game.score,
+        getScreenWidth: () => boardWidth,
+    });
+    hudView.position.set(0, boardHeight);
+
+    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
+    const overlayView = createOverlayView({
+        getWidth: () => boardWidth,
+        getHeight: () => boardHeight,
+        getVisible: () => game.phase === 'game-over',
+        getText: () => `GAME OVER\n\n${restartHint}`,
+    });
+
+    const view = (
+        <container
+            onPointerDown={onPointerDown}
+            onPointerUp={onPointerUp}
+            ref={(el) => {
+                el.hitArea = { contains: (x: number, y: number) => x >= 0 && x < boardWidth && y >= 0 && y < boardHeight };
+                el.on('globalpointermove', onPointerMove);
+                el.on('pointerupoutside', onPointerUp);
+            }}
+        >
+            {boardView}
+            {hudView}
+            {overlayView}
+        </container>
+    );
+
     return view;
 
-    function initialiseView(): void {
-        const board = game.board;
-        const boardView = createBoardView({
-            getClockMs: () => game.clockMs,
-            getPhase: () => board.phase,
-            getCells: () => board.cells,
-            getSwapPos1: () => board.swapPos1,
-            getSwapPos2: () => board.swapPos2,
-            getSwapProgress: () => board.swapProgress,
-            getSettleOrigins: () => board.settleOrigins,
-            getSettleProgress: () => board.settleProgress,
-            getMatchedIndices: () => board.matchedIndices,
-            getMatchProgress: () => board.matchProgress,
-        }, drag);
-        view.addChild(boardView);
-
-        // Drag input on the board area
-        view.eventMode = 'static';
-        view.hitArea = { contains: (x: number, y: number) => x >= 0 && x < boardWidth && y >= 0 && y < boardHeight };
-        view.on('pointerdown', onPointerDown);
-        view.on('globalpointermove', onPointerMove);
-        view.on('pointerup', onPointerUp);
-        view.on('pointerupoutside', onPointerUp);
-
-        // HUD
-        const hudView = createHudView({
-            getScore: () => game.score,
-            getScreenWidth: () => boardWidth,
-        });
-        hudView.position.set(0, boardHeight);
-        view.addChild(hudView);
-
-        // Game over overlay
-        const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
-        const overlayView = createOverlayView({
-            getWidth: () => boardWidth,
-            getHeight: () => boardHeight,
-            getVisible: () => game.phase === 'game-over',
-            getText: () => `GAME OVER\n\n${restartHint}`,
-        });
-        view.addChild(overlayView);
-    }
+    // --- Helpers ---
 
     function toGridPos(localX: number, localY: number): Position {
         return {
@@ -85,6 +88,8 @@ export function createGameView(game: GameModel): Container {
         const dc = Math.abs(pos.col - drag.origin.col);
         return (dr === 1 && dc === 0) || (dr === 0 && dc === 1);
     }
+
+    // --- Event handlers ---
 
     function onPointerDown(e: { global: { x: number; y: number } }): void {
         if (game.board.phase !== 'idle') return;

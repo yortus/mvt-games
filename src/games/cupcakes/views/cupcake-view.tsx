@@ -1,3 +1,5 @@
+/** @jsxImportSource #pixi-jsx */
+
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#common';
 import type { CupcakeKind } from '../models';
@@ -18,28 +20,29 @@ export interface CupcakeViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createCupcakeView(bindings: CupcakeViewBindings): Container {
-    const view = new Container();
-    const gfx = new Graphics();
-    const watcher = watch({
-        kind: bindings.getKind,
-    });
+    const watcher = watch({ kind: bindings.getKind });
 
-    view.addChild(gfx);
-    drawCupcake(gfx, bindings.getKind());
-    view.onRender = refresh;
-    return view;
-
-    function refresh(): void {
-        view.position.set(bindings.getX(), bindings.getY());
-        view.alpha = bindings.getAlpha();
-
-        const watched = watcher.poll();
-        if (watched.kind.changed) {
-            gfx.clear();
-            drawCupcake(gfx, watched.kind.value);
-        }
-    }
+    return (
+        <container x={bindings.getX} y={bindings.getY} alpha={bindings.getAlpha}>
+            <graphics
+                ref={(g) => {
+                    drawCupcake(g, bindings.getKind());
+                    g.onRender = () => {
+                        const watched = watcher.poll();
+                        if (watched.kind.changed) {
+                            g.clear();
+                            drawCupcake(g, watched.kind.value);
+                        }
+                    };
+                }}
+            />
+        </container>
+    );
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
 
 function drawCupcake(gfx: Graphics, kind: CupcakeKind): void {
     const color = KIND_COLOR[kind];
@@ -70,10 +73,6 @@ function drawCupcake(gfx: Graphics, kind: CupcakeKind): void {
     gfx.circle(0, -size * 0.55, size * 0.15).fill(0xCC0000);
     gfx.circle(size * 0.03, -size * 0.6, size * 0.05).fill(0xFF4444);
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
 
 const KIND_COLOR: Record<CupcakeKind, number> = {
     strawberry: 0xFF6B8A,

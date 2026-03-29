@@ -1,3 +1,5 @@
+/** @jsxImportSource #pixi-jsx */
+
 import gsap from 'gsap';
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#common';
@@ -49,10 +51,9 @@ const RETURN_SLIDE_DURATION = 0.15;
 // ---------------------------------------------------------------------------
 
 export function createBoardView(bindings: BoardViewBindings, drag: DragState): Container {
-    const view = new Container();
-    view.sortableChildren = true;
     const watcher = watch({ cellCount: () => bindings.getCells().length });
     let cupcakeContainers: Container[] = [];
+    let cupcakeHost!: Container;
 
     // Presentation state for drag tweens (targets mutated by GSAP)
     const candidateVisual = { x: 0, y: 0 };
@@ -99,22 +100,20 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         returningVisual,
     };
 
-    initialiseView();
-    view.onRender = refresh;
-    return view;
+    const view = (
+        <container ref={(el) => { el.onRender = refresh; }}>
+            <graphics ref={drawBackground} />
+            <container
+                ref={(el) => {
+                    cupcakeHost = el;
+                    el.sortableChildren = true;
+                }}
+            />
+        </container>
+    );
 
-    function initialiseView(): void {
-        const bg = new Graphics();
-        bg.zIndex = -1;
-        for (let r = 0; r < GRID_ROWS; r++) {
-            for (let c = 0; c < GRID_COLS; c++) {
-                const shade = (r + c) % 2 === 0 ? 0x3A2A4A : 0x2E1E3E;
-                bg.rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(shade);
-            }
-        }
-        view.addChild(bg);
-        buildCupcakes();
-    }
+    buildCupcakes();
+    return view;
 
     function refresh(): void {
         const watched = watcher.poll();
@@ -260,7 +259,7 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
                 getY: () => getCellY(idx),
                 getAlpha: () => getCellAlpha(idx),
             });
-            view.addChild(c);
+            cupcakeHost.addChild(c);
             cupcakeContainers.push(c);
         }
     }
@@ -277,5 +276,18 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
     function getCellAlpha(idx: number): number {
         return computeCellLayout(idx, CELL_SIZE, boardSnap, dragSnap).alpha;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function drawBackground(bg: Graphics): void {
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            const shade = (r + c) % 2 === 0 ? 0x3A2A4A : 0x2E1E3E;
+            bg.rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(shade);
+        }
     }
 }
