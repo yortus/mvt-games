@@ -144,9 +144,15 @@ async function generateThumbnails(): Promise<void> {
 // Launch / exit demo
 // ---------------------------------------------------------------------------
 
+function setUrlFragment(demoId: string | null): void {
+    const url = demoId ? '#' + demoId : location.pathname + location.search;
+    history.replaceState(null, '', url);
+}
+
 async function launchDemo(index: number): Promise<void> {
     const entry = demos[index];
 
+    setUrlFragment(entry.id);
     galleryEl.style.display = 'none';
     runnerEl.classList.add('active');
 
@@ -209,6 +215,7 @@ function exitDemo(): void {
 
     runnerEl.classList.remove('active');
     galleryEl.style.display = '';
+    setUrlFragment(null);
 }
 
 // ---------------------------------------------------------------------------
@@ -258,3 +265,18 @@ window.addEventListener('keydown', (e) => {
         dismissInfo();
     }
 });
+
+// ---------------------------------------------------------------------------
+// Auto-launch from URL fragment
+// ---------------------------------------------------------------------------
+
+const initialHash = location.hash.slice(1);
+if (initialHash) {
+    const index = demos.findIndex((d) => d.id === initialHash);
+    if (index >= 0) {
+        launchDemo(index);
+    }
+    else {
+        setUrlFragment(null);
+    }
+}

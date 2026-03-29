@@ -117,6 +117,44 @@ async function main(): Promise<void> {
     gameContainer.label = 'game-container';
     app.stage.addChild(gameContainer);
 
+    // ---- URL fragment helpers --------------------------------------------
+    function setUrlFragment(gameId: string | null): void {
+        const url = gameId ? '#' + gameId : location.pathname + location.search;
+        history.replaceState(null, '', url);
+    }
+
+    function doLaunchGame(): void {
+        const entry = cabinet.games[cabinet.selectedIndex];
+        currentEntry = entry;
+        isCabinetScreen = false;
+        if (isTouchDevice()) setNavVisible(false);
+        setUrlFragment(entry.id);
+
+        cabinet.launchSelected(gameContainer).then(() => {
+            currentSession = cabinet.activeSession ?? undefined;
+            // Ensure overlay layers render on top
+            app.stage.addChild(cabinetContainer);
+            app.stage.addChild(touchLayer);
+            app.stage.addChild(pauseBtnContainer);
+            app.stage.addChild(pauseMenuContainer);
+            fitCanvasToScreen();
+        });
+        fitCanvasToScreen();
+    }
+
+    function doExitToMenu(): void {
+        currentSession = undefined;
+        currentEntry = undefined;
+        touchLayer.visible = false;
+        pauseBtnContainer.visible = false;
+        paused = false;
+        cabinet.exitToMenu();
+        isCabinetScreen = true;
+        setNavVisible(true);
+        setUrlFragment(null);
+        fitCanvasToScreen();
+    }
+
     const bindings: CabinetViewBindings = {
         getPhase: () => cabinet.phase,
         getGameCount: () => cabinet.games.length,
@@ -126,34 +164,8 @@ async function main(): Promise<void> {
         getCanvasWidth: () => currentCanvasW,
         getCanvasHeight: () => currentCanvasH,
         onMovePressed: (direction) => cabinet.selectByDelta(direction === 'left' ? -1 : 1),
-        onLaunchPressed: () => {
-            const entry = cabinet.games[cabinet.selectedIndex];
-            currentEntry = entry;
-            isCabinetScreen = false;
-            if (isTouchDevice()) setNavVisible(false);
-
-            cabinet.launchSelected(gameContainer).then(() => {
-                currentSession = cabinet.activeSession ?? undefined;
-                // Ensure overlay layers render on top
-                app.stage.addChild(cabinetContainer);
-                app.stage.addChild(touchLayer);
-                app.stage.addChild(pauseBtnContainer);
-                app.stage.addChild(pauseMenuContainer);
-                fitCanvasToScreen();
-            });
-            fitCanvasToScreen();
-        },
-        onExitPressed: () => {
-            currentSession = undefined;
-            currentEntry = undefined;
-            touchLayer.visible = false;
-            pauseBtnContainer.visible = false;
-            paused = false;
-            cabinet.exitToMenu();
-            isCabinetScreen = true;
-            setNavVisible(true);
-            fitCanvasToScreen();
-        },
+        onLaunchPressed: doLaunchGame,
+        onExitPressed: doExitToMenu,
     };
 
     const cabinetContainer = createCabinetView(bindings);
@@ -497,6 +509,19 @@ async function main(): Promise<void> {
             cabinet.update(ticker.deltaMS);
         }
     });
+
+    // ---- Auto-launch from URL fragment ------------------------------------
+    const initialHash = location.hash.slice(1);
+    if (initialHash) {
+        const index = games.findIndex((g) => g.id === initialHash);
+        if (index >= 0) {
+            cabinet.selectByDelta(index - cabinet.selectedIndex);
+            doLaunchGame();
+        }
+        else {
+            setUrlFragment(null);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
