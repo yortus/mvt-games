@@ -23,8 +23,6 @@ export interface CupcakeCell {
     readonly col: number;
     /** Visual opacity (0-1, fades out during match removal). */
     readonly alpha: number;
-    /** Whether this cell is part of the current selection. */
-    readonly isSelected: boolean;
 }
 
 export interface BoardModel {
@@ -33,10 +31,8 @@ export interface BoardModel {
     readonly phase: BoardPhase;
     readonly cells: readonly CupcakeCell[];
     readonly score: number;
-    readonly selectedRow: number;
-    readonly selectedCol: number;
-    /** Select a cell. If adjacent to current selection, attempt a swap. */
-    selectCell(row: number, col: number): void;
+    /** Attempt to swap two cells. Returns true if accepted (cells adjacent, occupied, board idle). */
+    trySwap(r1: number, c1: number, r2: number, c2: number): boolean;
     update(deltaMs: number): void;
 }
 
@@ -64,14 +60,12 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     // Visual cells for rendering - pre-allocated pool
     const cells: MutableCell[] = [];
     for (let i = 0; i < totalCells; i++) {
-        cells.push({ kind: 'strawberry', row: 0, col: 0, alpha: 1, isSelected: false });
+        cells.push({ kind: 'strawberry', row: 0, col: 0, alpha: 1 });
     }
 
     let boardPhase: BoardPhase = 'idle';
     let score = 0;
     let cascadeStep = 0;
-    let selRow = -1;
-    let selCol = -1;
     let swapRow1 = -1;
     let swapCol1 = -1;
     let swapRow2 = -1;
@@ -93,43 +87,23 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get phase() { return boardPhase; },
         get cells() { return cells; },
         get score() { return score; },
-        get selectedRow() { return selRow; },
-        get selectedCol() { return selCol; },
 
-        selectCell(row: number, col: number): void {
-            if (boardPhase !== 'idle') return;
-            if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+        trySwap(r1: number, c1: number, r2: number, c2: number): boolean {
+            if (boardPhase !== 'idle') return false;
+            if (r1 < 0 || r1 >= rows || c1 < 0 || c1 >= cols) return false;
+            if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) return false;
 
-            // No cupcake at this position
-            if (grid[row * cols + col] === undefined) return;
+            // Must be adjacent
+            const dr = Math.abs(r2 - r1);
+            const dc = Math.abs(c2 - c1);
+            if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return false;
 
-            // Nothing selected yet
-            if (selRow < 0) {
-                selRow = row;
-                selCol = col;
-                markSelected();
-                return;
-            }
+            // Both cells must be occupied
+            if (grid[r1 * cols + c1] === undefined) return false;
+            if (grid[r2 * cols + c2] === undefined) return false;
 
-            // Tap same cell - deselect
-            if (selRow === row && selCol === col) {
-                clearSelection();
-                return;
-            }
-
-            // Check adjacency
-            const dr = Math.abs(row - selRow);
-            const dc = Math.abs(col - selCol);
-            if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
-                // Adjacent - attempt swap
-                beginSwap(selRow, selCol, row, col);
-            }
-            else {
-                // Not adjacent - move selection
-                selRow = row;
-                selCol = col;
-                markSelected();
-            }
+            beginSwap(r1, c1, r2, c2);
+            return true;
         },
 
         update(deltaMs: number): void {
@@ -159,25 +133,6 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
 
     return model;
 
-    // ---- Selection helpers -------------------------------------------------
-
-    function clearSelection(): void {
-        selRow = -1;
-        selCol = -1;
-        for (let i = 0; i < totalCells; i++) {
-            cells[i].isSelected = false;
-        }
-    }
-
-    function markSelected(): void {
-        for (let i = 0; i < totalCells; i++) {
-            cells[i].isSelected = false;
-        }
-        if (selRow >= 0) {
-            cells[selRow * cols + selCol].isSelected = true;
-        }
-    }
-
     // ---- Swap --------------------------------------------------------------
 
     function beginSwap(r1: number, c1: number, r2: number, c2: number): void {
@@ -187,7 +142,6 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         swapRow2 = r2;
         swapCol2 = c2;
         cascadeStep = 0;
-        clearSelection();
 
         const cell1 = cells[r1 * cols + c1];
         const cell2 = cells[r2 * cols + c2];
@@ -200,35 +154,32 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     }
 
     function finishSwap(): void {
-        // Commit the swap in the grid
         const idx1 = swapRow1 * cols + swapCol1;
         const idx2 = swapRow2 * cols + swapCol2;
         const temp = grid[idx1];
         grid[idx1] = grid[idx2];
         grid[idx2] = temp;
-
-        // Snap visual cells
         syncCellsFromGrid();
 
-        // Check for matches
         const matches = findMatches();
         if (matches.length > 0) {
             beginMatching(matches);
         }
         else {
             // No match - reverse the swap
-            boardPhase = 'reversing';
             grid[idx2] = grid[idx1];
             grid[idx1] = temp;
 
             const cell1 = cells[idx1];
             const cell2 = cells[idx2];
-            // Cell positions were snapped, so re-animate the reversal
+            cell1.kind = grid[idx1] ?? 'strawberry';
+            cell2.kind = grid[idx2] ?? 'strawberry';
             cell1.row = swapRow2;
             cell1.col = swapCol2;
             cell2.row = swapRow1;
             cell2.col = swapCol1;
 
+            boardPhase = 'reversing';
             const dur = SWAP_DURATION_MS * 0.001;
             resetTimeline();
             timeline.to(cell1, { row: swapRow1, col: swapCol1, duration: dur, ease: 'power1.inOut' }, 0);
@@ -495,7 +446,6 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
                 cell.row = r;
                 cell.col = c;
                 cell.alpha = kind !== undefined ? 1 : 0;
-                cell.isSelected = false;
             }
         }
     }
@@ -510,5 +460,4 @@ interface MutableCell {
     row: number;
     col: number;
     alpha: number;
-    isSelected: boolean;
 }

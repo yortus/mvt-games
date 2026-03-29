@@ -11,7 +11,6 @@ export interface CupcakeViewBindings {
     getX(): number;
     getY(): number;
     getAlpha(): number;
-    isSelected(): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -23,11 +22,10 @@ export function createCupcakeView(bindings: CupcakeViewBindings): Container {
     const gfx = new Graphics();
     const watcher = watch({
         kind: bindings.getKind,
-        selected: bindings.isSelected,
     });
 
     view.addChild(gfx);
-    drawCupcake(gfx, bindings.getKind(), bindings.isSelected());
+    drawCupcake(gfx, bindings.getKind());
     view.onRender = refresh;
     return view;
 
@@ -36,14 +34,14 @@ export function createCupcakeView(bindings: CupcakeViewBindings): Container {
         view.alpha = bindings.getAlpha();
 
         const watched = watcher.poll();
-        if (watched.kind.changed || watched.selected.changed) {
+        if (watched.kind.changed) {
             gfx.clear();
-            drawCupcake(gfx, watched.kind.value, watched.selected.value);
+            drawCupcake(gfx, watched.kind.value);
         }
     }
 }
 
-function drawCupcake(gfx: Graphics, kind: CupcakeKind, selected: boolean): void {
+function drawCupcake(gfx: Graphics, kind: CupcakeKind): void {
     const color = KIND_COLOR[kind];
     const frosting = KIND_FROSTING[kind];
     const size = 16;
@@ -71,12 +69,6 @@ function drawCupcake(gfx: Graphics, kind: CupcakeKind, selected: boolean): void 
     // Cherry on top
     gfx.circle(0, -size * 0.55, size * 0.15).fill(0xCC0000);
     gfx.circle(size * 0.03, -size * 0.6, size * 0.05).fill(0xFF4444);
-
-    // Selection highlight
-    if (selected) {
-        gfx.rect(-size * 0.85, -size * 0.75, size * 1.7, size * 1.65)
-            .stroke({ color: 0xFFFF00, width: 2 });
-    }
 }
 
 // ---------------------------------------------------------------------------
