@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#common';
-import { TILE_SIZE } from '../data';
+import { TILE_SIZE } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings

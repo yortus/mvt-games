@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
-import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT } from '../data';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT } from './view-constants';
 import type { GameModel } from '../models';
 import { createArenaView } from './arena-view';
 import { createFighterView } from './fighter-view';

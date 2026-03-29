@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice, watch } from '#common';
-import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
+import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
+import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';
 import { createFieldView } from './field-view';
 import { createDiggerView } from './digger-view';

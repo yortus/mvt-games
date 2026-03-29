@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { ARENA_WIDTH, ARENA_HEIGHT, HUD_HEIGHT } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { ARENA_WIDTH, ARENA_HEIGHT } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -12,8 +12,8 @@ export function createAsteroidsEntry(): GameEntry {
     return {
         id: 'asteroids',
         name: 'Asteroids',
-        screenWidth: ARENA_WIDTH,
-        screenHeight: ARENA_HEIGHT + HUD_HEIGHT,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
 
         start(stage: Container): GameSession {
             const gameModel = createGameModel({

@@ -1,29 +1,8 @@
-// ---------------------------------------------------------------------------
-// Arena Constants (world-units)
-// ---------------------------------------------------------------------------
-
-/** Width of the play area in world-units. */
-export const ARENA_WIDTH = 280;
-
-/** Height of the play area (above HUD) in world-units. */
-export const ARENA_HEIGHT = 360;
+import { ARENA_WIDTH, ARENA_HEIGHT, FORMATION_COLS } from '../data';
 
 // ---------------------------------------------------------------------------
-// Screen Constants (view-layer only)
+// Formation Positioning
 // ---------------------------------------------------------------------------
-
-/** Height of the HUD bar at the bottom in pixels. */
-export const HUD_HEIGHT = 30;
-
-// ---------------------------------------------------------------------------
-// Formation Constants
-// ---------------------------------------------------------------------------
-
-/** Number of columns in the enemy formation grid. */
-export const FORMATION_COLS = 10;
-
-/** Number of rows in the enemy formation grid. */
-export const FORMATION_ROWS = 5;
 
 /** Spacing between formation slots in world-units. */
 export const CELL_SIZE = 24;

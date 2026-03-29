@@ -1,26 +1,4 @@
 // ---------------------------------------------------------------------------
-// Screen Constants
-// ---------------------------------------------------------------------------
-
-/** Tile size in pixels. */
-export const TILE_SIZE = 16;
-
-/** Number of tile columns visible on screen. */
-export const VISIBLE_COLS = 28;
-
-/** Number of tile rows in the play area. */
-export const VISIBLE_ROWS = 14;
-
-/** Width of the play area in pixels. */
-export const SCREEN_WIDTH = VISIBLE_COLS * TILE_SIZE;
-
-/** Height of the play area in pixels. */
-export const PLAY_HEIGHT = VISIBLE_ROWS * TILE_SIZE;
-
-/** Height of the HUD bar at the bottom. */
-export const HUD_HEIGHT = 24;
-
-// ---------------------------------------------------------------------------
 // Scroll
 // ---------------------------------------------------------------------------
 

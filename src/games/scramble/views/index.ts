@@ -1,3 +1,4 @@
+export { SCREEN_WIDTH, SCREEN_HEIGHT } from './view-constants';
 export { createGameView } from './game-view';
 export { createRocketView } from './rocket-view';
 export { createUfoView } from './ufo-view';

@@ -1,12 +1,5 @@
 export {
     GRID_ROWS,
     GRID_COLS,
-    CELL_SIZE,
     CUPCAKE_KIND_COUNT,
-    SWAP_DURATION_MS,
-    MATCH_FADE_MS,
-    FALL_SPEED,
-    HUD_HEIGHT,
-    POINTS_PER_CUPCAKE,
-    CASCADE_MULTIPLIER,
-} from './stage-data';
+} from './constants';

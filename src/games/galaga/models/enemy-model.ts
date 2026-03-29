@@ -184,7 +184,9 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
                 if (state.enterTimer <= 0) {
                     state.phase = 'formation';
                 }
-                return;
+                else {
+                    return;
+                }
             }
 
             if (state.phase === 'formation') {

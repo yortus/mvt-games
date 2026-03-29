@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
-import { TILE_SIZE, MAZE_ROWS, MAZE_COLS } from '../data';
+import { MAZE_ROWS, MAZE_COLS } from '../data';
+import { TILE_SIZE, GHOST_COLORS } from './view-constants';
 import { createMazeView } from './maze-view';
 import { createPacmanView } from './pacman-view';
 import { createGhostView } from './ghost-view';
@@ -88,7 +89,7 @@ export function createGameView(game: GameModel): Container {
             const ghostContainer = createGhostView({
                 getRow: () => game.ghosts[idx].row,
                 getCol: () => game.ghosts[idx].col,
-                getColor: () => game.ghosts[idx].color,
+                getColor: () => GHOST_COLORS[idx] ?? 0xff0000,
                 getTileSize: () => TILE_SIZE,
             });
             view.addChild(ghostContainer);

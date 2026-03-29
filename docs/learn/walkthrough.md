@@ -28,10 +28,11 @@ src/games/asteroids/
 ├── index.ts              Barrel - re-exports createAsteroidsEntry
 ├── asteroids-entry.ts    GameEntry factory
 ├── data/
-│   ├── index.ts          Barrel - re-exports all constants
-│   └── stage-data.ts     Arena dimensions, speeds, timing, scoring
+│   ├── index.ts          Barrel - re-exports shared game constants
+│   └── constants.ts      Shared game constants (arena dimensions)
 ├── models/
-│   ├── index.ts          Barrel - re-exports all models and types
+│   ├── index.ts          Barrel - re-exports all models, types, and model constants
+│   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
 │   ├── common.ts         Domain types (RotationDirection, AsteroidSize, GamePhase)
 │   ├── player-input.ts   Input state container
 │   ├── ship-model.ts     Ship position, rotation, thrust, wrapping
@@ -40,7 +41,8 @@ src/games/asteroids/
 │   ├── debris-model.ts   Particle explosion/implosion effects
 │   └── game-model.ts     Root model - composes all child models
 └── views/
-    ├── index.ts           Barrel - re-exports createGameView
+    ├── index.ts           Barrel - re-exports createGameView and view constants
+    ├── view-constants.ts  View-only constants (HUD height)
     ├── game-view.ts       Top-level view - wires all child views
     ├── ship-view.ts       Ship renderer with thrust flame
     ├── bullet-view.ts     Bullet dot renderer
@@ -52,18 +54,30 @@ src/games/asteroids/
 The three directories follow MVT's layer separation: `data/` for static
 configuration, `models/` for state and logic, `views/` for presentation.
 
-## Shared Constants (`data/`)
+## Constants Layer
 
-The `data/` directory is not an MVT layer - it is simply a convenient place to
-collect static constants that both models and views may reference. All game
-constants live in `data/stage-data.ts` - arena dimensions, speeds, timing
-delays, scoring rules:
+Game constants are split across three locations by consumer:
+
+- **`data/constants.ts`** - shared game constants used by both models and views
+  (e.g. arena dimensions)
+- **`models/model-constants.ts`** - model-only constants (physics, scoring,
+  timing delays)
+- **`views/view-constants.ts`** - view-only constants (HUD pixel height)
+
+This separation enforces layer boundaries - models cannot accidentally import
+view constants and vice versa.
+
+Shared constants in `data/constants.ts`:
 
 ```ts
 // Arena dimensions in world-units (not pixels)
 export const ARENA_WIDTH = 400;
 export const ARENA_HEIGHT = 400;
+```
 
+Model constants in `models/model-constants.ts`:
+
+```ts
 // Ship physics
 export const SHIP_ROTATION_SPEED = 5;    // radians per second
 export const SHIP_THRUST = 200;          // world-units per second squared

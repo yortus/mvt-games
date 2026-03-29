@@ -26,7 +26,7 @@ import {
     DYING_DELAY_MS,
     RESPAWN_ANIM_MS,
     SPAWN_SAFE_RADIUS,
-} from '../data';
+} from './model-constants';
 import type { AsteroidSize, GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createAsteroidModel, type AsteroidModel } from './asteroid-model';

@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { TILE_SIZE, FIELD_ROWS, FIELD_COLS, HUD_HEIGHT, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { FIELD_ROWS, FIELD_COLS, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -14,8 +14,8 @@ export function createDigdugEntry(): GameEntry {
     return {
         id: 'digdug',
         name: 'Dig Dug',
-        screenWidth: FIELD_COLS * TILE_SIZE,
-        screenHeight: FIELD_ROWS * TILE_SIZE + HUD_HEIGHT,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
 
         async load(): Promise<void> {
             await textures.load();

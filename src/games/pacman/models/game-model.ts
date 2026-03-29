@@ -30,7 +30,6 @@ export interface GameModelOptions {
     grid: TileKind[][];
     pacmanSpawn: [number, number];
     ghostSpawns: [number, number][];
-    ghostColors: number[];
     pacmanSpeed?: number;
     ghostSpeed?: number;
 }
@@ -40,7 +39,7 @@ export interface GameModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createGameModel(options: GameModelOptions): GameModel {
-    const { grid, pacmanSpawn, ghostSpawns, ghostColors, pacmanSpeed = 5, ghostSpeed = 4 } = options;
+    const { grid, pacmanSpawn, ghostSpawns, pacmanSpeed = 5, ghostSpeed = 4 } = options;
 
     let gamePhase: GamePhase = 'playing';
 
@@ -133,12 +132,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function buildGhosts(maze: MazeModel): GhostModel[] {
         const ghosts: GhostModel[] = [];
         for (let i = 0; i < ghostSpawns.length; i++) {
-            const color = ghostColors[i] ?? 0xff0000;
             ghosts.push(
                 createGhostModel({
                     startRow: ghostSpawns[i][0],
                     startCol: ghostSpawns[i][1],
-                    color,
                     speed: ghostSpeed,
                     behavior: GHOST_BEHAVIORS[i] ?? 'chase',
                     isWalkable: (r, c) => !maze.isWall(r, c),

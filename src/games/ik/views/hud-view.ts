@@ -1,7 +1,8 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { watch } from '#common';
 import type { GamePhase } from '../data';
-import { SCREEN_WIDTH, HUD_HEIGHT, POINTS_TO_WIN_ROUND } from '../data';
+import { POINTS_TO_WIN_ROUND } from '../data';
+import { SCREEN_WIDTH, HUD_HEIGHT } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings

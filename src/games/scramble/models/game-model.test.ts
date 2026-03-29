@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createGameModel } from './game-model';
 import type { SectionProfile } from '../data';
-import { SECTIONS, SCROLL_SPEED } from '../data';
+import { SECTIONS } from '../data';
+import { SCROLL_SPEED } from './model-constants';
 
 // Minimal section for focused tests: 30 cols, flat floor at height 2, no ceiling
 function makeSection(cols: number, floorHeight = 2): SectionProfile {

@@ -6,16 +6,18 @@ import {
     type FighterPhase,
     type MoveKind,
     MOVE_DATA,
-    WALK_SPEED,
-    WALK_CYCLE_METRES,
-    JUMP_HEIGHT,
-    HIT_REACTION_MS,
-    BLOCK_REACTION_MS,
     FIGHTER_BODY_WIDTH,
     TURN_TOTAL_MS,
     DEFEAT_TOTAL_MS,
     WON_TOTAL_MS,
 } from '../data';
+import {
+    WALK_SPEED,
+    WALK_CYCLE_METRES,
+    JUMP_HEIGHT,
+    HIT_REACTION_MS,
+    BLOCK_REACTION_MS,
+} from './model-constants';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { SCREEN_WIDTH, PLAY_HEIGHT, HUD_HEIGHT, SECTIONS, textures } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { SECTIONS, textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -15,7 +15,7 @@ export function createScrambleEntry(): GameEntry {
         id: 'scramble',
         name: 'Scramble',
         screenWidth: SCREEN_WIDTH,
-        screenHeight: PLAY_HEIGHT + HUD_HEIGHT,
+        screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 1000,
 
         async load(): Promise<void> {

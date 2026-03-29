@@ -45,9 +45,6 @@ export const MAZE_COLS = MAZE_STRING.indexOf('\n');
 /** Number of rows in the maze. */
 export const MAZE_ROWS = MAZE_STRING.split('\n').length;
 
-/** Tile size in pixels. */
-export const TILE_SIZE = 20;
-
 const mazeRows = MAZE_STRING.split('\n');
 
 export const MAZE_DATA: TileKind[][] = mazeRows.map((row) =>
@@ -72,15 +69,4 @@ export const GHOST_SPAWNS: [number, number][] = [
     [10, 14], // Pinky (pink)
     [10, 15], // Inky (cyan)
     [10, 16], // Clyde (orange)
-];
-
-/** Height of the HUD area in pixels. */
-export const HUD_HEIGHT = 30;
-
-/** Ghost colors: Blinky, Pinky, Inky, Clyde. */
-export const GHOST_COLORS: number[] = [
-    0xff0000, // Blinky - red
-    0xffb8ff, // Pinky  - pink
-    0x00ffff, // Inky   - cyan
-    0xffb852, // Clyde  - orange
 ];

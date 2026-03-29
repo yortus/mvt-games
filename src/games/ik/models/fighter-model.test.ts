@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createFighterModel, type FighterModel } from './fighter-model';
-import { type MoveKind, ARENA_MIN_X, ARENA_MAX_X, JUMP_DURATION_MS, HIT_REACTION_MS, BLOCK_REACTION_MS } from '../data';
+import { type MoveKind, ARENA_MIN_X, ARENA_MAX_X } from '../data';
+import { JUMP_DURATION_MS, HIT_REACTION_MS, BLOCK_REACTION_MS } from './model-constants';
 
 // ---------------------------------------------------------------------------
 // Helper: advance a fighter by a given number of ms

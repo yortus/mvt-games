@@ -1,16 +1,11 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
 import {
     MAZE_DATA,
-    TILE_SIZE,
-    MAZE_ROWS,
-    MAZE_COLS,
     PACMAN_SPAWN,
     GHOST_SPAWNS,
-    GHOST_COLORS,
-    HUD_HEIGHT,
     textures,
 } from './data';
 
@@ -24,8 +19,8 @@ export function createPacmanEntry(): GameEntry {
     return {
         id: 'pacman',
         name: 'Pac-Man',
-        screenWidth: MAZE_COLS * TILE_SIZE,
-        screenHeight: MAZE_ROWS * TILE_SIZE + HUD_HEIGHT,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
 
         async load(): Promise<void> {
             await textures.load();
@@ -39,7 +34,6 @@ export function createPacmanEntry(): GameEntry {
                 grid: MAZE_DATA,
                 pacmanSpawn: PACMAN_SPAWN,
                 ghostSpawns: GHOST_SPAWNS,
-                ghostColors: GHOST_COLORS,
             });
 
             const gameView = createGameView(gameModel);

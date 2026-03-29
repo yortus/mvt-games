@@ -18,24 +18,8 @@ export {
     FIGHTER_BODY_WIDTH,
     FIGHTER_START_LEFT_X,
     FIGHTER_START_RIGHT_X,
-    SCREEN_WIDTH,
-    SCREEN_HEIGHT,
-    HUD_HEIGHT,
-    GROUND_Y_PX,
-    FRAME_WIDTH,
-    FRAME_HEIGHT,
-    WALK_SPEED,
-    JUMP_DURATION_MS,
-    JUMP_HEIGHT,
-    WALK_CYCLE_METRES,
-    ROUND_TIMER_MS,
     POINTS_TO_WIN_ROUND,
     ROUNDS_TO_WIN_MATCH,
-    ROUND_INTRO_DELAY_MS,
-    POINT_SCORED_DELAY_MS,
-    ROUND_OVER_DELAY_MS,
-    HIT_REACTION_MS,
-    BLOCK_REACTION_MS,
     TURN_TEXTURE_SEQUENCE,
     TURN_FRAME_MS,
     TURN_TOTAL_MS,
@@ -45,6 +29,6 @@ export {
     WON_TOGGLE_MS,
     WON_TOGGLE_COUNT,
     WON_TOTAL_MS,
-} from './arena-data';
+} from './constants';
 export { type MoveData, MOVE_DATA } from './move-data';
 export { textures } from './textures';

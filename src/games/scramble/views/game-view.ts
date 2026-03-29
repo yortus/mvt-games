@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
-import { TILE_SIZE, VISIBLE_COLS, VISIBLE_ROWS, SCREEN_WIDTH, PLAY_HEIGHT } from '../data';
+import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
+import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
 import { createTerrainView } from './terrain-view';
 import { createShipView } from './ship-view';
 import { createBulletView } from './bullet-view';

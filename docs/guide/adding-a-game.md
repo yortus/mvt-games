@@ -66,16 +66,18 @@ src/games/breakout/
 ├── index.ts              Barrel - re-exports createBreakoutEntry
 ├── breakout-entry.ts     GameEntry factory
 ├── data/
-│   ├── index.ts          Barrel - re-exports all constants
-│   └── stage-data.ts     Arena dimensions, speeds, brick layout
+│   ├── index.ts          Barrel - re-exports shared game constants
+│   └── constants.ts      Shared game constants (used by both models and views)
 ├── models/
-│   ├── index.ts          Barrel - re-exports all models and types
+│   ├── index.ts          Barrel - re-exports all models, types, and model constants
+│   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
 │   ├── common.ts         Domain types (BrickKind, GamePhase, etc.)
 │   ├── ball-model.ts     Ball position, velocity, bouncing
 │   ├── paddle-model.ts   Paddle position, input
 │   └── game-model.ts     Root model - composes children
 └── views/
-    ├── index.ts           Barrel - re-exports createGameView
+    ├── index.ts           Barrel - re-exports createGameView and view constants
+    ├── view-constants.ts  View-only constants (pixel sizes, HUD layout)
     ├── game-view.ts       Top-level view - wires child views
     ├── ball-view.ts       Ball renderer
     ├── paddle-view.ts     Paddle renderer
@@ -86,24 +88,42 @@ Note: The `data/` directory is a practical organisational choice, not an MVT
 architectural layer. See [Walkthrough](../learn/walkthrough.md) for a real
 example.
 
-## Step 1: Define Constants (`data/`)
+## Step 1: Define Constants
 
-Put static configuration - arena dimensions, speeds, timing values - in
-`data/stage-data.ts`. Use domain units, not pixels:
+Constants are split by consumer to enforce layer separation:
+
+**`data/constants.ts`** - shared game constants used by both models and views:
 
 ```ts
-// Arena dimensions in world-units
+// Arena dimensions in domain units
 export const ARENA_WIDTH = 300;
 export const ARENA_HEIGHT = 400;
+```
 
+**`models/model-constants.ts`** - model-only constants (physics, scoring, timing):
+
+```ts
 // Ball physics
-export const BALL_SPEED = 200;     // world-units per second
-export const BALL_RADIUS = 4;      // world-units
+export const BALL_SPEED = 200;     // domain-units per second
+export const BALL_RADIUS = 4;      // domain-units
 
 // Paddle
-export const PADDLE_WIDTH = 50;    // world-units
-export const PADDLE_SPEED = 300;   // world-units per second
+export const PADDLE_WIDTH = 50;    // domain-units
+export const PADDLE_SPEED = 300;   // domain-units per second
 ```
+
+**`views/view-constants.ts`** - view-only constants (pixel sizes, HUD layout):
+
+```ts
+/** Height of the HUD bar in pixels. */
+export const HUD_HEIGHT = 30;
+```
+
+Models import model constants from `./model-constants` and shared constants
+from `../data`. Views import view constants from `./view-constants` and shared
+constants from `../data`. This structure makes it architecturally clear which
+constants belong to which layer, and makes accidental cross-layer references
+obvious.
 
 ## Step 2: Create Models (`models/`)
 

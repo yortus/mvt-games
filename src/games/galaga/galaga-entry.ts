@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { ARENA_WIDTH, ARENA_HEIGHT, HUD_HEIGHT, SHIP_Y, SHIP_SPEED, SHIP_HALF_WIDTH, WAVES, textures } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { WAVES, textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -14,8 +14,8 @@ export function createGalagaEntry(): GameEntry {
     return {
         id: 'galaga',
         name: 'Galaga',
-        screenWidth: ARENA_WIDTH,
-        screenHeight: ARENA_HEIGHT + HUD_HEIGHT,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 2000,
 
         async load(): Promise<void> {
@@ -28,12 +28,6 @@ export function createGalagaEntry(): GameEntry {
 
             const gameModel = createGameModel({
                 waves: WAVES,
-                playHeight: ARENA_HEIGHT,
-                shipStartX: ARENA_WIDTH / 2,
-                shipStartY: SHIP_Y,
-                shipSpeed: SHIP_SPEED,
-                shipMinX: SHIP_HALF_WIDTH,
-                shipMaxX: ARENA_WIDTH - SHIP_HALF_WIDTH,
             });
 
             const gameView = createGameView(gameModel);

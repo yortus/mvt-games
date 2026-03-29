@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel, Position } from '../models';
-import { CELL_SIZE, GRID_ROWS, GRID_COLS } from '../data';
+import { GRID_ROWS, GRID_COLS } from '../data';
+import { CELL_SIZE_PX } from './view-constants';
 import { createBoardView } from './board-view';
 import type { DragState } from './board-view';
 import { createHudView } from './hud-view';
@@ -11,8 +12,8 @@ import { createHudView } from './hud-view';
 // ---------------------------------------------------------------------------
 
 export function createGameView(game: GameModel): Container {
-    const boardWidth = GRID_COLS * CELL_SIZE;
-    const boardHeight = GRID_ROWS * CELL_SIZE;
+    const boardWidth = GRID_COLS * CELL_SIZE_PX;
+    const boardHeight = GRID_ROWS * CELL_SIZE_PX;
 
     const drag: DragState = {
         active: false,
@@ -71,8 +72,8 @@ export function createGameView(game: GameModel): Container {
 
     function toGridPos(localX: number, localY: number): Position {
         return {
-            row: Math.floor(localY / CELL_SIZE),
-            col: Math.floor(localX / CELL_SIZE),
+            row: Math.floor(localY / CELL_SIZE_PX),
+            col: Math.floor(localX / CELL_SIZE_PX),
         };
     }
 

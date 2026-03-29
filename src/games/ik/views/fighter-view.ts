@@ -1,6 +1,7 @@
 import { Container, Sprite, type Texture } from 'pixi.js';
 import type { DefeatVariant, Facing, FighterPhase, MoveKind } from '../data';
-import { textures, SCREEN_WIDTH, ARENA_WIDTH, GROUND_Y_PX, MOVE_DATA, TURN_TEXTURE_SEQUENCE } from '../data';
+import { textures, ARENA_WIDTH, MOVE_DATA, TURN_TEXTURE_SEQUENCE } from '../data';
+import { SCREEN_WIDTH, GROUND_Y_PX } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings

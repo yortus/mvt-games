@@ -2,7 +2,8 @@ import gsap from 'gsap';
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#common';
 import type { BoardPhase, CupcakeCell } from '../models';
-import { CELL_SIZE, GRID_ROWS, GRID_COLS } from '../data';
+import { GRID_ROWS, GRID_COLS } from '../data';
+import { CELL_SIZE_PX } from './view-constants';
 import { createCupcakeView } from './cupcake-view';
 import { computeCellLayout } from './cell-layout';
 import type { BoardSnapshot, DragSnapshot } from './cell-layout';
@@ -109,7 +110,7 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         for (let r = 0; r < GRID_ROWS; r++) {
             for (let c = 0; c < GRID_COLS; c++) {
                 const shade = (r + c) % 2 === 0 ? 0x3A2A4A : 0x2E1E3E;
-                bg.rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE).fill(shade);
+                bg.rect(c * CELL_SIZE_PX, r * CELL_SIZE_PX, CELL_SIZE_PX, CELL_SIZE_PX).fill(shade);
             }
         }
         view.addChild(bg);
@@ -173,8 +174,8 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
                 returningVisual.y = candidateVisual.y;
 
                 const cell = bindings.getCells()[returningIdx];
-                const targetX = cell.pos.col * CELL_SIZE + CELL_SIZE * 0.5;
-                const targetY = cell.pos.row * CELL_SIZE + CELL_SIZE * 0.5;
+                const targetX = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                const targetY = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
                 const t = timeline.time();
                 timeline.to(returningVisual, {
                     x: targetX,
@@ -188,11 +189,11 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
             // New candidate starts sliding toward origin
             if (newCandidateIdx >= 0) {
                 const cell = bindings.getCells()[newCandidateIdx];
-                candidateVisual.x = cell.pos.col * CELL_SIZE + CELL_SIZE * 0.5;
-                candidateVisual.y = cell.pos.row * CELL_SIZE + CELL_SIZE * 0.5;
+                candidateVisual.x = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                candidateVisual.y = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
 
-                const targetX = drag.origin.col * CELL_SIZE + CELL_SIZE * 0.5;
-                const targetY = drag.origin.row * CELL_SIZE + CELL_SIZE * 0.5;
+                const targetX = drag.origin.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                const targetY = drag.origin.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
                 const t = timeline.time();
                 timeline.to(candidateVisual, {
                     x: targetX,
@@ -268,14 +269,14 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
     function getCellX(idx: number): number {
         fillBoardSnapshot(idx);
         fillDragSnapshot();
-        return computeCellLayout(idx, CELL_SIZE, boardSnap, dragSnap).x;
+        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).x;
     }
 
     function getCellY(idx: number): number {
-        return computeCellLayout(idx, CELL_SIZE, boardSnap, dragSnap).y;
+        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).y;
     }
 
     function getCellAlpha(idx: number): number {
-        return computeCellLayout(idx, CELL_SIZE, boardSnap, dragSnap).alpha;
+        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).alpha;
     }
 }

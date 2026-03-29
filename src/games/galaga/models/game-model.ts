@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { watch } from '#common';
 import type { WaveConfig } from '../data';
+import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import {
     FORMATION_LEFT,
     FORMATION_TOP,
@@ -10,7 +11,10 @@ import {
     BULLET_SPEED,
     MAX_PLAYER_BULLETS,
     MAX_ENEMY_BULLETS,
-} from '../data';
+    SHIP_Y,
+    SHIP_SPEED,
+    SHIP_HALF_WIDTH,
+} from './model-constants';
 import type { EnemyKind, GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
@@ -41,12 +45,6 @@ export interface GameModel {
 
 export interface GameModelOptions {
     readonly waves: readonly WaveConfig[];
-    readonly playHeight: number;
-    readonly shipStartX: number;
-    readonly shipStartY: number;
-    readonly shipSpeed: number;
-    readonly shipMinX: number;
-    readonly shipMaxX: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +52,11 @@ export interface GameModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createGameModel(options: GameModelOptions): GameModel {
-    const { waves, playHeight, shipStartX, shipStartY, shipSpeed, shipMinX, shipMaxX } = options;
+    const { waves } = options;
+    const playHeight = ARENA_HEIGHT;
+    const shipStartX = ARENA_WIDTH / 2;
+    const shipMinX = SHIP_HALF_WIDTH;
+    const shipMaxX = ARENA_WIDTH - SHIP_HALF_WIDTH;
 
     let gamePhase: GamePhase = 'playing';
     let waveIndex = 0;
@@ -199,8 +201,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function buildShip(): ShipModel {
         return createShipModel({
             startX: shipStartX,
-            startY: shipStartY,
-            speed: shipSpeed,
+            startY: SHIP_Y,
+            speed: SHIP_SPEED,
             minX: shipMinX,
             maxX: shipMaxX,
         });

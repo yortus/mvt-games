@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { watch } from '#common';
+import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import {
     SCROLL_SPEED,
     SHIP_SPEED,
@@ -19,8 +20,6 @@ import {
     DYING_DELAY_MS,
     RESPAWN_DELAY_MS,
     SECTION_CLEAR_DELAY_MS,
-    VISIBLE_COLS,
-    VISIBLE_ROWS,
     MAX_ROCKETS,
     ROCKET_DETECT_RANGE,
     ROCKET_LAUNCH_SPEED,
@@ -40,7 +39,7 @@ import {
     SPEED_INCREASE_PER_LOOP,
     MAX_EXPLOSIONS,
     EXPLOSION_DURATION_MS,
-} from '../data';
+} from './model-constants';
 import type { SectionProfile, SpawnKind } from '../data';
 import type { GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';

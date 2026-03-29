@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { createGameModel, type GameModel } from './game-model';
 import {
-    ROUND_INTRO_DELAY_MS,
-    ROUND_TIMER_MS,
-    ROUND_OVER_DELAY_MS,
     FIGHTER_START_LEFT_X,
     FIGHTER_START_RIGHT_X,
     MOVE_DATA,
 } from '../data';
+import {
+    ROUND_INTRO_DELAY_MS,
+    ROUND_TIMER_MS,
+    ROUND_OVER_DELAY_MS,
+} from './model-constants';
 
 // ---------------------------------------------------------------------------
 // Helpers

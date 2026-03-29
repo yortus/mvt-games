@@ -196,14 +196,16 @@ src/games/<name>/
 ├── index.ts              Barrel - re-exports createXxxEntry
 ├── <name>-entry.ts       GameEntry factory
 ├── data/
-│   ├── index.ts          Barrel - re-exports all constants
-│   └── stage-data.ts     Arena dimensions, speeds, timing, scoring
+│   ├── index.ts          Barrel - re-exports shared game constants
+│   └── constants.ts      Shared game constants (used by both models and views)
 ├── models/
-│   ├── index.ts          Barrel - re-exports all models and types
+│   ├── index.ts          Barrel - re-exports all models, types, and model constants
+│   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
 │   ├── common.ts         Domain types (directions, entity kinds, phases)
 │   └── game-model.ts     Root model - composes all child models
 └── views/
-    ├── index.ts           Barrel - re-exports createGameView
+    ├── index.ts           Barrel - re-exports createGameView and view constants
+    ├── view-constants.ts  View-only constants (pixel sizes, HUD layout)
     └── game-view.ts       Top-level view - wires all child views
 ```
 

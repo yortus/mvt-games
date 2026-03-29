@@ -10,13 +10,15 @@ import {
     FIGHTER_START_RIGHT_X,
     ARENA_MIN_X,
     ARENA_MAX_X,
+    resolveInputDirection,
+    resolveMove,
+} from '../data';
+import {
     ROUND_TIMER_MS,
     ROUND_INTRO_DELAY_MS,
     POINT_SCORED_DELAY_MS,
     ROUND_OVER_DELAY_MS,
-    resolveInputDirection,
-    resolveMove,
-} from '../data';
+} from './model-constants';
 import { createAiModel, type AiModel } from './ai-model';
 import { createFighterModel, type FighterModel } from './fighter-model';
 import { createPlayerInput, type PlayerInput } from './player-input';

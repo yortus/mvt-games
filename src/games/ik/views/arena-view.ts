@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { GROUND_Y_PX } from '../data';
+import { GROUND_Y_PX } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Factory

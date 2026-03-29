@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { GRID_ROWS, GRID_COLS, CELL_SIZE, HUD_HEIGHT } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { GRID_ROWS, GRID_COLS } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -12,8 +12,8 @@ export function createCupcakesEntry(): GameEntry {
     return {
         id: 'cupcakes',
         name: 'Kwazy Cupcakes',
-        screenWidth: GRID_COLS * CELL_SIZE,
-        screenHeight: GRID_ROWS * CELL_SIZE + HUD_HEIGHT,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
         instructions: [
             'Swap adjacent cupcakes to make',
             'a row or column of 3 or more',

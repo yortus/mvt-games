@@ -11,7 +11,6 @@ export interface GhostModel {
     /** Current column position (fractional while moving between tiles). */
     readonly col: number;
     readonly direction: Direction;
-    readonly color: number;
     update(deltaMs: number): void;
 }
 
@@ -24,7 +23,6 @@ export type GhostBehavior = 'chase' | 'ambush' | 'flank' | 'fickle';
 export interface GhostModelOptions {
     startRow: number;
     startCol: number;
-    color: number;
     /** Tiles per second. */
     speed: number;
     /** Ghost behaviour pattern. */
@@ -44,7 +42,7 @@ export interface GhostModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createGhostModel(options: GhostModelOptions): GhostModel {
-    const { startRow, startCol, color, speed, behavior, isWalkable, chaseTarget, flankPartner, scatterTarget } =
+    const { startRow, startCol, speed, behavior, isWalkable, chaseTarget, flankPartner, scatterTarget } =
         options;
 
     const state = {
@@ -77,7 +75,6 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         get direction() {
             return state.direction;
         },
-        color,
 
         update(deltaMs: number): void {
             // Advance the timeline

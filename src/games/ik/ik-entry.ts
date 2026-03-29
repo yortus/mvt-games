@@ -1,8 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView } from './views';
-import { SCREEN_WIDTH, SCREEN_HEIGHT, textures } from './data';
+import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory

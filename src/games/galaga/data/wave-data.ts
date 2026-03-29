@@ -1,4 +1,4 @@
-import { FORMATION_COLS } from './stage-data';
+import { FORMATION_COLS } from './constants';
 
 // ---------------------------------------------------------------------------
 // Interface

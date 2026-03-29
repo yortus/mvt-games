@@ -4,17 +4,11 @@ export type TileKind = 'surface' | 'dirt' | 'tunnel';
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Tile size in pixels. */
-export const TILE_SIZE = 20;
-
 /** Number of columns in the field. */
 export const FIELD_COLS = 14;
 
 /** Number of rows in the field (top row is surface). */
 export const FIELD_ROWS = 18;
-
-/** Height of the HUD area in pixels. */
-export const HUD_HEIGHT = 30;
 
 // ---------------------------------------------------------------------------
 // Depth Layers

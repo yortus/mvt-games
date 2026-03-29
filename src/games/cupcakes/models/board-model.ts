@@ -1,14 +1,13 @@
 import type { BoardPhase, CupcakeKind, Position } from './common';
 import { ALL_CUPCAKE_KINDS } from './common';
+import { GRID_ROWS, GRID_COLS } from '../data';
 import {
-    GRID_ROWS,
-    GRID_COLS,
     SWAP_DURATION_MS,
     MATCH_FADE_MS,
     FALL_SPEED,
     POINTS_PER_CUPCAKE,
     CASCADE_MULTIPLIER,
-} from '../data';
+} from './model-constants';
 import {
     findMatches,
     fillGridNoMatches,

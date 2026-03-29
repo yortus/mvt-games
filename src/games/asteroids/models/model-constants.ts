@@ -1,31 +1,14 @@
 // ---------------------------------------------------------------------------
-// Arena Constants (world-units)
-// ---------------------------------------------------------------------------
-
-/** Width of the play area in world-units. */
-export const ARENA_WIDTH = 400;
-
-/** Height of the play area (above HUD) in world-units. */
-export const ARENA_HEIGHT = 400;
-
-// ---------------------------------------------------------------------------
-// Screen Constants (view-layer only)
-// ---------------------------------------------------------------------------
-
-/** Height of the HUD bar at the bottom in pixels. */
-export const HUD_HEIGHT = 30;
-
-// ---------------------------------------------------------------------------
 // Ship Constants
 // ---------------------------------------------------------------------------
 
 /** Ship rotation speed in radians per second. */
 export const SHIP_ROTATION_SPEED = 5;
 
-/** Ship thrust acceleration in world-units per second². */
+/** Ship thrust acceleration in world-units per second squared. */
 export const SHIP_THRUST = 200;
 
-/** Ship drag factor - multiplied per second (0–1). */
+/** Ship drag factor - multiplied per second (0-1). */
 export const SHIP_DRAG = 0.98;
 
 /** Maximum ship speed in world-units per second. */
