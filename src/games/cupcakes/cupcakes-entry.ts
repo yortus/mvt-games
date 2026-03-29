@@ -30,8 +30,8 @@ export function createCupcakesEntry(): GameEntry {
 
         start(stage: Container): GameSession {
             const gameModel = createGameModel({
-                rows: GRID_ROWS,
-                cols: GRID_COLS,
+                rowCount: GRID_ROWS,
+                colCount: GRID_COLS,
             });
 
             const gameView = createGameView(gameModel);

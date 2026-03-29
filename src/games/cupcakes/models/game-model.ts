@@ -1,4 +1,5 @@
 import type { GamePhase } from './common';
+import type { Position } from './common';
 import { createBoardModel, type BoardModel } from './board-model';
 
 // ---------------------------------------------------------------------------
@@ -9,8 +10,10 @@ export interface GameModel {
     readonly phase: GamePhase;
     readonly board: BoardModel;
     readonly score: number;
+    /** Monotonic clock accumulated from update(deltaMs). */
+    readonly clockMs: number;
     /** Attempt to swap two cells. Returns true if accepted. */
-    trySwap(r1: number, c1: number, r2: number, c2: number): boolean;
+    trySwap(pos1: Position, pos2: Position): boolean;
     update(deltaMs: number): void;
 }
 
@@ -19,8 +22,8 @@ export interface GameModel {
 // ---------------------------------------------------------------------------
 
 export interface GameModelOptions {
-    readonly rows?: number;
-    readonly cols?: number;
+    readonly rowCount?: number;
+    readonly colCount?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,21 +31,24 @@ export interface GameModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createGameModel(options: GameModelOptions = {}): GameModel {
-    const board = createBoardModel({ rows: options.rows, cols: options.cols });
+    const board = createBoardModel(options);
     const gamePhase: GamePhase = 'playing';
+    let clockMs = 0;
 
     const model: GameModel = {
         get phase() { return gamePhase; },
         get board() { return board; },
         get score() { return board.score; },
+        get clockMs() { return clockMs; },
 
-        trySwap(r1: number, c1: number, r2: number, c2: number): boolean {
+        trySwap(pos1: Position, pos2: Position): boolean {
             if (gamePhase !== 'playing') return false;
-            return board.trySwap(r1, c1, r2, c2);
+            return board.trySwap(pos1, pos2);
         },
 
         update(deltaMs: number): void {
             if (gamePhase !== 'playing') return;
+            clockMs += deltaMs;
             board.update(deltaMs);
         },
     };

@@ -14,6 +14,15 @@ export const ALL_CUPCAKE_KINDS: readonly CupcakeKind[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Position
+// ---------------------------------------------------------------------------
+
+export interface Position {
+    col: number;
+    row: number;
+}
+
+// ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------
 
@@ -22,7 +31,6 @@ export type BoardPhase =
     | 'swapping'
     | 'reversing'
     | 'matching'
-    | 'falling'
-    | 'refilling';
+    | 'settling';
 
 export type GamePhase = 'playing' | 'game-over';

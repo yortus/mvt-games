@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
-import type { GameModel } from '../models';
+import type { GameModel, Position } from '../models';
 import { CELL_SIZE, GRID_ROWS, GRID_COLS } from '../data';
 import { createBoardView } from './board-view';
 import type { DragState } from './board-view';
@@ -16,12 +16,9 @@ export function createGameView(game: GameModel): Container {
 
     const drag: DragState = {
         active: false,
-        originRow: -1,
-        originCol: -1,
-        candidateRow: -1,
-        candidateCol: -1,
-        pointerX: 0,
-        pointerY: 0,
+        origin: { row: -1, col: -1 },
+        candidate: { row: -1, col: -1 },
+        pointer: { x: 0, y: 0 },
         committedSwap: false,
     };
 
@@ -30,8 +27,19 @@ export function createGameView(game: GameModel): Container {
     return view;
 
     function initialiseView(): void {
-        // Board
-        const boardView = createBoardView(game.board, drag);
+        const board = game.board;
+        const boardView = createBoardView({
+            getClockMs: () => game.clockMs,
+            getPhase: () => board.phase,
+            getCells: () => board.cells,
+            getSwapPos1: () => board.swapPos1,
+            getSwapPos2: () => board.swapPos2,
+            getSwapProgress: () => board.swapProgress,
+            getSettleOrigins: () => board.settleOrigins,
+            getSettleProgress: () => board.settleProgress,
+            getMatchedIndices: () => board.matchedIndices,
+            getMatchProgress: () => board.matchProgress,
+        }, drag);
         view.addChild(boardView);
 
         // Drag input on the board area
@@ -61,20 +69,20 @@ export function createGameView(game: GameModel): Container {
         view.addChild(overlayView);
     }
 
-    function toGridCell(localX: number, localY: number): { row: number; col: number } {
+    function toGridPos(localX: number, localY: number): Position {
         return {
-            col: Math.floor(localX / CELL_SIZE),
             row: Math.floor(localY / CELL_SIZE),
+            col: Math.floor(localX / CELL_SIZE),
         };
     }
 
-    function isValidCell(row: number, col: number): boolean {
-        return row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS;
+    function isValidPos(pos: Position): boolean {
+        return pos.row >= 0 && pos.row < GRID_ROWS && pos.col >= 0 && pos.col < GRID_COLS;
     }
 
-    function isAdjacentToOrigin(row: number, col: number): boolean {
-        const dr = Math.abs(row - drag.originRow);
-        const dc = Math.abs(col - drag.originCol);
+    function isAdjacentToOrigin(pos: Position): boolean {
+        const dr = Math.abs(pos.row - drag.origin.row);
+        const dc = Math.abs(pos.col - drag.origin.col);
         return (dr === 1 && dc === 0) || (dr === 0 && dc === 1);
     }
 
@@ -82,55 +90,49 @@ export function createGameView(game: GameModel): Container {
         if (game.board.phase !== 'idle') return;
 
         const local = view.toLocal(e.global);
-        const { row, col } = toGridCell(local.x, local.y);
-        if (!isValidCell(row, col)) return;
+        const pos = toGridPos(local.x, local.y);
+        if (!isValidPos(pos)) return;
 
         drag.active = true;
-        drag.originRow = row;
-        drag.originCol = col;
-        drag.candidateRow = -1;
-        drag.candidateCol = -1;
-        drag.pointerX = local.x;
-        drag.pointerY = local.y;
+        drag.origin.row = pos.row;
+        drag.origin.col = pos.col;
+        drag.candidate.row = -1;
+        drag.candidate.col = -1;
+        drag.pointer.x = local.x;
+        drag.pointer.y = local.y;
     }
 
     function onPointerMove(e: { global: { x: number; y: number } }): void {
         if (!drag.active) return;
         const local = view.toLocal(e.global);
-        drag.pointerX = local.x;
-        drag.pointerY = local.y;
+        drag.pointer.x = local.x;
+        drag.pointer.y = local.y;
 
-        const { row, col } = toGridCell(local.x, local.y);
-        if (isValidCell(row, col) &&
-            !(row === drag.originRow && col === drag.originCol) &&
-            isAdjacentToOrigin(row, col)) {
-            drag.candidateRow = row;
-            drag.candidateCol = col;
+        const pos = toGridPos(local.x, local.y);
+        if (isValidPos(pos) &&
+            !(pos.row === drag.origin.row && pos.col === drag.origin.col) &&
+            isAdjacentToOrigin(pos)) {
+            drag.candidate.row = pos.row;
+            drag.candidate.col = pos.col;
         }
         else {
-            drag.candidateRow = -1;
-            drag.candidateCol = -1;
+            drag.candidate.row = -1;
+            drag.candidate.col = -1;
         }
     }
 
     function onPointerUp(): void {
         if (!drag.active) return;
-
-        const r1 = drag.originRow;
-        const c1 = drag.originCol;
-        const r2 = drag.candidateRow;
-        const c2 = drag.candidateCol;
-
         drag.active = false;
 
-        if (r2 >= 0 && game.trySwap(r1, c1, r2, c2)) {
+        if (drag.candidate.row >= 0 && game.trySwap(drag.origin, drag.candidate)) {
             // Swap accepted - keep origin/candidate info so board-view holds
             // cells at swapped positions during the model's 'swapping' phase.
             drag.committedSwap = true;
         }
         else {
-            drag.candidateRow = -1;
-            drag.candidateCol = -1;
+            drag.candidate.row = -1;
+            drag.candidate.col = -1;
         }
     }
 }
