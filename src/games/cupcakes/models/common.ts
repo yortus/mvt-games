@@ -2,12 +2,12 @@
 // Cupcake
 // ---------------------------------------------------------------------------
 
-export type CupcakeKind = 'strawberry' | 'chocolate' | 'vanilla' | 'blueberry' | 'mint' | 'lemon';
+export type CupcakeKind = 'strawberry' | 'chocolate' | 'grape' | 'blueberry' | 'mint' | 'lemon';
 
 export const ALL_CUPCAKE_KINDS: readonly CupcakeKind[] = [
     'strawberry',
     'chocolate',
-    'vanilla',
+    'grape',
     'blueberry',
     'mint',
     'lemon',

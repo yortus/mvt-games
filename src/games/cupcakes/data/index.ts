@@ -3,3 +3,4 @@ export {
     GRID_COLS,
     CUPCAKE_KIND_COUNT,
 } from './constants';
+export { textures } from './textures';

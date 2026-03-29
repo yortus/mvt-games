@@ -11,32 +11,32 @@ import {
 // Shorthand for grid construction
 const S: CupcakeKind = 'strawberry';
 const C: CupcakeKind = 'chocolate';
-const V: CupcakeKind = 'vanilla';
+const G: CupcakeKind = 'grape';
 const B: CupcakeKind = 'blueberry';
 const _ = undefined;
 
 describe('findMatches', () => {
     it('returns empty when no 3-in-a-row exists', () => {
         // 3x3 grid, no runs of 3
-        const grid = [S, C, V, C, V, S, V, S, C];
+        const grid = [S, C, G, C, G, S, G, S, C];
         expect(findMatches(grid, 3, 3)).toEqual([]);
     });
 
     it('finds a horizontal match of 3', () => {
         // 3x3 grid, top row is all strawberry
-        const grid = [S, S, S, C, V, B, V, C, B];
+        const grid = [S, S, S, C, G, B, G, C, B];
         expect(findMatches(grid, 3, 3)).toEqual([0, 1, 2]);
     });
 
     it('finds a vertical match of 3', () => {
         // 3x3 grid, left column is all chocolate
-        const grid = [C, S, V, C, V, S, C, S, V];
+        const grid = [C, S, G, C, G, S, C, S, G];
         expect(findMatches(grid, 3, 3)).toEqual([0, 3, 6]);
     });
 
     it('finds a match of 4+', () => {
         // 4x3 grid, left column is 4 strawberry
-        const grid = [S, C, V, S, V, C, S, C, V, S, V, C];
+        const grid = [S, C, G, S, G, C, S, C, G, S, G, C];
         const matches = findMatches(grid, 4, 3);
         expect(matches).toEqual([0, 3, 6, 9]);
     });
@@ -46,14 +46,14 @@ describe('findMatches', () => {
         // S S S
         // S C V
         // S V C
-        const grid = [S, S, S, S, C, V, S, V, C];
+        const grid = [S, S, S, S, C, G, S, G, C];
         const matches = findMatches(grid, 3, 3);
         // Top row (0,1,2) + left column (0,3,6), deduplicated
         expect(matches).toEqual([0, 1, 2, 3, 6]);
     });
 
     it('ignores undefined cells', () => {
-        const grid = [_, _, _, S, C, V, C, V, S];
+        const grid = [_, _, _, S, C, G, C, G, S];
         expect(findMatches(grid, 3, 3)).toEqual([]);
     });
 });
@@ -87,7 +87,7 @@ describe('fillGridNoMatches', () => {
     it('fills every cell', () => {
         const grid: (CupcakeKind | undefined)[] = new Array(16).fill(undefined);
         let i = 0;
-        const kinds: CupcakeKind[] = ['strawberry', 'chocolate', 'vanilla', 'blueberry'];
+        const kinds: CupcakeKind[] = ['strawberry', 'chocolate', 'grape', 'blueberry'];
         fillGridNoMatches(grid, 4, 4, () => kinds[i++ % kinds.length]);
         expect(grid.every((k) => k !== undefined)).toBe(true);
     });
@@ -95,7 +95,7 @@ describe('fillGridNoMatches', () => {
     it('produces no matches', () => {
         const grid: (CupcakeKind | undefined)[] = new Array(25).fill(undefined);
         let i = 0;
-        const kinds: CupcakeKind[] = ['strawberry', 'chocolate', 'vanilla', 'blueberry', 'mint', 'lemon'];
+        const kinds: CupcakeKind[] = ['strawberry', 'chocolate', 'grape', 'blueberry', 'mint', 'lemon'];
         fillGridNoMatches(grid, 5, 5, () => kinds[i++ % kinds.length]);
         expect(findMatches(grid, 5, 5)).toEqual([]);
     });
@@ -103,10 +103,10 @@ describe('fillGridNoMatches', () => {
 
 describe('compactColumns', () => {
     it('does nothing when there are no gaps', () => {
-        const grid = [S, C, V, C];
+        const grid = [S, C, G, C];
         const { didMove } = compactColumns(grid, 2, 2);
         expect(didMove).toBe(false);
-        expect(grid).toEqual([S, C, V, C]);
+        expect(grid).toEqual([S, C, G, C]);
     });
 
     it('shifts cells down to fill gaps', () => {
@@ -133,23 +133,23 @@ describe('compactColumns', () => {
         // 3x2 grid:
         // col0: [S, _, C]  col1: [_, V, _]
         // Flat: [S, _, _, V, C, _]
-        const grid: (CupcakeKind | undefined)[] = [S, _, _, V, C, _];
+        const grid: (CupcakeKind | undefined)[] = [S, _, _, G, C, _];
         compactColumns(grid, 3, 2);
         // col0: [_, S, C]  col1: [_, _, V]
         // Flat: [_, _, S, _, C, V]
-        expect(grid).toEqual([_, _, S, _, C, V]);
+        expect(grid).toEqual([_, _, S, _, C, G]);
     });
 });
 
 describe('countEmptyTop', () => {
     it('returns 0 for full columns', () => {
-        const grid = [S, C, V, C];
+        const grid = [S, C, G, C];
         expect(countEmptyTop(grid, 2, 2)).toEqual([0, 0]);
     });
 
     it('counts contiguous empty cells from the top', () => {
         // 3x2: col0 = [_, _, S], col1 = [_, C, V]
-        const grid: (CupcakeKind | undefined)[] = [_, _, _, C, S, V];
+        const grid: (CupcakeKind | undefined)[] = [_, _, _, C, S, G];
         expect(countEmptyTop(grid, 3, 2)).toEqual([2, 1]);
     });
 

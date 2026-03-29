@@ -2,13 +2,15 @@ import type { Container } from 'pixi.js';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import { GRID_ROWS, GRID_COLS } from './data';
+import { GRID_ROWS, GRID_COLS, textures } from './data';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export function createCupcakesEntry(): GameEntry {
+    let loaded = false;
+
     return {
         id: 'cupcakes',
         name: 'Kwazy Cupcakes',
@@ -28,7 +30,13 @@ export function createCupcakesEntry(): GameEntry {
             'Chain combos for bonus points!',
         ].join('\n'),
 
+        async load(): Promise<void> {
+            await textures.load();
+            loaded = true;
+        },
+
         start(stage: Container): GameSession {
+            if (!loaded) throw new Error('cupcakes: load() must be called before start()');
             const gameModel = createGameModel({
                 rowCount: GRID_ROWS,
                 colCount: GRID_COLS,
