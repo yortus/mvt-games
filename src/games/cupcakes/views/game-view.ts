@@ -40,6 +40,8 @@ export function createGameView(game: GameModel): Container {
             getSettleProgress: () => board.settleProgress,
             getMatchedIndices: () => board.matchedIndices,
             getMatchProgress: () => board.matchProgress,
+            getMatchSequence: () => board.matchSequence,
+            getCascadeStep: () => board.cascadeStep,
         }, drag);
         view.addChild(boardView);
 

@@ -204,6 +204,52 @@ describe('BoardModel', () => {
         });
     });
 
+    describe('match sequence', () => {
+        it('matchSequence is not running when idle', () => {
+            const board = makeBoard();
+            expect(board.matchSequence.isRunning).toBe(false);
+        });
+
+        it('matchSequence starts running when matching begins', () => {
+            const board = makeBoard(4, 4);
+            const pair = findSwappablePair(board);
+            expect(pair).toBeDefined();
+            board.trySwap(pair![0], pair![1]);
+            stepMs(board, 300); // past swap duration
+            if (board.phase === 'matching') {
+                expect(board.matchSequence.isRunning).toBe(true);
+            }
+        });
+
+        it('matchProgress derives from the fade step', () => {
+            const board = makeBoard(4, 4);
+            const pair = findSwappablePair(board);
+            expect(pair).toBeDefined();
+            board.trySwap(pair![0], pair![1]);
+            stepMs(board, 300); // past swap into matching
+            if (board.phase === 'matching') {
+                // matchProgress should match the sequence fade step progress
+                expect(board.matchProgress).toBe(board.matchSequence.step('fade').progress);
+            }
+        });
+
+        it('cascadeStep is 0 when idle', () => {
+            const board = makeBoard();
+            expect(board.cascadeStep).toBe(0);
+        });
+
+        it('cascadeStep increments on each match in a cascade', () => {
+            const board = makeBoard(4, 4);
+            const pair = findSwappablePair(board);
+            expect(pair).toBeDefined();
+            board.trySwap(pair![0], pair![1]);
+            stepMs(board, 300);
+            if (board.phase === 'matching') {
+                expect(board.cascadeStep).toBeGreaterThanOrEqual(1);
+            }
+        });
+    });
+
     describe('settling phase', () => {
         it('settleProgress is 0 outside settling phase', () => {
             const board = makeBoard();

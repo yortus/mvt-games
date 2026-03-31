@@ -1,12 +1,13 @@
+import { createSequence, type Sequence } from '#common';
 import type { BoardPhase, CupcakeKind, Position } from './common';
 import { ALL_CUPCAKE_KINDS } from './common';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import {
     SWAP_DURATION_MS,
-    MATCH_FADE_MS,
     FALL_SPEED,
     POINTS_PER_CUPCAKE,
     CASCADE_MULTIPLIER,
+    MATCH_EFFECT_STEPS,
 } from './model-constants';
 import {
     findMatches,
@@ -25,10 +26,14 @@ export interface BoardModel {
     readonly phase: BoardPhase;
     readonly cells: readonly Readonly<CupcakeCell>[];
     readonly score: number;
+    /** Current cascade depth (0 when idle, 1 for first match, 2+ for cascades). */
+    readonly cascadeStep: number;
     /** Indices of cells currently being matched/removed. Empty outside 'matching' phase. */
     readonly matchedIndices: readonly number[];
-    /** Linear 0-1 progress through the current match removal. 0 outside 'matching' phase. */
+    /** Linear 0-1 progress through the match fade. 0 outside 'matching' phase. */
     readonly matchProgress: number;
+    /** Overlapping effect sequence active during the 'matching' phase. */
+    readonly matchSequence: Sequence;
     /** First position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
     readonly swapPos1: Readonly<Position>;
     /** Second position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
@@ -88,6 +93,8 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     let phaseEndTime = 0;
     let phaseElapsed = 0;
 
+    const matchSequence = createSequence(MATCH_EFFECT_STEPS);
+
     // Pre-allocated settle origins buffer (NaN = stationary)
     const settleOriginsBuf: number[] = new Array(totalCells);
     for (let i = 0; i < totalCells; i++) settleOriginsBuf[i] = NaN;
@@ -111,11 +118,12 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get phase() { return boardPhase; },
         get cells() { return cells; },
         get score() { return score; },
+        get cascadeStep() { return cascadeStep; },
         get matchedIndices() { return currentMatchedIndices; },
         get matchProgress() {
-            if (boardPhase !== 'matching' || phaseEndTime <= 0) return 0;
-            return Math.min(1, phaseElapsed / phaseEndTime);
+            return matchSequence.step('fade').progress;
         },
+        get matchSequence() { return matchSequence; },
         get swapPos1() { return swapPos1; },
         get swapPos2() { return swapPos2; },
         get swapProgress() {
@@ -148,6 +156,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         update(deltaMs: number): void {
             if (boardPhase === 'idle') return;
             phaseElapsed += deltaMs * 0.001;
+            matchSequence.update(deltaMs);
             if (phaseElapsed >= phaseEndTime) {
                 phaseFinishers[boardPhase]();
             }
@@ -208,8 +217,9 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         const multiplier = Math.pow(CASCADE_MULTIPLIER, cascadeStep - 1);
         score += Math.round(matches.length * POINTS_PER_CUPCAKE * multiplier);
 
+        matchSequence.start();
         phaseElapsed = 0;
-        phaseEndTime = MATCH_FADE_MS * 0.001;
+        phaseEndTime = matchSequence.totalMs * 0.001;
     }
 
     function finishMatching(): void {
