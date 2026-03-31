@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, RenderTexture, Text, TextureSource, type Texture } from 'pixi.js';
+import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
 import {
     createKeyboardInputView,
@@ -45,9 +45,6 @@ function setNavVisible(visible: boolean): void {
 
 /** Minimum margin (CSS px) reserved for touch controls when on a touch device. */
 const MIN_TOUCH_MARGIN_CSS = 80;
-
-/** Pause button size in CSS pixels. */
-const PAUSE_BTN_CSS = 36;
 
 // ---------------------------------------------------------------------------
 // Bootstrap
@@ -135,10 +132,11 @@ async function main(): Promise<void> {
             // Ensure overlay layers render on top
             app.stage.addChild(cabinetContainer);
             app.stage.addChild(touchLayer);
-            app.stage.addChild(pauseBtnContainer);
             app.stage.addChild(pauseMenuContainer);
+            updatePauseBtnVisibility();
             fitCanvasToScreen();
         });
+        updatePauseBtnVisibility();
         fitCanvasToScreen();
     }
 
@@ -146,12 +144,12 @@ async function main(): Promise<void> {
         currentSession = undefined;
         currentEntry = undefined;
         touchLayer.visible = false;
-        pauseBtnContainer.visible = false;
         paused = false;
         cabinet.exitToMenu();
         isCabinetScreen = true;
         setNavVisible(true);
         setUrlFragment(null);
+        updatePauseBtnVisibility();
         fitCanvasToScreen();
     }
 
@@ -209,11 +207,6 @@ async function main(): Promise<void> {
     }));
 
     app.stage.addChild(touchLayer);
-
-    const pauseBtnContainer = new Container();
-    pauseBtnContainer.label = 'pause-button';
-    pauseBtnContainer.visible = false;
-    app.stage.addChild(pauseBtnContainer);
 
     const pauseMenuContainer = new Container();
     pauseMenuContainer.label = 'pause-menu-layer';
@@ -311,9 +304,6 @@ async function main(): Promise<void> {
             // Touch view refreshes itself via watcher; just control visibility
             touchLayer.visible = isTouchDevice() && !!currentSession?.inputConfig && !paused;
 
-            // Reposition pause button
-            rebuildPauseButton(logicalW, logicalH, offsetX, offsetY, gameW, gameH, effectiveScale);
-
             // Pause menu view refreshes itself via watcher
         }
 
@@ -322,66 +312,6 @@ async function main(): Promise<void> {
 
     fitCanvasToScreen();
     window.addEventListener('resize', fitCanvasToScreen);
-
-    // ---- Pause button management -------------------------------------------
-    function rebuildPauseButton(
-        canvasW: number, canvasH: number,
-        gameX: number, gameY: number,
-        gameW: number, gameH: number,
-        scale: number,
-    ): void {
-        while (pauseBtnContainer.children.length > 0) {
-            pauseBtnContainer.removeChildAt(0).destroy({ children: true });
-        }
-
-        if (!currentSession) {
-            pauseBtnContainer.visible = false;
-            return;
-        }
-
-        const btnSize = Math.round(PAUSE_BTN_CSS / scale);
-        const margin = Math.round(8 / scale);
-
-        // Portrait: centred in the controls strip below the game, on the
-        //   same horizontal line as d-pad and fire buttons.
-        // Landscape: same vertical line as fire buttons (right-margin centre),
-        //   near the top of the game area.
-        const isPortrait = window.innerHeight > window.innerWidth;
-        let bx: number;
-        let by: number;
-        if (isPortrait) {
-            const controlsTop = gameY + gameH;
-            bx = Math.floor(canvasW / 2 - btnSize / 2);
-            by = controlsTop + Math.floor((canvasH - controlsTop) / 2 - btnSize / 2);
-        }
-        else {
-            const rightStart = gameX + gameW;
-            const rightCenterX = rightStart + (canvasW - rightStart) / 2;
-            bx = Math.floor(rightCenterX - btnSize / 2);
-            by = gameY + margin;
-        }
-
-        const bg = new Graphics();
-        bg.roundRect(0, 0, btnSize, btnSize, 4)
-            .fill({ color: 0x000000, alpha: 0.5 });
-        bg.roundRect(0, 0, btnSize, btnSize, 4)
-            .stroke({ color: 0x888888, width: 1 });
-        bg.position.set(bx, by);
-        bg.eventMode = 'static';
-        bg.cursor = 'pointer';
-        pauseBtnContainer.addChild(bg);
-
-        const icon = new Text({
-            text: '\u2759\u2759',
-            style: { fontFamily: 'monospace', fontSize: Math.round(btnSize * 0.5), fill: 0xffffff },
-        });
-        icon.anchor.set(0.5, 0.5);
-        icon.position.set(bx + btnSize / 2, by + btnSize / 2);
-        pauseBtnContainer.addChild(icon);
-
-        bg.on('pointerdown', togglePause);
-        pauseBtnContainer.visible = true;
-    }
 
     // ---- Pause management ---------------------------------------------------
     function togglePause(): void {
@@ -406,7 +336,6 @@ async function main(): Promise<void> {
     function exitToCabinet(): void {
         paused = false;
         touchLayer.visible = false;
-        pauseBtnContainer.visible = false;
 
         cabinetContainer.requestExit();
     }
@@ -425,26 +354,53 @@ async function main(): Promise<void> {
         }
     });
 
-    // ---- Fullscreen toggle (touch devices only) ----------------------------
+    // ---- Utility buttons (bottom-right corner) ----------------------------
+    const btnStyles = {
+        border: '1px solid #555',
+        borderRadius: '6px',
+        background: 'rgba(0,0,0,0.5)',
+        color: '#ccc',
+        fontSize: '18px',
+        cursor: 'pointer',
+        lineHeight: '1',
+        padding: '0',
+        width: '36px',
+        height: '36px',
+    };
+
+    // Pause button (visible during gameplay on touch devices)
+    const pauseBtn = document.createElement('button');
+    pauseBtn.textContent = '\u2759\u2759';
+    pauseBtn.setAttribute('aria-label', 'Pause');
+    Object.assign(pauseBtn.style, {
+        ...btnStyles,
+        position: 'fixed',
+        bottom: '6px',
+        right: '6px',
+        zIndex: '10000',
+        display: 'none',
+    });
+    document.body.appendChild(pauseBtn);
+    pauseBtn.addEventListener('click', togglePause);
+
+    function updatePauseBtnVisibility(): void {
+        pauseBtn.style.display = !isCabinetScreen && currentSession ? '' : 'none';
+    }
+
+    // Fullscreen button (touch devices only)
     if (isTouchDevice() && document.fullscreenEnabled) {
+        // Shift pause button left to make room for fullscreen
+        pauseBtn.style.right = '48px';
+
         const fsBtn = document.createElement('button');
         fsBtn.textContent = '\u26F6';
         fsBtn.setAttribute('aria-label', 'Toggle fullscreen');
         Object.assign(fsBtn.style, {
+            ...btnStyles,
             position: 'fixed',
             bottom: '6px',
             right: '6px',
             zIndex: '10000',
-            width: '36px',
-            height: '36px',
-            border: '1px solid #555',
-            borderRadius: '6px',
-            background: 'rgba(0,0,0,0.5)',
-            color: '#ccc',
-            fontSize: '18px',
-            cursor: 'pointer',
-            lineHeight: '1',
-            padding: '0',
         });
         document.body.appendChild(fsBtn);
 
