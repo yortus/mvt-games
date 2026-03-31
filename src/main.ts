@@ -220,6 +220,10 @@ async function main(): Promise<void> {
     pauseMenuContainer.addChild(createPauseMenuView({
         getCanvasWidth: () => currentCanvasW,
         getCanvasHeight: () => currentCanvasH,
+        getGameX: () => currentGameOffsetX,
+        getGameY: () => currentGameOffsetY,
+        getGameWidth: () => currentEntry?.screenWidth ?? currentCanvasW,
+        getGameHeight: () => currentEntry?.screenHeight ?? currentCanvasH,
         getScale: () => currentScale,
         getVisible: () => paused,
         onResumePressed: togglePause,

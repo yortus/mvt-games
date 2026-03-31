@@ -8,6 +8,10 @@ import { watch } from './watch';
 export interface PauseMenuViewBindings {
     getCanvasWidth(): number;
     getCanvasHeight(): number;
+    getGameX(): number;
+    getGameY(): number;
+    getGameWidth(): number;
+    getGameHeight(): number;
     getScale(): number;
     getVisible(): boolean;
     getHowToPlayText?(): string;
@@ -150,20 +154,43 @@ export function createPauseMenuView(
 
         const invScale = 1 / bindings.getScale();
 
-        // Rebuild backdrop when canvas dims change
-        if (canvasWidth.changed || canvasHeight.changed) {
+        // Rebuild backdrop when canvas dims change or menu first opens
+        if (visible.changed || canvasWidth.changed || canvasHeight.changed) {
             backdrop.clear();
             backdrop.rect(0, 0, canvasWidth.value, canvasHeight.value)
                 .fill({ color: 0x000000, alpha: 0.7 });
         }
 
+        // Centre on the game area, not the full canvas
+        const gx = bindings.getGameX();
+        const gy = bindings.getGameY();
+        const gw = bindings.getGameWidth();
+        const gh = bindings.getGameHeight();
+        const gameCenterX = gx + gw / 2;
+        const gameCenterY = gy + gh / 2;
+
+        // Count visible buttons to compute total block height
+        let visibleCount = 0;
+        for (let i = 0; i < buttons.length; i++) {
+            const isHtp = i === HOW_TO_PLAY_INDEX;
+            if (!showingHowToPlay && !(isHtp && !hasHowToPlay)) visibleCount++;
+        }
+
+        // Compute total content height in logical coords and centre vertically
+        const titleH = TITLE_CSS_SIZE * invScale;
+        const titleGap = TITLE_BTN_CSS_GAP * invScale;
+        const btnH = BTN_CSS_HEIGHT * invScale;
+        const btnGap = BTN_CSS_GAP * invScale;
+        const buttonsH = visibleCount * btnH + (visibleCount - 1) * btnGap;
+        const totalH = titleH + titleGap + buttonsH;
+        const blockTop = gameCenterY - totalH / 2;
+
         // Title position and scale
-        title.position.set(canvasWidth.value / 2, canvasHeight.value * 0.35);
+        title.position.set(gameCenterX, blockTop + titleH / 2);
         title.scale.set(invScale);
 
         // Button positions and scale - skip How to Play when no instructions
-        const btnStep = (BTN_CSS_HEIGHT + BTN_CSS_GAP) * invScale;
-        const startY = canvasHeight.value * 0.45;
+        const firstBtnY = blockTop + titleH + titleGap + btnH / 2;
         let visibleIdx = 0;
         for (let i = 0; i < buttons.length; i++) {
             const isHtp = i === HOW_TO_PLAY_INDEX;
@@ -171,8 +198,8 @@ export function createPauseMenuView(
             buttons[i].container.visible = !hidden;
             if (!hidden) {
                 buttons[i].container.position.set(
-                    canvasWidth.value / 2,
-                    startY + visibleIdx * btnStep,
+                    gameCenterX,
+                    firstBtnY + visibleIdx * (btnH + btnGap),
                 );
                 buttons[i].container.scale.set(invScale);
                 visibleIdx++;
@@ -185,11 +212,11 @@ export function createPauseMenuView(
             howToPlayBackdrop.clear();
             howToPlayBackdrop.rect(0, 0, canvasWidth.value, canvasHeight.value)
                 .fill({ color: 0x000000, alpha: 0.85 });
-            howToPlayBody.position.set(canvasWidth.value / 2, canvasHeight.value * 0.15);
+            howToPlayBody.position.set(gameCenterX, gy + gh * 0.15);
             howToPlayBody.scale.set(invScale);
             howToPlayBackBtn.container.position.set(
-                canvasWidth.value / 2,
-                canvasHeight.value * 0.85,
+                gameCenterX,
+                gy + gh * 0.85,
             );
             howToPlayBackBtn.container.scale.set(invScale);
         }
@@ -237,6 +264,7 @@ export function createPauseMenuView(
 // ---------------------------------------------------------------------------
 
 const TITLE_CSS_SIZE = 32;
+const TITLE_BTN_CSS_GAP = 24;
 const HOW_TO_PLAY_CSS_FONT = 14;
 const HOW_TO_PLAY_WRAP_WIDTH = 360;
 const BTN_CSS_WIDTH = 200;
