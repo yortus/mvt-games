@@ -37,15 +37,21 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
     const tileSize = bindings.getTileSize();
     const visibleCols = bindings.getVisibleCols();
     const visibleRows = bindings.getVisibleRows();
-    const BUFFER_SIZE = visibleCols + 2;
+    const BUFFER_SIZE = visibleCols + 4;
 
     // Ring buffer of column graphics
     const columnGfx: Graphics[] = new Array(BUFFER_SIZE);
     let ringStart = 0;
     let leftWorldCol = -1;
 
+    // Outer container stays at (0,0).
+    // Inner container shifts for sub-tile smooth scrolling.
     const view = new Container();
     view.label = 'terrain';
+
+    const content = new Container();
+    view.addChild(content);
+
     initialiseView();
     view.onRender = refresh;
     return view;
@@ -54,7 +60,7 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
         for (let i = 0; i < BUFFER_SIZE; i++) {
             const gfx = new Graphics();
             columnGfx[i] = gfx;
-            view.addChild(gfx);
+            content.addChild(gfx);
             drawColumn(gfx, leftWorldCol + i);
         }
         positionColumns();
@@ -62,7 +68,7 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
 
     function refresh(): void {
         const scrollCol = bindings.getScrollCol();
-        const targetLeftCol = Math.floor(scrollCol) - 1;
+        const targetLeftCol = Math.floor(scrollCol) - 2;
 
         // Detect discontinuous scroll jump (e.g. loop reset) and rebuild buffer
         if (targetLeftCol < leftWorldCol || targetLeftCol > leftWorldCol + BUFFER_SIZE) {
@@ -83,8 +89,8 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
 
         positionColumns();
 
-        // Sub-tile smooth scroll offset
-        view.x = (leftWorldCol - scrollCol) * tileSize;
+        // Sub-tile smooth scroll offset (applied to inner content, not the masked outer)
+        content.x = (leftWorldCol - scrollCol) * tileSize;
     }
 
     function positionColumns(): void {

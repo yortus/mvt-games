@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
@@ -30,6 +30,15 @@ export function createGameView(game: GameModel): Container {
     const explosionContainers: Container[] = [];
 
     const view = new Container();
+
+    // Masked play area - clips all game content to the visible screen
+    const playArea = new Container();
+    const playMask = new Graphics();
+    playMask.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
+    playArea.addChild(playMask);
+    playArea.mask = playMask;
+    view.addChild(playArea);
+
     initialiseView();
     return view;
 
@@ -37,7 +46,7 @@ export function createGameView(game: GameModel): Container {
 
     function initialiseView(): void {
         // Terrain (handles its own scroll positioning)
-        view.addChild(
+        playArea.addChild(
             createTerrainView({
                 getScrollCol: () => game.scrollCol,
                 getVisibleCols: () => VISIBLE_COLS,
@@ -49,7 +58,7 @@ export function createGameView(game: GameModel): Container {
         );
 
         // Ship
-        view.addChild(
+        playArea.addChild(
             createShipView({
                 getScreenX: () => (game.ship.worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.ship.worldRow * TILE_SIZE,
@@ -65,7 +74,7 @@ export function createGameView(game: GameModel): Container {
                 getScreenY: () => game.bullets[idx].worldRow * TILE_SIZE,
                 isActive: () => game.bullets[idx].isActive,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             bulletContainers.push(c);
         }
 
@@ -77,7 +86,7 @@ export function createGameView(game: GameModel): Container {
                 getScreenY: () => game.bombs[idx].worldRow * TILE_SIZE,
                 isActive: () => game.bombs[idx].isActive,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             bombContainers.push(c);
         }
 
@@ -91,7 +100,7 @@ export function createGameView(game: GameModel): Container {
                 isAlive: () => game.rockets[idx].isAlive,
                 getPhase: () => game.rockets[idx].phase,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             rocketContainers.push(c);
         }
 
@@ -104,7 +113,7 @@ export function createGameView(game: GameModel): Container {
                 isActive: () => game.ufos[idx].isActive,
                 isAlive: () => game.ufos[idx].isAlive,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             ufoContainers.push(c);
         }
 
@@ -117,12 +126,12 @@ export function createGameView(game: GameModel): Container {
                 isActive: () => game.fuelTanks[idx].isActive,
                 isAlive: () => game.fuelTanks[idx].isAlive,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             fuelTankContainers.push(c);
         }
 
         // Base target (large distinct structure at end of section 3)
-        view.addChild(
+        playArea.addChild(
             createBaseTargetView({
                 getScreenX: () => (game.baseWorldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.baseWorldRow * TILE_SIZE,
@@ -140,7 +149,7 @@ export function createGameView(game: GameModel): Container {
                 isActive: () => game.explosions[idx].isActive,
                 getProgress: () => game.explosions[idx].progress,
             });
-            view.addChild(c);
+            playArea.addChild(c);
             explosionContainers.push(c);
         }
 

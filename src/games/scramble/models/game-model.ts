@@ -428,14 +428,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function spawnEntity(kind: SpawnKind, worldCol: number, row: number): void {
-        // Ground entities sit on the terrain surface (+0.5 so center-anchored
-        // sprites are flush with the floor); airborne ones use the spawn row
+        // Ground entities sit on the terrain surface; +0.5 offsets centre
+        // sprites within their tile on both axes.
+        const centredCol = worldCol + 0.5;
         const groundRow = terrain.getSurfaceRow(Math.floor(worldCol)) + 0.5;
 
         if (kind === 'rocket') {
             for (let i = 0; i < rockets.length; i++) {
                 if (!rockets[i].isActive) {
-                    rockets[i].activate(worldCol, groundRow);
+                    rockets[i].activate(centredCol, groundRow);
                     return;
                 }
             }
@@ -443,7 +444,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         else if (kind === 'ufo') {
             for (let i = 0; i < ufos.length; i++) {
                 if (!ufos[i].isActive) {
-                    ufos[i].activate(worldCol, row);
+                    ufos[i].activate(centredCol, row);
                     return;
                 }
             }
@@ -451,7 +452,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         else if (kind === 'fuel-tank') {
             for (let i = 0; i < fuelTanks.length; i++) {
                 if (!fuelTanks[i].isActive) {
-                    fuelTanks[i].activate(worldCol, groundRow);
+                    fuelTanks[i].activate(centredCol, groundRow);
                     return;
                 }
             }
@@ -460,7 +461,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // Use a fuel tank slot for the base, track it specially
             for (let i = 0; i < fuelTanks.length; i++) {
                 if (!fuelTanks[i].isActive) {
-                    fuelTanks[i].activate(worldCol, groundRow);
+                    fuelTanks[i].activate(centredCol, groundRow);
                     baseFuelTankIndex = i;
                     baseAlive = true;
                     baseActive = true;
