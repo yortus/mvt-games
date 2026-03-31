@@ -230,6 +230,7 @@ async function main(): Promise<void> {
     app.stage.addChild(pauseMenuContainer);
 
     let orientationOverlay: HTMLDivElement | undefined;
+    let pausedBeforeOverlay = false;
 
     // ---- Responsive scaling ------------------------------------------------
     function fitCanvasToScreen(): void {
@@ -381,6 +382,7 @@ async function main(): Promise<void> {
     // ---- Pause management ---------------------------------------------------
     function togglePause(): void {
         if (isCabinetScreen) return;
+        if (orientationOverlay) return;
         paused = !paused;
         touchLayer.visible = isTouchDevice() && !!currentSession?.inputConfig && !paused;
     }
@@ -409,6 +411,12 @@ async function main(): Promise<void> {
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !isCabinetScreen && currentSession) {
             e.preventDefault();
+            if (orientationOverlay) {
+                orientationOverlay.remove();
+                orientationOverlay = undefined;
+                paused = pausedBeforeOverlay;
+                return;
+            }
             togglePause();
         }
     });
@@ -466,6 +474,8 @@ async function main(): Promise<void> {
         const shouldShow = isPortrait && needsLandscape;
 
         if (shouldShow && !orientationOverlay) {
+            pausedBeforeOverlay = paused;
+            paused = true;
             orientationOverlay = document.createElement('div');
             Object.assign(orientationOverlay.style, {
                 position: 'fixed',
@@ -494,12 +504,14 @@ async function main(): Promise<void> {
                 if (orientationOverlay) {
                     orientationOverlay.remove();
                     orientationOverlay = undefined;
+                    paused = pausedBeforeOverlay;
                 }
             });
         }
         else if (!shouldShow && orientationOverlay) {
             orientationOverlay.remove();
             orientationOverlay = undefined;
+            paused = pausedBeforeOverlay;
         }
     }
 
