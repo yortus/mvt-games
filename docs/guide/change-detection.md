@@ -42,6 +42,11 @@ This project provides a `watch()` factory that wraps multiple getters and
 tracks changes with `===` comparison. On each `poll()` call, every getter is
 re-evaluated and the result reports which values changed:
 
+Getters must return a `Watchable` type - `string | number | boolean | null
+| undefined`. Objects and arrays are excluded because `===` only checks
+reference identity, and does not detect mutations within objects or arrays. Watching an object or array directly is thus most often a bug as the likely intent does not match the actual behaviour. The `Watchable` restriction prevents such bugs.
+To watch a collection, derive a primitive (e.g. `() => items.length`).
+
 ```ts
 const watcher = watch({
     rows: bindings.getRows,

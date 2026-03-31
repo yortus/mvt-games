@@ -2,12 +2,15 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-export interface Watcher<T extends Record<string, () => unknown>> {
+/** Values safe for `===` change detection. Excludes objects and arrays. */
+export type Watchable = string | number | boolean | null | undefined;
+
+export interface Watcher<T extends Record<string, () => Watchable>> {
     /** Poll all getters, update change flags, and return the watched values. */
     poll(): WatchedValues<T>;
 }
 
-export type WatchedValues<T extends Record<string, () => unknown>> = {
+export type WatchedValues<T extends Record<string, () => Watchable>> = {
     readonly [K in keyof T]: WatchedProperty<ReturnType<T[K]>>;
 };
 
@@ -21,7 +24,7 @@ export interface WatchedProperty<T> {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function watch<T extends Record<string, () => unknown>>(getters: T): Watcher<T> {
+export function watch<T extends Record<string, () => Watchable>>(getters: T): Watcher<T> {
     const keys = Object.keys(getters) as (keyof T)[];
     const reads = keys.map((k) => getters[k]);
     const state = reads.map(() => ({
