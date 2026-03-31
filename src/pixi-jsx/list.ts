@@ -19,17 +19,24 @@ import { Container } from 'pixi.js';
 export interface ListProps<T> {
     of: () => readonly T[];
     to: (item: T, index: number) => Container;
+    /** Optional version getter. When provided, zip-compare is skipped unless the version changes. */
+    version?: () => unknown;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
+/** Sentinel guaranteeing the first reconcile always runs. */
+const VERSION_UNSET: unique symbol = Symbol('VERSION_UNSET');
+
 export function List<T>(props: ListProps<T>): Container {
     const container = new Container();
 
     // Snapshot of item references from the previous reconcile.
     const prev: unknown[] = [];
+
+    let prevVersion: unknown = VERSION_UNSET;
 
     reconcile();
     container.onRender = reconcile;
@@ -44,6 +51,12 @@ export function List<T>(props: ListProps<T>): Container {
     }
 
     function reconcile(): void {
+        if (props.version !== undefined) {
+            const v = props.version();
+            if (v === prevVersion) return;
+            prevVersion = v;
+        }
+
         const items = props.of();
         const newLen = items.length;
         const oldLen = prev.length;

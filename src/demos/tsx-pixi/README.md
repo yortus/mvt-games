@@ -78,6 +78,13 @@ prop and flows it into the `to` callback. Internally it uses a zip-compare
 reconciliation algorithm optimized for common game mutations (append, remove,
 single insert/delete) with object-identity comparison - no keys needed.
 
+**Optimisation: Version-gated reconciliation.** The `<List>` component accepts an optional
+`version` getter. When provided, the zip-compare reconciliation is skipped
+entirely unless the version value has changed (by `===`). This collapses N
+per-item identity checks into a single comparison on unchanged frames - useful
+for lists that mutate infrequently. The model naturally knows when it mutates
+the list, so providing a version counter is straightforward.
+
 **Optimisation: Codegen'd refresh functions.** At construction time, the runtime builds a
 specialized refresh function (via `new Function`) for each element's exact set
 of bindings. This eliminates per-frame loop overhead, object lookups, and
