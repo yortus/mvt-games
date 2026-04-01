@@ -121,7 +121,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get cascadeStep() { return cascadeStep; },
         get matchedIndices() { return currentMatchedIndices; },
         get matchProgress() {
-            return matchSequence.step('fade').progress;
+            return matchSequence.steps.fade.progress;
         },
         get matchSequence() { return matchSequence; },
         get swapPos1() { return swapPos1; },
@@ -219,7 +219,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
 
         matchSequence.start();
         phaseElapsed = 0;
-        phaseEndTime = matchSequence.totalMs * 0.001;
+        phaseEndTime = matchSequence.durationMs * 0.001;
     }
 
     function finishMatching(): void {

@@ -11,85 +11,77 @@ export interface StepDef {
     readonly durationMs: number;
 }
 
-/** Runtime state of a single step, updated each tick. */
-export interface StepState {
-    /** Name matching the step definition. */
-    readonly name: string;
-    /** Linear 0..1 progress. 0 before the step starts, 1 after it ends. */
-    readonly progress: number;
-    /** True while the step is running (0 < progress < 1). */
-    readonly active: boolean;
-}
-
 /** A pre-allocated, ticker-driven sequence of overlapping timed steps. */
-export interface Sequence {
-    /** True from `start()` until every step has completed. */
-    readonly isRunning: boolean;
-    /** Pre-allocated step states in definition order. */
-    readonly steps: readonly StepState[];
+export interface Sequence<N extends string = string> {
     /** Total duration in ms (max of startMs + durationMs across all steps). */
-    readonly totalMs: number;
+    readonly durationMs: number;
+    /** True from `start()` until every step has completed. */
+    readonly isActive: boolean;
+    /** Linear 0..1 overall progress through the sequence. */
+    readonly progress: number;
+    /** Named step lookup. Each property has its own `isActive` and `progress`. */
+    readonly steps: { readonly [K in N]: { readonly isActive: boolean; readonly progress: number } };
     /** Start (or restart) the sequence from t=0. */
     start(): void;
-    /** Advance by deltaMs. No-op when not running. */
+    /** Advance by deltaMs. No-op when not active. */
     update(deltaMs: number): void;
-    /** Look up a step by name. Returns the pre-allocated state object. */
-    step(name: string): StepState;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Sentinel returned by `step()` for unknown names. Always inactive. */
-const EMPTY_STEP: StepState = { name: '', progress: 0, active: false };
-
-export function createSequence(defs: readonly StepDef[]): Sequence {
+export function createSequence<const D extends readonly StepDef[]>(defs: D): Sequence<D[number]['name']> {
     const count = defs.length;
 
     // Pre-compute end times and total duration
     const startsSec: number[] = new Array(count);
     const durationsSec: number[] = new Array(count);
-    let totalMs = 0;
+    let durationMs = 0;
     for (let i = 0; i < count; i++) {
         startsSec[i] = defs[i].startMs * 0.001;
         durationsSec[i] = defs[i].durationMs * 0.001;
         const endMs = defs[i].startMs + defs[i].durationMs;
-        if (endMs > totalMs) totalMs = endMs;
+        if (endMs > durationMs) durationMs = endMs;
     }
-    const totalSec = totalMs * 0.001;
+    const totalSec = durationMs * 0.001;
 
     // Pre-allocated mutable step state pool
-    const pool: { name: string; progress: number; active: boolean }[] = new Array(count);
+    const pool: { isActive: boolean; progress: number }[] = new Array(count);
     for (let i = 0; i < count; i++) {
-        pool[i] = { name: defs[i].name, progress: 0, active: false };
+        pool[i] = { progress: 0, isActive: false };
     }
 
-    // Name -> index lookup (built once)
-    const nameIndex = new Map<string, number>();
+    // Named step record (built once - property access is cheaper than Map lookup)
+    const stepRecord: Record<string, { isActive: boolean; progress: number }> = {};
     for (let i = 0; i < count; i++) {
-        nameIndex.set(defs[i].name, i);
+        stepRecord[defs[i].name] = pool[i];
     }
 
     let elapsedSec = 0;
-    let running = false;
+    let active = false;
 
-    const sequence: Sequence = {
-        get isRunning() { return running; },
-        steps: pool,
-        totalMs,
+    const sequence: Sequence<D[number]['name']> = {
+        durationMs,
+        get isActive() { return active; },
+        get progress() {
+            if (totalSec <= 0) return 0;
+            const p = elapsedSec / totalSec;
+            return p > 1 ? 1 : p;
+        },
+        steps: stepRecord as Sequence<D[number]['name']>['steps'],
 
         start(): void {
             elapsedSec = 0;
-            running = true;
+            active = true;
             for (let i = 0; i < count; i++) {
                 pool[i].progress = 0;
-                pool[i].active = false;
+                pool[i].isActive = false;
             }
         },
 
         update(deltaMs: number): void {
-            if (!running) return;
+            if (!active) return;
             elapsedSec += deltaMs * 0.001;
 
             let anyActive = false;
@@ -99,34 +91,28 @@ export function createSequence(defs: readonly StepDef[]): Sequence {
                 const local = elapsedSec - s;
                 if (local <= 0) {
                     pool[i].progress = 0;
-                    pool[i].active = false;
+                    pool[i].isActive = false;
                     anyActive = true; // not yet started - sequence still running
                 }
                 else if (local >= d) {
                     pool[i].progress = 1;
-                    pool[i].active = false;
+                    pool[i].isActive = false;
                 }
                 else {
                     pool[i].progress = local / d;
-                    pool[i].active = true;
+                    pool[i].isActive = true;
                     anyActive = true;
                 }
             }
 
             if (elapsedSec >= totalSec) {
-                running = false;
+                active = false;
             }
             else if (!anyActive) {
                 // Edge case: gaps in the sequence (all steps done or not started
                 // but total time not reached). Keep running until totalSec.
-                running = true;
+                active = true;
             }
-        },
-
-        step(name: string): StepState {
-            const idx = nameIndex.get(name);
-            if (idx === undefined) return EMPTY_STEP;
-            return pool[idx];
         },
     };
 

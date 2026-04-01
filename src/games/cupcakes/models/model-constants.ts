@@ -27,9 +27,9 @@ export const CASCADE_MULTIPLIER = 1.5;
  *  popup:               [================================]         150-500ms
  * ```
  */
-export const MATCH_EFFECT_STEPS: readonly StepDef[] = [
+export const MATCH_EFFECT_STEPS = [
     { name: 'fade',  startMs: 0,   durationMs: 250 },
     { name: 'shake', startMs: 50,  durationMs: 200 },
     { name: 'dust',  startMs: 100, durationMs: 250 },
     { name: 'popup', startMs: 150, durationMs: 350 },
-];
+] as const satisfies readonly StepDef[];

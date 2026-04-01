@@ -207,7 +207,7 @@ describe('BoardModel', () => {
     describe('match sequence', () => {
         it('matchSequence is not running when idle', () => {
             const board = makeBoard();
-            expect(board.matchSequence.isRunning).toBe(false);
+            expect(board.matchSequence.isActive).toBe(false);
         });
 
         it('matchSequence starts running when matching begins', () => {
@@ -217,7 +217,7 @@ describe('BoardModel', () => {
             board.trySwap(pair![0], pair![1]);
             stepMs(board, 300); // past swap duration
             if (board.phase === 'matching') {
-                expect(board.matchSequence.isRunning).toBe(true);
+                expect(board.matchSequence.isActive).toBe(true);
             }
         });
 
@@ -229,7 +229,7 @@ describe('BoardModel', () => {
             stepMs(board, 300); // past swap into matching
             if (board.phase === 'matching') {
                 // matchProgress should match the sequence fade step progress
-                expect(board.matchProgress).toBe(board.matchSequence.step('fade').progress);
+                expect(board.matchProgress).toBe(board.matchSequence.steps.fade.progress);
             }
         });
 

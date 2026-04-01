@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { Container, Graphics, Text } from 'pixi.js';
-import { watch, type Sequence, type StepState } from '#common';
+import { watch, createSequenceReaction, type Sequence } from '#common';
 import type { BoardPhase, CupcakeCell } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_SIZE_PX } from './view-constants';
@@ -23,7 +23,7 @@ export interface BoardViewBindings {
     getSettleProgress(): number;
     getMatchedIndices(): readonly number[];
     getMatchProgress(): number;
-    getMatchSequence(): Sequence;
+    getMatchSequence(): Sequence<'fade' | 'shake' | 'dust' | 'popup'>;
     getCascadeStep(): number;
 }
 
@@ -152,6 +152,67 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         returningVisual,
     };
 
+    // ---- Match effect reactions (dispatched by step lifecycle) ---------------
+
+    const updateMatchEffects = createSequenceReaction(bindings.getMatchSequence(), {
+        shake: {
+            inactive: () => boardContent.position.set(0, 0),
+            active: (progress) => {
+                const cascade = bindings.getCascadeStep();
+                const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascade - 1)) * (1 - progress);
+                const p = progress * SHAKE_FREQUENCY;
+                boardContent.position.set(
+                    Math.sin(p) * amp,
+                    Math.cos(p * 0.7) * amp * 0.6,
+                );
+            },
+        },
+        dust: {
+            inactive: () => {
+                for (let i = 0; i < DUST_POOL_SIZE; i++) {
+                    dustPool[i].alpha = 0;
+                }
+            },
+            active: (progress) => {
+                const matchedIndices = bindings.getMatchedIndices();
+                const cascade = bindings.getCascadeStep();
+                const cells = bindings.getCells();
+                const radius = DUST_RADIUS + DUST_CASCADE_BONUS * (cascade - 1);
+                const count = matchedIndices.length < DUST_POOL_SIZE ? matchedIndices.length : DUST_POOL_SIZE;
+                const expand = progress;
+                const fade = 1 - progress;
+
+                for (let i = 0; i < count; i++) {
+                    const cell = cells[matchedIndices[i]];
+                    const cx = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                    const cy = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                    const g = dustPool[i];
+                    g.position.set(cx, cy);
+                    g.scale.set(radius * (0.5 + expand * 0.5));
+                    g.alpha = fade * 0.6;
+                }
+                for (let i = count; i < DUST_POOL_SIZE; i++) {
+                    dustPool[i].alpha = 0;
+                }
+            },
+        },
+        popup: {
+            inactive: () => {
+                popupText.alpha = 0;
+            },
+            starting: () => {
+                const cascade = bindings.getCascadeStep();
+                const matchCount = bindings.getMatchedIndices().length;
+                const pts = matchCount * 10;
+                popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
+            },
+            active: (progress) => {
+                popupText.position.set(matchCentreX, matchCentreY - POPUP_RISE_PX * progress);
+                popupText.alpha = 1 - progress * progress;
+            },
+        },
+    });
+
     initialiseView();
     view.onRender = refresh;
     return view;
@@ -185,6 +246,13 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
         if (bindings.getPhase() === 'settling') {
             settleMaxDist = computeSettleMaxDist();
+        }
+
+        // Match centre tracking (shared by dust and popup effects)
+        const matchedIndices = bindings.getMatchedIndices();
+        if (matchedIndices.length !== prevMatchCount) {
+            prevMatchCount = matchedIndices.length;
+            computeMatchCentre(matchedIndices);
         }
 
         updateMatchEffects();
@@ -333,23 +401,7 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).alpha;
     }
 
-    // ---- Match effects -----------------------------------------------------
-
-    function updateMatchEffects(): void {
-        const seq = bindings.getMatchSequence();
-        const matchedIndices = bindings.getMatchedIndices();
-        const cascade = bindings.getCascadeStep();
-
-        // Recompute match centre when matched cells change
-        if (matchedIndices.length !== prevMatchCount) {
-            prevMatchCount = matchedIndices.length;
-            computeMatchCentre(matchedIndices);
-        }
-
-        updateShake(seq.step('shake'), cascade);
-        updateDust(seq.step('dust'), matchedIndices, cascade);
-        updatePopup(seq.step('popup'));
-    }
+    // ---- Match effects (helpers) -------------------------------------------
 
     function computeMatchCentre(indices: readonly number[]): void {
         if (indices.length === 0) {
@@ -367,66 +419,5 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         }
         matchCentreX = sumX / indices.length;
         matchCentreY = sumY / indices.length;
-    }
-
-    function updateShake(step: StepState, cascade: number): void {
-        if (!step.active) {
-            boardContent.position.set(0, 0);
-            return;
-        }
-        const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascade - 1)) * (1 - step.progress);
-        const p = step.progress * SHAKE_FREQUENCY;
-        boardContent.position.set(
-            Math.sin(p) * amp,
-            Math.cos(p * 0.7) * amp * 0.6,
-        );
-    }
-
-    function updateDust(step: StepState, matchedIndices: readonly number[], cascade: number): void {
-        if (!step.active && step.progress === 0) {
-            for (let i = 0; i < DUST_POOL_SIZE; i++) {
-                dustPool[i].alpha = 0;
-            }
-            return;
-        }
-
-        const cells = bindings.getCells();
-        const radius = DUST_RADIUS + DUST_CASCADE_BONUS * (cascade - 1);
-        const count = matchedIndices.length < DUST_POOL_SIZE ? matchedIndices.length : DUST_POOL_SIZE;
-        const expand = step.progress;
-        const fade = 1 - step.progress;
-
-        for (let i = 0; i < count; i++) {
-            const cell = cells[matchedIndices[i]];
-            const cx = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-            const cy = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-            const g = dustPool[i];
-            g.position.set(cx, cy);
-            g.scale.set(radius * (0.5 + expand * 0.5));
-            g.alpha = fade * 0.6;
-        }
-
-        // Hide unused pool entries
-        for (let i = count; i < DUST_POOL_SIZE; i++) {
-            dustPool[i].alpha = 0;
-        }
-    }
-
-    function updatePopup(step: StepState): void {
-        if (!step.active && step.progress === 0) {
-            popupText.alpha = 0;
-            return;
-        }
-
-        // Show score text and cascade info
-        if (step.progress > 0 && popupText.alpha === 0) {
-            const cascade = bindings.getCascadeStep();
-            const matchCount = bindings.getMatchedIndices().length;
-            const pts = matchCount * 10; // base points
-            popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
-        }
-
-        popupText.position.set(matchCentreX, matchCentreY - POPUP_RISE_PX * step.progress);
-        popupText.alpha = 1 - step.progress * step.progress;
     }
 }
