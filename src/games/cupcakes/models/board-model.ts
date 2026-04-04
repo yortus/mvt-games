@@ -33,7 +33,7 @@ export interface BoardModel {
     /** Linear 0-1 progress through the match fade. 0 outside 'matching' phase. */
     readonly matchProgress: number;
     /** Overlapping effect sequence active during the 'matching' phase. */
-    readonly matchSequence: Sequence;
+    readonly matchSequence: Sequence<'fade' | 'shake' | 'dust' | 'popup'>;
     /** First position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
     readonly swapPos1: Readonly<Position>;
     /** Second position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
