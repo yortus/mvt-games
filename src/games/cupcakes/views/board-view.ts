@@ -116,10 +116,8 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
     popupText.zIndex = 60;
     view.addChild(popupText);
 
-    // Cached matched-cell centre for effects positioning
-    let matchCentreX = 0;
-    let matchCentreY = 0;
-    let prevMatchCount = 0;
+    // Cached matched-cell centre for popup positioning
+    const matchCentre = { x: 0, y: 0 };
 
     // Pre-allocated snapshot objects to avoid per-cell allocation
     const boardSnap: BoardSnapshot = {
@@ -200,14 +198,15 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
             inactive: () => {
                 popupText.alpha = 0;
             },
-            starting: () => {
+            entering: () => {
+                computeMatchCentre(bindings.getMatchedIndices(), matchCentre);
                 const cascade = bindings.getCascadeStep();
                 const matchCount = bindings.getMatchedIndices().length;
                 const pts = matchCount * 10;
                 popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
             },
             active: (progress) => {
-                popupText.position.set(matchCentreX, matchCentreY - POPUP_RISE_PX * progress);
+                popupText.position.set(matchCentre.x, matchCentre.y - POPUP_RISE_PX * progress);
                 popupText.alpha = 1 - progress * progress;
             },
         },
@@ -246,13 +245,6 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
         if (bindings.getPhase() === 'settling') {
             settleMaxDist = computeSettleMaxDist();
-        }
-
-        // Match centre tracking (shared by dust and popup effects)
-        const matchedIndices = bindings.getMatchedIndices();
-        if (matchedIndices.length !== prevMatchCount) {
-            prevMatchCount = matchedIndices.length;
-            computeMatchCentre(matchedIndices);
         }
 
         updateMatchEffects();
@@ -403,10 +395,10 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
     // ---- Match effects (helpers) -------------------------------------------
 
-    function computeMatchCentre(indices: readonly number[]): void {
+    function computeMatchCentre(indices: readonly number[], out: { x: number; y: number }): void {
         if (indices.length === 0) {
-            matchCentreX = 0;
-            matchCentreY = 0;
+            out.x = 0;
+            out.y = 0;
             return;
         }
         let sumX = 0;
@@ -417,7 +409,7 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
             sumX += cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
             sumY += cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
         }
-        matchCentreX = sumX / indices.length;
-        matchCentreY = sumY / indices.length;
+        out.x = sumX / indices.length;
+        out.y = sumY / indices.length;
     }
 }

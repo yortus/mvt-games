@@ -5,33 +5,29 @@ import type { Sequence } from './sequence';
 // ---------------------------------------------------------------------------
 
 /**
- * Handlers for a single step's lifecycle.
+ * Handlers for a single step's lifecycle phases.
  *
- * A step has three phases, derived purely from its current state:
- * - **before**: `progress === 0` and not active (step has not yet started)
- * - **active**: step is currently running (`isActive` is true)
- * - **after**: `progress > 0` and not active (step has completed)
+ * A step has two phases derived purely from its current state each frame:
+ * - **active**: the step is currently running (`isActive` is true)
+ * - **inactive**: the step is at rest (before it starts, or after it completes)
  *
- * `inactive` covers both rest states. It receives a boolean `isAfter`
- * argument: `false` when before the step, `true` when after. Most
- * handlers ignore this argument (same reset either side).
+ * `inactive` fires once when the step enters a rest state - on initialization,
+ * on active-to-rest transitions, and on rest-to-rest skips (e.g. sequence restart).
+ * `entering` fires once on the frame the step becomes active.
+ * `active` fires every frame while the step is running.
  *
- * `starting` and `ending` fire once on the frame the phase transitions
- * into or out of `active`, for one-shot setup/teardown.
- *
- * Phase is re-derived from step state every frame, so the reaction is
- * correct regardless of whether model time moves smoothly, jumps, or
- * flows backward.
+ * Both `inactive` and `entering` receive an `at` parameter indicating which end
+ * of the step the transition occurs at: `'start'` (progress=0 side) or
+ * `'end'` (progress=1 side). This is direction-neutral - if time flows
+ * backward, a step is entered at `'end'` and becomes inactive at `'start'`.
  */
 export interface StepHandlers {
-    /** Rest-state callback. `isAfter` is false before the step, true after it. */
-    inactive?: (isAfter: boolean) => void;
-    /** One-shot setup on the frame the step becomes active. */
-    starting?: () => void;
+    /** Rest state. `at` is `'start'` before the step, `'end'` after it. */
+    inactive?: (at: 'start' | 'end') => void;
+    /** One-shot on the frame the step becomes active. `at` is which end was entered from. */
+    entering?: (at: 'start' | 'end') => void;
     /** Called every frame while the step is active. */
     active?: (progress: number) => void;
-    /** One-shot teardown on the frame the step leaves active. */
-    ending?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,7 +41,7 @@ const AFTER = 2;
 
 /**
  * Creates a ticker-driven dispatcher that routes each sequence step
- * through inactive/starting/active/ending lifecycle callbacks.
+ * through enter/active/inactive lifecycle callbacks.
  *
  * Phase is derived purely from step state every frame:
  * - `isActive`       -> ACTIVE
@@ -65,21 +61,19 @@ export function createSequenceReaction<N extends string>(
 
     // Pre-extract step references and handlers for hot-path iteration
     const stepRefs: { readonly isActive: boolean; readonly progress: number }[] = new Array(count);
-    const inactives: (((isAfter: boolean) => void) | undefined)[] = new Array(count);
-    const startings: ((() => void) | undefined)[] = new Array(count);
+    const enterings: (((at: 'start' | 'end') => void) | undefined)[] = new Array(count);
     const actives: (((progress: number) => void) | undefined)[] = new Array(count);
-    const endings: ((() => void) | undefined)[] = new Array(count);
+    const inactives: (((at: 'start' | 'end') => void) | undefined)[] = new Array(count);
 
     // Per-step phase tracking for transition detection
     const prevPhase: number[] = new Array(count);
 
     for (let i = 0; i < count; i++) {
         stepRefs[i] = sequence.steps[keys[i]];
-        const r = handlers[keys[i]]!;
-        inactives[i] = r.inactive;
-        startings[i] = r.starting;
-        actives[i] = r.active;
-        endings[i] = r.ending;
+        const h = handlers[keys[i]]!;
+        enterings[i] = h.entering;
+        actives[i] = h.active;
+        inactives[i] = h.inactive;
     }
 
     // Initialise: derive phase from current state, fire the matching callback
@@ -87,7 +81,7 @@ export function createSequenceReaction<N extends string>(
         const step = stepRefs[i];
         const phase = step.isActive ? ACTIVE : step.progress <= 0 ? BEFORE : AFTER;
         prevPhase[i] = phase;
-        firePhaseEntry(i, phase);
+        firePhaseEntry(i, phase, phase);
     }
 
     return function update(): void {
@@ -98,13 +92,7 @@ export function createSequenceReaction<N extends string>(
 
             if (phase !== prev) {
                 prevPhase[i] = phase;
-
-                // Leaving active: fire ending before entering the new phase
-                if (prev === ACTIVE) {
-                    endings[i]?.();
-                }
-
-                firePhaseEntry(i, phase);
+                firePhaseEntry(i, phase, prev);
             }
             else if (phase === ACTIVE) {
                 // Same phase, still active: dispatch progress
@@ -114,13 +102,15 @@ export function createSequenceReaction<N extends string>(
         }
     };
 
-    function firePhaseEntry(i: number, phase: number): void {
+    function firePhaseEntry(i: number, phase: number, prev: number): void {
         if (phase === ACTIVE) {
-            startings[i]?.();
+            // Entering active: 'start' if coming from BEFORE, 'end' if from AFTER
+            enterings[i]?.(prev === BEFORE ? 'start' : 'end');
             actives[i]?.(stepRefs[i].progress);
         }
         else {
-            inactives[i]?.(phase === AFTER);
+            // Entering rest state: 'start' for BEFORE, 'end' for AFTER
+            inactives[i]?.(phase === AFTER ? 'end' : 'start');
         }
     }
 }
