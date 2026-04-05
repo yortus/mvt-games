@@ -28,8 +28,8 @@ function findSwappablePair(board: BoardModel): [Position, Position] | undefined 
         for (let c = 0; c < board.colCount - 1; c++) {
             const idx1 = r * board.colCount + c;
             const idx2 = r * board.colCount + c + 1;
-            if (board.cells[idx1].isAlive && board.cells[idx2].isAlive &&
-                board.cells[idx1].kind !== board.cells[idx2].kind) {
+            if (board.cells[idx1].isAlive && board.cells[idx2].isAlive
+                && board.cells[idx1].kind !== board.cells[idx2].kind) {
                 return [{ row: r, col: c }, { row: r, col: c + 1 }];
             }
         }

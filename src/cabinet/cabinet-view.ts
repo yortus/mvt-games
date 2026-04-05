@@ -71,9 +71,9 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     menuLayer.addChild(carousel);
 
     const hint = new Text({
-        text: isTouchDevice() ?
-            '\u2190\u2192 Swipe   \u2502   Tap Play' :
-            '\u2190\u2192 Browse   \u2502   Enter Play',
+        text: isTouchDevice()
+            ? '\u2190\u2192 Swipe   \u2502   Tap Play'
+            : '\u2190\u2192 Browse   \u2502   Enter Play',
         style: {
             fontFamily: 'monospace',
             fontSize: 13,
@@ -152,8 +152,8 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
             const card = cards[selectedIdx];
             if (card) {
                 const b = card.container.getBounds();
-                if (e.globalX >= b.minX && e.globalX <= b.maxX &&
-                    e.globalY >= b.minY && e.globalY <= b.maxY) {
+                if (e.globalX >= b.minX && e.globalX <= b.maxX
+                    && e.globalY >= b.minY && e.globalY <= b.maxY) {
                     startZoomIn(selectedIdx);
                 }
             }

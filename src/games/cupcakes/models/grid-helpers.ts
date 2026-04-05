@@ -78,12 +78,12 @@ export function wouldMatchAt(
     col: number,
     kind: CupcakeKind,
 ): boolean {
-    if (col >= 2 &&
-        grid[row * colCount + col - 1] === kind &&
-        grid[row * colCount + col - 2] === kind) return true;
-    if (row >= 2 &&
-        grid[(row - 1) * colCount + col] === kind &&
-        grid[(row - 2) * colCount + col] === kind) return true;
+    if (col >= 2
+        && grid[row * colCount + col - 1] === kind
+        && grid[row * colCount + col - 2] === kind) return true;
+    if (row >= 2
+        && grid[(row - 1) * colCount + col] === kind
+        && grid[(row - 2) * colCount + col] === kind) return true;
     return false;
 }
 

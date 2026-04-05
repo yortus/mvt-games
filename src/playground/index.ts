@@ -175,8 +175,8 @@ function buildLayout(root: HTMLElement): {
     // Footer
     const footer = document.createElement('div');
     footer.className = 'pg-footer';
-    footer.innerHTML = '<span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>' +
-        '<span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> Reset</span>';
+    footer.innerHTML = '<span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>'
+        + '<span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> Reset</span>';
     root.appendChild(footer);
 
     return { header, presetSelect, shareBtn, editorContainer, controlsContainer, canvasContainer, canvasPlaceholder: placeholder, consoleContainer, footer, modelTab, viewTab, canvasTab, setActivePanel };

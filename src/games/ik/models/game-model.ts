@@ -150,8 +150,8 @@ export function createGameModel(): GameModel {
                     handleTimerExpiry();
                 }
             }
-            else if (gamePhase === 'round-intro' || gamePhase === 'point-scored' ||
-                gamePhase === 'round-over' || gamePhase === 'match-over') {
+            else if (gamePhase === 'round-intro' || gamePhase === 'point-scored'
+                || gamePhase === 'round-over' || gamePhase === 'match-over') {
                 // Update fighters for ongoing animations (won/lost/defeated poses)
                 player.update(deltaMs);
                 opponent.update(deltaMs);
@@ -229,10 +229,10 @@ export function createGameModel(): GameModel {
         a: { x: number; y: number; w: number; h: number },
         b: { x: number; y: number; w: number; h: number },
     ): boolean {
-        return a.x < b.x + b.w &&
-            a.x + a.w > b.x &&
-            a.y < b.y + b.h &&
-            a.y + a.h > b.y;
+        return a.x < b.x + b.w
+            && a.x + a.w > b.x
+            && a.y < b.y + b.h
+            && a.y + a.h > b.y;
     }
 
     function checkCollisions(): void {

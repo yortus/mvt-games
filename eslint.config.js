@@ -24,10 +24,18 @@ export default tseslint.config(
             '@stylistic/brace-style': ['error', 'stroustrup', { allowSingleLine: true }],
             '@stylistic/comma-dangle': ['error', 'always-multiline'],
             '@stylistic/no-multi-spaces': 'off',
-            '@stylistic/operator-linebreak': ['error', 'after', {
+            '@stylistic/operator-linebreak': ['error', 'before', {
                 overrides: {
-                    '&': 'before',
-                    '|': 'before',
+                    '=': 'after',
+                    '+=': 'after',
+                    '-=': 'after',
+                    '*=': 'after',
+                    '/=': 'after',
+                    '%=': 'after',
+                    '**=': 'after',
+                    '&&=': 'after',
+                    '||=': 'after',
+                    '??=': 'after',
                 },
             }],
             '@stylistic/quote-props': ['error', 'consistent'],

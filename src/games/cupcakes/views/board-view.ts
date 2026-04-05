@@ -218,9 +218,9 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
             return;
         }
 
-        const newCandidateIdx = gesture.isActive && gesture.target.row >= 0 ?
-            gesture.target.row * GRID_COLS + gesture.target.col :
-                -1;
+        const newCandidateIdx = gesture.isActive && gesture.target.row >= 0
+            ? gesture.target.row * GRID_COLS + gesture.target.col
+            : -1;
 
         if (newCandidateIdx !== prevCandidateIdx) {
             // Previous candidate starts returning to grid
@@ -356,9 +356,9 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
             if (origin === origin) { // not NaN
                 const targetRow = bindings.getCells()[idx].pos.row;
                 const dist = targetRow - origin;
-                const cellProgress = settleMaxDist > 0 ?
-                        Math.min(1, bindings.getSettleProgress() * settleMaxDist / dist) :
-                    1;
+                const cellProgress = settleMaxDist > 0
+                    ? Math.min(1, bindings.getSettleProgress() * settleMaxDist / dist)
+                    : 1;
                 return gridY(origin + dist * Bounce.easeOut(cellProgress));
             }
         }

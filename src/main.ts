@@ -183,8 +183,8 @@ async function main(): Promise<void> {
             getGameWidth: () => currentEntry?.screenWidth ?? 0,
             getGameHeight: () => currentEntry?.screenHeight ?? 0,
             getScale: () => currentScale,
-            getShowDpad: () => currentSession?.inputConfig != null &&
-                (currentSession.inputConfig.showDpad ?? true),
+            getShowDpad: () => currentSession?.inputConfig != null
+                && (currentSession.inputConfig.showDpad ?? true),
             getShowPrimary: () => currentSession?.inputConfig?.showPrimary ?? false,
             getShowSecondary: () => currentSession?.inputConfig?.showSecondary ?? false,
             getPrimaryLabel: () => currentSession?.inputConfig?.primaryLabel ?? 'A',
@@ -276,9 +276,9 @@ async function main(): Promise<void> {
                 }
                 scale = Math.min(scale, Math.max(0.3, scaleWithMargin));
             }
-            const effectiveScale = isTouchDevice() ?
-                    Math.max(0.3, scale) :
-                    (scale < 1 ? scale : Math.max(1, Math.floor(scale)));
+            const effectiveScale = isTouchDevice()
+                ? Math.max(0.3, scale)
+                : (scale < 1 ? scale : Math.max(1, Math.floor(scale)));
 
             const logicalW = Math.ceil(viewportW / effectiveScale);
             const logicalH = Math.ceil(viewportH / effectiveScale);
@@ -428,8 +428,8 @@ async function main(): Promise<void> {
         if (!isTouchDevice()) return;
 
         const isPortrait = window.innerHeight > window.innerWidth;
-        const needsLandscape = !isCabinetScreen && currentEntry !== undefined &&
-            currentEntry.screenWidth > currentEntry.screenHeight;
+        const needsLandscape = !isCabinetScreen && currentEntry !== undefined
+            && currentEntry.screenWidth > currentEntry.screenHeight;
 
         const shouldShow = isPortrait && needsLandscape;
 
@@ -454,11 +454,11 @@ async function main(): Promise<void> {
                 padding: '24px',
             });
             orientationOverlay.innerHTML =
-                '<div style="font-size:48px">\u{1F4F1}\u27F3</div>' +
-                '<div>Rotate your device to landscape<br>for a better experience</div>' +
-                '<button style="margin-top:8px;padding:8px 24px;background:#333;color:#ccc;' +
-                'border:1px solid #555;border-radius:6px;font-family:monospace;font-size:14px;cursor:pointer">' +
-                'Dismiss</button>';
+                '<div style="font-size:48px">\u{1F4F1}\u27F3</div>'
+                + '<div>Rotate your device to landscape<br>for a better experience</div>'
+                + '<button style="margin-top:8px;padding:8px 24px;background:#333;color:#ccc;'
+                + 'border:1px solid #555;border-radius:6px;font-family:monospace;font-size:14px;cursor:pointer">'
+                + 'Dismiss</button>';
             document.body.appendChild(orientationOverlay);
             orientationOverlay.querySelector('button')!.addEventListener('click', () => {
                 if (orientationOverlay) {

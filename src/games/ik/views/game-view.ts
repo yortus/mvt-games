@@ -73,8 +73,8 @@ export function createGameView(game: GameModel): Container {
         createOverlayView({
             getWidth: () => SCREEN_WIDTH,
             getHeight: () => SCREEN_HEIGHT,
-            getVisible: () => game.phase === 'round-intro' ||
-                game.phase === 'match-over',
+            getVisible: () => game.phase === 'round-intro'
+                || game.phase === 'match-over',
             getText: () => resolveOverlayText(game, restartHint),
             onRestartPressed: (pressed) => {
                 game.playerInput.restartPressed = pressed;

@@ -61,9 +61,9 @@ export function createGameView(game: GameModel): Container {
             getHeight: () => canvasH,
             getVisible: () => game.phase !== 'playing',
             getText: () =>
-                game.phase === 'game-over' ?
-                    `GAME OVER\n\n${restartHint}` :
-                    `YOU WIN!\n\n${restartHint}`,
+                game.phase === 'game-over'
+                    ? `GAME OVER\n\n${restartHint}`
+                    : `YOU WIN!\n\n${restartHint}`,
             onRestartPressed: (pressed) => {
                 game.playerInput.restartPressed = pressed;
             },

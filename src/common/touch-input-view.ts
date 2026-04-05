@@ -64,9 +64,9 @@ export function createTouchInputView(
     function refresh(): void {
         const w = watcher.poll();
 
-        const structuralChange = w.showDpad.changed ||
-            w.showPrimary.changed || w.showSecondary.changed ||
-            w.floatingJoystick.changed;
+        const structuralChange = w.showDpad.changed
+            || w.showPrimary.changed || w.showSecondary.changed
+            || w.floatingJoystick.changed;
 
         if (structuralChange) {
             rebuild();
