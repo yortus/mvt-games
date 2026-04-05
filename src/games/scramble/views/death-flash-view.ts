@@ -1,6 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { type StatefulPixiView } from '#common';
-import { createDeathFlashViewModel } from './death-flash-view-model';
+import { createEdgeTween, type StatefulPixiView } from '#common';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -13,12 +12,21 @@ export interface DeathFlashViewBindings {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const FLASH_DURATION_MS = 200;
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export function createDeathFlashView(bindings: DeathFlashViewBindings): StatefulPixiView {
-    const vm = createDeathFlashViewModel({
-        getIsDying: bindings.isDying,
+    const tween = createEdgeTween({
+        getSource: bindings.isDying,
+        triggerValue: 1,
+        restValue: 0,
+        durationMs: FLASH_DURATION_MS,
     });
     const view = new Container();
 
@@ -32,11 +40,11 @@ export function createDeathFlashView(bindings: DeathFlashViewBindings): Stateful
     return Object.assign(view, { update });
 
     function update(deltaMs: number): void {
-        vm.update(deltaMs);
+        tween.update(deltaMs);
     }
 
     function refresh(): void {
-        view.visible = vm.isVisible;
-        view.alpha = vm.alpha;
+        view.visible = tween.value > 0;
+        view.alpha = tween.value;
     }
 }

@@ -1,3 +1,5 @@
+export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
+export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
 export { isTouchDevice } from './is-touch-device';
 export { createKeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
 export { createOverlayView, type OverlayViewBindings } from './overlay-view';
