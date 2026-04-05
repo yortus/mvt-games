@@ -7,8 +7,8 @@
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
-- **Views** - stateless renderers; read state through a `bindings` interface; refresh every frame via `refresh()`
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.refresh()` then renderer draws
+- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` method. Complex presentation logic can be extracted into a view model (an internal detail of the view)
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws
 - **Bindings** - plain object bridging view and model: `get*()` methods read state, `on*()` methods relay user input
 
 Full reference: [Architecture Overview](docs/learn/architecture-overview.md) -
@@ -65,7 +65,7 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 
 0. **No em-dashes** - use hyphens instead.
 1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/guide/time-management.md)
-2. **Views must be stateless.** No domain logic, no autonomous animations. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output, nothing else. Exception: limited presentation-only state. [Presentation State](docs/guide/presentation-state.md)
+2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` method. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/guide/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/guide/hot-paths.md)

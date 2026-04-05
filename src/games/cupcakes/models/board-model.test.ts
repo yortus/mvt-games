@@ -204,33 +204,28 @@ describe('BoardModel', () => {
         });
     });
 
-    describe('match sequence', () => {
-        it('matchSequence is not running when idle', () => {
+    describe('match phase', () => {
+        it('matchProgress is 0 when idle', () => {
             const board = makeBoard();
-            expect(board.matchSequence.isActive).toBe(false);
+            expect(board.matchProgress).toBe(0);
         });
 
-        it('matchSequence starts running when matching begins', () => {
+        it('matchProgress advances during matching phase', () => {
             const board = makeBoard(4, 4);
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
             board.trySwap(pair![0], pair![1]);
             stepMs(board, 300); // past swap duration
             if (board.phase === 'matching') {
-                expect(board.matchSequence.isActive).toBe(true);
+                board.update(50);
+                expect(board.matchProgress).toBeGreaterThan(0);
+                expect(board.matchProgress).toBeLessThanOrEqual(1);
             }
         });
 
-        it('matchProgress derives from the fade step', () => {
-            const board = makeBoard(4, 4);
-            const pair = findSwappablePair(board);
-            expect(pair).toBeDefined();
-            board.trySwap(pair![0], pair![1]);
-            stepMs(board, 300); // past swap into matching
-            if (board.phase === 'matching') {
-                // matchProgress should match the sequence fade step progress
-                expect(board.matchProgress).toBe(board.matchSequence.steps.fade.progress);
-            }
+        it('matchDurationMs is a positive number', () => {
+            const board = makeBoard();
+            expect(board.matchDurationMs).toBeGreaterThan(0);
         });
 
         it('cascadeStep is 0 when idle', () => {

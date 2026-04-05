@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '#common';
+import { type StatefulPixiView } from '#common';
+import { createDeathFlashViewModel } from './death-flash-view-model';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -15,41 +16,27 @@ export interface DeathFlashViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createDeathFlashView(bindings: DeathFlashViewBindings): Container {
-    const FLASH_DURATION_MS = 200;
-
-    const watcher = watch({ dying: bindings.isDying });
-
-    let timerMs = FLASH_DURATION_MS;
+export function createDeathFlashView(bindings: DeathFlashViewBindings): StatefulPixiView {
+    const vm = createDeathFlashViewModel({
+        getIsDying: bindings.isDying,
+    });
+    const view = new Container();
 
     const gfx = new Graphics();
     gfx.rect(0, 0, bindings.getScreenWidth(), bindings.getScreenHeight());
     gfx.fill({ color: 0xffffff });
-
-    const view = new Container();
     view.addChild(gfx);
+
     view.visible = false;
     view.onRender = refresh;
-    return view;
+    return Object.assign(view, { update });
+
+    function update(deltaMs: number): void {
+        vm.update(deltaMs);
+    }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.dying.changed && watched.dying.value) {
-            timerMs = 0;
-            view.visible = true;
-            view.alpha = 1;
-        }
-
-        if (timerMs >= FLASH_DURATION_MS) return;
-
-        timerMs += 16;
-
-        if (timerMs >= FLASH_DURATION_MS) {
-            view.visible = false;
-        }
-        else {
-            view.alpha = 1 - timerMs / FLASH_DURATION_MS;
-        }
+        view.visible = vm.isVisible;
+        view.alpha = vm.alpha;
     }
 }

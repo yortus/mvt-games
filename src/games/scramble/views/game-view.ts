@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createOverlayView, isTouchDevice } from '#common';
+import { createOverlayView, isTouchDevice, type StatefulPixiView } from '#common';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
@@ -21,30 +21,31 @@ import { createHudView } from './hud-view';
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export function createGameView(game: GameModel): StatefulPixiView {
     const bulletContainers: Container[] = [];
     const bombContainers: Container[] = [];
     const rocketContainers: Container[] = [];
     const ufoContainers: Container[] = [];
     const fuelTankContainers: Container[] = [];
     const explosionContainers: Container[] = [];
-
+    let deathFlashView: StatefulPixiView;
+    let sectionAnnouncementView: StatefulPixiView;
     const view = new Container();
 
-    // Masked play area - clips all game content to the visible screen
-    const playArea = new Container();
-    const playMask = new Graphics();
-    playMask.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
-    playArea.addChild(playMask);
-    playArea.mask = playMask;
-    view.addChild(playArea);
-
     initialiseView();
-    return view;
+    return Object.assign(view, { update });
 
     // ---- initialiseView ----------------------------------------------------
 
     function initialiseView(): void {
+        // Masked play area - clips all game content to the visible screen
+        const playArea = new Container();
+        const playMask = new Graphics();
+        playMask.rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
+        playArea.addChild(playMask);
+        playArea.mask = playMask;
+        view.addChild(playArea);
+
         // Terrain (handles its own scroll positioning)
         playArea.addChild(
             createTerrainView({
@@ -183,22 +184,20 @@ export function createGameView(game: GameModel): Container {
         );
 
         // Section announcement (shows section name on entry)
-        view.addChild(
-            createSectionAnnouncementView({
-                getSectionIndex: () => game.sectionIndex,
-                getScreenWidth: () => SCREEN_WIDTH,
-                getScreenHeight: () => PLAY_HEIGHT,
-            }),
-        );
+        sectionAnnouncementView = createSectionAnnouncementView({
+            getScreenWidth: () => SCREEN_WIDTH,
+            getScreenHeight: () => PLAY_HEIGHT,
+            getSectionIndex: () => game.sectionIndex,
+        });
+        view.addChild(sectionAnnouncementView);
 
         // Death flash (white flash on ship death)
-        view.addChild(
-            createDeathFlashView({
-                getScreenWidth: () => SCREEN_WIDTH,
-                getScreenHeight: () => PLAY_HEIGHT,
-                isDying: () => game.phase === 'dying',
-            }),
-        );
+        deathFlashView = createDeathFlashView({
+            getScreenWidth: () => SCREEN_WIDTH,
+            getScreenHeight: () => PLAY_HEIGHT,
+            isDying: () => game.phase === 'dying',
+        });
+        view.addChild(deathFlashView);
 
         // Base alert (flashing "DESTROY THE BASE!" when scroll is clamped)
         view.addChild(
@@ -209,5 +208,11 @@ export function createGameView(game: GameModel): Container {
                 getScreenHeight: () => PLAY_HEIGHT,
             }),
         );
+    }
+
+    // ---- Update presentation state ----------------------------------------------------
+    function update(deltaMs: number): void {
+        deathFlashView.update(deltaMs);
+        sectionAnnouncementView.update(deltaMs);
     }
 }

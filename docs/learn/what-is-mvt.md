@@ -70,7 +70,8 @@ assembles proven ideas into a framework suited to frame-based applications:
 | ----------------- | --------------------------------------------------------- |
 | MVC Model         | **Model** - owns state and domain logic                   |
 | MVC Controller    | **Ticker** - orchestrates the frame loop                  |
-| MVVM ViewModel    | **Bindings** - the `get*()`/`on*()` contract between view and model |
+| MVVM ViewModel    | **View model** - owns presentation state (when extracted from a view) |
+| MVVM Bindings     | **Bindings** - the `get*()`/`on*()` contract between view and model |
 | Passive View      | **View** - reads state through bindings, holds nothing    |
 | React state       | **Model** - single source of truth for domain state       |
 | React component   | **View** - renders based on current state                 |

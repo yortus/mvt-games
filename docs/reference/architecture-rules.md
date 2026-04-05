@@ -27,13 +27,13 @@ files), see the [Style Guide](style-guide.md).
 
 | # | Rule | Common Examples | Rationale |
 | -- | ---- | --------------- | --------- |
-| V1 | Views are stateless. They read state and write to the presentation output. | No domain logic, no autonomous animations, no internal domain state | Views are pure projections that can be replaced or multiplied without affecting behaviour. [Views](../learn/views.md) |
+| V1 | Views hold no domain state. They read state and write to the presentation output. | No domain logic, no autonomous animations, no internal domain state | Views are pure projections that can be replaced or multiplied without affecting behaviour. [Views](../learn/views.md) |
 | V2 | `refresh()` runs once per frame, after all models have updated. | Read bindings, set sprite positions and text labels | Frame-consistent snapshots. No view sees a half-updated world. |
 | V3 | `refresh()` must be idempotent. | Calling it twice with the same model state produces the same result | Predictability. No hidden side effects accumulate across frames. |
 | V4 | `refresh()` must not mutate models, emit domain events, or trigger state transitions. | Domain actions are relayed through `on*()` bindings, not called directly in `refresh()` | Views are read-only projections. |
 | V5 | All binding values must be re-read in `refresh()`, never cached at construction time. | Call `bindings.getScore()` inside `refresh()`, not in the factory closure | Bindings are reactive. Values may change between frames. [Bindings in Depth](../guide/bindings-in-depth.md) |
-| V6 | Presentation state is allowed only when purely cosmetic and the model does not need to know about it. | Animated score counter, fade-in on phase change | The exception, not the rule. [Presentation State](../guide/presentation-state.md) |
-| V7 | When a view needs elapsed time for presentation animation, receive it through a binding. Views must not invent their own notion of time. | A `getClockMs()` binding driving an easing tween | Keeps presentation animations deterministic, frame-rate-independent, and testable. [Presentation State](../guide/presentation-state.md) |
+| V6 | Views may hold cosmetic presentation state for transitions the model doesn't track. When the logic is complex enough to warrant separate testing, extract it into a view model. For the simplest cases (a single smoothed value), inline state with a `getClockMs()` binding is acceptable. | Death flash timer in a view; match effect sequence extracted to a view model; smoothed score counter inline with `getClockMs()` | Keeps models free of presentation concerns. View models are testable and deterministic when extraction is warranted. [Presentation State](../guide/presentation-state.md) |
+| V7 | When a view has inline presentation state, receive elapsed time through a `getClockMs()` binding. Views must not invent their own notion of time or hardcode frame deltas. | `getClockMs()` binding driving an easing tween; never `timerMs += 16` | Keeps presentation animations deterministic and frame-rate-independent. [Presentation State](../guide/presentation-state.md) |
 | V8 | MVT views can target any output technology. | Canvas scene graph, DOM, audio system, debug panel | MVT is not coupled to a particular renderer. |
 | V9 | View trees do not need to mirror model trees. | Multiple views from one model; models with no view; decorative views with no model | Domain structure and presentation needs are different concerns. Bindings decouple the two trees. [View Composition](../guide/view-composition.md) |
 
@@ -41,7 +41,7 @@ files), see the [Style Guide](style-guide.md).
 
 | # | Rule | Common Examples | Rationale |
 | -- | ---- | --------------- | --------- |
-| T1 | Each frame follows a strict sequence: update, refresh, render. Never interleave or skip steps. | `model.update(deltaMs)` then `view.refresh()` then renderer draws | Models settle first, then views read a stable snapshot. [The Ticker](../learn/ticker.md) |
+| T1 | Each frame follows a strict sequence: update, refresh, render. Never interleave or skip steps. | `model.update(deltaMs)` then `view.update(deltaMs)` (stateful views) then `view.refresh()` then renderer draws | Models settle first, then stateful views advance presentation state, then all views read a stable snapshot. [The Ticker](../learn/ticker.md) |
 | T2 | Cap `deltaMs` to a safe maximum. | e.g. 100ms cap to handle backgrounded tabs | Prevents huge time leaps that could break non-leap-safe models. |
 | T3 | The ticker contains no domain logic and no rendering code. | No collision checks, no sprite creation | Separation of concerns. It is purely a timing orchestrator. |
 | T4 | The ticker may pause, slow down, speed up, or single-step time. | Pause overlay, slow-mo debug, frame-by-frame stepping | Models stay in sync because they only see `deltaMs`. |

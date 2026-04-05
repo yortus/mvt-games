@@ -154,32 +154,38 @@ the application still work correctly? If yes, the view is properly stateless.
 If the view held state the rest of the application depended on, something is
 in the wrong layer.
 
-## Presentation State (the Exception)
+## Presentation State
 
-In limited cases, a view may maintain internal state for a purely cosmetic
-animation. This is the **exception**, not the rule. It applies only when:
+Most views are pure projections of model state - they read values in
+`refresh()` and update the scene graph. No state of their own is needed.
 
-1. The model doesn't need to know about the transition.
-2. The state is purely presentational and doesn't affect application behaviour.
+Occasionally a view needs its own state for a cosmetic transition that the
+model doesn't track. A model is a standalone simulation that determines game
+outcomes. It has no reason to track a 200ms death-flash overlay or a
+smooth score count-up - those don't affect what happens next in the game.
+But they do need timers and progress values that advance with time, so
+the view maintains them.
 
-**Example:** The model updates `score` in discrete jumps (0 to 100 to 250).
-The view animates the displayed number smoothly between values, maintaining a
-`displayedScore` that tweens toward the model's current score.
+A view with presentation state gains an `update(deltaMs)` method - the
+same time-advancement concept used by models - so the ticker can advance
+the view's state each frame:
 
 ```
-Model state:     0 -------- 100 ------------ 250
-                     jump          jump
-
-Displayed value: 0 ~~~~ 100 ~~~~ 250
-                  smooth    smooth
-                  tween     tween
+Ticker loop:
+  model.update(deltaMs)     -- domain state advances
+  view.update(deltaMs)      -- view state advances (views that have it)
+  view.refresh()            -- reads model + own state, writes to scene graph
 ```
 
-The model is unaware of this. It only knows the "real" score. If the view's
-internal state is influencing model behaviour or growing beyond a single
-tweened value, it likely belongs in the model instead.
+When the presentation logic grows complex enough to warrant separate testing,
+it can be extracted into a **view model** - a technique borrowed from the
+MVVM architecture. The view model is a plain object with `update(deltaMs)`
+and readable state, independently testable. The view creates and owns it
+internally.
 
-For more on this topic, see [Presentation State](../guide/presentation-state.md).
+For the full guide on presentation state - what qualifies, how views own it,
+when to extract a view model - see
+[Presentation State](../guide/presentation-state.md).
 
 ## Two Kinds of Views
 

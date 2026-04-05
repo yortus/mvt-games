@@ -36,6 +36,7 @@ export function createScrambleEntry(): GameEntry {
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
+                    gameView.update(deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);

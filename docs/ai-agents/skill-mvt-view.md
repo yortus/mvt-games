@@ -165,15 +165,28 @@ updates (position, alpha, visibility), read directly without watching.
 
 ## Presentation State
 
-**[MVT requirement]** Views are normally stateless. Presentation state is the
-exception - allowed only when **both** conditions hold:
+**[MVT requirement]** Most views are pure projections - read state, update
+scene graph. Occasionally a view needs its own state for a cosmetic transition
+that the model doesn't track (the model has no reason to track it because no
+domain outcome depends on it).
 
-1. The model does not need to know about the transition.
-2. The internal state is purely cosmetic.
+Views with presentation state gain an `update(deltaMs)` method. The ticker
+calls `view.update(deltaMs)` after models update. Parent views propagate
+`update()` to children that have it.
 
-When a view needs elapsed time for a presentation animation, receive it
-through a `getClockMs()` binding - views must not invent their own notion
-of time:
+When the presentation logic grows complex enough to warrant separate testing,
+extract it into a **view model** - a technique borrowed from MVVM:
+- The view model is a plain object with `update(deltaMs)` and readable state
+- Created and owned by the view that uses it (an internal detail)
+- Has no view or scene-graph dependencies (no Pixi.js imports)
+- Independently testable
+
+When multiple views share a view model, the nearest common parent creates
+the view model and passes it to both views.
+
+For the simplest cases (a single tweened value with trivial logic), inline
+presentation state in the view is acceptable, using a `getClockMs()` binding
+so the view does not invent its own notion of time:
 
 ```ts
 let displayedScore = 0;
@@ -192,9 +205,9 @@ function refresh(): void {
 }
 ```
 
-This keeps presentation animations deterministic, frame-rate-independent,
-and testable. If the tweening logic grows non-trivial, extract it into a
-standalone function that can be unit tested without a rendering context.
+As soon as the presentation state grows beyond a single value, or the timing
+logic warrants unit testing, extract it into a view model. Never hardcode
+frame deltas (`timerMs += 16`).
 
 ## Hot-Path Rules for `refresh()`
 
@@ -214,9 +227,11 @@ standalone function that can be unit tested without a rendering context.
 | Pattern                                    | Rule   | Fix                                           |
 | ------------------------------------------ | ------ | --------------------------------------------- |
 | Domain state in a view                     | V1     | Move to the model                             |
+| Complex presentation logic in a view       | V6     | Extract to a view model                       |
+| Hardcoded frame delta (`timerMs += 16`)    | V7     | Use a view model with `update(deltaMs)`       |
 | Caching binding values at construction     | V5     | Read `get*()` inside `refresh()`              |
 | Mutating models in `refresh()`             | V4     | Use `on*()` bindings for input relay          |
-| `setTimeout` / `setInterval` in a view     | V1     | Receive time through `getClockMs()` binding   |
+| `setTimeout` / `setInterval` in a view     | V1     | Use a view model or `getClockMs()` binding    |
 | Computing own deltaMs from `Date.now()`    | V7     | Use `getClockMs()` binding                    |
 | Using `class`                              | Style  | Factory function + plain record               |
 | Using `enum` or const-object enum          | Style  | String-literal union                          |
@@ -267,7 +282,7 @@ function createEntityView(bindings: EntityViewBindings): Container {
 - [Bindings in Depth](../guide/bindings-in-depth.md) - advanced bindings topics
 - [Change Detection](../guide/change-detection.md) - the Watch pattern
 - [View Composition](../guide/view-composition.md) - view hierarchies
-- [Presentation State](../guide/presentation-state.md) - the stateless exception
+- [Presentation State](../guide/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../reference/architecture-rules.md) - all rules (V1-V9)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../guide/hot-paths.md) - performance rules for `refresh()`

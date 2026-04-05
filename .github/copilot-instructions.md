@@ -6,8 +6,8 @@ Pixi.js, and GSAP. Follow these conventions when generating code.
 ## Architecture
 
 - **Models** own state and logic; advance via `update(deltaMs)` only - never wall-clock time.
-- **Views** are stateless; read via `bindings` object, write to Pixi scene graph.
-- **Ticker** loop: `model.update(deltaMs)` → `view.refresh()` → render.
+- **Views** read via `bindings` object, write to Pixi scene graph. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` method. Complex presentation logic can be extracted into a view model (an internal detail of the view).
+- **Ticker** loop: `model.update(deltaMs)` → `view.update(deltaMs)` (views with state) → `view.refresh()` → render.
 - **Cabinet** manages game selection; each game is a self-contained module under `src/games/<name>/`.
 - **GameEntry** - descriptor: `{ id, name, screenWidth, screenHeight, start(stage) → GameSession }`
 - **GameSession** - running instance: `{ update(deltaMs), destroy() }`

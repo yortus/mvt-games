@@ -1,106 +1,252 @@
 # Presentation State
 
-> In limited cases, a view may maintain internal state for a purely cosmetic
-> animation. This is the exception to stateless views - it applies only when
-> the model does not need to know about the transition and the state is
-> purely presentational.
+> Most views are pure projections of model state. Occasionally a view needs
+> its own state for cosmetic transitions that the model doesn't track. This
+> page explains when presentation state is needed, how views own it, and
+> when to extract it into a separately testable object called a view model.
 
 **Related:** [Views (Learn)](../learn/views.md) ·
 [View Composition](view-composition.md)
 
 ---
 
-## When It Applies
+## When Is State "Cosmetic"?
 
-MVT views are normally stateless - they read model state each frame and update
-the presentation to match. Presentation state is the exception. It applies only
-when **both** of these conditions hold:
+A model is a standalone simulation. It determines game outcomes - scores,
+deaths, matches, phase transitions. If you replayed the same inputs with no
+view at all, every outcome would be identical. The model doesn't need to know
+how those outcomes are communicated to the player.
 
-1. The model does not need to know about the transition to enforce domain rules.
-2. The internal state is purely cosmetic and does not affect application
-   behaviour.
+State is **cosmetic** when removing it would not change any domain outcome.
+It affects what the player sees, not what happens. Some concrete examples:
 
-If either condition is not met, the state belongs in the model.
+- A white flash overlay that fades out over 200ms when the player dies.
+  The model already knows the player is dead. The flash is visual feedback.
+- A score display that smoothly counts up from 100 to 200 when points are
+  awarded. The model score jumped instantly. The smooth count-up is polish.
+- A choreographed shake-then-popup sequence after a match event. The match
+  is resolved in the model. The celebration is feedback.
 
-## Example: Animated Score Counter
+These transitions need timers and progress values that advance with time -
+but the model has no reason to track them, because no game logic depends on
+whether the flash has finished fading or the popup has finished rising.
 
-The model updates `score` in discrete jumps (e.g. 0 to 100 to 250). The view
-wants to animate the displayed number smoothly between values:
+::: info Not all animation needs presentation state
+Many view animations are driven directly from model values with no extra
+state at all. A character moving across the screen reads model position. A
+health bar shrinking reads model health. An entity flickering while
+invulnerable reads a model flag and timer progress. These are just
+`refresh()` reading model state - no presentation state involved.
+
+Presentation state is only needed when the view introduces a transition
+**that the model doesn't track** - typically a cosmetic flourish in
+response to a model event.
+:::
+
+## Views With Presentation State
+
+When a view needs presentation state, it owns that state directly. The view
+gains an `update(deltaMs)` method - the same time-advancement concept used
+by models - so the ticker can advance the view's state each frame.
 
 ```
-Model state:     0 -------- 100 --------- 250
-                    sudden       sudden
-                     jump         jump
-
-Displayed value: 0 ~~~~~~~~ 100 ~~~~~~~~ 250
-                    smooth       smooth
-                    tween        tween
+Ticker loop:
+  model.update(deltaMs)     -- domain state advances
+  view.update(deltaMs)      -- view state advances (views that have it)
+  view.refresh()            -- reads model + own state, writes to scene graph
 ```
 
-The view maintains a `displayedScore` variable and tweens it toward the
-model's current score each frame. The model is unaware of this - it only knows
-the "real" score.
+Views without presentation state remain unchanged - no `update()` method,
+just `refresh()`. Most views fall into this category.
+
+### Example: Death Flash
+
+A white flash overlay that plays for 200ms when the player dies. The view
+maintains a timer and detects the dying transition:
 
 ```ts
-function createScoreView(bindings: ScoreViewBindings): Container {
-    const view = new Container();
-    const label = new Text({ text: '0', style: scoreStyle });
-    view.addChild(label);
+function createDeathFlashView(bindings: DeathFlashViewBindings):
+        Container & { update(deltaMs: number): void } {
+    const view = new Container() as Container & { update(deltaMs: number): void };
+    const gfx = new Graphics();
+    gfx.rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
+    view.addChild(gfx);
 
-    let displayedScore = 0;
-    let prevClockMs = 0;
+    let timerMs = FLASH_DURATION_MS;
+    let wasDying = false;
 
-    function refresh(): void {
-        const clockMs = bindings.getClockMs();
-        const deltaMs = clockMs - prevClockMs;
-        prevClockMs = clockMs;
+    view.update = (deltaMs) => {
+        const isDying = bindings.isDying();
+        if (isDying && !wasDying) timerMs = 0;
+        wasDying = isDying;
+        if (timerMs < FLASH_DURATION_MS) timerMs += deltaMs;
+    };
 
-        const target = bindings.getScore();
-        // Ease toward the model value based on elapsed time
-        const t = 1 - Math.pow(0.002, deltaMs / 1000);
-        displayedScore += (target - displayedScore) * t;
-        if (Math.abs(target - displayedScore) < 1) displayedScore = target;
-        label.text = String(Math.round(displayedScore));
-    }
+    view.onRender = function refresh() {
+        view.visible = timerMs < FLASH_DURATION_MS;
+        view.alpha = timerMs < FLASH_DURATION_MS
+            ? 1 - timerMs / FLASH_DURATION_MS
+            : 0;
+    };
 
-    view.onRender = refresh;
     return view;
 }
 ```
 
-This is a valid use of presentation state: the model's score is the source of
-truth, and the smooth animation is a purely cosmetic enhancement. Removing the
-view would not affect the game's logic.
+Parent views propagate `update()` to children that have it. This chains up
+through the view tree so the entry file stays clean:
 
-NOTE: The `getClockMs` binding gives the view access to externally-provided time without
-the view inventing its own notion of time. This keeps the animation
-deterministic and frame-rate-independent: the same clock progression always
-produces the same displayed values, regardless of how often `refresh()` is
-called.
+```ts
+// Entry file - no awareness of child presentation state
+const gameView = createGameView(gameModel);
+return {
+    update(deltaMs) {
+        gameModel.update(deltaMs);
+        gameView.update(deltaMs);
+    },
+};
+```
 
-## Other Examples
+### Receiving Time
 
-- **Fade in/out** - a model tracks an `isVisible` boolean; the view maintains
-  its own `alpha` value that eases toward 0 or 1.
-- **Sprite wobble** - a model reports `isHit`; the view plays a brief shake
-  animation that decays over a few frames.
-- **Score popup** - a model reports a score event; the view spawns a
-  floating "+100" label that fades out.
+Views with presentation state receive `deltaMs` through their `update()`
+method. For the simplest cases (a single smoothed value with no edge
+detection), a `getClockMs()` binding is an alternative that avoids adding
+an `update()` method:
 
-In each case, the model does not track the animation progress. The view
-manages a small piece of cosmetic state that exists solely for presentational
-polish.
+```ts
+let displayedScore = 0;
+let prevClockMs = 0;
+
+function refresh(): void {
+    const clockMs = bindings.getClockMs();
+    const deltaMs = clockMs - prevClockMs;
+    prevClockMs = clockMs;
+
+    const target = bindings.getScore();
+    const t = 1 - Math.pow(0.002, deltaMs / 1000);
+    displayedScore += (target - displayedScore) * t;
+    if (Math.abs(target - displayedScore) < 1) displayedScore = target;
+    label.text = String(Math.round(displayedScore));
+}
+```
+
+Either way, **do not hardcode frame deltas** (`timerMs += 16`). Time must
+come from outside the view, keeping updates deterministic and
+frame-rate-independent.
+
+## Extracting a View Model
+
+When a view's presentation logic grows complex - multi-step sequences,
+choreographed timing across several effects, transition detection with
+multiple edge triggers - the `update()` body becomes hard to read and hard
+to test through the view's visual output alone.
+
+In these cases, borrow a technique from the MVVM architecture: extract the
+presentation state and its logic into a separate object called a **view
+model**. The view model is a plain object with `update(deltaMs)` and
+readable state - independently testable with no rendering context needed.
+
+### When to extract
+
+- The presentation logic involves multi-step sequences or choreography
+- You want to unit test the timing and transition behaviour directly
+- The `update()` body has grown large enough to obscure what the view does
+
+### Example: Match Effects View Model
+
+A match-3 game plays overlapping shake, dust, and popup effects when
+cupcakes are matched. The edge detection and multi-step sequence warrant
+extraction:
+
+```ts
+// match-effects-view-model.ts
+interface MatchEffectsViewModel {
+    readonly sequence: Sequence<'fade' | 'shake' | 'dust' | 'popup'>;
+    update(deltaMs: number): void;
+    createReaction(handlers: MatchEffectHandlers): () => void;
+}
+
+function createMatchEffectsViewModel(getIsMatching: () => boolean): MatchEffectsViewModel {
+    const sequence = createSequence(MATCH_EFFECT_STEPS);
+    let wasMatching = false;
+    return {
+        get sequence() { return sequence; },
+        update(deltaMs) {
+            const isMatching = getIsMatching();
+            if (isMatching && !wasMatching) sequence.start();
+            wasMatching = isMatching;
+            sequence.update(deltaMs);
+        },
+        createReaction(handlers) {
+            return createSequenceReaction(sequence, handlers);
+        },
+    };
+}
+```
+
+The view creates the view model internally and delegates to it:
+
+```ts
+// board-view.ts
+function createBoardView(bindings: BoardViewBindings, gesture: GridDragGesture, drag: DragViewModel):
+        Container & { update(deltaMs: number): void } {
+    const matchEffects = createMatchEffectsViewModel({
+        getIsMatching: () => bindings.getPhase() === 'matching',
+    });
+
+    const view = new Container() as Container & { update(deltaMs: number): void };
+    // ... scene graph setup ...
+
+    const updateMatchEffects = createSequenceReaction(matchEffects.sequence, {
+        shake: {
+            inactive: () => boardContent.position.set(0, 0),
+            active: (progress) => { /* apply shake offset */ },
+        },
+        popup: {
+            entering: () => { /* compute popup text */ },
+            active: (progress) => { /* position and fade popup */ },
+        },
+    });
+
+    view.update = (deltaMs) => {
+        matchEffects.update(deltaMs);
+    };
+
+    view.onRender = function refresh() {
+        updateMatchEffects(); // dispatches lifecycle callbacks
+    };
+
+    return view;
+}
+```
+
+### View model guidelines
+
+- A view model is an internal detail of the view that uses it. The view
+  creates and owns it.
+- View models must not reference views or the scene graph (no Pixi.js
+  imports).
+- View models advance through `update(deltaMs)` only - the same time
+  management rules as models.
+- View models are closely coupled to their view. Place them as sibling
+  files (e.g. `board-view.ts` and `match-effects-view-model.ts`), so that
+  the extraction is visible and the view model is easy to find.
+- Always place view models in separate files from their view, so that they
+  can be imported and tested independently.
+- Use factory functions like everything else: `createXxxViewModel()`.
+- When two sibling views share a view model, the nearest common parent
+  creates the shared instance and passes it to both children.
 
 ## The Boundary: When to Move State to the Model
 
-If you find a view's internal state doing any of these, it likely belongs
-in the model instead:
+If you find presentation state doing any of these, it belongs in the domain
+model instead:
 
 | Smell                                                               | Remedy                              |
 | ------------------------------------------------------------------- | ----------------------------------- |
-| Other code depends on the view's internal state                     | Move to the model                   |
-| The view's state influences what the model does next                | Move to the model                   |
-| The internal state is growing beyond a single tweened value         | Move to the model                   |
+| Other code depends on the presentation state                        | Move to the model                   |
+| The state influences what the model does next                       | Move to the model                   |
 | Multiple views need to agree on the same animation progress         | Move to the model                   |
 | The animation needs to be paused, replayed, or fast-forwarded       | Move to the model (ticker-driven)   |
 
@@ -108,16 +254,11 @@ The guiding question: **If the view were deleted and rewritten from scratch,
 would the application still behave correctly?** If the answer is no, the
 state is not purely presentational.
 
-## Guidelines
+## Summary
 
-- Keep presentation state to single values (a tweened number, an alpha
-  value, a brief timer).
-- Do not let presentation state grow into a complex state machine inside a
-  view. If the tweening logic becomes non-trivial, extract it into a
-  standalone function that can be unit tested directly - without needing a
-  view or rendering context.
-- When in doubt, put the state in the model. It is always safe to track
-  state in the model; it is only sometimes safe to track it in the view.
-- Use a `getClockMs()` binding (or similar) so the view does not hardcode its
-  own version of time inside `refresh()`. This keeps presentation animations
-  deterministic, frame-rate-independent, and testable.
+| Where                 | What belongs there                                    |
+| --------------------- | ----------------------------------------------------- |
+| **Model**             | Domain state, domain logic, game rules                |
+| **View**              | Stateless projection: reads state, writes to presentation output |
+| **View (with state)** | Presentation state for cosmetic transitions the model doesn't track |
+| **View model**        | Extracted presentation logic that warrants separate testing |

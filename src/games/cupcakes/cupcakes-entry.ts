@@ -48,6 +48,7 @@ export function createCupcakesEntry(): GameEntry {
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
+                    gameView.update(deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);

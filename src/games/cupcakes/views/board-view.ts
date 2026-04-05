@@ -1,19 +1,19 @@
-import gsap from 'gsap';
 import { Container, Graphics, Text } from 'pixi.js';
-import { watch, createSequenceReaction, type Sequence } from '#common';
+import { Bounce, Power1 } from 'gsap';
+import { createSequenceReaction, type StatefulPixiView, watch } from '#common';
 import type { BoardPhase, CupcakeCell } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_SIZE_PX } from './view-constants';
 import { createCupcakeView } from './cupcake-view';
-import { computeCellLayout } from './cell-layout';
-import type { BoardSnapshot, DragSnapshot } from './cell-layout';
+import { createMatchEffectsViewModel } from './match-effects-view-model';
+import type { DragViewModel } from './drag-view-model';
+import type { GridDragGesture } from './grid-drag-gesture';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
 export interface BoardViewBindings {
-    getClockMs(): number;
     getPhase(): BoardPhase;
     getCells(): readonly Readonly<CupcakeCell>[];
     getSwapPos1(): { col: number; row: number };
@@ -22,30 +22,12 @@ export interface BoardViewBindings {
     getSettleOrigins(): readonly number[];
     getSettleProgress(): number;
     getMatchedIndices(): readonly number[];
-    getMatchProgress(): number;
-    getMatchSequence(): Sequence<'fade' | 'shake' | 'dust' | 'popup'>;
     getCascadeStep(): number;
-}
-
-// ---------------------------------------------------------------------------
-// Drag state (shared mutable object written by game-view)
-// ---------------------------------------------------------------------------
-
-export interface DragState {
-    active: boolean;
-    origin: { col: number; row: number };
-    candidate: { col: number; row: number };
-    pointer: { x: number; y: number };
-    /** True after trySwap accepted - view holds swapped positions until model exits 'swapping'. */
-    committedSwap: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const CANDIDATE_SLIDE_DURATION = 0.12;
-const RETURN_SLIDE_DURATION = 0.15;
 
 /** Maximum shake offset in pixels at cascade step 1. */
 const SHAKE_AMPLITUDE = 3;
@@ -70,7 +52,11 @@ const POPUP_RISE_PX = 20;
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createBoardView(bindings: BoardViewBindings, drag: DragState): Container {
+export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGesture, drag: DragViewModel): StatefulPixiView {
+    const matchEffects = createMatchEffectsViewModel({
+        getIsMatching: () => bindings.getPhase() === 'matching',
+    });
+
     const view = new Container();
     view.sortableChildren = true;
     const watcher = watch({ cellCount: () => bindings.getCells().length });
@@ -81,16 +67,8 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
     boardContent.sortableChildren = true;
     view.addChild(boardContent);
 
-    // Presentation state for drag tweens (targets mutated by GSAP)
-    const candidateVisual = { x: 0, y: 0 };
-    const returningVisual = { x: 0, y: 0 };
+    // Track previous candidate for drag transition detection
     let prevCandidateIdx = -1;
-    let candidateIdx = -1;
-    let returningIdx = -1;
-
-    // GSAP paused timeline for drag presentation animations
-    const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
-    let prevClockMs = 0;
 
     // Cached per-frame settle data
     let settleMaxDist = 0;
@@ -107,52 +85,20 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
     }
 
     // Score popup text
+    const popupTextContainer = new Container();
+    popupTextContainer.zIndex = 60;
+    view.addChild(popupTextContainer);
     const popupText = new Text({
         text: '',
         style: { fontFamily: 'monospace', fontSize: POPUP_FONT_SIZE, fill: 0xffff00, fontWeight: 'bold' },
+        anchor: { x: 0.5, y: 0.5 },
+        alpha: 0,
     });
-    popupText.anchor.set(0.5);
-    popupText.alpha = 0;
-    popupText.zIndex = 60;
-    view.addChild(popupText);
-
-    // Cached matched-cell centre for popup positioning
-    const matchCentre = { x: 0, y: 0 };
-
-    // Pre-allocated snapshot objects to avoid per-cell allocation
-    const boardSnap: BoardSnapshot = {
-        colCount: 0,
-        phase: 'idle',
-        cellPos: { col: 0, row: 0 },
-        cellIsAlive: true,
-        swapPos1: { row: -1, col: -1 },
-        swapPos2: { row: -1, col: -1 },
-        swapProgress: 0,
-        settleOrigin: NaN,
-        settleProgress: 0,
-        settleMaxDist: 0,
-        matchProgress: 0,
-        isMatched: false,
-    };
-
-    // Compound references point to the live drag/visual objects -
-    // only scalar flags need updating per frame in fillDragSnapshot().
-    const dragSnap: DragSnapshot = {
-        active: false,
-        committedSwap: false,
-        originIdx: -1,
-        candidateIdx: -1,
-        pointer: drag.pointer,
-        origin: drag.origin,
-        candidate: drag.candidate,
-        candidateVisual,
-        returningIdx: -1,
-        returningVisual,
-    };
+    popupTextContainer.addChild(popupText);
 
     // ---- Match effect reactions (dispatched by step lifecycle) ---------------
 
-    const updateMatchEffects = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateMatchEffects = createSequenceReaction(matchEffects.sequence, {
         shake: {
             inactive: () => boardContent.position.set(0, 0),
             active: (progress) => {
@@ -182,8 +128,8 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
                 for (let i = 0; i < count; i++) {
                     const cell = cells[matchedIndices[i]];
-                    const cx = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                    const cy = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+                    const cx = gridX(cell.pos.col);
+                    const cy = gridY(cell.pos.row);
                     const g = dustPool[i];
                     g.position.set(cx, cy);
                     g.scale.set(radius * (0.5 + expand * 0.5));
@@ -199,22 +145,29 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
                 popupText.alpha = 0;
             },
             entering: () => {
-                computeMatchCentre(bindings.getMatchedIndices(), matchCentre);
+                const centre = computeMatchCentre(bindings.getMatchedIndices());
+                popupTextContainer.position.set(centre.x, centre.y);
                 const cascade = bindings.getCascadeStep();
                 const matchCount = bindings.getMatchedIndices().length;
                 const pts = matchCount * 10;
                 popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
             },
             active: (progress) => {
-                popupText.position.set(matchCentre.x, matchCentre.y - POPUP_RISE_PX * progress);
-                popupText.alpha = 1 - progress * progress;
+                popupText.position.set(0, -POPUP_RISE_PX * progress);
+                popupText.alpha = 1 - progress ** 2;
             },
         },
     });
 
     initialiseView();
     view.onRender = refresh;
-    return view;
+
+    function update(deltaMs: number): void {
+        matchEffects.update(deltaMs);
+        drag.update(deltaMs);
+    }
+
+    return Object.assign(view, { update });
 
     function initialiseView(): void {
         const bg = new Graphics();
@@ -233,14 +186,6 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
         const watched = watcher.poll();
         if (watched.cellCount.changed) {
             buildCupcakes();
-        }
-
-        // Advance GSAP timeline by ticker-driven delta
-        const clockMs = bindings.getClockMs();
-        const deltaMs = clockMs - prevClockMs;
-        prevClockMs = clockMs;
-        if (deltaMs > 0) {
-            timeline.time(timeline.time() + deltaMs * 0.001);
         }
 
         if (bindings.getPhase() === 'settling') {
@@ -265,98 +210,48 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
 
     function updateDragPresentation(): void {
         // Committed swap override: hold cells at swapped positions during 'swapping'
-        if (drag.committedSwap) {
+        if (drag.isCommittedSwap) {
             if (bindings.getPhase() !== 'swapping') {
-                drag.committedSwap = false;
+                drag.clearCommittedSwap();
                 prevCandidateIdx = -1;
-                candidateIdx = -1;
-                returningIdx = -1;
             }
             return;
         }
 
-        const newCandidateIdx = drag.active && drag.candidate.row >= 0 ?
-            drag.candidate.row * GRID_COLS + drag.candidate.col :
+        const newCandidateIdx = gesture.isActive && gesture.target.row >= 0 ?
+            gesture.target.row * GRID_COLS + gesture.target.col :
                 -1;
 
         if (newCandidateIdx !== prevCandidateIdx) {
             // Previous candidate starts returning to grid
             if (prevCandidateIdx >= 0 && bindings.getPhase() === 'idle') {
-                returningIdx = prevCandidateIdx;
-                returningVisual.x = candidateVisual.x;
-                returningVisual.y = candidateVisual.y;
+                drag.setReturningIdx(prevCandidateIdx);
 
-                const cell = bindings.getCells()[returningIdx];
-                const targetX = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                const targetY = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                const t = timeline.time();
-                timeline.to(returningVisual, {
-                    x: targetX,
-                    y: targetY,
-                    duration: RETURN_SLIDE_DURATION,
-                    ease: 'power2.out',
-                    onComplete: () => { returningIdx = -1; },
-                }, t);
+                const cell = bindings.getCells()[prevCandidateIdx];
+                const targetX = gridX(cell.pos.col);
+                const targetY = gridY(cell.pos.row);
+                drag.slideReturn(
+                    drag.candidateVisual.x,
+                    drag.candidateVisual.y,
+                    targetX,
+                    targetY,
+                );
             }
 
             // New candidate starts sliding toward origin
             if (newCandidateIdx >= 0) {
                 const cell = bindings.getCells()[newCandidateIdx];
-                candidateVisual.x = cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                candidateVisual.y = cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-
-                const targetX = drag.origin.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                const targetY = drag.origin.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-                const t = timeline.time();
-                timeline.to(candidateVisual, {
-                    x: targetX,
-                    y: targetY,
-                    duration: CANDIDATE_SLIDE_DURATION,
-                    ease: 'power2.out',
-                }, t);
+                const fromX = gridX(cell.pos.col);
+                const fromY = gridY(cell.pos.row);
+                const targetX = gridX(gesture.origin.col);
+                const targetY = gridY(gesture.origin.row);
+                drag.slideCandidate(fromX, fromY, targetX, targetY);
             }
 
             prevCandidateIdx = newCandidateIdx;
         }
 
-        candidateIdx = newCandidateIdx;
-    }
-
-    function fillBoardSnapshot(idx: number): void {
-        const cell = bindings.getCells()[idx];
-        boardSnap.colCount = GRID_COLS;
-        boardSnap.phase = bindings.getPhase();
-        boardSnap.cellPos = cell.pos;
-        boardSnap.cellIsAlive = cell.isAlive;
-        boardSnap.swapPos1 = bindings.getSwapPos1();
-        boardSnap.swapPos2 = bindings.getSwapPos2();
-        boardSnap.swapProgress = bindings.getSwapProgress();
-        boardSnap.settleOrigin = bindings.getSettleOrigins()[idx];
-        boardSnap.settleProgress = bindings.getSettleProgress();
-        boardSnap.settleMaxDist = settleMaxDist;
-        boardSnap.matchProgress = bindings.getMatchProgress();
-
-        let matched = false;
-        if (boardSnap.phase === 'matching') {
-            const indices = bindings.getMatchedIndices();
-            for (let m = 0; m < indices.length; m++) {
-                if (indices[m] === idx) {
-                    matched = true;
-                    break;
-                }
-            }
-        }
-        boardSnap.isMatched = matched;
-    }
-
-    function fillDragSnapshot(): void {
-        dragSnap.active = drag.active;
-        dragSnap.committedSwap = drag.committedSwap;
-        dragSnap.originIdx = (drag.active || drag.committedSwap) ?
-            drag.origin.row * GRID_COLS + drag.origin.col :
-                -1;
-        dragSnap.candidateIdx = candidateIdx;
-        dragSnap.returningIdx = returningIdx;
+        drag.setCandidateIdx(newCandidateIdx);
     }
 
     function buildCupcakes(): void {
@@ -380,36 +275,129 @@ export function createBoardView(bindings: BoardViewBindings, drag: DragState): C
     }
 
     function getCellX(idx: number): number {
-        fillBoardSnapshot(idx);
-        fillDragSnapshot();
-        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).x;
+        // Committed swap: hold cells at swapped visual positions
+        if (drag.isCommittedSwap) {
+            const swapOriginIdx = drag.swapOrigin.row * GRID_COLS + drag.swapOrigin.col;
+            if (idx === swapOriginIdx) return gridX(drag.swapTarget.col);
+            if (idx === drag.candidateIdx) return gridX(drag.swapOrigin.col);
+        }
+
+        // Active drag: origin follows pointer, candidate follows tween
+        if (gesture.isActive) {
+            const dragOriginIdx = gesture.origin.row * GRID_COLS + gesture.origin.col;
+            if (idx === dragOriginIdx) return gesture.pointer.x;
+            if (idx === drag.candidateIdx) return drag.candidateVisual.x;
+        }
+
+        // Returning cell tween
+        if (idx === drag.returningIdx) return drag.returningVisual.x;
+
+        // Model swap/reverse interpolation
+        const phase = bindings.getPhase();
+        if (phase === 'swapping' || phase === 'reversing') {
+            const p1 = bindings.getSwapPos1();
+            const p2 = bindings.getSwapPos2();
+            const idx1 = p1.row * GRID_COLS + p1.col;
+            const idx2 = p2.row * GRID_COLS + p2.col;
+            if (idx === idx1 || idx === idx2) {
+                const t = Power1.easeInOut(bindings.getSwapProgress());
+                const from = idx === idx1 ? p1.col : p2.col;
+                const to = idx === idx1 ? p2.col : p1.col;
+                if (phase === 'reversing') {
+                    return gridX(to + (from - to) * t);
+                }
+                return gridX(from + (to - from) * t);
+            }
+        }
+
+        // Default: grid position
+        return gridX(bindings.getCells()[idx].pos.col);
     }
 
     function getCellY(idx: number): number {
-        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).y;
+        // Committed swap: hold cells at swapped visual positions
+        if (drag.isCommittedSwap) {
+            const swapOriginIdx = drag.swapOrigin.row * GRID_COLS + drag.swapOrigin.col;
+            if (idx === swapOriginIdx) return gridY(drag.swapTarget.row);
+            if (idx === drag.candidateIdx) return gridY(drag.swapOrigin.row);
+        }
+
+        // Active drag: origin follows pointer, candidate follows tween
+        if (gesture.isActive) {
+            const dragOriginIdx = gesture.origin.row * GRID_COLS + gesture.origin.col;
+            if (idx === dragOriginIdx) return gesture.pointer.y;
+            if (idx === drag.candidateIdx) return drag.candidateVisual.y;
+        }
+
+        // Returning cell tween
+        if (idx === drag.returningIdx) return drag.returningVisual.y;
+
+        // Model swap/reverse interpolation
+        const phase = bindings.getPhase();
+        if (phase === 'swapping' || phase === 'reversing') {
+            const p1 = bindings.getSwapPos1();
+            const p2 = bindings.getSwapPos2();
+            const idx1 = p1.row * GRID_COLS + p1.col;
+            const idx2 = p2.row * GRID_COLS + p2.col;
+            if (idx === idx1 || idx === idx2) {
+                const t = Power1.easeInOut(bindings.getSwapProgress());
+                const from = idx === idx1 ? p1.row : p2.row;
+                const to = idx === idx1 ? p2.row : p1.row;
+                if (phase === 'reversing') {
+                    return gridY(to + (from - to) * t);
+                }
+                return gridY(from + (to - from) * t);
+            }
+        }
+
+        // Settling interpolation
+        if (phase === 'settling') {
+            const origin = bindings.getSettleOrigins()[idx];
+            if (origin === origin) { // not NaN
+                const targetRow = bindings.getCells()[idx].pos.row;
+                const dist = targetRow - origin;
+                const cellProgress = settleMaxDist > 0 ?
+                        Math.min(1, bindings.getSettleProgress() * settleMaxDist / dist) :
+                    1;
+                return gridY(origin + dist * Bounce.easeOut(cellProgress));
+            }
+        }
+
+        // Default: grid position
+        return gridY(bindings.getCells()[idx].pos.row);
     }
 
     function getCellAlpha(idx: number): number {
-        return computeCellLayout(idx, CELL_SIZE_PX, boardSnap, dragSnap).alpha;
+        const cell = bindings.getCells()[idx];
+        if (!cell.isAlive) return 0;
+        if (!matchEffects.sequence.isActive) return 1;
+        if (bindings.getMatchedIndices().indexOf(idx) === -1) return 1;
+        return 1 - matchEffects.sequence.steps.fade.progress;
     }
 
     // ---- Match effects (helpers) -------------------------------------------
 
-    function computeMatchCentre(indices: readonly number[], out: { x: number; y: number }): void {
-        if (indices.length === 0) {
-            out.x = 0;
-            out.y = 0;
-            return;
-        }
+    function computeMatchCentre(indices: readonly number[]): { x: number; y: number } {
         let sumX = 0;
         let sumY = 0;
         const cells = bindings.getCells();
         for (let i = 0; i < indices.length; i++) {
             const cell = cells[indices[i]];
-            sumX += cell.pos.col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
-            sumY += cell.pos.row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+            sumX += gridX(cell.pos.col);
+            sumY += gridY(cell.pos.row);
         }
-        out.x = sumX / indices.length;
-        out.y = sumY / indices.length;
+        return { x: sumX / indices.length, y: sumY / indices.length };
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function gridX(col: number): number {
+    return col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
+}
+
+function gridY(row: number): number {
+    return row * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
 }
