@@ -1,11 +1,10 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { Bounce, Power1 } from 'gsap';
-import { createSequenceReaction, type StatefulPixiView, watch } from '#common';
+import { createSequence, createSequenceReaction, type StepDef, type StatefulPixiView, watch } from '#common';
 import type { BoardPhase, CupcakeCell } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_SIZE_PX } from './view-constants';
 import { createCupcakeView } from './cupcake-view';
-import { createMatchEffectsViewModel } from './match-effects-view-model';
 import type { DragViewModel } from './drag-view-model';
 import type { GridDragGesture } from './grid-drag-gesture';
 
@@ -48,14 +47,32 @@ const POPUP_FONT_SIZE = 12;
 /** How far the popup floats upward in pixels. */
 const POPUP_RISE_PX = 20;
 
+/**
+ * Overlapping effect steps that play during a match sequence.
+ *
+ * ```
+ * Time (ms):  0        100       200       250       350       500
+ *             |---------|---------|---------|---------|---------|-----|
+ *  fade:      [=====================]                              0-250ms
+ *  shake:        [=================]                               50-250ms
+ *  dust:            [==========================]                   100-350ms
+ *  popup:               [================================]         150-500ms
+ * ```
+ */
+const MATCH_EFFECT_STEPS = [
+    { name: 'fade',  startMs: 0,   durationMs: 250 },
+    { name: 'shake', startMs: 50,  durationMs: 200 },
+    { name: 'dust',  startMs: 100, durationMs: 250 },
+    { name: 'popup', startMs: 150, durationMs: 350 },
+] as const satisfies readonly StepDef[];
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGesture, drag: DragViewModel): StatefulPixiView {
-    const matchEffects = createMatchEffectsViewModel({
-        getIsMatching: () => bindings.getPhase() === 'matching',
-    });
+    const matchEffects = createSequence(MATCH_EFFECT_STEPS);
+    const phaseWatcher = watch({ phase: bindings.getPhase });
 
     const view = new Container();
     view.sortableChildren = true;
@@ -98,7 +115,7 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
 
     // ---- Match effect reactions (dispatched by step lifecycle) ---------------
 
-    const updateMatchEffects = createSequenceReaction(matchEffects.sequence, {
+    const updateMatchEffects = createSequenceReaction(matchEffects, {
         shake: {
             inactive: () => boardContent.position.set(0, 0),
             active: (progress) => {
@@ -163,6 +180,8 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
     view.onRender = refresh;
 
     function update(deltaMs: number): void {
+        const { phase } = phaseWatcher.poll();
+        if (phase.changed && phase.value === 'matching') matchEffects.start();
         matchEffects.update(deltaMs);
         drag.update(deltaMs);
     }
@@ -370,9 +389,9 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
     function getCellAlpha(idx: number): number {
         const cell = bindings.getCells()[idx];
         if (!cell.isAlive) return 0;
-        if (!matchEffects.sequence.isActive) return 1;
+        if (!matchEffects.isActive) return 1;
         if (bindings.getMatchedIndices().indexOf(idx) === -1) return 1;
-        return 1 - matchEffects.sequence.steps.fade.progress;
+        return 1 - matchEffects.steps.fade.progress;
     }
 
     // ---- Match effects (helpers) -------------------------------------------
