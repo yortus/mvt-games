@@ -1,6 +1,6 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 import gsap, { Bounce, Power1 } from 'gsap';
-import { createSequenceReaction, watch, type Sequence, type StatefulPixiView } from '#common';
+import { watch, type Sequence, type StatefulPixiView } from '#common';
 import type { BoardPhase, CupcakeCell } from '../../models';
 import { GRID_ROWS, GRID_COLS } from '../../data';
 import { CELL_SIZE_PX } from '../view-constants';
@@ -11,7 +11,7 @@ import { createGridDragGesture } from '../grid-drag-gesture';
 // Bindings
 // ---------------------------------------------------------------------------
 
-export interface BoardPiecesViewBindings {
+export interface PiecesViewBindings {
     getPhase(): BoardPhase;
     getCells(): readonly Readonly<CupcakeCell>[];
     getSwapPos1(): { col: number; row: number };
@@ -20,8 +20,7 @@ export interface BoardPiecesViewBindings {
     getSettleOrigins(): readonly number[];
     getSettleProgress(): number;
     getMatchedIndices(): readonly number[];
-    getCascadeStep(): number;
-    getMatchSequence(): Sequence<'fade' | 'shake'>;
+    getMatchSequence(): Sequence<'fade'>;
     onSwapRequested(origin: { col: number; row: number }, target: { col: number; row: number }): boolean;
 }
 
@@ -29,33 +28,11 @@ export interface BoardPiecesViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createBoardPiecesView(bindings: BoardPiecesViewBindings): StatefulPixiView {
+export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView {
     const view = new Container();
+    view.sortableChildren = true;
     const watcher = watch({ cellCount: () => bindings.getCells().length });
     let cupcakeContainers: Container[] = [];
-
-    // boardContent is offset by the shake displacement each frame.
-    // It contains both the checkerboard background and the cupcakes so the
-    // whole board visual shakes together as a unit.
-    const boardContent = new Container();
-    boardContent.sortableChildren = true;
-    view.addChild(boardContent);
-
-    // Match sequence reactions for shake
-    const updateMatchReactions = createSequenceReaction(bindings.getMatchSequence(), {
-        shake: {
-            inactive: () => boardContent.position.set(0, 0),
-            active: (progress) => {
-                const cascade = bindings.getCascadeStep();
-                const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascade - 1)) * (1 - progress);
-                const p = progress * SHAKE_FREQUENCY;
-                boardContent.position.set(
-                    Math.sin(p) * amp,
-                    Math.cos(p * 0.7) * amp * 0.6,
-                );
-            },
-        },
-    });
 
     // Track previous candidate for drag transition detection
     let prevCandidateIdx = -1;
@@ -107,15 +84,6 @@ export function createBoardPiecesView(bindings: BoardPiecesViewBindings): Statef
     }
 
     function initialiseContent(): void {
-        const bg = new Graphics();
-        bg.zIndex = -1;
-        for (let r = 0; r < GRID_ROWS; r++) {
-            for (let c = 0; c < GRID_COLS; c++) {
-                const shade = (r + c) % 2 === 0 ? 0x3A2A4A : 0x2E1E3E;
-                bg.rect(c * CELL_SIZE_PX, r * CELL_SIZE_PX, CELL_SIZE_PX, CELL_SIZE_PX).fill(shade);
-            }
-        }
-        boardContent.addChild(bg);
         buildCupcakes();
     }
 
@@ -129,7 +97,6 @@ export function createBoardPiecesView(bindings: BoardPiecesViewBindings): Statef
             settleMaxDist = computeSettleMaxDist();
         }
 
-        updateMatchReactions();
         updateDragPresentation();
     }
 
@@ -206,7 +173,7 @@ export function createBoardPiecesView(bindings: BoardPiecesViewBindings): Statef
                 getY: () => getCellY(idx),
                 getAlpha: () => getCellAlpha(idx),
             });
-            boardContent.addChild(c);
+            view.addChild(c);
             cupcakeContainers.push(c);
         }
     }
@@ -309,7 +276,7 @@ export function createBoardPiecesView(bindings: BoardPiecesViewBindings): Statef
         if (!cell.isAlive) return 0;
         if (bindings.getMatchedIndices().indexOf(idx) === -1) return 1;
         const matchSequence = bindings.getMatchSequence();
-        return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 1;
+        return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 0;
     }
 
     // ---- Input handlers ----------------------------------------------------
@@ -394,13 +361,6 @@ const RETURN_SLIDE_DURATION = 0.15;
 
 /** zIndex applied to the dragged cupcake so it renders above its neighbours. */
 const DRAG_Z_INDEX = 10;
-
-/** Maximum shake offset in pixels at cascade step 1. */
-const SHAKE_AMPLITUDE = 3;
-/** Extra shake amplitude per additional cascade step. */
-const SHAKE_CASCADE_BONUS = 1.5;
-/** Speed multiplier for the shake oscillation. */
-const SHAKE_FREQUENCY = 40;
 
 function gridX(col: number): number {
     return col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;

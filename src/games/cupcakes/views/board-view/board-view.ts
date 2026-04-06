@@ -1,8 +1,10 @@
 import { Container } from 'pixi.js';
 import { createSequence, type StepDef, type StatefulPixiView, watch } from '#common';
 import type { BoardPhase, CupcakeCell } from '../../models';
-import { createBoardPiecesView } from './board-pieces-view';
+import { createBackgroundView } from './background-view';
 import { createMatchEffectsView } from './match-effects-view';
+import { createPiecesView } from './pieces-view';
+import { createShakeContainerView } from './shake-container-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -32,7 +34,15 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     const matchSequence = createSequence(MATCH_EFFECT_STEPS);
     const phaseWatcher = watch({ phase: bindings.getPhase });
 
-    const pieces = createBoardPiecesView({
+    // Shake container wraps background and pieces so they displace together.
+    const shakeContainer = createShakeContainerView({
+        getMatchSequence: () => matchSequence,
+        getCascadeStep: bindings.getCascadeStep,
+    });
+
+    const background = createBackgroundView();
+
+    const pieces = createPiecesView({
         getPhase: bindings.getPhase,
         getCells: bindings.getCells,
         getSwapPos1: bindings.getSwapPos1,
@@ -41,12 +51,11 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
         getSettleOrigins: bindings.getSettleOrigins,
         getSettleProgress: bindings.getSettleProgress,
         getMatchedIndices: bindings.getMatchedIndices,
-        getCascadeStep: bindings.getCascadeStep,
         getMatchSequence: () => matchSequence,
         onSwapRequested: bindings.onSwapRequested,
     });
 
-    const effects = createMatchEffectsView({
+    const matchEffects = createMatchEffectsView({
         getCells: bindings.getCells,
         getMatchedIndices: bindings.getMatchedIndices,
         getCascadeStep: bindings.getCascadeStep,
@@ -54,8 +63,9 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     });
 
     const view = new Container();
-    view.addChild(pieces);
-    view.addChild(effects);
+    view.addChild(shakeContainer);
+    shakeContainer.content.addChild(background, pieces);
+    view.addChild(matchEffects); // Match effects sit outside the shake container (dust/popup don't shake).
 
     return Object.assign(view, {
         update(deltaMs: number): void {
