@@ -1,17 +1,17 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import gsap, { Bounce, Power1 } from 'gsap';
-import { createSequence, createSequenceReaction, type StepDef, type StatefulPixiView, watch } from '#common';
-import type { BoardPhase, CupcakeCell } from '../models';
-import { GRID_ROWS, GRID_COLS } from '../data';
-import { CELL_SIZE_PX } from './view-constants';
-import { createCupcakeView } from './cupcake-view';
-import { createGridDragGesture } from './grid-drag-gesture';
+import { createSequenceReaction, watch, type Sequence, type StatefulPixiView } from '#common';
+import type { BoardPhase, CupcakeCell } from '../../models';
+import { GRID_ROWS, GRID_COLS } from '../../data';
+import { CELL_SIZE_PX } from '../view-constants';
+import { createCupcakeView } from '../cupcake-view';
+import { createGridDragGesture } from '../grid-drag-gesture';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
-export interface BoardViewBindings {
+export interface BoardPiecesViewBindings {
     getPhase(): BoardPhase;
     getCells(): readonly Readonly<CupcakeCell>[];
     getSwapPos1(): { col: number; row: number };
@@ -21,73 +21,41 @@ export interface BoardViewBindings {
     getSettleProgress(): number;
     getMatchedIndices(): readonly number[];
     getCascadeStep(): number;
+    getMatchSequence(): Sequence<'fade' | 'shake'>;
     onSwapRequested(origin: { col: number; row: number }, target: { col: number; row: number }): boolean;
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-/** Maximum shake offset in pixels at cascade step 1. */
-const SHAKE_AMPLITUDE = 3;
-/** Extra shake amplitude per additional cascade step. */
-const SHAKE_CASCADE_BONUS = 1.5;
-/** Speed multiplier for the shake oscillation. */
-const SHAKE_FREQUENCY = 40;
-
-/** Base dust cloud radius in pixels. */
-const DUST_RADIUS = 6;
-/** Extra dust radius per additional cascade step. */
-const DUST_CASCADE_BONUS = 2;
-/** Number of pre-allocated dust sprites. */
-const DUST_POOL_SIZE = 16;
-
-/** Score popup style. */
-const POPUP_FONT_SIZE = 12;
-/** How far the popup floats upward in pixels. */
-const POPUP_RISE_PX = 20;
-
-/** Slide duration in seconds for the candidate cell animation. */
-const CANDIDATE_SLIDE_DURATION = 0.12;
-/** Slide duration in seconds for the returning cell animation. */
-const RETURN_SLIDE_DURATION = 0.15;
-
-/**
- * Overlapping effect steps that play during a match sequence.
- *
- * ```
- * Time (ms):  0        100       200       250       350       500
- *             |---------|---------|---------|---------|---------|-----|
- *  fade:      [=====================]                              0-250ms
- *  shake:        [=================]                               50-250ms
- *  dust:            [==========================]                   100-350ms
- *  popup:               [================================]         150-500ms
- * ```
- */
-const MATCH_EFFECT_STEPS = [
-    { name: 'fade',  startMs: 0,   durationMs: 250 },
-    { name: 'shake', startMs: 50,  durationMs: 200 },
-    { name: 'dust',  startMs: 100, durationMs: 250 },
-    { name: 'popup', startMs: 150, durationMs: 350 },
-] as const satisfies readonly StepDef[];
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
-    const matchEffects = createSequence(MATCH_EFFECT_STEPS);
-    const phaseWatcher = watch({ phase: bindings.getPhase });
-
+export function createBoardPiecesView(bindings: BoardPiecesViewBindings): StatefulPixiView {
     const view = new Container();
-    view.sortableChildren = true;
     const watcher = watch({ cellCount: () => bindings.getCells().length });
     let cupcakeContainers: Container[] = [];
 
-    // Board content container (offset by shake)
+    // boardContent is offset by the shake displacement each frame.
+    // It contains both the checkerboard background and the cupcakes so the
+    // whole board visual shakes together as a unit.
     const boardContent = new Container();
     boardContent.sortableChildren = true;
     view.addChild(boardContent);
+
+    // Match sequence reactions for shake
+    const updateMatchReactions = createSequenceReaction(bindings.getMatchSequence(), {
+        shake: {
+            inactive: () => boardContent.position.set(0, 0),
+            active: (progress) => {
+                const cascade = bindings.getCascadeStep();
+                const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascade - 1)) * (1 - progress);
+                const p = progress * SHAKE_FREQUENCY;
+                boardContent.position.set(
+                    Math.sin(p) * amp,
+                    Math.cos(p * 0.7) * amp * 0.6,
+                );
+            },
+        },
+    });
 
     // Track previous candidate for drag transition detection
     let prevCandidateIdx = -1;
@@ -129,105 +97,16 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     view.on('pointerup', onPointerUp);
     view.on('pointerupoutside', onPointerUp);
 
-    // Dust cloud pool (pre-allocated circles)
-    const dustPool: Graphics[] = [];
-    for (let i = 0; i < DUST_POOL_SIZE; i++) {
-        const g = new Graphics();
-        g.circle(0, 0, 1).fill(0xffffff);
-        g.alpha = 0;
-        g.zIndex = 50;
-        view.addChild(g);
-        dustPool.push(g);
-    }
-
-    // Score popup text
-    const popupTextContainer = new Container();
-    popupTextContainer.zIndex = 60;
-    view.addChild(popupTextContainer);
-    const popupText = new Text({
-        text: '',
-        style: { fontFamily: 'monospace', fontSize: POPUP_FONT_SIZE, fill: 0xffff00, fontWeight: 'bold' },
-        anchor: { x: 0.5, y: 0.5 },
-        alpha: 0,
-    });
-    popupTextContainer.addChild(popupText);
-
-    // ---- Match effect reactions (dispatched by step lifecycle) ---------------
-
-    const updateMatchEffects = createSequenceReaction(matchEffects, {
-        shake: {
-            inactive: () => boardContent.position.set(0, 0),
-            active: (progress) => {
-                const cascade = bindings.getCascadeStep();
-                const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascade - 1)) * (1 - progress);
-                const p = progress * SHAKE_FREQUENCY;
-                boardContent.position.set(
-                    Math.sin(p) * amp,
-                    Math.cos(p * 0.7) * amp * 0.6,
-                );
-            },
-        },
-        dust: {
-            inactive: () => {
-                for (let i = 0; i < DUST_POOL_SIZE; i++) {
-                    dustPool[i].alpha = 0;
-                }
-            },
-            active: (progress) => {
-                const matchedIndices = bindings.getMatchedIndices();
-                const cascade = bindings.getCascadeStep();
-                const cells = bindings.getCells();
-                const radius = DUST_RADIUS + DUST_CASCADE_BONUS * (cascade - 1);
-                const count = matchedIndices.length < DUST_POOL_SIZE ? matchedIndices.length : DUST_POOL_SIZE;
-                const expand = progress;
-                const fade = 1 - progress;
-
-                for (let i = 0; i < count; i++) {
-                    const cell = cells[matchedIndices[i]];
-                    const cx = gridX(cell.pos.col);
-                    const cy = gridY(cell.pos.row);
-                    const g = dustPool[i];
-                    g.position.set(cx, cy);
-                    g.scale.set(radius * (0.5 + expand * 0.5));
-                    g.alpha = fade * 0.6;
-                }
-                for (let i = count; i < DUST_POOL_SIZE; i++) {
-                    dustPool[i].alpha = 0;
-                }
-            },
-        },
-        popup: {
-            inactive: () => {
-                popupText.alpha = 0;
-            },
-            entering: () => {
-                const centre = computeMatchCentre(bindings.getMatchedIndices());
-                popupTextContainer.position.set(centre.x, centre.y);
-                const cascade = bindings.getCascadeStep();
-                const matchCount = bindings.getMatchedIndices().length;
-                const pts = matchCount * 10;
-                popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
-            },
-            active: (progress) => {
-                popupText.position.set(0, -POPUP_RISE_PX * progress);
-                popupText.alpha = 1 - progress ** 2;
-            },
-        },
-    });
-
-    initialiseView();
+    initialiseContent();
     view.onRender = refresh;
-
-    function update(deltaMs: number): void {
-        const { phase } = phaseWatcher.poll();
-        if (phase.changed && phase.value === 'matching') matchEffects.start();
-        matchEffects.update(deltaMs);
-        if (deltaMs > 0) dragTimeline.time(dragTimeline.time() + deltaMs * 0.001);
-    }
 
     return Object.assign(view, { update });
 
-    function initialiseView(): void {
+    function update(deltaMs: number): void {
+        if (deltaMs > 0) dragTimeline.time(dragTimeline.time() + deltaMs * 0.001);
+    }
+
+    function initialiseContent(): void {
         const bg = new Graphics();
         bg.zIndex = -1;
         for (let r = 0; r < GRID_ROWS; r++) {
@@ -250,7 +129,7 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
             settleMaxDist = computeSettleMaxDist();
         }
 
-        updateMatchEffects();
+        updateMatchReactions();
         updateDragPresentation();
     }
 
@@ -428,9 +307,9 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     function getCellAlpha(idx: number): number {
         const cell = bindings.getCells()[idx];
         if (!cell.isAlive) return 0;
-        if (!matchEffects.isActive) return 1;
         if (bindings.getMatchedIndices().indexOf(idx) === -1) return 1;
-        return 1 - matchEffects.steps.fade.progress;
+        const matchSequence = bindings.getMatchSequence();
+        return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 1;
     }
 
     // ---- Input handlers ----------------------------------------------------
@@ -439,6 +318,10 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
         if (bindings.getPhase() !== 'idle') return;
         const local = view.toLocal(e.global);
         gesture.begin(local.x, local.y);
+        if (gesture.isActive) {
+            const idx = gesture.origin.row * GRID_COLS + gesture.origin.col;
+            cupcakeContainers[idx].zIndex = DRAG_Z_INDEX;
+        }
     }
 
     function onPointerMove(e: { global: { x: number; y: number } }): void {
@@ -449,6 +332,7 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
 
     function onPointerUp(): void {
         if (!gesture.isActive) return;
+        const originIdx = gesture.origin.row * GRID_COLS + gesture.origin.col;
         if (gesture.target.row >= 0 && bindings.onSwapRequested(gesture.origin, gesture.target)) {
             isCommittedSwap = true;
             swapOrigin.row = gesture.origin.row;
@@ -456,12 +340,19 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
             swapTarget.row = gesture.target.row;
             swapTarget.col = gesture.target.col;
         }
+        else {
+            cupcakeContainers[originIdx].zIndex = 0;
+        }
         gesture.end();
     }
 
     // ---- Drag helpers -------------------------------------------------------
 
     function clearCommittedSwap(): void {
+        const originIdx = swapOrigin.row * GRID_COLS + swapOrigin.col;
+        if (originIdx >= 0 && originIdx < cupcakeContainers.length) {
+            cupcakeContainers[originIdx].zIndex = 0;
+        }
         isCommittedSwap = false;
         swapOrigin.row = -1;
         swapOrigin.col = -1;
@@ -490,25 +381,26 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
             onComplete: () => { returningIdx = -1; },
         }, t);
     }
-
-    // ---- Match effects (helpers) -------------------------------------------
-
-    function computeMatchCentre(indices: readonly number[]): { x: number; y: number } {
-        let sumX = 0;
-        let sumY = 0;
-        const cells = bindings.getCells();
-        for (let i = 0; i < indices.length; i++) {
-            const cell = cells[indices[i]];
-            sumX += gridX(cell.pos.col);
-            sumY += gridY(cell.pos.row);
-        }
-        return { x: sumX / indices.length, y: sumY / indices.length };
-    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** Slide duration in seconds for the candidate cell animation. */
+const CANDIDATE_SLIDE_DURATION = 0.12;
+/** Slide duration in seconds for the returning cell animation. */
+const RETURN_SLIDE_DURATION = 0.15;
+
+/** zIndex applied to the dragged cupcake so it renders above its neighbours. */
+const DRAG_Z_INDEX = 10;
+
+/** Maximum shake offset in pixels at cascade step 1. */
+const SHAKE_AMPLITUDE = 3;
+/** Extra shake amplitude per additional cascade step. */
+const SHAKE_CASCADE_BONUS = 1.5;
+/** Speed multiplier for the shake oscillation. */
+const SHAKE_FREQUENCY = 40;
 
 function gridX(col: number): number {
     return col * CELL_SIZE_PX + CELL_SIZE_PX * 0.5;
