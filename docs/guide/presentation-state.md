@@ -189,7 +189,7 @@ The view creates the view model internally and delegates to it:
 
 ```ts
 // board-view.ts
-function createBoardView(bindings: BoardViewBindings, gesture: GridDragGesture, drag: DragViewModel):
+function createBoardView(bindings: BoardViewBindings):
         Container & { update(deltaMs: number): void } {
     const matchEffects = createMatchEffectsViewModel({
         getIsMatching: () => bindings.getPhase() === 'matching',
