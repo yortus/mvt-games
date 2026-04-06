@@ -1,12 +1,11 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { Bounce, Power1 } from 'gsap';
+import gsap, { Bounce, Power1 } from 'gsap';
 import { createSequence, createSequenceReaction, type StepDef, type StatefulPixiView, watch } from '#common';
 import type { BoardPhase, CupcakeCell } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_SIZE_PX } from './view-constants';
 import { createCupcakeView } from './cupcake-view';
-import type { DragViewModel } from './drag-view-model';
-import type { GridDragGesture } from './grid-drag-gesture';
+import { createGridDragGesture } from './grid-drag-gesture';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -22,6 +21,7 @@ export interface BoardViewBindings {
     getSettleProgress(): number;
     getMatchedIndices(): readonly number[];
     getCascadeStep(): number;
+    onSwapRequested(origin: { col: number; row: number }, target: { col: number; row: number }): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,6 +47,11 @@ const POPUP_FONT_SIZE = 12;
 /** How far the popup floats upward in pixels. */
 const POPUP_RISE_PX = 20;
 
+/** Slide duration in seconds for the candidate cell animation. */
+const CANDIDATE_SLIDE_DURATION = 0.12;
+/** Slide duration in seconds for the returning cell animation. */
+const RETURN_SLIDE_DURATION = 0.15;
+
 /**
  * Overlapping effect steps that play during a match sequence.
  *
@@ -70,7 +75,7 @@ const MATCH_EFFECT_STEPS = [
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGesture, drag: DragViewModel): StatefulPixiView {
+export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     const matchEffects = createSequence(MATCH_EFFECT_STEPS);
     const phaseWatcher = watch({ phase: bindings.getPhase });
 
@@ -89,6 +94,40 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
 
     // Cached per-frame settle data
     let settleMaxDist = 0;
+
+    // Drag presentation state
+    let isCommittedSwap = false;
+    const swapOrigin = { col: -1, row: -1 };
+    const swapTarget = { col: -1, row: -1 };
+    const candidateVisual = { x: 0, y: 0 };
+    const returningVisual = { x: 0, y: 0 };
+    let candidateIdx = -1;
+    let returningIdx = -1;
+    const dragTimeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
+
+    // Drag gesture
+    const gesture = createGridDragGesture({
+        toGridPosition: (x, y) => {
+            const col = Math.floor(x / CELL_SIZE_PX);
+            const row = Math.floor(y / CELL_SIZE_PX);
+            if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return undefined;
+            if (gesture.isActive) {
+                if (row === gesture.origin.row && col === gesture.origin.col) return undefined;
+                const dr = Math.abs(row - gesture.origin.row);
+                const dc = Math.abs(col - gesture.origin.col);
+                if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return undefined;
+            }
+            return { col, row };
+        },
+    });
+
+    // Input listeners
+    view.eventMode = 'static';
+    view.hitArea = { contains: (x: number, y: number) => x >= 0 && x < GRID_COLS * CELL_SIZE_PX && y >= 0 && y < GRID_ROWS * CELL_SIZE_PX };
+    view.on('pointerdown', onPointerDown);
+    view.on('globalpointermove', onPointerMove);
+    view.on('pointerup', onPointerUp);
+    view.on('pointerupoutside', onPointerUp);
 
     // Dust cloud pool (pre-allocated circles)
     const dustPool: Graphics[] = [];
@@ -183,7 +222,7 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
         const { phase } = phaseWatcher.poll();
         if (phase.changed && phase.value === 'matching') matchEffects.start();
         matchEffects.update(deltaMs);
-        drag.update(deltaMs);
+        if (deltaMs > 0) dragTimeline.time(dragTimeline.time() + deltaMs * 0.001);
     }
 
     return Object.assign(view, { update });
@@ -229,9 +268,9 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
 
     function updateDragPresentation(): void {
         // Committed swap override: hold cells at swapped positions during 'swapping'
-        if (drag.isCommittedSwap) {
+        if (isCommittedSwap) {
             if (bindings.getPhase() !== 'swapping') {
-                drag.clearCommittedSwap();
+                clearCommittedSwap();
                 prevCandidateIdx = -1;
             }
             return;
@@ -244,14 +283,14 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
         if (newCandidateIdx !== prevCandidateIdx) {
             // Previous candidate starts returning to grid
             if (prevCandidateIdx >= 0 && bindings.getPhase() === 'idle') {
-                drag.setReturningIdx(prevCandidateIdx);
+                returningIdx = prevCandidateIdx;
 
                 const cell = bindings.getCells()[prevCandidateIdx];
                 const targetX = gridX(cell.pos.col);
                 const targetY = gridY(cell.pos.row);
-                drag.slideReturn(
-                    drag.candidateVisual.x,
-                    drag.candidateVisual.y,
+                slideReturn(
+                    candidateVisual.x,
+                    candidateVisual.y,
                     targetX,
                     targetY,
                 );
@@ -264,13 +303,13 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
                 const fromY = gridY(cell.pos.row);
                 const targetX = gridX(gesture.origin.col);
                 const targetY = gridY(gesture.origin.row);
-                drag.slideCandidate(fromX, fromY, targetX, targetY);
+                slideCandidate(fromX, fromY, targetX, targetY);
             }
 
             prevCandidateIdx = newCandidateIdx;
         }
 
-        drag.setCandidateIdx(newCandidateIdx);
+        candidateIdx = newCandidateIdx;
     }
 
     function buildCupcakes(): void {
@@ -295,21 +334,21 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
 
     function getCellX(idx: number): number {
         // Committed swap: hold cells at swapped visual positions
-        if (drag.isCommittedSwap) {
-            const swapOriginIdx = drag.swapOrigin.row * GRID_COLS + drag.swapOrigin.col;
-            if (idx === swapOriginIdx) return gridX(drag.swapTarget.col);
-            if (idx === drag.candidateIdx) return gridX(drag.swapOrigin.col);
+        if (isCommittedSwap) {
+            const swapOriginIdx = swapOrigin.row * GRID_COLS + swapOrigin.col;
+            if (idx === swapOriginIdx) return gridX(swapTarget.col);
+            if (idx === candidateIdx) return gridX(swapOrigin.col);
         }
 
         // Active drag: origin follows pointer, candidate follows tween
         if (gesture.isActive) {
             const dragOriginIdx = gesture.origin.row * GRID_COLS + gesture.origin.col;
             if (idx === dragOriginIdx) return gesture.pointer.x;
-            if (idx === drag.candidateIdx) return drag.candidateVisual.x;
+            if (idx === candidateIdx) return candidateVisual.x;
         }
 
         // Returning cell tween
-        if (idx === drag.returningIdx) return drag.returningVisual.x;
+        if (idx === returningIdx) return returningVisual.x;
 
         // Model swap/reverse interpolation
         const phase = bindings.getPhase();
@@ -335,21 +374,21 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
 
     function getCellY(idx: number): number {
         // Committed swap: hold cells at swapped visual positions
-        if (drag.isCommittedSwap) {
-            const swapOriginIdx = drag.swapOrigin.row * GRID_COLS + drag.swapOrigin.col;
-            if (idx === swapOriginIdx) return gridY(drag.swapTarget.row);
-            if (idx === drag.candidateIdx) return gridY(drag.swapOrigin.row);
+        if (isCommittedSwap) {
+            const swapOriginIdx = swapOrigin.row * GRID_COLS + swapOrigin.col;
+            if (idx === swapOriginIdx) return gridY(swapTarget.row);
+            if (idx === candidateIdx) return gridY(swapOrigin.row);
         }
 
         // Active drag: origin follows pointer, candidate follows tween
         if (gesture.isActive) {
             const dragOriginIdx = gesture.origin.row * GRID_COLS + gesture.origin.col;
             if (idx === dragOriginIdx) return gesture.pointer.y;
-            if (idx === drag.candidateIdx) return drag.candidateVisual.y;
+            if (idx === candidateIdx) return candidateVisual.y;
         }
 
         // Returning cell tween
-        if (idx === drag.returningIdx) return drag.returningVisual.y;
+        if (idx === returningIdx) return returningVisual.y;
 
         // Model swap/reverse interpolation
         const phase = bindings.getPhase();
@@ -392,6 +431,64 @@ export function createBoardView(bindings: BoardViewBindings, gesture: GridDragGe
         if (!matchEffects.isActive) return 1;
         if (bindings.getMatchedIndices().indexOf(idx) === -1) return 1;
         return 1 - matchEffects.steps.fade.progress;
+    }
+
+    // ---- Input handlers ----------------------------------------------------
+
+    function onPointerDown(e: { global: { x: number; y: number } }): void {
+        if (bindings.getPhase() !== 'idle') return;
+        const local = view.toLocal(e.global);
+        gesture.begin(local.x, local.y);
+    }
+
+    function onPointerMove(e: { global: { x: number; y: number } }): void {
+        if (!gesture.isActive) return;
+        const local = view.toLocal(e.global);
+        gesture.move(local.x, local.y);
+    }
+
+    function onPointerUp(): void {
+        if (!gesture.isActive) return;
+        if (gesture.target.row >= 0 && bindings.onSwapRequested(gesture.origin, gesture.target)) {
+            isCommittedSwap = true;
+            swapOrigin.row = gesture.origin.row;
+            swapOrigin.col = gesture.origin.col;
+            swapTarget.row = gesture.target.row;
+            swapTarget.col = gesture.target.col;
+        }
+        gesture.end();
+    }
+
+    // ---- Drag helpers -------------------------------------------------------
+
+    function clearCommittedSwap(): void {
+        isCommittedSwap = false;
+        swapOrigin.row = -1;
+        swapOrigin.col = -1;
+        swapTarget.row = -1;
+        swapTarget.col = -1;
+        candidateIdx = -1;
+        returningIdx = -1;
+    }
+
+    function slideCandidate(fromX: number, fromY: number, toX: number, toY: number): void {
+        candidateVisual.x = fromX;
+        candidateVisual.y = fromY;
+        const t = dragTimeline.time();
+        dragTimeline.to(candidateVisual, { x: toX, y: toY, duration: CANDIDATE_SLIDE_DURATION, ease: 'power2.out' }, t);
+    }
+
+    function slideReturn(fromX: number, fromY: number, toX: number, toY: number): void {
+        returningVisual.x = fromX;
+        returningVisual.y = fromY;
+        const t = dragTimeline.time();
+        dragTimeline.to(returningVisual, {
+            x: toX,
+            y: toY,
+            duration: RETURN_SLIDE_DURATION,
+            ease: 'power2.out',
+            onComplete: () => { returningIdx = -1; },
+        }, t);
     }
 
     // ---- Match effects (helpers) -------------------------------------------
