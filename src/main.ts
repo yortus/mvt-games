@@ -8,7 +8,7 @@ import {
 } from '#common';
 import {
     createAsteroidsEntry,
-    createCupcakesEntry,
+    createCactiiEntry,
     createDigdugEntry,
     createGalagaEntry,
     createIkEntry,
@@ -84,7 +84,7 @@ async function main(): Promise<void> {
     // ---- Game registry -----------------------------------------------------
     const games = [
         createAsteroidsEntry(),
-        createCupcakesEntry(),
+        createCactiiEntry(),
         createDigdugEntry(),
         createGalagaEntry(),
         createIkEntry(),

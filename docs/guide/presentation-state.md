@@ -156,7 +156,7 @@ readable state - independently testable with no rendering context needed.
 ### Example: Match Effects View Model
 
 A match-3 game plays overlapping shake, dust, and popup effects when
-cupcakes are matched. The edge detection and multi-step sequence warrant
+cactii are matched. The edge detection and multi-step sequence warrant
 extraction:
 
 ```ts
