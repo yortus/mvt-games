@@ -8,7 +8,7 @@ import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-vie
 // ---------------------------------------------------------------------------
 
 const CELL_WIDTH = 200;
-const CELL_HEIGHT = 280;
+const CELL_HEIGHT = 250;
 const COLS = 8;
 
 /** Centre pixel position for a grid cell. */

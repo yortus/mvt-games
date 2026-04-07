@@ -4,7 +4,7 @@ import { GRID_ROWS, GRID_COLS } from '../data';
 export const CELL_WIDTH_PX = 200;
 
 /** Height of one grid cell in pixels (matches texture height). */
-export const CELL_HEIGHT_PX = 280;
+export const CELL_HEIGHT_PX = 250;
 
 /** Height of the HUD bar below the board in pixels. */
 export const HUD_HEIGHT = 180;
