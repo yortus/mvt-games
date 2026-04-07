@@ -239,8 +239,8 @@ function main(): void {
     }
 
     console.log(
-        `\nDone - ${extracted} frames extracted to ${OUT_DIR}` +
-        (bgMissing > 0 ? ` (${bgMissing} frames had no background pixels)` : ''),
+        `\nDone - ${extracted} frames extracted to ${OUT_DIR}`
+        + (bgMissing > 0 ? ` (${bgMissing} frames had no background pixels)` : ''),
     );
 }
 

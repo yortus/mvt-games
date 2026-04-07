@@ -542,9 +542,9 @@ describe(`session simulation - ${SESSION_TICKS} ticks, ${SESSION_N} values (${SE
             sCounter++;
             // Per-tick signals write every tick (positions etc.)
             // + infrequent signals on change ticks
-            const nWrites = changeSchedule[t] ?
-                SESSION_N_DIRECT + SESSION_K :
-                SESSION_N_DIRECT;
+            const nWrites = changeSchedule[t]
+                ? SESSION_N_DIRECT + SESSION_K
+                : SESSION_N_DIRECT;
             batch(() => {
                 for (let i = 0; i < nWrites; i++) {
                     sSetters[i](sCounter * SESSION_N + i);
