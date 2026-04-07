@@ -46,6 +46,9 @@ function setNavVisible(visible: boolean): void {
 /** Minimum margin (CSS px) reserved for touch controls when on a touch device. */
 const MIN_TOUCH_MARGIN_CSS = 80;
 
+/** Height (CSS px) reserved at the bottom for the pause / fullscreen button strip. */
+const BUTTON_STRIP_PX = 48;
+
 // ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
@@ -254,9 +257,16 @@ async function main(): Promise<void> {
             const gameW = currentEntry.screenWidth;
             const gameH = currentEntry.screenHeight;
 
+            // Reserve a strip at the bottom for pause / fullscreen buttons
+            // so they never overlap the play area.
+            const availH = viewportH - BUTTON_STRIP_PX;
+
+            // Maximum scale that fits the game fully in the available area.
+            const maxFitScale = Math.min(viewportW / gameW, availH / gameH);
+
             // Calculate scale, reserving margin for touch controls on the
             // correct axis: portrait puts controls below, landscape on sides.
-            let scale = Math.min(viewportW / gameW, viewportH / gameH);
+            let scale = maxFitScale;
             if (isTouchDevice()) {
                 const isPortrait = viewportH > viewportW;
                 let scaleWithMargin: number;
@@ -264,20 +274,22 @@ async function main(): Promise<void> {
                     // Reserve space below for d-pad / pause / fire strip
                     scaleWithMargin = Math.min(
                         viewportW / gameW,
-                        (viewportH - MIN_TOUCH_MARGIN_CSS * 2) / gameH,
+                        (availH - MIN_TOUCH_MARGIN_CSS * 2) / gameH,
                     );
                 }
                 else {
                     // Reserve space on both sides for d-pad (left) and buttons (right)
                     scaleWithMargin = Math.min(
                         (viewportW - MIN_TOUCH_MARGIN_CSS * 2) / gameW,
-                        viewportH / gameH,
+                        availH / gameH,
                     );
                 }
                 scale = Math.min(scale, Math.max(0.3, scaleWithMargin));
             }
+            // Clamp at maxFitScale so the game never overflows the viewport,
+            // even when the 0.3 minimum would push it larger than available.
             const effectiveScale = isTouchDevice()
-                ? Math.max(0.3, scale)
+                ? Math.min(maxFitScale, Math.max(0.3, scale))
                 : (scale < 1 ? scale : Math.max(1, Math.floor(scale)));
 
             const logicalW = Math.ceil(viewportW / effectiveScale);
