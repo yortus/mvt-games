@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSequence } from '#common';
+import { EMPTY_CELL, type CupcakeCell } from '../../models';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
 
 // ---------------------------------------------------------------------------
@@ -18,25 +19,30 @@ function gridY(row: number): number {
     return row * CELL_SIZE + CELL_SIZE * 0.5;
 }
 
-/** Flat index for (row, col). */
-function cellIndex(row: number, col: number): number {
-    return row * COLS + col;
-}
-
 /** A single cell at the given position. */
-function cell(row: number, col: number, isAlive = true) {
-    return { kind: 'strawberry' as const, pos: { row, col }, isAlive };
+function cell(row: number, col: number): CupcakeCell {
+    return { kind: 'strawberry', row, col };
 }
 
 /** Build a full 8x8 grid of alive cells. */
-function fullGrid() {
-    const cells = [];
+function fullGrid(): CupcakeCell[][] {
+    const cells: CupcakeCell[][] = [];
     for (let r = 0; r < 8; r++) {
+        cells[r] = [];
         for (let c = 0; c < COLS; c++) {
-            cells.push(cell(r, c));
+            cells[r][c] = cell(r, c);
         }
     }
     return cells;
+}
+
+/** Build a 2D NaN-filled settleOriginRows array matching a fullGrid. */
+function emptySettleOrigins(): number[][] {
+    const origins: number[][] = [];
+    for (let r = 0; r < 8; r++) {
+        origins[r] = new Array(COLS).fill(NaN);
+    }
+    return origins;
 }
 
 /** A fade-only match sequence for test use. */
@@ -50,12 +56,12 @@ function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewMod
     return {
         getPhase: () => 'idle',
         getCells: () => cells,
-        getSwapPos1: () => ({ col: 0, row: 0 }),
-        getSwapPos2: () => ({ col: 1, row: 0 }),
+        getSwapCell1: () => undefined,
+        getSwapCell2: () => undefined,
         getSwapProgress: () => 0,
-        getSettleOrigins: () => [],
         getSettleProgress: () => 0,
-        getMatchedIndices: () => [],
+        getSettleOriginRows: emptySettleOrigins,
+        getMatchedCells: () => [],
         getMatchSequence: makeFadeSequence,
         onSwapRequested: () => true,
         ...overrides,
@@ -69,49 +75,53 @@ function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewMod
 describe('PiecesViewModel', () => {
     describe('idle grid positions', () => {
         it('returns grid-centred positions for each cell', () => {
-            const vm = createPiecesViewModel(makeOptions());
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
             vm.update(0);
 
-            expect(vm.getCellX(cellIndex(0, 0))).toBe(gridX(0));
-            expect(vm.getCellY(cellIndex(0, 0))).toBe(gridY(0));
-            expect(vm.getCellX(cellIndex(3, 5))).toBe(gridX(5));
-            expect(vm.getCellY(cellIndex(3, 5))).toBe(gridY(3));
+            expect(vm.getCellX(cells[0][0])).toBe(gridX(0));
+            expect(vm.getCellY(cells[0][0])).toBe(gridY(0));
+            expect(vm.getCellX(cells[3][5])).toBe(gridX(5));
+            expect(vm.getCellY(cells[3][5])).toBe(gridY(3));
         });
 
         it('returns full alpha for alive, non-matched cells', () => {
-            const vm = createPiecesViewModel(makeOptions());
-            expect(vm.getCellAlpha(cellIndex(0, 0))).toBe(1);
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            expect(vm.getCellAlpha(cells[0][0])).toBe(1);
         });
     });
 
     describe('drag interaction', () => {
-        it('dragOriginIndex is -1 when no drag is active', () => {
+        it('dragOriginCell is undefined when no drag is active', () => {
             const vm = createPiecesViewModel(makeOptions());
             vm.update(0);
-            expect(vm.dragOriginIndex).toBe(-1);
+            expect(vm.dragOriginCell).toBeUndefined();
         });
 
-        it('tracks drag origin index during an active drag', () => {
-            const vm = createPiecesViewModel(makeOptions());
+        it('tracks drag origin cell during an active drag', () => {
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
             vm.update(0);
 
-            expect(vm.dragOriginIndex).toBe(cellIndex(3, 2));
+            expect(vm.dragOriginCell).toBe(cells[3][2]);
         });
 
         it('moves the dragged cell to the pointer position', () => {
-            const vm = createPiecesViewModel(makeOptions());
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
             vm.dragTo(100, 150);
             vm.update(0);
 
-            const index = cellIndex(3, 2);
-            expect(vm.getCellX(index)).toBe(100);
-            expect(vm.getCellY(index)).toBe(150);
+            const originCell = cells[3][2];
+            expect(vm.getCellX(originCell)).toBe(100);
+            expect(vm.getCellY(originCell)).toBe(150);
         });
 
         it('ignores pointer down when not idle', () => {
@@ -123,28 +133,29 @@ describe('PiecesViewModel', () => {
             vm.startDrag(gridX(2), gridY(3));
             vm.update(0);
 
-            expect(vm.dragOriginIndex).toBe(-1);
+            expect(vm.dragOriginCell).toBeUndefined();
         });
 
         it('clears drag origin after pointer up', () => {
-            const vm = createPiecesViewModel(makeOptions());
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
             vm.update(0);
-            expect(vm.dragOriginIndex).toBe(cellIndex(3, 2));
+            expect(vm.dragOriginCell).toBe(cells[3][2]);
 
             vm.endDrag();
             vm.update(0);
-            expect(vm.dragOriginIndex).toBe(-1);
+            expect(vm.dragOriginCell).toBeUndefined();
         });
 
         it('calls onSwapRequested when drag commits to a neighbour', () => {
-            let capturedOrigin: { col: number; row: number } | undefined;
-            let capturedTarget: { col: number; row: number } | undefined;
-            const onSwapRequested = vi.fn((origin: { col: number; row: number }, target: { col: number; row: number }) => {
-                capturedOrigin = { ...origin };
-                capturedTarget = { ...target };
+            let capturedOrigin: CupcakeCell | undefined;
+            let capturedTarget: CupcakeCell | undefined;
+            const onSwapRequested = vi.fn((origin: CupcakeCell, target: CupcakeCell) => {
+                capturedOrigin = origin;
+                capturedTarget = target;
                 return true;
             });
             const vm = createPiecesViewModel(makeOptions({ onSwapRequested }));
@@ -156,8 +167,8 @@ describe('PiecesViewModel', () => {
             vm.endDrag();
 
             expect(onSwapRequested).toHaveBeenCalledOnce();
-            expect(capturedOrigin).toEqual({ col: 2, row: 3 });
-            expect(capturedTarget).toEqual({ col: 3, row: 3 });
+            expect(capturedOrigin).toMatchObject({ col: 2, row: 3 });
+            expect(capturedTarget).toMatchObject({ col: 3, row: 3 });
         });
     });
 
@@ -168,8 +179,10 @@ describe('PiecesViewModel', () => {
                 phase = 'swapping';
                 return true;
             });
+            const cells = fullGrid();
 
             const vm = createPiecesViewModel(makeOptions({
+                getCells: () => cells,
                 getPhase: () => phase,
                 onSwapRequested,
             }));
@@ -182,9 +195,9 @@ describe('PiecesViewModel', () => {
             vm.update(0);
 
             // During 'swapping', origin cell renders at target position
-            const originIndex = cellIndex(3, 2);
-            expect(vm.getCellX(originIndex)).toBe(gridX(3));
-            expect(vm.getCellY(originIndex)).toBe(gridY(3));
+            const originCell = cells[3][2];
+            expect(vm.getCellX(originCell)).toBe(gridX(3));
+            expect(vm.getCellY(originCell)).toBe(gridY(3));
         });
 
         it('clears committed swap when phase leaves swapping', () => {
@@ -193,8 +206,10 @@ describe('PiecesViewModel', () => {
                 phase = 'swapping';
                 return true;
             });
+            const cells = fullGrid();
 
             const vm = createPiecesViewModel(makeOptions({
+                getCells: () => cells,
                 getPhase: () => phase,
                 onSwapRequested,
             }));
@@ -204,73 +219,78 @@ describe('PiecesViewModel', () => {
             vm.dragTo(gridX(3), gridY(3));
             vm.endDrag();
             vm.update(0);
-            expect(vm.dragOriginIndex).toBe(cellIndex(3, 2));
+            expect(vm.dragOriginCell).toBe(cells[3][2]);
 
             // Phase transitions away from swapping
             phase = 'idle';
             vm.update(0);
-            expect(vm.dragOriginIndex).toBe(-1);
+            expect(vm.dragOriginCell).toBeUndefined();
         });
     });
 
     describe('swap/reverse interpolation', () => {
         it('interpolates cell X between swap positions during swapping', () => {
             let progress = 0;
+            const cells = fullGrid();
+            const c1 = cells[3][2];
+            const c2 = cells[3][3];
             const vm = createPiecesViewModel(makeOptions({
+                getCells: () => cells,
                 getPhase: () => 'swapping',
-                getSwapPos1: () => ({ col: 2, row: 3 }),
-                getSwapPos2: () => ({ col: 3, row: 3 }),
+                getSwapCell1: () => c1,
+                getSwapCell2: () => c2,
                 getSwapProgress: () => progress,
             }));
             vm.update(0);
 
-            const i1 = cellIndex(3, 2);
-            const i2 = cellIndex(3, 3);
-
             // At progress 0, cell 1 is at its own position
-            expect(vm.getCellX(i1)).toBe(gridX(2));
-            expect(vm.getCellX(i2)).toBe(gridX(3));
+            expect(vm.getCellX(c1)).toBe(gridX(2));
+            expect(vm.getCellX(c2)).toBe(gridX(3));
 
             // At progress 1, cell 1 is at cell 2's position
             progress = 1;
-            expect(vm.getCellX(i1)).toBeCloseTo(gridX(3), 0);
-            expect(vm.getCellX(i2)).toBeCloseTo(gridX(2), 0);
+            expect(vm.getCellX(c1)).toBeCloseTo(gridX(3), 0);
+            expect(vm.getCellX(c2)).toBeCloseTo(gridX(2), 0);
         });
 
         it('interpolates in reverse during reversing phase', () => {
             let progress = 0;
+            const cells = fullGrid();
+            const c1 = cells[3][2];
+            const c2 = cells[3][3];
             const vm = createPiecesViewModel(makeOptions({
+                getCells: () => cells,
                 getPhase: () => 'reversing',
-                getSwapPos1: () => ({ col: 2, row: 3 }),
-                getSwapPos2: () => ({ col: 3, row: 3 }),
+                getSwapCell1: () => c1,
+                getSwapCell2: () => c2,
                 getSwapProgress: () => progress,
             }));
             vm.update(0);
 
-            const i1 = cellIndex(3, 2);
-
             // At progress 0, cell 1 starts at the swapped position (cell 2's spot)
-            expect(vm.getCellX(i1)).toBeCloseTo(gridX(3), 0);
+            expect(vm.getCellX(c1)).toBeCloseTo(gridX(3), 0);
 
             // At progress 1, cell 1 returns to its own position
             progress = 1;
-            expect(vm.getCellX(i1)).toBeCloseTo(gridX(2), 0);
+            expect(vm.getCellX(c1)).toBeCloseTo(gridX(2), 0);
         });
     });
 
     describe('match fade alpha', () => {
-        it('returns 0 for dead cells', () => {
+        it('returns 0 for empty cells', () => {
             const cells = fullGrid();
-            cells[0] = cell(0, 0, false);
+            cells[0][0] = EMPTY_CELL;
             const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
 
-            expect(vm.getCellAlpha(0)).toBe(0);
+            expect(vm.getCellAlpha(cells[0][0])).toBe(0);
         });
 
         it('fades matched cells based on sequence progress', () => {
+            const cells = fullGrid();
             const seq = makeFadeSequence();
             const vm = createPiecesViewModel(makeOptions({
-                getMatchedIndices: () => [0],
+                getCells: () => cells,
+                getMatchedCells: () => [cells[0][0]],
                 getMatchSequence: () => seq,
             }));
 
@@ -278,65 +298,68 @@ describe('PiecesViewModel', () => {
             // Half-way through the 250ms fade
             seq.update(125);
 
-            const alpha = vm.getCellAlpha(0);
+            const alpha = vm.getCellAlpha(cells[0][0]);
             expect(alpha).toBeGreaterThan(0);
             expect(alpha).toBeLessThan(1);
         });
 
         it('returns 0 for matched cells after sequence completes', () => {
+            const cells = fullGrid();
             const seq = makeFadeSequence();
             const vm = createPiecesViewModel(makeOptions({
-                getMatchedIndices: () => [0],
+                getCells: () => cells,
+                getMatchedCells: () => [cells[0][0]],
                 getMatchSequence: () => seq,
             }));
 
             seq.start();
             seq.update(300); // past 250ms duration
 
-            expect(vm.getCellAlpha(0)).toBe(0);
+            expect(vm.getCellAlpha(cells[0][0])).toBe(0);
         });
 
         it('returns 1 for non-matched alive cells', () => {
+            const cells = fullGrid();
             const seq = makeFadeSequence();
             seq.start();
             seq.update(125);
 
             const vm = createPiecesViewModel(makeOptions({
-                getMatchedIndices: () => [0],
+                getCells: () => cells,
+                getMatchedCells: () => [cells[0][0]],
                 getMatchSequence: () => seq,
             }));
 
             // Cell 1 is not matched
-            expect(vm.getCellAlpha(1)).toBe(1);
+            expect(vm.getCellAlpha(cells[0][1])).toBe(1);
         });
     });
 
     describe('settling interpolation', () => {
         it('interpolates falling cells toward their target row', () => {
             const cells = fullGrid();
+            const settleOrigins = emptySettleOrigins();
             // Cell at (2,0) fell from row 0
-            const settleOrigins = new Array(64).fill(NaN);
-            settleOrigins[cellIndex(2, 0)] = 0; // fell from row 0 to row 2
+            settleOrigins[2][0] = 0;
+            const targetCell = cells[2][0];
 
             let progress = 0;
             const vm = createPiecesViewModel(makeOptions({
                 getPhase: () => 'settling',
                 getCells: () => cells,
-                getSettleOrigins: () => settleOrigins,
                 getSettleProgress: () => progress,
+                getSettleOriginRows: () => settleOrigins,
             }));
 
             vm.update(0); // caches settleMaxDist
 
-            const index = cellIndex(2, 0);
-
             // At progress 0, cell is at its origin row
-            expect(vm.getCellY(index)).toBe(gridY(0));
+            expect(vm.getCellY(targetCell)).toBe(gridY(0));
 
             // At progress 1, cell reaches its target row (with bounce easing)
             progress = 1;
             vm.update(0);
-            expect(vm.getCellY(index)).toBeCloseTo(gridY(2), 0);
+            expect(vm.getCellY(targetCell)).toBeCloseTo(gridY(2), 0);
         });
     });
 });

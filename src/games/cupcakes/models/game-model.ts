@@ -1,5 +1,4 @@
-import type { GamePhase } from './common';
-import type { Position } from './common';
+import type { CupcakeCell, GamePhase } from './common';
 import { createBoardModel, type BoardModel } from './board-model';
 
 // ---------------------------------------------------------------------------
@@ -13,7 +12,7 @@ export interface GameModel {
     /** Monotonic clock accumulated from update(deltaMs). */
     readonly clockMs: number;
     /** Attempt to swap two cells. Returns true if accepted. */
-    trySwap(pos1: Position, pos2: Position): boolean;
+    trySwap(cell1: CupcakeCell, cell2: CupcakeCell): boolean;
     update(deltaMs: number): void;
 }
 
@@ -41,9 +40,9 @@ export function createGameModel(options: GameModelOptions = {}): GameModel {
         get score() { return board.score; },
         get clockMs() { return clockMs; },
 
-        trySwap(pos1: Position, pos2: Position): boolean {
+        trySwap(cell1: CupcakeCell, cell2: CupcakeCell): boolean {
             if (gamePhase !== 'playing') return false;
-            return board.trySwap(pos1, pos2);
+            return board.trySwap(cell1, cell2);
         },
 
         update(deltaMs: number): void {

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSequence, type StepDef, type StatefulPixiView, watch } from '#common';
+import { createSequence, type StepDef, type StatefulPixiView, watch, type DeepReadonly } from '#common';
 import type { BoardPhase, CupcakeCell } from '../../models';
 import { createBackgroundView } from './background-view';
 import { createMatchEffectsView } from './match-effects-view';
@@ -12,15 +12,15 @@ import { createShakeContainerView } from './shake-container-view';
 
 export interface BoardViewBindings {
     getPhase(): BoardPhase;
-    getCells(): readonly Readonly<CupcakeCell>[];
-    getSwapPos1(): { col: number; row: number };
-    getSwapPos2(): { col: number; row: number };
+    getCells(): DeepReadonly<CupcakeCell[][]>;
+    getSwapCell1(): CupcakeCell | undefined;
+    getSwapCell2(): CupcakeCell | undefined;
     getSwapProgress(): number;
-    getSettleOrigins(): readonly number[];
     getSettleProgress(): number;
-    getMatchedIndices(): readonly number[];
+    getSettleOriginRows(): DeepReadonly<number[][]>;
+    getMatchedCells(): readonly CupcakeCell[];
     getCascadeStep(): number;
-    onSwapRequested(origin: { col: number; row: number }, target: { col: number; row: number }): boolean;
+    onSwapRequested(origin: CupcakeCell, target: CupcakeCell): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,19 +45,18 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     const pieces = createPiecesView({
         getPhase: bindings.getPhase,
         getCells: bindings.getCells,
-        getSwapPos1: bindings.getSwapPos1,
-        getSwapPos2: bindings.getSwapPos2,
+        getSwapCell1: bindings.getSwapCell1,
+        getSwapCell2: bindings.getSwapCell2,
         getSwapProgress: bindings.getSwapProgress,
-        getSettleOrigins: bindings.getSettleOrigins,
         getSettleProgress: bindings.getSettleProgress,
-        getMatchedIndices: bindings.getMatchedIndices,
+        getSettleOriginRows: bindings.getSettleOriginRows,
+        getMatchedCells: bindings.getMatchedCells,
         getMatchSequence: () => matchSequence,
         onSwapRequested: bindings.onSwapRequested,
     });
 
     const matchEffects = createMatchEffectsView({
-        getCells: bindings.getCells,
-        getMatchedIndices: bindings.getMatchedIndices,
+        getMatchedCells: bindings.getMatchedCells,
         getCascadeStep: bindings.getCascadeStep,
         getMatchSequence: () => matchSequence,
     });

@@ -1,6 +1,7 @@
-import type { BoardPhase, CupcakeKind, Position } from './common';
-import { ALL_CUPCAKE_KINDS } from './common';
+import type { BoardPhase, CupcakeCell, CupcakeKind } from './common';
+import { ALL_CUPCAKE_KINDS, EMPTY_CELL, createCell } from './common';
 import { GRID_ROWS, GRID_COLS } from '../data';
+import type { DeepReadonly } from '#common';
 import {
     SWAP_DURATION_MS,
     MATCH_PHASE_DURATION_MS,
@@ -10,7 +11,7 @@ import {
 } from './model-constants';
 import {
     findMatches,
-    fillGridNoMatches,
+    fillCellsNoMatches,
     compactColumns,
     countEmptyTop,
 } from './grid-helpers';
@@ -23,37 +24,33 @@ export interface BoardModel {
     readonly rowCount: number;
     readonly colCount: number;
     readonly phase: BoardPhase;
-    readonly cells: readonly Readonly<CupcakeCell>[];
+    /** 2D row-major grid: `cells[row][col]`. */
+    readonly cells: DeepReadonly<CupcakeCell[][]>;
     readonly score: number;
     /** Current cascade depth (0 when idle, 1 for first match, 2+ for cascades). */
     readonly cascadeStep: number;
-    /** Indices of cells currently being matched/removed. Empty outside 'matching' phase. */
-    readonly matchedIndices: readonly number[];
+    /** Cells currently being matched/removed. Empty outside 'matching' phase. */
+    readonly matchedCells: readonly CupcakeCell[];
     /** Linear 0-1 progress through the match phase. 0 outside 'matching' phase. */
     readonly matchProgress: number;
     /** Duration of the match phase in ms. */
     readonly matchDurationMs: number;
-    /** First position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
-    readonly swapPos1: Readonly<Position>;
-    /** Second position in a swap/reverse. Meaningful during 'swapping' and 'reversing' phases. */
-    readonly swapPos2: Readonly<Position>;
+    /** First cell in a swap/reverse. Undefined outside swap/reverse phases. */
+    readonly swapCell1: CupcakeCell | undefined;
+    /** Second cell in a swap/reverse. Undefined outside swap/reverse phases. */
+    readonly swapCell2: CupcakeCell | undefined;
     /** Linear 0-1 progress through swap/reverse phase. 0 outside those phases. */
     readonly swapProgress: number;
-    /** Per-cell origin row before settling (NaN if stationary). Meaningful during 'settling' phase. */
-    readonly settleOrigins: readonly number[];
     /** Linear 0-1 progress through settling phase. 0 outside 'settling' phase. */
     readonly settleProgress: number;
+    /**
+     * Per-cell origin row before settling: `settleOriginRows[row][col]`.
+     * NaN when the cell is stationary. Meaningful only during 'settling' phase.
+     */
+    readonly settleOriginRows: DeepReadonly<number[][]>;
     /** Attempt to swap two cells. Returns true if accepted (cells adjacent, occupied, board idle). */
-    trySwap(pos1: Position, pos2: Position): boolean;
+    trySwap(cell1: CupcakeCell, cell2: CupcakeCell): boolean;
     update(deltaMs: number): void;
-}
-
-export interface CupcakeCell {
-    kind: CupcakeKind;
-    /** Grid position (always integer). */
-    pos: Position;
-    /** Whether this grid position contains a cupcake. */
-    isAlive: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,29 +69,27 @@ export interface BoardModelOptions {
 export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     const rowCount = options.rowCount ?? GRID_ROWS;
     const colCount = options.colCount ?? GRID_COLS;
-    const totalCells = rowCount * colCount;
 
-    // Grid stores cupcake kind at each position; undefined = empty
-    const grid: (CupcakeKind | undefined)[] = new Array(totalCells);
+    // 2D row-major grid: cells[row][col].
+    const cells: CupcakeCell[][] = [];
+    for (let r = 0; r < rowCount; r++) {
+        cells[r] = new Array(colCount).fill(EMPTY_CELL);
+    }
 
-    // Pre-allocated cell pool
-    const cells: CupcakeCell[] = [];
-    for (let i = 0; i < totalCells; i++) {
-        cells.push({ kind: 'strawberry', pos: { row: 0, col: 0 }, isAlive: true });
+    // Parallel 2D array: origin row before settling (NaN = stationary).
+    const settleOriginRows: number[][] = [];
+    for (let r = 0; r < rowCount; r++) {
+        settleOriginRows[r] = new Array(colCount).fill(NaN);
     }
 
     let boardPhase: BoardPhase = 'idle';
     let score = 0;
     let cascadeStep = 0;
-    let currentMatchedIndices: number[] = [];
-    let swapPos1: Position = { row: -1, col: -1 };
-    let swapPos2: Position = { row: -1, col: -1 };
+    let currentMatchedCells: CupcakeCell[] = [];
+    let swapCell1: CupcakeCell | undefined;
+    let swapCell2: CupcakeCell | undefined;
     let phaseEndTime = 0;
     let phaseElapsed = 0;
-
-    // Pre-allocated settle origins buffer (NaN = stationary)
-    const settleOriginsBuf: number[] = new Array(totalCells);
-    for (let i = 0; i < totalCells; i++) settleOriginsBuf[i] = NaN;
 
     const phaseFinishers: Record<BoardPhase, () => void> = {
         idle: () => {},
@@ -104,8 +99,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         settling: finishSettling,
     };
 
-    fillGridNoMatches(grid, rowCount, colCount, randomKind);
-    syncCellsFromGrid();
+    fillCellsNoMatches(cells, rowCount, colCount, randomKind);
 
     // ---- Public record -----------------------------------------------------
 
@@ -116,38 +110,34 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get cells() { return cells; },
         get score() { return score; },
         get cascadeStep() { return cascadeStep; },
-        get matchedIndices() { return currentMatchedIndices; },
+        get matchedCells() { return currentMatchedCells; },
         get matchProgress() {
             if (boardPhase !== 'matching' || phaseEndTime <= 0) return 0;
             return Math.min(1, phaseElapsed / phaseEndTime);
         },
         get matchDurationMs() { return MATCH_PHASE_DURATION_MS; },
-        get swapPos1() { return swapPos1; },
-        get swapPos2() { return swapPos2; },
+        get swapCell1() { return swapCell1; },
+        get swapCell2() { return swapCell2; },
         get swapProgress() {
             if (boardPhase !== 'swapping' && boardPhase !== 'reversing') return 0;
             if (phaseEndTime <= 0) return 0;
             return Math.min(1, phaseElapsed / phaseEndTime);
         },
-        get settleOrigins() { return settleOriginsBuf; },
         get settleProgress() {
             if (boardPhase !== 'settling' || phaseEndTime <= 0) return 0;
             return Math.min(1, phaseElapsed / phaseEndTime);
         },
+        get settleOriginRows() { return settleOriginRows; },
 
-        trySwap(pos1: Position, pos2: Position): boolean {
+        trySwap(cell1: CupcakeCell, cell2: CupcakeCell): boolean {
             if (boardPhase !== 'idle') return false;
-            if (pos1.row < 0 || pos1.row >= rowCount || pos1.col < 0 || pos1.col >= colCount) return false;
-            if (pos2.row < 0 || pos2.row >= rowCount || pos2.col < 0 || pos2.col >= colCount) return false;
+            if (cell1 === EMPTY_CELL || cell2 === EMPTY_CELL) return false;
 
-            const dr = Math.abs(pos2.row - pos1.row);
-            const dc = Math.abs(pos2.col - pos1.col);
+            const dr = Math.abs(cell2.row - cell1.row);
+            const dc = Math.abs(cell2.col - cell1.col);
             if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return false;
 
-            if (grid[pos1.row * colCount + pos1.col] === undefined) return false;
-            if (grid[pos2.row * colCount + pos2.col] === undefined) return false;
-
-            beginSwap(pos1, pos2);
+            beginSwap(cell1, cell2);
             return true;
         },
 
@@ -164,35 +154,38 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
 
     // ---- Swap --------------------------------------------------------------
 
-    function beginSwap(pos1: Position, pos2: Position): void {
+    function beginSwap(cell1: CupcakeCell, cell2: CupcakeCell): void {
         boardPhase = 'swapping';
-        swapPos1 = { ...pos1 };
-        swapPos2 = { ...pos2 };
+        swapCell1 = cell1;
+        swapCell2 = cell2;
         cascadeStep = 0;
         phaseElapsed = 0;
         phaseEndTime = SWAP_DURATION_MS * 0.001;
     }
 
     function finishSwap(): void {
-        const idx1 = swapPos1.row * colCount + swapPos1.col;
-        const idx2 = swapPos2.row * colCount + swapPos2.col;
+        const r1 = swapCell1!.row, c1 = swapCell1!.col;
+        const r2 = swapCell2!.row, c2 = swapCell2!.col;
+        const kind1 = swapCell1!.kind;
+        const kind2 = swapCell2!.kind;
 
-        // Commit swap to grid
-        const temp = grid[idx1];
-        grid[idx1] = grid[idx2];
-        grid[idx2] = temp;
-        syncCellsFromGrid();
+        // Commit swap: create new cells with swapped kinds
+        cells[r1][c1] = createCell(kind2, r1, c1);
+        cells[r2][c2] = createCell(kind1, r2, c2);
+        swapCell1 = cells[r1][c1];
+        swapCell2 = cells[r2][c2];
 
-        const matches = findMatches(grid, rowCount, colCount);
+        const matches = findMatches(cells, rowCount, colCount);
         if (matches.length > 0) {
             beginMatching(matches);
             return;
         }
 
-        // No match - revert grid then begin reversal
-        grid[idx2] = grid[idx1];
-        grid[idx1] = temp;
-        syncCellsFromGrid();
+        // No match - revert to original kinds
+        cells[r1][c1] = createCell(kind1, r1, c1);
+        cells[r2][c2] = createCell(kind2, r2, c2);
+        swapCell1 = cells[r1][c1];
+        swapCell2 = cells[r2][c2];
 
         boardPhase = 'reversing';
         phaseElapsed = 0;
@@ -200,29 +193,33 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     }
 
     function finishReverse(): void {
-        syncCellsFromGrid();
+        swapCell1 = undefined;
+        swapCell2 = undefined;
         boardPhase = 'idle';
     }
 
     // ---- Matching ----------------------------------------------------------
 
-    function beginMatching(matches: number[]): void {
+    function beginMatching(matchedCells: CupcakeCell[]): void {
         boardPhase = 'matching';
         cascadeStep++;
-        currentMatchedIndices = matches;
+        currentMatchedCells = matchedCells;
 
         const multiplier = Math.pow(CASCADE_MULTIPLIER, cascadeStep - 1);
-        score += Math.round(matches.length * POINTS_PER_CUPCAKE * multiplier);
+        score += Math.round(matchedCells.length * POINTS_PER_CUPCAKE * multiplier);
 
         phaseElapsed = 0;
         phaseEndTime = MATCH_PHASE_DURATION_MS * 0.001;
     }
 
     function finishMatching(): void {
-        for (let i = 0; i < currentMatchedIndices.length; i++) {
-            grid[currentMatchedIndices[i]] = undefined;
+        for (let i = 0; i < currentMatchedCells.length; i++) {
+            const cell = currentMatchedCells[i];
+            cells[cell.row][cell.col] = EMPTY_CELL;
         }
-        currentMatchedIndices = [];
+        currentMatchedCells = [];
+        swapCell1 = undefined;
+        swapCell2 = undefined;
         beginSettling();
     }
 
@@ -231,13 +228,13 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     function beginSettling(): void {
         boardPhase = 'settling';
 
-        const { sourceRows, didMove } = compactColumns(grid, rowCount, colCount);
-        const emptyCounts = countEmptyTop(grid, rowCount, colCount);
+        const { sourceRows, didMove } = compactColumns(cells, rowCount, colCount);
+        const emptyCounts = countEmptyTop(cells, rowCount, colCount);
 
         let anyRefill = false;
         for (let c = 0; c < colCount; c++) {
             for (let r = 0; r < emptyCounts[c]; r++) {
-                grid[r * colCount + c] = randomKind();
+                cells[r][c] = createCell(randomKind(), r, c);
                 anyRefill = true;
             }
         }
@@ -247,25 +244,27 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
             return;
         }
 
-        syncCellsFromGrid();
-
-        // Build settle origins and compute max fall distance
+        // Stamp settleOriginRows for cells that fell and compute max fall distance
         let maxDist = 0;
-        for (let i = 0; i < totalCells; i++) settleOriginsBuf[i] = NaN;
 
-        for (let i = 0; i < totalCells; i++) {
-            const src = sourceRows[i];
-            if (src < 0) continue;
-            settleOriginsBuf[i] = src;
-            const r = Math.floor(i / colCount);
-            const dist = r - src;
-            if (dist > maxDist) maxDist = dist;
+        for (let r = 0; r < rowCount; r++) {
+            for (let c = 0; c < colCount; c++) {
+                const src = sourceRows[r][c];
+                if (src < 0) {
+                    settleOriginRows[r][c] = NaN;
+                    continue;
+                }
+                settleOriginRows[r][c] = src;
+                const dist = r - src;
+                if (dist > maxDist) maxDist = dist;
+            }
         }
 
+        // New cells from refill get a negative settleOriginRows entry (off-screen origin)
         for (let c = 0; c < colCount; c++) {
             const ec = emptyCounts[c];
             for (let r = 0; r < ec; r++) {
-                settleOriginsBuf[r * colCount + c] = r - ec;
+                settleOriginRows[r][c] = r - ec;
                 if (ec > maxDist) maxDist = ec;
             }
         }
@@ -275,10 +274,14 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     }
 
     function finishSettling(): void {
-        for (let i = 0; i < totalCells; i++) settleOriginsBuf[i] = NaN;
-        syncCellsFromGrid();
+        // Clear all settleOriginRows
+        for (let r = 0; r < rowCount; r++) {
+            for (let c = 0; c < colCount; c++) {
+                settleOriginRows[r][c] = NaN;
+            }
+        }
 
-        const matches = findMatches(grid, rowCount, colCount);
+        const matches = findMatches(cells, rowCount, colCount);
         if (matches.length > 0) {
             beginMatching(matches);
         }
@@ -287,20 +290,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         }
     }
 
-    // ---- Helpers -----------------------------------------------------------
-
-    function syncCellsFromGrid(): void {
-        for (let r = 0; r < rowCount; r++) {
-            for (let c = 0; c < colCount; c++) {
-                const idx = r * colCount + c;
-                const kind = grid[idx];
-                const cell = cells[idx];
-                cell.kind = kind ?? 'strawberry';
-                cell.pos = { row: r, col: c };
-                cell.isAlive = kind !== undefined;
-            }
-        }
-    }
+    // ---- Random ------------------------------------------------------------
 
     function randomKind(): CupcakeKind {
         return ALL_CUPCAKE_KINDS[Math.floor(Math.random() * ALL_CUPCAKE_KINDS.length)];

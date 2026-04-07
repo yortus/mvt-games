@@ -9,4 +9,5 @@ export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
 export { type StatefulPixiView } from './stateful-pixi-view';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { createTouchInputView, type TouchInputViewBindings } from './touch-input-view';
+export { type DeepReadonly } from './type-utils';
 export { watch } from './watch';

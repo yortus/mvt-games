@@ -1,8 +1,9 @@
 import { Container } from 'pixi.js';
 import { watch, type StatefulPixiView } from '#common';
-import { GRID_COLS, GRID_ROWS } from '../../data';
+import type { CupcakeCell } from '../../models';
 import { createCupcakeView } from '../cupcake-view';
 import { CELL_SIZE_PX } from '../view-constants';
+import { GRID_COLS, GRID_ROWS } from '../../data';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
 
 // ---------------------------------------------------------------------------
@@ -18,10 +19,10 @@ export type PiecesViewBindings = PiecesViewModelOptions;
 export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView {
     const vm = createPiecesViewModel(bindings);
     const watcher = watch({
-        cellCount: () => bindings.getCells().length,
-        dragIndex: () => vm.dragOriginIndex,
+        gridSize: () => bindings.getCells().length,
     });
     let cupcakeContainers: Container[] = [];
+    let prevDragCell: CupcakeCell | undefined;
 
     const view = new Container();
     initialseView();
@@ -43,13 +44,18 @@ export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView
 
     function refresh(): void {
         const watched = watcher.poll();
-        if (watched.cellCount.changed) buildCupcakes();
+        if (watched.gridSize.changed) buildCupcakes();
 
         // Sync drag zIndex from view model
-        if (watched.dragIndex.changed) {
-            const { value, previous = -1 } = watched.dragIndex;
-            if (previous !== -1) cupcakeContainers[previous].zIndex = 0;
-            if (value !== -1) cupcakeContainers[value].zIndex = DRAG_Z_INDEX;
+        const dragCell = vm.dragOriginCell;
+        if (dragCell !== prevDragCell) {
+            if (prevDragCell) {
+                cupcakeContainers[prevDragCell.row * GRID_COLS + prevDragCell.col].zIndex = 0;
+            }
+            if (dragCell) {
+                cupcakeContainers[dragCell.row * GRID_COLS + dragCell.col].zIndex = DRAG_Z_INDEX;
+            }
+            prevDragCell = dragCell;
         }
     }
 
@@ -59,17 +65,18 @@ export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView
         }
         cupcakeContainers = [];
 
-        const count = bindings.getCells().length;
-        for (let i = 0; i < count; i++) {
-            const index = i;
-            const c = createCupcakeView({
-                getKind: () => bindings.getCells()[index].kind,
-                getX: () => vm.getCellX(index),
-                getY: () => vm.getCellY(index),
-                getAlpha: () => vm.getCellAlpha(index),
-            });
-            view.addChild(c);
-            cupcakeContainers.push(c);
+        for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+                const row = r, col = c;
+                const cupcake = createCupcakeView({
+                    getKind: () => bindings.getCells()[row][col].kind,
+                    getX: () => vm.getCellX(bindings.getCells()[row][col]),
+                    getY: () => vm.getCellY(bindings.getCells()[row][col]),
+                    getAlpha: () => vm.getCellAlpha(bindings.getCells()[row][col]),
+                });
+                view.addChild(cupcake);
+                cupcakeContainers.push(cupcake);
+            }
         }
     }
 

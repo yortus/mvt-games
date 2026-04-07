@@ -8,8 +8,7 @@ import { CELL_SIZE_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface MatchEffectsViewBindings {
-    getCells(): readonly Readonly<CupcakeCell>[];
-    getMatchedIndices(): readonly number[];
+    getMatchedCells(): readonly Readonly<CupcakeCell>[];
     getCascadeStep(): number;
     getMatchSequence(): Sequence<'dust' | 'popup'>;
 }
@@ -53,18 +52,17 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 }
             },
             active: (progress) => {
-                const matchedIndices = bindings.getMatchedIndices();
+                const matchedCells = bindings.getMatchedCells();
                 const cascade = bindings.getCascadeStep();
-                const cells = bindings.getCells();
                 const radius = DUST_RADIUS + DUST_CASCADE_BONUS * (cascade - 1);
-                const count = matchedIndices.length < DUST_POOL_SIZE ? matchedIndices.length : DUST_POOL_SIZE;
+                const count = matchedCells.length < DUST_POOL_SIZE ? matchedCells.length : DUST_POOL_SIZE;
                 const expand = progress;
                 const fade = 1 - progress;
 
                 for (let i = 0; i < count; i++) {
-                    const cell = cells[matchedIndices[i]];
-                    const cx = gridX(cell.pos.col);
-                    const cy = gridY(cell.pos.row);
+                    const cell = matchedCells[i];
+                    const cx = gridX(cell.col);
+                    const cy = gridY(cell.row);
                     const g = dustPool[i];
                     g.position.set(cx, cy);
                     g.scale.set(radius * (0.5 + expand * 0.5));
@@ -80,10 +78,10 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 popupText.alpha = 0;
             },
             entering: () => {
-                const centre = computeMatchCentre(bindings.getMatchedIndices());
+                const centre = computeMatchCentre(bindings.getMatchedCells());
                 popupTextContainer.position.set(centre.x, centre.y);
                 const cascade = bindings.getCascadeStep();
-                const matchCount = bindings.getMatchedIndices().length;
+                const matchCount = bindings.getMatchedCells().length;
                 const pts = matchCount * 10;
                 popupText.text = cascade > 1 ? `+${pts} x${cascade}` : `+${pts}`;
             },
@@ -97,16 +95,14 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
     view.onRender = updateEffects;
     return view;
 
-    function computeMatchCentre(indices: readonly number[]): { x: number; y: number } {
+    function computeMatchCentre(matchedCells: readonly Readonly<CupcakeCell>[]): { x: number; y: number } {
         let sumX = 0;
         let sumY = 0;
-        const cells = bindings.getCells();
-        for (let i = 0; i < indices.length; i++) {
-            const cell = cells[indices[i]];
-            sumX += gridX(cell.pos.col);
-            sumY += gridY(cell.pos.row);
+        for (let i = 0; i < matchedCells.length; i++) {
+            sumX += gridX(matchedCells[i].col);
+            sumY += gridY(matchedCells[i].row);
         }
-        return { x: sumX / indices.length, y: sumY / indices.length };
+        return { x: sumX / matchedCells.length, y: sumY / matchedCells.length };
     }
 }
 

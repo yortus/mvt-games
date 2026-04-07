@@ -1,6 +1,6 @@
 import gsap, { Bounce, Power1 } from 'gsap';
-import type { Sequence } from '#common';
-import type { BoardPhase, CupcakeCell } from '../../models';
+import type { Sequence, DeepReadonly } from '#common';
+import { EMPTY_CELL, type BoardPhase, type CupcakeCell } from '../../models';
 import { GRID_ROWS, GRID_COLS } from '../../data';
 import { CELL_SIZE_PX } from '../view-constants';
 
@@ -9,11 +9,11 @@ import { CELL_SIZE_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface PiecesViewModel {
-    getCellX(index: number): number;
-    getCellY(index: number): number;
-    getCellAlpha(index: number): number;
-    /** Index of the cell whose sprite should render on top, or -1 if none. */
-    readonly dragOriginIndex: number;
+    getCellX(cell: CupcakeCell): number;
+    getCellY(cell: CupcakeCell): number;
+    getCellAlpha(cell: CupcakeCell): number;
+    /** The cell whose sprite should render on top, or undefined if none. */
+    readonly dragOriginCell: CupcakeCell | undefined;
     startDrag(localX: number, localY: number): void;
     dragTo(localX: number, localY: number): void;
     endDrag(): void;
@@ -26,15 +26,15 @@ export interface PiecesViewModel {
 
 export interface PiecesViewModelOptions {
     getPhase(): BoardPhase;
-    getCells(): readonly Readonly<CupcakeCell>[];
-    getSwapPos1(): { col: number; row: number };
-    getSwapPos2(): { col: number; row: number };
+    getCells(): DeepReadonly<CupcakeCell[][]>;
+    getSwapCell1(): CupcakeCell | undefined;
+    getSwapCell2(): CupcakeCell | undefined;
     getSwapProgress(): number;
-    getSettleOrigins(): readonly number[];
     getSettleProgress(): number;
-    getMatchedIndices(): readonly number[];
+    getSettleOriginRows(): DeepReadonly<number[][]>;
+    getMatchedCells(): readonly CupcakeCell[];
     getMatchSequence(): Sequence<'fade'>;
-    onSwapRequested(origin: { col: number; row: number }, target: { col: number; row: number }): boolean;
+    onSwapRequested(origin: CupcakeCell, target: CupcakeCell): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -43,32 +43,32 @@ export interface PiecesViewModelOptions {
 
 export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesViewModel {
     // Track previous candidate for drag transition detection
-    let prevCandidateIndex = -1;
+    let prevCandidateCell: CupcakeCell | undefined;
 
     // Cached per-frame settle data
     let settleMaxDist = 0;
 
     // Drag presentation state
     let isCommittedSwap = false;
-    let swapOrigin = { col: -1, row: -1 };
-    let swapTarget = { col: -1, row: -1 };
+    let swapOriginCell: CupcakeCell | undefined;
+    let swapTargetCell: CupcakeCell | undefined;
     const candidateVisual = { x: 0, y: 0 };
     const returningVisual = { x: 0, y: 0 };
-    let candidateIndex = -1;
-    let returningIndex = -1;
+    let candidateCell: CupcakeCell | undefined;
+    let returningCell: CupcakeCell | undefined;
     const dragTimeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
     // Drag gesture state
     let isDragActive = false;
-    const dragOrigin = { col: -1, row: -1 };
-    const dragTarget = { col: -1, row: -1 };
+    let dragOriginCell: CupcakeCell | undefined;
+    let dragTargetCell: CupcakeCell | undefined;
     const dragPointer = { x: 0, y: 0 };
 
     return {
         getCellX,
         getCellY,
         getCellAlpha,
-        get dragOriginIndex() { return getDragOriginIndex(); },
+        get dragOriginCell() { return getDragOriginCell(); },
         startDrag,
         dragTo,
         endDrag,
@@ -88,43 +88,39 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         updateDragPresentation();
     }
 
-    function getDragOriginIndex(): number {
-        if (isCommittedSwap) return swapOrigin.row * GRID_COLS + swapOrigin.col;
-        if (isDragActive) return dragOrigin.row * GRID_COLS + dragOrigin.col;
-        return -1;
+    function getDragOriginCell(): CupcakeCell | undefined {
+        if (isCommittedSwap) return swapOriginCell;
+        if (isDragActive) return dragOriginCell;
+        return undefined;
     }
 
     // ---- Per-cell accessors ------------------------------------------------
 
-    function getCellX(index: number): number {
+    function getCellX(cell: CupcakeCell): number {
         // Committed swap: hold cells at swapped visual positions
         if (isCommittedSwap) {
-            const swapOriginIndex = swapOrigin.row * GRID_COLS + swapOrigin.col;
-            if (index === swapOriginIndex) return gridX(swapTarget.col);
-            if (index === candidateIndex) return gridX(swapOrigin.col);
+            if (cell === swapOriginCell) return gridX(swapTargetCell!.col);
+            if (cell === candidateCell) return gridX(swapOriginCell!.col);
         }
 
         // Active drag: origin follows pointer, candidate follows tween
         if (isDragActive) {
-            const originIndex = dragOrigin.row * GRID_COLS + dragOrigin.col;
-            if (index === originIndex) return dragPointer.x;
-            if (index === candidateIndex) return candidateVisual.x;
+            if (cell === dragOriginCell) return dragPointer.x;
+            if (cell === candidateCell) return candidateVisual.x;
         }
 
         // Returning cell tween
-        if (index === returningIndex) return returningVisual.x;
+        if (cell === returningCell) return returningVisual.x;
 
         // Model swap/reverse interpolation
         const phase = options.getPhase();
         if (phase === 'swapping' || phase === 'reversing') {
-            const p1 = options.getSwapPos1();
-            const p2 = options.getSwapPos2();
-            const i1 = p1.row * GRID_COLS + p1.col;
-            const i2 = p2.row * GRID_COLS + p2.col;
-            if (index === i1 || index === i2) {
+            const c1 = options.getSwapCell1();
+            const c2 = options.getSwapCell2();
+            if (cell === c1 || cell === c2) {
                 const t = Power1.easeInOut(options.getSwapProgress());
-                const from = index === i1 ? p1.col : p2.col;
-                const to = index === i1 ? p2.col : p1.col;
+                const from = cell === c1 ? c1!.col : c2!.col;
+                const to = cell === c1 ? c2!.col : c1!.col;
                 if (phase === 'reversing') {
                     return gridX(to + (from - to) * t);
                 }
@@ -133,38 +129,34 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         }
 
         // Default: grid position
-        return gridX(options.getCells()[index].pos.col);
+        return gridX(cell.col);
     }
 
-    function getCellY(index: number): number {
+    function getCellY(cell: CupcakeCell): number {
         // Committed swap: hold cells at swapped visual positions
         if (isCommittedSwap) {
-            const swapOriginIndex = swapOrigin.row * GRID_COLS + swapOrigin.col;
-            if (index === swapOriginIndex) return gridY(swapTarget.row);
-            if (index === candidateIndex) return gridY(swapOrigin.row);
+            if (cell === swapOriginCell) return gridY(swapTargetCell!.row);
+            if (cell === candidateCell) return gridY(swapOriginCell!.row);
         }
 
         // Active drag: origin follows pointer, candidate follows tween
         if (isDragActive) {
-            const originIndex = dragOrigin.row * GRID_COLS + dragOrigin.col;
-            if (index === originIndex) return dragPointer.y;
-            if (index === candidateIndex) return candidateVisual.y;
+            if (cell === dragOriginCell) return dragPointer.y;
+            if (cell === candidateCell) return candidateVisual.y;
         }
 
         // Returning cell tween
-        if (index === returningIndex) return returningVisual.y;
+        if (cell === returningCell) return returningVisual.y;
 
         // Model swap/reverse interpolation
         const phase = options.getPhase();
         if (phase === 'swapping' || phase === 'reversing') {
-            const p1 = options.getSwapPos1();
-            const p2 = options.getSwapPos2();
-            const i1 = p1.row * GRID_COLS + p1.col;
-            const i2 = p2.row * GRID_COLS + p2.col;
-            if (index === i1 || index === i2) {
+            const c1 = options.getSwapCell1();
+            const c2 = options.getSwapCell2();
+            if (cell === c1 || cell === c2) {
                 const t = Power1.easeInOut(options.getSwapProgress());
-                const from = index === i1 ? p1.row : p2.row;
-                const to = index === i1 ? p2.row : p1.row;
+                const from = cell === c1 ? c1!.row : c2!.row;
+                const to = cell === c1 ? c2!.row : c1!.row;
                 if (phase === 'reversing') {
                     return gridY(to + (from - to) * t);
                 }
@@ -173,26 +165,25 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         }
 
         // Settling interpolation
-        if (phase === 'settling') {
-            const origin = options.getSettleOrigins()[index];
-            if (origin === origin) { // not NaN
-                const targetRow = options.getCells()[index].pos.row;
-                const dist = targetRow - origin;
+        if (phase === 'settling' && cell !== EMPTY_CELL) {
+            const originRow = options.getSettleOriginRows()[cell.row][cell.col];
+            if (originRow === originRow) { // not NaN
+                const targetRow = cell.row;
+                const dist = targetRow - originRow;
                 const cellProgress = settleMaxDist > 0
                     ? Math.min(1, options.getSettleProgress() * settleMaxDist / dist)
                     : 1;
-                return gridY(origin + dist * Bounce.easeOut(cellProgress));
+                return gridY(originRow + dist * Bounce.easeOut(cellProgress));
             }
         }
 
         // Default: grid position
-        return gridY(options.getCells()[index].pos.row);
+        return gridY(cell.row);
     }
 
-    function getCellAlpha(index: number): number {
-        const cell = options.getCells()[index];
-        if (!cell.isAlive) return 0;
-        if (options.getMatchedIndices().indexOf(index) === -1) return 1;
+    function getCellAlpha(cell: CupcakeCell): number {
+        if (cell === EMPTY_CELL) return 0;
+        if (options.getMatchedCells().indexOf(cell) === -1) return 1;
         const matchSequence = options.getMatchSequence();
         return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 0;
     }
@@ -201,13 +192,11 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
     function startDrag(localX: number, localY: number): void {
         if (options.getPhase() !== 'idle') return;
-        const pos = resolveGridPosition(localX, localY);
-        if (pos === undefined) return;
+        const cell = resolveGridCell(localX, localY);
+        if (!cell) return;
         isDragActive = true;
-        dragOrigin.row = pos.row;
-        dragOrigin.col = pos.col;
-        dragTarget.row = -1;
-        dragTarget.col = -1;
+        dragOriginCell = cell;
+        dragTargetCell = undefined;
         dragPointer.x = localX;
         dragPointer.y = localY;
     }
@@ -216,33 +205,33 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (!isDragActive) return;
         dragPointer.x = localX;
         dragPointer.y = localY;
-        const pos = resolveGridPosition(localX, localY);
-        dragTarget.row = pos ? pos.row : -1;
-        dragTarget.col = pos ? pos.col : -1;
+        dragTargetCell = resolveGridCell(localX, localY);
     }
 
     function endDrag(): void {
         if (!isDragActive) return;
-        if (dragTarget.row >= 0 && options.onSwapRequested(dragOrigin, dragTarget)) {
+        if (dragTargetCell && options.onSwapRequested(dragOriginCell!, dragTargetCell)) {
             isCommittedSwap = true;
-            swapOrigin = { ...dragOrigin };
-            swapTarget = { ...dragTarget };
+            swapOriginCell = dragOriginCell;
+            swapTargetCell = dragTargetCell;
         }
         isDragActive = false;
-        dragTarget.row = -1;
-        dragTarget.col = -1;
+        dragTargetCell = undefined;
     }
 
     // ---- Drag presentation helpers -----------------------------------------
 
     function computeSettleMaxDist(): number {
-        const origins = options.getSettleOrigins();
+        const settleOriginRows = options.getSettleOriginRows();
         const cells = options.getCells();
         let maxDist = 0;
-        for (let i = 0; i < origins.length; i++) {
-            if (origins[i] !== origins[i]) continue;
-            const dist = cells[i].pos.row - origins[i];
-            if (dist > maxDist) maxDist = dist;
+        for (let r = 0; r < cells.length; r++) {
+            for (let c = 0; c < cells[r].length; c++) {
+                const originRow = settleOriginRows[r][c];
+                if (originRow !== originRow) continue; // NaN check
+                const dist = cells[r][c].row - originRow;
+                if (dist > maxDist) maxDist = dist;
+            }
         }
         return maxDist;
     }
@@ -252,23 +241,21 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (isCommittedSwap) {
             if (options.getPhase() !== 'swapping') {
                 clearCommittedSwap();
-                prevCandidateIndex = -1;
+                prevCandidateCell = undefined;
             }
             return;
         }
 
-        const newCandidateIndex = isDragActive && dragTarget.row >= 0
-            ? dragTarget.row * GRID_COLS + dragTarget.col
-            : -1;
+        const newCandidateCell = isDragActive && dragTargetCell
+            ? dragTargetCell
+            : undefined;
 
-        if (newCandidateIndex !== prevCandidateIndex) {
+        if (newCandidateCell !== prevCandidateCell) {
             // Previous candidate starts returning to grid
-            if (prevCandidateIndex >= 0 && options.getPhase() === 'idle') {
-                returningIndex = prevCandidateIndex;
-
-                const cell = options.getCells()[prevCandidateIndex];
-                const targetX = gridX(cell.pos.col);
-                const targetY = gridY(cell.pos.row);
+            if (prevCandidateCell && options.getPhase() === 'idle') {
+                returningCell = prevCandidateCell;
+                const targetX = gridX(prevCandidateCell.col);
+                const targetY = gridY(prevCandidateCell.row);
                 slideReturn(
                     candidateVisual.x,
                     candidateVisual.y,
@@ -278,42 +265,40 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
             }
 
             // New candidate starts sliding toward origin
-            if (newCandidateIndex >= 0) {
-                const cell = options.getCells()[newCandidateIndex];
-                const fromX = gridX(cell.pos.col);
-                const fromY = gridY(cell.pos.row);
-                const targetX = gridX(dragOrigin.col);
-                const targetY = gridY(dragOrigin.row);
+            if (newCandidateCell) {
+                const fromX = gridX(newCandidateCell.col);
+                const fromY = gridY(newCandidateCell.row);
+                const targetX = gridX(dragOriginCell!.col);
+                const targetY = gridY(dragOriginCell!.row);
                 slideCandidate(fromX, fromY, targetX, targetY);
             }
 
-            prevCandidateIndex = newCandidateIndex;
+            prevCandidateCell = newCandidateCell;
         }
 
-        candidateIndex = newCandidateIndex;
+        candidateCell = newCandidateCell;
     }
 
     function clearCommittedSwap(): void {
         isCommittedSwap = false;
-        swapOrigin.row = -1;
-        swapOrigin.col = -1;
-        swapTarget.row = -1;
-        swapTarget.col = -1;
-        candidateIndex = -1;
-        returningIndex = -1;
+        swapOriginCell = undefined;
+        swapTargetCell = undefined;
+        candidateCell = undefined;
+        returningCell = undefined;
     }
 
-    function resolveGridPosition(x: number, y: number): { col: number; row: number } | undefined {
+    function resolveGridCell(x: number, y: number): CupcakeCell | undefined {
         const col = Math.floor(x / CELL_SIZE_PX);
         const row = Math.floor(y / CELL_SIZE_PX);
         if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return undefined;
+        const cell = options.getCells()[row][col];
         if (isDragActive) {
-            if (row === dragOrigin.row && col === dragOrigin.col) return undefined;
-            const dr = Math.abs(row - dragOrigin.row);
-            const dc = Math.abs(col - dragOrigin.col);
+            if (cell === dragOriginCell) return undefined;
+            const dr = Math.abs(row - dragOriginCell!.row);
+            const dc = Math.abs(col - dragOriginCell!.col);
             if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return undefined;
         }
-        return { col, row };
+        return cell;
     }
 
     function slideCandidate(fromX: number, fromY: number, toX: number, toY: number): void {
@@ -332,7 +317,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
             y: toY,
             duration: RETURN_SLIDE_DURATION,
             ease: 'power2.out',
-            onComplete: () => { returningIndex = -1; },
+            onComplete: () => { returningCell = undefined; },
         }, t);
     }
 }

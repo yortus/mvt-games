@@ -25,12 +25,12 @@ export function createGameView(game: GameModel): StatefulPixiView {
         boardView = createBoardView({
             getPhase: () => board.phase,
             getCells: () => board.cells,
-            getSwapPos1: () => board.swapPos1,
-            getSwapPos2: () => board.swapPos2,
+            getSwapCell1: () => board.swapCell1,
+            getSwapCell2: () => board.swapCell2,
             getSwapProgress: () => board.swapProgress,
-            getSettleOrigins: () => board.settleOrigins,
             getSettleProgress: () => board.settleProgress,
-            getMatchedIndices: () => board.matchedIndices,
+            getSettleOriginRows: () => board.settleOriginRows,
+            getMatchedCells: () => board.matchedCells,
             getCascadeStep: () => board.cascadeStep,
             onSwapRequested: (origin, target) => game.trySwap(origin, target),
         });

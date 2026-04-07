@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createBoardModel } from './board-model';
 import type { BoardModel } from './board-model';
-import type { Position } from './common';
+import type { CupcakeCell } from './common';
+import { EMPTY_CELL } from './common';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -23,14 +24,14 @@ function makeBoard(rowCount = 3, colCount = 3): BoardModel {
 }
 
 /** Find two adjacent cells with different kinds that can be swapped. */
-function findSwappablePair(board: BoardModel): [Position, Position] | undefined {
+function findSwappablePair(board: BoardModel): [CupcakeCell, CupcakeCell] | undefined {
     for (let r = 0; r < board.rowCount; r++) {
         for (let c = 0; c < board.colCount - 1; c++) {
-            const idx1 = r * board.colCount + c;
-            const idx2 = r * board.colCount + c + 1;
-            if (board.cells[idx1].isAlive && board.cells[idx2].isAlive
-                && board.cells[idx1].kind !== board.cells[idx2].kind) {
-                return [{ row: r, col: c }, { row: r, col: c + 1 }];
+            const cell1 = board.cells[r][c];
+            const cell2 = board.cells[r][c + 1];
+            if (cell1 !== EMPTY_CELL && cell2 !== EMPTY_CELL
+                && cell1.kind !== cell2.kind) {
+                return [cell1, cell2];
             }
         }
     }
@@ -50,10 +51,12 @@ describe('BoardModel', () => {
 
         it('has integer cell positions', () => {
             const board = makeBoard();
-            for (let i = 0; i < board.cells.length; i++) {
-                const cell = board.cells[i];
-                expect(Number.isInteger(cell.pos.row)).toBe(true);
-                expect(Number.isInteger(cell.pos.col)).toBe(true);
+            for (let r = 0; r < board.cells.length; r++) {
+                for (let c = 0; c < board.cells[r].length; c++) {
+                    const cell = board.cells[r][c];
+                    expect(Number.isInteger(cell.row)).toBe(true);
+                    expect(Number.isInteger(cell.col)).toBe(true);
+                }
             }
         });
 
@@ -64,15 +67,26 @@ describe('BoardModel', () => {
             expect(board.settleProgress).toBe(0);
         });
 
-        it('matchedIndices is empty when idle', () => {
+        it('matchedCells is empty when idle', () => {
             const board = makeBoard();
-            expect(board.matchedIndices).toEqual([]);
+            expect(board.matchedCells).toEqual([]);
         });
 
-        it('settleOrigins are all NaN when idle', () => {
+        it('settleOriginRows are all NaN when idle', () => {
             const board = makeBoard();
-            for (let i = 0; i < board.settleOrigins.length; i++) {
-                expect(board.settleOrigins[i]).toBeNaN();
+            for (let r = 0; r < board.settleOriginRows.length; r++) {
+                for (let c = 0; c < board.settleOriginRows[r].length; c++) {
+                    expect(board.settleOriginRows[r][c]).toBeNaN();
+                }
+            }
+        });
+
+        it('has no EMPTY_CELL entries after initialisation', () => {
+            const board = makeBoard();
+            for (let r = 0; r < board.cells.length; r++) {
+                for (let c = 0; c < board.cells[r].length; c++) {
+                    expect(board.cells[r][c]).not.toBe(EMPTY_CELL);
+                }
             }
         });
     });
@@ -82,23 +96,25 @@ describe('BoardModel', () => {
             const board = makeBoard();
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
-            const [p1, p2] = pair!;
-            expect(board.trySwap(p1, p2)).toBe(true);
+            const [c1, c2] = pair!;
+            expect(board.trySwap(c1, c2)).toBe(true);
             expect(board.phase).not.toBe('idle');
 
-            // Second swap should be rejected
-            expect(board.trySwap(p1, p2)).toBe(false);
+            // Second swap should be rejected (board not idle)
+            expect(board.trySwap(c1, c2)).toBe(false);
         });
 
-        it('rejects non-adjacent positions', () => {
+        it('rejects non-adjacent cells', () => {
             const board = makeBoard();
-            expect(board.trySwap({ row: 0, col: 0 }, { row: 2, col: 2 })).toBe(false);
+            const cell1 = board.cells[0][0];
+            const cell2 = board.cells[2][2];
+            expect(board.trySwap(cell1, cell2)).toBe(false);
         });
 
-        it('rejects out-of-bounds positions', () => {
+        it('rejects EMPTY_CELL', () => {
             const board = makeBoard();
-            expect(board.trySwap({ row: -1, col: 0 }, { row: 0, col: 0 })).toBe(false);
-            expect(board.trySwap({ row: 0, col: 0 }, { row: 0, col: 99 })).toBe(false);
+            expect(board.trySwap(EMPTY_CELL, board.cells[0][0])).toBe(false);
+            expect(board.trySwap(board.cells[0][0], EMPTY_CELL)).toBe(false);
         });
     });
 
@@ -111,14 +127,14 @@ describe('BoardModel', () => {
             expect(board.phase).toBe('swapping');
         });
 
-        it('exposes swapPos1 and swapPos2', () => {
+        it('exposes swapCell1 and swapCell2', () => {
             const board = makeBoard();
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
-            const [p1, p2] = pair!;
-            board.trySwap(p1, p2);
-            expect(board.swapPos1).toEqual(p1);
-            expect(board.swapPos2).toEqual(p2);
+            const [c1, c2] = pair!;
+            board.trySwap(c1, c2);
+            expect(board.swapCell1).toBe(c1);
+            expect(board.swapCell2).toBe(c2);
         });
 
         it('swapProgress advances linearly from 0 toward 1', () => {
@@ -141,8 +157,10 @@ describe('BoardModel', () => {
             board.update(50);
 
             for (let i = 0; i < board.cells.length; i++) {
-                expect(Number.isInteger(board.cells[i].pos.row)).toBe(true);
-                expect(Number.isInteger(board.cells[i].pos.col)).toBe(true);
+                for (let j = 0; j < board.cells[i].length; j++) {
+                    expect(Number.isInteger(board.cells[i][j].row)).toBe(true);
+                    expect(Number.isInteger(board.cells[i][j].col)).toBe(true);
+                }
             }
         });
     });
@@ -165,9 +183,9 @@ describe('BoardModel', () => {
             let reversed = false;
             for (let r = 0; r < board.rowCount && !reversed; r++) {
                 for (let c = 0; c < board.colCount - 1 && !reversed; c++) {
-                    const p1: Position = { row: r, col: c };
-                    const p2: Position = { row: r, col: c + 1 };
-                    if (!board.trySwap(p1, p2)) continue;
+                    const cell1 = board.cells[r][c];
+                    const cell2 = board.cells[r][c + 1];
+                    if (!board.trySwap(cell1, cell2)) continue;
                     stepMs(board, 300);
                     if (board.phase === 'reversing') {
                         reversed = true;
@@ -251,10 +269,12 @@ describe('BoardModel', () => {
             expect(board.settleProgress).toBe(0);
         });
 
-        it('settleOrigins are NaN outside settling phase', () => {
+        it('settleOriginRows are all NaN outside settling phase', () => {
             const board = makeBoard();
-            for (let i = 0; i < board.settleOrigins.length; i++) {
-                expect(board.settleOrigins[i]).toBeNaN();
+            for (let r = 0; r < board.settleOriginRows.length; r++) {
+                for (let c = 0; c < board.settleOriginRows[r].length; c++) {
+                    expect(board.settleOriginRows[r][c]).toBeNaN();
+                }
             }
         });
     });
@@ -269,12 +289,17 @@ describe('BoardModel', () => {
     describe('update integrity', () => {
         it('does nothing when idle', () => {
             const board = makeBoard();
-            const cellsBefore = board.cells.map((c) => ({ ...c.pos, kind: c.kind }));
+            const cellsBefore: { row: number; col: number; kind: string }[][] = [];
+            for (let r = 0; r < board.cells.length; r++) {
+                cellsBefore[r] = board.cells[r].map((cell) => ({ row: cell.row, col: cell.col, kind: cell.kind }));
+            }
             board.update(1000);
-            for (let i = 0; i < board.cells.length; i++) {
-                expect(board.cells[i].pos.row).toBe(cellsBefore[i].row);
-                expect(board.cells[i].pos.col).toBe(cellsBefore[i].col);
-                expect(board.cells[i].kind).toBe(cellsBefore[i].kind);
+            for (let r = 0; r < board.cells.length; r++) {
+                for (let c = 0; c < board.cells[r].length; c++) {
+                    expect(board.cells[r][c].row).toBe(cellsBefore[r][c].row);
+                    expect(board.cells[r][c].col).toBe(cellsBefore[r][c].col);
+                    expect(board.cells[r][c].kind).toBe(cellsBefore[r][c].kind);
+                }
             }
         });
     });
