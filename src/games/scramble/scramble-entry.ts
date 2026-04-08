@@ -16,6 +16,7 @@ export function createScrambleEntry(): GameEntry {
         name: 'Scramble',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        integerScale: true,
         thumbnailAdvanceMs: 1000,
 
         async load(): Promise<void> {

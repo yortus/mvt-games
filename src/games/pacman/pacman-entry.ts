@@ -21,6 +21,7 @@ export function createPacmanEntry(): GameEntry {
         name: 'Pac-Man',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        integerScale: true,
 
         async load(): Promise<void> {
             await textures.load();

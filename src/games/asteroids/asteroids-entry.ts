@@ -14,6 +14,7 @@ export function createAsteroidsEntry(): GameEntry {
         name: 'Asteroids',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        integerScale: true,
 
         start(stage: Container): GameSession {
             const gameModel = createGameModel({

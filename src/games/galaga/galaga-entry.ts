@@ -16,6 +16,7 @@ export function createGalagaEntry(): GameEntry {
         name: 'Galaga',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        integerScale: true,
         thumbnailAdvanceMs: 2000,
 
         async load(): Promise<void> {

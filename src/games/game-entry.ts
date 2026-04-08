@@ -21,6 +21,11 @@ export interface GameEntry {
      */
     readonly thumbnailAdvanceMs?: number;
     /**
+     * When true, the desktop scaler snaps to integer multiples (1x, 2x, 3x...)
+     * for crisp pixel-art rendering. Defaults to false (smooth scaling).
+     */
+    readonly integerScale?: boolean;
+    /**
      * Optional play instructions shown via the pause menu's
      * "How to Play" button. Games without instructions may omit this.
      */

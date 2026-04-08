@@ -16,6 +16,7 @@ export function createDigdugEntry(): GameEntry {
         name: 'Dig Dug',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        integerScale: true,
 
         async load(): Promise<void> {
             await textures.load();

@@ -264,33 +264,32 @@ async function main(): Promise<void> {
             // Maximum scale that fits the game fully in the available area.
             const maxFitScale = Math.min(viewportW / gameW, availH / gameH);
 
-            // Calculate scale, reserving margin for touch controls on the
-            // correct axis: portrait puts controls below, landscape on sides.
+            // Calculate scale, reserving margin for touch controls.
+            // Compute both portrait (controls below) and landscape (controls
+            // on sides) arrangements and pick whichever gives the larger game
+            // so the scale transitions smoothly through square viewports.
             let scale = maxFitScale;
             if (isTouchDevice()) {
-                const isPortrait = viewportH > viewportW;
-                let scaleWithMargin: number;
-                if (isPortrait) {
-                    // Reserve space below for d-pad / pause / fire strip
-                    scaleWithMargin = Math.min(
-                        viewportW / gameW,
-                        (availH - MIN_TOUCH_MARGIN_CSS * 2) / gameH,
-                    );
-                }
-                else {
-                    // Reserve space on both sides for d-pad (left) and buttons (right)
-                    scaleWithMargin = Math.min(
-                        (viewportW - MIN_TOUCH_MARGIN_CSS * 2) / gameW,
-                        availH / gameH,
-                    );
-                }
+                // Portrait arrangement: reserve vertical space below for d-pad
+                const portraitScale = Math.min(
+                    viewportW / gameW,
+                    (availH - MIN_TOUCH_MARGIN_CSS * 2) / gameH,
+                );
+                // Landscape arrangement: reserve horizontal space on sides
+                const landscapeScale = Math.min(
+                    (viewportW - MIN_TOUCH_MARGIN_CSS * 2) / gameW,
+                    availH / gameH,
+                );
+                const scaleWithMargin = Math.max(portraitScale, landscapeScale);
                 scale = Math.min(scale, Math.max(0.3, scaleWithMargin));
             }
             // Clamp at maxFitScale so the game never overflows the viewport,
             // even when the 0.3 minimum would push it larger than available.
             const effectiveScale = isTouchDevice()
                 ? Math.min(maxFitScale, Math.max(0.3, scale))
-                : (scale < 1 ? scale : Math.max(1, Math.floor(scale)));
+                : currentEntry.integerScale
+                    ? (scale < 1 ? scale : Math.max(1, Math.floor(scale)))
+                    : scale;
 
             const logicalW = Math.ceil(viewportW / effectiveScale);
             const logicalH = Math.ceil(viewportH / effectiveScale);
