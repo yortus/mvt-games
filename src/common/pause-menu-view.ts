@@ -44,6 +44,7 @@ export function createPauseMenuView(
     // Title - drawn at CSS-pixel size, positioned and scaled in refresh
     const title = new Text({
         text: 'PAUSED',
+        resolution: TEXT_RESOLUTION,
         style: {
             fontFamily: 'monospace',
             fontSize: TITLE_CSS_SIZE,
@@ -66,6 +67,7 @@ export function createPauseMenuView(
 
     const howToPlayBody = new Text({
         text: '',
+        resolution: TEXT_RESOLUTION,
         style: {
             fontFamily: 'monospace',
             fontSize: HOW_TO_PLAY_CSS_FONT,
@@ -263,6 +265,9 @@ export function createPauseMenuView(
 // Internals
 // ---------------------------------------------------------------------------
 
+/** Rasterise text at device DPR so it stays crisp regardless of renderer resolution. */
+const TEXT_RESOLUTION = window.devicePixelRatio || 1;
+
 const TITLE_CSS_SIZE = 32;
 const TITLE_BTN_CSS_GAP = 24;
 const HOW_TO_PLAY_CSS_FONT = 14;
@@ -297,6 +302,7 @@ function createButton(label: string, onTap: () => void): ButtonEntry {
 
     const text = new Text({
         text: label,
+        resolution: TEXT_RESOLUTION,
         style: {
             fontFamily: 'monospace',
             fontSize: BTN_CSS_FONT,

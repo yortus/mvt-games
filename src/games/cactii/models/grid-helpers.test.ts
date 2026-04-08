@@ -8,6 +8,7 @@ import {
     fillCellsNoMatches,
     compactColumns,
     countEmptyTop,
+    hasAvailableMove,
 } from './grid-helpers';
 
 // ---------------------------------------------------------------------------
@@ -185,5 +186,69 @@ describe('countEmptyTop', () => {
         // 3x1: [_, S, _] - only 1 empty at top
         const cells = grid(1, _, S, _);
         expect(countEmptyTop(cells, 3, 1)).toEqual([1]);
+    });
+});
+
+describe('hasAvailableMove', () => {
+    it('returns true when a horizontal swap creates a match', () => {
+        // Swapping (0,1) C <-> (0,2) S gives S S S in row 0
+        const cells = grid(3,
+            S, C, S,
+            C, S, C,
+            S, C, S,
+        );
+        expect(hasAvailableMove(cells, 3, 3)).toBe(true);
+    });
+
+    it('returns true when a vertical swap creates a match', () => {
+        // Swapping (1,0) C <-> (2,0) S gives col0 = S,S,S
+        const cells = grid(3,
+            S, C, G,
+            C, G, C,
+            S, C, G,
+        );
+        expect(hasAvailableMove(cells, 3, 3)).toBe(true);
+    });
+
+    it('returns false when no swap creates a match', () => {
+        // 3-color Latin square: no swap can produce a run of 3
+        const cells = grid(3,
+            S, C, G,
+            C, G, S,
+            G, S, C,
+        );
+        expect(hasAvailableMove(cells, 3, 3)).toBe(false);
+    });
+
+    it('returns false for a larger deadlocked board', () => {
+        // 4x4 Latin square with 4 colors
+        const cells = grid(4,
+            S, C, G, B,
+            C, G, B, S,
+            G, B, S, C,
+            B, S, C, G,
+        );
+        expect(hasAvailableMove(cells, 4, 4)).toBe(false);
+    });
+
+    it('ignores empty cells', () => {
+        const cells = grid(3,
+            _, _, _,
+            _, _, _,
+            _, _, _,
+        );
+        expect(hasAvailableMove(cells, 3, 3)).toBe(false);
+    });
+
+    it('detects a move when swapped cell creates a match in the other position', () => {
+        // Row 0: S C S  -- swapping C→S at (0,1)↔(1,1) puts S at (0,1), making S S S
+        // Row 1: G S G
+        // Row 2: C G C
+        const cells = grid(3,
+            S, G, S,
+            C, S, C,
+            G, C, G,
+        );
+        expect(hasAvailableMove(cells, 3, 3)).toBe(true);
     });
 });

@@ -14,6 +14,7 @@ import {
     fillCellsNoMatches,
     compactColumns,
     countEmptyTop,
+    hasAvailableMove,
 } from './grid-helpers';
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,8 @@ export interface BoardModel {
     readonly settleOriginRows: DeepReadonly<number[][]>;
     /** Attempt to swap two cells. Returns true if accepted (cells adjacent, occupied, board idle). */
     trySwap(cell1: CactusCell, cell2: CactusCell): boolean;
+    /** True when the board has settled and no valid moves remain. */
+    readonly isGameOver: boolean;
     update(deltaMs: number): void;
 }
 
@@ -90,6 +93,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     let swapCell2: CactusCell | undefined;
     let phaseEndTime = 0;
     let phaseElapsed = 0;
+    let gameOver = false;
 
     const phaseFinishers: Record<BoardPhase, () => void> = {
         idle: () => {},
@@ -128,6 +132,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
             return Math.min(1, phaseElapsed / phaseEndTime);
         },
         get settleOriginRows() { return settleOriginRows; },
+        get isGameOver() { return gameOver; },
 
         trySwap(cell1: CactusCell, cell2: CactusCell): boolean {
             if (boardPhase !== 'idle') return false;
@@ -287,6 +292,9 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         }
         else {
             boardPhase = 'idle';
+            if (!hasAvailableMove(cells, rowCount, colCount)) {
+                gameOver = true;
+            }
         }
     }
 

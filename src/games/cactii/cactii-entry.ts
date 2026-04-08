@@ -54,6 +54,10 @@ export function createCactiiEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: false,
+                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                },
             };
         },
     };

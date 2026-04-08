@@ -303,4 +303,11 @@ describe('BoardModel', () => {
             }
         });
     });
+
+    describe('game over detection', () => {
+        it('isGameOver is false on a typical board', () => {
+            const board = makeBoard(4, 4);
+            expect(board.isGameOver).toBe(false);
+        });
+    });
 });

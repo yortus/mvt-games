@@ -51,6 +51,9 @@ export function createGameView(game: GameModel): StatefulPixiView {
             getHeight: () => boardHeight,
             getVisible: () => game.phase === 'game-over',
             getText: () => `GAME OVER\n\n${restartHint}`,
+            onRestartPressed: (pressed) => {
+                game.playerInput.restartPressed = pressed;
+            },
         });
         view.addChild(overlayView);
     }
