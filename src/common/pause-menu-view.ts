@@ -266,7 +266,9 @@ export function createPauseMenuView(
 // ---------------------------------------------------------------------------
 
 /** Rasterise text at device DPR so it stays crisp regardless of renderer resolution. */
-const TEXT_RESOLUTION = window.devicePixelRatio || 1;
+const TEXT_RESOLUTION = (typeof globalThis !== 'undefined' && 'devicePixelRatio' in globalThis)
+    ? globalThis.devicePixelRatio
+    : 1;
 
 const TITLE_CSS_SIZE = 32;
 const TITLE_BTN_CSS_GAP = 24;
