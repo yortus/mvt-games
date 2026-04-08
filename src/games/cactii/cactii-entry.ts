@@ -55,6 +55,7 @@ export function createCactiiEntry(): GameEntry {
                     gameView.destroy({ children: true });
                 },
                 inputConfig: {
+                    showDpad: false,
                     onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
                 },
             };
