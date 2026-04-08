@@ -28,6 +28,7 @@ export function createOverlayView(bindings: OverlayViewBindings): Container {
 
     const w = bindings.getWidth();
     const h = bindings.getHeight();
+    const fontSize = Math.round(w * 0.05);
 
     const bg = new Graphics();
     bg.rect(0, 0, w, h).fill({ color: 0x000000, alpha: 0.6 });
@@ -35,7 +36,7 @@ export function createOverlayView(bindings: OverlayViewBindings): Container {
 
     const label = new Text({
         text: '',
-        style: { fontFamily: 'monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
+        style: { fontFamily: 'monospace', fontSize, fill: 0xffffff, align: 'center' },
     });
     label.anchor.set(0.5);
     label.position.set(w / 2, h / 2);
