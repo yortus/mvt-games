@@ -206,6 +206,50 @@ Key points:
 - **Private state** (`elapsed`) lives in the closure, invisible to consumers.
 - **`readonly` properties** signal "read from outside, mutate only from within."
 
+### Getter / Setter Pairs
+
+When a model property is read-write (externally settable), use a **getter /
+setter pair** on the interface - not a getter paired with a `setX()` method.
+Setters are the idiomatic JavaScript mechanism for this and keep the
+interface minimal.
+
+```ts
+// ✅ Preferred - getter/setter pair
+interface FlockModel {
+    separation: number;     // readable and writable
+    readonly maxSpeed: number;  // readable only
+}
+
+// ❌ Avoid - getter + setX() method
+interface FlockModel {
+    readonly separation: number;
+    setSeparation(value: number): void;
+}
+```
+
+In the factory implementation, use `get` / `set` accessors backed by a
+closure variable:
+
+```ts
+const model: FlockModel = {
+    get separation() { return separation; },
+    set separation(value) { separation = value; },
+    // ...
+};
+```
+
+**When a setter has side effects** (e.g. `boidCount` must add/remove boids),
+the setter body contains that logic directly:
+
+```ts
+get boidCount() { return boids.length; },
+set boidCount(count) {
+    const target = Math.max(0, Math.round(count));
+    while (boids.length < target) boids.push(randomBoid());
+    while (boids.length > target) boids.pop();
+},
+```
+
 ## Code Organisation
 
 ### File Sections

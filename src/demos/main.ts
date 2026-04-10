@@ -1,5 +1,6 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
 import type { DemoEntry, DemoSession } from './demo-entry';
+import { createBoidsEntry } from './boids';
 import { createTsxPixiEntry } from './tsx-pixi';
 
 // ---------------------------------------------------------------------------
@@ -7,6 +8,7 @@ import { createTsxPixiEntry } from './tsx-pixi';
 // ---------------------------------------------------------------------------
 
 const demos: DemoEntry[] = [
+    createBoidsEntry(),
     createTsxPixiEntry(),
 ];
 
@@ -31,6 +33,7 @@ const infoSourceEl = document.getElementById('info-source-container')!;
 let activeApp: Application | undefined;
 let activeSession: DemoSession | undefined;
 let escapeHandler: ((e: KeyboardEvent) => void) | undefined;
+let resizeHandler: (() => void) | undefined;
 
 // ---------------------------------------------------------------------------
 // Build gallery cards
@@ -84,7 +87,13 @@ for (let i = 0; i < demos.length; i++) {
 // Thumbnail generation
 // ---------------------------------------------------------------------------
 
-generateThumbnails();
+let thumbnailsGenerated = false;
+
+function ensureThumbnails(): void {
+    if (thumbnailsGenerated) return;
+    thumbnailsGenerated = true;
+    generateThumbnails();
+}
 
 async function generateThumbnails(): Promise<void> {
     const TICK_MS = 16;
@@ -184,6 +193,19 @@ async function launchDemo(index: number): Promise<void> {
     activeApp = app;
     activeSession = session;
 
+    // Resize handling - debounced so continuous dragging doesn't thrash
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    resizeHandler = () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const w = entry.screenWidth;
+            const h = entry.screenHeight;
+            app.renderer.resize(w, h);
+            session.resize?.();
+        }, 150);
+    };
+    window.addEventListener('resize', resizeHandler);
+
     escapeHandler = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
             e.preventDefault();
@@ -194,6 +216,11 @@ async function launchDemo(index: number): Promise<void> {
 }
 
 function exitDemo(): void {
+    if (resizeHandler) {
+        window.removeEventListener('resize', resizeHandler);
+        resizeHandler = undefined;
+    }
+
     if (escapeHandler) {
         window.removeEventListener('keydown', escapeHandler);
         escapeHandler = undefined;
@@ -216,6 +243,7 @@ function exitDemo(): void {
     runnerEl.classList.remove('active');
     galleryEl.style.display = '';
     setUrlFragment(null);
+    ensureThumbnails();
 }
 
 // ---------------------------------------------------------------------------
@@ -267,16 +295,18 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ---------------------------------------------------------------------------
-// Auto-launch from URL fragment
+// Auto-launch from URL fragment, or show gallery
 // ---------------------------------------------------------------------------
 
 const initialHash = location.hash.slice(1);
-if (initialHash) {
-    const index = demos.findIndex((d) => d.id === initialHash);
-    if (index >= 0) {
-        launchDemo(index);
-    }
-    else {
-        setUrlFragment(null);
-    }
+const autoLaunchIndex = initialHash
+    ? demos.findIndex((d) => d.id === initialHash)
+    : -1;
+
+if (autoLaunchIndex >= 0) {
+    launchDemo(autoLaunchIndex);
+}
+else {
+    if (initialHash) setUrlFragment(null);
+    ensureThumbnails();
 }

@@ -111,6 +111,11 @@
             #demo-runner canvas {
                 border: 1px solid #30363d;
                 border-radius: 6px;
+                max-width: calc(100vw - 24px);
+                max-height: calc(100vh - var(--site-nav-height, 48px) - 24px);
+                object-fit: contain;
+                width: auto;
+                height: auto;
             }
             .back-button {
                 position: absolute;

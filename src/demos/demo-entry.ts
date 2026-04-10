@@ -37,6 +37,11 @@ export interface DemoEntry {
 export interface DemoSession {
     /** Advance demo state by the given elapsed milliseconds. */
     update(deltaMs: number): void;
+    /**
+     * Re-layout after a viewport size change.
+     * Called by the runner after resizing the Pixi renderer.
+     */
+    resize?(): void;
     /** Tear down the demo session and remove visuals from the stage. */
     destroy(): void;
 }
