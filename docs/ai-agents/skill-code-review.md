@@ -55,8 +55,11 @@ with minimal knowledge of its surroundings. Practically:
   required, not expose the full implementation surface. Narrow contracts
   maximise flexibility for non-breaking future changes and minimise the
   chance of consumers depending on implementation details (Hyrum's Law).
-- **JSDoc on public interfaces** for any requirements, promises, or
-  protocols that types alone cannot capture.
+- **JSDoc on all public exports** - every exported interface, type, factory
+  function, constant, and their public members must have a JSDoc comment.
+  At minimum a one-line `/** ... */` summary. Add further detail for
+  anything types alone cannot capture: units, valid ranges, invariants,
+  side effects, or protocols.
 
 When reviewing, ask: *Could someone understand this module by reading only
 its public interface, without looking at anything else?*
@@ -64,6 +67,12 @@ its public interface, without looking at anything else?*
 **Common finding:** A module exposes internal helpers or types that callers
 don't need. **Fix:** move them below the exports or into a private helper
 file; tighten the barrel re-exports.
+
+**Common finding:** An exported interface or factory function lacks any
+JSDoc, forcing consumers to read the implementation to understand its
+purpose. **Fix:** add at minimum a one-line `/** ... */` summary to every
+export and its public members. Document units, constraints, and semantics
+that the type signature does not convey.
 
 #### Single responsibility (pragmatic, not dogmatic)
 
