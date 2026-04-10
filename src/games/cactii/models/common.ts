@@ -21,7 +21,12 @@ export interface CactusCell {
     readonly row: number;
 }
 
-/** Sentinel singleton representing an empty grid position. */
+/**
+ * Sentinel singleton representing an empty grid position.
+ *
+ * Always check via identity (`cell === EMPTY_CELL`), never read its `kind`,
+ * `row`, or `col` - those carry placeholder values with no semantic meaning.
+ */
 export const EMPTY_CELL: CactusCell = Object.freeze({
     kind: 'astrophytum' as CactusKind,
     col: -1,

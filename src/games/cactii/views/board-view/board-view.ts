@@ -20,7 +20,7 @@ export interface BoardViewBindings {
     getSettleOriginRows(): DeepReadonly<number[][]>;
     getMatchedCells(): readonly CactusCell[];
     getCascadeStep(): number;
-    onSwapRequested(origin: CactusCell, target: CactusCell): boolean;
+    onSwapRequested?(origin: CactusCell, target: CactusCell): boolean;
 }
 
 // ---------------------------------------------------------------------------

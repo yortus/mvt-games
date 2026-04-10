@@ -126,11 +126,21 @@ quality cap, a comment would help.
 
 ## Acceptance Criteria
 
-- [ ] Medium findings addressed (getCellAlpha scan, injectable randomness)
-- [ ] Low findings triaged (fix or explicitly defer with rationale)
-- [ ] `npx vitest run` passes after changes
-- [ ] `npm run lint` passes after changes
+- [x] Medium findings addressed (getCellAlpha scan, injectable randomness)
+- [x] Low findings triaged (fix or explicitly defer with rationale)
+- [x] `npx vitest run` passes after changes
+- [x] `npm run lint` passes after changes
 
 ## Progress Log
 
 - 2026-04-10: Review completed and task created.
+- 2026-04-10: All 8 findings implemented:
+  - `getCellAlpha` now uses pre-allocated `Uint8Array` lookup (H2 fix)
+  - `BoardModelOptions.random` added for injectable PRNG
+  - `phaseEndTime` renamed to `phaseDurationSec`
+  - `onSwapRequested` made optional in `BoardViewBindings` and `PiecesViewBindings`
+  - Internal `gameOver` renamed to `isGameOver`
+  - JSDoc added to all `PiecesViewModel` public methods
+  - `DUST_POOL_SIZE` documented as deliberate visual cap
+  - `EMPTY_CELL` JSDoc expanded with warning about placeholder properties
+  - All 348 tests pass, lint clean

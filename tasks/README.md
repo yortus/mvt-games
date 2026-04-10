@@ -16,9 +16,10 @@ contains a description, acceptance criteria checklist, and a progress log.
 
 ## Active
 
-| #   | Task                                                              | Priority | Updated    |
-| --- | ----------------------------------------------------------------- | -------- | ---------- |
-| 001 | [Review: Kwazy Cactii](active/001-review-cactii.md)              | medium   | 2026-04-10 |
+| #   | Task | Priority | Updated |
+| --- | ---- | -------- | ------- |
+
+(none)
 
 ## Backlog
 
@@ -29,7 +30,6 @@ contains a description, acceptance criteria checklist, and a progress log.
 
 ## Archive
 
-| #   | Task | Completed |
-| --- | ---- | --------- |
-
-(none)
+| #   | Task                                                              | Completed  |
+| --- | ----------------------------------------------------------------- | ---------- |
+| 001 | [Review: Kwazy Cactii](archive/001-review-cactii.md)             | 2026-04-10 |

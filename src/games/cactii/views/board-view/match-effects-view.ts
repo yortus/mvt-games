@@ -114,7 +114,11 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
 const DUST_RADIUS = 30;
 /** Extra dust radius per additional cascade step. */
 const DUST_CASCADE_BONUS = 10;
-/** Number of pre-allocated dust sprites. */
+/**
+ * Number of pre-allocated dust sprites. Acts as a visual quality cap -
+ * if a match phase contains more cells than this, the extra cells
+ * simply have no dust cloud. 16 covers typical single-match groups.
+ */
 const DUST_POOL_SIZE = 16;
 
 /** Score popup font size. */

@@ -63,6 +63,8 @@ export interface BoardModel {
 export interface BoardModelOptions {
     readonly rowCount?: number;
     readonly colCount?: number;
+    /** Custom random source (0-1). Defaults to `Math.random`. Useful for seeded testing. */
+    readonly random?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +74,7 @@ export interface BoardModelOptions {
 export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     const rowCount = options.rowCount ?? GRID_ROWS;
     const colCount = options.colCount ?? GRID_COLS;
+    const random = options.random ?? Math.random;
 
     // 2D row-major grid: cells[row][col].
     const cells: CactusCell[][] = [];
@@ -91,9 +94,9 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     let currentMatchedCells: CactusCell[] = [];
     let swapCell1: CactusCell | undefined;
     let swapCell2: CactusCell | undefined;
-    let phaseEndTime = 0;
+    let phaseDurationSec = 0;
     let phaseElapsed = 0;
-    let gameOver = false;
+    let isGameOver = false;
 
     const phaseFinishers: Record<BoardPhase, () => void> = {
         idle: () => {},
@@ -116,23 +119,23 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get cascadeStep() { return cascadeStep; },
         get matchedCells() { return currentMatchedCells; },
         get matchProgress() {
-            if (boardPhase !== 'matching' || phaseEndTime <= 0) return 0;
-            return Math.min(1, phaseElapsed / phaseEndTime);
+            if (boardPhase !== 'matching' || phaseDurationSec <= 0) return 0;
+            return Math.min(1, phaseElapsed / phaseDurationSec);
         },
         get matchDurationMs() { return MATCH_PHASE_DURATION_MS; },
         get swapCell1() { return swapCell1; },
         get swapCell2() { return swapCell2; },
         get swapProgress() {
             if (boardPhase !== 'swapping' && boardPhase !== 'reversing') return 0;
-            if (phaseEndTime <= 0) return 0;
-            return Math.min(1, phaseElapsed / phaseEndTime);
+            if (phaseDurationSec <= 0) return 0;
+            return Math.min(1, phaseElapsed / phaseDurationSec);
         },
         get settleProgress() {
-            if (boardPhase !== 'settling' || phaseEndTime <= 0) return 0;
-            return Math.min(1, phaseElapsed / phaseEndTime);
+            if (boardPhase !== 'settling' || phaseDurationSec <= 0) return 0;
+            return Math.min(1, phaseElapsed / phaseDurationSec);
         },
         get settleOriginRows() { return settleOriginRows; },
-        get isGameOver() { return gameOver; },
+        get isGameOver() { return isGameOver; },
 
         trySwap(cell1: CactusCell, cell2: CactusCell): boolean {
             if (boardPhase !== 'idle') return false;
@@ -149,7 +152,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         update(deltaMs: number): void {
             if (boardPhase === 'idle') return;
             phaseElapsed += deltaMs * 0.001;
-            if (phaseElapsed >= phaseEndTime) {
+            if (phaseElapsed >= phaseDurationSec) {
                 phaseFinishers[boardPhase]();
             }
         },
@@ -165,7 +168,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         swapCell2 = cell2;
         cascadeStep = 0;
         phaseElapsed = 0;
-        phaseEndTime = SWAP_DURATION_MS * 0.001;
+        phaseDurationSec = SWAP_DURATION_MS * 0.001;
     }
 
     function finishSwap(): void {
@@ -194,7 +197,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
 
         boardPhase = 'reversing';
         phaseElapsed = 0;
-        phaseEndTime = SWAP_DURATION_MS * 0.001;
+        phaseDurationSec = SWAP_DURATION_MS * 0.001;
     }
 
     function finishReverse(): void {
@@ -214,7 +217,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         score += Math.round(matchedCells.length * POINTS_PER_CACTUS * multiplier);
 
         phaseElapsed = 0;
-        phaseEndTime = MATCH_PHASE_DURATION_MS * 0.001;
+        phaseDurationSec = MATCH_PHASE_DURATION_MS * 0.001;
     }
 
     function finishMatching(): void {
@@ -275,7 +278,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         }
 
         phaseElapsed = 0;
-        phaseEndTime = (maxDist / FALL_SPEED) || 0.001;
+        phaseDurationSec = (maxDist / FALL_SPEED) || 0.001;
     }
 
     function finishSettling(): void {
@@ -293,7 +296,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         else {
             boardPhase = 'idle';
             if (!hasAvailableMove(cells, rowCount, colCount)) {
-                gameOver = true;
+                isGameOver = true;
             }
         }
     }
@@ -301,6 +304,6 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     // ---- Random ------------------------------------------------------------
 
     function randomKind(): CactusKind {
-        return ALL_CACTUS_KINDS[Math.floor(Math.random() * ALL_CACTUS_KINDS.length)];
+        return ALL_CACTUS_KINDS[Math.floor(random() * ALL_CACTUS_KINDS.length)];
     }
 }

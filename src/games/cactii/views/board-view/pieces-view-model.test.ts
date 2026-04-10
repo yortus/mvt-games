@@ -298,6 +298,7 @@ describe('PiecesViewModel', () => {
             seq.start();
             // Half-way through the 250ms fade
             seq.update(125);
+            vm.update(0);
 
             const alpha = vm.getCellAlpha(cells[0][0]);
             expect(alpha).toBeGreaterThan(0);
@@ -315,6 +316,7 @@ describe('PiecesViewModel', () => {
 
             seq.start();
             seq.update(300); // past 250ms duration
+            vm.update(0);
 
             expect(vm.getCellAlpha(cells[0][0])).toBe(0);
         });
@@ -330,6 +332,7 @@ describe('PiecesViewModel', () => {
                 getMatchedCells: () => [cells[0][0]],
                 getMatchSequence: () => seq,
             }));
+            vm.update(0);
 
             // Cell 1 is not matched
             expect(vm.getCellAlpha(cells[0][1])).toBe(1);
