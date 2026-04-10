@@ -32,15 +32,15 @@ export function createBoidsEntry(): DemoEntry {
             const model = createFlockModel({
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
-                boidCount: 100,
-                separation: 1.5,
-                alignment: 1.0,
-                cohesion: 1.0,
-                wander: 3,
-                visionAngle: 4.71,
+                boidCount: 200,
+                separation: 3.0,
+                alignment: 0.5,
+                cohesion: 3.0,
+                wander: 9.0,
+                visionAngle: 4.0,
                 maxSpeed: 20,
                 minSpeed: 5,
-                perceptionRadius: 10,
+                perceptionRadius: 16,
             });
 
             let timeScale = 1;

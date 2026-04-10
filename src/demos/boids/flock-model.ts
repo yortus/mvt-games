@@ -98,7 +98,8 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
 
         const sepRadiusSq = (perceptionRadius * SEPARATION_FRACTION) * (perceptionRadius * SEPARATION_FRACTION);
         const percRadiusSq = perceptionRadius * perceptionRadius;
-        const edgeMargin = perceptionRadius * SEPARATION_FRACTION;
+        const edgeMarginX = arenaWidth * EDGE_MARGIN_FRACTION;
+        const edgeMarginY = arenaHeight * EDGE_MARGIN_FRACTION;
         const halfVision = visionAngle / 2;
         const useVisionCone = visionAngle < Math.PI * 2 - 0.01;
 
@@ -182,13 +183,25 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
                 cfy = cohY / neighbourCount - by;
             }
 
-            // Edge repulsion: push boids away from arena walls
+            // Edge repulsion: quadratic falloff over a wide margin
             let edgeX = 0;
             let edgeY = 0;
-            if (bx < edgeMargin) edgeX = (edgeMargin - bx) / edgeMargin;
-            else if (bx > arenaWidth - edgeMargin) edgeX = -(bx - (arenaWidth - edgeMargin)) / edgeMargin;
-            if (by < edgeMargin) edgeY = (edgeMargin - by) / edgeMargin;
-            else if (by > arenaHeight - edgeMargin) edgeY = -(by - (arenaHeight - edgeMargin)) / edgeMargin;
+            if (bx < edgeMarginX) {
+                const t = 1 - bx / edgeMarginX;
+                edgeX = t * t;
+            }
+            else if (bx > arenaWidth - edgeMarginX) {
+                const t = 1 - (arenaWidth - bx) / edgeMarginX;
+                edgeX = -(t * t);
+            }
+            if (by < edgeMarginY) {
+                const t = 1 - by / edgeMarginY;
+                edgeY = t * t;
+            }
+            else if (by > arenaHeight - edgeMarginY) {
+                const t = 1 - (arenaHeight - by) / edgeMarginY;
+                edgeY = -(t * t);
+            }
 
             // Store debug vectors (weighted - actual acceleration contribution)
             boid.separationDx = sfx * separation;
@@ -241,7 +254,10 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
 const SEPARATION_FRACTION = 0.4;
 
 /** Strength of the repulsive force applied near arena edges. */
-const EDGE_FORCE = 30;
+const EDGE_FORCE = 40;
+
+/** Edge margin as a fraction of each arena dimension (0.25 = outer 25%). */
+const EDGE_MARGIN_FRACTION = 0.25;
 
 /** Rate at which the wander angle drifts (radians/second scaling factor). */
 const WANDER_JITTER = 8;
