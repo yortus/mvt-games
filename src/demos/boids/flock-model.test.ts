@@ -178,36 +178,31 @@ describe('FlockModel', () => {
     });
 
     it('separation pushes close boids apart', () => {
-        // Place two boids very close together with zero velocity
+        // Use a large perception radius so randomly placed boids are
+        // guaranteed to see each other within the 100x60 arena.
         const model = createFlockModel({
             ...defaultOptions(),
-            boidCount: 0,
+            boidCount: 2,
             separation: 5,
             alignment: 0,
             cohesion: 0,
+            wander: 0,
+            perceptionRadius: 200,
         });
-        model.boidCount = 0;
-        // Manually add two close boids via boidCount after setting count to 0
-        // Instead, create a model with 2 boids close together
-        const model2 = createFlockModel({
-            ...defaultOptions(),
-            boidCount: 0,
-            separation: 5,
-            alignment: 0,
-            cohesion: 0,
-        });
-        // Add boids - they'll be random but we can test the principle
-        model2.boidCount = 2;
 
-        const initialDist = Math.hypot(model2.boids[0].position.x - model2.boids[1].position.x, model2.boids[0].position.y - model2.boids[1].position.y);
+        const initialDist = Math.hypot(
+            model.boids[0].position.x - model.boids[1].position.x,
+            model.boids[0].position.y - model.boids[1].position.y,
+        );
 
-        // Only meaningful if they start close enough to interact
-        if (initialDist < model2.perceptionRadius) {
-            stepMs(model2, 1000);
-            const finalDist = Math.hypot(model2.boids[0].position.x - model2.boids[1].position.x, model2.boids[0].position.y - model2.boids[1].position.y);
-            // With only separation active, they should move apart (or at least not closer)
-            expect(finalDist).toBeGreaterThanOrEqual(initialDist * 0.5);
-        }
+        stepMs(model, 1000);
+
+        const finalDist = Math.hypot(
+            model.boids[0].position.x - model.boids[1].position.x,
+            model.boids[0].position.y - model.boids[1].position.y,
+        );
+        // With only separation active, they should move apart (or at least not closer)
+        expect(finalDist).toBeGreaterThanOrEqual(initialDist * 0.5);
     });
 
     it('cohesion pulls boids together when far apart', () => {

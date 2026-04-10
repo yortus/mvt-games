@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { FlockModel } from './flock-model';
+import { PANEL_PADDING, SLIDER_WIDTH } from './layout-constants';
 import { createSliderView } from './slider-view';
 import { createCheckboxView } from './checkbox-view';
 
@@ -14,6 +15,8 @@ export interface BoidsViewOptions {
     readonly isPortrait: boolean;
     getTimeScale(): number;
     onTimeScaleChanged?(value: number): void;
+    getIsShowingInfluences(): boolean;
+    onShowInfluencesToggled?(isShowing: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -21,7 +24,7 @@ export interface BoidsViewOptions {
 // ---------------------------------------------------------------------------
 
 export function createBoidsView(options: BoidsViewOptions): Container {
-    const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged } = options;
+    const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged, getIsShowingInfluences, onShowInfluencesToggled } = options;
     const view = new Container();
     view.label = 'boids-demo';
 
@@ -58,8 +61,6 @@ export function createBoidsView(options: BoidsViewOptions): Container {
         controlsContainer.position.set(simWidth + PANEL_PADDING, PANEL_PADDING);
     }
     view.addChild(controlsContainer);
-
-    let showInfluences = false;
 
     const countSlider = createSliderView({
         getLabel: () => 'Boid Count',
@@ -143,8 +144,8 @@ export function createBoidsView(options: BoidsViewOptions): Container {
 
     const influenceCheckbox = createCheckboxView({
         getLabel: () => 'Show Influences',
-        getIsChecked: () => showInfluences,
-        onToggled: (checked) => { showInfluences = checked; },
+        getIsChecked: getIsShowingInfluences,
+        onToggled: onShowInfluencesToggled,
     });
 
     // Layout controls vertically
@@ -186,7 +187,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
 
         // Debug overlay - weighted acceleration vectors with arrowheads
         debugGfx.clear();
-        if (showInfluences) {
+        if (getIsShowingInfluences()) {
             for (let i = 0; i < count; i++) {
                 const b = boids[i];
                 const px = b.position.x * pxPerMetre;
@@ -214,8 +215,6 @@ export function createBoidsView(options: BoidsViewOptions): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const PANEL_PADDING = 20;
-const SLIDER_WIDTH = 320;
 const SLIDER_SPACING = 55;
 const BOID_SIZE = 5;
 
@@ -248,10 +247,8 @@ function perceptionToPercent(radius: number, vision: number): number {
 }
 
 function drawBoidTriangle(g: Graphics, x: number, y: number, angle: number, size: number, color: number): void {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const tipX = x + cos * size * 1.5;
-    const tipY = y + sin * size * 1.5;
+    const tipX = x + Math.cos(angle) * size * 1.5;
+    const tipY = y + Math.sin(angle) * size * 1.5;
     const leftX = x + Math.cos(angle + 2.5) * size;
     const leftY = y + Math.sin(angle + 2.5) * size;
     const rightX = x + Math.cos(angle - 2.5) * size;

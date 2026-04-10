@@ -2,6 +2,7 @@ import type { Container } from 'pixi.js';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { createBoidsView } from './boids-view';
+import { PANEL_PADDING, SLIDER_WIDTH } from './layout-constants';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -44,6 +45,7 @@ export function createBoidsEntry(): DemoEntry {
             });
 
             let timeScale = 1;
+            let isShowingInfluences = false;
 
             let view = createBoidsView({
                 model,
@@ -52,6 +54,8 @@ export function createBoidsEntry(): DemoEntry {
                 isPortrait: layout.isPortrait,
                 getTimeScale: () => timeScale,
                 onTimeScaleChanged: (v) => { timeScale = v; },
+                getIsShowingInfluences: () => isShowingInfluences,
+                onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
             });
             stage.addChild(view);
 
@@ -71,6 +75,8 @@ export function createBoidsEntry(): DemoEntry {
                         isPortrait: newLayout.isPortrait,
                         getTimeScale: () => timeScale,
                         onTimeScaleChanged: (v) => { timeScale = v; },
+                        getIsShowingInfluences: () => isShowingInfluences,
+                        onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
                     });
                     stage.addChild(view);
                 },
@@ -91,9 +97,6 @@ export function createBoidsEntry(): DemoEntry {
 const ARENA_WIDTH = 100;
 const ARENA_HEIGHT = 82;
 
-// Panel layout (must stay in sync with boids-view constants)
-const SLIDER_WIDTH = 320;
-const PANEL_PADDING = 20;
 const PANEL_TOTAL = SLIDER_WIDTH + PANEL_PADDING * 2;
 const CONTROLS_HEIGHT = 460;
 

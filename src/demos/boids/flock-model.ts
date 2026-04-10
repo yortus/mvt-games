@@ -96,6 +96,13 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
         const count = boids.length;
         if (count === 0) return;
 
+        applySteeringForces(dt, count);
+        integratePositions(dt, count);
+    }
+
+    // ---- Update helpers ----------------------------------------------------
+
+    function applySteeringForces(dt: number, count: number): void {
         const sepRadiusSq = (perceptionRadius * SEPARATION_FRACTION) * (perceptionRadius * SEPARATION_FRACTION);
         const percRadiusSq = perceptionRadius * perceptionRadius;
         const edgeMarginX = arenaWidth * EDGE_MARGIN_FRACTION;
@@ -114,7 +121,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
             const wanderX = Math.cos(boidHeading + boid.wanderAngle);
             const wanderY = Math.sin(boidHeading + boid.wanderAngle);
 
-            // Accumulate the three forces
+            // Accumulate neighbour forces
             let sepX = 0;
             let sepY = 0;
             let aliVx = 0;
@@ -130,27 +137,22 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
 
                 const dx = other.position.x - bx;
                 const dy = other.position.y - by;
-
                 const distSq = dx * dx + dy * dy;
 
                 if (distSq < percRadiusSq && distSq > 0) {
-                    // Vision cone check: is this neighbour within the field of view?
                     if (useVisionCone) {
                         let angle = Math.atan2(dy, dx) - boidHeading;
-                        // Normalise to [-PI, PI]
                         if (angle > Math.PI) angle -= Math.PI * 2;
                         else if (angle < -Math.PI) angle += Math.PI * 2;
                         if (angle > halfVision || angle < -halfVision) continue;
                     }
 
-                    // Alignment + cohesion: within perception radius
                     aliVx += other.vx;
                     aliVy += other.vy;
                     cohX += other.position.x;
                     cohY += other.position.y;
                     neighbourCount++;
 
-                    // Separation: within closer radius
                     if (distSq < sepRadiusSq) {
                         const dist = Math.sqrt(distSq);
                         sepX -= dx / dist;
@@ -174,11 +176,8 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
             }
 
             if (neighbourCount > 0) {
-                // Alignment: steer towards average velocity
                 afx = aliVx / neighbourCount - boid.vx;
                 afy = aliVy / neighbourCount - boid.vy;
-
-                // Cohesion: steer towards average position
                 cfx = cohX / neighbourCount - bx;
                 cfy = cohY / neighbourCount - by;
             }
@@ -203,7 +202,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
                 edgeY = -(t * t);
             }
 
-            // Store debug vectors (weighted - actual acceleration contribution)
+            // Store debug vectors (weighted acceleration contributions)
             boid.separationDx = sfx * separation;
             boid.separationDy = sfy * separation;
             boid.alignmentDx = afx * alignment;
@@ -216,20 +215,25 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
             boid.vy += (sfy * separation + afy * alignment + cfy * cohesion + wanderY * wander + edgeY * EDGE_FORCE) * dt;
 
             // Clamp speed
-            const speedSq = boid.vx * boid.vx + boid.vy * boid.vy;
-            if (speedSq > maxSpeed * maxSpeed) {
-                const speed = Math.sqrt(speedSq);
-                boid.vx = (boid.vx / speed) * maxSpeed;
-                boid.vy = (boid.vy / speed) * maxSpeed;
-            }
-            else if (minSpeed > 0 && speedSq > 0 && speedSq < minSpeed * minSpeed) {
-                const speed = Math.sqrt(speedSq);
-                boid.vx = (boid.vx / speed) * minSpeed;
-                boid.vy = (boid.vy / speed) * minSpeed;
-            }
+            clampSpeed(boid);
         }
+    }
 
-        // Apply positions and clamp to arena bounds.
+    function clampSpeed(boid: MutableBoid): void {
+        const speedSq = boid.vx * boid.vx + boid.vy * boid.vy;
+        if (speedSq > maxSpeed * maxSpeed) {
+            const speed = Math.sqrt(speedSq);
+            boid.vx = (boid.vx / speed) * maxSpeed;
+            boid.vy = (boid.vy / speed) * maxSpeed;
+        }
+        else if (minSpeed > 0 && speedSq > 0 && speedSq < minSpeed * minSpeed) {
+            const speed = Math.sqrt(speedSq);
+            boid.vx = (boid.vx / speed) * minSpeed;
+            boid.vy = (boid.vy / speed) * minSpeed;
+        }
+    }
+
+    function integratePositions(dt: number, count: number): void {
         for (let i = 0; i < count; i++) {
             const boid = boids[i];
             const pos = boid.position;

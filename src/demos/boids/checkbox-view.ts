@@ -30,6 +30,9 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
 
     view.addChild(hitArea, box, label);
 
+    let prevIsChecked: boolean | undefined;
+    let prevLabel: string | undefined;
+
     hitArea.on('pointerdown', () => {
         bindings.onToggled?.(!bindings.getIsChecked());
     });
@@ -41,6 +44,11 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
 
     function refresh(): void {
         const isChecked = bindings.getIsChecked();
+        const labelText = bindings.getLabel();
+
+        if (isChecked === prevIsChecked && labelText === prevLabel) return;
+        prevIsChecked = isChecked;
+        prevLabel = labelText;
 
         box.clear();
         box.roundRect(0, 0, BOX_SIZE, BOX_SIZE, 2)
@@ -51,7 +59,7 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
                 .fill({ color: 0x6688cc });
         }
 
-        label.text = bindings.getLabel();
+        label.text = labelText;
         label.position.set(BOX_SIZE + BOX_LABEL_GAP, (BOX_SIZE - LABEL_SIZE) / 2);
     }
 }
