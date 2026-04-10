@@ -61,6 +61,13 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 
+## Tasks
+
+The `tasks/` directory contains a lightweight task board. Check
+[tasks/README.md](tasks/README.md) for the current backlog, active work, and
+archive. To pick up a task, move it from `backlog/` to `active/`, work on it,
+update its progress log, and move it to `archive/` when done.
+
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead.
