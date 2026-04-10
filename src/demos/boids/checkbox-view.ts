@@ -4,9 +4,13 @@ import { Container, Graphics, Text } from 'pixi.js';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** Bindings for a togglable checkbox control. */
 export interface CheckboxViewBindings {
+    /** Display label shown next to the checkbox. */
     getLabel(): string;
+    /** Whether the checkbox is currently checked. */
     getIsChecked(): boolean;
+    /** Called when the user clicks the checkbox. */
     onToggled?(isChecked: boolean): void;
 }
 
@@ -14,6 +18,7 @@ export interface CheckboxViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Create a togglable checkbox view wired to the given bindings. */
 export function createCheckboxView(bindings: CheckboxViewBindings): Container {
     const view = new Container();
     view.label = 'checkbox';

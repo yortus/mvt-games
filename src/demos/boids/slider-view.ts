@@ -4,17 +4,28 @@ import { Container, Graphics, Text } from 'pixi.js';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** Scale mode for mapping slider position to value. */
 export type SliderScaleMode = 'linear' | 'log';
 
+/** Bindings for a draggable slider control. */
 export interface SliderViewBindings {
+    /** Display label shown above the slider. */
     getLabel(): string;
+    /** Minimum value at the left edge of the track. */
     getMin(): number;
+    /** Maximum value at the right edge of the track. */
     getMax(): number;
+    /** Snap increment. The value is rounded to the nearest multiple. */
     getStep(): number;
+    /** Current value of the slider. */
     getValue(): number;
+    /** Whether the slider maps positions linearly or logarithmically. */
     getScaleMode(): SliderScaleMode;
+    /** Optional override for the track width in pixels. */
     getWidth?(): number;
+    /** Optional override for the track height in pixels. */
     getHeight?(): number;
+    /** Called when the user drags the knob to a new value. */
     onValueChanged?(value: number): void;
 }
 
@@ -22,6 +33,7 @@ export interface SliderViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Create a draggable slider view wired to the given bindings. */
 export function createSliderView(bindings: SliderViewBindings): Container {
     const view = new Container();
     view.label = 'slider';

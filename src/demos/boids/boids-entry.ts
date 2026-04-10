@@ -8,6 +8,7 @@ import { PANEL_PADDING, SLIDER_WIDTH } from './layout-constants';
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Create the demo entry descriptor for the boids flocking simulation. */
 export function createBoidsEntry(): DemoEntry {
     return {
         id: 'boids',

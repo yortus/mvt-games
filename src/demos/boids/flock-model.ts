@@ -5,19 +5,33 @@ import { createBoidModel } from './boid-model';
 // Interface
 // ---------------------------------------------------------------------------
 
+/** A flock of boids simulated with separation, alignment, and cohesion rules. */
 export interface FlockModel {
+    /** All boids currently in the flock. */
     readonly boids: readonly BoidModel[];
+    /** Arena width in metres. */
     readonly arenaWidth: number;
+    /** Arena height in metres. */
     readonly arenaHeight: number;
+    /** Separation force weight. Higher values push boids apart more aggressively. */
     separation: number;
+    /** Alignment force weight. Higher values make boids match neighbours' headings. */
     alignment: number;
+    /** Cohesion force weight. Higher values pull boids toward neighbours' centre. */
     cohesion: number;
+    /** Wander force weight. Higher values add more random steering. */
     wander: number;
+    /** Vision cone half-angle in radians. Boids ignore neighbours outside this cone. */
     visionAngle: number;
+    /** Number of boids in the flock. Setting this adds or removes boids. */
     boidCount: number;
+    /** Radius in metres within which a boid perceives neighbours. */
     perceptionRadius: number;
+    /** Minimum scalar speed in m/s. Boids are accelerated if slower. */
     readonly minSpeed: number;
+    /** Maximum scalar speed in m/s. Boids are clamped if faster. */
     readonly maxSpeed: number;
+    /** Advance the simulation by the given elapsed time. */
     update(deltaMs: number): void;
 }
 
@@ -25,17 +39,29 @@ export interface FlockModel {
 // Options
 // ---------------------------------------------------------------------------
 
+/** Options for creating a {@link FlockModel}. */
 export interface FlockModelOptions {
+    /** Arena width in metres. */
     readonly arenaWidth: number;
+    /** Arena height in metres. */
     readonly arenaHeight: number;
+    /** Initial number of boids. */
     readonly boidCount: number;
+    /** Initial separation force weight. */
     readonly separation: number;
+    /** Initial alignment force weight. */
     readonly alignment: number;
+    /** Initial cohesion force weight. */
     readonly cohesion: number;
+    /** Initial wander force weight. */
     readonly wander: number;
+    /** Initial vision cone angle in radians. */
     readonly visionAngle: number;
+    /** Minimum scalar speed in m/s. */
     readonly minSpeed: number;
+    /** Maximum scalar speed in m/s. */
     readonly maxSpeed: number;
+    /** Initial perception radius in metres. */
     readonly perceptionRadius: number;
 }
 
@@ -43,6 +69,7 @@ export interface FlockModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Create a flock simulation model with the given initial parameters. */
 export function createFlockModel(options: FlockModelOptions): FlockModel {
     const { arenaWidth, arenaHeight, maxSpeed, minSpeed } = options;
 

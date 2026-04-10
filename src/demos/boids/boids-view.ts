@@ -8,14 +8,23 @@ import { createCheckboxView } from './checkbox-view';
 // Options
 // ---------------------------------------------------------------------------
 
+/** Options for creating the boids demo view. */
 export interface BoidsViewOptions {
+    /** The flock model to visualise. */
     readonly model: FlockModel;
+    /** Width of the simulation area in pixels. */
     readonly simWidth: number;
+    /** Height of the simulation area in pixels. */
     readonly simHeight: number;
+    /** Whether the layout is portrait (controls below sim) or landscape (controls beside sim). */
     readonly isPortrait: boolean;
+    /** Return the current time-scale multiplier. */
     getTimeScale(): number;
+    /** Called when the user changes the time-scale slider. */
     onTimeScaleChanged?(value: number): void;
+    /** Return whether per-boid influence vectors are shown. */
     getIsShowingInfluences(): boolean;
+    /** Called when the user toggles the influence-vector checkbox. */
     onShowInfluencesToggled?(isShowing: boolean): void;
 }
 
@@ -23,6 +32,7 @@ export interface BoidsViewOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Create the main boids demo view including simulation area and control panel. */
 export function createBoidsView(options: BoidsViewOptions): Container {
     const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged, getIsShowingInfluences, onShowInfluencesToggled } = options;
     const view = new Container();
