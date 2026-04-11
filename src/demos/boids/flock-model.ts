@@ -1,5 +1,5 @@
-import type { BoidModel, MutableBoid } from './boid-model';
-import { createBoidModel } from './boid-model';
+import { type DeepReadonly } from '#common';
+import { type BoidModel, createBoidModel } from './boid-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -8,7 +8,7 @@ import { createBoidModel } from './boid-model';
 /** A flock of boids simulated with separation, alignment, and cohesion rules. */
 export interface FlockModel {
     /** All boids currently in the flock. */
-    readonly boids: readonly BoidModel[];
+    readonly boids: DeepReadonly<BoidModel[]>;
     /** Arena width in metres. */
     readonly arenaWidth: number;
     /** Arena height in metres. */
@@ -80,7 +80,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
     let visionAngle = options.visionAngle;
     let perceptionRadius = options.perceptionRadius;
 
-    const boids: MutableBoid[] = [];
+    const boids: BoidModel[] = [];
     populateBoids(boids, options.boidCount, arenaWidth, arenaHeight, maxSpeed);
 
     const model: FlockModel = {
@@ -246,7 +246,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
         }
     }
 
-    function clampSpeed(boid: MutableBoid): void {
+    function clampSpeed(boid: BoidModel): void {
         const speedSq = boid.vx * boid.vx + boid.vy * boid.vy;
         if (speedSq > maxSpeed * maxSpeed) {
             const speed = Math.sqrt(speedSq);
@@ -293,7 +293,7 @@ const EDGE_MARGIN_FRACTION = 0.25;
 /** Rate at which the wander angle drifts (radians/second scaling factor). */
 const WANDER_JITTER = 8;
 
-function randomBoid(arenaWidth: number, arenaHeight: number, maxSpeed: number): MutableBoid {
+function randomBoid(arenaWidth: number, arenaHeight: number, maxSpeed: number): BoidModel {
     const angle = Math.random() * Math.PI * 2;
     const speed = maxSpeed * (0.3 + Math.random() * 0.7);
     return createBoidModel({
@@ -304,7 +304,7 @@ function randomBoid(arenaWidth: number, arenaHeight: number, maxSpeed: number): 
 }
 
 function populateBoids(
-    boids: MutableBoid[],
+    boids: BoidModel[],
     count: number,
     arenaWidth: number,
     arenaHeight: number,
