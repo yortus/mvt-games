@@ -1,8 +1,12 @@
 import { Container } from 'pixi.js';
-import { createSequence, type StepDef, type StatefulPixiView, watch, type DeepReadonly } from '#common';
+import { createSequence, type StatefulPixiView, watch, type DeepReadonly } from '#common';
 import type { BoardPhase, CactusCell } from '../../models';
 import { createBackgroundView } from './background-view';
+import { createBannerView } from './banner-view';
+import { createFireworkView } from './firework-view';
+import { createFlashOverlayView } from './flash-overlay-view';
 import { createMatchEffectsView } from './match-effects-view';
+import { MATCH_EFFECT_STEPS } from './match-sequence-defs';
 import { createPiecesView } from './pieces-view';
 import { createShakeContainerView } from './shake-container-view';
 
@@ -55,16 +59,37 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
         onSwapRequested: bindings.onSwapRequested,
     });
 
+    const flashOverlay = createFlashOverlayView({
+        getMatchSequence: () => matchSequence,
+        getCascadeStep: bindings.getCascadeStep,
+    });
+
     const matchEffects = createMatchEffectsView({
         getMatchedCells: bindings.getMatchedCells,
         getCascadeStep: bindings.getCascadeStep,
         getMatchSequence: () => matchSequence,
     });
 
+    const fireworks = createFireworkView({
+        getMatchedCells: bindings.getMatchedCells,
+        getMatchSequence: () => matchSequence,
+        getCascadeStep: bindings.getCascadeStep,
+    });
+
+    const banner = createBannerView({
+        getMatchSequence: () => matchSequence,
+        getCascadeStep: bindings.getCascadeStep,
+    });
+
     const view = new Container();
     view.addChild(shakeContainer);
     shakeContainer.content.addChild(background, pieces);
-    view.addChild(matchEffects); // Match effects sit outside the shake container (dust/popup don't shake).
+    // Effects sit outside the shake container (they don't displace with the board).
+    // Add order determines z-order: flash < dust/stars/popup < fireworks < banner.
+    view.addChild(flashOverlay);
+    view.addChild(matchEffects);
+    view.addChild(fireworks);
+    view.addChild(banner);
 
     return Object.assign(view, {
         update(deltaMs: number): void {
@@ -75,26 +100,3 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
         },
     });
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/**
- * Overlapping effect steps that play during a match sequence.
- *
- * ```
- * Time (ms):  0        100       200       250       350       500
- *             |---------|---------|---------|---------|---------|-----|
- *  fade:      [=====================]                              0-250ms
- *  shake:        [=================]                               50-250ms
- *  dust:            [==========================]                   100-350ms
- *  popup:               [================================]         150-500ms
- * ```
- */
-const MATCH_EFFECT_STEPS = [
-    { name: 'fade',  startMs: 0,   durationMs: 250 },
-    { name: 'shake', startMs: 50,  durationMs: 200 },
-    { name: 'dust',  startMs: 100, durationMs: 250 },
-    { name: 'popup', startMs: 150, durationMs: 350 },
-] as const satisfies readonly StepDef[];

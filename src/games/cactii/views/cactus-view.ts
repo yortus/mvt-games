@@ -13,6 +13,8 @@ export interface CactusViewBindings {
     getX(): number;
     getY(): number;
     getAlpha(): number;
+    getScale(): number;
+    getRotation(): number;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,6 +37,8 @@ export function createCactusView(bindings: CactusViewBindings): Container {
     function refresh(): void {
         view.position.set(bindings.getX(), bindings.getY());
         view.alpha = bindings.getAlpha();
+        view.scale.set(bindings.getScale());
+        view.rotation = bindings.getRotation();
 
         const watched = watcher.poll();
         if (watched.kind.changed) {

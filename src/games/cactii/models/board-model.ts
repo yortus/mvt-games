@@ -1,6 +1,6 @@
 import type { BoardPhase, CactusCell, CactusKind } from './common';
 import { ALL_CACTUS_KINDS, EMPTY_CELL, createCell } from './common';
-import { GRID_ROWS, GRID_COLS } from '../data';
+import { GRID_ROWS, GRID_COLS, CACTUS_KIND_COUNT } from '../data';
 import type { DeepReadonly } from '#common';
 import {
     SWAP_DURATION_MS,
@@ -304,6 +304,6 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     // ---- Random ------------------------------------------------------------
 
     function randomKind(): CactusKind {
-        return ALL_CACTUS_KINDS[Math.floor(random() * ALL_CACTUS_KINDS.length)];
+        return ALL_CACTUS_KINDS[Math.floor(random() * CACTUS_KIND_COUNT)];
     }
 }

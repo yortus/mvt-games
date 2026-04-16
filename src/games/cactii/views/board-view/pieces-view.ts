@@ -73,6 +73,8 @@ export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView
                     getX: () => vm.getCellX(bindings.getCells()[row][col]),
                     getY: () => vm.getCellY(bindings.getCells()[row][col]),
                     getAlpha: () => vm.getCellAlpha(bindings.getCells()[row][col]),
+                    getScale: () => vm.getCellScale(bindings.getCells()[row][col]),
+                    getRotation: () => vm.getCellRotation(bindings.getCells()[row][col]),
                 });
                 view.addChild(cactus);
                 cactusContainers.push(cactus);

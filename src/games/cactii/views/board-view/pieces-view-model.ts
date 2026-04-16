@@ -15,6 +15,10 @@ export interface PiecesViewModel {
     getCellY(cell: CactusCell): number;
     /** Opacity for a cell: 0 for empty/matched, 1 otherwise. */
     getCellAlpha(cell: CactusCell): number;
+    /** Scale for a cell: shrinks during match fade, 1 otherwise. */
+    getCellScale(cell: CactusCell): number;
+    /** Rotation in radians for a cell: spins during match fade, 0 otherwise. */
+    getCellRotation(cell: CactusCell): number;
     /** The cell whose sprite should render on top, or undefined if none. */
     readonly dragOriginCell: CactusCell | undefined;
     /** Begin a drag gesture at the given local pixel position. Only effective when idle. */
@@ -77,6 +81,8 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         getCellX,
         getCellY,
         getCellAlpha,
+        getCellScale,
+        getCellRotation,
         get dragOriginCell() { return getDragOriginCell(); },
         startDrag,
         dragTo,
@@ -203,6 +209,22 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 1;
         const matchSequence = options.getMatchSequence();
         return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 0;
+    }
+
+    function getCellScale(cell: CactusCell): number {
+        if (cell === EMPTY_CELL) return 0;
+        if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 1;
+        const matchSequence = options.getMatchSequence();
+        if (!matchSequence.steps.fade.isActive) return matchedFlags[cell.row * GRID_COLS + cell.col] ? 0 : 1;
+        return 1 - FADE_SCALE_AMOUNT * matchSequence.steps.fade.progress;
+    }
+
+    function getCellRotation(cell: CactusCell): number {
+        if (cell === EMPTY_CELL) return 0;
+        if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 0;
+        const matchSequence = options.getMatchSequence();
+        if (!matchSequence.steps.fade.isActive) return 0;
+        return FADE_ROTATION * matchSequence.steps.fade.progress;
     }
 
     // ---- Input handlers ----------------------------------------------------
@@ -347,6 +369,11 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 const CANDIDATE_SLIDE_DURATION = 0.12;
 /** Slide duration in seconds for the returning cell animation. */
 const RETURN_SLIDE_DURATION = 0.15;
+
+/** How much to shrink matched cells during fade (1 = full shrink, 0 = none). */
+const FADE_SCALE_AMOUNT = 0.8;
+/** Max rotation in radians during fade (pi/4 = 45 degrees). */
+const FADE_ROTATION = Math.PI * 1;
 
 function gridX(col: number): number {
     return col * CELL_WIDTH_PX + CELL_WIDTH_PX * 0.5;
