@@ -16,10 +16,9 @@ contains a description, acceptance criteria checklist, and a progress log.
 
 ## Active
 
-| #   | Task | Priority | Updated |
-| --- | ---- | -------- | ------- |
-
-(none)
+| #   | Task                                                                          | Priority | Updated    |
+| --- | ----------------------------------------------------------------------------- | -------- | ---------- |
+| 002 | [Documentation Overhaul](active/002-documentation-overhaul/task.md)           | high     | 2026-04-17 |
 
 ## Backlog
 
