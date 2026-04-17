@@ -28,6 +28,8 @@ is written and organized in this project.
 | Module specifiers     | `'./foo'` not `'./foo.ts'`             | [Project Structure](project-structure.md)      |
 | Indentation           | 4 spaces                               | [Formatting](#formatting)                      |
 | Unused parameters     | `_deltaMs`                             | [Naming Conventions](#naming-conventions)      |
+| No `null`             | `undefined` over `null`                | [No `null`](#no-null)                          |
+| No `this`             | Closures over `this` bindings          | [No `this`](#no-this)                          |
 
 ## Naming Conventions
 
@@ -154,6 +156,47 @@ let selected: Item | undefined;
 function find(id: string): Item | null;
 let selected: Item | null = null;
 ```
+
+## No `this`
+
+Avoid `this` throughout the codebase. In JavaScript, `this` is determined by
+how a function is called, not where it is defined - which makes it fragile:
+
+```ts
+// ❌ Dangerous - `this` depends on call site
+class Ship {
+    x = 0;
+    moveRight() { this.x += 1; }
+}
+
+const ship = new Ship();
+const move = ship.moveRight;
+move(); // 💥 `this` is undefined (strict mode) or globalThis
+```
+
+This breaks whenever a method is passed as a callback, destructured out of
+an object, or stored in a variable. Workarounds exist (`.bind()`, arrow
+methods in constructors), but they add ceremony and are easy to forget.
+
+Avoiding `this` is straightforward with factory functions and closures, and
+it enables patterns that `this`-dependent code cannot support:
+
+```ts
+// ✅ Destructuring - pull out just the methods you need
+const { update, reset } = createCounterModel();
+
+// ✅ Passing methods directly - no .bind() needed
+ticker.add(model.update);
+
+// ✅ Composition - mix methods from multiple sources freely
+const combined = {
+    ...createMovement(options),
+    ...createHealth(options),
+};
+```
+
+These patterns work because every function closes over its own state rather
+than relying on a `this` binding at the call site.
 
 ## Factory Functions
 
