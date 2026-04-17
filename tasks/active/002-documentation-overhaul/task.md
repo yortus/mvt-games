@@ -247,6 +247,33 @@ Rewrite `push-vs-pull.md`, `events.md`, `signals.md`, `polling.md` (was
 - Preserve the neutral, fair comparative tone
 - Use consistent structure across the three approach pages
 
+**Design note: Polling is MVT's intentional reactivity stance.**
+
+The architecture specification is built around frame-based polling. This is
+deliberate, not incidental. The `refresh()`-every-frame pattern, the
+`get*()`-in-bindings contract, and the strict frame ordering guarantee all
+assume polling. The reactivity rewrite should be up-front about this:
+
+- MVT chose polling because the frame loop already runs every tick, making
+  the polling cost near-zero while eliminating subscription management,
+  lifecycle concerns, and event-ordering bugs.
+- A signal- or event-based variant of MVT would share the same model/view
+  separation and the same `update(deltaMs)` contract. The differences:
+  - Views would subscribe to state changes instead of re-reading every frame.
+  - `refresh()` could be triggered on change rather than unconditionally,
+    potentially skipping frames where nothing changed.
+  - The strict frame-ordering guarantee weakens: with push-based notification,
+    a view might react to a model change mid-update before all models have
+    settled, unless batching is added (re-introducing complexity polling
+    avoids for free).
+  - Subscription lifecycle becomes a concern: views must unsubscribe on
+    teardown, subscriptions can leak, and the dependency graph must be
+    managed.
+- The reactivity guide pages should present all three strategies fairly but
+  make clear that MVT's architecture is designed around polling. Signal/event
+  approaches are valid alternatives with different tradeoffs, not deficiencies
+  in MVT.
+
 ### Phase 4 - New and rewritten topics
 
 These add substantial new content. Steps marked [PLAN FIRST] need a brief
