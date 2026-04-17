@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with [Bindings](../learn/bindings.md) and [Views](../learn/views.md).*
+
 ## The Problem
 
 Re-evaluating every binding every frame is correct but not always efficient.

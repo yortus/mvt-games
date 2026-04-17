@@ -8,6 +8,8 @@
 
 ---
 
+*Assumes familiarity with [Bindings](../learn/bindings.md) and [Views](../learn/views.md).*
+
 ## Optional `on*()` Bindings
 
 `on*()` bindings should usually be **optional**. A view emits events for user

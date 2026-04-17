@@ -722,6 +722,117 @@ function createView(model: any): any {
 `,
 };
 
+const clock: Preset = {
+    id: 'clock',
+    name: 'Analogue Clock',
+    description: 'An analogue clock with hour, minute, and second hands. Demonstrates domain-level coordinates (time) converted to pixels in the view.',
+    canvasWidth: 300,
+    canvasHeight: 200,
+    modelCode: `// Analogue Clock - Model
+// Tracks elapsed time in domain units (hours, minutes, seconds).
+// No pixels, angles, or rendering concepts.
+
+interface ClockModel {
+    readonly hours: number;        // 0-11 (fractional)
+    readonly minutes: number;      // 0-59 (fractional)
+    readonly seconds: number;      // 0-59 (fractional)
+    update(deltaMs: number): void;
+}
+
+function createModel(): ClockModel {
+    const msPerSecond = 1000;
+    const secondsPerMinute = 60;
+    const minutesPerHour = 60;
+    const hoursPerCycle = 12;
+
+    let elapsedMs = 0;             // total milliseconds elapsed
+
+    return {
+        get hours() {
+            const totalHours = elapsedMs / (msPerSecond * secondsPerMinute * minutesPerHour);
+            return totalHours % hoursPerCycle;
+        },
+        get minutes() {
+            const totalMinutes = elapsedMs / (msPerSecond * secondsPerMinute);
+            return totalMinutes % minutesPerHour;
+        },
+        get seconds() {
+            const totalSeconds = elapsedMs / msPerSecond;
+            return totalSeconds % secondsPerMinute;
+        },
+        update(deltaMs: number) {
+            elapsedMs += deltaMs;
+        },
+    };
+}
+`,
+    viewCode: `// Analogue Clock - View
+// Converts domain time (hours/minutes/seconds) into angles and pixel positions.
+
+function createView(model: any): any {
+    setBackground(0x0a0a1e);
+
+    const CLOCK_RADIUS = 80;         // radius in pixels
+    const CENTRE_X = 150;            // canvas centre x, pixels
+    const CENTRE_Y = 100;            // canvas centre y, pixels
+
+    const face = new Graphics();
+    const hands = new Graphics();
+    const view = new Container();
+    view.addChild(face, hands);
+
+    // Draw the static clock face once
+    face.circle(CENTRE_X, CENTRE_Y, CLOCK_RADIUS);
+    face.fill(0x1a1a2e);
+    face.stroke({ color: 0x8888cc, width: 2 });
+
+    // Tick marks
+    for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        const inner = CLOCK_RADIUS - 8;
+        face.moveTo(
+            CENTRE_X + Math.cos(angle) * inner,
+            CENTRE_Y + Math.sin(angle) * inner,
+        );
+        face.lineTo(
+            CENTRE_X + Math.cos(angle) * CLOCK_RADIUS,
+            CENTRE_Y + Math.sin(angle) * CLOCK_RADIUS,
+        );
+        face.stroke({ color: 0x8888cc, width: 2 });
+    }
+
+    // Centre dot
+    face.circle(CENTRE_X, CENTRE_Y, 3);
+    face.fill(0xff4444);
+
+    view.onRender = refresh;
+    return view;
+
+    function refresh(): void {
+        hands.clear();
+        drawHand(model.hours / 12, CLOCK_RADIUS * 0.5, 4, 0xcccccc);   // hour
+        drawHand(model.minutes / 60, CLOCK_RADIUS * 0.7, 3, 0xcccccc); // minute
+        drawHand(model.seconds / 60, CLOCK_RADIUS * 0.9, 1, 0xff4444); // second
+    }
+
+    function drawHand(
+        fraction: number,   // 0-1 around the dial
+        length: number,     // pixels
+        width: number,      // pixels
+        color: number,
+    ): void {
+        const angle = fraction * Math.PI * 2 - Math.PI / 2; // 12 o'clock = top
+        hands.moveTo(CENTRE_X, CENTRE_Y);
+        hands.lineTo(
+            CENTRE_X + Math.cos(angle) * length,
+            CENTRE_Y + Math.sin(angle) * length,
+        );
+        hands.stroke({ color, width });
+    }
+}
+`,
+};
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -732,6 +843,7 @@ export const presets: readonly Preset[] = [
     trafficLight,
     keyboardSprite,
     countdownTimer,
+    clock,
 ];
 
 export function getPresetById(id: string): Preset | undefined {

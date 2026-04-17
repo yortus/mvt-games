@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with the full [Learn path](../learn/what-is-mvt.md), especially the [Walkthrough](../learn/walkthrough.md).*
+
 ::: info
 This page is specific to the `mvt-games` repository - it describes how to add
 a game to this particular project's cabinet system. The MVT architecture itself

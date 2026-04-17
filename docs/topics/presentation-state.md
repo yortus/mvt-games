@@ -10,6 +10,8 @@
 
 ---
 
+*Assumes familiarity with [Views](../learn/views.md) and [The Ticker](../learn/ticker.md).*
+
 ## When Is State "Cosmetic"?
 
 A model is a standalone simulation. It determines game outcomes - scores,

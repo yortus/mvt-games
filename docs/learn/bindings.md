@@ -18,6 +18,12 @@ receives at construction time:
 | `get*()` | Read current state | Model -> View | `getX(): number`                          |
 | `on*()`  | Relay user input   | View -> Model | `onTapped(x: number, y: number): void`    |
 
+For the language-neutral specification, see
+[Architecture: Bindings](../architecture/bindings.md).
+
+> **Try it live:** [Keyboard Sprite in Playground](/playground/#preset=keyboard-sprite) -
+> see bindings wiring `get*()` accessors and `on*()` input handlers.
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -116,8 +122,8 @@ function createGameView(game: GameModel): Container {
     // Wire HUD bindings from model properties
     container.addChild(
         createHudView({
-            getScore: () => game.score.score,
-            getLives: () => game.score.lives,
+            getScore: () => game.score,
+            getLives: () => game.lives,
             getWave: () => game.wave,
         }),
     );

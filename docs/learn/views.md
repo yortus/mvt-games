@@ -10,14 +10,20 @@
 
 ## What is a View?
 
-A view is part of the presentation layer. It reads current model state and updates
-its audio/visual output to match - e.g. a Pixi.js scene graph, a DOM element, or an audio
-channel. A `refresh()` function runs each frame. Views are
-**stateless** and **timeless** - they don't track what happened before, and
-they don't decide what happens next.
+A view is a **window into the simulation**. Each frame, it reads current model
+state and updates its audio/visual output to match - a Pixi.js scene graph, a
+DOM element, an audio channel, or a debug panel. You could open multiple
+windows (multiple views) onto the same model and they would all stay in sync.
+You could close all windows and the simulation would keep running unchanged.
 
-In this project, views typically use Pixi.js containers and manage scene graphs. The examples
-below reflect this, but the MVT pattern applies to any presentation target.
+Views are **stateless** and **timeless** - they don't track what happened
+before, and they don't decide what happens next. A `refresh()` function runs
+each frame.
+
+In this project, views typically use Pixi.js containers and manage scene
+graphs. The examples below reflect this, but the MVT pattern applies to any
+presentation target. For the language-neutral specification, see
+[Architecture: Views](../architecture/views.md).
 
 ## A Minimal View
 
@@ -72,6 +78,9 @@ choice. The examples on this page use this repo's conventions (factory
 functions, Pixi.js scene graphs, `onRender` hooks). See the
 [Style Guide](../reference/style-guide.md) for this repo's specific
 conventions.
+
+> **Try it live:** [Score Counter in Playground](/playground/#preset=score-counter) -
+> see how a view reads model state each frame and updates the display.
 
 ## The `refresh()` Contract
 

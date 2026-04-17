@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with [Models](../learn/models.md) and [Views](../learn/views.md).*
+
 ## Testing Philosophy
 
 Test against **public, specified behaviours** - not internal implementation

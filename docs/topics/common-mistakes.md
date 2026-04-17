@@ -8,6 +8,8 @@
 
 ---
 
+*Assumes familiarity with [Models](../learn/models.md) and [Views](../learn/views.md).*
+
 ## Mistake Reference
 
 | # | Mistake | Symptom | Fix |

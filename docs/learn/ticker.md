@@ -93,6 +93,9 @@ The strict update-then-refresh sequence provides a consistency guarantee:
   The data flow is one-directional within each frame: models produce state,
   views consume it.
 
+For the language-neutral specification, see
+[Architecture: The Ticker](../architecture/ticker.md).
+
 ## What the Ticker Does NOT Do
 
 The ticker is purely a timing orchestrator:

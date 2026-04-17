@@ -14,9 +14,10 @@ Each frame, the ticker runs three steps in strict order:
 
 ```mermaid
 flowchart TB
-    T["Ticker (frame loop)"] -- "1. deltaMs" --> M["Models\nadvance state"]
-    M -- "2. deltaMs" --> V["Views\nadvance presentation state\nupdate scene graph"]
-    V -- "3. presentation" --> R["Renderer\ndraws frame"]
+    T["Ticker (frame loop)"] -- "1. update(deltaMs)" --> M["Models\nadvance state"]
+    T -- "2. refresh()" --> V["Views\nread state, update presentation"]
+    V -- "3. scene graph" --> R["Renderer\ndraws frame"]
+    M -. "bindings: get*()" .-> V
 ```
 
 1. **Update models** - the ticker passes `deltaMs` to models. Models advance
@@ -105,6 +106,9 @@ in depth on its own page:
   user input. Reusable views typically access state through bindings rather
   than importing models directly.
   ([Bindings](bindings.md))
+
+For the full language-neutral specification, see the
+[Architecture](../architecture/index.md) section.
 
 - **Hot paths stay lean.** `update()` and `refresh()` run every frame. Avoid
   per-tick heap allocations.

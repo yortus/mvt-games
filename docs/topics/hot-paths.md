@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with [The Ticker](../learn/ticker.md).*
+
 ## What Counts as a Hot Path
 
 In MVT, the hot-path roots are:

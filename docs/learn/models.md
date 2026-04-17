@@ -9,10 +9,18 @@
 
 ## What is a Model?
 
-A model represents the data and logic of the application. It maintains state,
-enforces domain rules, and defines how the application evolves over time.
+A model is a **headless simulation**. It maintains state, enforces domain
+rules, and defines how the application evolves over time - but it has no idea
+how (or whether) it is being displayed. You could run a model in a terminal,
+in a test harness, or with no output at all. Feed it a sequence of
+`update(deltaMs)` calls and it produces a complete state history.
+
 Models are the single source of truth - everything that matters about the
-current state of the application lives in a model.
+current state of the application lives in a model. Views are just windows
+looking into that simulation.
+
+For the language-neutral specification, see
+[Architecture: Models](../architecture/models.md).
 
 ## A Minimal Model
 
@@ -42,6 +50,8 @@ function createTimerModel(durationMs: number): TimerModel {
 }
 ```
 
+> **Try it live:** [Countdown Timer in Playground](/playground/#preset=countdown-timer)
+
 Notice what happens each frame:
 
 - The ticker calls `update(deltaMs)`, passing the elapsed milliseconds.
@@ -49,7 +59,8 @@ Notice what happens each frame:
 - Once `remainingMs` hits zero, `isExpired` flips to `true`.
 
 All state lives inside the model. There are no timers, no rendering calls, no
-references to anything outside. The model is a self-contained simulation.
+references to anything outside. The model is a headless simulation - it doesn't
+know or care whether anything is watching.
 
 ## What MVT Requires of Models
 
@@ -93,15 +104,15 @@ assert state:
 test('timer counts down and expires', () => {
     const timer = createTimerModel(3000);
 
-    expect(timer.remaining).toBe(3000);
-    expect(timer.expired).toBe(false);
+    expect(timer.remainingMs).toBe(3000);
+    expect(timer.isExpired).toBe(false);
 
     timer.update(1000);
-    expect(timer.remaining).toBe(2000);
+    expect(timer.remainingMs).toBe(2000);
 
     timer.update(2000);
-    expect(timer.remaining).toBe(0);
-    expect(timer.expired).toBe(true);
+    expect(timer.remainingMs).toBe(0);
+    expect(timer.isExpired).toBe(true);
 });
 ```
 
@@ -249,6 +260,29 @@ substitute implementations in tests or swap in alternative strategies.
 
 For this repo's full naming rules and code conventions, see
 [Style Guide](../reference/style-guide.md).
+
+## Model Composition
+
+In practice, models form trees. A parent model creates child models and
+delegates `update(deltaMs)` to each one. After children have updated, the
+parent handles cross-cutting concerns like collisions or phase transitions:
+
+```mermaid
+graph TD
+    Game["GameModel.update(deltaMs)"]
+    Game -->|"1. delegate"| Ship["ShipModel.update()"]
+    Game -->|"1. delegate"| Bullets["BulletModel[].update()"]
+    Game -->|"1. delegate"| Enemies["EnemyModel[].update()"]
+    Game -->|"2. orchestrate"| Collisions["checkCollisions()"]
+    Game -->|"2. orchestrate"| Phases["checkPhaseTransitions()"]
+```
+
+Each child model is independently testable - call its `update()` directly
+without the parent. The parent's tests focus on the orchestration: do
+collisions register correctly? Do phases transition at the right time?
+
+For more on composition patterns, see
+[Model Composition](../topics/model-composition.md).
 
 ---
 

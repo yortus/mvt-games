@@ -40,6 +40,15 @@ Each layer has a clear job and a clear boundary. Models don't know views exist.
 Views don't decide what happens next. The ticker orchestrates them without
 containing any domain logic or rendering code.
 
+The mental image: **a model is a headless simulation**. It can run without any
+display at all - feed it a sequence of `update(deltaMs)` calls and it produces
+a complete state history. A view is then just a window looking into that
+simulation, reading the current state and drawing what it sees. You could open
+ten windows, or close them all, and the simulation doesn't change.
+
+For the transferable, language-neutral specification of these layers, see the
+[Architecture](../architecture/index.md) section.
+
 ## What You Get
 
 Keeping the three layers separate produces concrete, practical benefits:

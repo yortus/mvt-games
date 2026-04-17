@@ -14,6 +14,9 @@ export default withMermaid(defineConfig({
     base,
     outDir: '../dist/docs',
     srcExclude: ['RESTRUCTURE-PLAN.md'],
+    ignoreDeadLinks: [
+        /^\/playground\//,
+    ],
 
     appearance: 'dark',
 
@@ -53,6 +56,7 @@ export default withMermaid(defineConfig({
             {
                 text: 'Learn MVT',
                 items: [
+                    { text: 'Quickstart', link: '/learn/quickstart' },
                     { text: 'What is MVT?', link: '/learn/what-is-mvt' },
                     { text: 'Architecture Overview', link: '/learn/architecture-overview' },
                     { text: 'Models', link: '/learn/models' },

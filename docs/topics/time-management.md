@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with [Models](../learn/models.md) and [The Ticker](../learn/ticker.md).*
+
 ## The `deltaMs` Contract (Recap)
 
 Every model exposes an `update(deltaMs)` method. The ticker calls it once per

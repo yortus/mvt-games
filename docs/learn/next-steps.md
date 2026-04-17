@@ -37,8 +37,8 @@ self-contained with stated prerequisites.
 
 ## Look Things Up
 
-- **[Architecture Rules](../reference/architecture-rules.md)** - Every MVT
-  rule on one page, numbered and categorized.
+- **[Architecture Rules](../architecture/rules.md)** - Every universal MVT
+  rule on one page, categorized by layer.
 - **[Style Guide](../reference/style-guide.md)** - Naming, formatting, barrel
   files, and code conventions used in this repo.
 - **[Glossary](../reference/glossary.md)** - All terms defined.
@@ -47,8 +47,11 @@ self-contained with stated prerequisites.
 
 ## Understand the Background
 
-- **[Proven Patterns](../foundations/proven-patterns.md)** - How MVT connects
-  to established, battle-tested patterns from game engines and UI frameworks.
+- **[Architecture Specification](../architecture/index.md)** - The
+  transferable, language-neutral MVT specification. Models, views, bindings,
+  ticker, and universal rules.
+- **[Pattern Heritage](../architecture/heritage.md)** - How MVT connects
+  to established patterns from game engines and UI frameworks.
 - **[Reactivity Guide](../reactivity/)** - Why MVT chose pull-based reactivity
   (watchers) over push-based alternatives (events, signals). Supplementary
   reading for those who want to understand the design decision.

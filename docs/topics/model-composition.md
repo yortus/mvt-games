@@ -9,6 +9,8 @@
 
 ---
 
+*Assumes familiarity with [Models](../learn/models.md).*
+
 ## Parent-Child Delegation
 
 A root model composes child models and delegates `update(deltaMs)` calls down

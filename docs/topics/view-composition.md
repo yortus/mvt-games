@@ -10,6 +10,8 @@
 
 ---
 
+*Assumes familiarity with [Views](../learn/views.md) and [Bindings](../learn/bindings.md).*
+
 ## Parent Views Wire Child Bindings
 
 Views compose hierarchically. A parent view creates child views, each with its
