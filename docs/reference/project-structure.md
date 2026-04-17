@@ -5,7 +5,7 @@
 > MVT architectural requirements.
 
 **Related:** [Style Guide](style-guide.md) · [Architecture Rules](architecture-rules.md) ·
-[Adding a Game](../guide/adding-a-game.md)
+[Adding a Game](../topics/adding-a-game.md)
 
 ---
 
@@ -210,4 +210,4 @@ src/games/<name>/
 ```
 
 For details on creating a new game module, see
-[Adding a Game](../guide/adding-a-game.md).
+[Adding a Game](../topics/adding-a-game.md).

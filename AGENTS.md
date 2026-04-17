@@ -11,8 +11,8 @@
 - **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws
 - **Bindings** - plain object bridging view and model: `get*()` methods read state, `on*()` methods relay user input
 
-Full reference: [Architecture Overview](docs/learn/architecture-overview.md) -
-[Architecture Rules](docs/reference/architecture-rules.md)
+Full reference: [Architecture Overview](docs/architecture/index.md) -
+[Architecture Rules](docs/architecture/rules.md)
 
 ## Project Structure
 
@@ -37,7 +37,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](docs/guide/adding-a-game.md).
+- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](docs/topics/adding-a-game.md).
 
 ## Key Conventions
 
@@ -71,11 +71,11 @@ update its progress log, and move it to `archive/` when done.
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead.
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/guide/time-management.md)
-2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` method. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/guide/presentation-state.md)
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/topics/time-management.md)
+2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` method. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/topics/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/guide/hot-paths.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/topics/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/learn/models.md)
 
 Full rules: [Architecture Rules](docs/reference/architecture-rules.md)
@@ -114,12 +114,12 @@ Load the relevant skills file for task-specific instructions:
 
 | Section          | Content                                   |
 | ---------------- | ----------------------------------------- |
+| [Architecture](docs/architecture/index.md) | Transferable MVT specification |
 | [Learn](docs/learn/what-is-mvt.md) | Sequential introduction to MVT  |
-| [Guide](docs/guide/time-management.md) | In-depth topic pages      |
+| [Topics](docs/topics/time-management.md) | In-depth topic pages      |
 | [Reference](docs/reference/architecture-rules.md) | Rules, style, glossary |
-| [Foundations](docs/foundations/proven-patterns.md) | Pattern heritage      |
+| [Reactivity](docs/reactivity/index.md) | Reactivity strategy comparison |
 | [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
-| [Contributing](docs/contributing.md) | Documentation maintenance guide |
 
 ## Tech Stack
 

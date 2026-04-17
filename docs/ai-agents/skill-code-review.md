@@ -265,9 +265,9 @@ Within each section, list findings as bullet points with:
 
 - [Architecture Rules](../reference/architecture-rules.md) - all MVT rules
 - [Style Guide](../reference/style-guide.md) - code conventions
-- [Hot Paths](../guide/hot-paths.md) - performance considerations
-- [Bindings in Depth](../guide/bindings-in-depth.md) - bindings patterns
-- [Model Composition](../guide/model-composition.md) - model hierarchy
-- [View Composition](../guide/view-composition.md) - view hierarchy
-- [Presentation State](../guide/presentation-state.md) - when views may
+- [Hot Paths](../topics/hot-paths.md) - performance considerations
+- [Bindings in Depth](../topics/bindings-in-depth.md) - bindings patterns
+- [Model Composition](../topics/model-composition.md) - model hierarchy
+- [View Composition](../topics/view-composition.md) - view hierarchy
+- [Presentation State](../topics/presentation-state.md) - when views may
   hold state

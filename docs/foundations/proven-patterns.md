@@ -1,11 +1,10 @@
 # Proven Patterns Behind MVT
 
-> You don't need to read this to use MVT. It's here for those who want to
-> understand the engineering heritage behind the architecture.
+> This page has moved to [Heritage](../architecture/heritage.md) as part of
+> the Architecture section.
 
-**Related:** [Architecture Overview](../learn/architecture-overview.md) ·
-[Architecture Rules](../reference/architecture-rules.md) ·
-[Glossary](../reference/glossary.md)
+**Related:** [Architecture Overview](../architecture/index.md) ·
+[Heritage](../architecture/heritage.md)
 
 ---
 
@@ -73,7 +72,7 @@ produce identical outputs.
   No timing uncertainty, no flaky tests.
 
 **Learn more:** [Models](../learn/models.md) ·
-[Time Management](../guide/time-management.md)
+[Time Management](../topics/time-management.md)
 
 ### Passive View (Bindings)
 
@@ -103,7 +102,7 @@ If you've used React, this will feel familiar - a component that receives data
 via props and reports input via callback props is the same structural idea.
 
 **Learn more:** [Bindings](../learn/bindings.md) ·
-[Bindings in Depth](../guide/bindings-in-depth.md)
+[Bindings in Depth](../topics/bindings-in-depth.md)
 
 ### Stateless Rendering (Views)
 
@@ -128,7 +127,7 @@ stateless - `refresh()` is idempotent, and calling it twice with the same
 model state produces the same result.
 
 **Learn more:** [Views](../learn/views.md) ·
-[Presentation State](../guide/presentation-state.md) (the exception)
+[Presentation State](../topics/presentation-state.md) (the exception)
 
 ### Dirty Checking (Watch)
 
@@ -149,7 +148,7 @@ is near zero because you're already executing code every frame. (React's
 `React.memo` and `useMemo` serve the same purpose - skip work when inputs are
 unchanged.)
 
-**Learn more:** [Change Detection](../guide/change-detection.md)
+**Learn more:** [Change Detection](../topics/change-detection.md)
 
 ### Hierarchical Composition
 
@@ -170,8 +169,8 @@ from small, independently testable units. Add a new feature as a new
 model/view pair without touching existing ones. The pattern scales from a
 single entity to arbitrarily complex applications.
 
-**Learn more:** [Model Composition](../guide/model-composition.md) ·
-[View Composition](../guide/view-composition.md)
+**Learn more:** [Model Composition](../topics/model-composition.md) ·
+[View Composition](../topics/view-composition.md)
 
 ---
 

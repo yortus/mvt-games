@@ -279,10 +279,10 @@ function createEntityView(bindings: EntityViewBindings): Container {
 
 - [Views (Learn)](../learn/views.md) - introduction from scratch
 - [Bindings (Learn)](../learn/bindings.md) - the bindings pattern
-- [Bindings in Depth](../guide/bindings-in-depth.md) - advanced bindings topics
-- [Change Detection](../guide/change-detection.md) - the Watch pattern
-- [View Composition](../guide/view-composition.md) - view hierarchies
-- [Presentation State](../guide/presentation-state.md) - view models and presentation state
+- [Bindings in Depth](../topics/bindings-in-depth.md) - advanced bindings topics
+- [Change Detection](../topics/change-detection.md) - the Watch pattern
+- [View Composition](../topics/view-composition.md) - view hierarchies
+- [Presentation State](../topics/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../reference/architecture-rules.md) - all rules (V1-V9)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../guide/hot-paths.md) - performance rules for `refresh()`
+- [Hot Paths](../topics/hot-paths.md) - performance rules for `refresh()`

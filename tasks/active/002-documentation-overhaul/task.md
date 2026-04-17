@@ -385,3 +385,19 @@ docs structure.
 - 2026-04-17 - Completeness review. Added: llms.txt (1.7), anti-patterns
   visibility (1.5), quickstart page (2.6), new diagrams (2.3), Recipes as
   future addition. Total: 6 phases, 23 steps.
+- 2026-04-18 - **Phase 1 complete.** All 7 steps done:
+  - 1.1: Created docs/architecture/ with 6 pages (index, models, views,
+    bindings, ticker, rules, heritage). Language-neutral, pseudocode only.
+  - 1.2: Renamed docs/guide/ to docs/topics/. Updated ~15 files with
+    ../guide/ -> ../topics/ references.
+  - 1.3: Removed Contributing from sidebar (page remains at docs/contributing.md).
+  - 1.4: Condensed foundations/proven-patterns.md into architecture/heritage.md.
+    Original file now a redirect stub. Removed Foundations sidebar section.
+  - 1.5: Grouped Topics sidebar into 4 subclusters (Core Patterns, Composition,
+    Building, Troubleshooting).
+  - 1.6: Rewrote docs/index.md landing page. Three Layers table, Frame Sequence
+    diagram, organized reading paths table.
+  - 1.7: Thinned docs/ai-agents/index.md to ~50-line wrapper pointing to
+    AGENTS.md. Created llms.txt at repo root. Updated AGENTS.md and
+    .github/copilot-instructions.md to reference new architecture section.
+  - Build and lint pass clean.

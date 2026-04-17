@@ -39,6 +39,18 @@ export default withMermaid(defineConfig({
                 ],
             },
             {
+                text: 'Architecture',
+                items: [
+                    { text: 'Overview', link: '/architecture/' },
+                    { text: 'Models', link: '/architecture/models' },
+                    { text: 'Views', link: '/architecture/views' },
+                    { text: 'Bindings', link: '/architecture/bindings' },
+                    { text: 'The Ticker', link: '/architecture/ticker' },
+                    { text: 'Rules', link: '/architecture/rules' },
+                    { text: 'Heritage', link: '/architecture/heritage' },
+                ],
+            },
+            {
                 text: 'Learn MVT',
                 items: [
                     { text: 'What is MVT?', link: '/learn/what-is-mvt' },
@@ -52,18 +64,38 @@ export default withMermaid(defineConfig({
                 ],
             },
             {
-                text: 'Guide',
+                text: 'Topics',
                 items: [
-                    { text: 'Time Management', link: '/guide/time-management' },
-                    { text: 'Bindings in Depth', link: '/guide/bindings-in-depth' },
-                    { text: 'Change Detection', link: '/guide/change-detection' },
-                    { text: 'Model Composition', link: '/guide/model-composition' },
-                    { text: 'View Composition', link: '/guide/view-composition' },
-                    { text: 'Presentation State', link: '/guide/presentation-state' },
-                    { text: 'Hot Paths', link: '/guide/hot-paths' },
-                    { text: 'Testing', link: '/guide/testing' },
-                    { text: 'Adding a Game', link: '/guide/adding-a-game' },
-                    { text: 'Common Mistakes', link: '/guide/common-mistakes' },
+                    {
+                        text: 'Core Patterns',
+                        items: [
+                            { text: 'Time Management', link: '/topics/time-management' },
+                            { text: 'Hot Paths', link: '/topics/hot-paths' },
+                            { text: 'Change Detection', link: '/topics/change-detection' },
+                        ],
+                    },
+                    {
+                        text: 'Composition',
+                        items: [
+                            { text: 'Model Composition', link: '/topics/model-composition' },
+                            { text: 'View Composition', link: '/topics/view-composition' },
+                            { text: 'Bindings in Depth', link: '/topics/bindings-in-depth' },
+                        ],
+                    },
+                    {
+                        text: 'Building',
+                        items: [
+                            { text: 'Presentation State', link: '/topics/presentation-state' },
+                            { text: 'Testing', link: '/topics/testing' },
+                            { text: 'Adding a Game', link: '/topics/adding-a-game' },
+                        ],
+                    },
+                    {
+                        text: 'Troubleshooting',
+                        items: [
+                            { text: 'Common Mistakes', link: '/topics/common-mistakes' },
+                        ],
+                    },
                 ],
             },
             {
@@ -73,12 +105,6 @@ export default withMermaid(defineConfig({
                     { text: 'Style Guide', link: '/reference/style-guide' },
                     { text: 'Glossary', link: '/reference/glossary' },
                     { text: 'Project Structure', link: '/reference/project-structure' },
-                ],
-            },
-            {
-                text: 'Foundations',
-                items: [
-                    { text: 'Proven Patterns', link: '/foundations/proven-patterns' },
                 ],
             },
             {
@@ -102,12 +128,6 @@ export default withMermaid(defineConfig({
                     { text: 'Skill: MVT View', link: '/ai-agents/skill-mvt-view' },
                     { text: 'Skill: Code Style', link: '/ai-agents/skill-code-style' },
                     { text: 'Skill: Documentation', link: '/ai-agents/skill-documentation' },
-                ],
-            },
-            {
-                text: 'Contributing',
-                items: [
-                    { text: 'Documentation Guide', link: '/contributing' },
                 ],
             },
         ],

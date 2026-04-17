@@ -185,7 +185,7 @@ internally.
 
 For the full guide on presentation state - what qualifies, how views own it,
 when to extract a view model - see
-[Presentation State](../guide/presentation-state.md).
+[Presentation State](../topics/presentation-state.md).
 
 ## Two Kinds of Views
 

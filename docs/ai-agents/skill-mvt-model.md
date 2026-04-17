@@ -253,9 +253,9 @@ Re-export through the directory's barrel file (`index.ts`).
 ## Full References
 
 - [Models (Learn)](../learn/models.md) - introduction from scratch
-- [Time Management](../guide/time-management.md) - GSAP recipes, advance-then-orchestrate
-- [Model Composition](../guide/model-composition.md) - parent-child delegation
+- [Time Management](../topics/time-management.md) - GSAP recipes, advance-then-orchestrate
+- [Model Composition](../topics/model-composition.md) - parent-child delegation
 - [Architecture Rules](../reference/architecture-rules.md) - all rules (M1-M5)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../guide/hot-paths.md) - performance rules for `update()`
-- [Testing](../guide/testing.md) - testing models, `stepMs` helper
+- [Hot Paths](../topics/hot-paths.md) - performance rules for `update()`
+- [Testing](../topics/testing.md) - testing models, `stepMs` helper

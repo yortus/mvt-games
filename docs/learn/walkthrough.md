@@ -306,7 +306,7 @@ function refresh(): void {
 
 This is a practical example of change detection - poll every frame, rebuild
 only on change. For the full pattern, see
-[Change Detection](../guide/change-detection.md).
+[Change Detection](../topics/change-detection.md).
 
 ## The Entry Point
 
@@ -402,7 +402,7 @@ graph TB
 The model tree and view tree happen to look similar in this game because each
 domain entity has a natural visual counterpart. This is common in simple games
 but is not a requirement - see
-[Model-View Mapping](../guide/view-composition.md#model-view-mapping) for cases
+[Model-View Mapping](../topics/view-composition.md#model-view-mapping) for cases
 where the trees diverge. The trees are connected by bindings wired in
 the top-level game view. Models own state and logic. Views own rendering. The
 ticker drives the loop. Each layer does its job and nothing more.

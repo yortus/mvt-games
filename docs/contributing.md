@@ -67,14 +67,14 @@ Use this table to decide where new content belongs:
 | Section | What belongs here | Examples |
 | --- | --- | --- |
 | **learn/** | Sequential introduction to MVT concepts. Each page builds on the previous one. | What is MVT, models, views, ticker, bindings |
-| **guide/** | In-depth topic pages. Self-contained, any reading order. | Time management, testing, adding a game, hot paths |
+| **topics/** | In-depth topic pages. Self-contained, any reading order. | Time management, testing, adding a game, hot paths |
 | **reference/** | Terse, scannable, linkable. Complete coverage. | Architecture rules, style guide, glossary, project structure |
 | **foundations/** | Connecting MVT to established patterns. Historical and academic context. | Game loop heritage, passive view, deterministic simulation |
 | **reactivity/** | Deep-dive into reactivity strategies. Supplementary - not required to use MVT. | Events, signals, watchers, comparison |
 | **ai-agents/** | AI agent orientation and skills files. | Agent index, skill-mvt-model, skill-mvt-view |
 
 When in doubt: if the content explains a core concept for newcomers, it
-belongs in `learn/`. If it goes deeper on a topic, it belongs in `guide/`.
+belongs in `learn/`. If it goes deeper on a topic, it belongs in `topics/`.
 If it is a quick-lookup resource, it belongs in `reference/`.
 
 ## Page Template
@@ -87,7 +87,7 @@ Every docs page follows this structure:
 > Brief 2-3 sentence summary of what this page covers.
 
 **Prerequisites:** [Link to prior page] (for learn/ pages)
-**Related:** [Link], [Link] (for guide/ and reference/ pages)
+**Related:** [Link], [Link] (for topics/ and reference/ pages)
 
 ---
 
@@ -102,7 +102,7 @@ Key points:
 - The summary is the skim layer. A reader who reads only this line should
   understand the page's scope.
 - `learn/` pages use **Prerequisites** and **Next** links to form a chain.
-- `guide/` and `reference/` pages use **Related** links to connect to
+- `topics/` and `reference/` pages use **Related** links to connect to
   siblings and dependencies.
 
 ## Tone and Style Rules
@@ -123,7 +123,7 @@ Follow this checklist for every page:
 
 These are two separate concerns. Keep them clearly distinguished:
 
-- **MVT architecture** (learn/ and guide/ pages): generally applicable rules
+- **MVT architecture** (learn/ and topics/ pages): generally applicable rules
   that any codebase using MVT should follow. Examples: models own state,
   views are stateless, the ticker drives time.
 - **Code style** (reference/style-guide.md and code examples): conventions
@@ -221,8 +221,8 @@ Current diagram inventory:
 | MVT frame loop | learn/architecture-overview.md | Mermaid flowchart |
 | Component summary | learn/architecture-overview.md | Markdown table |
 | Bindings data flow | learn/bindings.md | Mermaid sequence diagram |
-| Model tree | guide/model-composition.md | Mermaid graph |
-| View tree | guide/view-composition.md | Mermaid graph |
+| Model tree | topics/model-composition.md | Mermaid graph |
+| View tree | topics/view-composition.md | Mermaid graph |
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
 | Ticker frame sequence | learn/ticker.md | Mermaid sequence diagram |
 | Reactivity reading path | reactivity/index.md | ASCII diagram |

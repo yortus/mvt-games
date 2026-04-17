@@ -94,7 +94,7 @@ in depth on its own page:
 - **Views hold no domain state.** They read current state and update the
   presentation. Views may hold cosmetic presentation state for transitions
   the model doesn't track (see
-  [Presentation State](../guide/presentation-state.md)).
+  [Presentation State](../topics/presentation-state.md)).
   ([Views](views.md))
 
 - **The ticker orchestrates, nothing more.** It drives the frame loop but
@@ -108,7 +108,7 @@ in depth on its own page:
 
 - **Hot paths stay lean.** `update()` and `refresh()` run every frame. Avoid
   per-tick heap allocations.
-  ([Hot Paths](../guide/hot-paths.md))
+  ([Hot Paths](../topics/hot-paths.md))
 
 ---
 

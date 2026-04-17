@@ -12,7 +12,7 @@ The docs are organized into six sections. Place new content in the right one:
 | Section | Purpose | Content style |
 | --- | --- | --- |
 | **learn/** | Sequential introduction to MVT | Progressive, builds on previous pages |
-| **guide/** | In-depth topic pages (any order) | Self-contained, detailed, with prerequisites |
+| **topics/** | In-depth topic pages (any order) | Self-contained, detailed, with prerequisites |
 | **reference/** | Quick-lookup resources | Terse, scannable, complete |
 | **foundations/** | MVT's pattern heritage | Academic, connecting to established patterns |
 | **reactivity/** | Reactivity strategies deep-dive | Supplementary, not required for MVT |
@@ -28,7 +28,7 @@ Every docs page must follow this structure:
 > Brief 2-3 sentence summary of what this page covers.
 
 **Prerequisites:** [Link to prior page] (learn/ pages only)
-**Related:** [Link], [Link] (guide/ and reference/ pages)
+**Related:** [Link], [Link] (topics/ and reference/ pages)
 
 ---
 
@@ -42,7 +42,7 @@ Every docs page must follow this structure:
 - The summary line is mandatory. It is the skim layer - a reader who reads
   only this should understand the page's scope.
 - `learn/` pages use **Prerequisites** and **Next** to form a chain.
-- `guide/` and `reference/` pages use **Related** to connect to siblings.
+- `topics/` and `reference/` pages use **Related** to connect to siblings.
 
 ## Writing Rules
 
@@ -79,7 +79,7 @@ Every docs page must follow this structure:
 These are separate concerns. Never conflate them:
 
 - **MVT architecture:** generally applicable rules (models own state, views
-  are stateless, ticker drives time). Documented in `learn/` and `guide/`.
+  are stateless, ticker drives time). Documented in `learn/` and `topics/`.
 - **Code style:** conventions specific to this repo (factory functions, naming
   rules, barrel files). Documented in `reference/style-guide.md`.
 

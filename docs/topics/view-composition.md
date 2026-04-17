@@ -66,7 +66,7 @@ graph TD
 ```
 
 The top-level view is application-specific and receives the model directly.
-Leaf views are reusable and receive bindings. This matches the two access
+Leaf views are reusable and receive bindings. This matches the access
 patterns described in [Bindings in Depth](bindings-in-depth.md).
 
 ## Multiple Views, One Model

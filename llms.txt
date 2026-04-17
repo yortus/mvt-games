@@ -1,0 +1,55 @@
+# MVT Games - llms.txt
+
+> MVT (Model-View-Ticker) is an architecture for frame-based interactive
+> applications. This file provides a compressed entry point for LLMs.
+
+## Architecture
+
+MVT splits applications into three layers:
+
+- **Model** - owns state and domain logic. Advances only via update(deltaMs).
+  No wall-clock time, no view references, no presentation values.
+- **View** - reads state, writes presentation output. Stateless (no domain
+  state). refresh() runs each frame, must be idempotent and side-effect free.
+- **Ticker** - drives the frame loop: model.update(deltaMs) then
+  view.update(deltaMs) (views with state) then view.refresh() then render.
+- **Bindings** - contract between view and model. get*() reads state, on*()
+  relays user input. Reusable views use bindings; top-level views access
+  models directly.
+
+## Frame Sequence
+
+Every frame: compute deltaMs, cap it, update models, advance view
+presentation state, refresh views, render. Models settle before views read.
+
+## Key Rules
+
+- Models: all state through update(deltaMs) only. No setTimeout, Date.now(),
+  auto-playing tweens. Domain-level coordinates (tiles, world-units), not
+  pixels. Parent delegates update() to children.
+- Views: no domain state. refresh() is idempotent, read-only. Re-read
+  bindings every frame (never cache at construction). May hold cosmetic
+  presentation state (gains update(deltaMs)). Extract complex presentation
+  logic to a view model.
+- Ticker: strict sequence (update, refresh, render). Cap deltaMs. No domain
+  logic or rendering code.
+- Hot paths: no per-tick allocations. Index-based for loops. Pre-allocated
+  structures. Change detection for expensive infrequent rebuilds.
+
+## Project Conventions (this repo only)
+
+- Factory functions, not classes: createXxxModel(options) -> XxxModel
+- Barrel imports only: never import past index.ts
+- String-literal unions, not enums
+- 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest
+- TypeScript 5.9, Pixi.js 8, GSAP 3, Vite 7
+
+## Documentation
+
+- docs/architecture/ - transferable MVT specification (language-neutral)
+- docs/learn/ - sequential introduction (8 pages)
+- docs/topics/ - in-depth topic pages (time, composition, testing, etc.)
+- docs/reference/ - rules, style guide, glossary, project structure
+- docs/reactivity/ - events vs signals vs polling comparison
+- docs/ai-agents/ - agent orientation and task-specific skills files
+- AGENTS.md - compressed agent entry point (canonical)

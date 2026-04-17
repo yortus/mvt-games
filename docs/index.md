@@ -12,21 +12,35 @@ frame-consistent rendering across the board.
 
 ## The Three Layers
 
-```
-  Ticker (frame loop)
-    │
-    ├── 1. model.update(deltaMs)   ← Models advance state
-    ├── 2. view.refresh()          ← Views read state, update presentation
-    └── 3. renderer draws          ← Frame drawn to screen
-```
-
 | Layer      | Owns                | Receives       | Must not touch         |
 | ---------- | ------------------- | -------------- | ---------------------- |
 | **Model**  | State, domain logic | `deltaMs`      | Views, rendering, time |
 | **View**   | Presentation        | Bindings/model | Domain state, timers   |
 | **Ticker** | Frame loop          | Animation frame | Domain logic, rendering code |
 
-## Choose Your Path
+## The Frame Sequence
+
+Every frame follows the same strict order:
+
+```
+  Ticker (frame loop)
+    ├── 1. model.update(deltaMs)   ← Models advance state
+    ├── 2. view.refresh()          ← Views read state, update presentation
+    └── 3. renderer draws          ← Frame drawn to screen
+```
+
+Models always settle before views read them. Views never see a half-updated
+world.
+
+## How This Documentation Is Organized
+
+| Section | What you'll find | When to use it |
+|---|---|---|
+| **[Architecture](architecture/)** | The transferable MVT specification - contracts, constraints, and patterns in language-neutral terms | Understanding the architecture independent of any implementation |
+| **[Learn](learn/what-is-mvt.md)** | Sequential introduction from zero to working understanding, using this project's TypeScript + Pixi.js implementation | New to MVT - start here |
+| **[Topics](topics/time-management.md)** | In-depth pages on specific subjects (time, composition, testing, hot paths) - any reading order | Going deeper on a particular topic |
+| **[Reference](reference/architecture-rules.md)** | Terse lookup pages - rules, style guide, glossary, project structure | Quick lookups while working |
+| **[Reactivity](reactivity/)** | Comparative analysis of reactivity strategies (events, signals, polling) | Understanding why MVT uses polling |
 
 ### Learn MVT
 
@@ -42,42 +56,32 @@ in eight short pages:
 7. [Walkthrough](learn/walkthrough.md) - Annotated tour of the Asteroids module
 8. [Next Steps](learn/next-steps.md) - Where to go from here
 
+### Architecture
+
+Want the pure MVT specification without implementation details?
+
+- [Architecture Overview](architecture/) - The problem, the solution, the three layers
+- [Architecture Rules](architecture/rules.md) - Universal MVT constraints
+- [Heritage](architecture/heritage.md) - The proven patterns MVT assembles
+
 ### Reference
 
 Already familiar and need to look something up?
 
-- [Architecture Rules](reference/architecture-rules.md) - All MVT rules in one page
+- [Architecture Rules](reference/architecture-rules.md) - All rules on one page
 - [Style Guide](reference/style-guide.md) - Code conventions and naming
 - [Glossary](reference/glossary.md) - Term definitions
 - [Project Structure](reference/project-structure.md) - Directory layout and barrel files
-- [Proven Patterns](foundations/proven-patterns.md) - The engineering heritage behind MVT
-- [Reactivity Guide](reactivity/) - Events, signals, watchers, and comparison framework
+
+### Common Mistakes
+
+Making something work but not sure if you're doing it right?
+[Common Mistakes](topics/common-mistakes.md) covers the most frequent
+anti-patterns and how to fix them.
 
 ### AI Agents
 
 AI coding agents should start with [AGENTS.md](https://github.com/yortus/mvt-games/blob/main/AGENTS.md)
 for compressed orientation.
-
-## Contributing
-
-Adding to or maintaining these docs?
-See the [Contributing Guide](contributing.md) for page templates,
-section purposes, and style rules.
-
-## Design Philosophy
-
-These guides are built around four principles:
-
-1. **Separation of concerns** - Models own state; views own presentation; the
-   ticker owns time. No layer reaches into another. Public APIs
-   are defined by interfaces, not implementation details.
-2. **Testability by design** - Models are deterministic (same `update` calls
-   produce the same state). Views can be tested with mock bindings. Neither
-   depends on the other.
-3. **Explicit over implicit** - Time flows through `update(deltaMs)`, not
-   hidden timers. Data flows through `bindings`, not global imports.
-4. **Performance without obscurity** - Hot-path rules exist to avoid per-tick
-   waste, but clarity still matters. Optimise where it counts; keep everything
-   else readable.
 
 

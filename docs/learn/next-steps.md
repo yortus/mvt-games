@@ -9,30 +9,30 @@
 
 ## Deepen Your Understanding
 
-The guide section covers advanced topics in any order. Each page is
+The topics section covers advanced subjects in any order. Each page is
 self-contained with stated prerequisites.
 
-- **[Time Management](../guide/time-management.md)** - deltaMs, GSAP
+- **[Time Management](../topics/time-management.md)** - deltaMs, GSAP
   timelines, the advance-then-orchestrate pattern, and testing time-dependent
   models.
-- **[Bindings in Depth](../guide/bindings-in-depth.md)** - Optional bindings,
+- **[Bindings in Depth](../topics/bindings-in-depth.md)** - Optional bindings,
   reactive bindings, and access-pattern decision criteria.
-- **[Change Detection](../guide/change-detection.md)** - The Watch pattern,
+- **[Change Detection](../topics/change-detection.md)** - The Watch pattern,
   dirty checking, and when to use it.
-- **[Model Composition](../guide/model-composition.md)** - Building complex
+- **[Model Composition](../topics/model-composition.md)** - Building complex
   applications from model trees.
-- **[View Composition](../guide/view-composition.md)** - View hierarchies and
+- **[View Composition](../topics/view-composition.md)** - View hierarchies and
   multi-view projection from a single model.
-- **[Presentation State](../guide/presentation-state.md)** - When and how
+- **[Presentation State](../topics/presentation-state.md)** - When and how
   views may hold internal animation state.
-- **[Hot Paths](../guide/hot-paths.md)** - Performance rules for code that
+- **[Hot Paths](../topics/hot-paths.md)** - Performance rules for code that
   runs every tick.
 
 ## Build Something
 
-- **[Adding a Game](../guide/adding-a-game.md)** - Step-by-step guide to
+- **[Adding a Game](../topics/adding-a-game.md)** - Step-by-step guide to
   creating a new game module and registering it with the cabinet.
-- **[Testing](../guide/testing.md)** - How to test models, views, and
+- **[Testing](../topics/testing.md)** - How to test models, views, and
   bindings.
 
 ## Look Things Up

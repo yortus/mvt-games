@@ -170,12 +170,13 @@ automatically picks up the new values on the next frame.
 
 ## When to Use Bindings vs Direct Model Access
 
-Not every view needs bindings. MVT uses two access patterns:
+Not every view needs bindings. MVT recognises three access patterns:
 
-| View kind                      | Access pattern         | Rationale                                     |
-| ------------------------------ | ---------------------- | --------------------------------------------- |
-| **Top-level application view** | Model(s) directly      | Application-specific; biggest bindings savings |
-| **Leaf / reusable view**       | `get*()`/`on*()` bindings | Small interface cost; genuine reuse potential |
+| View kind                      | Access pattern                | Rationale                                     |
+| ------------------------------ | ----------------------------- | --------------------------------------------- |
+| **Top-level application view** | Model(s) directly             | Application-specific; biggest bindings savings |
+| **Leaf / reusable view**       | `get*()`/`on*()` bindings     | Small interface cost; genuine reuse potential  |
+| **Static configuration**       | Ambient constants             | Never changes at runtime; not reactive state   |
 
 **Top-level views** are the least likely to be reused - they exist to wire this
 specific application's sub-views together. They're also the views with the
@@ -188,7 +189,7 @@ property is named `posX` but the view expects `getX()`, only the wiring
 changes.
 
 For more on optional bindings, reactive bindings, and advanced access patterns,
-see [Bindings in Depth](../guide/bindings-in-depth.md).
+see [Bindings in Depth](../topics/bindings-in-depth.md).
 
 ---
 
