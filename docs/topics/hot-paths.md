@@ -120,8 +120,9 @@ function refresh(): void {
 ### Text updates in `refresh()`
 
 String assignment (`label.text = String(score)`) allocates a string on every
-call. For text that changes every frame, this is unavoidable. For text that
-changes rarely, use change detection to skip the update:
+call. For continuous state (text that changes every frame), this is
+unavoidable. For discrete state (text that changes rarely), use change
+detection to skip the update:
 
 ```ts
 let prevScore = -1;

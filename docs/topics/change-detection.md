@@ -24,10 +24,11 @@
 ## The Problem
 
 Re-evaluating every binding every frame is correct but not always efficient.
-Some bindings change rarely (dimensions, configuration, game phase) while
-others change every frame (entity positions). For infrequent changes that
-trigger expensive work - rebuilding a grid, tearing down and recreating child
-views - running that work every frame wastes resources.
+Some bindings represent continuous state that changes every frame (entity
+positions), while others represent discrete state that changes rarely
+(dimensions, configuration, game phase). For discrete changes that trigger
+expensive work - rebuilding a grid, tearing down and recreating child views -
+running that work every frame wastes resources.
 
 ## Manual Previous-Value Tracking
 
@@ -125,9 +126,9 @@ instead.
 
 | Situation                                                     | Approach                                                          |
 | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Value changes most frames (entity x/y)                        | Read binding directly - change detection adds overhead for no gain |
-| Value changes rarely, reaction is cheap (text label)          | Compare previous value - skip redundant updates                   |
-| Value changes rarely, reaction is expensive (presentation rebuild) | Essential - avoid rebuilding 60 times per second                |
+| Continuous state (entity x/y)                                 | Read binding directly - change detection adds overhead for no gain |
+| Discrete state, reaction is cheap (text label)                | Compare previous value - skip redundant updates                   |
+| Discrete state, reaction is expensive (presentation rebuild)  | Essential - avoid rebuilding 60 times per second                  |
 
 The decision is straightforward: if the cost of detecting changes exceeds the
 cost of just doing the work, skip the detection.

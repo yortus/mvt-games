@@ -203,17 +203,17 @@ listed below.
 
 ---
 
-### Challenge: Per-tick values create a dilemma
+### Challenge: Continuous state creates a dilemma
 
 In games, many values change every frame - positions, velocities, animation
-progress. This creates a dilemma with no good resolution:
+progress. This continuous state creates a dilemma with no good resolution:
 
-**If per-tick values are signals**, every write (60/sec per value) triggers the
-full reactive pipeline: dependency tracking, dirty-marking, subscriber
+**If continuous values are signals**, every write (60/sec per value) triggers
+the full reactive pipeline: dependency tracking, dirty-marking, subscriber
 notification, effect re-execution. The cost is pure overhead - the view would
 read these values every frame anyway.
 
-**If per-tick values are NOT signals**, effects cannot react to them. The view
+**If continuous values are NOT signals**, effects cannot react to them. The view
 must read them manually, outside the reactive system. Now you have two tiers:
 some state is reactive, some is not. The distinction is invisible at the call
 site.
@@ -237,8 +237,8 @@ function refresh(): void {
   where the answer to "when should I re-evaluate?" is already "every frame."
 - Not wrapping everything means the automatic tracking promise is only
   partially fulfilled - you end up managing per-frame reads manually anyway.
-- Polling handles both cases uniformly: watch infrequent changes, read
-  per-tick values directly. No dilemma.
+- Polling handles both cases uniformly: watch discrete changes, read
+  continuous values directly. No dilemma.
 
 ---
 
@@ -406,7 +406,7 @@ reactivity mechanism between model and view.
 
 Observable streams compose asynchronous event sequences with operators like
 `debounce`, `throttle`, `combineLatest`. In game contexts, streams are rarely
-used for per-tick state (the overhead is significant) but can be useful for
+used for continuous state (the overhead is significant) but can be useful for
 input processing pipelines. The subscription and disposal lifecycle adds the
 same cleanup burden as events. For most game view-update needs, polling is
 simpler.
@@ -436,7 +436,7 @@ avoids:
 | Model complexity | Must emit events | Must wrap values in signals | Plain getters |
 | Consistency | Emit-after-mutation discipline | Batching discipline | Free (update-then-read) |
 | Cleanup | Manual `off()` | Manual `dispose()` | None |
-| Per-tick values | Wasteful or excluded | Wasteful or excluded | Direct read |
+| Continuous state | Wasteful or excluded | Wasteful or excluded | Direct read |
 | Consumer flexibility | Limited to declared events | Limited to signal-wrapped values | Any getter |
 | Control flow | Implicit, distributed | Implicit, scheduler-dependent | Explicit, top-to-bottom |
 | Complex state | Event granularity decisions | Signal granularity decisions | Plain data structures |

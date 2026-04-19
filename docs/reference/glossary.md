@@ -12,7 +12,9 @@
 | ---- | ---------- |
 | **Barrel file** | An `index.ts` that re-exports the public API of a directory module. All cross-directory imports must go through the barrel. [Project Structure](project-structure.md) |
 | **Bindings** | A plain object bridging view and model. Contains `get*()` accessors for reading state and `on*()` handlers for relaying user input. [Bindings](../learn/bindings.md) · [Bindings in Depth](../topics/bindings-in-depth.md) |
-| **Change detection** | A technique where the view polls a binding each frame and acts only when the value differs from the previous frame. Avoids expensive rebuilds for infrequently changing state. [Change Detection](../topics/change-detection.md) |
+| **Change detection** | A technique where the view polls a binding each frame and acts only when the value differs from the previous frame. Avoids expensive rebuilds for discrete state. [Change Detection](../topics/change-detection.md) |
+| **Continuous state** | Model state that changes most frames - positions, velocities, animation progress. Read directly in `refresh()` with no change detection overhead. [Reactivity](../topics/reactivity.md#three-categories-of-state) |
+| **Discrete state** | Model state that changes infrequently - scores, phases, lives, wave numbers. Watched via change detection to avoid expensive per-frame rebuilds. [Reactivity](../topics/reactivity.md#three-categories-of-state) |
 | **`deltaMs`** | Milliseconds elapsed since the last tick. The sole mechanism by which time flows into models. [Models](../learn/models.md) · [Time Management](../topics/time-management.md) |
 | **Domain units** | Position, distance, and velocity units meaningful to the game domain (tiles, world-units, slots) rather than presentation-layer measures (pixels, points). [Models](../learn/models.md) |
 | **Factory function** | A `createXxx(options)` function that returns an object satisfying an interface. Used instead of classes for encapsulation via closures. This is a project convention, not an MVT requirement. [Style Guide](style-guide.md) |

@@ -109,18 +109,19 @@ anything. See
 [Change Detection - Consumer-Defined Events](change-detection.md#change-detection-as-consumer-defined-events)
 for the full pattern.
 
-### Per-tick state is just a read
+### Continuous state is just a read
 
-Positions, velocities, animation progress - these change every frame. In a
-polling system, per-tick values are read directly with no reactive overhead:
+Positions, velocities, animation progress - continuous state that changes
+every frame. In a polling system, continuous values are read directly with no
+reactive overhead:
 
 ```ts
 // No watcher needed - just read it.
 sprite.x = model.col * TILE_SIZE;
 ```
 
-With signals, per-tick values must still be wrapped in signals for effects to
-work - but the dependency tracking overhead is pure waste when the consumer
+With signals, continuous values must still be wrapped in signals for effects
+to work - but the dependency tracking overhead is pure waste when the consumer
 reads the value every frame anyway. Events are even less suited: emitting 60
 times per second per value creates dispatch overhead for no benefit.
 
@@ -155,14 +156,14 @@ function refresh(): void {
     if (w.phase.changed) rebuildAppearance(w.phase.value);
     if (w.score.changed) scoreLabel.text = String(w.score.value);
 
-    // Per-tick values - just read directly
+    // Continuous state - just read directly
     sprite.x = model.col * TILE_SIZE;
     sprite.y = model.row * TILE_SIZE;
 }
 ```
 
-This gives the best of both worlds: cheap change detection for infrequent
-state, zero overhead for per-frame state.
+This gives the best of both worlds: cheap change detection for discrete
+state, zero overhead for continuous state.
 
 ## Limitations and Tradeoffs
 
@@ -224,7 +225,7 @@ see [Events and Signals](events-and-signals.md).
 | Model complexity | Plain getters | Must emit events | Must wrap in signals |
 | Consistency | Free (update-then-read) | Requires emit-after-mutation discipline | Requires batching and scheduling |
 | Cleanup | None | Manual `off()` per subscription | Manual `dispose()` per scope |
-| Per-tick values | Direct read, zero overhead | Wasteful (60 emits/sec) | Wasteful (60 signal writes/sec) |
+| Continuous state | Direct read, zero overhead | Wasteful (60 emits/sec) | Wasteful (60 signal writes/sec) |
 | Consumer flexibility | Watch any getter | Limited to declared events | Limited to signal-wrapped values |
 
 In a frame-based game loop, polling is the simplest approach that works

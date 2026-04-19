@@ -59,4 +59,4 @@
 | **H-cost** | Minimise per-tick computation cost | Prefer O(1) lookups over repeated traversals. Cache derived values. |
 | **H-alloc** | Avoid per-tick heap allocations in `update()` and `refresh()` | Minimises garbage collection pressure. |
 | **H-loops** | Use index-based loops and pre-allocated structures | Avoids iterator and temporary array allocation. |
-| **H-change** | Use change detection when a value changes rarely but triggers expensive work | Check every frame, rebuild only on change. |
+| **H-change** | Use change detection for discrete state that changes rarely but triggers expensive work | Check every frame, rebuild only on change. |

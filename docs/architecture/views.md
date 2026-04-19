@@ -68,10 +68,10 @@ will show stale values for that field. The idempotency and reactivity
 constraints above guard against this - they require `refresh()` to re-read
 *all* state every frame.
 
-When a value changes rarely but triggers expensive work (rebuilding a grid,
-recreating child views), change detection lets `refresh()` skip unchanged
-work - a standard retained-mode optimisation that slots naturally into the
-frame-loop lifecycle.
+When discrete state changes rarely but triggers expensive work (rebuilding a
+grid, recreating child views), change detection lets `refresh()` skip
+unchanged work - a standard retained-mode optimisation that slots naturally
+into the frame-loop lifecycle.
 
 ## What Belongs in a View
 
