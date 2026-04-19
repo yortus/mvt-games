@@ -37,7 +37,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](docs/topics/adding-a-game.md).
+- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](src/games/README.md).
 
 ## Key Conventions
 
@@ -115,7 +115,7 @@ Load the relevant skills file for task-specific instructions:
 | Section          | Content                                   |
 | ---------------- | ----------------------------------------- |
 | [Architecture](docs/architecture/index.md) | Transferable MVT specification |
-| [Learn](docs/learn/what-is-mvt.md) | Sequential introduction to MVT  |
+| [Building with MVT](docs/learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Topics](docs/topics/time-management.md) | In-depth topic pages      |
 | [Reference](docs/reference/architecture-rules.md) | Rules, style, glossary |
 | [Reactivity](docs/reactivity/index.md) | Reactivity strategy comparison |

@@ -4,8 +4,7 @@
 > codebase. These are organisational choices specific to this project, not
 > MVT architectural requirements.
 
-**Related:** [Style Guide](style-guide.md) · [Architecture Rules](architecture-rules.md) ·
-[Adding a Game](../topics/adding-a-game.md)
+**Related:** [Style Guide](style-guide.md) · [Architecture Rules](architecture-rules.md)
 
 ---
 
@@ -209,5 +208,5 @@ src/games/<name>/
     └── game-view.ts       Top-level view - wires all child views
 ```
 
-For details on creating a new game module, see
-[Adding a Game](../topics/adding-a-game.md).
+For details on creating a new game module, see the
+`src/games/README.md` in the repository.

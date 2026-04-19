@@ -3,7 +3,7 @@
 > Every MVT rule on one page. Numbered, categorized, and linkable. When a rule
 > here conflicts with a guide page, this page is the definitive authority.
 
-**Related:** [Architecture Overview](../learn/architecture-overview.md) ·
+**Related:** [The Game Loop](../learn/game-loop.md) ·
 [Style Guide](style-guide.md) · [Glossary](glossary.md)
 
 ---
@@ -41,7 +41,7 @@ files), see the [Style Guide](style-guide.md).
 
 | # | Rule | Common Examples | Rationale |
 | -- | ---- | --------------- | --------- |
-| T1 | Each frame follows a strict sequence: update, refresh, render. Never interleave or skip steps. | `model.update(deltaMs)` then `view.update(deltaMs)` (stateful views) then `view.refresh()` then renderer draws | Models settle first, then stateful views advance presentation state, then all views read a stable snapshot. [The Ticker](../learn/ticker.md) |
+| T1 | Each frame follows a strict sequence: update, refresh, render. Never interleave or skip steps. | `model.update(deltaMs)` then `view.update(deltaMs)` (stateful views) then `view.refresh()` then renderer draws | Models settle first, then stateful views advance presentation state, then all views read a stable snapshot. [The Game Loop](../learn/game-loop.md) |
 | T2 | Cap `deltaMs` to a safe maximum. | e.g. 100ms cap to handle backgrounded tabs | Prevents huge time leaps that could break non-leap-safe models. |
 | T3 | The ticker contains no domain logic and no rendering code. | No collision checks, no sprite creation | Separation of concerns. It is purely a timing orchestrator. |
 | T4 | The ticker may pause, slow down, speed up, or single-step time. | Pause overlay, slow-mo debug, frame-by-frame stepping | Models stay in sync because they only see `deltaMs`. |

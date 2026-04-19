@@ -21,7 +21,7 @@
 | Universal MVT rules | [Architecture Rules](../architecture/rules.md) |
 | This repo's code style | [Style Guide](../reference/style-guide.md) |
 | Project layout and barrels | [Project Structure](../reference/project-structure.md) |
-| Adding a new game | [Adding a Game](../topics/adding-a-game.md) |
+| Adding a new game | `src/games/README.md` |
 | All terms defined | [Glossary](../reference/glossary.md) |
 
 ## Skills Files
@@ -41,7 +41,7 @@ Load the relevant skills file for task-specific instructions:
 | Section | Content |
 |---|---|
 | [Architecture](../architecture/index.md) | Transferable MVT specification |
-| [Learn](../learn/what-is-mvt.md) | Sequential introduction to MVT |
+| [Building with MVT](../learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Topics](../topics/time-management.md) | In-depth topic pages |
 | [Reference](../reference/architecture-rules.md) | Rules, style, glossary |
 | [Reactivity](../reactivity/index.md) | Reactivity strategy comparison |

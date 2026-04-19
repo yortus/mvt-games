@@ -9,7 +9,7 @@
 
 ---
 
-*Assumes familiarity with [The Ticker](../learn/ticker.md).*
+*Assumes familiarity with [The Game Loop](../learn/game-loop.md).*
 
 ## What Counts as a Hot Path
 

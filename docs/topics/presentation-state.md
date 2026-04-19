@@ -10,7 +10,7 @@
 
 ---
 
-*Assumes familiarity with [Views](../learn/views.md) and [The Ticker](../learn/ticker.md).*
+*Assumes familiarity with [Views](../learn/views.md) and [The Game Loop](../learn/game-loop.md).*
 
 ## When Is State "Cosmetic"?
 

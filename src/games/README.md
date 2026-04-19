@@ -4,18 +4,7 @@
 > the cabinet. Covers directory structure, GameEntry/GameSession interfaces,
 > models, views, and the registration process.
 
-**Related:** [Walkthrough](../learn/walkthrough.md) · [Models (Learn)](../learn/models.md) ·
-[Views (Learn)](../learn/views.md) · [Testing](testing.md)
-
----
-
-*Assumes familiarity with the full [Learn path](../learn/what-is-mvt.md), especially the [Walkthrough](../learn/walkthrough.md).*
-
-::: info
-This page is specific to the `mvt-games` repository - it describes how to add
-a game to this particular project's cabinet system. The MVT architecture itself
-does not prescribe a cabinet, game entry, or registration mechanism.
-:::
+See the [MVT documentation](../../docs/index.md) for architecture background.
 
 ## Overview
 
@@ -87,8 +76,7 @@ src/games/breakout/
 ```
 
 Note: The `data/` directory is a practical organisational choice, not an MVT
-architectural layer. See [Walkthrough](../learn/walkthrough.md) for a real
-example.
+architectural layer.
 
 ## Step 1: Define Constants
 
@@ -144,7 +132,7 @@ Create child models for each game entity. Each child model:
 - Defines positions in domain units.
 
 Create a root game model that composes the children, following the
-advance-then-orchestrate pattern (see [Time Management](time-management.md)):
+advance-then-orchestrate pattern:
 
 ```ts
 function createGameModel(options: GameModelOptions): GameModel {

@@ -3,7 +3,7 @@
 > A model owns state and domain logic. It advances through `update(deltaMs)`,
 > knows nothing about views or rendering, and is fully testable in isolation.
 
-**Previous:** [Architecture Overview](architecture-overview.md) · **Next:** [Views](views.md)
+**Previous:** [The Game Loop](game-loop.md) · **Next:** [Views](views.md)
 
 ---
 

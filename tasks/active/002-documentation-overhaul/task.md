@@ -475,3 +475,17 @@ Phase 7 (polish):
   "Adding Visual Polish" group for presentation state; dropped walkthrough,
   next-steps, adding-a-game from docs; reactivity condensed to 3 pages under
   Reacting to Changes.
+- 2026-04-19 - **Phase 3 complete.** All 6 steps done:
+  - 3.1: Replaced Learn MVT + Topics sidebar sections with single "Building
+    with MVT" section containing 9 groups in .vitepress/config.ts.
+  - 3.2: Created learn/game-loop.md merging content from architecture-overview
+    and ticker pages. Covers frame sequence, deltaMs, ordering guarantees.
+  - 3.3: Absorbed "What is MVT?" into architecture/index.md (patterns-you-know
+    table, updated Related links).
+  - 3.4: Existing pages relocated into new sidebar groups (no file moves -
+    sidebar links reorganized).
+  - 3.5: Moved adding-a-game.md to src/games/README.md. Deleted what-is-mvt,
+    architecture-overview, ticker, walkthrough, next-steps from learn/.
+  - 3.6: Rewrote landing page to reflect Building with MVT structure. Fixed
+    ~25 cross-links across docs, reference, ai-agents, contributing, AGENTS.md.
+  - Build passes clean.

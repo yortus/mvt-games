@@ -54,50 +54,50 @@ export default withMermaid(defineConfig({
                 ],
             },
             {
-                text: 'Learn MVT',
+                text: 'Building with MVT',
                 items: [
                     { text: 'Quickstart', link: '/learn/quickstart' },
-                    { text: 'What is MVT?', link: '/learn/what-is-mvt' },
-                    { text: 'Architecture Overview', link: '/learn/architecture-overview' },
-                    { text: 'Models', link: '/learn/models' },
-                    { text: 'Views', link: '/learn/views' },
-                    { text: 'The Ticker', link: '/learn/ticker' },
-                    { text: 'Bindings', link: '/learn/bindings' },
-                    { text: 'Walkthrough', link: '/learn/walkthrough' },
-                    { text: 'Next Steps', link: '/learn/next-steps' },
-                ],
-            },
-            {
-                text: 'Topics',
-                items: [
+                    { text: 'The Game Loop', link: '/learn/game-loop' },
                     {
-                        text: 'Core Patterns',
+                        text: 'Simulating the World',
                         items: [
+                            { text: 'Models', link: '/learn/models' },
                             { text: 'Time Management', link: '/topics/time-management' },
-                            { text: 'Hot Paths', link: '/topics/hot-paths' },
-                            { text: 'Change Detection', link: '/topics/change-detection' },
+                            { text: 'Model Composition', link: '/topics/model-composition' },
                         ],
                     },
                     {
-                        text: 'Composition',
+                        text: 'Presenting the World',
                         items: [
-                            { text: 'Model Composition', link: '/topics/model-composition' },
+                            { text: 'Views', link: '/learn/views' },
+                            { text: 'Bindings', link: '/learn/bindings' },
                             { text: 'View Composition', link: '/topics/view-composition' },
                             { text: 'Bindings in Depth', link: '/topics/bindings-in-depth' },
                         ],
                     },
                     {
-                        text: 'Building',
+                        text: 'Reacting to Changes',
                         items: [
-                            { text: 'Presentation State', link: '/topics/presentation-state' },
-                            { text: 'Testing', link: '/topics/testing' },
-                            { text: 'Adding a Game', link: '/topics/adding-a-game' },
+                            { text: 'Change Detection', link: '/topics/change-detection' },
                         ],
                     },
                     {
-                        text: 'Troubleshooting',
+                        text: 'Adding Visual Polish',
+                        items: [
+                            { text: 'Presentation State', link: '/topics/presentation-state' },
+                        ],
+                    },
+                    {
+                        text: 'Iterating with Confidence',
+                        items: [
+                            { text: 'Testing', link: '/topics/testing' },
+                        ],
+                    },
+                    {
+                        text: 'Avoiding Pitfalls',
                         items: [
                             { text: 'Common Mistakes', link: '/topics/common-mistakes' },
+                            { text: 'Hot Paths', link: '/topics/hot-paths' },
                         ],
                     },
                 ],

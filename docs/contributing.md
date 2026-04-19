@@ -218,16 +218,16 @@ Current diagram inventory:
 
 | Diagram | Page | Type |
 | --- | --- | --- |
-| MVT frame loop | learn/architecture-overview.md | Mermaid flowchart |
-| Component summary | learn/architecture-overview.md | Markdown table |
+| MVT frame loop | learn/game-loop.md | Mermaid flowchart |
+| Component summary | learn/game-loop.md | Markdown table |
 | Bindings data flow | learn/bindings.md | Mermaid sequence diagram |
 | Model tree | topics/model-composition.md | Mermaid graph |
 | View tree | topics/view-composition.md | Mermaid graph |
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
-| Ticker frame sequence | learn/ticker.md | Mermaid sequence diagram |
+| Ticker frame sequence | learn/game-loop.md | Mermaid sequence diagram |
 | Reactivity reading path | reactivity/index.md | ASCII diagram |
 | Pattern reinforcement | foundations/proven-patterns.md | Mermaid flowchart |
-| Real game model/view tree | learn/walkthrough.md | Mermaid graph |
+| Real game model/view tree | (removed) | Mermaid graph |
 
 Before adding a new diagram, check this list to avoid duplicating an
 existing one. When you add a diagram, add it to this table.

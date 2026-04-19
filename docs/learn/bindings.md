@@ -4,7 +4,7 @@
 > `get*()` methods read state, `on*()` methods relay user input. This keeps
 > views decoupled from models and independently testable.
 
-**Previous:** [The Ticker](ticker.md) · **Next:** [Walkthrough](walkthrough.md)
+**Previous:** [Views](views.md)
 
 ---
 
@@ -196,7 +196,3 @@ changes.
 
 For more on optional bindings, reactive bindings, and advanced access patterns,
 see [Bindings in Depth](../topics/bindings-in-depth.md).
-
----
-
-**Next:** [Walkthrough](walkthrough.md)

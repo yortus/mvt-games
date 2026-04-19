@@ -4,7 +4,7 @@
 > has no idea of time beyond the `refresh()` call, and is constructed once then
 > updated every frame.
 
-**Previous:** [Models](models.md) · **Next:** [The Ticker](ticker.md)
+**Previous:** [Models](models.md) · **Next:** [Bindings](bindings.md)
 
 ---
 
@@ -78,9 +78,6 @@ choice. The examples on this page use this repo's conventions (factory
 functions, Pixi.js scene graphs, `onRender` hooks). See the
 [Style Guide](../reference/style-guide.md) for this repo's specific
 conventions.
-
-> **Try it live:** [Score Counter in Playground](/playground/#preset=score-counter) -
-> see how a view reads model state each frame and updates the display.
 
 ## The `refresh()` Contract
 
@@ -215,7 +212,3 @@ benefit.
 model shape, making them reusable and independently testable with mock bindings.
 
 The details of this pattern are covered in [Bindings](bindings.md).
-
----
-
-**Next:** [The Ticker](ticker.md)

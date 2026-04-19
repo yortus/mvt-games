@@ -3,7 +3,7 @@
 > Build a working MVT example in under 5 minutes - a bouncing ball with
 > gravity and floor collision.
 
-**Next:** [What is MVT?](what-is-mvt.md) (the full Learn path)
+**Next:** [The Game Loop](game-loop.md)
 
 ---
 
@@ -24,12 +24,11 @@ function createBallModel(): BallModel {
     const radius = 0.15;     // metres
     const floorY = 3;        // metres
     const gravity = 15;      // metres/s^2
-
     let x = 2;               // metres
     let y = 0.5;             // metres
     let vy = 0;              // metres/s
 
-    return {
+    const model: BallModel = {
         get x() { return x; },
         get y() { return y; },
         get radius() { return radius; },
@@ -43,6 +42,7 @@ function createBallModel(): BallModel {
             }
         },
     };
+    return model;
 }
 ```
 
@@ -64,16 +64,17 @@ function createBallView(model: BallModel): Container {
     const SCALE = 100;   // pixels per metre
 
     const gfx = new Graphics();
-    const container = new Container();
-    container.addChild(gfx);
+    const view = new Container();
+    view.addChild(gfx);
+    view.onRender = refresh;
 
-    container.onRender = () => {
+    function refresh() {
         gfx.clear();
         gfx.circle(model.x * SCALE, model.y * SCALE, model.radius * SCALE);
         gfx.fill(0xff6644);
-    };
+    }
 
-    return container;
+    return view;
 }
 ```
 
@@ -110,10 +111,7 @@ the model nor the view knows about the other's internals.
 This is MVT at its simplest: a model that simulates, a view that renders, and
 a ticker that drives the loop. To understand the architecture in depth:
 
-1. **[What is MVT?](what-is-mvt.md)** - the three layers and why they're
-   separated
+1. **[The Game Loop](game-loop.md)** - frame sequencing and `deltaMs`
 2. **[Models](models.md)** - what belongs in a model (and what doesn't)
 3. **[Views](views.md)** - the `refresh()` contract and scene graph patterns
-4. **[The Ticker](ticker.md)** - frame sequencing and `deltaMs`
-5. **[Bindings](bindings.md)** - decoupling views from specific models
-6. **[Walkthrough](walkthrough.md)** - a real game (Asteroids) dissected
+4. **[Bindings](bindings.md)** - decoupling views from specific models

@@ -9,7 +9,7 @@
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md) and [The Ticker](../learn/ticker.md).*
+*Assumes familiarity with [Models](../learn/models.md) and [The Game Loop](../learn/game-loop.md).*
 
 ## The `deltaMs` Contract (Recap)
 

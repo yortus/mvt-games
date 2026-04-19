@@ -4,10 +4,20 @@
 > applications that separates domain state from presentation by routing all
 > time through a deterministic update loop.
 
-**Related:** [Learn MVT](../learn/what-is-mvt.md) -
+**Related:** [Building with MVT](../learn/quickstart.md) -
 [Architecture Rules](rules.md)
 
 ---
+
+## How This Section Relates to the Rest of the Docs
+
+This Architecture section describes MVT as a transferable pattern. It uses
+pseudocode and is independent of any language, renderer, or framework.
+
+The [Building with MVT](../learn/quickstart.md) section teaches the
+architecture through this project's TypeScript + Pixi.js implementation.
+The [Reference](../reference/architecture-rules.md) section includes both
+universal MVT rules and repo-specific conventions.
 
 ## The Problem
 
@@ -68,7 +78,26 @@ views consume it.
   trees. The two hierarchies are decoupled through bindings and need not
   mirror each other.
 
-## Deeper
+## How MVT Relates to Patterns You Know
+
+If you have experience with UI architectures, MVT will feel familiar. It
+assembles proven ideas into a framework suited to frame-based applications:
+
+| Pattern you know  | MVT equivalent                                            |
+| ----------------- | --------------------------------------------------------- |
+| MVC Model         | **Model** - owns state and domain logic                   |
+| MVC Controller    | **Ticker** - orchestrates the frame loop                  |
+| MVVM Bindings     | **Bindings** - the `get*()`/`on*()` contract between view and model |
+| Passive View      | **View** - reads state through bindings, holds nothing    |
+| React state       | **Model** - single source of truth for domain state       |
+| React component   | **View** - renders based on current state                 |
+| Game loop          | **Ticker** - `update()` then `render()` each frame        |
+
+The key difference from typical UI architectures is that MVT is designed for
+continuous animation. There is no event-driven re-render; instead, the ticker
+drives a steady frame loop where models advance and views refresh every frame.
+
+## Go Deeper
 
 | Page | What it covers |
 |---|---|
@@ -78,14 +107,3 @@ views consume it.
 | [The Ticker](ticker.md) | Frame sequence, time ownership, determinism |
 | [Rules](rules.md) | Universal MVT constraints |
 | [Heritage](heritage.md) | The established patterns MVT assembles |
-
-## How This Section Relates to the Rest
-
-This Architecture section describes MVT as a transferable pattern. It uses
-pseudocode and is independent of any language, renderer, or framework.
-
-The [Learn](../learn/what-is-mvt.md) path teaches MVT through this project's
-TypeScript + Pixi.js implementation. The
-[Topics](../topics/time-management.md) section covers advanced usage. The
-[Reference](../reference/architecture-rules.md) section includes both
-universal MVT rules and repo-specific conventions.
