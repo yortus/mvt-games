@@ -19,7 +19,7 @@ receives at construction time:
 | `on*()`  | Relay user input   | View -> Model | `onTapped(x: number, y: number): void`    |
 
 For the language-neutral specification, see
-[Architecture: Bindings](../architecture/bindings.md).
+[Architecture: Bindings](../../architecture/bindings.md).
 
 > **Try it live:** [Keyboard Sprite in Playground](/playground/#preset=keyboard-sprite) -
 > see bindings wiring `get*()` accessors and `on*()` input handlers.
@@ -195,4 +195,4 @@ property is named `posX` but the view expects `getX()`, only the wiring
 changes.
 
 For more on optional bindings, live binding rules, and advanced access patterns,
-see [Bindings in Depth](../topics/bindings-in-depth.md).
+see [Bindings in Depth](bindings-in-depth.md).

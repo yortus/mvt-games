@@ -252,10 +252,10 @@ Re-export through the directory's barrel file (`index.ts`).
 
 ## Full References
 
-- [Models (Learn)](../learn/models.md) - introduction from scratch
-- [Time Management](../topics/time-management.md) - GSAP recipes, advance-then-orchestrate
-- [Model Composition](../topics/model-composition.md) - parent-child delegation
+- [Models (Learn)](../building-with-mvt/simulating-the-world/models.md) - introduction from scratch
+- [Time Management](../building-with-mvt/simulating-the-world/time-management.md) - GSAP recipes, advance-then-orchestrate
+- [Model Composition](../building-with-mvt/simulating-the-world/model-composition.md) - parent-child delegation
 - [Architecture Rules](../architecture/rules.md) - all model rules (M-time through M-composition)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../topics/hot-paths.md) - performance rules for `update()`
-- [Testing Models](../topics/testing-models.md) - testing models, `advanceTime` helper
+- [Hot Paths](../building-with-mvt/avoiding-pitfalls/hot-paths.md) - performance rules for `update()`
+- [Testing Models](../building-with-mvt/iterating-with-confidence/testing-models.md) - testing models, `advanceTime` helper

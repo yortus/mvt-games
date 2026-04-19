@@ -4,15 +4,15 @@
 > Create one, call methods, advance time, assert public state. No DOM,
 > no canvas, no real timers.
 
-**Related:** [Models (Learn)](../learn/models.md) -
-[Time Management](time-management.md) -
-[Model Composition](model-composition.md) -
+**Related:** [Models (Learn)](../simulating-the-world/models.md) -
+[Time Management](../simulating-the-world/time-management.md) -
+[Model Composition](../simulating-the-world/model-composition.md) -
 [Testing Views](testing-views.md)
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md) and
-[Time Management](time-management.md).*
+*Assumes familiarity with [Models](../simulating-the-world/models.md) and
+[Time Management](../simulating-the-world/time-management.md).*
 
 ## The Pattern
 

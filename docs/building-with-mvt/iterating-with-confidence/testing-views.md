@@ -4,14 +4,14 @@
 > view produce the right visual output for a given set of inputs? The
 > answer is less straightforward than it sounds.
 
-**Related:** [Views (Learn)](../learn/views.md) -
-[Presentation State](presentation-state.md) -
+**Related:** [Views (Learn)](../presenting-the-world/views.md) -
+[Presentation State](../adding-visual-polish/presentation-state.md) -
 [Testing Models](testing-models.md)
 
 ---
 
-*Assumes familiarity with [Views](../learn/views.md) and
-[Bindings](../learn/bindings.md).*
+*Assumes familiarity with [Views](../presenting-the-world/views.md) and
+[Bindings](../presenting-the-world/bindings.md).*
 
 ## The Challenge
 
@@ -168,7 +168,7 @@ Visual snapshots require discipline to avoid becoming noise:
 ### Testing views with presentation state
 
 Views with `update(deltaMs)` (those holding
-[presentation state](presentation-state.md)) need time advanced before
+[presentation state](../adding-visual-polish/presentation-state.md)) need time advanced before
 the snapshot is taken. Use the same small-step approach as model tests:
 
 ```ts

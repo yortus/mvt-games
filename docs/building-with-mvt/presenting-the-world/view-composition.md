@@ -5,12 +5,13 @@
 > not need to mirror the model tree - views are structured for presentation
 > needs, not model structure.
 
-**Related:** [Views (Learn)](../learn/views.md) ·
-[Model Composition](model-composition.md) · [Bindings in Depth](bindings-in-depth.md)
+**Related:** [Views (Learn)](views.md) ·
+[Model Composition](../simulating-the-world/model-composition.md) · [Bindings in Depth](bindings-in-depth.md) ·
+[Taming Complex Views](../adding-visual-polish/taming-complex-views.md)
 
 ---
 
-*Assumes familiarity with [Views](../learn/views.md) and [Bindings](../learn/bindings.md).*
+*Assumes familiarity with [Views](views.md) and [Bindings](bindings.md).*
 
 ## Parent Views Wire Child Bindings
 
@@ -136,7 +137,7 @@ function refresh(): void {
 ```
 
 For the full change detection pattern, see
-[Change Detection](change-detection.md).
+[Change Detection](../reacting-to-changes/change-detection.md).
 
 ---
 
@@ -174,4 +175,4 @@ model internals directly, the two trees can be shaped independently.
 ---
 
 For more on how the model side composes, see
-[Model Composition](model-composition.md).
+[Model Composition](../simulating-the-world/model-composition.md).

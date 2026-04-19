@@ -4,15 +4,15 @@
 > open, closing, closed. This page shows how to model these transitions
 > cleanly using a single `phase` value and a single `progress` number.
 
-**Related:** [Presentation State](presentation-state.md) -
+**Related:** [Presentation State](../adding-visual-polish/presentation-state.md) -
 [Open-Ended Phases](open-ended-phases.md) -
 [Complex Sequences](complex-sequences.md) -
-[Time Management](time-management.md)
+[Time Management](../simulating-the-world/time-management.md)
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md) and
-[Presentation State](presentation-state.md).*
+*Assumes familiarity with [Models](../simulating-the-world/models.md) and
+[Presentation State](../adding-visual-polish/presentation-state.md).*
 
 ## The Scenario
 
@@ -30,7 +30,7 @@ how far through that phase you are.
 The simplest version of this is a boolean - `isOpen` - that flips between
 two states. This works when the transition is instantaneous or when the
 view handles the transition entirely as presentation state (see
-[Presentation State](presentation-state.md)):
+[Presentation State](../adding-visual-polish/presentation-state.md)):
 
 ```ts
 interface DoorModel {
@@ -213,7 +213,7 @@ know about the transition.
 
 When phases live in the view as presentation state, the same `phase` +
 `progress` pattern applies - it just lives in the view's `update()` method
-rather than the model. See [Presentation State](presentation-state.md) for
+rather than the model. See [Presentation State](../adding-visual-polish/presentation-state.md) for
 how views manage their own timed state.
 
 ## A Real Example: Match-3 Board Phases

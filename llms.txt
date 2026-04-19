@@ -47,9 +47,8 @@ presentation state, refresh views, render. Models settle before views read.
 ## Documentation
 
 - docs/architecture/ - transferable MVT specification (language-neutral)
-- docs/learn/ - sequential introduction (8 pages)
+- docs/learn/ - sequential introduction (5 pages)
 - docs/topics/ - in-depth topic pages (time, composition, testing, etc.)
 - docs/reference/ - rules, style guide, glossary, project structure
-- docs/reactivity/ - events vs signals vs polling comparison
 - docs/ai-agents/ - agent orientation and task-specific skills files
 - AGENTS.md - compressed agent entry point (canonical)

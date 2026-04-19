@@ -5,18 +5,18 @@
 > page explores how to handle phases where `progress` has no obvious
 > meaning, and how to pair them with cyclic animations.
 
-**Related:** [Phase-Based Transitions](phase-transitions.md) -
+**Related:** [Phase-Based Transitions](phase-based-transitions.md) -
 [Complex Sequences](complex-sequences.md) -
-[Presentation State](presentation-state.md) -
-[Time Management](time-management.md)
+[Presentation State](../adding-visual-polish/presentation-state.md) -
+[Time Management](../simulating-the-world/time-management.md)
 
 ---
 
-*Assumes familiarity with [Phase-Based Transitions](phase-transitions.md).*
+*Assumes familiarity with [Phase-Based Transitions](phase-based-transitions.md).*
 
 ## The Problem
 
-The [previous page](phase-transitions.md) introduced the `phase` +
+The [previous page](phase-based-transitions.md) introduced the `phase` +
 `progress` pattern for transitions with fixed durations. A banner opens
 over 300ms, displays for 2000ms, closes over 200ms. Every phase has a
 known duration, so `progress` (0..1) always has a clear meaning.

@@ -4,15 +4,15 @@
 > efficient reactivity for view bindings that change rarely but trigger
 > expensive work.
 
-**Related:** [Reactivity: Why Polling](reactivity.md) -
+**Related:** [Reactivity: Why Polling](why-polling.md) -
 [Events and Signals](events-and-signals.md) -
-[Bindings (Learn)](../learn/bindings.md) -
-[Bindings in Depth](bindings-in-depth.md) -
-[Hot Paths](hot-paths.md)
+[Bindings (Learn)](../presenting-the-world/bindings.md) -
+[Bindings in Depth](../presenting-the-world/bindings-in-depth.md) -
+[Hot Paths](../avoiding-pitfalls/hot-paths.md)
 
 ---
 
-*Assumes familiarity with [Bindings](../learn/bindings.md) and [Views](../learn/views.md).*
+*Assumes familiarity with [Bindings](../presenting-the-world/bindings.md) and [Views](../presenting-the-world/views.md).*
 
 > **Terminology note:** We use "change detection" in its literal sense -
 > comparing a current value against a previous value. This is distinct from
@@ -187,5 +187,5 @@ when the count actually changes does the rebuild run.
 
 ---
 
-For the basics of bindings, see [Bindings (Learn)](../learn/bindings.md).
-For hot-path considerations, see [Hot Paths](hot-paths.md).
+For the basics of bindings, see [Bindings (Learn)](../presenting-the-world/bindings.md).
+For hot-path considerations, see [Hot Paths](../avoiding-pitfalls/hot-paths.md).

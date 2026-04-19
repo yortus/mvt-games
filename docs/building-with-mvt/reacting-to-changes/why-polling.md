@@ -6,8 +6,8 @@
 
 **Related:** [Change Detection](change-detection.md) -
 [Events and Signals](events-and-signals.md) -
-[The Game Loop](../learn/game-loop.md) -
-[Hot Paths](hot-paths.md)
+[The Game Loop](../the-game-loop.md) -
+[Hot Paths](../avoiding-pitfalls/hot-paths.md)
 
 ---
 

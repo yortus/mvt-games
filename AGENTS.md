@@ -71,12 +71,12 @@ update its progress log, and move it to `archive/` when done.
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead.
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/topics/time-management.md)
-2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` method. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/topics/presentation-state.md)
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/building-with-mvt/simulating-the-world/time-management.md)
+2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` method. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/building-with-mvt/adding-visual-polish/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/topics/hot-paths.md)
-6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/learn/models.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/avoiding-pitfalls/hot-paths.md)
+6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)
 
 Full rules: [Architecture Rules](docs/architecture/rules.md)
 
@@ -115,8 +115,7 @@ Load the relevant skills file for task-specific instructions:
 | Section          | Content                                   |
 | ---------------- | ----------------------------------------- |
 | [Architecture](docs/architecture/index.md) | Transferable MVT specification |
-| [Building with MVT](docs/learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
-| [Topics](docs/topics/time-management.md) | In-depth topic pages      |
+| [Building with MVT](docs/building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Reference](docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
 | [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
 

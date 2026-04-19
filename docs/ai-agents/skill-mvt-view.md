@@ -274,12 +274,12 @@ function createEntityView(bindings: EntityViewBindings): Container {
 
 ## Full References
 
-- [Views (Learn)](../learn/views.md) - introduction from scratch
-- [Bindings (Learn)](../learn/bindings.md) - the bindings pattern
-- [Bindings in Depth](../topics/bindings-in-depth.md) - advanced bindings topics
-- [Change Detection](../topics/change-detection.md) - the Watch pattern
-- [View Composition](../topics/view-composition.md) - view hierarchies
-- [Presentation State](../topics/presentation-state.md) - view models and presentation state
+- [Views (Learn)](../building-with-mvt/presenting-the-world/views.md) - introduction from scratch
+- [Bindings (Learn)](../building-with-mvt/presenting-the-world/bindings.md) - the bindings pattern
+- [Bindings in Depth](../building-with-mvt/presenting-the-world/bindings-in-depth.md) - advanced bindings topics
+- [Change Detection](../building-with-mvt/reacting-to-changes/change-detection.md) - the Watch pattern
+- [View Composition](../building-with-mvt/presenting-the-world/view-composition.md) - view hierarchies
+- [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../topics/hot-paths.md) - performance rules for `refresh()`
+- [Hot Paths](../building-with-mvt/avoiding-pitfalls/hot-paths.md) - performance rules for `refresh()`

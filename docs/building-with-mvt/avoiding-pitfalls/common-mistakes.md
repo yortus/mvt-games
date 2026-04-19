@@ -3,12 +3,12 @@
 > A quick-reference table of mistakes commonly made in MVT codebases, with
 > symptoms, causes, and fixes.
 
-**Related:** [Time Management](time-management.md) · [Hot Paths](hot-paths.md) ·
-[Bindings in Depth](bindings-in-depth.md)
+**Related:** [Time Management](../simulating-the-world/time-management.md) · [Hot Paths](hot-paths.md) ·
+[Bindings in Depth](../presenting-the-world/bindings-in-depth.md)
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md) and [Views](../learn/views.md).*
+*Assumes familiarity with [Models](../simulating-the-world/models.md) and [Views](../presenting-the-world/views.md).*
 
 ## Mistake Reference
 
@@ -52,7 +52,7 @@ update(deltaMs) {
 }
 ```
 
-See [Time Management](time-management.md).
+See [Time Management](../simulating-the-world/time-management.md).
 
 ## 2. Caching a binding at construction
 
@@ -74,7 +74,7 @@ function refresh(): void {
 }
 ```
 
-See [Bindings in Depth](bindings-in-depth.md).
+See [Bindings in Depth](../presenting-the-world/bindings-in-depth.md).
 
 ## 3. Pixel coordinates in a model
 
@@ -95,7 +95,7 @@ readonly x: number;  // world-units
 container.position.x = bindings.getX() * SCALE;
 ```
 
-See [Models (Learn)](../learn/models.md).
+See [Models (Learn)](../simulating-the-world/models.md).
 
 ## 4. Per-tick allocations in `refresh()`
 
@@ -137,7 +137,7 @@ update(deltaMs) {
 }
 ```
 
-See [Time Management](time-management.md).
+See [Time Management](../simulating-the-world/time-management.md).
 
 ## 6. Zero-duration GSAP tweens
 
@@ -153,7 +153,7 @@ has zero duration. GSAP treats it as "already passed" on a paused timeline.
 const dist = Math.abs(targetCol - state.x) + Math.abs(targetRow - state.y) || 0.001;
 ```
 
-See [Time Management](time-management.md).
+See [Time Management](../simulating-the-world/time-management.md).
 
 ## 7. Auto-playing a GSAP timeline
 
@@ -173,7 +173,7 @@ const tl = gsap.timeline();
 const tl = gsap.timeline({ paused: true, autoRemoveChildren: true });
 ```
 
-See [Time Management](time-management.md).
+See [Time Management](../simulating-the-world/time-management.md).
 
 ## 8. Domain logic in a view
 
@@ -186,7 +186,7 @@ transitions that belong in the model.
 **Fix:** Move all domain logic to the model. The view should only read state
 and update the presentation.
 
-See [Views (Learn)](../learn/views.md).
+See [Views (Learn)](../presenting-the-world/views.md).
 
 ## 9. View holding domain state
 
@@ -199,5 +199,5 @@ model.
 **Fix:** Move the state to the model. Views should be replaceable without
 losing any information the application depends on.
 
-See [Presentation State](presentation-state.md) for the narrow exception
+See [Presentation State](../adding-visual-polish/presentation-state.md) for the narrow exception
 where views may hold cosmetic animation state.

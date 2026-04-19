@@ -3,12 +3,12 @@
 > Advanced bindings topics: optional `get*()` and `on*()` members, live
 > binding rules, and a decision framework for choosing how views access state.
 
-**Related:** [Bindings (Learn)](../learn/bindings.md) · [Views (Learn)](../learn/views.md) ·
+**Related:** [Bindings (Learn)](bindings.md) · [Views (Learn)](views.md) ·
 [View Composition](view-composition.md)
 
 ---
 
-*Assumes familiarity with [Bindings](../learn/bindings.md) and [Views](../learn/views.md).*
+*Assumes familiarity with [Bindings](bindings.md) and [Views](views.md).*
 
 ## Optional `on*()` Bindings
 
@@ -66,7 +66,7 @@ reactivity. The bindings are dynamic, not self-notifying.)
 A view must never cache a binding's return value at construction time and
 assume it will stay the same. Every value a view depends on must be
 re-evaluated in `refresh()`, either by calling the binding directly or through
-change detection (see [Change Detection](change-detection.md)).
+change detection (see [Change Detection](../reacting-to-changes/change-detection.md)).
 
 ```ts
 // Wrong - cached at construction, never re-evaluated
@@ -148,4 +148,4 @@ modifying. With direct structural access, one or both would need to change.
 
 ---
 
-For the basics of bindings, see [Bindings (Learn)](../learn/bindings.md).
+For the basics of bindings, see [Bindings (Learn)](bindings.md).

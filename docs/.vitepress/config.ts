@@ -56,61 +56,61 @@ export default withMermaid(defineConfig({
             {
                 text: 'Building with MVT',
                 items: [
-                    { text: 'Quickstart', link: '/learn/quickstart' },
-                    { text: 'The Game Loop', link: '/learn/game-loop' },
+                    { text: 'Quickstart', link: '/building-with-mvt/quickstart' },
+                    { text: 'The Game Loop', link: '/building-with-mvt/the-game-loop' },
                     {
                         text: 'Simulating the World',
                         items: [
-                            { text: 'Models', link: '/learn/models' },
-                            { text: 'Time Management', link: '/topics/time-management' },
-                            { text: 'Model Composition', link: '/topics/model-composition' },
+                            { text: 'Models', link: '/building-with-mvt/simulating-the-world/models' },
+                            { text: 'Time Management', link: '/building-with-mvt/simulating-the-world/time-management' },
+                            { text: 'Model Composition', link: '/building-with-mvt/simulating-the-world/model-composition' },
                         ],
                     },
                     {
                         text: 'Presenting the World',
                         items: [
-                            { text: 'Views', link: '/learn/views' },
-                            { text: 'Bindings', link: '/learn/bindings' },
-                            { text: 'View Composition', link: '/topics/view-composition' },
-                            { text: 'Bindings in Depth', link: '/topics/bindings-in-depth' },
+                            { text: 'Views', link: '/building-with-mvt/presenting-the-world/views' },
+                            { text: 'Bindings', link: '/building-with-mvt/presenting-the-world/bindings' },
+                            { text: 'View Composition', link: '/building-with-mvt/presenting-the-world/view-composition' },
+                            { text: 'Bindings in Depth', link: '/building-with-mvt/presenting-the-world/bindings-in-depth' },
                         ],
                     },
                     {
                         text: 'Reacting to Changes',
                         items: [
-                            { text: 'Why Polling', link: '/topics/reactivity' },
-                            { text: 'Change Detection', link: '/topics/change-detection' },
-                            { text: 'Events and Signals', link: '/topics/events-and-signals' },
+                            { text: 'Why Polling', link: '/building-with-mvt/reacting-to-changes/why-polling' },
+                            { text: 'Change Detection', link: '/building-with-mvt/reacting-to-changes/change-detection' },
+                            { text: 'Events and Signals', link: '/building-with-mvt/reacting-to-changes/events-and-signals' },
                         ],
                     },
                     {
                         text: 'Adding Visual Polish',
                         items: [
-                            { text: 'Presentation State', link: '/topics/presentation-state' },
-                            { text: 'Taming Complex Views', link: '/topics/managing-view-complexity' },
+                            { text: 'Presentation State', link: '/building-with-mvt/adding-visual-polish/presentation-state' },
+                            { text: 'Taming Complex Views', link: '/building-with-mvt/adding-visual-polish/taming-complex-views' },
                         ],
                     },
                     {
                         text: 'Animating Transitions',
                         items: [
-                            { text: 'Phase-Based Transitions', link: '/topics/phase-transitions' },
-                            { text: 'Open-Ended Phases', link: '/topics/open-ended-phases' },
-                            { text: 'Complex Sequences', link: '/topics/complex-sequences' },
+                            { text: 'Phase-Based Transitions', link: '/building-with-mvt/animating-transitions/phase-based-transitions' },
+                            { text: 'Open-Ended Phases', link: '/building-with-mvt/animating-transitions/open-ended-phases' },
+                            { text: 'Complex Sequences', link: '/building-with-mvt/animating-transitions/complex-sequences' },
                         ],
                     },
                     {
                         text: 'Iterating with Confidence',
                         items: [
-                            { text: 'Testing', link: '/topics/testing' },
-                            { text: 'Testing Models', link: '/topics/testing-models' },
-                            { text: 'Testing Views', link: '/topics/testing-views' },
+                            { text: 'Testing', link: '/building-with-mvt/iterating-with-confidence/testing' },
+                            { text: 'Testing Models', link: '/building-with-mvt/iterating-with-confidence/testing-models' },
+                            { text: 'Testing Views', link: '/building-with-mvt/iterating-with-confidence/testing-views' },
                         ],
                     },
                     {
                         text: 'Avoiding Pitfalls',
                         items: [
-                            { text: 'Common Mistakes', link: '/topics/common-mistakes' },
-                            { text: 'Hot Paths', link: '/topics/hot-paths' },
+                            { text: 'Common Mistakes', link: '/building-with-mvt/avoiding-pitfalls/common-mistakes' },
+                            { text: 'Hot Paths', link: '/building-with-mvt/avoiding-pitfalls/hot-paths' },
                         ],
                     },
                 ],
@@ -132,6 +132,7 @@ export default withMermaid(defineConfig({
                     { text: 'Skill: MVT Model', link: '/ai-agents/skill-mvt-model' },
                     { text: 'Skill: MVT View', link: '/ai-agents/skill-mvt-view' },
                     { text: 'Skill: Code Style', link: '/ai-agents/skill-code-style' },
+                    { text: 'Skill: Code Review', link: '/ai-agents/skill-code-review' },
                     { text: 'Skill: Documentation', link: '/ai-agents/skill-documentation' },
                 ],
             },

@@ -7,14 +7,20 @@
 
 ## Documentation Structure
 
-The docs are organized into six sections. Place new content in the right one:
+The docs are organized into five sections. Place new content in the right one:
 
 | Section | Purpose | Content style |
 | --- | --- | --- |
-| **learn/** | Sequential introduction to MVT | Progressive, builds on previous pages |
-| **topics/** | In-depth topic pages (any order) | Self-contained, detailed, with prerequisites |
+| **architecture/** | Transferable MVT specification | Language-neutral, defines models/views/bindings/ticker/rules |
+| **building-with-mvt/** | Progressive guide, with sub-group directories | Entry pages (quickstart, game loop) plus nested topic dirs |
+| **building-with-mvt/simulating-the-world/** | Models, time, composition | Progressive, self-contained |
+| **building-with-mvt/presenting-the-world/** | Views, bindings, view composition | Progressive, self-contained |
+| **building-with-mvt/reacting-to-changes/** | Polling, change detection, events | Progressive, self-contained |
+| **building-with-mvt/adding-visual-polish/** | Presentation state, view models | Progressive, self-contained |
+| **building-with-mvt/animating-transitions/** | Transitions and sequences | Progressive, self-contained |
+| **building-with-mvt/iterating-with-confidence/** | Testing approaches | Progressive, self-contained |
+| **building-with-mvt/avoiding-pitfalls/** | Mistakes and performance | Progressive, self-contained |
 | **reference/** | Quick-lookup resources | Terse, scannable, complete |
-| **foundations/** | MVT's pattern heritage | Academic, connecting to established patterns |
 | **ai-agents/** | Agent orientation and skills files | Compressed, task-oriented |
 
 ## Page Template
@@ -26,8 +32,8 @@ Every docs page must follow this structure:
 
 > Brief 2-3 sentence summary of what this page covers.
 
-**Prerequisites:** [Link to prior page] (learn/ pages only)
-**Related:** [Link], [Link] (topics/ and reference/ pages)
+**Previous:** [Link to prior page] (guide pages)
+**Related:** [Link], [Link]
 
 ---
 
@@ -35,13 +41,13 @@ Every docs page must follow this structure:
 
 ---
 
-**Next:** [Link to next page] (learn/ pages only)
+**Next:** [Link to next page] (guide pages)
 ```
 
 - The summary line is mandatory. It is the skim layer - a reader who reads
   only this should understand the page's scope.
-- `learn/` pages use **Prerequisites** and **Next** to form a chain.
-- `topics/` and `reference/` pages use **Related** to connect to siblings.
+- Guide pages use **Previous** and **Next** to form a reading chain.
+- All pages use **Related** to connect to siblings.
 
 ## Writing Rules
 
@@ -78,7 +84,8 @@ Every docs page must follow this structure:
 These are separate concerns. Never conflate them:
 
 - **MVT architecture:** generally applicable rules (models own state, views
-  are stateless, ticker drives time). Documented in `learn/` and `topics/`.
+  are stateless, ticker drives time). Documented in the guide pages under
+  "Building with MVT".
 - **Code style:** conventions specific to this repo (factory functions, naming
   rules, barrel files). Documented in `reference/style-guide.md`.
 
@@ -135,8 +142,8 @@ Code examples must follow the project's code conventions:
 When adding or modifying a page:
 
 1. Add the page to **Related** lines on sibling pages.
-2. For `learn/` pages, update **Next** on the previous page and
-   **Prerequisites** on the new page.
+2. For guide pages, update **Next** on the previous page and
+   **Previous** on the new page.
 3. Add new terms to [reference/glossary.md](../reference/glossary.md).
 4. Update the sidebar in the VitePress configuration.
 5. Check that all internal links resolve (no broken references).

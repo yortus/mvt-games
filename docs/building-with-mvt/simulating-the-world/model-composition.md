@@ -4,12 +4,12 @@
 > delegates to child models, each independently testable. Cross-cutting
 > concerns like collisions and scoring live in the parent.
 
-**Related:** [Models (Learn)](../learn/models.md) ·
-[View Composition](view-composition.md) · [Testing Models](testing-models.md)
+**Related:** [Models (Learn)](models.md) ·
+[View Composition](../presenting-the-world/view-composition.md) · [Testing Models](../iterating-with-confidence/testing-models.md)
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md).*
+*Assumes familiarity with [Models](models.md).*
 
 ## Parent-Child Delegation
 
@@ -142,4 +142,4 @@ test('bullet destroys asteroid on collision', () => {
 });
 ```
 
-For more on testing strategies, see [Testing Models](testing-models.md).
+For more on testing strategies, see [Testing Models](../iterating-with-confidence/testing-models.md).

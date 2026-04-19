@@ -3,7 +3,7 @@
 > A model owns state and domain logic. It advances through `update(deltaMs)`,
 > knows nothing about views or rendering, and is fully testable in isolation.
 
-**Previous:** [The Game Loop](game-loop.md) · **Next:** [Views](views.md)
+**Previous:** [The Game Loop](../the-game-loop.md) · **Next:** [Views](../presenting-the-world/views.md)
 
 ---
 
@@ -20,7 +20,7 @@ current state of the application lives in a model. Views are just windows
 looking into that simulation.
 
 For the language-neutral specification, see
-[Architecture: Models](../architecture/models.md).
+[Architecture: Models](../../architecture/models.md).
 
 ## A Minimal Model
 
@@ -77,7 +77,7 @@ factory functions, how you name things - is a style choice. The examples on
 this page use the conventions of this repo (factory functions, closure-scoped
 private state, getter-based interfaces). Other codebases using MVT could use
 classes, MobX observables, or any other style without affecting the
-architecture. See the [Style Guide](../reference/style-guide.md) for this
+architecture. See the [Style Guide](../../reference/style-guide.md) for this
 repo's specific conventions.
 
 ## The `update(deltaMs)` Contract
@@ -259,7 +259,7 @@ type), and construction is tied to a specific `new` call, making it harder to
 substitute implementations in tests or swap in alternative strategies.
 
 For this repo's full naming rules and code conventions, see
-[Style Guide](../reference/style-guide.md).
+[Style Guide](../../reference/style-guide.md).
 
 ## Model Composition
 
@@ -282,8 +282,8 @@ without the parent. The parent's tests focus on the orchestration: do
 collisions register correctly? Do phases transition at the right time?
 
 For more on composition patterns, see
-[Model Composition](../topics/model-composition.md).
+[Model Composition](model-composition.md).
 
 ---
 
-**Next:** [Views](views.md)
+**Next:** [Views](../presenting-the-world/views.md)

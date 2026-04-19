@@ -3,7 +3,7 @@
 > Build a working MVT example in under 5 minutes - a bouncing ball with
 > gravity and floor collision.
 
-**Next:** [The Game Loop](game-loop.md)
+**Next:** [The Game Loop](the-game-loop.md)
 
 ---
 
@@ -111,7 +111,7 @@ the model nor the view knows about the other's internals.
 This is MVT at its simplest: a model that simulates, a view that renders, and
 a ticker that drives the loop. To understand the architecture in depth:
 
-1. **[The Game Loop](game-loop.md)** - frame sequencing and `deltaMs`
-2. **[Models](models.md)** - what belongs in a model (and what doesn't)
-3. **[Views](views.md)** - the `refresh()` contract and scene graph patterns
-4. **[Bindings](bindings.md)** - decoupling views from specific models
+1. **[The Game Loop](the-game-loop.md)** - frame sequencing and `deltaMs`
+2. **[Models](simulating-the-world/models.md)** - what belongs in a model (and what doesn't)
+3. **[Views](presenting-the-world/views.md)** - the `refresh()` contract and scene graph patterns
+4. **[Bindings](presenting-the-world/bindings.md)** - decoupling views from specific models

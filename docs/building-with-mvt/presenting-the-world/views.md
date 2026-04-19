@@ -4,7 +4,7 @@
 > has no idea of time beyond the `refresh()` call, and is constructed once
 > then updated every frame.
 
-**Previous:** [Models](models.md) · **Next:** [Bindings](bindings.md)
+**Previous:** [Models](../simulating-the-world/models.md) · **Next:** [Bindings](bindings.md)
 
 ---
 
@@ -25,7 +25,7 @@ hold [presentation state](#presentation-state) for cosmetic transitions -
 In this project, views typically use Pixi.js containers and manage scene
 graphs. The examples below reflect this, but the MVT pattern applies to any
 presentation target. For the language-neutral specification, see
-[Architecture: Views](../architecture/views.md).
+[Architecture: Views](../../architecture/views.md).
 
 ## A Minimal View
 
@@ -78,7 +78,7 @@ Everything else - whether you use factory functions or classes, Pixi.js
 containers or DOM elements, `onRender` hooks or manual call sites - is a style
 choice. The examples on this page use this repo's conventions (factory
 functions, Pixi.js scene graphs, `onRender` hooks). See the
-[Style Guide](../reference/style-guide.md) for this repo's specific
+[Style Guide](../../reference/style-guide.md) for this repo's specific
 conventions.
 
 ## The `refresh()` Contract
@@ -124,7 +124,7 @@ retained-mode (the scene graph persists across frames and is mutated, not
 recreated). You get immediate-mode correctness - no stale state, no
 subscription bugs - with retained-mode efficiency - no per-frame object
 allocation. For the full explanation, see
-[Architecture: Views](../architecture/views.md#immediate-mode-data-flow-retained-mode-output).
+[Architecture: Views](../../architecture/views.md#immediate-mode-data-flow-retained-mode-output).
 
 ```ts
 function createBulletView(bindings: BulletViewBindings): Container {
@@ -201,7 +201,7 @@ internally.
 
 For the full guide on presentation state - what qualifies, how views own it,
 when to extract a view model - see
-[Presentation State](../topics/presentation-state.md).
+[Presentation State](../adding-visual-polish/presentation-state.md).
 
 ## Two Kinds of Views
 

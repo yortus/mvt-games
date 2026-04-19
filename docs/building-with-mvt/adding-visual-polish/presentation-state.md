@@ -5,14 +5,15 @@
 > shake - for visual feedback that the model doesn't track. This page explains
 > what presentation state is, when it is useful, and how to implement it.
 
-**Related:** [Views (Learn)](../learn/views.md) -
-[Taming Complex Views](managing-view-complexity.md) -
-[View Composition](view-composition.md) -
-[The Game Loop](../learn/game-loop.md)
+**Related:** [Views (Learn)](../presenting-the-world/views.md) -
+[Taming Complex Views](taming-complex-views.md) -
+[Phase-Based Transitions](../animating-transitions/phase-based-transitions.md) -
+[View Composition](../presenting-the-world/view-composition.md) -
+[The Game Loop](../the-game-loop.md)
 
 ---
 
-*Assumes familiarity with [Views](../learn/views.md) and [The Game Loop](../learn/game-loop.md).*
+*Assumes familiarity with [Views](../presenting-the-world/views.md) and [The Game Loop](../the-game-loop.md).*
 
 ## What Is Presentation State?
 
@@ -224,5 +225,5 @@ keeping complex views understandable.
 
 ---
 
-**Next:** [Taming Complex Views](managing-view-complexity.md) -
+**Next:** [Taming Complex Views](taming-complex-views.md) -
 strategies for keeping views with presentation state under control.

@@ -5,9 +5,9 @@
 > keeping complex views under control.
 
 **Related:** [Presentation State](presentation-state.md) -
-[Views (Learn)](../learn/views.md) -
-[View Composition](view-composition.md) -
-[Testing Views](testing-views.md)
+[Views (Learn)](../presenting-the-world/views.md) -
+[View Composition](../presenting-the-world/view-composition.md) -
+[Testing Views](../iterating-with-confidence/testing-views.md)
 
 ---
 
@@ -303,8 +303,8 @@ the coordination logic itself is what needs testing.
 
 ---
 
-**Next:** [Phase-Based Transitions](phase-transitions.md) - modelling
+**Next:** [Phase-Based Transitions](../animating-transitions/phase-based-transitions.md) - modelling
 components that cycle through mutually-exclusive phases.
 
-**See also:** [View Composition](view-composition.md) -
-[Testing Views](testing-views.md)
+**See also:** [View Composition](../presenting-the-world/view-composition.md) -
+[Testing Views](../iterating-with-confidence/testing-views.md)

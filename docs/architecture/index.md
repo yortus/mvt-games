@@ -4,7 +4,7 @@
 > applications that separates domain state from presentation by routing all
 > time through a deterministic update loop.
 
-**Related:** [Building with MVT](../learn/quickstart.md) -
+**Related:** [Building with MVT](../building-with-mvt/quickstart.md) -
 [Architecture Rules](rules.md)
 
 ---
@@ -14,7 +14,7 @@
 This Architecture section describes MVT as a transferable pattern. It uses
 pseudocode and is independent of any language, renderer, or framework.
 
-The [Building with MVT](../learn/quickstart.md) section teaches the
+The [Building with MVT](../building-with-mvt/quickstart.md) section teaches the
 architecture through this project's TypeScript + Pixi.js implementation.
 The [Reference](../reference/architecture-rules.md) section includes both
 universal MVT rules and repo-specific conventions.

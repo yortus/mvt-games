@@ -4,9 +4,9 @@
 > deterministic - call `update()`, assert state. Views produce pixels -
 > capture and compare. Neither depends on the other.
 
-**Related:** [Models (Learn)](../learn/models.md) -
-[Views (Learn)](../learn/views.md) -
-[Model Composition](model-composition.md)
+**Related:** [Models (Learn)](../simulating-the-world/models.md) -
+[Views (Learn)](../presenting-the-world/views.md) -
+[Model Composition](../simulating-the-world/model-composition.md)
 
 ---
 

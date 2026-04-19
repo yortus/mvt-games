@@ -4,9 +4,9 @@
 > constraints that change the cost-benefit calculation. This page examines
 > where each approach helps, and where it creates friction.
 
-**Related:** [Reactivity: Why MVT Uses Polling](reactivity.md) -
+**Related:** [Reactivity: Why MVT Uses Polling](why-polling.md) -
 [Change Detection](change-detection.md) -
-[The Game Loop](../learn/game-loop.md)
+[The Game Loop](../the-game-loop.md)
 
 ---
 
@@ -449,5 +449,5 @@ unnecessary.
 
 ---
 
-**See also:** [Reactivity: Why MVT Uses Polling](reactivity.md) -
+**See also:** [Reactivity: Why MVT Uses Polling](why-polling.md) -
 [Change Detection](change-detection.md)

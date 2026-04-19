@@ -41,7 +41,7 @@ Load the relevant skills file for task-specific instructions:
 | Section | Content |
 |---|---|
 | [Architecture](../architecture/index.md) | Transferable MVT specification |
-| [Building with MVT](../learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
-| [Topics](../topics/time-management.md) | In-depth topic pages |
+| [Building with MVT](../building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
+| [Topics](../building-with-mvt/simulating-the-world/time-management.md) | In-depth topic pages |
 | [Reference](../reference/architecture-rules.md) | Rules, style, glossary |
 

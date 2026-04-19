@@ -5,7 +5,7 @@
 > top-level loop that runs your game.
 
 **Related:** [Architecture: The Ticker](../architecture/ticker.md) ·
-[Time Management](../topics/time-management.md) · [Hot Paths](../topics/hot-paths.md)
+[Time Management](simulating-the-world/time-management.md) · [Hot Paths](avoiding-pitfalls/hot-paths.md)
 
 ---
 
@@ -143,14 +143,19 @@ regardless of tree depth.
 - **Views hold no domain state.** They read current state and update the
   presentation. Views may hold cosmetic presentation state for transitions
   the model doesn't track (see
-  [Presentation State](../topics/presentation-state.md)).
+  [Presentation State](adding-visual-polish/presentation-state.md)).
 
 - **The ticker orchestrates, nothing more.** It drives the frame loop but
   contains no domain logic or rendering code.
 
 - **Hot paths stay lean.** `update()` and `refresh()` run every frame. Avoid
   per-tick heap allocations.
-  ([Hot Paths](../topics/hot-paths.md))
+  ([Hot Paths](avoiding-pitfalls/hot-paths.md))
 
 For the language-neutral specification, see the
 [Architecture](../architecture/index.md) section.
+
+---
+
+**Previous:** [Quickstart](quickstart.md) -
+**Next:** [Models](simulating-the-world/models.md)

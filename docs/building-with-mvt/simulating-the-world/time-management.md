@@ -4,12 +4,13 @@
 > forbidden time mechanisms, GSAP timeline recipes, and the
 > advance-then-orchestrate pattern.
 
-**Related:** [Models](../learn/models.md) · [Hot Paths](hot-paths.md) ·
-[Common Mistakes](common-mistakes.md)
+**Related:** [Models](models.md) · [Hot Paths](../avoiding-pitfalls/hot-paths.md) ·
+[Common Mistakes](../avoiding-pitfalls/common-mistakes.md) ·
+[Phase-Based Transitions](../animating-transitions/phase-based-transitions.md)
 
 ---
 
-*Assumes familiarity with [Models](../learn/models.md) and [The Game Loop](../learn/game-loop.md).*
+*Assumes familiarity with [Models](models.md) and [The Game Loop](../the-game-loop.md).*
 
 ## The `deltaMs` Contract (Recap)
 
@@ -26,7 +27,7 @@ The contract guarantees:
 - **Consistent snapshots** - between `update()` and `refresh()`, model state
   is stable. No background timer can mutate it mid-frame.
 
-For the full introduction, see [Models](../learn/models.md).
+For the full introduction, see [Models](models.md).
 
 ## Forbidden Time Mechanisms
 
@@ -145,7 +146,7 @@ update(deltaMs) {
 
 The patterns below address pitfalls specific to using GSAP with paused,
 manually-advanced timelines in models. See also
-[Common Mistakes](common-mistakes.md) for a quick-reference table.
+[Common Mistakes](../avoiding-pitfalls/common-mistakes.md) for a quick-reference table.
 
 ### Use `autoRemoveChildren` and explicit positioning
 
@@ -247,7 +248,7 @@ A model is **not leap-safe** when any of these apply:
 Do not assume a model is leap-safe unless you know its internals. When you
 need to fast-forward a model that is not leap-safe (e.g. generating
 thumbnails), step in small increments to preserve correct behaviour. See the
-`advanceTime` helper in [Testing Models](testing-models.md).
+`advanceTime` helper in [Testing Models](../iterating-with-confidence/testing-models.md).
 
 ## Testing Time-Dependent Models
 
@@ -295,4 +296,4 @@ test('game transitions through phases', () => {
 
 No rendering context, no DOM, no timers - just function calls and assertions.
 
-For more on testing, see [Testing Models](testing-models.md).
+For more on testing, see [Testing Models](../iterating-with-confidence/testing-models.md).

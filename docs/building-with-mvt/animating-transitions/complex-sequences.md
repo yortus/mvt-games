@@ -6,16 +6,16 @@
 > timing offsets. This page shows how to orchestrate complex multi-step
 > sequences.
 
-**Related:** [Phase-Based Transitions](phase-transitions.md) -
+**Related:** [Phase-Based Transitions](phase-based-transitions.md) -
 [Open-Ended Phases](open-ended-phases.md) -
-[Taming Complex Views](managing-view-complexity.md) -
-[Presentation State](presentation-state.md)
+[Taming Complex Views](../adding-visual-polish/taming-complex-views.md) -
+[Presentation State](../adding-visual-polish/presentation-state.md)
 
 ---
 
 *Assumes familiarity with
-[Phase-Based Transitions](phase-transitions.md) and
-[Presentation State](presentation-state.md).*
+[Phase-Based Transitions](phase-based-transitions.md) and
+[Presentation State](../adding-visual-polish/presentation-state.md).*
 
 ## Beyond Single-Phase Transitions
 
@@ -69,7 +69,7 @@ interface Sequence {
 ```
 
 Each step is the familiar `progress` (0..1) pattern from
-[Phase-Based Transitions](phase-transitions.md) - but now multiple steps
+[Phase-Based Transitions](phase-based-transitions.md) - but now multiple steps
 run in parallel with independent timelines.
 
 ## Defining a Sequence
@@ -164,7 +164,7 @@ the steps it cares about. The flash view reads `steps.flash`. The shake
 view reads `steps.shake`. No child knows about the other children or their
 steps.
 
-This is the same [split-into-focused-sub-views](managing-view-complexity.md)
+This is the same [split-into-focused-sub-views](../adding-visual-polish/taming-complex-views.md)
 strategy from the previous section, applied to sequences. The sequence
 object is the shared coordination mechanism - each sub-view reads its own
 slice independently.
@@ -262,7 +262,7 @@ Often the model exposes a simple phase (`'matching'`) but says nothing
 about the visual choreography. The view creates a sequence, triggers it
 on the phase change, and advances it with `update(deltaMs)`. The model
 is unaware of the sequence - it is
-[presentation state](presentation-state.md).
+[presentation state](../adding-visual-polish/presentation-state.md).
 
 ```
 Model:  phase = 'matching', matchedCells = [...], cascadeStep = 2
@@ -474,6 +474,6 @@ presentation state.
 
 ---
 
-**See also:** [Taming Complex Views](managing-view-complexity.md) -
-[Presentation State](presentation-state.md) -
-[Phase-Based Transitions](phase-transitions.md)
+**See also:** [Taming Complex Views](../adding-visual-polish/taming-complex-views.md) -
+[Presentation State](../adding-visual-polish/presentation-state.md) -
+[Phase-Based Transitions](phase-based-transitions.md)

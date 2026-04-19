@@ -4,12 +4,12 @@
 > `refresh()` in views typically run 60 times per second or faster. Avoid
 > unnecessary heap allocations and heavy computations in these functions.
 
-**Related:** [Models (Learn)](../learn/models.md) · [Views (Learn)](../learn/views.md) ·
-[Change Detection](change-detection.md)
+**Related:** [Models (Learn)](../simulating-the-world/models.md) · [Views (Learn)](../presenting-the-world/views.md) ·
+[Change Detection](../reacting-to-changes/change-detection.md)
 
 ---
 
-*Assumes familiarity with [The Game Loop](../learn/game-loop.md).*
+*Assumes familiarity with [The Game Loop](../the-game-loop.md).*
 
 ## What Counts as a Hot Path
 
@@ -136,4 +136,4 @@ function refresh(): void {
 }
 ```
 
-See [Change Detection](change-detection.md) for more on this pattern.
+See [Change Detection](../reacting-to-changes/change-detection.md) for more on this pattern.

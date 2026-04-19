@@ -49,8 +49,8 @@ Four principles govern every page in this documentation:
 The same topic pages serve both learning and reference. The difference is
 navigation:
 
-- **Learn path:** A guided reading order with prerequisites. Pages in
-  `learn/` are read in sequence, each ending with a "Next:" link.
+- **Learn path:** A guided reading order with prerequisites. Pages under
+  "Building with MVT" are read in sequence, each ending with a "Next:" link.
 - **Reference path:** Flat index. Every concept is directly accessible via
   the sidebar, glossary, or search.
 - **AI agent path:** AGENTS.md is a compressed orientation that links to
@@ -66,14 +66,19 @@ Use this table to decide where new content belongs:
 
 | Section | What belongs here | Examples |
 | --- | --- | --- |
-| **learn/** | Sequential introduction to MVT concepts. Each page builds on the previous one. | What is MVT, models, views, ticker, bindings |
-| **topics/** | In-depth topic pages. Self-contained, any reading order. | Time management, testing, adding a game, hot paths |
+| **building-with-mvt/** | Entry pages for the progressive guide | Quickstart, the game loop |
+| **building-with-mvt/simulating-the-world/** | Models, time, composition | Models, time management, model composition |
+| **building-with-mvt/presenting-the-world/** | Views, bindings, view composition | Views, bindings, view composition, bindings in depth |
+| **building-with-mvt/reacting-to-changes/** | Polling, change detection, events | Why polling, change detection, events and signals |
+| **building-with-mvt/adding-visual-polish/** | Presentation state and view models | Presentation state, taming complex views |
+| **building-with-mvt/animating-transitions/** | Phase-based, open-ended, sequences | Phase-based transitions, open-ended phases, complex sequences |
+| **building-with-mvt/iterating-with-confidence/** | Testing approaches and patterns | Testing, testing models, testing views |
+| **building-with-mvt/avoiding-pitfalls/** | Common mistakes and performance | Common mistakes, hot paths |
+| **architecture/** | Transferable MVT specification | Overview, models, views, bindings, ticker, rules, heritage |
 | **reference/** | Terse, scannable, linkable. Complete coverage. | Architecture rules, style guide, glossary, project structure |
-| **foundations/** | Connecting MVT to established patterns. Historical and academic context. | Game loop heritage, passive view, deterministic simulation |
-| **ai-agents/** | AI agent orientation and skills files. | Agent index, skill-mvt-model, skill-mvt-view |
+| **ai-agents/** | AI agent orientation and skills files | Agent index, skill-mvt-model, skill-mvt-view |
 
-When in doubt: if the content explains a core concept for newcomers, it
-belongs in `learn/`. If it goes deeper on a topic, it belongs in `topics/`.
+New guide content goes in the matching content-group directory.
 If it is a quick-lookup resource, it belongs in `reference/`.
 
 ## Page Template
@@ -100,9 +105,8 @@ Every docs page follows this structure:
 Key points:
 - The summary is the skim layer. A reader who reads only this line should
   understand the page's scope.
-- `learn/` pages use **Prerequisites** and **Next** links to form a chain.
-- `topics/` and `reference/` pages use **Related** links to connect to
-  siblings and dependencies.
+- Guide pages use **Previous** and **Next** links to form a reading chain.
+- All pages use **Related** links to connect to siblings and dependencies.
 
 ## Tone and Style Rules
 
@@ -122,9 +126,9 @@ Follow this checklist for every page:
 
 These are two separate concerns. Keep them clearly distinguished:
 
-- **MVT architecture** (learn/ and topics/ pages): generally applicable rules
-  that any codebase using MVT should follow. Examples: models own state,
-  views are stateless, the ticker drives time.
+- **MVT architecture** (guide pages under Building with MVT): generally
+  applicable rules that any codebase using MVT should follow. Examples:
+  models own state, views are stateless, the ticker drives time.
 - **Code style** (reference/style-guide.md and code examples): conventions
   specific to this repo. Examples: factory functions vs classes, naming
   rules, barrel file structure.
@@ -184,8 +188,8 @@ Models are free to use any mechanism that advances state through `deltaMs`.
 5. **Cross-link from related pages.** Add the new page to the **Related**
    line of sibling pages.
 6. **Update the sidebar** in the VitePress configuration.
-7. **For learn/ pages:** update the **Next** link on the previous page and
-   the **Prerequisites** link on the page itself.
+7. **For guide pages:** update the **Next** link on the previous page and
+   the **Previous** link on the page itself.
 
 ## Updating Existing Pages
 
@@ -217,14 +221,14 @@ Current diagram inventory:
 
 | Diagram | Page | Type |
 | --- | --- | --- |
-| MVT frame loop | learn/game-loop.md | Mermaid flowchart |
-| Component summary | learn/game-loop.md | Markdown table |
-| Bindings data flow | learn/bindings.md | Mermaid sequence diagram |
-| Model tree | topics/model-composition.md | Mermaid graph |
-| View tree | topics/view-composition.md | Mermaid graph |
+| MVT frame loop | building-with-mvt/the-game-loop.md | Mermaid flowchart |
+| Component summary | building-with-mvt/the-game-loop.md | Markdown table |
+| Bindings data flow | building-with-mvt/presenting-the-world/bindings.md | Mermaid sequence diagram |
+| Model tree | building-with-mvt/simulating-the-world/model-composition.md | Mermaid graph |
+| View tree | building-with-mvt/presenting-the-world/view-composition.md | Mermaid graph |
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
-| Ticker frame sequence | learn/game-loop.md | Mermaid sequence diagram |
-| Pattern reinforcement | foundations/proven-patterns.md | Mermaid flowchart |
+| Ticker frame sequence | building-with-mvt/the-game-loop.md | Mermaid sequence diagram |
+| Pattern reinforcement | architecture/heritage.md | Mermaid flowchart |
 | Real game model/view tree | (removed) | Mermaid graph |
 
 Before adding a new diagram, check this list to avoid duplicating an
