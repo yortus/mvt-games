@@ -70,7 +70,6 @@ Key principles:
 ```ts
 interface ScoreViewBindings {
     getScore(): number;
-    getClockMs(): number;
 }
 
 function createScoreView(bindings: ScoreViewBindings): Container {
@@ -185,29 +184,27 @@ When multiple views share a view model, the nearest common parent creates
 the view model and passes it to both views.
 
 For the simplest cases (a single tweened value with trivial logic), inline
-presentation state in the view is acceptable, using a `getClockMs()` binding
-so the view does not invent its own notion of time:
+presentation state in the view is acceptable. The view gains an
+`update(deltaMs)` method so the ticker can advance its state:
 
 ```ts
 let displayedScore = 0;
-let prevClockMs = 0;
 
-function refresh(): void {
-    const clockMs = bindings.getClockMs();
-    const deltaMs = clockMs - prevClockMs;
-    prevClockMs = clockMs;
-
+function update(deltaMs: number): void {
     const target = bindings.getScore();
     const t = 1 - Math.pow(0.002, deltaMs / 1000);
     displayedScore += (target - displayedScore) * t;
     if (Math.abs(target - displayedScore) < 1) displayedScore = target;
+}
+
+function refresh(): void {
     label.text = String(Math.round(displayedScore));
 }
 ```
 
 As soon as the presentation state grows beyond a single value, or the timing
 logic warrants unit testing, extract it into a view model. Never hardcode
-frame deltas (`timerMs += 16`).
+frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
 ## Hot-Path Rules for `refresh()`
 
@@ -224,19 +221,19 @@ frame deltas (`timerMs += 16`).
 
 ## Forbidden Patterns - Quick Reference
 
-| Pattern                                    | Rule   | Fix                                           |
-| ------------------------------------------ | ------ | --------------------------------------------- |
-| Domain state in a view                     | V1     | Move to the model                             |
-| Complex presentation logic in a view       | V6     | Extract to a view model                       |
-| Hardcoded frame delta (`timerMs += 16`)    | V7     | Use a view model with `update(deltaMs)`       |
-| Caching binding values at construction     | V5     | Read `get*()` inside `refresh()`              |
-| Mutating models in `refresh()`             | V4     | Use `on*()` bindings for input relay          |
-| `setTimeout` / `setInterval` in a view     | V1     | Use a view model or `getClockMs()` binding    |
-| Computing own deltaMs from `Date.now()`    | V7     | Use `getClockMs()` binding                    |
-| Using `class`                              | Style  | Factory function + plain record               |
-| Using `enum` or const-object enum          | Style  | String-literal union                          |
-| Using `null`                               | Style  | Use `undefined`                               |
-| `array.map()` in `refresh()` hot path      | H2     | Index-based `for` loop                        |
+| Pattern                                    | Rule            | Fix                                           |
+| ------------------------------------------ | --------------- | --------------------------------------------- |
+| Domain state in a view                     | V-stateless     | Move to the model                             |
+| Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
+| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use `update(deltaMs)` on the view             |
+| Caching binding values at construction     | V-reactive      | Read `get*()` inside `refresh()`              |
+| Mutating models in `refresh()`             | V-readonly      | Use `on*()` bindings for input relay          |
+| `setTimeout` / `setInterval` in a view     | V-stateless     | Use `update(deltaMs)` on the view             |
+| Computing own deltaMs from `Date.now()`    | V-presentation  | Receive `deltaMs` from the ticker             |
+| Using `class`                              | Style           | Factory function + plain record               |
+| Using `enum` or const-object enum          | Style           | String-literal union                          |
+| Using `null`                               | Style           | Use `undefined`                               |
+| `array.map()` in `refresh()` hot path      | H-alloc         | Index-based `for` loop                        |
 
 ## Complete Minimal Example
 
@@ -283,6 +280,6 @@ function createEntityView(bindings: EntityViewBindings): Container {
 - [Change Detection](../topics/change-detection.md) - the Watch pattern
 - [View Composition](../topics/view-composition.md) - view hierarchies
 - [Presentation State](../topics/presentation-state.md) - view models and presentation state
-- [Architecture Rules](../reference/architecture-rules.md) - all rules (V1-V9)
+- [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../topics/hot-paths.md) - performance rules for `refresh()`

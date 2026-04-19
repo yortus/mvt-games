@@ -556,3 +556,16 @@ Phase 7 (polish):
   - Updated landing page, cross-links in time-management, model-composition,
     managing-view-complexity, skill-mvt-model.
   - Build passes clean.
+- 2026-04-19 - **Phase 6 complete.** Rules revision done:
+  - 6.1: Rewrote reference/architecture-rules.md as quick-reference hub
+    pointing to architecture/rules.md for universal MVT rules and
+    style-guide.md for repo conventions. No more duplicated rule definitions.
+  - 6.2: All rule references migrated from old numbered scheme (M1-M5,
+    V1-V9, T1-T4, B1-B4, H1-H4) to named scheme (M-time, V-stateless,
+    H-alloc, etc). Updated skill-code-review.md, skill-mvt-model.md,
+    skill-mvt-view.md.
+  - 6.3: Propagated changes to AGENTS.md (rules link now points to
+    architecture/rules.md). Fixed outdated getClockMs() references in
+    skill-mvt-view.md (replaced with update(deltaMs) pattern). Updated
+    presentation state guidance in skill-code-review.md.
+  - Build passes clean.

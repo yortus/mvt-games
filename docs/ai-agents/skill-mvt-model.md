@@ -237,25 +237,25 @@ Re-export through the directory's barrel file (`index.ts`).
 
 ## Forbidden Patterns - Quick Reference
 
-| Pattern                                | Rule   | Fix                                           |
-| -------------------------------------- | ------ | --------------------------------------------- |
-| `setTimeout` / `setInterval` in model  | M2     | Use `update(deltaMs)` with arithmetic or GSAP |
-| Importing a view or view module        | M3     | Models never reference views                  |
-| Storing pixel coordinates              | M4     | Use domain units (row/col, world units)       |
-| Using `class`                          | Style  | Factory function + plain record               |
-| Using `enum` or const-object enum      | Style  | String-literal union                          |
-| Using `null`                           | Style  | Use `undefined`                               |
-| Using `Type` in type names             | Style  | Use `Kind` (e.g. `TileKind`)                  |
-| Using `state` for lifecycle property   | Style  | Use `phase` (e.g. `GamePhase`)                |
-| `array.map()` in `update()` hot path   | H2     | Index-based `for` loop                        |
-| Template-string keys in `update()`     | H2     | Arithmetic encoding (`r * cols + c`)          |
+| Pattern                                | Rule         | Fix                                           |
+| -------------------------------------- | ------------ | --------------------------------------------- |
+| `setTimeout` / `setInterval` in model  | M-time       | Use `update(deltaMs)` with arithmetic or GSAP |
+| Importing a view or view module        | M-isolation  | Models never reference views                  |
+| Storing pixel coordinates              | M-domain     | Use domain units (row/col, world units)       |
+| Using `class`                          | Style        | Factory function + plain record               |
+| Using `enum` or const-object enum      | Style        | String-literal union                          |
+| Using `null`                           | Style        | Use `undefined`                               |
+| Using `Type` in type names             | Style        | Use `Kind` (e.g. `TileKind`)                  |
+| Using `state` for lifecycle property   | Style        | Use `phase` (e.g. `GamePhase`)                |
+| `array.map()` in `update()` hot path   | H-alloc      | Index-based `for` loop                        |
+| Template-string keys in `update()`     | H-alloc      | Arithmetic encoding (`r * cols + c`)          |
 
 ## Full References
 
 - [Models (Learn)](../learn/models.md) - introduction from scratch
 - [Time Management](../topics/time-management.md) - GSAP recipes, advance-then-orchestrate
 - [Model Composition](../topics/model-composition.md) - parent-child delegation
-- [Architecture Rules](../reference/architecture-rules.md) - all rules (M1-M5)
+- [Architecture Rules](../architecture/rules.md) - all model rules (M-time through M-composition)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../topics/hot-paths.md) - performance rules for `update()`
 - [Testing Models](../topics/testing-models.md) - testing models, `advanceTime` helper

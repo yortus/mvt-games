@@ -30,13 +30,13 @@ These are non-negotiable. Violations produce incorrect code.
 
 | Rule | What to check | Common violation |
 | ---- | ------------- | ---------------- |
-| M1-M5 | Models own all domain state; advance via `update(deltaMs)` only; no view/ticker references; domain-level coordinates; parent delegates to children | Model importing a view type; model using `Date.now()`; model storing pixel coordinates |
-| V1-V9 | Views are stateless; `refresh()` is idempotent, side-effect-free; bindings re-read every frame; presentation state only when purely cosmetic | View caching a binding value at construction; `refresh()` mutating model state; domain logic in a view |
-| T1-T4 | Ticker sequence is update-refresh-render; `deltaMs` is capped; no domain logic in ticker | Ticker performing collision checks |
-| B1-B4 | Bindings use `get*`/`on*`; leaf views use bindings; `on*` bindings are optional; wired at construction site | View reaching into model internals instead of using bindings |
-| H1-H4 | No per-tick allocations; index-based loops; change detection for expensive infrequent updates | `array.map()` in `refresh()`; template-string keys in `update()` |
+| M-time, M-isolation, M-domain, M-composition | Models own all domain state; advance via `update(deltaMs)` only; no view/ticker references; domain-level coordinates; parent delegates to children | Model importing a view type; model using `Date.now()`; model storing pixel coordinates |
+| V-stateless through V-tree | Views are stateless; `refresh()` is idempotent, side-effect-free; bindings re-read every frame; presentation state only when purely cosmetic | View caching a binding value at construction; `refresh()` mutating model state; domain logic in a view |
+| T-sequence through T-control | Ticker sequence is update-refresh-render; `deltaMs` is capped; no domain logic in ticker | Ticker performing collision checks |
+| B-contract through B-wiring | Bindings use `get*`/`on*`; leaf views use bindings; `on*` bindings are optional; wired at construction site | View reaching into model internals instead of using bindings |
+| H-cost through H-change | No per-tick allocations; index-based loops; change detection for expensive infrequent updates | `array.map()` in `refresh()`; template-string keys in `update()` |
 
-Reference: [Architecture Rules](../reference/architecture-rules.md)
+Reference: [Architecture Rules](../architecture/rules.md)
 
 ### 2. Software Engineering Principles
 
@@ -157,7 +157,8 @@ Beyond the hard rules, review for good use of established patterns.
 - **Change detection:** Expensive, infrequent updates use `watch()`.
   Cheap per-frame updates (position, alpha) read directly.
 - **Presentation state:** Used only when purely cosmetic and the model does
-  not need to know. Time comes through a `getClockMs()` binding.
+  not need to know. Views with presentation state receive time through
+  `update(deltaMs)`. Complex logic should be extracted into a view model.
 
 #### Composition
 

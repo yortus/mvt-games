@@ -60,3 +60,8 @@
 .vp-doc .mermaid {
     overflow-x: auto;
 }
+
+/* Keep bold rule names (first column) from wrapping across lines */
+.vp-doc td:first-child strong {
+    white-space: nowrap;
+}

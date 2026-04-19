@@ -78,7 +78,7 @@ update its progress log, and move it to `archive/` when done.
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/topics/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/learn/models.md)
 
-Full rules: [Architecture Rules](docs/reference/architecture-rules.md)
+Full rules: [Architecture Rules](docs/architecture/rules.md)
 
 ## File Organisation Within a Module
 
@@ -117,7 +117,7 @@ Load the relevant skills file for task-specific instructions:
 | [Architecture](docs/architecture/index.md) | Transferable MVT specification |
 | [Building with MVT](docs/learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Topics](docs/topics/time-management.md) | In-depth topic pages      |
-| [Reference](docs/reference/architecture-rules.md) | Rules, style, glossary |
+| [Reference](docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
 | [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
 
 ## Tech Stack
