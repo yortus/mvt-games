@@ -7,7 +7,7 @@
 **Related:** [Presentation State](presentation-state.md) -
 [Views (Learn)](../learn/views.md) -
 [View Composition](view-composition.md) -
-[Testing](testing.md)
+[Testing Views](testing-views.md)
 
 ---
 
@@ -307,4 +307,4 @@ the coordination logic itself is what needs testing.
 components that cycle through mutually-exclusive phases.
 
 **See also:** [View Composition](view-composition.md) -
-[Testing](testing.md)
+[Testing Views](testing-views.md)

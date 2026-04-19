@@ -102,6 +102,8 @@ export default withMermaid(defineConfig({
                         text: 'Iterating with Confidence',
                         items: [
                             { text: 'Testing', link: '/topics/testing' },
+                            { text: 'Testing Models', link: '/topics/testing-models' },
+                            { text: 'Testing Views', link: '/topics/testing-views' },
                         ],
                     },
                     {

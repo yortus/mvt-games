@@ -5,7 +5,7 @@
 > concerns like collisions and scoring live in the parent.
 
 **Related:** [Models (Learn)](../learn/models.md) ·
-[View Composition](view-composition.md) · [Testing](testing.md)
+[View Composition](view-composition.md) · [Testing Models](testing-models.md)
 
 ---
 
@@ -142,4 +142,4 @@ test('bullet destroys asteroid on collision', () => {
 });
 ```
 
-For more on testing strategies, see [Testing](testing.md).
+For more on testing strategies, see [Testing Models](testing-models.md).

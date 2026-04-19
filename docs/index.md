@@ -59,7 +59,7 @@ The progressive guide takes you from a working example to advanced topics:
 5. **Reacting to Changes** - [Why Polling](topics/reactivity.md), [Change Detection](topics/change-detection.md), [Events and Signals](topics/events-and-signals.md)
 6. **Adding Visual Polish** - [Presentation State](topics/presentation-state.md), [Taming Complex Views](topics/managing-view-complexity.md)
 7. **Animating Transitions** - [Phase-Based](topics/phase-transitions.md), [Open-Ended Phases](topics/open-ended-phases.md), [Complex Sequences](topics/complex-sequences.md)
-8. **Iterating with Confidence** - [Testing](topics/testing.md)
+8. **Iterating with Confidence** - [Testing](topics/testing.md), [Testing Models](topics/testing-models.md), [Testing Views](topics/testing-views.md)
 9. **Avoiding Pitfalls** - [Common Mistakes](topics/common-mistakes.md), [Hot Paths](topics/hot-paths.md)
 
 ### Reference

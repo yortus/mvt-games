@@ -247,7 +247,7 @@ A model is **not leap-safe** when any of these apply:
 Do not assume a model is leap-safe unless you know its internals. When you
 need to fast-forward a model that is not leap-safe (e.g. generating
 thumbnails), step in small increments to preserve correct behaviour. See the
-`stepMs` helper in [Testing](testing.md).
+`advanceTime` helper in [Testing Models](testing-models.md).
 
 ## Testing Time-Dependent Models
 
@@ -295,4 +295,4 @@ test('game transitions through phases', () => {
 
 No rendering context, no DOM, no timers - just function calls and assertions.
 
-For more on testing, see [Testing](testing.md).
+For more on testing, see [Testing Models](testing-models.md).

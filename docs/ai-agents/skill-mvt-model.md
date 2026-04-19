@@ -258,4 +258,4 @@ Re-export through the directory's barrel file (`index.ts`).
 - [Architecture Rules](../reference/architecture-rules.md) - all rules (M1-M5)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../topics/hot-paths.md) - performance rules for `update()`
-- [Testing](../topics/testing.md) - testing models, `stepMs` helper
+- [Testing Models](../topics/testing-models.md) - testing models, `advanceTime` helper

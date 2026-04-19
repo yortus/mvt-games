@@ -540,3 +540,19 @@ Phase 7 (polish):
   - Updated landing page (item 7).
   - Added Next link from managing-view-complexity to phase-transitions.
   - Build passes clean.
+- 2026-04-19 - **Phase 5.3 complete.** Testing expanded to 3 pages:
+  - Rewrote testing.md as hub page with philosophy, layer table, quick links.
+  - Created topics/testing-models.md: the pattern (create/act/assert),
+    advanceTime helper (small steps + microtask flush for async models),
+    leap-safe vs not, factory-with-defaults, composed models, what not to
+    test, assertion pattern table.
+  - Created topics/testing-views.md: scene graph assertions (value problem -
+    reimplementation false negatives, refactor fragility, just snapshots with
+    extra steps), when they work (visibility, view models, coarse checks).
+    Visual snapshot testing (how it works, Playwright tooling, test harness,
+    comparison table, managing snapshots, testing presentation state).
+  - Added Testing Models and Testing Views to sidebar under Iterating with
+    Confidence.
+  - Updated landing page, cross-links in time-management, model-composition,
+    managing-view-complexity, skill-mvt-model.
+  - Build passes clean.
