@@ -21,7 +21,7 @@ receives at construction time:
 For the language-neutral specification, see
 [Architecture: Bindings](../../architecture/bindings.md).
 
-> **Try it live:** [Keyboard Sprite in Playground](/playground/#preset=keyboard-sprite) -
+> **Try it live:** <PlaygroundLink preset="keyboard-sprite" label="Keyboard Sprite in Playground" /> -
 > see bindings wiring `get*()` accessors and `on*()` input handlers.
 
 ```mermaid

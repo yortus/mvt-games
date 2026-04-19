@@ -1,6 +1,7 @@
 import { h, defineComponent } from 'vue';
 import DefaultTheme from 'vitepress/theme';
 import type { Theme } from 'vitepress';
+import PlaygroundLink from '../components/PlaygroundLink.vue';
 import './custom.css';
 
 declare const __SITE_ROOT__: string;
@@ -19,4 +20,7 @@ export default {
             });
         },
     }),
+    enhanceApp({ app }) {
+        app.component('PlaygroundLink', PlaygroundLink);
+    },
 } satisfies Theme;

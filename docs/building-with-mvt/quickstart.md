@@ -103,7 +103,7 @@ the model nor the view knows about the other's internals.
 
 ## Try It Live
 
-> **[Open in Playground](/playground/#preset=bouncing-ball)** - edit the model
+> **<PlaygroundLink preset="bouncing-ball" />** - edit the model
 > and view side by side and see changes instantly.
 
 ## What's Next?
