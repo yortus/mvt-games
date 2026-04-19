@@ -194,5 +194,5 @@ candidates. The bindings interface gives them an adapter layer: if a model's
 property is named `posX` but the view expects `getX()`, only the wiring
 changes.
 
-For more on optional bindings, reactive bindings, and advanced access patterns,
+For more on optional bindings, live binding rules, and advanced access patterns,
 see [Bindings in Depth](../topics/bindings-in-depth.md).

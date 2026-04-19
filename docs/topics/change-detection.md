@@ -14,6 +14,13 @@
 
 *Assumes familiarity with [Bindings](../learn/bindings.md) and [Views](../learn/views.md).*
 
+> **Terminology note:** We use "change detection" in its literal sense -
+> comparing a current value against a previous value. This is distinct from
+> the framework-specific meanings: Angular's zone-based change detection
+> cycle, or React's virtual DOM reconciliation. The underlying idea - skip
+> work when nothing changed - is the same, but the mechanism here is
+> explicit per-value comparison, not framework-managed tree diffing.
+
 ## The Problem
 
 Re-evaluating every binding every frame is correct but not always efficient.
@@ -46,11 +53,6 @@ it becomes repetitive.
 This project provides a `watch()` factory that wraps multiple getters and
 tracks changes with `===` comparison. On each `poll()` call, every getter is
 re-evaluated and the result reports which values changed:
-
-Getters must return a `Watchable` type - `string | number | boolean | null
-| undefined`. Objects and arrays are excluded because `===` only checks
-reference identity, and does not detect mutations within objects or arrays. Watching an object or array directly is thus most often a bug as the likely intent does not match the actual behaviour. The `Watchable` restriction prevents such bugs.
-To watch a collection, derive a primitive (e.g. `() => items.length`).
 
 ```ts
 const watcher = watch({
@@ -85,6 +87,39 @@ Note: `watch()` is a helper specific to this project, not an MVT
 architectural requirement. The underlying concept - polling for changes and
 acting only when values differ - can be implemented in whatever way suits your
 codebase.
+
+### First-poll behaviour
+
+On the first `poll()` call, every watched value reports `changed: true`
+(because the previous value starts as `undefined`). This means any
+change-guarded setup work runs automatically on the first frame without
+special initialization code. If your setup logic is expensive and should run
+exactly once at construction time instead, perform that work before the first
+`refresh()` rather than relying on the first poll.
+
+### The `Watchable` type restriction
+
+Getters must return a `Watchable` type - `string | number | boolean | null
+| undefined`. Objects and arrays are excluded because `===` only checks
+reference identity and does not detect mutations within objects or arrays.
+Watching an object or array directly is most often a bug, as the likely
+intent (detecting internal changes) does not match the actual behaviour
+(detecting reference replacement). The `Watchable` restriction prevents such
+bugs at the type level.
+
+To watch a collection, derive a primitive:
+
+```ts
+// Watch the length, not the array itself.
+const watcher = watch({
+    enemyCount: () => game.enemies.length,
+});
+```
+
+If you genuinely need to detect reference replacement of an object (e.g. the
+model swaps out an entire sub-model), that is a valid use case - but it
+cannot be expressed through `watch()`. Use a manual previous-reference check
+instead.
 
 ## When to Use Change Detection
 

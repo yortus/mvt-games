@@ -11,10 +11,16 @@
 
 ---
 
-## The Change-Detection Problem
+> **A note on "polling."** In I/O and networking contexts, "polling" implies
+> busy-waiting and is considered wasteful. In a tick-based game loop the
+> meaning is different: the view reads current state at the natural
+> synchronization point that already runs every frame. There is no busy-wait -
+> the frame callback would run regardless.
 
-When model state changes, the view needs to know. Reactivity is the mechanism
-that connects the two. There are three broad strategies:
+## The Reactivity Problem
+
+When model state changes, the view needs to know. *Reactivity* is the general
+term for the mechanism that connects the two. There are three broad strategies:
 
 | Strategy | Who initiates? | Example |
 |----------|---------------|---------|
@@ -96,7 +102,12 @@ that needs a new reaction requires changing the model. With signals, the model
 must wrap values in signal containers - values not wrapped are invisible to
 effects.
 
-Polling treats all readable state uniformly. Any getter can be watched.
+Polling treats all readable state uniformly. Any getter can be watched. This
+effectively turns change detection into *consumer-defined events* - the view
+chooses what constitutes a meaningful change without the model declaring
+anything. See
+[Change Detection - Consumer-Defined Events](change-detection.md#change-detection-as-consumer-defined-events)
+for the full pattern.
 
 ### Per-tick state is just a read
 
@@ -113,11 +124,22 @@ work - but the dependency tracking overhead is pure waste when the consumer
 reads the value every frame anyway. Events are even less suited: emitting 60
 times per second per value creates dispatch overhead for no benefit.
 
-## The Hybrid Pattern
+## Three Categories of State
 
-Not all state changes every frame. Scores, phases, lives - these change
-infrequently but may trigger expensive view work (rebuilding text, restructuring the scene). Polling these values with `===` comparison is
-cheap, and skipping the expensive work when nothing changed is valuable.
+Not all state behaves the same way. Recognising the category helps you choose
+the right reading strategy:
+
+| Category | Changes... | Examples | Strategy |
+|----------|-----------|----------|----------|
+| **Continuous** | Most frames | position, velocity, animation progress | Read directly - no change detection needed |
+| **Discrete** | Occasionally | score, phase, lives, wave number | `watch()` for change detection |
+| **Static** | Never at runtime | tile size, grid dimensions, screen size | Import from data module or pass as parameter |
+
+Continuous state is read every frame with no overhead. Static state is resolved
+at construction time. The interesting category is discrete state - values that
+change infrequently but may trigger expensive view work (rebuilding text,
+restructuring the scene). Polling these with `===` comparison is cheap, and
+skipping the expensive work when nothing changed is valuable.
 
 The `watch()` helper encapsulates this:
 
@@ -142,17 +164,54 @@ function refresh(): void {
 This gives the best of both worlds: cheap change detection for infrequent
 state, zero overhead for per-frame state.
 
-## Tradeoffs
+## Limitations and Tradeoffs
 
-Polling is not free. Every watcher getter runs every frame, even when nothing
-changed. At game-typical scale (10-50 watched values), the cost is negligible -
-well under 1% of the 16.6ms frame budget. But it is a fixed cost per tick,
-unlike events and signals which have zero cost when idle.
+**Idle cost.** Polling is not free. Every watcher getter runs every frame, even when nothing changed. At game-typical scale (up to hundreds of watched values), the cost is a negligible part of the frame budget. But it is a fixed cost per tick,
+unlike events and signals which have zero cost when idle. Conversely for
+continuously-changing values, polling is cheaper than events or signals.
 
-Derived state must be computed in the model or in getter expressions. There is
-no equivalent of `createMemo` that automatically caches and invalidates.
+**Derived state.** Derived state must be computed in the model or in getter expressions. There is no equivalent of `createMemo` that automatically caches and invalidates.
 In practice, model-layer derivation is straightforward and keeps complexity
 where it belongs - in the model.
+
+**Transient state.** If a value changes and reverts within a single
+`update()` call, polling never sees the change. For example, a model that
+sets a flag, performs work, then clears the flag - the view's next `refresh()`
+sees only the cleared state. If the transient change matters to the view, the
+model must persist it for at least one frame (e.g. a `lastEvent` property) or
+a complementary mechanism like a message queue can be used.
+
+**Scaling to very large entity counts.** At typical game scale, watched
+getters are fast. At extreme scale (thousands of entities, each with many
+watched properties), the per-frame comparison cost grows linearly. In such
+cases, consider watching aggregate values (e.g. a collection version counter)
+rather than individual properties, or narrowing which entities are actively
+watched.
+
+## Hybrid Approaches
+
+Polling handles the vast majority of view-update needs in a game loop. For
+cross-cutting concerns that are not view-correctness-critical - audio cues,
+analytics, achievement tracking - events can complement polling naturally.
+
+The key constraint: **views should not depend on events for correctness.** If a
+view needs state to render correctly, it should read that state through
+bindings. Events are appropriate for fire-and-forget side effects where missing
+a notification is not a rendering bug.
+
+```ts
+// Audio reacts to events - missing one is a minor glitch, not a visual bug.
+audioManager.on('enemy-destroyed', () => playSound('boom'));
+
+// The view reads state through bindings - always correct, every frame.
+function refresh(): void {
+    sprite.x = bindings.getX() * TILE_SIZE;
+}
+```
+
+This keeps models simple (events are optional, not required), views reliable
+(polling for correctness), and side-effect systems loosely coupled (events for
+notification).
 
 For a detailed look at the tradeoffs of events and signals in game contexts,
 see [Events and Signals](events-and-signals.md).
@@ -170,6 +229,11 @@ see [Events and Signals](events-and-signals.md).
 
 In a frame-based game loop, polling is the simplest approach that works
 correctly by default.
+
+> **Empirical note:** the project includes benchmarks comparing watchers,
+> signals, and events for a typical game-entity workload. Results confirm
+> that watcher overhead is negligible at game-typical scale. See
+> `benchmarks/reactivity-simple.bench.ts` for the benchmark source.
 
 ---
 

@@ -1,6 +1,6 @@
 # Bindings in Depth
 
-> Advanced bindings topics: optional `get*()` and `on*()` members, reactive
+> Advanced bindings topics: optional `get*()` and `on*()` members, live
 > binding rules, and a decision framework for choosing how views access state.
 
 **Related:** [Bindings (Learn)](../learn/bindings.md) · [Views (Learn)](../learn/views.md) ·
@@ -57,13 +57,16 @@ const visible = bindings.getVisible?.() ?? true;
 When in doubt, keep `get*()` bindings required. A missing accessor is usually
 a wiring bug, and TypeScript catching it at the call site is valuable.
 
-## Reactive Bindings
+## Live Bindings
 
-Bindings are **reactive** - their values may change between frames. A view must
-never cache a binding's return value at construction time and assume it will
-stay the same. Every value a view depends on must be re-evaluated in
-`refresh()`, either by calling the binding directly or through change
-detection (see [Change Detection](change-detection.md)).
+Bindings are **live** - their values may change between frames. (We avoid
+calling them "reactive" here because MVT uses polling rather than push-based
+reactivity. The bindings are dynamic, not self-notifying.)
+
+A view must never cache a binding's return value at construction time and
+assume it will stay the same. Every value a view depends on must be
+re-evaluated in `refresh()`, either by calling the binding directly or through
+change detection (see [Change Detection](change-detection.md)).
 
 ```ts
 // Wrong - cached at construction, never re-evaluated

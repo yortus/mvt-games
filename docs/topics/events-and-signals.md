@@ -24,11 +24,21 @@ uniquely efficient.
 
 **Natural fit for discrete occurrences.** Events model *things that happen*: a
 keypress, a power-up collected, an enemy destroyed. These are point-in-time
-notifications that don't have a persistent "current value."
+notifications that don't have a persistent "current value." This is a genuine
+strength that polling cannot fully replicate - if a model event fires and the
+relevant state resets within the same `update()` call, polling never sees it.
+Events are the only mechanism of the three that naturally models one-shot
+occurrences with no persistent state.
 
 **Decoupling without indirection.** The source defines its event contract;
 consumers subscribe to what they care about. An audio manager can react to
 `'enemy-destroyed'` without the game model knowing about audio.
+
+**Discoverable API.** A model's event list serves as documentation.
+`ghostModel.on('eaten', ...)` tells a new developer what the model can report.
+With polling, the consumer must know which getters to watch and what
+transitions are meaningful - that knowledge lives in the view, not in the
+model's API surface.
 
 **No framework needed.** `EventTarget` is built into the browser. `EventEmitter`
 is built into Node. Every JS developer has used events.
@@ -182,6 +192,12 @@ does the minimum work necessary.
 **Well-supported in UI frameworks.** Signals are the reactivity foundation in
 SolidJS, Angular, Vue, and the TC39 proposal. If you are building a UI app,
 signals are the idiomatic choice.
+
+**Evolving toward frame-level scheduling.** Some signal runtimes are adding
+schedulers that batch signal reads to frame boundaries - converging toward
+polling's timing semantics while keeping the declarative API. This is an
+interesting development but does not currently eliminate the other challenges
+listed below.
 
 ## Challenges with Signals
 
@@ -356,6 +372,52 @@ setEnemies(prev => [...prev, newEnemy]);
 - With polling, models use plain arrays and objects. Views watch derived
   scalars like `() => enemies.length` to detect structural changes. No
   immutable update patterns, no granularity decisions, no framework coupling.
+
+---
+
+## Other Approaches
+
+Events and signals are the most common alternatives, but a few other patterns
+appear in game development.
+
+### Command / message queues
+
+A model produces messages during `update()` (e.g. `{ kind: 'enemy-destroyed', id: 42 }`); the view consumes them during `refresh()` and clears the queue.
+This is a push model that avoids the synchronous-emission problems of events
+because messages are deferred, not dispatched inline. It also solves the
+transient-state problem - a change-and-revert within one `update()` still
+leaves a message in the queue.
+
+The tradeoff is that models now maintain a queue, consumers must drain it each
+frame, and the queue itself becomes part of the model's API. For cross-cutting
+fire-and-forget concerns (audio cues, analytics), a message queue can be a
+clean complement to polling.
+
+### State machines / statecharts
+
+For discrete state like game phases, entity modes, and lifecycle stages,
+formalised state machines (e.g. XState-style statecharts) offer structured
+transition logic and guard conditions. In MVT, the model often *is* a state
+machine internally - the view polls the current state each frame. State
+machines are a modelling technique for the *model layer*, orthogonal to the
+reactivity mechanism between model and view.
+
+### Reactive streams (RxJS-style)
+
+Observable streams compose asynchronous event sequences with operators like
+`debounce`, `throttle`, `combineLatest`. In game contexts, streams are rarely
+used for per-tick state (the overhead is significant) but can be useful for
+input processing pipelines. The subscription and disposal lifecycle adds the
+same cleanup burden as events. For most game view-update needs, polling is
+simpler.
+
+### Diffing / snapshots
+
+Some ECS-style architectures snapshot model state and diff it automatically.
+This is structurally similar to polling but automated at the framework level.
+The `watch()` helper is a lightweight, manual version of the same idea -
+applied selectively where the developer chooses, rather than applied globally
+by a framework.
 
 ---
 
