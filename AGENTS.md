@@ -118,7 +118,6 @@ Load the relevant skills file for task-specific instructions:
 | [Building with MVT](docs/learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Topics](docs/topics/time-management.md) | In-depth topic pages      |
 | [Reference](docs/reference/architecture-rules.md) | Rules, style, glossary |
-| [Reactivity](docs/reactivity/index.md) | Reactivity strategy comparison |
 | [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
 
 ## Tech Stack

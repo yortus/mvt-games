@@ -70,7 +70,6 @@ Use this table to decide where new content belongs:
 | **topics/** | In-depth topic pages. Self-contained, any reading order. | Time management, testing, adding a game, hot paths |
 | **reference/** | Terse, scannable, linkable. Complete coverage. | Architecture rules, style guide, glossary, project structure |
 | **foundations/** | Connecting MVT to established patterns. Historical and academic context. | Game loop heritage, passive view, deterministic simulation |
-| **reactivity/** | Deep-dive into reactivity strategies. Supplementary - not required to use MVT. | Events, signals, watchers, comparison |
 | **ai-agents/** | AI agent orientation and skills files. | Agent index, skill-mvt-model, skill-mvt-view |
 
 When in doubt: if the content explains a core concept for newcomers, it
@@ -225,7 +224,6 @@ Current diagram inventory:
 | View tree | topics/view-composition.md | Mermaid graph |
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
 | Ticker frame sequence | learn/game-loop.md | Mermaid sequence diagram |
-| Reactivity reading path | reactivity/index.md | ASCII diagram |
 | Pattern reinforcement | foundations/proven-patterns.md | Mermaid flowchart |
 | Real game model/view tree | (removed) | Mermaid graph |
 

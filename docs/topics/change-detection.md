@@ -4,8 +4,11 @@
 > efficient reactivity for view bindings that change rarely but trigger
 > expensive work.
 
-**Related:** [Bindings (Learn)](../learn/bindings.md) ·
-[Bindings in Depth](bindings-in-depth.md) · [Hot Paths](hot-paths.md)
+**Related:** [Reactivity: Why Polling](reactivity.md) -
+[Events and Signals](events-and-signals.md) -
+[Bindings (Learn)](../learn/bindings.md) -
+[Bindings in Depth](bindings-in-depth.md) -
+[Hot Paths](hot-paths.md)
 
 ---
 

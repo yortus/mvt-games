@@ -489,3 +489,22 @@ Phase 7 (polish):
   - 3.6: Rewrote landing page to reflect Building with MVT structure. Fixed
     ~25 cross-links across docs, reference, ai-agents, contributing, AGENTS.md.
   - Build passes clean.
+- 2026-04-19 - **Phase 4 complete.** Reactivity rewrite done:
+  - 4.1: Created topics/reactivity.md (Why MVT Uses Polling) - covers game
+    loop answering "when?", model simplicity, consistency, no leaks,
+    consumer-defined reactions, hybrid pattern, tradeoffs, summary table.
+  - 4.2: Updated change-detection.md Related links to reference new reactivity
+    and events-and-signals pages.
+  - 4.3: Created topics/events-and-signals.md with user-specified structure:
+    The Case for Events, Challenges with Events (sync/inconsistent state,
+    implicit coupling, mixing paradigms, event spaghetti), The Case for
+    Signals, Challenges with Signals (per-tick dilemma, effect combining,
+    batching, invisible boundary, complex state). Each challenge has example
+    code and observations.
+  - 4.4: Deleted docs/reactivity/ directory (7 pages). Removed Reactivity
+    sidebar section. Added 3 pages to Reacting to Changes group (Why Polling,
+    Change Detection, Events and Signals).
+  - Fixed cross-links in index.md, AGENTS.md, contributing.md,
+    ai-agents/index.md, ai-agents/skill-documentation.md. Cleaned up blank
+    line artifacts.
+  - Build passes clean.

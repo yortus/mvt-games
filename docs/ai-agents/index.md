@@ -44,4 +44,4 @@ Load the relevant skills file for task-specific instructions:
 | [Building with MVT](../learn/quickstart.md) | Progressive guide from quickstart to advanced topics |
 | [Topics](../topics/time-management.md) | In-depth topic pages |
 | [Reference](../reference/architecture-rules.md) | Rules, style, glossary |
-| [Reactivity](../reactivity/index.md) | Reactivity strategy comparison |
+

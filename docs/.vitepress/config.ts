@@ -78,7 +78,9 @@ export default withMermaid(defineConfig({
                     {
                         text: 'Reacting to Changes',
                         items: [
+                            { text: 'Why Polling', link: '/topics/reactivity' },
                             { text: 'Change Detection', link: '/topics/change-detection' },
+                            { text: 'Events and Signals', link: '/topics/events-and-signals' },
                         ],
                     },
                     {
@@ -109,18 +111,6 @@ export default withMermaid(defineConfig({
                     { text: 'Style Guide', link: '/reference/style-guide' },
                     { text: 'Glossary', link: '/reference/glossary' },
                     { text: 'Project Structure', link: '/reference/project-structure' },
-                ],
-            },
-            {
-                text: 'Reactivity',
-                items: [
-                    { text: 'Overview', link: '/reactivity/' },
-                    { text: 'Push vs Pull', link: '/reactivity/push-vs-pull' },
-                    { text: 'Events', link: '/reactivity/events' },
-                    { text: 'Signals', link: '/reactivity/signals' },
-                    { text: 'Watchers', link: '/reactivity/watchers' },
-                    { text: 'Comparison', link: '/reactivity/comparison' },
-                    { text: 'Examples', link: '/reactivity/examples' },
                 ],
             },
             {

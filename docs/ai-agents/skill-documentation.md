@@ -15,7 +15,6 @@ The docs are organized into six sections. Place new content in the right one:
 | **topics/** | In-depth topic pages (any order) | Self-contained, detailed, with prerequisites |
 | **reference/** | Quick-lookup resources | Terse, scannable, complete |
 | **foundations/** | MVT's pattern heritage | Academic, connecting to established patterns |
-| **reactivity/** | Reactivity strategies deep-dive | Supplementary, not required for MVT |
 | **ai-agents/** | Agent orientation and skills files | Compressed, task-oriented |
 
 ## Page Template

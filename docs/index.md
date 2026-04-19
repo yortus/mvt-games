@@ -39,7 +39,6 @@ world.
 | **[Architecture](architecture/)** | The transferable MVT specification - contracts, constraints, and patterns in language-neutral terms | Understanding the architecture independent of any implementation |
 | **[Building with MVT](learn/quickstart.md)** | Progressive guide from quickstart to advanced topics - models, views, bindings, reactivity, testing, and more | Learning MVT and building with it |
 | **[Reference](reference/architecture-rules.md)** | Terse lookup pages - rules, style guide, glossary, project structure | Quick lookups while working |
-| **[Reactivity](reactivity/)** | Comparative analysis of reactivity strategies (events, signals, polling) | Understanding why MVT uses polling |
 
 ### Architecture
 
@@ -57,7 +56,7 @@ The progressive guide takes you from a working example to advanced topics:
 2. [The Game Loop](learn/game-loop.md) - the frame sequence your code lives inside
 3. **Simulating the World** - [Models](learn/models.md), [Time Management](topics/time-management.md), [Model Composition](topics/model-composition.md)
 4. **Presenting the World** - [Views](learn/views.md), [Bindings](learn/bindings.md), [View Composition](topics/view-composition.md)
-5. **Reacting to Changes** - [Change Detection](topics/change-detection.md)
+5. **Reacting to Changes** - [Why Polling](topics/reactivity.md), [Change Detection](topics/change-detection.md), [Events and Signals](topics/events-and-signals.md)
 6. **Adding Visual Polish** - [Presentation State](topics/presentation-state.md)
 7. **Iterating with Confidence** - [Testing](topics/testing.md)
 8. **Avoiding Pitfalls** - [Common Mistakes](topics/common-mistakes.md), [Hot Paths](topics/hot-paths.md)
