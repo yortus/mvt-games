@@ -428,3 +428,16 @@ docs structure.
     AGENTS.md. Created llms.txt at repo root. Updated AGENTS.md and
     .github/copilot-instructions.md to reference new architecture section.
   - Build and lint pass clean.
+- 2026-04-18 - **Phase 2 complete.** All 6 steps done:
+  - 2.1: Strengthened model-view separation in Learn pages (headless simulation
+    analogy, additional angles).
+  - 2.2: Audited all code examples, fixed 3 bugs.
+  - 2.3: Fixed architecture-overview flowchart bindings data flow. Added model
+    composition mermaid diagram to models.md.
+  - 2.4: Added prerequisite lines to all Topics pages. Learn page callouts
+    added then removed (just repeated sidebar headings).
+  - 2.5: Added playground links to models.md (countdown-timer), views.md
+    (score-counter), bindings.md (keyboard-sprite). Created clock preset.
+  - 2.6: Added quickstart page (bouncing ball with domain units/metres, SCALE
+    conversion in view, links to bouncing-ball playground preset).
+  - Build passes clean.
