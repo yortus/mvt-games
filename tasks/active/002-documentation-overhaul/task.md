@@ -508,3 +508,16 @@ Phase 7 (polish):
     ai-agents/index.md, ai-agents/skill-documentation.md. Cleaned up blank
     line artifacts.
   - Build passes clean.
+- 2025-06-19 - **Phase 5.1 complete.** Presentation State rewrite done:
+  - Rewrote presentation-state.md: what is cosmetic state (game example:
+    death flash; non-game example: editable text field), when useful,
+    implementation with update()/refresh(), propagation through view tree,
+    receiving time, boundary test, complexity warning. Links forward to new
+    managing-view-complexity page.
+  - Created topics/managing-view-complexity.md: three strategies in order of
+    preference: (1) split into focused sub-views, (2) extract reusable helpers
+    (BooleanTween, EdgeTween, easing functions), (3) extract a view model
+    (rare, for coordinated multi-step sequences). Choosing-a-strategy table.
+  - Added Taming Complex Views to sidebar under Adding Visual Polish.
+  - Updated landing page Building with MVT item 6.
+  - Build passes clean.

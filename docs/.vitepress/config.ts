@@ -87,6 +87,7 @@ export default withMermaid(defineConfig({
                         text: 'Adding Visual Polish',
                         items: [
                             { text: 'Presentation State', link: '/topics/presentation-state' },
+                            { text: 'Taming Complex Views', link: '/topics/managing-view-complexity' },
                         ],
                     },
                     {

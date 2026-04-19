@@ -57,7 +57,7 @@ The progressive guide takes you from a working example to advanced topics:
 3. **Simulating the World** - [Models](learn/models.md), [Time Management](topics/time-management.md), [Model Composition](topics/model-composition.md)
 4. **Presenting the World** - [Views](learn/views.md), [Bindings](learn/bindings.md), [View Composition](topics/view-composition.md)
 5. **Reacting to Changes** - [Why Polling](topics/reactivity.md), [Change Detection](topics/change-detection.md), [Events and Signals](topics/events-and-signals.md)
-6. **Adding Visual Polish** - [Presentation State](topics/presentation-state.md)
+6. **Adding Visual Polish** - [Presentation State](topics/presentation-state.md), [Taming Complex Views](topics/managing-view-complexity.md)
 7. **Iterating with Confidence** - [Testing](topics/testing.md)
 8. **Avoiding Pitfalls** - [Common Mistakes](topics/common-mistakes.md), [Hot Paths](topics/hot-paths.md)
 
