@@ -91,6 +91,14 @@ export default withMermaid(defineConfig({
                         ],
                     },
                     {
+                        text: 'Animating Transitions',
+                        items: [
+                            { text: 'Phase-Based Transitions', link: '/topics/phase-transitions' },
+                            { text: 'Open-Ended Phases', link: '/topics/open-ended-phases' },
+                            { text: 'Complex Sequences', link: '/topics/complex-sequences' },
+                        ],
+                    },
+                    {
                         text: 'Iterating with Confidence',
                         items: [
                             { text: 'Testing', link: '/topics/testing' },

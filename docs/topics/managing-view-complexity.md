@@ -303,5 +303,8 @@ the coordination logic itself is what needs testing.
 
 ---
 
+**Next:** [Phase-Based Transitions](phase-transitions.md) - modelling
+components that cycle through mutually-exclusive phases.
+
 **See also:** [View Composition](view-composition.md) -
 [Testing](testing.md)
