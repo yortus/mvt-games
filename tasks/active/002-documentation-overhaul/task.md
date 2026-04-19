@@ -374,6 +374,12 @@ Update all files referencing rules: `skill-code-review.md`,
 
 ### Phase 7 - Final polish
 
+**7.0 - Update all docs dir/file names**
+
+Check all directory and file names reflect the documentation changes.
+Update as necessary so that directory names match documentation categories,
+and filenames match topic names.
+
 **7.1 - Cross-link audit**
 
 Walk every page and verify all Related/Next/Previous links. Ensure new pages
@@ -427,6 +433,7 @@ Phase 6 (rules):
 - [ ] Rule naming scheme revised and references updated
 
 Phase 7 (polish):
+- [ ] Update all docs dir/file names
 - [ ] Cross-links verified across all pages
 - [ ] AI agent files updated
 - [ ] Site map updated to reflect final structure
