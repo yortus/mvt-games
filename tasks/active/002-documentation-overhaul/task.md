@@ -24,23 +24,37 @@ Comprehensive overhaul of the project documentation (`docs/`). Goals:
 The final sidebar structure will be:
 
 ```
-Architecture       (new - transferable MVT specification)
-Learn              (was learn/ - sequential introduction, unchanged content)
-Topics             (was guide/ - self-contained topic pages, grouped)
-Reference          (was reference/ - terse lookup pages)
-Reactivity         (rewritten - integrated supplementary section)
-AI Agents          (unchanged - agent-specific entry points)
+MVT Architecture           (transferable specification - 7 pages, done)
+Building with MVT          (progressive learning + topics, merged)
+  Quickstart               (standalone - done, needs relocation)
+  The Game Loop            (standalone - frame sequence, deltaMs, ordering)
+  Simulating the World     (group - models, time, composition)
+  Presenting the World     (group - views, bindings, view composition)
+  Reacting to Changes      (group - reactivity, change detection, alternatives)
+  Animating Transitions    (group - state machines, sequences, phases - NEW)
+  Adding Visual Polish     (group - presentation state, view models - REWRITE)
+  Iterating with Confidence (group - testing patterns - EXPAND)
+  Avoiding Pitfalls        (group - common issues, antipatterns, hot paths)
+MVT Reference              (terse lookup - 4 pages, done)
+AI Agents                  (collapsed, unchanged)
 ```
+
+Pages removed from docs:
+
+- `topics/adding-a-game.md` - move to `src/games/README.md`
+- `learn/walkthrough.md` - drop (future interactive tutorial)
+- `learn/what-is-mvt.md` - absorb into Architecture section
+- `learn/architecture-overview.md` - merge into The Game Loop
+- `learn/next-steps.md` - drop (progressive sidebar replaces it)
+- `reactivity/` (7 pages) - condense into 3 pages under Reacting to Changes
 
 Future additions (not in scope for this overhaul):
 
-- **Tutorials** section - step-by-step build-alongs with interactive examples,
-  sitting between Learn and Topics when foundational content is solid.
+- **Interactive tutorials** - step-by-step build-alongs (e.g. an interactive
+  walkthrough replacing the dropped static walkthrough page).
 - **Recipes / How-to** section - task-oriented guides ("How to animate a state
-  transition", "How to add a new entity"). Currently some Topics pages are
-  partly recipe-like (Adding a Game, Common Mistakes). If a critical mass of
-  recipe-style content emerges, splitting into a dedicated section would be
-  justified.
+  transition", "How to add a new entity"). If a critical mass of recipe-style
+  content emerges, splitting into a dedicated section would be justified.
 
 Supporting artefacts in this directory:
 
@@ -217,72 +231,94 @@ something working in the playground. Structure:
 This front-loads the reward and gives context for the conceptual material
 that follows. Place it before or alongside the Learn path entry point.
 
-### Phase 3 - Reactivity guide rewrite
+### Phase 3 - Restructure into "Building with MVT"
 
-Complete rewrite of `docs/reactivity/`. The current 7 pages were written before
-the contributing guide and don't follow its philosophy.
+Merge the Learn and Topics sections into a single progressive "Building with
+MVT" section. This is the structural migration - content rewrites happen in
+later phases where noted.
 
-**3.1 - Rename "watchers" to "polling"**
+**3.1 - Create the new sidebar structure**
 
-The taxonomy becomes "events vs signals vs polling" - three genuinely distinct
-reactivity strategies. Update all references, filenames, and cross-links.
+Replace the separate Learn and Topics sidebar sections with a single "Building
+with MVT" section using the group structure defined above. Update
+`.vitepress/config.ts`.
 
-**3.2 - Write a new entry-point page**
+**3.2 - Create "The Game Loop" page**
 
-Replace `docs/reactivity/index.md` with a page that:
+Merge `learn/architecture-overview.md` and `learn/ticker.md` into a single new
+page covering: the frame sequence (model.update -> view.update -> view.refresh
+-> render), deltaMs, deterministic time, and ordering guarantees. Practical
+focus: "here's the loop your code lives inside".
 
-- Explains why this topic matters for MVT (the project chose polling - why?)
-- Summarises the key tradeoffs and conclusions in one skim-friendly page
-- Links out to the detailed comparison pages for readers who want depth
-- Fits seamlessly into the wider docs navigation (linked from `next-steps.md`
-  and the landing page's Reference section)
+**3.3 - Absorb "What is MVT?" into Architecture**
 
-**3.3 - Condense the detail pages**
+Move relevant conceptual content from `learn/what-is-mvt.md` into the
+Architecture section (primarily `architecture/index.md`). The Architecture
+section becomes the single home for "what MVT is and why". Delete or redirect
+the Learn page.
 
-Rewrite `push-vs-pull.md`, `events.md`, `signals.md`, `polling.md` (was
-`watchers.md`), `comparison.md`, and `examples.md` to:
+**3.4 - Relocate existing pages into new groups**
 
-- Follow skim-first structure (summary, tables/callouts, then depth)
-- Be significantly shorter (target ~150-250 lines each, down from current)
-- Preserve the neutral, fair comparative tone
-- Use consistent structure across the three approach pages
+Move existing pages into their new sidebar groups without rewriting content:
 
-**Design note: Polling is MVT's intentional reactivity stance.**
+| Group | Pages |
+|---|---|
+| Simulating the World | `learn/models.md`, `topics/time-management.md`, `topics/model-composition.md` |
+| Presenting the World | `learn/views.md`, `learn/bindings.md`, `topics/view-composition.md`, `topics/bindings-in-depth.md` |
+| Reacting to Changes | `topics/change-detection.md` (+ new pages in Phase 4) |
+| Adding Visual Polish | `topics/presentation-state.md` (rewrite in Phase 5) |
+| Iterating with Confidence | `topics/testing.md` (expand in Phase 5) |
+| Avoiding Pitfalls | `topics/common-issues.md`, `topics/hot-paths.md` |
 
-The architecture specification is built around frame-based polling. This is
-deliberate, not incidental. The `refresh()`-every-frame pattern, the
-`get*()`-in-bindings contract, and the strict frame ordering guarantee all
-assume polling. The reactivity rewrite should be up-front about this:
+**3.5 - Remove pages from docs**
 
-- MVT chose polling because the frame loop already runs every tick, making
-  the polling cost near-zero while eliminating subscription management,
-  lifecycle concerns, and event-ordering bugs.
-- A signal- or event-based variant of MVT would share the same model/view
-  separation and the same `update(deltaMs)` contract. The differences:
-  - Views would subscribe to state changes instead of re-reading every frame.
-  - `refresh()` could be triggered on change rather than unconditionally,
-    potentially skipping frames where nothing changed.
-  - The strict frame-ordering guarantee weakens: with push-based notification,
-    a view might react to a model change mid-update before all models have
-    settled, unless batching is added (re-introducing complexity polling
-    avoids for free).
-  - Subscription lifecycle becomes a concern: views must unsubscribe on
-    teardown, subscriptions can leak, and the dependency graph must be
-    managed.
-- The reactivity guide pages should present all three strategies fairly but
-  make clear that MVT's architecture is designed around polling. Signal/event
-  approaches are valid alternatives with different tradeoffs, not deficiencies
-  in MVT.
+- Move `topics/adding-a-game.md` content to `src/games/README.md`
+- Delete `learn/walkthrough.md` (future interactive tutorial)
+- Delete `learn/next-steps.md` (progressive sidebar replaces it)
+- Delete or redirect `learn/what-is-mvt.md` and `learn/architecture-overview.md`
+  after content is absorbed
 
-### Phase 4 - New and rewritten topics
+**3.6 - Update landing page and cross-links**
 
-These add substantial new content. Steps marked [PLAN FIRST] need a brief
-outline reviewed before implementation.
+Update `docs/index.md` to reflect the new "Building with MVT" structure.
+Fix all cross-links broken by page moves and deletions.
 
-**4.1 - Rewrite Presentation State [PLAN FIRST]**
+### Phase 4 - Reactivity rewrite
 
-Full rewrite of `docs/topics/presentation-state.md`, incorporating learnings
-from the Cactii game implementation. Topics to cover:
+Condense `docs/reactivity/` (7 pages) into 3 pages under Reacting to Changes.
+
+**4.1 - Write the Reactivity page**
+
+New page making the case for polling in game loops. Covers: the change
+detection problem, how the game loop favours polling, why push-based approaches
+add friction, tradeoffs. Absorbs content from `reactivity/index.md` and
+`reactivity/push-vs-pull.md`.
+
+**4.2 - Revise the Change Detection page**
+
+Update `topics/change-detection.md` to serve as the practical "how to poll"
+page. Covers: watch() helper, which values to watch, when to watch vs read
+directly, consumer-defined events, dynamic child lists.
+
+**4.3 - Write the Events and Signals page**
+
+New condensed page giving a fair treatment of push-based alternatives. Covers:
+events (strengths and game-loop friction), signals (strengths and friction),
+side-by-side comparison. For curious readers. Absorbs content from
+`reactivity/events.md`, `reactivity/signals.md`, `reactivity/comparison.md`.
+
+**4.4 - Delete the standalone reactivity section**
+
+Remove `docs/reactivity/` directory and its 7 pages. Remove from sidebar.
+Redirect or update any remaining cross-links.
+
+### Phase 5 - New and rewritten topics
+
+Steps marked **[PLAN FIRST]** need a brief outline reviewed before writing.
+
+**5.1 - Rewrite Presentation State [PLAN FIRST]** (Adding Visual Polish)
+
+Full rewrite of `presentation-state.md`. Topics to cover:
 
 1. Time in views - how views receive and use `deltaMs`, when views need
    `update()` vs being purely stateless
@@ -292,10 +328,10 @@ from the Cactii game implementation. Topics to cover:
 Planning substep: produce a topic outline with section headings, key examples,
 and decision criteria before writing.
 
-**4.2 - New topic: Complex Sequences [PLAN FIRST]**
+**5.2 - New topic: Animating Transitions [PLAN FIRST]**
 
-New guide page(s) covering MVT patterns for complex timed sequences. Three
-scenario categories:
+New page(s) covering MVT patterns for complex timed sequences. Three scenario
+categories:
 
 1. Multiple mutually-exclusive phases (state machine pattern)
 2. Open-ended phases paired with cyclic animations
@@ -304,105 +340,96 @@ scenario categories:
 Planning substep: produce a topic outline with scenarios, patterns, and example
 sketches before writing.
 
-**4.3 - Expand testing coverage**
+**5.3 - Expand testing coverage** (Iterating with Confidence)
 
-The current single `docs/topics/testing.md` page is insufficient. Expand into
-multiple pages or a substantially larger single page covering:
+Expand `testing.md` into a substantially larger page or multiple pages:
 
 - Model testing - patterns, time-stepping helpers, factory-with-defaults
 - View testing - scene graph assertions, snapshot testing, mock bindings
-- Testing techniques - deterministic time, testing composed models, testing
-  sequences
+- Testing techniques - deterministic time, testing composed models
 - Testing anti-patterns - what not to test, over-testing internals
 
-May fit under a "Testing" subgroup in the Topics sidebar.
+### Phase 6 - Rules revision
 
-### Phase 5 - Rules revision
-
-**5.1 - Audit and split architecture rules**
+**6.1 - Audit and split architecture rules**
 
 Review every rule in `docs/reference/architecture-rules.md` and split them:
 
-- **Universal MVT rules** move to the Architecture section's rules page
-  (created in 1.1). These are the transferable constraints any MVT
-  implementation must follow.
-- **Repo-specific conventions** stay in the Reference section, absorbed into
-  the style guide or a separate conventions page.
+- **Universal MVT rules** move to `docs/architecture/rules.md`
+- **Repo-specific conventions** stay in Reference (style guide or conventions)
 
-For each rule:
-- Identify whether it's universal MVT or repo-specific
-- Identify rules that feel "tacked on" vs essential architectural constraints
-- Identify important constraints that are missing and should be rules
-- Consider splitting into tiers (e.g. "must" rules vs "should" guidelines)
-- Ensure every rule has a clear rationale
+For each rule: identify universal vs repo-specific, check for missing
+constraints, consider "must" vs "should" tiers, ensure clear rationale.
 
-**5.2 - Revise rule naming scheme**
+**6.2 - Revise rule naming scheme**
 
-The current M1-M5 / V1-V9 numbering is brittle - inserting a rule renumbers
-downstream rules, breaking all references. Consider alternatives:
+Replace brittle M1-M5 / V1-V9 numbering with a stable scheme (e.g. descriptive
+names like ESLint's `no-wall-clock-time`, or numbered with gaps). Update all
+references in docs, AGENTS.md, skill files, and code review checklists.
 
-- Descriptive names (like ESLint: `no-wall-clock-time`)
-- Numbered with gaps (M10, M20, M30... leaving room for insertions)
-- Prefixed codes with semantic meaning
+**6.3 - Propagate rule changes**
 
-Whatever scheme is chosen, update all references in docs, AGENTS.md, skill
-files, and code review checklists.
+Update all files referencing rules: `skill-code-review.md`,
+`common-mistakes.md`, `AGENTS.md`, `.github/copilot-instructions.md`.
 
-**5.3 - Propagate rule changes**
+### Phase 7 - Final polish
 
-After 5.1 and 5.2, update all files that reference rules:
-- `docs/ai-agents/skill-code-review.md`
-- `docs/topics/common-mistakes.md`
-- `AGENTS.md`
-- `.github/copilot-instructions.md`
+**7.1 - Cross-link audit**
 
-### Phase 6 - Final polish
+Walk every page and verify all Related/Next/Previous links. Ensure new pages
+are linked from relevant siblings. Verify glossary has entries for all
+introduced terms. Verify landing page reflects final structure.
 
-**6.1 - Cross-link audit**
+**7.2 - Update AI agent files**
 
-Walk every page and verify:
-- All **Related** / **Next** / **Previous** links are correct
-- New pages are linked from relevant siblings
-- Glossary has entries for all terms introduced in new/revised pages
-- Landing page accurately reflects the final structure
+Ensure AGENTS.md and skill files reflect the final docs structure.
 
-**6.2 - Update AI agent files**
+**7.3 - Update site-map.md**
 
-Ensure AGENTS.md and skill files reflect the final docs structure. Verify the
-"single canonical source" principle from Phase 1.5 is maintained.
-
-**6.3 - Update site-map.md**
-
-Regenerate the site map artefact in this task directory to reflect the final
-docs structure.
+Regenerate the site map artefact in this task directory.
 
 ## Acceptance Criteria
 
-- [ ] Architecture section created with ~4-6 transferable specification pages
-- [ ] Top-level sections renamed to Learn / Topics / Reference / Architecture
-- [ ] Landing page diagram/heading mismatch fixed
-- [ ] Landing page has "how docs are organized" section
-- [ ] Contributing guide relocated out of docs navigation
-- [ ] Foundations page integrated into Architecture or another section
-- [ ] Topics sidebar has grouped subclusters
-- [ ] Agent file duplication reduced to single canonical source
-- [ ] Model-view separation explanations strengthened with analogies
-- [ ] All code examples audited for clarity and universality
-- [ ] All diagrams audited for accuracy and new diagrams added where needed
-- [ ] Architecture vs convention callouts used consistently in examples
-- [ ] Learn pages have "You will learn" callouts
-- [ ] Quickstart page added
-- [ ] Key examples link to playground presets
-- [ ] llms.txt file added
-- [ ] Reactivity guide fully rewritten (polling taxonomy, entry page, condensed)
-- [ ] Presentation State guide rewritten (planned, then written)
-- [ ] Complex Sequences guide written (planned, then written)
+Phase 1-2 (done):
+- [x] Architecture section created with 7 transferable specification pages
+- [x] Top-level sections renamed; landing page fixed
+- [x] Contributing guide removed from sidebar
+- [x] Foundations integrated into Architecture heritage page
+- [x] Topics sidebar grouped into subclusters
+- [x] Agent file duplication reduced; llms.txt added
+- [x] Model-view separation explanations strengthened
+- [x] Code examples audited; diagrams audited and added
+- [x] Prerequisite callouts added to Topics pages
+- [x] Playground links added to key examples
+- [x] Quickstart page added
+
+Phase 3 (restructure):
+- [ ] Learn and Topics merged into "Building with MVT" with 9 sidebar groups
+- [ ] "The Game Loop" page created from merged ticker/architecture-overview
+- [ ] "What is MVT?" absorbed into Architecture section
+- [ ] `adding-a-game.md` moved to `src/games/README.md`
+- [ ] `walkthrough.md` and `next-steps.md` deleted
+- [ ] Landing page and all cross-links updated
+
+Phase 4 (reactivity):
+- [ ] Reactivity page written (why polling)
+- [ ] Change Detection page revised (how to poll)
+- [ ] Events and Signals page written (alternatives)
+- [ ] Standalone `reactivity/` section deleted
+
+Phase 5 (new content):
+- [ ] Presentation State rewritten (planned, then written)
+- [ ] Animating Transitions written (planned, then written)
 - [ ] Testing coverage expanded
+
+Phase 6 (rules):
 - [ ] Architecture rules split: universal in Architecture, repo-specific in Reference
 - [ ] Rule naming scheme revised and references updated
+
+Phase 7 (polish):
 - [ ] Cross-links verified across all pages
+- [ ] AI agent files updated
 - [ ] Site map updated to reflect final structure
-- [ ] Final task write-up including next steps (based on future additions not in scope)
 
 ## Progress Log
 
@@ -441,3 +468,10 @@ docs structure.
   - 2.6: Added quickstart page (bouncing ball with domain units/metres, SCALE
     conversion in view, links to bouncing-ball playground preset).
   - Build passes clean.
+- 2026-04-19 - **Plan revised.** Merged Learn + Topics into single "Building
+  with MVT" section with 9 progressive groups. Phases renumbered (now 7).
+  Key changes: dissolved "Core Concepts" (ticker -> Game Loop, models ->
+  Simulating the World, views/bindings -> Presenting the World); added
+  "Adding Visual Polish" group for presentation state; dropped walkthrough,
+  next-steps, adding-a-game from docs; reactivity condensed to 3 pages under
+  Reacting to Changes.
