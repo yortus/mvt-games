@@ -1,8 +1,8 @@
 # Views
 
 > A view reads state and updates presentation. It holds no domain state,
-> has no idea of time beyond the `refresh()` call, and is constructed once then
-> updated every frame.
+> has no idea of time beyond the `refresh()` call, and is constructed once
+> then updated every frame.
 
 **Previous:** [Models](models.md) · **Next:** [Bindings](bindings.md)
 
@@ -16,9 +16,11 @@ DOM element, an audio channel, or a debug panel. You could open multiple
 windows (multiple views) onto the same model and they would all stay in sync.
 You could close all windows and the simulation would keep running unchanged.
 
-Views are **stateless** and **timeless** - they don't track what happened
-before, and they don't decide what happens next. A `refresh()` function runs
-each frame.
+Views hold **no domain state** and are **timeless** - they don't track what
+happened before, and they don't decide what happens next. A `refresh()`
+function runs each frame. (Views *do* hold a retained scene graph and may
+hold [presentation state](#presentation-state) for cosmetic transitions -
+"stateless" always refers to domain state in MVT.)
 
 In this project, views typically use Pixi.js containers and manage scene
 graphs. The examples below reflect this, but the MVT pattern applies to any
@@ -116,6 +118,14 @@ construction time, the view builds its scene graph - `Container`, `Graphics`,
 the view updates properties on these objects (position, text, visibility, tint)
 without tearing down and rebuilding the tree.
 
+This is a hybrid approach: the *data flow* is immediate-mode (`refresh()`
+re-reads all state from scratch every frame), but the *output* is
+retained-mode (the scene graph persists across frames and is mutated, not
+recreated). You get immediate-mode correctness - no stale state, no
+subscription bugs - with retained-mode efficiency - no per-frame object
+allocation. For the full explanation, see
+[Architecture: Views](../architecture/views.md#immediate-mode-data-flow-retained-mode-output).
+
 ```ts
 function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
@@ -156,9 +166,9 @@ Views are the thinnest possible layer between model state and presentation:
 | Direct model imports           | Leaf views use bindings for decoupling                |
 
 A good test: if you deleted the view and wrote a new one from scratch, would
-the application still work correctly? If yes, the view is properly stateless.
-If the view held state the rest of the application depended on, something is
-in the wrong layer.
+the application still work correctly? If yes, the view is properly
+domain-stateless. If the view held state the rest of the application depended
+on, something is in the wrong layer.
 
 ## Presentation State
 

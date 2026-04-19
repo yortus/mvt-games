@@ -41,16 +41,33 @@ identical outputs. This is the basis for:
 - **Time manipulation** - pause, slow-motion, fast-forward by controlling
   delta.
 
-### Stateless Rendering (Views)
+### Immediate-Mode Data Flow, Retained-Mode Output (Views)
 
 **UI as a function of state** - the core insight behind React, Elm, and
-immediate-mode GUI libraries like Dear ImGui. The view is a pure
-transformation: `state -> presentation`.
+immediate-mode GUI libraries like Dear ImGui. Every frame, `refresh()`
+re-reads all state and writes output as if rendering from scratch. This is
+the **immediate-mode data flow** pattern: the view is a pure transformation
+from `state -> presentation`, with no subscriptions and no change
+notifications driving updates.
 
-Stateless rendering eliminates entire categories of bugs: stale state,
-inconsistent UI, distributed coordination errors, missed update notifications,
-event ordering problems. The
-display is guaranteed to be consistent with the model after every frame.
+However, MVT views typically write to a **retained-mode output** - a scene
+graph, a DOM tree, or another persistent structure. Display objects are
+constructed once and mutated each frame, not recreated. Dear ImGui is
+immediate mode in *both* data flow and output - it reconstructs its widget
+tree every frame. MVT borrows only the data flow pattern.
+
+This hybrid gives two benefits simultaneously:
+
+- **Immediate-mode correctness** - no stale state, no subscription bugs, no
+  missed update notifications, no event ordering problems. The display is
+  guaranteed to be consistent with the model after every frame.
+- **Retained-mode efficiency** - no per-frame allocation of display objects.
+  The scene graph persists, and `refresh()` only mutates properties that need
+  updating.
+
+This is the same strategy React uses (immediate-mode mental model over a
+retained DOM) and the same approach most modern game engines use for their
+update-then-render loops.
 
 ### Passive View (Bindings)
 
@@ -74,6 +91,13 @@ Polling for changes rather than relying on push notifications. The most
 prominent example is Angular 1's digest cycle. In a frame-loop context where
 `refresh()` already runs every tick, the polling cost is near zero.
 
+Because MVT views target a retained scene graph, change detection is also a
+performance tool: if a value hasn't changed, the view can skip mutating the
+corresponding display objects entirely. In a pure immediate-mode system this
+optimisation would be unnecessary (the output is rebuilt anyway), but in
+MVT's retained hybrid it is how you get minimal-mutation efficiency on top
+of immediate-mode correctness.
+
 ### Hierarchical Composition
 
 The **Composite** pattern - treating individual objects and compositions
@@ -87,12 +111,13 @@ Each pattern enables and reinforces the others:
 
 - The game loop requires models to be deterministic - if models used their own
   timers, the ticker couldn't control time.
-- Deterministic models provide a single source of truth, making stateless
-  views viable - just read current state every frame.
-- Stateless views have explicit bindings so they don't create hidden
+- Deterministic models provide a single source of truth, making
+  domain-stateless views viable - just read current state every frame.
+- Domain-stateless views have explicit bindings so they don't create hidden
   dependencies on specific models.
 - Dirty checking slots cleanly into the frame-loop lifecycle since `refresh()`
-  runs every tick anyway.
+  runs every tick anyway. It also exploits the retained scene graph -
+  unchanged values need not be written to display objects.
 - Hierarchical composition lets each pattern scale from one model/view to
   dozens without changing the architecture.
 

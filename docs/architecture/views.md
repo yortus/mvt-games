@@ -15,8 +15,12 @@
 
 A view is part of the presentation layer. Each frame, it reads from current model
 state and updates its output to match - a canvas scene graph, a DOM tree,
-an audio mix, a debug panel. Views are **stateless projections**: they don't
-track what happened before, and they don't decide what happens next.
+an audio mix, a debug panel. Views are **domain-stateless projections**: they
+don't track domain history, and they don't decide what happens next.
+
+Views *do* hold a retained output structure - the scene graph - and may hold
+[presentation state](#presentation-state) for cosmetic transitions. "Stateless"
+always refers to domain state in MVT.
 
 ## The `refresh()` Contract
 
@@ -36,6 +40,38 @@ The contract:
 - **No side effects.** `refresh()` reads state and writes to the presentation
   layer. It does not mutate models, emit domain events, or trigger state
   transitions.
+
+## Immediate-Mode Data Flow, Retained-Mode Output
+
+The `refresh()` contract is an **immediate-mode data flow** pattern: the view
+re-reads all state and writes output every frame, as if rendering from
+scratch. There are no subscriptions, no change notifications, no event-driven
+partial updates - just a fresh read of current state each frame.
+
+But views typically write to a **retained output** - a scene graph, a DOM
+tree, or another persistent structure. Display objects are constructed once
+at view creation time and mutated in `refresh()`, not recreated every frame.
+
+This hybrid gives two benefits simultaneously:
+
+- **Immediate-mode correctness.** No stale state, no subscription bugs, no
+  missed updates. The output is guaranteed to match current model state after
+  every `refresh()`.
+- **Retained-mode efficiency.** No per-frame allocation of display objects.
+  The output structure persists across frames, and only changed properties
+  are written.
+
+The retained output is effectively a cache of the last `refresh()` call.
+Like any cache, its correctness depends on `refresh()` being comprehensive:
+if a new model field is added but `refresh()` doesn't read it, the output
+will show stale values for that field. The idempotency and reactivity
+constraints above guard against this - they require `refresh()` to re-read
+*all* state every frame.
+
+When a value changes rarely but triggers expensive work (rebuilding a grid,
+recreating child views), change detection lets `refresh()` skip unchanged
+work - a standard retained-mode optimisation that slots naturally into the
+frame-loop lifecycle.
 
 ## What Belongs in a View
 
@@ -59,7 +95,7 @@ transform domain state into presentation:
 
 A good test: if you deleted the view and wrote a new one from scratch using
 the same state, would the simulation still work correctly? If yes, the view
-is properly stateless.
+is properly domain-stateless.
 
 ## Presentation State
 
