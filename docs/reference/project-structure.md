@@ -179,6 +179,22 @@ import { type Direction } from '.'; // resolves to ./index.ts
 import { type Direction } from './index'; // same problem, explicit
 ```
 
+This applies at **any** depth, not just to files sitting directly beside the
+barrel. A file in a subdirectory is still inside the module, so reaching up to
+an ancestor barrel is the same violation:
+
+```ts
+// Inside models/helpers/clamp.ts
+
+// ❌ Wrong - ancestor barrel, still a self-import
+import { type Direction } from '../index';
+```
+
+If a module genuinely needs to consume another module's public API, it belongs
+beside that module rather than inside it, importing the sibling barrel
+(`'../other-module'`). Needing an ancestor barrel is a signal that the
+directory nesting is wrong.
+
 Importing from your own barrel creates a circular dependency: the barrel
 re-exports you, and you import from the barrel. Even when the cycle is
 technically resolvable, it makes the dependency graph harder to reason about
