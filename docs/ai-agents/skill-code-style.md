@@ -52,7 +52,8 @@ its public API.
 - **No `.ts` extensions** in module specifiers - write `'./foo'`,
   not `'./foo.ts'`.
 - **No declarations** in barrel files - only re-exports.
-- **No self-imports** through barrels.
+- **No self-imports** through barrels, at any depth - not `'./index'` from
+  beside the barrel, and not `'../index'` from a subdirectory.
 
 ```ts
 // ✅ Correct - import through barrel
@@ -63,6 +64,9 @@ import { ScoreModel } from './models/score-model';
 
 // ✅ Correct - within same directory, direct relative path
 import { createTimerModel } from './timer-model';
+
+// ❌ Wrong - self-import through an ancestor barrel, from a subdirectory
+import { createTimerModel } from '../index';
 ```
 
 Enforced by the `import/no-internal-modules` ESLint rule.
