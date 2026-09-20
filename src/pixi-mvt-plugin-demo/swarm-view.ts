@@ -32,9 +32,10 @@ export interface EntitySlot {
  * Reconciles one child view per live entity, adding and removing them from
  * inside `onRefresh`.
  *
- * Children created here are not in the scheduler's snapshot for this pass, so
- * without the drain they would render one frame at their constructor state.
- * With it they are refreshed before the frame is drawn and appear in place.
+ * A pass iterates a snapshot taken before the first hook ran, so a child added
+ * here is not called until the next pass. That is why `createEntityView` sets
+ * its own first frame: a view that spawns children is the one thing that has to
+ * think about it, and it is the one thing with everything it needs to hand.
  */
 export function createSwarmView(bindings: SwarmViewBindings): Container {
     const view = new Container();
@@ -103,7 +104,14 @@ export function createEntityView(slot: EntitySlot): Container {
         pulseMs += deltaMs;
     };
 
-    view.onRefresh = () => {
+    view.onRefresh = refresh;
+    // Born correct rather than at the origin: this view is created from inside
+    // its parent's own refresh, so the pass in flight will not reach it.
+    refresh();
+
+    return view;
+
+    function refresh(): void {
         const entity = slot.entity;
         if (entity === undefined) return;
         view.position.set(entity.x * slot.fieldWidth, entity.y * slot.fieldHeight);
@@ -115,9 +123,7 @@ export function createEntityView(slot: EntitySlot): Container {
         const pulse = 1 + Math.sin(pulseMs * 0.006 + entity.id) * 0.25;
         view.scale.set((2.2 + life * 3.4) * pulse);
         dot.tint = hueToRgb(entity.hue);
-    };
-
-    return view;
+    }
 }
 
 // ---------------------------------------------------------------------------

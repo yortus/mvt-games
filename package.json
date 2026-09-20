@@ -18,7 +18,7 @@
         "preview": "vite preview",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "bench": "vitest bench --run",
+        "bench": "tsx scripts/bench-scene-passes.ts",
         "test": "vitest run",
         "test:watch": "vitest",
         "generate-textures": "tsx scripts/generate-textures.ts"

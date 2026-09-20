@@ -1,9 +1,14 @@
 import { Container, extensions } from 'pixi.js';
-import type { RefreshHook, SceneGraphOwner, UpdateHook } from './mvt-types';
+import type { RefreshHook, UpdateHook } from './mvt-types';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
+
+// Inside the `PixiMixins` namespace below, the name `Container` resolves to the
+// interface being declared there rather than to Pixi's class, so the memo lists
+// reach the class through this alias.
+type SceneNode = Container;
 
 // Pixi's own mixins declare `PixiMixins.Container` without type parameters even
 // though `Container.d.ts` references it as `PixiMixins.Container<C>`. That only
@@ -26,43 +31,51 @@ declare global {
             /**
              * Syncs this container's presentation output from model state.
              *
-             * Called after every container's `onUpdate` for the tick, and
-             * before any of this container's descendants' `onRefresh`.
-             * Must be idempotent.
+             * Called before any of this container's descendants' `onRefresh`.
+             * Must be idempotent: it restates a fact rather than making a
+             * change, so running it twice changes nothing.
              */
             onRefresh: RefreshHook | undefined;
 
-            /** @internal */ _mvtOnUpdate: UpdateHook | undefined;
-            /** @internal */ _mvtOnRefresh: RefreshHook | undefined;
-            /** @internal */ _mvtOwner: SceneGraphOwner | undefined;
-            /** @internal */ _mvtUpdateSlot: number;
-            /** @internal */ _mvtRefreshSlot: number;
+            /** @internal Backing field for `onUpdate`. */
+            _mvtOnUpdate: UpdateHook | undefined;
+            /** @internal Backing field for `onRefresh`. */
+            _mvtOnRefresh: RefreshHook | undefined;
+            /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
+            _mvtHasUpdate: boolean | undefined;
+            /** @internal Preorder list of the `onUpdate` bearers in this subtree. */
+            _mvtUpdateList: SceneNode[] | undefined;
+            /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
+            _mvtHasRefresh: boolean | undefined;
+            /** @internal Preorder list of the `onRefresh` bearers in this subtree. */
+            _mvtRefreshList: SceneNode[] | undefined;
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// Install
 // ---------------------------------------------------------------------------
 
+// Installed at module load rather than lazily on first use. A hook assigned
+// before the accessors exist creates an own data property that shadows them for
+// the life of that container, so its setter - and with it invalidation - would
+// never fire again. Importing this module is the only ordering requirement, and
+// ES modules evaluate imports before the importing module's own code.
+installMixin();
+
 /**
- * Installs `onUpdate` / `onRefresh` on `Container.prototype` and hooks the
- * structural mutation methods so schedulers learn about tree changes.
+ * Adds `onUpdate` / `onRefresh` to `Container.prototype` and wraps the
+ * structural methods so the memo fields can be invalidated.
  *
- * Idempotent, and called automatically by `createSceneScheduler`.
- *
- * This file and `mvt-application-plugin.ts` are the only two in the spike that
- * use `this`, which the style guide otherwise rules out. A prototype accessor
- * and a wrapped prototype method have no way to reach their instance without
- * it, and Pixi's application plugin contract calls `init` / `destroy` bound to
- * the `Application`. The exemption stops at this boundary: hooks are invoked
- * as plain calls, never with a receiver, so a view's hook is an ordinary
- * closure over its own state like every other view in this repo.
+ * This file is the only one in the plugin that uses `this`, which the style
+ * guide otherwise rules out. A prototype accessor and a wrapped prototype
+ * method have no way to reach their instance without it. The exemption stops
+ * here: hooks are invoked as plain calls, never with a receiver, so a view's
+ * hook is an ordinary closure over its own state like every other view.
  */
-export function installMvtContainerMixin(): void {
-    if (installed) return;
-    installed = true;
-    extensions.mixin(Container, mvtMixin);
+function installMixin(): void {
+    extensions.mixin(Container, createMixinSource());
     wrapStructuralMethods();
 }
 
@@ -70,47 +83,54 @@ export function installMvtContainerMixin(): void {
 // Internals
 // ---------------------------------------------------------------------------
 
-let installed = false;
-
 interface MvtContainerMixin {
     _mvtOnUpdate: UpdateHook | undefined;
     _mvtOnRefresh: RefreshHook | undefined;
-    _mvtOwner: SceneGraphOwner | undefined;
-    _mvtUpdateSlot: number;
-    _mvtRefreshSlot: number;
+    _mvtHasUpdate: boolean | undefined;
+    _mvtUpdateList: SceneNode[] | undefined;
+    _mvtHasRefresh: boolean | undefined;
+    _mvtRefreshList: SceneNode[] | undefined;
     onUpdate: UpdateHook | undefined;
     onRefresh: RefreshHook | undefined;
 }
 
-// Accessors rather than plain fields so that assigning a hook to a container
-// that is already attached can re-seat it in the call list. Assigning to an
-// ancestor whose descendants are already listed would otherwise place the
-// ancestor after them - the ordering hole that `onRender` has.
-const mvtMixin: MvtContainerMixin & ThisType<Container> = {
-    _mvtOnUpdate: undefined,
-    _mvtOnRefresh: undefined,
-    _mvtOwner: undefined,
-    _mvtUpdateSlot: -1,
-    _mvtRefreshSlot: -1,
+/**
+ * The property descriptors handed to `extensions.mixin`, which copies them onto
+ * the prototype with `Object.defineProperties`, accessors intact.
+ *
+ * The hooks are accessors rather than plain fields because assigning one has to
+ * invalidate the memoised lists above the container. Without that, hooking an
+ * already-attached container would leave it out of a list built before it
+ * carried a hook - which is exactly the ordering hole `onRender` has.
+ */
+function createMixinSource(): MvtContainerMixin & ThisType<Container> {
+    return {
+        _mvtOnUpdate: undefined,
+        _mvtOnRefresh: undefined,
+        _mvtHasUpdate: undefined,
+        _mvtUpdateList: undefined,
+        _mvtHasRefresh: undefined,
+        _mvtRefreshList: undefined,
 
-    get onUpdate(): UpdateHook | undefined {
-        return this._mvtOnUpdate;
-    },
-    set onUpdate(hook: UpdateHook | undefined) {
-        if (this._mvtOnUpdate === hook) return;
-        this._mvtOnUpdate = hook;
-        this._mvtOwner?.hookChanged(this);
-    },
+        get onUpdate(): UpdateHook | undefined {
+            return this._mvtOnUpdate;
+        },
+        set onUpdate(hook: UpdateHook | undefined) {
+            if (this._mvtOnUpdate === hook) return;
+            this._mvtOnUpdate = hook;
+            invalidateUpdate(this);
+        },
 
-    get onRefresh(): RefreshHook | undefined {
-        return this._mvtOnRefresh;
-    },
-    set onRefresh(hook: RefreshHook | undefined) {
-        if (this._mvtOnRefresh === hook) return;
-        this._mvtOnRefresh = hook;
-        this._mvtOwner?.hookChanged(this);
-    },
-};
+        get onRefresh(): RefreshHook | undefined {
+            return this._mvtOnRefresh;
+        },
+        set onRefresh(hook: RefreshHook | undefined) {
+            if (this._mvtOnRefresh === hook) return;
+            this._mvtOnRefresh = hook;
+            invalidateRefresh(this);
+        },
+    };
+}
 
 /**
  * Wraps the membership-changing methods on `Container.prototype`.
@@ -118,8 +138,8 @@ const mvtMixin: MvtContainerMixin & ThisType<Container> = {
  * Deliberately absent: `swapChildren`, `sortChildren`, `setChildIndex`, and
  * `addChild` / `addChildAt` when the child is already parented here. Those are
  * pure sibling reorderings, and sibling order carries no guarantee, so they
- * cannot invalidate a call list. That exclusion matters - `sortChildren` is
- * called by Pixi itself during rendering whenever `sortableChildren` is set.
+ * cannot invalidate a list. That exclusion matters - Pixi calls `sortChildren`
+ * itself during rendering whenever `sortableChildren` is set.
  *
  * Everything else funnels through these five. `setChildIndex`, `reparentChild`,
  * `reparentChildAt`, `replaceChild`, `removeChildAt` and `removeFromParent` all
@@ -137,16 +157,16 @@ function wrapStructuralMethods(): void {
     proto.addChild = function addChild(this: Container, ...children: Container[]): Container {
         if (children.length !== 1) {
             // The base implementation recurses into `this.addChild` per child,
-            // so each one is reported by the single-child path below.
+            // so each one is covered by the single-child path below.
             return baseAddChild.apply(this, children);
         }
         const child = children[0];
         // A child already parented here is only being moved to the end of the
         // sibling list. If it had a different parent, the base implementation
-        // calls that parent's `removeChild`, which reports the detach for us.
+        // calls that parent's `removeChild`, which invalidates that side.
         const isReorder = child.parent === this;
         const result = baseAddChild.call(this, child);
-        if (!isReorder) notifyAttach(this, child);
+        if (!isReorder) invalidate(this);
         return result;
     };
 
@@ -157,11 +177,10 @@ function wrapStructuralMethods(): void {
         const result = baseAddChildAt.call(this, child, index);
         if (previousParent === this) return result;
         // Unlike `addChild`, this path splices the child out of its previous
-        // parent directly instead of going through `removeChild`, so the
-        // detach has to be reported here or the container would end up listed
-        // twice.
-        if (previousParent) notifyDetach(child);
-        notifyAttach(this, child);
+        // parent directly instead of going through `removeChild`, so that side
+        // has to be invalidated here.
+        if (previousParent) invalidate(previousParent);
+        invalidate(this);
         return result;
     }) as typeof proto.addChildAt;
 
@@ -172,7 +191,7 @@ function wrapStructuralMethods(): void {
         const child = children[0];
         const wasChild = child.parent === this;
         const result = baseRemoveChild.call(this, child);
-        if (wasChild) notifyDetach(child);
+        if (wasChild) invalidate(this);
         return result;
     };
 
@@ -182,29 +201,60 @@ function wrapStructuralMethods(): void {
         endIndex?: number,
     ): Container[] {
         const removed = baseRemoveChildren.call(this, beginIndex, endIndex);
-        for (let i = 0; i < removed.length; i++) {
-            notifyDetach(removed[i]);
-        }
+        if (removed.length > 0) invalidate(this);
         return removed;
     };
 
     proto.destroy = function destroy(this: Container, options?: Parameters<typeof baseDestroy>[0]): void {
+        // Clearing the hooks is what stops a destroyed container being called
+        // again. Detaching alone is not enough: a container driven directly by
+        // `updateScene(node)` has no parent to be detached from, so nothing
+        // else would ever take it out of its own list. Doing it before the base
+        // call means the setters still climb through the ancestors.
+        this.onUpdate = undefined;
+        this.onRefresh = undefined;
         baseDestroy.call(this, options);
-        // `destroy` unparents itself via `removeFromParent`, which reports the
-        // detach - unless it had no parent, which is the case for a scheduler
-        // root. Cover that here so a destroyed root cannot stay in a list.
-        if (this._mvtOwner !== undefined) notifyDetach(this);
     };
 }
 
-function notifyAttach(parent: Container, child: Container): void {
-    const owner = parent._mvtOwner;
-    if (owner === undefined) return;
-    owner.attachSubtree(child);
+/** Invalidates both kinds, which is what every structural change needs. */
+function invalidate(node: Container): void {
+    invalidateUpdate(node);
+    invalidateRefresh(node);
 }
 
-function notifyDetach(child: Container): void {
-    const owner = child._mvtOwner;
-    if (owner === undefined) return;
-    owner.detachSubtree(child);
+/**
+ * Climbs to the root clearing the update memo, stopping at the first container
+ * already dirty for that kind.
+ *
+ * The short-circuit relies on a per-kind invariant - a container dirty for kind
+ * K implies all its ancestors are dirty for K - which this climb maintains
+ * inductively. After the first mutation of a frame the chain above it is
+ * already dirty, so every later mutation stops on its first comparison, and a
+ * tree nothing ever drives is permanently dirty and costs one comparison per
+ * mutation.
+ */
+function invalidateUpdate(node: Container): void {
+    // `Container.parent` is typed `Container | null` by Pixi, one of the few
+    // places it hands back `null`, so the climb tests truthiness.
+    let cursor: Container | null = node;
+    while (cursor) {
+        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdateList === undefined) return;
+        // Both fields of a kind are cleared together: they are maintained in
+        // lockstep and the short-circuit above tests both.
+        cursor._mvtHasUpdate = undefined;
+        cursor._mvtUpdateList = undefined;
+        cursor = cursor.parent;
+    }
+}
+
+/** The refresh half of {@link invalidateUpdate}. */
+function invalidateRefresh(node: Container): void {
+    let cursor: Container | null = node;
+    while (cursor) {
+        if (cursor._mvtHasRefresh === undefined && cursor._mvtRefreshList === undefined) return;
+        cursor._mvtHasRefresh = undefined;
+        cursor._mvtRefreshList = undefined;
+        cursor = cursor.parent;
+    }
 }

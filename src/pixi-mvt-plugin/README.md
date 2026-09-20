@@ -1,252 +1,342 @@
-# pixi-mvt-plugin (spike)
+# pixi-mvt-plugin
 
-Scene-wide `onUpdate(deltaMs)` and `onRefresh()` for Pixi containers, with a
-traversal order MVT can rely on.
+> Per-frame logic that belongs to a container instead of to a ticker. For Pixi
+> developers; no architecture knowledge assumed. See
+> [the design notes](../../proposals/002-mvt-plugin-design-notes.md) for how it works and why it is built this
+> way.
 
 **Status: spike.** Nothing outside this folder and its demo imports it, and no
-existing view has been migrated. The 60 files using `onRender` are untouched.
+existing view has been migrated.
 
-The demo lives in `src/pixi-mvt-plugin-demo/`, beside the plugin rather than
-inside it. A demo is a consumer of the plugin, so nesting it would have forced
-an ancestor-barrel import (`from '../index'`), which inverts the dependency
-direction and is not done anywhere else in this repo.
+---
 
-New to this? Start with [QUICK-START.md](QUICK-START.md), which assumes Pixi
-experience and no knowledge of MVT. This page is the design rationale.
+Two optional hooks on every `Container`, and two functions that drive them
+across a scene:
+
+```ts
+container.onUpdate = (deltaMs) => { /* advance state over time */ };
+container.onRefresh = () => { /* make the scene show current state */ };
+
+updateScene(app.stage, deltaMs); // runs every onUpdate in the subtree
+refreshScene(app.stage);         // runs every onRefresh in the subtree
+```
+
+Both passes call a container before any of its descendants, run without a
+renderer or a ticker, and cost microseconds on a realistic scene. That is the
+whole API: four names.
+
+## `onUpdate`: state that moves on its own
+
+Most games have visuals that animate without affecting gameplay - a spinning
+indicator, a hit flash, a recoil spring. That is localised state, and today Pixi
+has nothing for it. It takes a ticker subscription and a matching
+unsubscription that is easy to forget, which leaks and keeps ghost animations
+running after teardown:
+
+```ts
+function createSpinner(): Container {
+    const view = new Graphics().rect(-20, -20, 40, 40).fill(0x44aaff);
+
+    const tick = (ticker: Ticker) => {
+        view.rotation += 0.002 * ticker.deltaMS;
+    };
+    Ticker.shared.add(tick);
+    view.on('destroyed', () => Ticker.shared.remove(tick));
+
+    return view;
+}
+```
+
+With `onUpdate`, the angle is a local variable and the subscription disappears:
+
+```ts
+function createSpinner(): Container {
+    const view = new Graphics().rect(-20, -20, 40, 40).fill(0x44aaff);
+    let angle = 0;
+
+    view.onUpdate = (deltaMs) => angle += 0.002 * deltaMs; // state advances
+    view.onRefresh = () => view.rotation = angle;          // scene matches state
+
+    return view;
+}
+```
+
+A container animates only while it is in the scene graph. There is nothing to
+unsubscribe, nothing to forget, and no coupling to a global clock - the time is
+an argument, so a test can pass it whatever it likes. Developers arriving from
+Unity recognise `MonoBehaviour.Update` immediately.
+
+## `onRefresh`: the scene catches up
+
+Keeping a scene in sync with game state is normally a chore of remembering:
+every place that changes `player.hp` also has to remember to resize the health
+bar. `onRefresh` inverts that. It reads state and syncs the display to it:
+
+```ts
+const player = { hp: 100 };
+
+healthBar.onRefresh = () => {
+    const fraction = player.hp / 100;
+    bar.scale.x = fraction;
+    bar.tint = fraction > 0.5 ? GREEN : fraction > 0.2 ? YELLOW : RED;
+};
+```
+
+The bar is now correct forever, and not because anything told it. A trap, a
+healing potion, loading a save, a cheat typed into a debug console: none of them
+need a line of code to keep the bar in sync, because the bar re-derives itself
+from `player.hp` every frame. No dirty flags, no change events, no `setHp()`
+that also has to remember to resize a rectangle. A whole category of stale
+display bugs goes away.
+
+It is the same split as the spinner, just bigger and public. `angle` is state
+and `view.rotation` is the picture of it, exactly as `player.hp` is state and
+`bar.scale.x` is the picture of it.
+
+Rule of thumb: if it changes state, it belongs in `onUpdate`. If it makes the
+scene match state, it belongs in `onRefresh`.
+
+## Wiring it up
+
+Nothing is subscribed on your behalf. The frame is yours:
+
+```ts
+import { Application } from 'pixi.js';
+import { refreshScene, updateScene } from './pixi-mvt-plugin';
+
+const app = new Application();
+await app.init({ width: 960, height: 600 });
+
+app.ticker.add((ticker) => {
+    model.update(ticker.deltaMS);            // your game state
+    updateScene(app.stage, ticker.deltaMS);  // views advance their own state
+    refreshScene(app.stage);                 // views sync from state
+});
+```
+
+Every `onUpdate` in the scene finishes before any `onRefresh` starts, so no
+frame is drawn from a half-updated world. That is a property of the loop above,
+not something the library enforces, which is what makes the next part free:
+
+```ts
+app.ticker.add((ticker) => {
+    if (!paused) {
+        updateScene(app.stage, ticker.deltaMS * timeScale); // 0.25 is slow motion
+    }
+    refreshScene(app.stage); // runs either way
+});
+
+// and a single-step debug key is just:
+onKeyPress('.', () => updateScene(app.stage, 16));
+```
+
+Pause, slow motion and single-stepping all fall out of that, and a paused frame
+still draws correctly: menus opened while paused lay themselves out, sliders
+track, and anything that changes state while the world is frozen shows up
+immediately.
+
+`updateScene` and `refreshScene` can be called on **any** container, at any
+time, by more than one caller. Driving a branch is as valid as driving the
+stage, which is what lets a test drive one view and an editor drive one panel.
+
+## Why not `onRender`?
+
+**Recommendation: do not use `onRender` for state sync. Use `onRefresh`.**
+
+`onRender` is not broken, and this is not a criticism of it. It answers the
+question *"I am about to be drawn"*. `onRefresh` answers *"the state may have
+changed"*. Those are different questions, and they only give the same answer
+when render cadence equals tick cadence and nothing in the tree is cached.
+
+Five ways they diverge, in rough order of how likely they are to bite:
+
+1. **`onRender` fires per render, not per tick.** A render-on-demand app
+   (editors, tools, UI-heavy Pixi) may render zero or three times in a tick.
+   Fixed-timestep simulation with interpolated rendering decouples the two by
+   design. In both, sync happens at the wrong cadence or not at all. Pairing
+   `onUpdate` with `onRender` quietly reintroduces exactly the render coupling
+   that `onUpdate` exists to remove.
+2. **`cacheAsTexture` silently suppresses it.** It is a mainstream performance
+   tool - static backgrounds, tile layers, complex UI panels. The moment anyone
+   caches a subtree, every `onRender` inside it stops firing. A teammate
+   enabling caching for performance breaks someone else's sync, with no error.
+3. **Render groups fragment its ordering.** `renderGroup: true` is Pixi 8's
+   recommended tool for subtrees that move as a unit - cameras, parallax, HUDs.
+   Each group keeps its own callback list.
+4. **No renderer means no sync at all.** Headless scene-wide testing,
+   server-side simulation, fast-forward and netcode rollback, thumbnail
+   generation. You can call one container's `onRender` by hand; you cannot do
+   that for a composed scene of twenty nested views without writing the walk
+   yourself, which is this plugin.
+5. **An ordering hole.** `onRender`'s registration list is append-only, so
+   assigning it to an already-attached container whose descendants are already
+   registered places the ancestor *after* them.
+
+To be fair to it: `onRender`'s ordering is better than it is often described.
+Whole subtrees are registered in preorder and nested render groups run
+parent-first, so late attachment, reparenting and sibling reordering are all
+fine. Point 5 is the one genuine hole, and this plugin closes it because
+assigning a hook goes through a setter that invalidates the cached list.
+
+The positive case is simpler: `onUpdate` and `onRefresh` are a matched pair.
+Same traversal, same ordering guarantee, same invalidation, same testability,
+both driven by explicit calls at points you choose. Mixing `onUpdate` with
+`onRender` means two mechanisms with different semantics, one of which you do
+not control.
+
+## It composes in JSX
+
+This is the one thing with no workaround. The experimental
+[`src/pixi-jsx/`](../pixi-jsx/) runtime types `JSX.Element` as `Container`, and
+`ListProps.to` as `(item, index) => Container`. Every composition point is
+therefore blind to a view that carries its own `update()` method: the
+`& { update }` half of the type is erased the moment the value enters a JSX
+tree, and `addChildren()` just calls `parent.addChild(child)`.
+
+So an update-bearing view cannot simply be written into a scene. It has to be
+built separately, outside the tree, so a reference survives for manual tick
+forwarding, then spliced back in by `ref` or hoisted above the JSX entirely.
+That is a second construction path running alongside the declarative one, and
+it exists purely so somebody can reach a method.
+
+With `onUpdate` the problem disappears rather than being worked around. An
+update-bearing view is an ordinary `Container` that composes at any depth,
+inside a `<List>`, with no ref and no forwarding. The pass finds it by walking
+the tree that JSX just built.
+
+## Testing
+
+Both passes are ordinary function calls, so a scene runs with no `Application`,
+no renderer and no ticker.
+
+`onRefresh` is the easy one, because it is a pure projection of state. Set the
+state, refresh once, assert on the scene. No frames, no time:
+
+```ts
+it('shows a hurt bar in amber', () => {
+    player.hp = 30;
+    refreshScene(healthBar);
+
+    expect(bar.scale.x).toBeCloseTo(0.3);
+    expect(bar.tint).toBe(0xddaa33);
+});
+```
+
+`onUpdate` takes the time you give it:
+
+```ts
+import { Container } from 'pixi.js';
+import { refreshScene, updateScene } from './pixi-mvt-plugin';
+
+it('spins two radians per second', () => {
+    const root = new Container();
+    const spinner = createSpinner();
+    root.addChild(spinner);
+
+    updateScene(root, 1000);
+    refreshScene(root);
+
+    expect(spinner.rotation).toBeCloseTo(2);
+});
+```
+
+Because you pass the time in, a thousand frames run instantly or one frame runs
+at a time. The same trick covers promo shots, rewind and replay: step scene
+time however you like, then render it.
+
+## Rules of the road
+
+**Ordering.** Every container runs before any of its descendants. Sibling order
+is deliberately unspecified: a view whose hook depends on a sibling's hook is
+reading another view's output rather than reading state.
+
+**Gating.** Both hooks always fire, including on containers with
+`visible = false`, and regardless of culling or whether a render happened. An
+animation that pauses while hidden is wrong when it reappears. To stop a
+subtree, detach or destroy it - that costs nothing per tick, and a destroyed
+container never fires again.
+
+**Mutation during a pass.** A pass walks a snapshot of the list taken before the
+first hook ran.
+
+| A hook, during the pass...                | Behaviour                                     |
+| ----------------------------------------- | --------------------------------------------- |
+| adds a hooked child                       | Not in the snapshot; runs from the next pass  |
+| removes a **later** container             | Skipped                                       |
+| removes an **earlier** container          | No effect this pass                           |
+| clears a hook on a later container        | Skipped                                       |
+| reparents a container in the same subtree | Called once, from its snapshot position       |
+| destroys a container                      | Same as removing it                           |
+| re-enters the same pass on the same node  | Throws                                        |
+
+A view that builds children inside `onRefresh` therefore has to give them their
+first frame itself, by refreshing them as it creates them. That is one line in
+the one place that knows it is needed;
+[the demo's entity view](../pixi-mvt-plugin-demo/swarm-view.ts) does it.
+
+**Both run every frame**, so do not allocate in them. Index-based loops, no
+`array.map()`, no template strings.
+
+**`onRefresh` must be safe to run twice.** Assign, never accumulate:
+`view.x = ...`, not `view.x += ...`. Accumulate in `onUpdate` instead.
+
+**Mutating `container.children` directly is not supported.** The plugin learns
+about tree changes from `addChild`, `addChildAt`, `removeChild`,
+`removeChildren` and `destroy`. Splicing the array behind their backs leaves a
+stale list.
+
+## What it costs
+
+Measured with `npm run bench`, one arm per process, microseconds per frame on a
+Windows laptop. A frame is one pass plus the scenario's churn.
+
+| Scenario                                          | naive walk | this plugin |
+| ------------------------------------------------- | ---------- | ----------- |
+| 20k containers, 200 hooked, static                 | 224 us     | **0.50 us** |
+| 2k containers, all hooked, static                  | 10.4 us    | **4.5 us**  |
+| 2k containers, all hooked, 100 swaps per frame     | **36.5 us**| 65.3 us     |
+| 100 hookless 25-container subtrees, re-attached    | 45.5 us    | **9.8 us**  |
+
+The first row is the realistic shape - a large scene where few containers carry
+hooks - and it is why the list is cached rather than walked. The third row is
+the honest one: when every container is hooked *and* the tree changes every
+frame, the cache is rebuilt every frame and pure overhead. That case is
+structural and documented rather than fixed.
+
+Two baselines worth having:
+
+- **Dispatch against the incumbent.** 2000 hooks through Pixi's own `onRender`
+  list cost 2.7 us; the same 2000 through `refreshScene` cost 4.7 us. The
+  difference is under a nanosecond per container, and buys the detachment check
+  that makes mid-pass removal safe.
+- **What the monkey-patch costs a tree that never uses it.** 100 attach and
+  detach pairs on an unmanaged tree: 13.4 us unpatched, 13.7 us patched, which
+  is inside the run-to-run noise. The patch is the main adoption objection, and
+  the objection is about trust rather than speed, so the number is here.
 
 ## Running it
 
-| Command                                        | What it does                          |
-| ---------------------------------------------- | ------------------------------------- |
-| `npx vitest run src/pixi-mvt-plugin*`           | 57 tests                              |
-| `npx vitest bench --run src/pixi-mvt-plugin/`   | Strategy comparison                   |
-| `npm run dev`, then `/spike/`                   | Visual demo                           |
+| Command                              | What it does           |
+| ------------------------------------ | ---------------------- |
+| `npx vitest run src/pixi-mvt-plugin*` | 55 tests               |
+| `npm run bench`                      | The table above        |
+| `npm run dev`, then `/spike/`        | Visual demo            |
 
 The demo page is dev-server only. To include it in `npm run build`, add
 `'spike': resolve(__dirname, 'spike/index.html')` to `rollupOptions.input` in
 `vite.config.ts`. That edit has deliberately not been made.
 
-## API
+The demo lives in [`src/pixi-mvt-plugin-demo/`](../pixi-mvt-plugin-demo/),
+beside the plugin rather than inside it: a demo is a consumer of the plugin, so
+nesting it would force an ancestor-barrel import, which
+[project-structure.md](../../docs/reference/project-structure.md) forbids.
 
-```ts
-import { createSceneScheduler, installMvtScenePlugin } from './pixi-mvt-plugin';
+## Next
 
-// Core: works on any Container. No Application, no ticker, no renderer.
-const scene = createSceneScheduler(root);
-scene.update(16);
-scene.refresh();
-
-// Adapter: exposes app.scene, and subscribes to nothing.
-installMvtScenePlugin();
-const app = new Application();
-await app.init({ mvtStrategy: 'incremental' });
-
-app.ticker.add((ticker) => {
-    model.update(ticker.deltaMS);
-    app.scene.update(ticker.deltaMS);
-    app.scene.refresh();
-});
-```
-
-Any container can carry either hook:
-
-```ts
-view.onUpdate = (deltaMs) => { flashMs -= deltaMs; };
-view.onRefresh = () => { view.position.set(bindings.getX(), bindings.getY()); };
-```
-
-## The ordering contract
-
-**Every container is called before any of its descendants. Sibling order is
-unspecified.**
-
-Sibling order is left out on purpose. A view whose `refresh` depends on a
-sibling's `refresh` is reading another view's presentation output rather than
-the model, which is cross-talk MVT already rules out. Ancestors are different:
-a parent legitimately sets a transform, layout or visibility that children read.
-
-That weaker contract is what makes the rest of the design work:
-
-- Pure sibling reorderings cannot invalidate a call list, so `swapChildren`,
-  `sortChildren`, `setChildIndex` and `addChild`-to-move are not hooked at all.
-  This matters, because Pixi calls `sortChildren` itself during rendering
-  whenever `sortableChildren` is set.
-- Attaching a subtree can append its hooks to the tail of the list. Every
-  appended node's ancestors are either inside the appended block, and earlier in
-  it because the block is in preorder, or were already in the list before the
-  block started. So maintenance costs the size of the change, not the size of
-  the scene.
-
-The one thing this contract cannot express is bottom-up measurement, where a
-parent sizes itself from its children's measured extents. Pixi bounds are
-pull-based and computed at call time (`getLocalBounds` recomputes through
-`checkChildrenDidChange`), so measuring your own children inside a single
-`refresh` body is correct regardless of traversal order. Only measurement
-*across* views lags by a tick, and the fix is for the view doing the measuring
-to own the thing being measured.
-
-## What `onRender` actually guarantees
-
-Earlier in this spike `onRender` was described as having no ordering guarantee.
-That was overstated, and the correction is worth recording.
-
-`RenderGroup._onRenderContainers` is a flat append-ordered array, but the two
-registration paths that matter (`RenderGroup.init` and `RenderGroup.addChild`)
-both append whole subtrees in preorder, which preserves
-ancestors-before-descendants for the same reason the incremental strategy does.
-Nested render groups also run parent-first, since `_updateRenderGroups` recurses
-into `renderGroupChildren` after calling `runOnRender`. So late attachment,
-reparenting and sibling reordering are all fine under `onRender`.
-
-The one genuine ordering hole is assigning `onRender` to an **already-attached**
-container whose descendants are already registered: the setter appends, placing
-the ancestor after its own descendants. The factory convention in this repo
-dodges it, because views are built detached and hooked before being attached.
-
-So the ordering argument is a weak reason to adopt this. The real reasons are:
-
-1. There is no `update(deltaMs)` equivalent at all.
-2. `onRender` requires a render. No renderer means no refresh, which rules out
-   headless tests, and makes `generateThumbnails` work only incidentally.
-3. `cacheAsTexture` silently suppresses it: `_updateRenderGroups` returns early
-   for a cached group whose texture is current, and nested groups stop firing.
-4. Refresh scheduling stays coupled to render internals.
-
-Incidentally, `runOnRender` is called unconditionally and has never been gated
-on visibility, so the workaround at `src/common/pause-menu-view.ts:33` ("outer
-stays visible so onRender fires") was never needed.
-
-## Gating
-
-Neither pass is gated on `visible`, `renderable`, culling, or whether a render
-happened.
-
-`onUpdate` must not be gated. It advances time-dependent cosmetic state, and
-state that stops advancing while hidden is stale when it reappears. Worse,
-gating it would make presentation state a function of whether something was
-rendered. The way to stop it is to detach or destroy, which is explicit and
-costs nothing per tick.
-
-`onRefresh` could safely be gated, since it is required to be idempotent. It
-isn't, for now, because the cheap lever is already detachment and because
-Pixi's folded `globalDisplayStatus` is computed during the render pass, so
-reading it from a refresh gives last frame's answer. If profiling later shows
-per-entity refresh cost matters, the gate is a single predicate in the pass
-loop and effective visibility should be computed during the walk rather than
-borrowed from the renderer.
-
-## Hook signature
-
-`onUpdate(deltaMs: number)`, not `onUpdate(ticker)`. Passing a `Ticker` would be
-more consistent with `ticker.add`, but it hands views `lastTime`, `elapsedMS`
-and `FPS`, which is the wall clock that MVT rule 1 exists to keep out. It also
-makes synthetic stepping (tests, thumbnails, replays) awkward, invites views to
-pick a different time base from their models via `ticker.speed`, and would give
-the core a hard dependency on Pixi's Ticker.
-
-## Drain-the-tail
-
-Each pass iterates a snapshot, so a container created by a hook is not in that
-pass's list. Without help it would render one frame of constructor state, which
-every entity-spawning view would hit.
-
-After the main loop, the scheduler runs hooks on containers attached during the
-pass, repeating up to `maxDrainRounds` (default 4) and warning in dev if the cap
-is hit. Ancestors-first still holds: a drained container was attached under
-something the pass already visited.
-
-Known edge: detaching and re-attaching a container that sits *earlier* in the
-list than the hook doing the mutating can run it twice in one pass. Reconciling
-parents do not hit this, because their children always sit after them.
-
-## Strategies
-
-Both satisfy the same contract and are selected by option.
-
-- **`rebuild`** marks the lists dirty on any membership change and re-walks the
-  whole tree at the start of the next pass. About thirty lines.
-- **`incremental`** appends attached subtrees, tombstones detached ones, and
-  compacts when tombstones reach half the list. Never walks the whole tree after
-  construction.
-
-Measured on a 2000-container scene (`vitest bench`, one tick = churn + update +
-refresh):
-
-| Scenario                  | rebuild    | incremental | winner              |
-| ------------------------- | ---------- | ----------- | ------------------- |
-| Static scene              | 53,086 hz  | 51,700 hz   | tie (within noise)  |
-| 5 swaps per tick          | 11,972 hz  | 21,841 hz   | incremental, 1.82x  |
-| 100 swaps per tick        | 7,987 hz   | 12,614 hz   | incremental, 1.58x  |
-
-Two findings worth flagging, because both contradict what was predicted before
-measuring:
-
-1. **The win is under 2x, not the order of magnitude expected.** Hook dispatch
-   dominates a tick. Walking 2000 containers is expensive, but not next to
-   dispatching 4000 hook calls, so removing the walk cannot buy more than it
-   costs.
-2. **The advantage shrinks as churn rises**, from 1.82x at 5 swaps to 1.58x at
-   100. Both strategies pay the per-subtree ownership-stamping walk on attach
-   and detach, and that shared cost grows with churn while the rebuild being
-   avoided stays a fixed 2000-node walk.
-
-Which is to say: `incremental` is the better default and the cost of keeping it
-is a tombstone-and-compaction scheme, but `rebuild` is not the liability it
-looked like on paper. If the complexity ever becomes a problem, dropping to
-`rebuild` costs less than expected.
-
-## How it works
-
-`installMvtContainerMixin()` (called automatically) does two things:
-
-1. `extensions.mixin(Container, ...)` adds `onUpdate` / `onRefresh` as
-   **accessors**. Assignment is what lets a hook added to an already-attached
-   container re-seat its subtree, which is what closes the `onRender` hole
-   described above. The backing fields are `_mvtOnUpdate` / `_mvtOnRefresh`,
-   because `Container.prototype._onUpdate` is already Pixi's private transform
-   callback.
-2. Wraps five membership-changing methods on `Container.prototype`:
-   `addChild`, `addChildAt`, `removeChild`, `removeChildren`, `destroy`.
-   Everything else funnels through them. `addChildAt` needs its own detach
-   notification because, unlike `addChild`, it splices a child out of its
-   previous parent directly instead of calling `removeChild`.
-
-Each container in a managed tree carries a reference to its scheduler, so a
-mutation routes to exactly one scheduler without searching, and a container
-detached mid-pass is skipped by a single identity check in the pass loop.
-
-Monkey-patching the host framework is the genuinely invasive part of this
-design. Its failure mode is silent staleness if a future Pixi version adds a
-structural method that does not delegate to these five. The tests cover each
-wrapped path, and two of them were checked to fail when the corresponding guard
-is removed.
-
-## Style notes
-
-Two style-guide rules needed a deliberate decision here.
-
-**`this`** is confined to `mvt-container-mixin.ts` and
-`mvt-application-plugin.ts`. A prototype accessor and a wrapped prototype method
-cannot reach their instance without it, and Pixi calls application plugin
-`init` / `destroy` bound to the `Application`. Hooks themselves are invoked as
-plain calls with no receiver, so a view's hook stays an ordinary closure. The
-side effect is that a hook defined as a subclass prototype method would not see
-its instance, which costs nothing here because the repo has no classes.
-
-**`null`** appears nowhere in the spike's own surface. Hooks, ownership and
-tombstoned slots are all `undefined`. `Container.parent` is typed
-`Container | null` by Pixi, so the handful of places that read it use a
-truthiness check rather than comparing against `null`.
-
-## Open questions
-
-- Should the wrappers be replaced by something less invasive? The event-based
-  alternative (`childAdded` / `childRemoved`) is rejected here because catching
-  every mutation needs a listener on every container, but it is worth revisiting
-  if the wrapper set proves fragile across Pixi versions.
-- Nested schedulers (creating a scheduler rooted inside another scheduler's
-  tree) are unsupported. The ownership stamp is last-writer-wins.
-- Direct mutation of `container.children` bypasses everything. Should that be
-  detected in dev builds?
-- Is `refresh` worth gating behind an opt-in per container after all? The demo
-  makes the cost visible; nothing has been measured on a real game yet.
+- [the design notes](../../proposals/002-mvt-plugin-design-notes.md) - how the traversal is memoised, what was
+  tried and rejected, the benchmark method, and the open questions.
+- [the appraisal](../../proposals/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
+  should adopt it at all.
+- Once game state outgrows a few closures, the rest of this repo shows the
+  model-and-view split these two hooks were designed for. You do not need it to
+  use them.

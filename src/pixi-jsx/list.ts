@@ -33,8 +33,13 @@ const VERSION_UNSET: unique symbol = Symbol('VERSION_UNSET');
 export function List<T>(props: ListProps<T>): Container {
     const container = new Container();
 
-    // Snapshot of item references from the previous reconcile.
-    const prev: unknown[] = [];
+    // Snapshots of item references, double-buffered. `prev` is read-only for
+    // the duration of a reconcile and `next` accumulates the new snapshot.
+    // A single array cannot serve both: after an insertion the write cursor
+    // runs ahead of the read cursor, so writing the new snapshot in place
+    // clobbers old entries the delete cursor has not reached yet.
+    let prev: unknown[] = [];
+    let next: unknown[] = [];
 
     let prevVersion: unknown = VERSION_UNSET;
 
@@ -69,7 +74,7 @@ export function List<T>(props: ListProps<T>): Container {
 
         while (ni < newLen && oi < oldLen) {
             if (items[ni] === prev[oi]) {
-                prev[ni] = items[ni];
+                next[ni] = items[ni];
                 ni++;
                 oi++;
                 continue;
@@ -78,7 +83,7 @@ export function List<T>(props: ListProps<T>): Container {
             // Single insertion: next new item matches current old
             if (ni + 1 < newLen && items[ni + 1] === prev[oi]) {
                 container.addChildAt(createSlot(items[ni] as T, ni), ni);
-                prev[ni] = items[ni];
+                next[ni] = items[ni];
                 ni++;
                 continue;
             }
@@ -96,7 +101,7 @@ export function List<T>(props: ListProps<T>): Container {
             const slot = container.children[ni];
             slot.children[0].destroy({ children: true });
             slot.addChild(props.to(items[ni] as T, ni));
-            prev[ni] = items[ni];
+            next[ni] = items[ni];
             ni++;
             oi++;
         }
@@ -104,7 +109,7 @@ export function List<T>(props: ListProps<T>): Container {
         // Remaining new items: appends
         while (ni < newLen) {
             container.addChild(createSlot(items[ni] as T, ni));
-            prev[ni] = items[ni];
+            next[ni] = items[ni];
             ni++;
         }
 
@@ -116,6 +121,10 @@ export function List<T>(props: ListProps<T>): Container {
             oi++;
         }
 
-        prev.length = newLen;
+        // Swap the buffers. No allocation: both arrays persist across frames.
+        next.length = newLen;
+        const spent = prev;
+        prev = next;
+        next = spent;
     }
 }

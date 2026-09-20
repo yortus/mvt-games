@@ -1,6 +1,5 @@
 import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { installMvtScenePlugin } from '../pixi-mvt-plugin';
-import type { SchedulerStrategyKind } from '../pixi-mvt-plugin';
+import { refreshScene, updateScene } from '../pixi-mvt-plugin';
 import { createSwarmModel } from './swarm-model';
 import { createSwarmView } from './swarm-view';
 
@@ -14,19 +13,12 @@ const FIELD_HEIGHT = 600;
 main();
 
 async function main(): Promise<void> {
-    const strategy = readStrategy();
-
-    // The plugin has to be registered before `init`, which is when Pixi runs
-    // application plugins.
-    installMvtScenePlugin();
-
     const app = new Application();
     await app.init({
         width: FIELD_WIDTH,
         height: FIELD_HEIGHT,
         backgroundColor: 0x0d1117,
         antialias: true,
-        mvtStrategy: strategy,
     });
     document.getElementById('stage')!.appendChild(app.canvas);
 
@@ -49,27 +41,27 @@ async function main(): Promise<void> {
     }));
 
     const probe = createOrderProbe(field);
+    const timings = createPassTimings();
     const hud = createHudView({
-        getStrategy: () => strategy,
         getEntityCount: () => swarm.entities.length,
         getSpawnRate: () => swarm.spawnRate,
         getFps: () => app.ticker.FPS,
-        getStats: () => app.scene.stats,
+        getUpdateMicros: () => timings.updateMicros,
+        getRefreshMicros: () => timings.refreshMicros,
         getProbeTrace: () => probe.trace,
     });
     app.stage.addChild(hud);
 
     // ---- Controls ---------------------------------------------------------
-    wireControls(strategy, swarm);
+    wireControls(swarm);
 
     // ---- Loop -------------------------------------------------------------
-    // The whole point of the ports-and-adapters split: the frame is three
-    // explicit calls in one place, and nothing is subscribed behind your back.
+    // The whole frame, in one place, subscribed to nothing behind your back.
     app.ticker.add((ticker) => {
         const deltaMs = ticker.deltaMS;
-        swarm.update(deltaMs);      // models advance
-        app.scene.update(deltaMs);  // views advance their presentation state
-        app.scene.refresh();        // views sync from models
+        swarm.update(deltaMs);                        // models advance
+        timings.runUpdate(app.stage, deltaMs);        // views advance their own state
+        timings.runRefresh(app.stage);                // views sync from models
         probe.endFrame();
     });
 }
@@ -104,17 +96,11 @@ function createCameraView(): Container {
 }
 
 interface HudBindings {
-    getStrategy(): SchedulerStrategyKind;
     getEntityCount(): number;
     getSpawnRate(): number;
     getFps(): number;
-    getStats(): {
-        readonly updateCalls: number;
-        readonly refreshCalls: number;
-        readonly rebuilds: number;
-        readonly compactions: number;
-        readonly drainRounds: number;
-    };
+    getUpdateMicros(): number;
+    getRefreshMicros(): number;
     getProbeTrace(): string;
 }
 
@@ -123,7 +109,7 @@ function createHudView(bindings: HudBindings): Container {
     view.label = 'hud';
 
     const panel = new Graphics();
-    panel.roundRect(0, 0, 360, 214, 8).fill({ color: 0x161b22, alpha: 0.88 });
+    panel.roundRect(0, 0, 360, 176, 8).fill({ color: 0x161b22, alpha: 0.88 });
     panel.position.set(12, 12);
     view.addChild(panel);
 
@@ -138,22 +124,58 @@ function createHudView(bindings: HudBindings): Container {
     view.addChild(text);
 
     view.onRefresh = () => {
-        const stats = bindings.getStats();
         text.text = [
-            `strategy      ${bindings.getStrategy()}`,
             `fps           ${bindings.getFps().toFixed(0)}`,
             `entities      ${bindings.getEntityCount()}`,
             `spawn rate    ${bindings.getSpawnRate().toFixed(0)}/s`,
-            `update calls  ${stats.updateCalls}`,
-            `refresh calls ${stats.refreshCalls}`,
-            `rebuilds      ${stats.rebuilds}`,
-            `compactions   ${stats.compactions}`,
-            `drain rounds  ${stats.drainRounds}`,
+            `update pass   ${bindings.getUpdateMicros().toFixed(0)} us`,
+            `refresh pass  ${bindings.getRefreshMicros().toFixed(0)} us`,
             `probe order   ${bindings.getProbeTrace()}`,
         ].join('\n');
     };
 
     return view;
+}
+
+// ---------------------------------------------------------------------------
+// Pass timings
+// ---------------------------------------------------------------------------
+
+interface PassTimings {
+    readonly updateMicros: number;
+    readonly refreshMicros: number;
+    /** Runs `updateScene` and records what it cost. */
+    runUpdate(stage: Container, deltaMs: number): void;
+    /** Runs `refreshScene` and records what it cost. */
+    runRefresh(stage: Container): void;
+}
+
+/**
+ * Times each pass and smooths the result, so the cost of driving a churning
+ * scene of a few thousand containers is visible on screen.
+ */
+function createPassTimings(): PassTimings {
+    let updateMicros = 0;
+    let refreshMicros = 0;
+
+    return {
+        get updateMicros(): number {
+            return updateMicros;
+        },
+        get refreshMicros(): number {
+            return refreshMicros;
+        },
+        runUpdate(stage: Container, deltaMs: number): void {
+            const start = performance.now();
+            updateScene(stage, deltaMs);
+            updateMicros += ((performance.now() - start) * 1000 - updateMicros) * SMOOTHING;
+        },
+        runRefresh(stage: Container): void {
+            const start = performance.now();
+            refreshScene(stage);
+            refreshMicros += ((performance.now() - start) * 1000 - refreshMicros) * SMOOTHING;
+        },
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -190,9 +212,9 @@ function createOrderProbe(parent: Container): OrderProbe {
         cursor = link;
     }
 
-    // Hooked only after the chain is attached, so p3 and p4 are already in the
-    // call list. An append-ordered scheme such as Pixi's own `onRender` list
-    // would call p2 last; the trace on screen shows it in tree position.
+    // Hooked only after the chain is attached, so p3 and p4 are already listed.
+    // An append-ordered scheme such as Pixi's own `onRender` list would call p2
+    // last; the trace on screen shows it in tree position.
     links[1].onRefresh = () => recorded.push('p2');
 
     return {
@@ -210,23 +232,7 @@ function createOrderProbe(parent: Container): OrderProbe {
 // Controls
 // ---------------------------------------------------------------------------
 
-function readStrategy(): SchedulerStrategyKind {
-    const raw = new URLSearchParams(location.search).get('strategy');
-    return raw === 'rebuild' ? 'rebuild' : 'incremental';
-}
-
-function wireControls(strategy: SchedulerStrategyKind, swarm: { spawnRate: number }): void {
-    const toggle = document.getElementById('toggle-strategy') as HTMLButtonElement | undefined;
-    if (toggle) {
-        toggle.textContent = strategy === 'incremental'
-            ? 'Switch to rebuild strategy'
-            : 'Switch to incremental strategy';
-        toggle.addEventListener('click', () => {
-            const next = strategy === 'incremental' ? 'rebuild' : 'incremental';
-            location.search = `?strategy=${next}`;
-        });
-    }
-
+function wireControls(swarm: { spawnRate: number }): void {
     const rate = document.getElementById('spawn-rate') as HTMLInputElement | undefined;
     const rateLabel = document.getElementById('spawn-rate-label');
     if (rate) {
@@ -238,3 +244,10 @@ function wireControls(strategy: SchedulerStrategyKind, swarm: { spawnRate: numbe
         if (rateLabel) rateLabel.textContent = `${rate.value}/s`;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How much of each frame's measurement the displayed figure takes on. */
+const SMOOTHING = 0.1;

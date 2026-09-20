@@ -28,16 +28,6 @@
                 border: 1px solid #30363d;
                 border-radius: 8px;
             }
-            button {
-                padding: 8px 16px;
-                border-radius: 6px;
-                border: 1px solid #30363d;
-                background: #21262d;
-                color: #c9d1d9;
-                font-size: 13px;
-                cursor: pointer;
-            }
-            button:hover { background: #30363d; border-color: #58a6ff; }
             label { font-size: 13px; color: #8b949e; display: flex; align-items: center; gap: 10px; }
             input[type='range'] { width: 220px; }
             #spawn-rate-label { color: #c9d1d9; min-width: 56px; font-family: ui-monospace, Menlo, Consolas, monospace; }
@@ -56,7 +46,6 @@
             <div id="stage"></div>
 
             <div class="controls">
-                <button id="toggle-strategy">Switch strategy</button>
                 <label>
                     spawn rate
                     <input id="spawn-rate" type="range" min="0" max="600" step="10" />
@@ -74,14 +63,15 @@
                     and refresh regardless: neither pass is gated on visibility, culling or rendering.
                 </p>
                 <p>
-                    <code>drain rounds</code> climbs because the swarm view creates its child views from inside
-                    <code>onRefresh</code>. Those children are refreshed on the same tick rather than showing one
-                    frame of constructor state.
+                    <code>update pass</code> and <code>refresh pass</code> are what each pass costs over the whole
+                    scene, in microseconds. Raise the spawn rate to churn the scene graph harder and watch what it
+                    does to them: every swap dirties the memoised call list, so the list is rebuilt on the next
+                    pass.
                 </p>
                 <p>
-                    <code>rebuilds</code> counts full depth-first walks of the scene and only moves under the
-                    <code>rebuild</code> strategy. <code>compactions</code> counts tombstone sweeps and only moves
-                    under <code>incremental</code>. Raise the spawn rate, then switch strategy to compare.
+                    The swarm view creates and destroys its child views from inside <code>onRefresh</code>. A pass
+                    walks a snapshot, so a child created during one is not called until the next pass; each entity
+                    view runs its own refresh once at construction rather than showing a frame at the origin.
                 </p>
             </div>
         </div>

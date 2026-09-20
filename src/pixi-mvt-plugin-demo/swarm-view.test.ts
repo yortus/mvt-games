@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { createSceneScheduler } from '../pixi-mvt-plugin';
+import { refreshScene, updateScene } from '../pixi-mvt-plugin';
 import { createSwarmModel } from './swarm-model';
 import { createSwarmView } from './swarm-view';
 
@@ -20,14 +20,13 @@ function createScene(spawnRate: number, initialCount: number) {
         getFieldHeight: () => FIELD,
     });
     root.addChild(view);
-    const scheduler = createSceneScheduler(root);
-    return { swarm, root, view, scheduler };
+    return { swarm, root, view };
 }
 
 function tick(scene: ReturnType<typeof createScene>, deltaMs = 16): void {
     scene.swarm.update(deltaMs);
-    scene.scheduler.update(deltaMs);
-    scene.scheduler.refresh();
+    updateScene(scene.root, deltaMs);
+    refreshScene(scene.root);
 }
 
 // ---------------------------------------------------------------------------
@@ -45,9 +44,10 @@ describe('createSwarmView', () => {
     });
 
     it('positions a child on the tick it is created, not the tick after', () => {
-        // This is the drain-the-tail guarantee. The parent creates children
-        // from inside onRefresh, so without the drain they would sit at the
-        // origin for one frame.
+        // A pass iterates a snapshot, so a child created during it is not
+        // called until the next pass. The entity view covers that by running
+        // its own refresh once at construction; without that it would sit at
+        // the origin for a frame.
         const scene = createScene(0, 1);
         tick(scene);
 
@@ -79,8 +79,8 @@ describe('createSwarmView', () => {
         // The pulse is driven purely by accumulated deltaMs, so stepping time
         // with the model frozen still changes the rendered scale.
         for (let i = 0; i < 12; i++) {
-            scene.scheduler.update(16);
-            scene.scheduler.refresh();
+            updateScene(scene.root, 16);
+            refreshScene(scene.root);
         }
 
         expect(child.scale.x).not.toBeCloseTo(firstScale, 6);
@@ -108,7 +108,7 @@ describe('createSwarmView', () => {
             };
         }
 
-        scene.scheduler.refresh();
+        refreshScene(scene.root);
 
         expect(order[0]).toBe('parent');
         expect(order.indexOf('parent')).toBe(order.lastIndexOf('parent'));
