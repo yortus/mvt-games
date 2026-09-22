@@ -18,6 +18,19 @@ function defaultOptions() {
         maxSpeed: 20,
         minSpeed: 0,
         perceptionRadius: 10,
+        random: createSeededRandom(1),
+    };
+}
+
+/** Mulberry32: a small seeded PRNG, so every test sees the same flock. */
+function createSeededRandom(seed: number): () => number {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6D2B79F5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 }
 
@@ -140,21 +153,22 @@ describe('FlockModel', () => {
                 wander: 0,
             });
 
-            // Record initial speeds and directions
-            const initialSpeeds: number[] = [];
-            const initialDirections: number[] = [];
+            // Record initial velocities. Compare components rather than
+            // direction, which wraps at +/-PI and made this test flaky.
+            const initialVx: number[] = [];
+            const initialVy: number[] = [];
             for (let i = 0; i < model.boids.length; i++) {
-                initialSpeeds.push(model.boids[i].speed);
-                initialDirections.push(model.boids[i].direction);
+                initialVx.push(model.boids[i].vx);
+                initialVy.push(model.boids[i].vy);
             }
 
             // Very short step to minimise edge-force drift
             model.update(0.1);
 
-            // Speed and direction should be approximately unchanged
+            // Velocity should be approximately unchanged
             for (let i = 0; i < model.boids.length; i++) {
-                expect(model.boids[i].speed).toBeCloseTo(initialSpeeds[i], 2);
-                expect(model.boids[i].direction).toBeCloseTo(initialDirections[i], 2);
+                expect(model.boids[i].vx).toBeCloseTo(initialVx[i], 2);
+                expect(model.boids[i].vy).toBeCloseTo(initialVy[i], 2);
             }
         });
 
@@ -177,53 +191,98 @@ describe('FlockModel', () => {
         });
     });
 
-    it('separation pushes close boids apart', () => {
-        // Use a large perception radius so randomly placed boids are
-        // guaranteed to see each other within the 100x60 arena.
-        const model = createFlockModel({
-            ...defaultOptions(),
-            boidCount: 2,
-            separation: 5,
-            alignment: 0,
-            cohesion: 0,
-            wander: 0,
-            perceptionRadius: 200,
-        });
-
-        const initialDist = Math.hypot(
-            model.boids[0].position.x - model.boids[1].position.x,
-            model.boids[0].position.y - model.boids[1].position.y,
-        );
-
-        stepMs(model, 1000);
-
-        const finalDist = Math.hypot(
-            model.boids[0].position.x - model.boids[1].position.x,
-            model.boids[0].position.y - model.boids[1].position.y,
-        );
-        // With only separation active, they should move apart (or at least not closer)
-        expect(finalDist).toBeGreaterThanOrEqual(initialDist * 0.5);
+    it('is reproducible from a seeded random source', () => {
+        const a = createFlockModel({ ...defaultOptions(), wander: 5 });
+        const b = createFlockModel({ ...defaultOptions(), wander: 5 });
+        stepMs(a, 1000);
+        stepMs(b, 1000);
+        for (let i = 0; i < a.boids.length; i++) {
+            expect(b.boids[i].position).toEqual(a.boids[i].position);
+        }
     });
 
-    it('cohesion pulls boids together when far apart', () => {
+    it('separation pushes a boid directly away from a close neighbour', () => {
+        // Asserts the force itself rather than where the flock ends up. The
+        // flock is chaotic, so "boids end up further apart" only holds on
+        // average and made this test flaky. A boid with exactly one neighbour
+        // inside separation range must be pushed straight away from it, at a
+        // magnitude equal to the separation weight.
+        const separation = 5;
+        const model = createFlockModel({
+            ...defaultOptions(),
+            boidCount: 60,
+            separation,
+            alignment: 0,
+            cohesion: 0,
+        });
+
+        // Forces are computed from positions at the start of the update
+        const xs: number[] = [];
+        const ys: number[] = [];
+        for (let i = 0; i < model.boids.length; i++) {
+            xs.push(model.boids[i].position.x);
+            ys.push(model.boids[i].position.y);
+        }
+        model.update(16);
+
+        const separationRadius = model.perceptionRadius * 0.4;
+        let checked = 0;
+        for (let i = 0; i < xs.length; i++) {
+            let neighbour = -1;
+            let neighbourCount = 0;
+            for (let j = 0; j < xs.length; j++) {
+                if (i !== j && Math.hypot(xs[j] - xs[i], ys[j] - ys[i]) < separationRadius) {
+                    neighbour = j;
+                    neighbourCount++;
+                }
+            }
+            if (neighbourCount !== 1) continue;
+
+            const dist = Math.hypot(xs[neighbour] - xs[i], ys[neighbour] - ys[i]);
+            const boid = model.boids[i];
+            expect(boid.separationDx).toBeCloseTo(-(xs[neighbour] - xs[i]) / dist * separation);
+            expect(boid.separationDy).toBeCloseTo(-(ys[neighbour] - ys[i]) / dist * separation);
+            checked++;
+        }
+        // The seeded flock is crowded enough that some boids qualify
+        expect(checked).toBeGreaterThan(0);
+    });
+
+    it('cohesion pulls each boid toward the centre of its neighbours', () => {
+        // Asserts the force itself, for the same reason as the separation
+        // test: where a chaotic flock ends up only holds on average. With a
+        // perception radius spanning the arena, every boid sees every other,
+        // so its cohesion force points at the centroid of the rest.
+        const cohesion = 3;
         const model = createFlockModel({
             ...defaultOptions(),
             boidCount: 20,
             separation: 0,
             alignment: 0,
-            cohesion: 3,
-            perceptionRadius: 100, // large radius so all boids see each other
+            cohesion,
+            perceptionRadius: 200,
         });
 
-        // Let the flock settle so initial random velocities don't dominate
-        stepMs(model, 2000);
-        const initialSpread = computeSpread(model);
+        // Forces are computed from positions at the start of the update
+        const xs: number[] = [];
+        const ys: number[] = [];
+        let sumX = 0;
+        let sumY = 0;
+        for (let i = 0; i < model.boids.length; i++) {
+            xs.push(model.boids[i].position.x);
+            ys.push(model.boids[i].position.y);
+            sumX += xs[i];
+            sumY += ys[i];
+        }
+        model.update(16);
 
-        stepMs(model, 5000);
-
-        const finalSpread = computeSpread(model);
-        // Cohesion should reduce the spread of the flock
-        expect(finalSpread).toBeLessThan(initialSpread);
+        const others = xs.length - 1;
+        for (let i = 0; i < xs.length; i++) {
+            const centroidX = (sumX - xs[i]) / others;
+            const centroidY = (sumY - ys[i]) / others;
+            expect(model.boids[i].cohesionDx).toBeCloseTo((centroidX - xs[i]) * cohesion);
+            expect(model.boids[i].cohesionDy).toBeCloseTo((centroidY - ys[i]) * cohesion);
+        }
     });
 
     it('handles zero boids without errors', () => {

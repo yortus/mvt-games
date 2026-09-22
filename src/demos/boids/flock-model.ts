@@ -63,6 +63,12 @@ export interface FlockModelOptions {
     readonly maxSpeed: number;
     /** Initial perception radius in metres. */
     readonly perceptionRadius: number;
+    /**
+     * Source of uniform random numbers in [0, 1), used for initial placement
+     * and wander. Defaults to `Math.random`. Pass a seeded generator for a
+     * reproducible simulation.
+     */
+    readonly random?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +78,7 @@ export interface FlockModelOptions {
 /** Create a flock simulation model with the given initial parameters. */
 export function createFlockModel(options: FlockModelOptions): FlockModel {
     const { arenaWidth, arenaHeight, maxSpeed, minSpeed } = options;
+    const random = options.random ?? Math.random;
 
     let separation = options.separation;
     let alignment = options.alignment;
@@ -81,7 +88,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
     let perceptionRadius = options.perceptionRadius;
 
     const boids: BoidModel[] = [];
-    populateBoids(boids, options.boidCount, arenaWidth, arenaHeight, maxSpeed);
+    populateBoids(boids, options.boidCount, arenaWidth, arenaHeight, maxSpeed, random);
 
     const model: FlockModel = {
         get boids() { return boids; },
@@ -103,7 +110,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
         set boidCount(count) {
             const target = Math.max(0, Math.round(count));
             while (boids.length < target) {
-                boids.push(randomBoid(arenaWidth, arenaHeight, maxSpeed));
+                boids.push(randomBoid(arenaWidth, arenaHeight, maxSpeed, random));
             }
             while (boids.length > target) {
                 boids.pop();
@@ -144,7 +151,7 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
             const boidHeading = Math.atan2(boid.vy, boid.vx);
 
             // Wander: drift the wander angle randomly, then compute force
-            boid.wanderAngle += (Math.random() - 0.5) * WANDER_JITTER * dt;
+            boid.wanderAngle += (random() - 0.5) * WANDER_JITTER * dt;
             const wanderX = Math.cos(boidHeading + boid.wanderAngle);
             const wanderY = Math.sin(boidHeading + boid.wanderAngle);
 
@@ -293,13 +300,14 @@ const EDGE_MARGIN_FRACTION = 0.25;
 /** Rate at which the wander angle drifts (radians/second scaling factor). */
 const WANDER_JITTER = 8;
 
-function randomBoid(arenaWidth: number, arenaHeight: number, maxSpeed: number): BoidModel {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = maxSpeed * (0.3 + Math.random() * 0.7);
+function randomBoid(arenaWidth: number, arenaHeight: number, maxSpeed: number, random: () => number): BoidModel {
+    const angle = random() * Math.PI * 2;
+    const speed = maxSpeed * (0.3 + random() * 0.7);
     return createBoidModel({
-        position: { x: Math.random() * arenaWidth, y: Math.random() * arenaHeight },
+        position: { x: random() * arenaWidth, y: random() * arenaHeight },
         speed,
         direction: angle,
+        wanderAngle: random() * Math.PI * 2,
     });
 }
 
@@ -309,8 +317,9 @@ function populateBoids(
     arenaWidth: number,
     arenaHeight: number,
     maxSpeed: number,
+    random: () => number,
 ): void {
     for (let i = 0; i < count; i++) {
-        boids.push(randomBoid(arenaWidth, arenaHeight, maxSpeed));
+        boids.push(randomBoid(arenaWidth, arenaHeight, maxSpeed, random));
     }
 }

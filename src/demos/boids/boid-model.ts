@@ -44,6 +44,8 @@ export interface BoidModelOptions {
     speed: number;
     /** Initial direction of travel in radians. */
     direction: number;
+    /** Initial wander angle in radians. */
+    wanderAngle: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,14 +54,14 @@ export interface BoidModelOptions {
 
 /** Create a mutable boid with Cartesian velocity from initial polar options. */
 export function createBoidModel(options: BoidModelOptions): BoidModel {
-    const { position, speed, direction } = options;
+    const { position, speed, direction, wanderAngle } = options;
     return {
         position: { x: position.x, y: position.y },
         vx: Math.cos(direction) * speed,
         vy: Math.sin(direction) * speed,
         get speed() { return Math.sqrt(this.vx * this.vx + this.vy * this.vy); },
         get direction() { return Math.atan2(this.vy, this.vx); },
-        wanderAngle: Math.random() * Math.PI * 2,
+        wanderAngle,
         separationDx: 0,
         separationDy: 0,
         alignmentDx: 0,
