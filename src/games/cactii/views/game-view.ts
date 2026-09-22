@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createOverlayView, isTouchDevice, type StatefulPixiView } from '#common';
+import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';
@@ -10,19 +10,17 @@ import { createHudView } from './hud-view';
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): StatefulPixiView {
+export function createGameView(game: GameModel): Container {
     const boardWidth = GRID_COLS * CELL_WIDTH_PX;
     const boardHeight = GRID_ROWS * CELL_HEIGHT_PX;
 
     const view = new Container();
-    let boardView: StatefulPixiView;
     initialiseView();
-    const update = (deltaMs: number) => boardView.update(deltaMs);
-    return Object.assign(view, { update });
+    return view;
 
     function initialiseView(): void {
         const board = game.board;
-        boardView = createBoardView({
+        const boardView = createBoardView({
             getPhase: () => board.phase,
             getCells: () => board.cells,
             getSwapCell1: () => board.swapCell1,

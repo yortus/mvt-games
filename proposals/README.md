@@ -9,10 +9,10 @@ Nothing here is a description of how the repo currently works. For that, see
 
 | | Document | Status |
 | --- | --- | --- |
-| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Implemented in `src/pixi-mvt/`; the section 3.5 visibility gating was superseded by the `SKIP_DESCENDANTS` sentinel. Scramble migrated as a pilot; the other games are pending |
+| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Implemented in `src/pixi-mvt/`; the section 3.5 visibility gating was superseded by the `SKIP_DESCENDANTS` sentinel. All games, the cabinet and `src/common/` migrated. What is left (a check by eye, updating `docs/`, the demos, `pixi-jsx`) is listed in section 13.1 |
 | 002 | [MVT plugin design notes](./002-mvt-plugin-design-notes.md) | Rationale for what was built |
 | 003 | [MVT plugin appraisal](./003-mvt-plugin-appraisal.md) | Independent review of whether this repo needs it |
-| 004 | [`<List>` proposal](./004-list-proposal.md) | Proposed. Depends on 001 |
+| 004 | [`<List>` proposal](./004-list-proposal.md) | Proposed. Its dependency on 001 is met, so it is unblocked |
 | 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | **Implemented** in `src/common/slot-list/` (`SlotList` + `OrderedSlotList`, shipped as `releaseDelayMs`); adopted in `asteroids` and `scramble`, with a demo in `src/demos/ordered-list/`. Only the `<List>` projection (section 5.3) remains, pending 004 |
 | 006 | [`<List>` patterns guide](./006-list-patterns.md) | Usage guide for 004 and 005 |
 
@@ -37,4 +37,4 @@ you are weighing whether the plugin is worth having.
   because it is a publication, not a plan.
 - [`src/demos/list-swap/`](../src/demos/list-swap/README.md) is a runnable
   demonstration of the addressing model in 004. It carries a local copy of an
-  earlier `<List>` because the current design cannot run until 001 lands.
+  earlier `<List>` until 004 replaces the shipping one (004 section 9, step 7).

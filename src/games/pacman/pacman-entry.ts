@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
@@ -43,6 +44,7 @@ export function createPacmanEntry(): GameEntry {
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
+                    updateScene(gameView, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);

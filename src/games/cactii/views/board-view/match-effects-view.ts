@@ -180,7 +180,7 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
         },
     });
 
-    view.onRender = updateEffects;
+    view.onRefresh = updateEffects;
     return view;
 
     function computeMatchCentre(matchedCells: readonly Readonly<CactusCell>[]): { x: number; y: number } {

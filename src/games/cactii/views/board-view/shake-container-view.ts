@@ -67,7 +67,7 @@ export function createShakeContainerView(bindings: ShakeContainerViewBindings): 
         },
     });
 
-    view.onRender = updateShake;
+    view.onRefresh = updateShake;
     return Object.assign(view, { content });
 }
 

@@ -31,7 +31,7 @@ export function createHudView(bindings: HudViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {

@@ -21,7 +21,7 @@ export function createBulletView(bindings: BulletViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {

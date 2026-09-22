@@ -177,7 +177,7 @@ function createBallView(bindings: BallViewBindings): Container {
         );
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
@@ -213,6 +213,7 @@ function createGameView(game: GameModel): Container {
 The entry point factory creates the `GameEntry` descriptor:
 
 ```ts
+import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 
 function createBreakoutEntry(): GameEntry {
@@ -230,6 +231,7 @@ function createBreakoutEntry(): GameEntry {
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
+                    updateScene(gameView, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);
@@ -242,7 +244,11 @@ function createBreakoutEntry(): GameEntry {
 ```
 
 The `start()` method creates the model and view, mounts the view, and returns
-a session. The `destroy()` method removes the view and cleans up.
+a session. The session's `update()` advances the model, then runs `updateScene`
+so any view with presentation state (an `onUpdate` method) advances too. The
+cabinet runs `refreshScene` over the whole stage once per frame, so the session
+never refreshes its own views. The `destroy()` method removes the view and
+cleans up.
 
 If your game needs to load assets (sprite sheets, textures), implement the
 optional `load()` method:

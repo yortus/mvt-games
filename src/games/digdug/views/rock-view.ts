@@ -32,7 +32,7 @@ export function createRockView(bindings: RockViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {

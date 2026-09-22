@@ -31,7 +31,7 @@ export function createCactusView(bindings: CactusViewBindings): Container {
     });
 
     view.addChild(panel, sprite);
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {

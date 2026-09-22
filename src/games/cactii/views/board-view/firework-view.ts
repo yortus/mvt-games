@@ -124,7 +124,7 @@ export function createFireworkView(bindings: FireworkViewBindings): Container {
         },
     });
 
-    view.onRender = updateFirework;
+    view.onRefresh = updateFirework;
     return view;
 }
 

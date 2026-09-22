@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSequence, type StatefulPixiView, watch, type DeepReadonly } from '#common';
+import { createSequence, watch, type DeepReadonly } from '#common';
 import type { BoardPhase, CactusCell } from '../../models';
 import { createBackgroundView } from './background-view';
 import { createBannerView } from './banner-view';
@@ -31,7 +31,7 @@ export interface BoardViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
+export function createBoardView(bindings: BoardViewBindings): Container {
     // The match sequence is shared presentation state. It is created here and
     // distributed as structural subsets via bindings to the child layers that
     // need it. No child holds a reference to another child.
@@ -91,12 +91,14 @@ export function createBoardView(bindings: BoardViewBindings): StatefulPixiView {
     view.addChild(fireworks);
     view.addChild(banner);
 
-    return Object.assign(view, {
-        update(deltaMs: number): void {
-            const { phase } = phaseWatcher.poll();
-            if (phase.changed && phase.value === 'matching') matchSequence.start();
-            matchSequence.update(deltaMs);
-            pieces.update(deltaMs);
-        },
-    });
+    // Runs before the child views' own update and refresh, so every layer sees
+    // this frame's match sequence.
+    view.onUpdate = update;
+    return view;
+
+    function update(deltaMs: number): void {
+        const { phase } = phaseWatcher.poll();
+        if (phase.changed && phase.value === 'matching') matchSequence.start();
+        matchSequence.update(deltaMs);
+    }
 }

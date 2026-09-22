@@ -77,7 +77,7 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     });
     view.addChild(sprite);
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {

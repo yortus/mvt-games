@@ -17,6 +17,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
+import { refreshScene } from './pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -487,10 +488,14 @@ async function main(): Promise<void> {
     }
 
     // ---- Ticker ------------------------------------------------------------
+    // Sessions advance their own models and views (`onUpdate`); one refresh
+    // pass then syncs the whole stage, including while paused so the pause
+    // menu and cabinet stay current.
     app.ticker.add((ticker) => {
         if (!paused) {
             cabinet.update(ticker.deltaMS);
         }
+        refreshScene(app.stage);
     });
 
     // ---- Auto-launch from URL fragment ------------------------------------
@@ -542,6 +547,7 @@ async function generateThumbnails(games: GameEntry[], app: Application): Promise
                 session.update(step);
                 remaining -= step;
             }
+            refreshScene(tempStage);
 
             const renderTexture = RenderTexture.create({
                 width: entry.screenWidth,

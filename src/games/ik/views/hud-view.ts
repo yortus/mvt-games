@@ -110,7 +110,7 @@ export function createHudView(bindings: HudViewBindings): Container {
     let lastPlayerRounds = -1;
     let lastOpponentRounds = -1;
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { watch, type StatefulPixiView } from '#common';
+import { watch } from '#common';
 import type { CactusCell } from '../../models';
 import { createCactusView } from '../cactus-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
@@ -16,7 +16,7 @@ export type PiecesViewBindings = PiecesViewModelOptions;
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView {
+export function createPiecesView(bindings: PiecesViewBindings): Container {
     const vm = createPiecesViewModel(bindings);
     const watcher = watch({
         gridSize: () => bindings.getCells().length,
@@ -26,8 +26,9 @@ export function createPiecesView(bindings: PiecesViewBindings): StatefulPixiView
 
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
-    return Object.assign(view, { update: vm.update });
+    view.onUpdate = vm.update;
+    view.onRefresh = refresh;
+    return view;
 
     function initialiseView(): void {
         view.sortableChildren = true;

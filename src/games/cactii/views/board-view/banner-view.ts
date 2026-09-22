@@ -89,7 +89,7 @@ export function createBannerView(bindings: BannerViewBindings): Container {
         },
     });
 
-    view.onRender = updateBanner;
+    view.onRefresh = updateBanner;
     return view;
 }
 

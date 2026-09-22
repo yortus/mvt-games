@@ -5,9 +5,9 @@
 > [the design notes](../../proposals/002-mvt-plugin-design-notes.md) for how it works and why it is built this
 > way.
 
-**Status: spike.** Used by its demo and by the Scramble game, which was migrated
-as a pilot. The other games and the shared views still refresh through Pixi's
-`onRender` and can migrate incrementally.
+**Status: spike.** Used by its demo, every game, the cabinet and the shared
+views in `src/common/`. The other demos and the `pixi-jsx` runtime still refresh
+through Pixi's `onRender`.
 
 ---
 

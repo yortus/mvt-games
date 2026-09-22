@@ -38,7 +38,7 @@ export function createFlashOverlayView(bindings: FlashOverlayViewBindings): Cont
         },
     });
 
-    view.onRender = updateFlash;
+    view.onRefresh = updateFlash;
     return view;
 }
 

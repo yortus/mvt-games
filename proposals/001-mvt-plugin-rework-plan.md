@@ -9,10 +9,16 @@
 
 **Written:** 2026-09-18, against Pixi 8.16.0, branch `pixi-mvt-plugin`.
 
-**Status: implemented**, sections 1 to 11. Section 12 (repo migration) is under
-way - Scramble has been migrated end to end as a pilot, and the other games are
-still open. Section 13 (follow-ups) is untouched. The plugin folder is now
-`src/pixi-mvt`. What shipped is described in
+**Status: implemented**, sections 1 to 12. Section 12 (repo migration) is
+complete: every game, the cabinet and the shared views in `src/common/` use
+`onRefresh`, and Cactii's hand-forwarded `update` chain is now `onUpdate`. Each
+game session runs `updateScene` over its own view, and `main.ts` runs one
+`refreshScene` over the whole stage per tick, paused or not. The demos
+(`src/demos/`, including the `pixi-jsx` runtime) still use `onRender` and
+`StatefulPixiView`; the JSX runtime moves as step 1 of
+[the `<List>` proposal](./004-list-proposal.md). The migration work still to do
+is listed in section 13.1; the other section 13 follow-ups are untouched. The
+plugin folder is now `src/pixi-mvt`. What shipped is described in
 [the design notes](./002-mvt-plugin-design-notes.md); the benchmark numbers there
 are freshly measured and supersede the design-time baselines in section 10.
 
@@ -656,10 +662,74 @@ Revisit once v1 is complete and has been used:
    container, then after the loop rebuild and dispatch any entry whose epoch
    differs. Costs one integer write per hook per frame in the hot path, so it
    needs measuring against the numbers in section 10.
-2. **Migrating the 59 `onRender` sites to `onRefresh`**, once the `onUpdate`
-   migration has settled.
+2. ~~**Migrating the 59 `onRender` sites to `onRefresh`**~~. Done for every
+   game, the cabinet and `src/common/` (see section 13.1 for what is left).
 3. **`onRender` versus `onRefresh` dispatch cost**, if the benchmark from
    section 10 shows anything surprising.
+
+### 13.1 Remaining migration work
+
+Found while completing section 12 on 2026-09-22. The games now follow this
+wiring:
+
+- Each `GameSession.update` runs `gameModel.update(deltaMs)` and then
+  `updateScene(gameView, deltaMs)`, even in games with no `onUpdate` views yet,
+  so a view added later cannot silently miss its ticks.
+- `src/main.ts` runs one `refreshScene(app.stage)` per tick, paused or not, and
+  one `refreshScene(tempStage)` before rendering each thumbnail. Sessions never
+  refresh their own views.
+
+The remaining items, roughly in priority order:
+
+1. **Check the games by eye.** The migration passes type-check, lint and
+   tests, but nobody has played it yet. The most likely places for a
+   regression are:
+   - Cactii's match effects (shake, flash, fireworks, banner) and dragging a
+     piece, because that is where the `onUpdate` chain moved.
+   - The pause menu while paused.
+   - The cabinet thumbnails.
+   - Any view that only ran while visible under `onRender`. Nothing gates on
+     `visible` now, so hidden views refresh too.
+2. **Rewrite the `docs/` guide to match.** The guide still teaches
+   `view.onRender = refresh` and passing `update()` down by hand. That is about
+   26 mentions across 9 pages. The main ones:
+   - `docs/ai-agents/skill-mvt-view.md` (its "Using `onRender`" section and
+     every example)
+   - `docs/building-with-mvt/presenting-the-world/views.md`
+   - `docs/building-with-mvt/adding-visual-polish/presentation-state.md` (the
+     hand-forwarding example at its "How to Implement It" section)
+   - `docs/building-with-mvt/quickstart.md` and
+     `iterating-with-confidence/testing-views.md`
+
+   Open question: should `docs/architecture/` (the language-neutral spec) and
+   rule 2 in `AGENTS.md` keep describing presentation state as "the view gains
+   an `update(deltaMs)` method"? That is still true in the abstract, and
+   `onUpdate` is how this repo does it with Pixi. The probable answer is to
+   keep the spec neutral and describe `onUpdate` in the Pixi-specific guide
+   only. Decide that before rewriting anything.
+3. **Migrate the demo host and non-JSX demos.** `src/demos/main.ts` drives
+   `session.update` only and relies on `onRender` for refresh. Give it the same
+   wiring as `src/main.ts`, then move:
+   - `demos/boids/` (3 views)
+   - `demos/ordered-list/ordered-list-view.ts` (`StatefulPixiView` becomes
+     `onUpdate`)
+
+   Mixing is safe in the meantime: `onRender` still fires during rendering, so
+   nothing breaks while the two schemes coexist.
+4. **The JSX demos wait for 004.** `pixi-jsx` (`jsx-runtime.ts`, `list.ts`),
+   `demos/tsx-pixi/demo-view.tsx` and `demos/list-swap/` move with step 1 of
+   [the `<List>` proposal](./004-list-proposal.md). `list-swap/list.ts` is a
+   local copy that step 7 of that proposal deletes. Its `onRender` also relies
+   on running before Pixi rebuilds draw instructions, so do not rename it on
+   its own.
+5. **Retire `StatefulPixiView`** from `src/common/` once items 3 and 4 have
+   removed its last users (`demos/ordered-list/`, `demos/list-swap/`).
+6. **Migrate the playground.** `src/playground/presets.ts` has 6
+   `view.onRender = refresh` sites in preset source. Whatever runs presets in
+   `src/playground/sandbox/` then needs to drive `refreshScene` too.
+   Low priority, and separate from the rest.
+7. **Update 004's outdated wording.** Section 7.5 still says "Until `onUpdate`
+   lands", but it has landed.
 
 ---
 

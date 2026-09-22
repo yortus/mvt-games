@@ -30,7 +30,7 @@ export function createPauseMenuView(
     const view = new Container();
     view.label = 'pause-menu';
 
-    // Inner container toggles visibility; outer stays visible so onRender fires
+    // Inner container toggles visibility; the outer one holds the refresh hook
     const content = new Container();
     content.visible = false;
     view.addChild(content);
@@ -130,7 +130,7 @@ export function createPauseMenuView(
         originalDestroy(opts);
     };
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     // ---- Refresh -----------------------------------------------------------

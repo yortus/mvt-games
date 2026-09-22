@@ -56,7 +56,7 @@ export function createTouchInputView(
         secondaryLabel: bindings.getSecondaryLabel,
     });
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     // ---- Refresh / layout --------------------------------------------------

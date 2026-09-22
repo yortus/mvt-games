@@ -23,7 +23,7 @@ export function createGameView(game: GameModel): Container {
     const view = new Container();
     initialiseView();
     buildGhosts();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {

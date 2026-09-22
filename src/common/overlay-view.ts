@@ -61,7 +61,7 @@ export function createOverlayView(bindings: OverlayViewBindings): Container {
 
     view.visible = false;
 
-    view.onRender = () => {
+    view.onRefresh = () => {
         const watched = watcher.poll();
         if (watched.visible.changed) {
             view.visible = watched.visible.value as boolean;

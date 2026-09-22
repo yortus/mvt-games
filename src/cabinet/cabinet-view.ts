@@ -185,7 +185,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
 
     // ---- Lifecycle --------------------------------------------------------
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
 
     const originalDestroy = view.destroy.bind(view);
     view.destroy = (options) => {
