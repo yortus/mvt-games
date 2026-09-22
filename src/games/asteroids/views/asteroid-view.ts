@@ -7,6 +7,7 @@ import type { AsteroidSize } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface AsteroidViewBindings {
+    isPresent(): boolean;
     getX(): number;
     getY(): number;
     getAngle(): number;
@@ -21,7 +22,7 @@ export interface AsteroidViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createAsteroidView(bindings: AsteroidViewBindings): Container {
-    const watcher = watch({ alive: bindings.isAlive });
+    const watcher = watch({ seed: bindings.getShapeSeed });
     let bodyGfx: Graphics;
 
     const view = new Container();
@@ -36,11 +37,17 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.alive.changed) {
-            view.visible = watched.alive.value;
+        if (!bindings.isPresent()) {
+            view.visible = false;
+            return;
         }
+
+        const watched = watcher.poll();
+        if (watched.seed.changed) {
+            drawAsteroid(); // a different asteroid now occupies this slot - redraw its outline
+        }
+
+        view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
         view.position.set(bindings.getX(), bindings.getY());

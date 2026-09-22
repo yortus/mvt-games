@@ -14,10 +14,9 @@ import { createHudView } from './hud-view';
 
 export function createGameView(game: GameModel): Container {
     const watcher = watch({
-        asteroidCount: () => game.asteroids.length,
         bulletCount: () => game.bullets.length,
     });
-    let asteroidContainers: Container[] = [];
+    const asteroidContainers: Container[] = [];
     let bulletContainers: Container[] = [];
 
     const view = new Container();
@@ -81,27 +80,24 @@ export function createGameView(game: GameModel): Container {
     function refresh(): void {
         const watched = watcher.poll();
 
-        if (watched.asteroidCount.changed) buildAsteroids();
+        // Grow the asteroid pool to cover new storage slots; existing views
+        // re-read their slot each frame, so a length change rebuilds nothing.
+        buildAsteroids();
         if (watched.bulletCount.changed) buildBullets();
     }
 
     function buildAsteroids(): void {
-        for (let i = 0; i < asteroidContainers.length; i++) {
-            asteroidContainers[i].destroy();
-        }
-        asteroidContainers = [];
-
-        const count = game.asteroids.length;
-        for (let i = 0; i < count; i++) {
-            const idx = i;
+        while (asteroidContainers.length < game.asteroids.slotCount) {
+            const idx = asteroidContainers.length;
             const c = createAsteroidView({
-                getX: () => game.asteroids[idx].x,
-                getY: () => game.asteroids[idx].y,
-                getAngle: () => game.asteroids[idx].angle,
-                getSize: () => game.asteroids[idx].size,
-                getRadius: () => game.asteroids[idx].radius,
-                isAlive: () => game.asteroids[idx].isAlive,
-                getShapeSeed: () => game.asteroids[idx].shapeSeed,
+                isPresent: () => game.asteroids.at(idx) !== undefined,
+                getX: () => game.asteroids.at(idx)?.value.x ?? 0,
+                getY: () => game.asteroids.at(idx)?.value.y ?? 0,
+                getAngle: () => game.asteroids.at(idx)?.value.angle ?? 0,
+                getSize: () => game.asteroids.at(idx)?.value.size ?? 'large',
+                getRadius: () => game.asteroids.at(idx)?.value.radius ?? 0,
+                isAlive: () => game.asteroids.at(idx)?.value.isAlive ?? false,
+                getShapeSeed: () => game.asteroids.at(idx)?.value.shapeSeed ?? -1,
             });
             view.addChild(c);
             asteroidContainers.push(c);

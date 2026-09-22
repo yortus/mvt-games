@@ -10,3 +10,11 @@ export { createFuelTankModel, type FuelTankModel } from './fuel-tank-model';
 export { createFuelModel, type FuelModel, type FuelModelOptions } from './fuel-model';
 export { createExplosionModel, type ExplosionModel, type ExplosionModelOptions } from './explosion-model';
 export { createGameModel, type GameModel, type GameModelOptions } from './game-model';
+export {
+    MAX_BULLETS,
+    MAX_BOMBS,
+    MAX_ROCKETS,
+    MAX_UFOS,
+    MAX_FUEL_TANKS,
+    MAX_EXPLOSIONS,
+} from './model-constants';

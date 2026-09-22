@@ -1,6 +1,14 @@
 import { Container, Graphics } from 'pixi.js';
 import { createOverlayView, isTouchDevice } from '#common';
-import type { GameModel } from '../models';
+import {
+    type GameModel,
+    MAX_BULLETS,
+    MAX_BOMBS,
+    MAX_ROCKETS,
+    MAX_UFOS,
+    MAX_FUEL_TANKS,
+    MAX_EXPLOSIONS,
+} from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
 import { createTerrainView } from './terrain-view';
@@ -59,57 +67,57 @@ export function createGameView(game: GameModel): Container {
             }),
         );
 
-        // Bullet views (fixed pool)
-        for (let i = 0; i < game.bullets.length; i++) {
+        // Bullet views (fixed pool over the bullet SlotList's storage slots)
+        for (let i = 0; i < MAX_BULLETS; i++) {
             const idx = i;
             playArea.addChild(createBulletView({
-                getScreenX: () => (game.bullets[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.bullets[idx].worldRow * TILE_SIZE,
-                isActive: () => game.bullets[idx].isActive,
+                getScreenX: () => ((game.bullets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.bullets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.bullets.at(idx) !== undefined,
             }));
         }
 
-        // Bomb views (fixed pool)
-        for (let i = 0; i < game.bombs.length; i++) {
+        // Bomb views (fixed pool over the bomb SlotList's storage slots)
+        for (let i = 0; i < MAX_BOMBS; i++) {
             const idx = i;
             playArea.addChild(createBombView({
-                getScreenX: () => (game.bombs[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.bombs[idx].worldRow * TILE_SIZE,
-                isActive: () => game.bombs[idx].isActive,
+                getScreenX: () => ((game.bombs.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.bombs.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.bombs.at(idx) !== undefined,
             }));
         }
 
-        // Rocket views (fixed pool)
-        for (let i = 0; i < game.rockets.length; i++) {
+        // Rocket views (fixed pool over the rocket SlotList's storage slots)
+        for (let i = 0; i < MAX_ROCKETS; i++) {
             const idx = i;
             playArea.addChild(createRocketView({
-                getScreenX: () => (game.rockets[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.rockets[idx].worldRow * TILE_SIZE,
-                isActive: () => game.rockets[idx].isActive,
-                isAlive: () => game.rockets[idx].isAlive,
-                getPhase: () => game.rockets[idx].phase,
+                getScreenX: () => ((game.rockets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.rockets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.rockets.at(idx) !== undefined,
+                isAlive: () => game.rockets.at(idx) !== undefined,
+                getPhase: () => game.rockets.at(idx)?.value.phase ?? 'idle',
             }));
         }
 
-        // UFO views (fixed pool)
-        for (let i = 0; i < game.ufos.length; i++) {
+        // UFO views (fixed pool over the UFO SlotList's storage slots)
+        for (let i = 0; i < MAX_UFOS; i++) {
             const idx = i;
             playArea.addChild(createUfoView({
-                getScreenX: () => (game.ufos[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.ufos[idx].worldRow * TILE_SIZE,
-                isActive: () => game.ufos[idx].isActive,
-                isAlive: () => game.ufos[idx].isAlive,
+                getScreenX: () => ((game.ufos.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.ufos.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.ufos.at(idx) !== undefined,
+                isAlive: () => game.ufos.at(idx) !== undefined,
             }));
         }
 
-        // Fuel tank views (fixed pool)
-        for (let i = 0; i < game.fuelTanks.length; i++) {
+        // Fuel tank views (fixed pool over the fuel-tank SlotList's storage slots)
+        for (let i = 0; i < MAX_FUEL_TANKS; i++) {
             const idx = i;
             playArea.addChild(createFuelTankView({
-                getScreenX: () => (game.fuelTanks[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.fuelTanks[idx].worldRow * TILE_SIZE,
-                isActive: () => game.fuelTanks[idx].isActive,
-                isAlive: () => game.fuelTanks[idx].isAlive,
+                getScreenX: () => ((game.fuelTanks.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.fuelTanks.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.fuelTanks.at(idx) !== undefined,
+                isAlive: () => game.fuelTanks.at(idx) !== undefined,
             }));
         }
 
@@ -123,14 +131,14 @@ export function createGameView(game: GameModel): Container {
             }),
         );
 
-        // Explosion views (fixed pool)
-        for (let i = 0; i < game.explosions.length; i++) {
+        // Explosion views (fixed pool over the explosion SlotList's storage slots)
+        for (let i = 0; i < MAX_EXPLOSIONS; i++) {
             const idx = i;
             playArea.addChild(createExplosionView({
-                getScreenX: () => (game.explosions[idx].worldCol - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => game.explosions[idx].worldRow * TILE_SIZE,
-                isActive: () => game.explosions[idx].isActive,
-                getProgress: () => game.explosions[idx].progress,
+                getScreenX: () => ((game.explosions.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.explosions.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isActive: () => game.explosions.at(idx) !== undefined,
+                getProgress: () => game.explosions.at(idx)?.value.progress ?? 0,
             }));
         }
 

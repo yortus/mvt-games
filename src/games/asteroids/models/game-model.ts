@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#common';
+import { watch, createSlotList, type Slot, type SlotList } from '#common';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,
@@ -41,7 +41,7 @@ import { createDebrisModel, type DebrisModel } from './debris-model';
 export interface GameModel {
     readonly phase: GamePhase;
     readonly ship: ShipModel;
-    readonly asteroids: readonly AsteroidModel[];
+    readonly asteroids: SlotList<AsteroidModel>;
     readonly bullets: readonly BulletModel[];
     readonly debris: DebrisModel;
     readonly score: number;
@@ -80,13 +80,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const ship = buildShip();
     let bullets = buildBulletPool();
-    let asteroids: AsteroidModel[] = [];
+    const asteroids = createSlotList<AsteroidModel>();
     const debrisModel = createDebrisModel({ lifetimeMs: DYING_DELAY_MS });
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // Spawn first wave
-    asteroids = spawnWaveAsteroids(asteroidCountForWave(1));
+    spawnWaveAsteroids(asteroidCountForWave(1));
 
     // ---- Public record -----------------------------------------------------
 
@@ -151,25 +151,26 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // Advance phase timeline (dying / wave-clear / respawn delays)
             phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
             debrisModel.update(deltaMs);
+            asteroids.update(deltaMs);
 
             // During dying, respawning, wave-clear, and game-over,
             // asteroids keep moving but no input or collision checks
             if (gamePhase !== 'playing' && gamePhase !== 'respawning') {
                 if (gamePhase === 'dying') {
-                    for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+                    updateAsteroids(deltaMs);
                 }
                 return;
             }
 
             // During respawning, only advance asteroids (no input or collisions)
             if (gamePhase === 'respawning') {
-                for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+                updateAsteroids(deltaMs);
                 return;
             }
 
             // Update children
             ship.update(deltaMs);
-            for (let i = 0; i < asteroids.length; i++) asteroids[i].update(deltaMs);
+            updateAsteroids(deltaMs);
             for (let i = 0; i < bullets.length; i++) bullets[i].update(deltaMs);
 
             // Collision checks
@@ -177,7 +178,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (gamePhase === 'playing') checkShipVsAsteroids();
 
             // Wave clear
-            if (gamePhase === 'playing' && aliveAsteroidCount() === 0) {
+            if (gamePhase === 'playing' && asteroids.liveCount === 0) {
                 scheduleWaveClear();
             }
         },
@@ -233,8 +234,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         });
     }
 
-    function spawnWaveAsteroids(count: number): AsteroidModel[] {
-        const result: AsteroidModel[] = [];
+    function spawnWaveAsteroids(count: number): void {
         for (let i = 0; i < count; i++) {
             let ax: number;
             let ay: number;
@@ -243,9 +243,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 ax = Math.random() * arenaWidth;
                 ay = Math.random() * arenaHeight;
             } while (distSq(ax, ay, ship.x, ship.y) < SPAWN_SAFE_RADIUS * SPAWN_SAFE_RADIUS);
-            result.push(spawnAsteroid(ax, ay, 'large'));
+            asteroids.insert(spawnAsteroid(ax, ay, 'large'));
         }
-        return result;
     }
 
     function asteroidCountForWave(wave: number): number {
@@ -261,12 +260,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         return dx * dx + dy * dy;
     }
 
-    function aliveAsteroidCount(): number {
-        let count = 0;
-        for (let i = 0; i < asteroids.length; i++) {
-            if (asteroids[i].isAlive) count++;
+    function updateAsteroids(deltaMs: number): void {
+        for (let i = 0; i < asteroids.slotCount; i++) {
+            const slot = asteroids.at(i);
+            if (slot !== undefined) slot.value.update(deltaMs);
         }
-        return count;
     }
 
     function findSafeRespawnPosition(): { x: number; y: number } {
@@ -282,9 +280,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const cy = Math.random() * arenaHeight;
 
             let minDist = Infinity;
-            for (let a = 0; a < asteroids.length; a++) {
-                if (!asteroids[a].isAlive) continue;
-                const d = distSq(cx, cy, asteroids[a].x, asteroids[a].y);
+            for (let a = 0; a < asteroids.slotCount; a++) {
+                const slot = asteroids.at(a);
+                if (slot === undefined || !slot.value.isAlive) continue;
+                const d = distSq(cx, cy, slot.value.x, slot.value.y);
                 if (d < minDist) minDist = d;
             }
 
@@ -306,7 +305,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function loadWave(): void {
         ship.respawn(arenaWidth / 2, arenaHeight / 2);
         bullets = buildBulletPool();
-        asteroids = spawnWaveAsteroids(asteroidCountForWave(wave));
+        asteroids.clear();
+        spawnWaveAsteroids(asteroidCountForWave(wave));
         debrisModel.clear();
         fireConsumed = false;
         gamePhase = 'playing';
@@ -397,15 +397,16 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const bullet = bullets[b];
             if (!bullet.isActive) continue;
 
-            for (let a = 0; a < asteroids.length; a++) {
-                const ast = asteroids[a];
-                if (!ast.isAlive) continue;
+            for (let a = 0; a < asteroids.slotCount; a++) {
+                const slot = asteroids.at(a);
+                if (slot === undefined || !slot.value.isAlive) continue;
 
+                const ast = slot.value;
                 const hitDist = ast.radius + BULLET_RADIUS;
                 if (distSq(bullet.x, bullet.y, ast.x, ast.y) < hitDist * hitDist) {
                     score += SCORE_BY_SIZE[ast.size];
                     bullet.deactivate();
-                    splitAsteroid(a);
+                    splitAsteroid(slot);
                     break;
                 }
             }
@@ -415,10 +416,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkShipVsAsteroids(): void {
         if (!ship.isAlive) return;
 
-        for (let a = 0; a < asteroids.length; a++) {
-            const ast = asteroids[a];
-            if (!ast.isAlive) continue;
+        for (let a = 0; a < asteroids.slotCount; a++) {
+            const slot = asteroids.at(a);
+            if (slot === undefined || !slot.value.isAlive) continue;
 
+            const ast = slot.value;
             const hitDist = ast.radius + SHIP_RADIUS;
             if (distSq(ship.x, ship.y, ast.x, ast.y) < hitDist * hitDist) {
                 ship.kill();
@@ -428,9 +430,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 
-    function splitAsteroid(index: number): void {
-        const ast = asteroids[index];
+    function splitAsteroid(slot: Slot<AsteroidModel>): void {
+        const ast = slot.value;
         ast.kill();
+        asteroids.remove(slot);
 
         const childSize = CHILD_SIZE[ast.size];
         if (!childSize) return;
@@ -449,7 +452,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 arenaWidth,
                 arenaHeight,
             });
-            asteroids.push(child);
+            asteroids.insert(child);
         }
     }
 }

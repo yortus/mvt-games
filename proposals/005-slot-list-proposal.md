@@ -18,9 +18,9 @@ tests. Deviations from this proposal as written:
 - `insert` scans from a cached lowest-free-index hint (amortised ~O(1), O(n)
   worst case); the bitmap in section 7 remains deferred.
 
-Still pending: the `<List>` projection (section 5.3, needs 004) and the
-`scramble` conversion (section 10, step 4). `asteroids` (step 3) and a visual
-demo (`src/demos/ordered-list/`) are done.
+Still pending: the `<List>` projection (section 5.3, needs 004). `asteroids`
+(step 3), `scramble` (step 4), and a visual demo (`src/demos/ordered-list/`) are
+done.
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
 component. [the patterns guide](./006-list-patterns.md) for how the two
@@ -634,9 +634,11 @@ exist and `update` has never been called is the mitigation.
    asteroid collection in a `SlotList`; the view grows a pool by storage index
    and redraws a slot only when its tenant changes, instead of destroying and
    rebuilding every view on a length change. Its fixed bullet pool was left as-is.
-4. **Convert `scramble`** - pending, and the larger job: six hand-rolled pools
-   become six declarations, and its explosions gain a real release delay. Watch
-   the index-based collision logic and the base-fuel-tank special case.
+4. **Convert `scramble`** - **done**. Six hand-rolled pools became six `SlotList`
+   declarations; the base-fuel-tank index-as-identity became a held `Slot`
+   reference; explosions use `releaseDelayMs` (born removed) for their fade. The
+   entity models keep their now-internal `isActive` flags - a later cleanup
+   could drop them.
 5. **`Order` only when a screen needs it** - **done** as `OrderedSlotList` in
    `src/common/slot-list/` with unit tests, plus a visual demo in
    `src/demos/ordered-list/` (reorder slide + exit fade). No game needs it yet.

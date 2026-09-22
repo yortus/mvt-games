@@ -24,14 +24,14 @@ describe('GameModel', () => {
             expect(g.phase).toBe('playing');
         });
 
-        it('has correct pool sizes', () => {
+        it('pools start empty', () => {
             const g = makeGame();
-            expect(g.bullets.length).toBe(4);
-            expect(g.bombs.length).toBe(2);
-            expect(g.rockets.length).toBe(8);
-            expect(g.ufos.length).toBe(6);
-            expect(g.fuelTanks.length).toBe(6);
-            expect(g.explosions.length).toBe(8);
+            expect(g.bullets.slotCount).toBe(0);
+            expect(g.bombs.slotCount).toBe(0);
+            expect(g.rockets.slotCount).toBe(0);
+            expect(g.ufos.slotCount).toBe(0);
+            expect(g.fuelTanks.slotCount).toBe(0);
+            expect(g.explosions.slotCount).toBe(0);
         });
 
         it('starts with scroll at 0', () => {
@@ -58,8 +58,7 @@ describe('GameModel', () => {
             const g = makeGame();
             g.playerInput.firePressed = true;
             g.update(16);
-            const activeBullets = g.bullets.filter((b) => b.isActive);
-            expect(activeBullets.length).toBe(1);
+            expect(g.bullets.liveCount).toBe(1);
         });
 
         it('does not fire more than one bullet per press', () => {
@@ -67,8 +66,7 @@ describe('GameModel', () => {
             g.playerInput.firePressed = true;
             g.update(16);
             g.update(16); // same press held
-            const activeBullets = g.bullets.filter((b) => b.isActive);
-            expect(activeBullets.length).toBe(1);
+            expect(g.bullets.liveCount).toBe(1);
         });
 
         it('fires another bullet after releasing and pressing again', () => {
@@ -79,16 +77,14 @@ describe('GameModel', () => {
             g.update(16);
             g.playerInput.firePressed = true;
             g.update(16);
-            const activeBullets = g.bullets.filter((b) => b.isActive);
-            expect(activeBullets.length).toBe(2);
+            expect(g.bullets.liveCount).toBe(2);
         });
 
         it('drops a bomb on bomb press', () => {
             const g = makeGame();
             g.playerInput.bombPressed = true;
             g.update(16);
-            const activeBombs = g.bombs.filter((b) => b.isActive);
-            expect(activeBombs.length).toBe(1);
+            expect(g.bombs.liveCount).toBe(1);
         });
     });
 
@@ -115,10 +111,7 @@ describe('GameModel', () => {
             // Spawns at cols ~10-90 in section 1, spawn edge = scrollCol + 28 + 2
             for (let i = 0; i < 100; i++) g.update(100); // 10 seconds of scroll at speed 3 -> scrollCol ~30
             // At least some rockets or UFOs should be active by now
-            const activeRockets = g.rockets.filter((r) => r.isActive);
-            const activeUfos = g.ufos.filter((u) => u.isActive);
-            const activeFuel = g.fuelTanks.filter((f) => f.isActive);
-            expect(activeRockets.length + activeUfos.length + activeFuel.length).toBeGreaterThan(0);
+            expect(g.rockets.liveCount + g.ufos.liveCount + g.fuelTanks.liveCount).toBeGreaterThan(0);
         });
     });
 
