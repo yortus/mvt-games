@@ -6,6 +6,7 @@ export { createOverlayView, type OverlayViewBindings } from './overlay-view';
 export { createPauseMenuView, type PauseMenuViewBindings } from './pause-menu-view';
 export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
+export { createSlotList, type Slot, type SlotList, type SlotListOptions } from './slot-list';
 export { type StatefulPixiView } from './stateful-pixi-view';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { createTouchInputView, type TouchInputViewBindings } from './touch-input-view';

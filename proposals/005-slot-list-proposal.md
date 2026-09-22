@@ -6,7 +6,20 @@
 > elsewhere in the model stay correct without handles or generation counters.
 > Designed to be projected directly by an index-addressed `<List>`.
 
-**Status:** proposed, not implemented.
+**Status:** core collection **implemented** in `src/common/slot-list/`
+(`createSlotList`, `Slot<T>`, `SlotList<T>`, `SlotListOptions<T>`), with full unit
+tests. Deviations from this proposal as written:
+
+- Lives in `#common` at `src/common/slot-list/`, not a top-level `#slot-list`
+  module (open question 1, resolved).
+- `reuseDelayMs` shipped as `releaseDelayMs`; the whole removal lifecycle is
+  named off `remove` / `release` (live -> pending release -> released) to keep
+  the vocabulary minimal.
+- `insert` scans from a cached lowest-free-index hint (amortised ~O(1), O(n)
+  worst case); the bitmap in section 7 remains deferred.
+
+Still pending: the `<List>` projection (section 5.3, needs 004), the `Order`
+collaborator (section 5.2), and the game conversions (section 10, steps 3-4).
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
 component. [the patterns guide](./006-list-patterns.md) for how the two
@@ -600,32 +613,34 @@ exist and `update` has never been called is the mitigation.
 
 ## 10. Adoption
 
-1. **Land `onRefresh` with `SKIP_DESCENDANTS`** in the plugin rework. Section 5.3
-   depends on it, and it is worth doing on its own merits.
-2. **Implement `SlotList`.** Unit-testable with no Pixi dependency.
-3. **Convert one game.** `asteroids` is the honest test: it holds the only
-   genuinely variable-length list in the repo and currently destroys and
+1. **Land `onRefresh` with `SKIP_DESCENDANTS`** in the plugin rework - **done**
+   (see proposal 001). Section 5.3 depends on it, and it is worth doing on its
+   own merits.
+2. **Implement `SlotList`** - **done**, in `src/common/slot-list/` with unit
+   tests and no Pixi dependency.
+3. **Convert one game** - pending. `asteroids` is the honest test: it holds the
+   only genuinely variable-length list in the repo and currently destroys and
    rebuilds every view on any length change.
-4. **Convert `scramble`.** Six hand-rolled pools become six declarations, and
-   its explosions gain a real reuse delay.
-5. **`Order` only when a screen needs it.** No game in the repo does.
-6. **Document in `docs/building-with-mvt/simulating-the-world/`**, since this is
-   a model-side structure, with a cross-link from the list patterns guide.
+4. **Convert `scramble`** - pending. Six hand-rolled pools become six
+   declarations, and its explosions gain a real release delay.
+5. **`Order` only when a screen needs it** - pending. No game in the repo does.
+6. **Document in `docs/building-with-mvt/simulating-the-world/`** - pending,
+   since this is a model-side structure, with a cross-link from the list
+   patterns guide.
 
 ---
 
 ## 11. Open questions
 
-1. **Where does it live?** `src/slot-list/` with a `#slot-list` alias matches
-   `src/pixi-jsx/` and `src/pixi-mvt/`. Folding it into `#common` avoids
-   a new top-level module but buries a substantial piece of the architecture in
-   a grab-bag. Leaning towards its own module.
-2. **Can `update(deltaMs)` be skipped when `reuseDelayMs` is zero everywhere?**
-   It becomes a no-op, but requiring it unconditionally is one fewer rule. The
-   cost of requiring it is one call per list per frame.
-3. **Should `clear()` respect reuse delays or free immediately?** Immediate is
-   simpler and is what a level transition wants. A fading variant could come
-   later if a screen needs it.
+1. **Where does it live?** *Resolved: folded into `#common` at
+   `src/common/slot-list/`*, reached through the existing `#common` barrel,
+   rather than a top-level `#slot-list` module.
+2. **Can `update(deltaMs)` be skipped when the release delay is zero everywhere?**
+   *Resolved: no.* `update` is required unconditionally - one fewer rule, at the
+   cost of one call per list per frame, and it is O(1) when nothing is due.
+3. **Should `clear()` respect release delays or release immediately?**
+   *Resolved: immediate*, which is what a level transition wants. A fading
+   variant could come later if a screen needs it.
 4. **Should `Order` maintain rank in a side table or write it onto the slot?**
-   A side table keeps `Slot<T>` at three fields; writing it back makes the view
-   binding trivial. Leaning towards the side table.
+   Still open; `Order` is unbuilt. A side table keeps `Slot<T>` at three fields;
+   writing it back makes the view binding trivial. Leaning towards the side table.
