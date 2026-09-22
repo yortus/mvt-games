@@ -9,7 +9,7 @@ Nothing here is a description of how the repo currently works. For that, see
 
 | | Document | Status |
 | --- | --- | --- |
-| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Partly implemented in `src/pixi-mvt-plugin/`. Visibility gating (section 3.5) is not |
+| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Implemented in `src/pixi-mvt/`; the section 3.5 visibility gating was superseded by the `SKIP_DESCENDANTS` sentinel. Scramble migrated as a pilot; the other games are pending |
 | 002 | [MVT plugin design notes](./002-mvt-plugin-design-notes.md) | Rationale for what was built |
 | 003 | [MVT plugin appraisal](./003-mvt-plugin-appraisal.md) | Independent review of whether this repo needs it |
 | 004 | [`<List>` proposal](./004-list-proposal.md) | Proposed. Depends on 001 |

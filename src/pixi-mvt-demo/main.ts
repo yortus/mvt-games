@@ -1,5 +1,5 @@
 import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { refreshScene, updateScene } from '../pixi-mvt-plugin';
+import { refreshScene, updateScene } from '../pixi-mvt';
 import { createSwarmModel } from './swarm-model';
 import { createSwarmView } from './swarm-view';
 
@@ -188,8 +188,10 @@ interface OrderProbe {
 }
 
 /**
- * A four-deep chain of containers that records the order its hooks fire in, so
- * the ordering guarantee is visible on screen rather than only in a test.
+ * A four-deep chain of containers that records the order its refresh methods
+ * fire in, so the ordering guarantee is visible on screen rather than only in a
+ * test. The links carry no drawables, so they cost nothing to keep in the
+ * refresh walk.
  */
 function createOrderProbe(parent: Container): OrderProbe {
     const recorded: string[] = [];
@@ -202,20 +204,17 @@ function createOrderProbe(parent: Container): OrderProbe {
         const label = labels[i];
         const link = new Container();
         link.label = label;
-        // Never drawn, and refreshed anyway: neither pass is gated on
-        // visibility, culling or whether a render even happened.
-        link.visible = false;
-        // p2 deliberately starts with no hook.
-        if (label !== 'p2') link.onRefresh = () => recorded.push(label);
+        // p2 deliberately starts with no refresh method.
+        if (label !== 'p2') link.onRefresh = () => void recorded.push(label);
         cursor.addChild(link);
         links.push(link);
         cursor = link;
     }
 
-    // Hooked only after the chain is attached, so p3 and p4 are already listed.
-    // An append-ordered scheme such as Pixi's own `onRender` list would call p2
-    // last; the trace on screen shows it in tree position.
-    links[1].onRefresh = () => recorded.push('p2');
+    // Given a refresh method only after the chain is attached, so p3 and p4 are
+    // already listed. An append-ordered scheme such as Pixi's own `onRender`
+    // list would call p2 last; the trace on screen shows it in tree position.
+    links[1].onRefresh = () => void recorded.push('p2');
 
     return {
         get trace(): string {

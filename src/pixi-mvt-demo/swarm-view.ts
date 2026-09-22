@@ -32,10 +32,11 @@ export interface EntitySlot {
  * Reconciles one child view per live entity, adding and removing them from
  * inside `onRefresh`.
  *
- * A pass iterates a snapshot taken before the first hook ran, so a child added
- * here is not called until the next pass. That is why `createEntityView` sets
- * its own first frame: a view that spawns children is the one thing that has to
- * think about it, and it is the one thing with everything it needs to hand.
+ * A pass iterates a snapshot taken before the first refresh method ran, so a
+ * child added here is not called until the next pass. That is why
+ * `createEntityView` sets its own first frame: a view that spawns children is
+ * the one thing that has to think about it, and it is the one thing with
+ * everything it needs to hand.
  */
 export function createSwarmView(bindings: SwarmViewBindings): Container {
     const view = new Container();
@@ -84,7 +85,7 @@ export function createSwarmView(bindings: SwarmViewBindings): Container {
 }
 
 /**
- * A leaf view with both hooks.
+ * A leaf view with both methods.
  *
  * `onUpdate` advances a pulse that the model knows nothing about - cosmetic
  * presentation state, which is exactly the thing that must keep advancing

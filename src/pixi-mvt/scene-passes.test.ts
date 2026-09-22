@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { refreshScene, updateScene } from './scene-passes';
+import { SKIP_DESCENDANTS } from './mvt-types';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -12,7 +13,7 @@ import { refreshScene, updateScene } from './scene-passes';
  */
 interface Driver {
     readonly kind: 'update' | 'refresh';
-    hook(container: Container, fn: () => void): void;
+    assign(container: Container, fn: () => void): void;
     clear(container: Container): void;
     run(node: Container): void;
 }
@@ -20,7 +21,7 @@ interface Driver {
 const drivers: Driver[] = [
     {
         kind: 'update',
-        hook: (container, fn) => {
+        assign: (container, fn) => {
             container.onUpdate = fn;
         },
         clear: (container) => {
@@ -30,7 +31,7 @@ const drivers: Driver[] = [
     },
     {
         kind: 'refresh',
-        hook: (container, fn) => {
+        assign: (container, fn) => {
             container.onRefresh = fn;
         },
         clear: (container) => {
@@ -61,10 +62,10 @@ function container(label: string): Container {
     return created;
 }
 
-/** A container whose hook of the driven kind records that it ran. */
+/** A container whose method of the driven kind records that it ran. */
 function node(label: string, driver: Driver, rec: Recorder): Container {
     const created = container(label);
-    driver.hook(created, () => rec.calls.push(label));
+    driver.assign(created, () => rec.calls.push(label));
     return created;
 }
 
@@ -116,7 +117,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         rec = createRecorder();
     });
 
-    it('calls every hook in the subtree exactly once', () => {
+    it('calls every method in the subtree exactly once', () => {
         const root = node('root', driver, rec);
         const a = node('a', driver, rec);
         const b = node('b', driver, rec);
@@ -143,9 +144,9 @@ describe.each(drivers)('$kind pass', (driver) => {
         expectAncestorsFirst(rec.calls, root);
     });
 
-    it('calls an ancestor hooked after its descendants were listed before them', () => {
+    it('calls an ancestor given a method after its descendants were listed before it', () => {
         // The hole `onRender` has: its registration list is append-only, so
-        // hooking an already-attached ancestor places it after its own
+        // giving an already-attached ancestor a method places it after its own
         // descendants.
         const root = node('root', driver, rec);
         const parent = container('parent');
@@ -157,7 +158,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['root', 'child']);
 
         rec.clear();
-        driver.hook(parent, () => rec.calls.push('parent'));
+        driver.assign(parent, () => rec.calls.push('parent'));
         driver.run(root);
 
         expectAncestorsFirst(rec.calls, root);
@@ -204,7 +205,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         }
     });
 
-    it('ignores hooks outside the driven subtree', () => {
+    it('ignores methods outside the driven subtree', () => {
         const root = node('root', driver, rec);
         const outsider = node('outsider', driver, rec);
         const holder = container('holder');
@@ -254,7 +255,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['root']);
     });
 
-    it('drops a container whose hook is cleared', () => {
+    it('drops a container whose method is cleared', () => {
         const root = node('root', driver, rec);
         const child = node('child', driver, rec);
         root.addChild(child);
@@ -321,10 +322,10 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls.length).toBe(4);
     });
 
-    it('prunes hookless subtrees', () => {
+    it('prunes subtrees with no method', () => {
         const root = container('root');
-        const hooked: Container[] = [];
-        // 200 branches of 100 hookless containers each, with a hook on every
+        const active: Container[] = [];
+        // 200 branches of 100 method-free containers each, with a method on every
         // tenth branch: 20k containers, 200 of which are ever called.
         for (let branchIndex = 0; branchIndex < 200; branchIndex++) {
             const branch = container(`branch${branchIndex}`);
@@ -337,39 +338,39 @@ describe.each(drivers)('$kind pass', (driver) => {
             }
             if (branchIndex % 10 !== 0) continue;
             for (let i = 0; i < 10; i++) {
-                const leaf = node(`hooked${branchIndex}-${i}`, driver, rec);
+                const leaf = node(`leaf${branchIndex}-${i}`, driver, rec);
                 cursor.addChild(leaf);
-                hooked.push(leaf);
+                active.push(leaf);
             }
         }
 
         driver.run(root);
 
-        expect(hooked.length).toBe(200);
+        expect(active.length).toBe(200);
         expect(rec.calls.length).toBe(200);
     });
 
-    it('still invalidates when a hook is reassigned after the mixin installed', () => {
-        // Regression for the accessor-shadowing defect: a hook assigned before
+    it('still invalidates when a method is reassigned after the mixin installed', () => {
+        // Regression for the accessor-shadowing defect: a method assigned before
         // the mixin was installed used to create an own data property, and
         // every later assignment then bypassed the setter.
         const root = node('root', driver, rec);
         const parent = container('parent');
         root.addChild(parent);
 
-        driver.hook(parent, () => rec.calls.push('early'));
+        driver.assign(parent, () => rec.calls.push('early'));
         driver.clear(parent);
         driver.run(root);
         expect(rec.calls).toEqual(['root']);
 
         rec.clear();
-        driver.hook(parent, () => rec.calls.push('parent'));
+        driver.assign(parent, () => rec.calls.push('parent'));
         driver.run(root);
 
         expect(rec.calls).toEqual(['root', 'parent']);
     });
 
-    it('leaves the other pass untouched when a hook is assigned', () => {
+    it('leaves the other pass untouched when a method is assigned', () => {
         const root = node('root', driver, rec);
         const child = container('child');
         root.addChild(child);
@@ -379,8 +380,8 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(other).toBeDefined();
 
         rec.clear();
-        // Assigning the other kind of hook must not invalidate this kind's list.
-        other?.hook(child, () => rec.calls.push('other'));
+        // Assigning the other kind of method must not invalidate this kind's list.
+        other?.assign(child, () => rec.calls.push('other'));
         driver.run(root);
         expect(rec.calls).toEqual(['root']);
 
@@ -389,9 +390,9 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['other']);
     });
 
-    it('throws when a hook drives the pass it is already inside', () => {
+    it('throws when a method drives the pass it is already inside', () => {
         const root = container('root');
-        driver.hook(root, () => {
+        driver.assign(root, () => {
             rec.calls.push('root');
             driver.run(root);
         });
@@ -400,17 +401,17 @@ describe.each(drivers)('$kind pass', (driver) => {
         // The guard left nothing behind: a later pass still runs.
         rec.clear();
         driver.clear(root);
-        driver.hook(root, () => rec.calls.push('root'));
+        driver.assign(root, () => rec.calls.push('root'));
         driver.run(root);
         expect(rec.calls).toEqual(['root']);
     });
 
-    it('allows a hook to drive a different container', () => {
+    it('allows a method to drive a different container', () => {
         const root = container('root');
         const sub = node('sub', driver, rec);
         const subChild = node('subChild', driver, rec);
         sub.addChild(subChild);
-        driver.hook(root, () => {
+        driver.assign(root, () => {
             rec.calls.push('root');
             driver.run(sub);
         });
@@ -426,13 +427,13 @@ describe.each(drivers)('$kind pass', (driver) => {
 // ---------------------------------------------------------------------------
 
 describe('updateScene', () => {
-    it('passes deltaMs through to every hook', () => {
+    it('passes deltaMs through to every method', () => {
         const deltas: number[] = [];
         const root = new Container();
         const child = new Container();
         root.addChild(child);
-        root.onUpdate = (deltaMs) => deltas.push(deltaMs);
-        child.onUpdate = (deltaMs) => deltas.push(deltaMs);
+        root.onUpdate = (deltaMs) => void deltas.push(deltaMs);
+        child.onUpdate = (deltaMs) => void deltas.push(deltaMs);
 
         updateScene(root, 16.5);
 
@@ -473,8 +474,8 @@ describe('refreshScene', () => {
         for (let i = 0; i < all.length; i++) {
             const current = all[i];
             current.label = `n${i}`;
-            current.onUpdate = () => order.push(`update:${current.label}`);
-            current.onRefresh = () => order.push(`refresh:${current.label}`);
+            current.onUpdate = () => void order.push(`update:${current.label}`);
+            current.onRefresh = () => void order.push(`refresh:${current.label}`);
         }
 
         updateScene(root, 16);
@@ -483,6 +484,140 @@ describe('refreshScene', () => {
         expect(order.filter((entry) => entry.startsWith('update:')).length).toBe(3);
         expect(order[2].startsWith('update:')).toBe(true);
         expect(order[3].startsWith('refresh:')).toBe(true);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// SKIP_DESCENDANTS
+// ---------------------------------------------------------------------------
+
+describe('SKIP_DESCENDANTS', () => {
+    it('skips a container\'s descendants when its method returns the sentinel', () => {
+        const calls: string[] = [];
+        const root = new Container();
+        const gate = new Container();
+        const child = new Container();
+        gate.addChild(child);
+        root.addChild(gate);
+        root.onRefresh = () => void calls.push('root');
+        gate.onRefresh = () => {
+            calls.push('gate');
+            return SKIP_DESCENDANTS;
+        };
+        child.onRefresh = () => void calls.push('child');
+
+        refreshScene(root);
+
+        expect(calls).toEqual(['root', 'gate']); // the gate ran; its child did not
+    });
+
+    it('skips a deep descendant subtree, not just direct children', () => {
+        const calls: string[] = [];
+        const root = new Container();
+        const gate = new Container();
+        const child = new Container();
+        const grandchild = new Container();
+        child.addChild(grandchild);
+        gate.addChild(child);
+        root.addChild(gate);
+        gate.onRefresh = () => SKIP_DESCENDANTS;
+        child.onRefresh = () => void calls.push('child');
+        grandchild.onRefresh = () => void calls.push('grandchild');
+
+        refreshScene(root);
+
+        expect(calls).toEqual([]);
+    });
+
+    it('lets a container that skipped itself recover on a later pass', () => {
+        // The gate ran and only skipped its subtree, so nothing gets stuck: it
+        // decides afresh every pass, with no rebuild.
+        const calls: string[] = [];
+        const root = new Container();
+        const child = new Container();
+        root.addChild(child);
+        let open = false;
+        root.onRefresh = () => (open ? undefined : SKIP_DESCENDANTS);
+        child.onRefresh = () => void calls.push('child');
+
+        refreshScene(root);
+        expect(calls).toEqual([]);
+
+        open = true;
+        refreshScene(root);
+        expect(calls).toEqual(['child']);
+    });
+
+    it('skips descendants in the update pass too', () => {
+        const calls: string[] = [];
+        const root = new Container();
+        const frozen = new Container();
+        const child = new Container();
+        frozen.addChild(child);
+        root.addChild(frozen);
+        root.onUpdate = () => void calls.push('root');
+        frozen.onUpdate = () => SKIP_DESCENDANTS;
+        child.onUpdate = () => void calls.push('child');
+
+        updateScene(root, 16);
+
+        expect(calls).toEqual(['root']); // the frozen subtree did not advance
+    });
+
+    it('never prunes the container a pass is driven from', () => {
+        // The driven root returning the sentinel skips its descendants, but the
+        // root itself always runs - it is the entry point.
+        const calls: string[] = [];
+        const root = new Container();
+        const child = new Container();
+        root.addChild(child);
+        root.onRefresh = () => {
+            calls.push('root');
+            return SKIP_DESCENDANTS;
+        };
+        child.onRefresh = () => void calls.push('child');
+
+        refreshScene(root);
+
+        expect(calls).toEqual(['root']);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Visibility does not gate
+// ---------------------------------------------------------------------------
+
+describe('visibility', () => {
+    it('does not affect either pass', () => {
+        const calls: string[] = [];
+        const root = new Container();
+        const hidden = new Container();
+        const child = new Container();
+        hidden.addChild(child);
+        root.addChild(hidden);
+        root.onRefresh = () => void calls.push('root');
+        hidden.onRefresh = () => void calls.push('hidden');
+        child.onRefresh = () => void calls.push('child');
+
+        hidden.visible = false;
+        refreshScene(root);
+
+        expect([...calls].sort()).toEqual(['child', 'hidden', 'root']);
+    });
+
+    it('lets a view set its own `visible` without getting stuck', () => {
+        // Nothing gates on visibility, so a self-hiding view still refreshes and
+        // can reveal itself again. The old design forbade this; now it is free.
+        const calls: string[] = [];
+        const root = new Container();
+        root.onRefresh = () => {
+            root.visible = false;
+            calls.push('root');
+        };
+
+        expect(() => refreshScene(root)).not.toThrow();
+        refreshScene(root);
+        expect(calls).toEqual(['root', 'root']);
     });
 });
 
@@ -497,7 +632,7 @@ describe('mutation during a pass', () => {
         rec = createRecorder();
     });
 
-    it('runs a container added by a hook from the next pass, not this one', () => {
+    it('runs a container added by a method from the next pass, not this one', () => {
         const root = container('root');
         let spawned = false;
         root.onRefresh = () => {
@@ -505,7 +640,7 @@ describe('mutation during a pass', () => {
             if (spawned) return;
             spawned = true;
             const child = container('child');
-            child.onRefresh = () => rec.calls.push('child');
+            child.onRefresh = () => void rec.calls.push('child');
             root.addChild(child);
         };
 
@@ -522,7 +657,7 @@ describe('mutation during a pass', () => {
         const first = container('first');
         const doomed = container('doomed');
         root.addChild(first, doomed);
-        doomed.onRefresh = () => rec.calls.push('doomed');
+        doomed.onRefresh = () => void rec.calls.push('doomed');
         first.onRefresh = () => {
             rec.calls.push('first');
             root.removeChild(doomed);
@@ -538,7 +673,7 @@ describe('mutation during a pass', () => {
         const early = container('early');
         const later = container('later');
         root.addChild(early, later);
-        early.onRefresh = () => rec.calls.push('early');
+        early.onRefresh = () => void rec.calls.push('early');
         later.onRefresh = () => {
             rec.calls.push('later');
             root.removeChild(early);
@@ -552,12 +687,12 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['later']);
     });
 
-    it('skips a container whose hook is cleared earlier in the same pass', () => {
+    it('skips a container whose method is cleared earlier in the same pass', () => {
         const root = container('root');
         const first = container('first');
         const silenced = container('silenced');
         root.addChild(first, silenced);
-        silenced.onRefresh = () => rec.calls.push('silenced');
+        silenced.onRefresh = () => void rec.calls.push('silenced');
         first.onRefresh = () => {
             rec.calls.push('first');
             silenced.onRefresh = undefined;
@@ -575,8 +710,8 @@ describe('mutation during a pass', () => {
         const movable = container('movable');
         left.addChild(movable);
         root.addChild(left, right);
-        movable.onRefresh = () => rec.calls.push('movable');
-        right.onRefresh = () => rec.calls.push('right');
+        movable.onRefresh = () => void rec.calls.push('movable');
+        right.onRefresh = () => void rec.calls.push('right');
         left.onRefresh = () => {
             rec.calls.push('left');
             right.addChild(movable);
@@ -594,8 +729,8 @@ describe('mutation during a pass', () => {
         const cargo = container('cargo');
         doomed.addChild(cargo);
         root.addChild(first, doomed);
-        doomed.onRefresh = () => rec.calls.push('doomed');
-        cargo.onRefresh = () => rec.calls.push('cargo');
+        doomed.onRefresh = () => void rec.calls.push('doomed');
+        cargo.onRefresh = () => void rec.calls.push('cargo');
         first.onRefresh = () => {
             rec.calls.push('first');
             doomed.destroy();
@@ -608,7 +743,7 @@ describe('mutation during a pass', () => {
 
     it('stops calling a destroyed container that is driven directly', () => {
         const root = container('root');
-        root.onRefresh = () => rec.calls.push('root');
+        root.onRefresh = () => void rec.calls.push('root');
 
         refreshScene(root);
         expect(rec.calls).toEqual(['root']);
@@ -624,8 +759,8 @@ describe('mutation during a pass', () => {
 // Own-property shadowing
 // ---------------------------------------------------------------------------
 
-describe('shadowed hooks', () => {
-    it('throws in dev when a hook is defined as an own property', () => {
+describe('shadowed methods', () => {
+    it('throws in dev when a method is defined as an own property', () => {
         const root = new Container();
         const child = new Container();
         child.label = 'child';
@@ -681,7 +816,7 @@ describe('against a naive walk', () => {
     it.each(seeds)('agrees with it under a random mutation script (seed %i)', (seed) => {
         const rec = createRecorder();
         const root = container('root');
-        root.onRefresh = () => rec.calls.push('root');
+        root.onRefresh = () => void rec.calls.push('root');
         const random = createRandom(seed);
         const pool: Container[] = [root];
         let counter = 0;
@@ -693,7 +828,7 @@ describe('against a naive walk', () => {
                 const target = pool[Math.floor(random() * pool.length)];
                 if (roll < 0.45) {
                     const child = container(`n${counter++}`);
-                    child.onRefresh = () => rec.calls.push(child.label);
+                    child.onRefresh = () => void rec.calls.push(child.label);
                     target.addChild(child);
                     pool.push(child);
                 }
@@ -715,7 +850,7 @@ describe('against a naive walk', () => {
                 else if (pool.length > 1) {
                     const victim = pool[1 + Math.floor(random() * (pool.length - 1))];
                     victim.onRefresh = victim.onRefresh === undefined
-                        ? () => rec.calls.push(victim.label)
+                        ? () => void rec.calls.push(victim.label)
                         : undefined;
                 }
             }

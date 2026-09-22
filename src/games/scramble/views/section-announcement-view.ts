@@ -1,5 +1,5 @@
 import { Container, Text } from 'pixi.js';
-import { createSequence, watch, type StatefulPixiView } from '#common';
+import { createSequence, watch } from '#common';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -28,7 +28,7 @@ const SECTION_NAMES: readonly string[] = [
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createSectionAnnouncementView(bindings: SectionAnnouncementViewBindings): StatefulPixiView {
+export function createSectionAnnouncementView(bindings: SectionAnnouncementViewBindings): Container {
     const sequence = createSequence([
         { name: 'display', startMs: 0, durationMs: DISPLAY_DURATION_MS },
         { name: 'fade', startMs: DISPLAY_DURATION_MS, durationMs: FADE_DURATION_MS },
@@ -46,23 +46,22 @@ export function createSectionAnnouncementView(bindings: SectionAnnouncementViewB
     });
     view.addChild(label);
 
-    view.visible = false;
-    view.onRender = refresh;
-    return Object.assign(view, { update });
-
-    function update(deltaMs: number): void {
+    view.onUpdate = (deltaMs) => {
         const { sectionIndex } = watcher.poll();
         if (sectionIndex.changed) {
             text = SECTION_NAMES[sectionIndex.value] ?? '';
             sequence.start();
         }
         sequence.update(deltaMs);
-    }
+    };
 
-    function refresh(): void {
+    view.onRefresh = () => {
+        // A centred overlay that fades in and out: it drives its own alpha
+        // (0 when idle), since a smooth fade needs alpha, not a visible toggle.
         const { fade } = sequence.steps;
-        view.visible = sequence.isActive;
-        view.alpha = fade.isActive ? 1 - fade.progress : 1;
+        view.alpha = sequence.isActive ? (fade.isActive ? 1 - fade.progress : 1) : 0;
         label.text = sequence.isActive ? text : '';
-    }
+    };
+
+    return view;
 }

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene, updateScene } from '../pixi-mvt-plugin';
+import { refreshScene, updateScene } from '../pixi-mvt';
 import { createSwarmModel } from './swarm-model';
 import { createSwarmView } from './swarm-view';
 

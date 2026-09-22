@@ -3,8 +3,8 @@
 > Replace the reconciling `<List>` with one that knows only how many slots it
 > holds and what is at each index. Add `<Switch>` for slots whose shape varies.
 > Covers the supporting changes the JSX runtime needs, the Pixi 8 behaviour the
-> design depends on, the hard dependency on visibility-gated `onRefresh`, and a
-> migration path.
+> design depends on, the hard dependency on the `SKIP_DESCENDANTS` sentinel, and
+> a migration path.
 
 **Status:** proposed, not implemented. A working reference implementation of
 `<List>` runs in [`src/demos/list-swap/`](../src/demos/list-swap/README.md). One
@@ -28,7 +28,7 @@ model-side collection designed to be projected by this component.
 | On reorder | 1 to 2 rebuilds per swap, about `N` on a re-sort | no structural work at all |
 | Containers per item | 2 (slot wrapper plus item) | 1 |
 | Item views bound by | item object captured in a closure | an accessor, re-read each frame |
-| Empty or surplus slots | destroyed and rebuilt | hidden, and pruned by the refresh pass |
+| Empty or surplus slots | destroyed and rebuilt | hidden, and their subtree skipped by the refresh pass |
 
 This is a proposal to *simplify*, not a claim that the current `<List>` is
 broken. Section 2.4 states the case against this proposal, including the
@@ -43,10 +43,10 @@ One new component comes with it:
   superset of the current one.
 
 An earlier draft also proposed `<Show>`. It is withdrawn (section 6): its whole
-justification was that hidden subtrees still refresh, which visibility gating
-in the refresh pass makes false.
+justification was that hidden subtrees still refresh, which a slot wrapper
+returning `SKIP_DESCENDANTS` makes false.
 
-This proposal has a **hard dependency** on that gating, and therefore on the
+This proposal has a **hard dependency** on that sentinel, and therefore on the
 plugin rework. Section 7.5 states what it needs and why Pixi's own `onRender`
 cannot provide it.
 
@@ -241,7 +241,7 @@ load-bearing: if an upgrade changes any of them, revisit the design.
 | Fact | Where | Consequence |
 | --- | --- | --- |
 | `onRender` hooks live in a flat per-render-group array, populated at `addChild`/`removeChild` time | `RenderGroup.addChild`, `addOnRender` | Refresh cost is proportional to attached hooked containers, independent of tree depth |
-| `runOnRender` iterates that array unconditionally. **No display flag gates it.** Verified against `visible`, `renderable`, `alpha`, `culled`, `includeInBuild`, `measurable` and `RenderLayer` attach/detach, none of which alter the registry | `RenderGroup.runOnRender` | A flat registry has no parent links, so it structurally cannot prune. This is why gating has to happen in a **walk**, which is what section 7.5 uses |
+| `runOnRender` iterates that array unconditionally. **No display flag gates it.** Verified against `visible`, `renderable`, `alpha`, `culled`, `includeInBuild`, `measurable` and `RenderLayer` attach/detach, none of which alter the registry | `RenderGroup.runOnRender` | A flat registry has no parent links, so it structurally cannot skip a subtree. This is why subtree-skipping has to happen in a **walk**, which is what section 7.5 uses |
 | `isRenderGroup` and `cacheAsTexture` move a subtree's hooks into a child render group | probe against `RenderGroup` | The hooks are relocated, not disabled |
 | `cacheAsTexture` does **not** suppress its own group's hooks. `runOnRender` runs before the early return; only nested render groups are skipped | `RenderGroupSystem._updateRenderGroups` | There is no flag-based way to park a subtree in place |
 | `RenderGroup.removeChild` on a child that **is** a render group is O(1). It splices one entry from `renderGroupChildren` and returns without walking the subtree | `RenderGroup.removeChild` | Detach is far cheaper than a per-hook `indexOf` for render-group children. But render groups get their own instruction set, so making every list slot one **breaks batching**, which is why this is not a route to cheap detaching |
@@ -273,8 +273,8 @@ export interface ListProps<T> {
     /**
      * Builds the slot for `index`. Called once per index, ever.
      * The accessor is non-optional: bindings only run while the slot is
-     * occupied, because the list hides empty slots and the refresh pass prunes
-     * hidden subtrees.
+     * occupied, because an empty slot's wrapper returns `SKIP_DESCENDANTS`, so
+     * the refresh pass skips its subtree.
      */
     children: (item: () => T, index: number) => Container;
     /** Optional handle on the list's own container. Requires section 7.4. */
@@ -312,10 +312,11 @@ capture-at-construction mistake visible instead of natural.
 3. Slot `i` is always at child index `i`. Slots are added at the tail and
    **never removed**, so child order equals slot order with no sorting and no
    splicing.
-4. **The list owns slot visibility.** A slot is visible when `i < length()` and
-   `item(i)` is not `undefined`. Everything else is hidden.
+4. **Each slot owns its own visibility.** A slot's wrapper shows itself when
+   `i < length()` and `item(i)` is not `undefined`, and hides itself otherwise.
 5. **Hidden slots are not detached and not destroyed.** They stay in the tree,
-   and the refresh pass prunes them because they are hidden (section 7.5).
+   and their wrapper returns `SKIP_DESCENDANTS`, so the refresh pass skips their
+   subtree (section 7.5).
 6. Slot bindings therefore only run while the slot is occupied, so the item
    accessor is non-optional inside `children`.
 7. `slots.length` is a high-water mark. It never shrinks, so the tree's
@@ -333,58 +334,71 @@ export function List<T>(props: ListProps<T>): Container {
     // Resolved once per slot per frame, read by that slot's bindings.
     const items: (T | undefined)[] = [];
 
-    sync();
+    ensure(props.length());
 
-    // The list's own hook runs before its descendants in the refresh pass, so
-    // visibility set here is seen when the pass reaches the slots.
-    container.onRefresh = sync;
+    // The list's own hook only grows the pool. Each slot resolves its own
+    // presence, so there is no per-slot loop here.
+    container.onRefresh = () => { ensure(props.length()); };
 
     return container;
 
-    function sync(): void {
-        const length = props.length();
-
+    function ensure(length: number): void {
         while (slots.length < length) {
             const index = slots.length;
+
+            // One container per item: the user's item view. The list wraps its
+            // generated refresh (`ownRefresh`) with a presence check that runs
+            // first - resolving the item, showing or hiding the slot, and
+            // returning SKIP_DESCENDANTS when the slot is empty so `ownRefresh`
+            // and the rest of the subtree are skipped. No item binding ever runs
+            // past the end of the list. The item root must not carry its own
+            // `visible` binding, since the list owns presence-visibility.
             const slot = props.children(() => items[index] as T, index);
+            const ownRefresh = slot.onRefresh;
+            slot.onRefresh = () => {
+                const len = props.length();
+                const item = index < len && props.item !== undefined ? props.item(index) : undefined;
+                items[index] = item;
+                const present = index < len && (props.item === undefined || item !== undefined);
+                slot.visible = present; // Pixi's visible setter early-outs when unchanged.
+                if (!present) return SKIP_DESCENDANTS;
+                return ownRefresh?.();
+            };
+
             slots[index] = slot;
             container.addChild(slot);
-        }
-
-        for (let i = 0; i < slots.length; i++) {
-            const item = i < length && props.item !== undefined
-                ? props.item(i)
-                : undefined;
-            items[i] = item;
-            // Pixi's visible setter early-outs when unchanged.
-            slots[i].visible = i < length && (props.item === undefined || item !== undefined);
         }
     }
 }
 ```
 
-Without an `item` prop the per-slot loop reduces to a visibility write, and the
-common case of an unchanged `length` costs one comparison per slot.
+A newly grown slot is added during a pass, so by the plugin's mutation rule it
+first refreshes on the next pass, one frame after it appears. Without an `item`
+prop each slot's presence check reduces to a visibility write, and an unchanged
+`length` grows nothing.
 
 ### 4.4 Shrink policy: hide, never detach or destroy
 
-Three options, and visibility gating in the refresh pass decides between them.
+Three options, and the `SKIP_DESCENDANTS` sentinel in the refresh pass decides
+between them.
 
 | Policy | Cost while parked | Churn cost | Safe |
 | --- | --- | --- | --- |
 | Destroy | none | allocation plus a JIT compile per element, per respawn | yes |
 | Detach | none | structural change, instruction rebuild, and it **invalidates the memoised refresh list** | yes |
-| **Hide** | one visibility check, subtree pruned | a visibility write, which early-outs when unchanged | **yes, given gating** |
+| **Hide** | one sentinel return, subtree skipped | a visibility write, which early-outs when unchanged | **yes, given the sentinel** |
 
 Hiding used to be the unsafe option, because a hidden slot still refreshed and
-its bindings ran past the end of the list. With `onRefresh` gated on visibility
-that is no longer true, and hiding becomes the cheapest of the three by a wide
-margin.
+its bindings ran past the end of the list. Now an empty slot's wrapper returns
+`SKIP_DESCENDANTS`, so the pass skips the slot's subtree in one step and no item
+binding runs past the end of the list. Hiding becomes the cheapest of the three
+by a wide margin.
 
 The decisive point against detaching is not the `indexOf` cost. It is that
 detaching is a structural change, and the refresh pass memoises its traversal
 into a flat list keyed on structure. Detaching a slot invalidates that memo and
-forces a rebuild. Hiding does not, because visibility is not structure.
+forces a rebuild. Hiding does not: visibility is not structure, and the sentinel
+skips the subtree without mutating the tree.
 
 So slots are built once and never removed. There is no `trim()`, and no policy
 to choose.
@@ -525,10 +539,10 @@ An earlier draft proposed `<Show>` on the grounds that a hidden subtree still
 runs every hook it contains, so detaching was the only way to stop a subtree
 refreshing without destroying it.
 
-Visibility gating in the refresh pass (section 7.5) makes that premise false.
-`visible={() => ...}` now stops the subtree refreshing, and it does so without
-a structural change and without invalidating the memoised traversal, both of
-which detaching costs.
+The `SKIP_DESCENDANTS` sentinel in the refresh pass (section 7.5) makes that
+premise false. An element that returns the sentinel while hidden stops its
+subtree refreshing, and it does so without a structural change and without
+invalidating the memoised traversal, both of which detaching costs.
 
 So `<Show>` is withdrawn, and a plain `visible` binding replaces every use of
 it. This is a straight reduction: one fewer component, one fewer decision, and
@@ -606,29 +620,28 @@ never consume `ref` themselves, to avoid a double call.
 Without this, a caller cannot reach a `<List>`'s own container to set, for
 example, `sortableChildren`.
 
-### 7.5 `onRefresh` with visibility gating: a hard dependency
+### 7.5 `onRefresh` with `SKIP_DESCENDANTS`: a hard dependency
 
 **This proposal depends on the [plugin rework plan](./001-mvt-plugin-rework-plan.md)**,
 on two counts.
 
-**Gating.** Sections 4.2, 4.4 and 6 all rest on hidden subtrees not refreshing.
-Pixi's own `onRender` registry is flat, with no parent links, so it cannot
-prune (section 3). The plugin's refresh pass is a **walk**, and a walk can fold
-`localDisplayStatus` as it descends and skip a hidden subtree in O(1).
-`onUpdate` stays ungated, because presentation state that stops advancing while
-hidden is stale when it reappears.
+**The sentinel.** Sections 4.2, 4.4 and 6 all rest on an empty or hidden slot
+being able to skip its subtree's refresh. Pixi's own `onRender` registry is
+flat, with no parent links, so it cannot skip a subtree (section 3). The
+plugin's refresh pass is a **walk**, and a method that returns `SKIP_DESCENDANTS`
+skips its subtree in O(1) via the pass's skip table. Nothing gates on `visible`,
+so `onUpdate` and `onRefresh` stay symmetric; a subtree skipped in the update
+pass simply freezes until it opts back in.
 
 **Hooks.** `<List>`, `<Switch>` and every element's generated refresh must use
-`onRefresh`, not `onRender`, or they sit outside the gated pass entirely.
+`onRefresh`, not `onRender`, or they sit outside the pass the plugin drives.
 
-`<List>` sets slot visibility in its own hook, and the pass visits parents
-before children, so a slot that becomes visible this frame is refreshed this
-frame. There is no one-frame lag on reappearance.
-
-**The rule gating asks of views:** a view must not hide its own container.
-Otherwise it is pruned, its hook stops running, and nothing can turn it back
-on. This is already the repo's convention for position and scale, and it is
-exactly why `<List>` owns slot visibility rather than each slot owning its own.
+Each slot is a wrapper container: its refresh returns `SKIP_DESCENDANTS` when its
+item is absent, and sets its own `visible` for drawing. The pass visits parents
+before children, so a slot that becomes present this frame is refreshed this
+frame, with no one-frame lag on reappearance. Because nothing gates on
+visibility, a slot that sets its own `visible = false` still runs its own hook
+next frame, so it can always reveal itself again.
 
 **Update-bearing views** are the second reason the plugin matters.
 `JSX.Element` is `Container`, so the `& { update }` half of `StatefulPixiView`
@@ -642,35 +655,43 @@ by the view that *contains* the list, as `src/demos/list-swap/` does and
 `cactii/views/board-view/` already does. That is the better factoring anyway,
 because the state is then testable without Pixi.
 
-### 7.6 Hoist `visible` bindings to the parent's refresh
+### 7.6 Codegen: `visible` first, then `SKIP_DESCENDANTS`
 
-Required by the rule in 7.5, and mechanical.
+Mechanical, and local to each element's generated refresh.
 
-A `<sprite visible={() => ...} />` is, at runtime, an element clearing its own
-visibility from its own hook, which is precisely the deadlock case. But the
-runtime builds children before parents and has them in `props.children`, so it
-can move a child's `visible` binding into the **parent's** generated refresh.
+An element with a `visible` binding evaluates it **first** in its own generated
+refresh, assigns `this.visible`, and returns `SKIP_DESCENDANTS` when the result
+is false, before running any other binding:
 
-The author keeps writing `visible={...}` and never learns the rule, because the
-convention holds mechanically. An element with no JSX parent keeps the binding,
-which is safe when it is the node a refresh pass is called on, since the pass
-never prunes its own root.
+```ts
+element.onRefresh = () => {
+    element.visible = isVisible();
+    if (!element.visible) return SKIP_DESCENDANTS;
+    // ...the element's other bindings
+};
+```
 
-This is the one runtime change gating forces, and it costs a few lines in
-`jsx()` where children are already being walked.
+The author keeps writing `visible={...}` and never thinks about the sentinel.
+Setting its own `visible` is safe - nothing gates on it, so the element runs its
+own hook again next frame and can reveal itself - and returning the sentinel
+saves the cost of refreshing a hidden subtree. An element with no `visible`
+binding generates no such branch.
+
+This is the one runtime change the sentinel asks of the JSX codegen, and it
+costs a few lines in `buildRefreshFn` where the binding order is already fixed.
 
 ---
 
 ## 8. Accepted limitations
 
 **A hard dependency on the plugin rework.** Sections 4.2, 4.4, 6 and 7.5 all
-rest on visibility gating in `onRefresh`. Without it, hidden slots still
-refresh, the item accessor has to become optional again, a per-element guard
-comes back, and `<Show>` has to be reinstated. This is the largest risk in the
-proposal and it is external to it.
+rest on the `SKIP_DESCENDANTS` sentinel in `onRefresh`. Without it, hidden slots
+still refresh, the item accessor has to become optional again, a per-element
+guard comes back, and `<Show>` has to be reinstated. This is the largest risk in
+the proposal and it is external to it.
 
 **High-water-mark memory.** A list that peaks at 5000 items retains 5000 slots
-for the life of the list. Hidden slots cost one visibility check each per frame
+for the life of the list. Hidden slots cost one sentinel return each per frame
 and nothing else, but they are resident. This is now a deliberate trade rather
 than a policy choice: the alternative, detaching, invalidates the memoised
 traversal on every change.
@@ -680,6 +701,11 @@ hides instantly. Something has to hold the item long enough to animate it out,
 which is what `reuseDelayMs` in
 [the `SlotList` proposal](./005-slot-list-proposal.md) exists for. Under
 rule 1 the model owns time, so an exit animation was never the view's to own.
+
+**Item roots cannot carry their own `visible` binding.** The list owns each
+slot's presence-visibility by wrapping the slot's refresh (section 4.3), so an
+item root that also drove `visible` would fight it. Drive `visible` on a child
+of the item root instead, or leave presence to the list.
 
 **Per-frame cost is `O(slots)`, not `O(1)`.** Section 4.6 sets out why that is
 the honest comparison and where the work moved from.
@@ -694,7 +720,7 @@ the honest comparison and where the work moved from.
 0. **Already landed.** The cursor-aliasing defect in section 2.2 is fixed and
    covered by [`list.test.ts`](../src/pixi-jsx/list.test.ts). That fix stands on its own and
    is independent of whether this proposal is adopted.
-1. **Land `onRefresh` with visibility gating** in the plugin rework, and move
+1. **Land `onRefresh` with `SKIP_DESCENDANTS`** in the plugin rework, and move
    the JSX runtime's generated refresh from `onRender` to `onRefresh`. This is
    a hard dependency (section 7.5), so nothing below can ship without it.
 2. Land section 7.1 next. It is independent, it is a clear win, and it de-risks

@@ -16,7 +16,7 @@ export interface BaseTargetViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createBaseTargetView(bindings: BaseTargetViewBindings): Container {
-    let flashTimer = 0;
+    let flashMs = 0;
 
     const tileSize = bindings.getTileSize();
     const width = tileSize * 2;
@@ -37,23 +37,19 @@ export function createBaseTargetView(bindings: BaseTargetViewBindings): Containe
 
     const view = new Container();
     view.addChild(body, inner);
-    view.visible = false;
-    view.onRender = refresh;
-    return view;
 
-    function refresh(): void {
-        const alive = bindings.isBaseAlive();
-        view.visible = alive;
-        if (!alive) {
-            flashTimer = 0;
-            return;
-        }
+    view.onUpdate = (deltaMs) => {
+        flashMs += deltaMs;
+    };
 
+    view.onRefresh = () => {
+        const isAlive = view.visible = bindings.isBaseAlive();
+        if (!isAlive) return;
         view.position.set(bindings.getScreenX(), bindings.getScreenY());
-
-        // Pulse effect to draw attention
-        flashTimer += 16;
-        const pulse = 0.85 + 0.15 * Math.sin(flashTimer * 0.006);
+        // Pulse effect to draw attention.
+        const pulse = 0.85 + 0.15 * Math.sin(flashMs * 0.006);
         view.scale.set(pulse);
-    }
+    };
+
+    return view;
 }

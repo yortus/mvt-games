@@ -11,7 +11,7 @@
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
 component. [the patterns guide](./006-list-patterns.md) for how the two
 compose. [the plugin rework plan](./001-mvt-plugin-rework-plan.md) for the refresh
-pass whose visibility gating makes hidden slots free.
+pass whose `SKIP_DESCENDANTS` sentinel makes hidden slots free.
 
 ---
 
@@ -258,8 +258,9 @@ function update(deltaMs: number): void {
 ```
 
 No guard prop, and no non-null assertion. `<List>` hides slots whose `item(i)`
-is `undefined`, and the refresh pass prunes hidden subtrees, so these bindings
-demonstrably do not run while the slot is empty.
+is `undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh
+pass skips its subtree and these bindings demonstrably do not run while the slot
+is empty.
 
 ### 4.2 Creeps: growable, fresh values, referenced by towers
 
@@ -411,16 +412,17 @@ content, such as a fanned card hand, also needs `zIndex` with
 ```
 
 That is the whole integration. `<List>` owns slot visibility: it hides any slot
-where `item(i)` is `undefined` or whose index is past `length`, and the refresh
-pass prunes hidden subtrees. Three consequences:
+where `item(i)` is `undefined` or whose index is past `length`, and an empty
+slot returns `SKIP_DESCENDANTS` so the refresh pass skips its subtree. Three
+consequences:
 
 - **No guard prop and no `<Show>`** in the slot body. The author cannot forget
   a guard, because there is no guard to write.
 - **The slot accessor is non-optional.** Bindings only run while the slot is
   occupied, so `slot().value` needs no assertion.
-- **A hidden slot costs one visibility check**, not one getter per binding.
+- **A hidden slot costs one presence check**, not one getter per binding.
 
-This depends on `onRefresh` visibility gating in
+This depends on `onRefresh` and the `SKIP_DESCENDANTS` sentinel in
 [the plugin rework plan](./001-mvt-plugin-rework-plan.md) section 3.5. Without it,
 hidden subtrees still refresh and the guard has to come back.
 
@@ -598,7 +600,7 @@ exist and `update` has never been called is the mitigation.
 
 ## 10. Adoption
 
-1. **Land `onRefresh` visibility gating** in the plugin rework. Section 5.3
+1. **Land `onRefresh` with `SKIP_DESCENDANTS`** in the plugin rework. Section 5.3
    depends on it, and it is worth doing on its own merits.
 2. **Implement `SlotList`.** Unit-testable with no Pixi dependency.
 3. **Convert one game.** `asteroids` is the honest test: it holds the only
@@ -615,7 +617,7 @@ exist and `update` has never been called is the mitigation.
 ## 11. Open questions
 
 1. **Where does it live?** `src/slot-list/` with a `#slot-list` alias matches
-   `src/pixi-jsx/` and `src/pixi-mvt-plugin/`. Folding it into `#common` avoids
+   `src/pixi-jsx/` and `src/pixi-mvt/`. Folding it into `#common` avoids
    a new top-level module but buries a substantial piece of the architecture in
    a grab-bag. Leaning towards its own module.
 2. **Can `update(deltaMs)` be skipped when `reuseDelayMs` is zero everywhere?**

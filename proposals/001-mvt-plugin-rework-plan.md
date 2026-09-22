@@ -1,18 +1,30 @@
-# Rework Plan: pixi-mvt-plugin
+# Rework Plan: pixi-mvt
 
 > Implementation plan for reworking the spike. Written to be picked up cold in
 > a fresh session - everything needed to start is in this file.
 > Companions: [the appraisal](./003-mvt-plugin-appraisal.md) (independent review). The two
 > documents this plan calls README.md and QUICK-START.md have since been
 > swapped by section 11, and are now [the design notes](./002-mvt-plugin-design-notes.md) and
-> [README.md](../src/pixi-mvt-plugin/README.md).
+> [README.md](../src/pixi-mvt/README.md).
 
 **Written:** 2026-09-18, against Pixi 8.16.0, branch `pixi-mvt-plugin`.
 
-**Status: implemented**, sections 1 to 11. Section 12 (migrating the repo's own
-games onto the hooks) and section 13 (follow-ups) are still open. What shipped
-is described in [the design notes](./002-mvt-plugin-design-notes.md); the benchmark numbers there
+**Status: implemented**, sections 1 to 11. Section 12 (repo migration) is under
+way - Scramble has been migrated end to end as a pilot, and the other games are
+still open. Section 13 (follow-ups) is untouched. The plugin folder is now
+`src/pixi-mvt`. What shipped is described in
+[the design notes](./002-mvt-plugin-design-notes.md); the benchmark numbers there
 are freshly measured and supersede the design-time baselines in section 10.
+
+**Superseded since implementation: the visibility gating in section 3.5 was
+replaced by an explicit `SKIP_DESCENDANTS` sentinel.** A method returns the
+sentinel to skip its own descendants for a frame, and both passes honour it
+symmetrically. Nothing gates on `visible`, so the self-hide rule, its dev-only
+`visible` setter guard, and the JSX `visible`-hoisting the gating design needed
+are all gone; a view may set its own `visible` like any other presentation
+output. Sections 3.5, 4.1 and 4.2 below are rewritten to the shipped sentinel,
+and the pass-root and detach handling that once existed only to make gating safe
+now fall out of the same skip table. The design notes are the authority.
 
 ---
 
@@ -127,16 +139,17 @@ both driven by explicit calls at points you choose. Mixing `onUpdate` with
 `onRender` means two mechanisms with different semantics, one of which you do
 not control.
 
-They are a matched pair in everything except gating, where section 3.5 makes
-them deliberately asymmetric: `onUpdate` always fires, `onRefresh` skips hidden
-subtrees. That is not an inconsistency but the distinction the two hooks exist
-to draw. One **advances** state and must never skip a tick; the other
-**projects** state and is idempotent, so skipping it while nothing can observe
-the result costs nothing.
+They are a matched pair in mechanics: same traversal, same ordering, same
+invalidation, same skip table, same `SKIP_DESCENDANTS` sentinel. The only
+asymmetry is one of intent. `onUpdate` **advances** state, so a subtree that
+opts out with the sentinel freezes and is one frame stale on resume; `onRefresh`
+**projects** state, so a subtree that opts out simply restates nothing until it
+opts back in. Neither gates on visibility.
 
-A sixth divergence from `onRender` follows from that: gating is only possible
-in a walk. Pixi's registry is flat with no parent links, so it cannot prune a
-subtree even in principle.
+A sixth divergence from `onRender` is that a subtree can be skipped at all: the
+sentinel jumps past a subtree in one step because the walk knows the tree's
+shape. Pixi's registry is flat with no parent links, so it cannot skip a subtree
+even in principle.
 
 ### 3.4 Hook signatures - settled, do not revisit
 
@@ -147,75 +160,47 @@ thumbnails, replays), invites views to pick a different time base from their
 models via `ticker.speed`, and would give the core a hard dependency on Pixi's
 Ticker.
 
-### 3.5 Gating - settled, do not revisit
+### 3.5 Skipping subtrees - settled, do not revisit
 
-**`onUpdate` never gates. `onRefresh` gates on visibility.**
+**Neither pass gates on visibility. A method may return `SKIP_DESCENDANTS` to
+skip its own descendants for a frame.**
 
 `onUpdate` must not be gated: presentation state that stops advancing while
 hidden is stale when it reappears, and gating would make state evolution a
-function of whether something was drawn.
+function of whether something was drawn. `onRefresh` could in principle skip
+hidden subtrees - it is idempotent and projects rather than advances - but the
+earlier draft that did this had to fold `localDisplayStatus` as it walked,
+forbade a view from clearing its own `visible` (a pruned container drops out of
+its own walk and deadlocks), and needed a dev-mode `visible` setter guard to
+catch that. Restating a hidden fact is one method call that assigns a value
+nobody draws, so dropping the gate makes the two passes the same walk and lets a
+view set its own `visible` like any other presentation output.
 
-`onRefresh` is different in kind. It is idempotent and it projects rather than
-advances, so skipping it costs nothing that the next visible frame does not
-recover. A hidden subtree is refreshed to no observable effect, which for a
-pooled list of a few hundred slots is the bulk of the pass.
+**The sentinel.** `SKIP_DESCENDANTS` is a unique symbol the plugin exports. A
+method returns it to tell the pass to skip that container's descendants this
+frame:
 
-An earlier draft settled this the other way, on two grounds. Both are now
-answered:
+```ts
+slot.onRefresh = () => {
+    if (item === undefined) return SKIP_DESCENDANTS; // leave the empty slot's subtree alone
+    // ...otherwise project item into the subtree
+};
+```
 
-- *"Pixi's folded `globalDisplayStatus` is computed during the render pass, so
-  reading it from a refresh gives last frame's answer."* True, and verified:
-  it is written only in `updateRenderGroupTransforms`. But it is the wrong
-  field. `localDisplayStatus` is written eagerly by the `visible`, `renderable`
-  and `culled` setters and is current at all times. A **walk** can fold it
-  itself as it descends, one pass earlier than Pixi does. That is a capability
-  Pixi's own `onRender` cannot have, because its registry is flat with no
-  parent links.
-- *"The cheap lever is already detachment."* Not for churn. Detaching sets
-  `structureDidChange`, forces an instruction rebuild, and invalidates the
-  memoised list in section 4, so it is paid twice. Visibility is not structure
-  and invalidates nothing.
+The container itself has already run, so it can stop returning the sentinel on a
+later frame and the subtree resumes - no deadlock. The skip is O(1) via the skip
+table in section 4.1, since preorder makes a subtree contiguous, and no ancestor
+stack is needed. The node the pass starts on is never skipped by an outside
+caller; a driven root that returns the sentinel still skips only its
+descendants.
 
-**The rule.** Descending the refresh walk, a node whose `localDisplayStatus`
-lacks the visible bit is skipped along with its subtree, in O(1) via the skip
-table in section 4.1. The node the pass starts on is never pruned, since
-nothing above it runs.
-
-**Ordering falls out correctly.** The walk is preorder, so a parent that sets a
-child's visibility this frame is visited first, and the child is refreshed in
-the same pass. There is no one-frame lag on reappearance.
-
-#### The one thing gating requires of views
-
-> **A view must not hide its own container.** Visibility, like position and
-> scale, is set by the parent.
-
-Otherwise a view that hides itself is pruned, its own hook stops running, and
-nothing can ever turn it back on. Deadlock, silent, permanent.
-
-This is already the repo's convention for position and scale, so gating
-extends it to visibility rather than inventing a rule. It is also what makes
-`<List>` work: the list sets each slot's visibility, and the list is never
-pruned by its slots' state.
-
-Three things make it stick:
-
-- **JSX hoists it.** An element with a `visible` binding has that binding
-  moved into its *parent's* generated refresh, so JSX authors keep writing
-  `<sprite visible={...} />` and the convention holds mechanically. An element
-  with no JSX parent keeps the binding, and the pass-root exemption covers the
-  case where it is the root.
-- **A dev-mode assertion catches the rest.** The walk records a node's
-  visibility before running its hook and warns if the hook cleared it. That
-  turns an invisible permanent failure into a named one, which matters most for
-  imperative views the runtime cannot inspect.
-- **Existing views need a small migration.** `scramble/views/bullet-view.ts`
-  and its siblings currently do `view.visible = bindings.isActive()` inside
-  their own refresh. Those move to the parent, which in `game-view.ts` is one
-  assignment in a loop it already runs. Section 12 covers it.
-
-To stop a subtree entirely, still detach or destroy it. To stop it *this
-frame*, have its parent hide it.
+**Symmetric across both passes.** Skipping a branch's refresh saves the cost of
+restating facts nobody will draw; skipping its update freezes that branch's
+presentation state, which is then one frame stale when it resumes, exactly as a
+paused world is. It is the mechanism `<List>` uses to leave an empty slot's
+subtree alone: the slot wrapper returns the sentinel when its item is absent and
+sets its own `visible` for drawing. To stop a subtree entirely, still detach or
+destroy it.
 
 ## 4. Design: per-node memoisation
 
@@ -225,21 +210,21 @@ Two fields per hook kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
-_mvtHasUpdate?: boolean;      // does my subtree contain any onUpdate? undefined = dirty
-_mvtUpdateList?: Container[]; // flat preorder list of hooked descendants
+_mvtHasUpdate?: boolean;   // does my subtree contain any onUpdate? undefined = dirty
+_mvtUpdate?: SubtreeInfo;   // list plus skip table, built and discarded together
 _mvtHasRefresh?: boolean;
-_mvtRefresh?: RefreshIndex;   // list plus skip table, built and discarded together
+_mvtRefresh?: SubtreeInfo;  // list plus skip table, built and discarded together
 
-interface RefreshIndex {
+interface SubtreeInfo {
     readonly list: Container[];
     /** Per entry, the index just past its subtree. */
     readonly skip: Int32Array;
 }
 ```
 
-Refresh carries a skip table because only refresh gates (3.5). The list is
-preorder, so an entry's descendants are contiguous, and recording where each
-subtree ends turns "skip this hidden subtree" into one index assignment.
+Both passes carry a skip table, because both honour `SKIP_DESCENDANTS` (3.5).
+The list is preorder, so an entry's descendants are contiguous, and recording
+where each subtree ends turns "skip this subtree" into one index assignment.
 
 **The two are one field on purpose.** A skip table that could outlive the list
 it indexes would be a second source of truth about the tree. Bundled, it is
@@ -249,8 +234,8 @@ to clear rather than two it could clear inconsistently.
 Worth being precise about what the skip table does *not* have to survive. It
 indexes the list, not the scene graph. Once built, the list is immutable, so
 `skip[i]` is always a valid index into it regardless of what the tree does
-afterwards. Scene mutation invalidates the whole index (4.3) and both are
-rebuilt together; mid-pass mutation (6.2) leaves the index stale in exactly the
+afterwards. Scene mutation invalidates the whole memo (4.3) and both are
+rebuilt together; mid-pass mutation (6.2) leaves the memo stale in exactly the
 way it was already stale, with no new failure mode.
 
 One case that looks dangerous and is not: `sortChildren` reorders siblings, so
@@ -265,69 +250,55 @@ visited by a rebuild, which is what makes later prunes O(1).
 
 ### 4.2 Algorithms
 
-Shown for update. Refresh runs the same collection against the other pair of
-fields, and differs only in its drive loop, which gates on visibility:
+Both passes are one implementation, parameterised by which pair of fields and
+which method they read. The invoke loop honours `SKIP_DESCENDANTS` and is
+identical for update and refresh:
 
 ```ts
-const VISIBLE = 2;   // localDisplayStatus bit
-
-export function refreshScene(node: Container): void {
-    const { list, skip } = refreshIndexOf(node);
-
+// pass = UPDATE | REFRESH
+function invokeSubtreeMethods(info: SubtreeInfo, node: Container, pass: Pass, deltaMs: number): void {
+    const { list, skip } = info;
     for (let i = 0; i < list.length; ) {
         const target = list[i];
-
-        // Detached mid-pass: skip its subtree too, not just the root of it.
+        // Detached mid-pass: skip its whole subtree, whose internal parent
+        // links are still intact. The driven root has no parent and is exempt.
         if (target.parent === null && target !== node) { i = skip[i]; continue; }
-
-        // Hidden: prune the subtree. Never prune the node the pass started on,
-        // which has no ancestor able to reveal it.
-        if (i > 0 && (target.localDisplayStatus & VISIBLE) === 0) { i = skip[i]; continue; }
-
-        target.onRefresh?.();
-        i++;
+        const result = pass === UPDATE ? target.onUpdate?.(deltaMs) : target.onRefresh?.();
+        i = result === SKIP_DESCENDANTS ? skip[i] : i + 1;
     }
 }
 ```
 
-The fold is the subtle part. A hidden node must prune its **subtree**, not just
-itself, or a locally-visible child of a hidden parent would refresh. Skipping
-to `skip[i]` does the fold implicitly, since preorder makes a subtree
-contiguous, and no ancestor stack is needed.
+Skipping to `skip[i]` drops the whole subtree, not just its root, since preorder
+makes a subtree contiguous, and no ancestor stack is needed. The same one-line
+jump serves both a returned sentinel and a mid-pass detach, so the pass-root
+exemption and subtree-detach handling the gating draft treated as special cases
+now fall out of one branch.
 
-Two details worth keeping:
-
-- **`i > 0` protects the pass root.** Nothing above it runs, so if it were
-  pruned while hidden, nothing could reveal it. Every other entry has a visible
-  ancestor by construction, since that ancestor is what let the walk reach it.
-- **Mid-pass detach now skips the subtree**, where an earlier draft advanced by
-  one and went on to refresh the detached node's descendants, whose own
-  `parent` links are still intact. The skip table fixes a pre-existing wart for
-  free.
+Collection is likewise shared, shown here for update:
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
-    let list = node._mvtUpdateList;
-    if (list === undefined) {
-        list = [];
-        collect(node, list);
-        node._mvtUpdateList = list;
+    let info = node._mvtUpdate;
+    if (info === undefined) {
+        info = buildSubtreeInfo(node, UPDATE);
+        node._mvtUpdate = info;
     }
-    for (let i = 0; i < list.length; i++) {
-        const target = list[i];
-        if (target.parent === null && target !== node) continue; // detached mid-pass
-        const hook = target.onUpdate;
-        if (hook === undefined) continue;
-        hook(deltaMs);
-    }
+    invokeSubtreeMethods(info, node, UPDATE, deltaMs);
 }
 
-function collect(node: Container, out: Container[]): void {
-    if (node.onUpdate !== undefined) out.push(node);
+function collectSubtreeMethods(node: Container, out: Container[], ends: number[]): void {
+    let selfIndex = -1;
+    if (node.onUpdate !== undefined) {
+        selfIndex = out.length;
+        out.push(node);
+        ends.push(0); // placeholder, backfilled below
+    }
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (hasUpdate(ch[i])) collect(ch[i], out); // prune hookless subtrees
+        if (hasUpdate(ch[i])) collectSubtreeMethods(ch[i], out, ends); // prune hookless subtrees
     }
+    if (selfIndex !== -1) ends[selfIndex] = out.length; // index just past this subtree
 }
 
 function hasUpdate(node: Container): boolean {
@@ -352,9 +323,9 @@ kind:
 function invalidateUpdate(node: Container | null): void {
     let n = node;
     while (n) {
-        if (n._mvtHasUpdate === undefined && n._mvtUpdateList === undefined) return;
+        if (n._mvtHasUpdate === undefined && n._mvtUpdate === undefined) return;
         n._mvtHasUpdate = undefined;
-        n._mvtUpdateList = undefined;
+        n._mvtUpdate = undefined;
         // Refresh clears `_mvtHasRefresh` and `_mvtRefresh`, the latter carrying
         // both the list and its skip table so they cannot be cleared apart.
         n = n.parent;
@@ -487,10 +458,11 @@ The list is a snapshot taken at the start of the pass.
   wins by 420x.
 - **Direct `container.children` mutation bypasses everything.** Documented
   non-support.
-- **A view must not hide its own container (3.5).** JSX hoisting and a dev-mode
-  assertion cover most of it, but an imperative view that clears its own
-  `visible` from inside its own hook will deadlock, and nothing in the type
-  system prevents it. This is the one genuinely new rule gating introduces.
+- **A subtree skipped in the update pass is one frame stale on resume.**
+  Returning `SKIP_DESCENDANTS` from `onUpdate` freezes that subtree's
+  presentation state, so it shows the frame it froze on for one frame when it
+  resumes, exactly as a paused world does. It is an opt-in for deliberately
+  frozen subtrees, not a default.
 
 ## 7. Defects to fix
 
@@ -518,9 +490,9 @@ instance carries an own hook property, plus a regression test for the
 reassign-after-install path.
 
 The appraisal claims this is "the exact construction order QUICK-START
-teaches". That part is **wrong** - QUICK-START's order works, because `collect`
-reads the public property. The real trigger is reassignment after install on a
-container hooked before install.
+teaches". That part is **wrong** - QUICK-START's order works, because
+`collectSubtreeMethods` reads the public property. The real trigger is
+reassignment after install on a container hooked before install.
 
 ### 7.2 Benchmark harness is invalid
 
@@ -571,18 +543,20 @@ achievable.
 6. Drops a detached container, **and its descendants**, when detached mid-pass.
 7. Prunes hookless subtrees - 20k nodes / 200 hooked yields exactly 203 calls.
 
-**Gating** (`refreshScene` only)
+**SKIP_DESCENDANTS** (both passes)
 
-Containers are visible by default, so existing tests are unaffected and these
-are the cases that have to be written deliberately.
+Containers run regardless of `visible`, so these are the cases to write
+deliberately.
 
-8. A hidden node and its whole subtree are skipped, including a child left
-   locally visible.
-9. Revealing a node from its parent's hook refreshes the node in the **same**
-   pass, not the next one.
-10. The node the pass was called on refreshes even when hidden.
-11. `updateScene` fires for hidden subtrees, proving the asymmetry in 3.5.
-12. Dev mode warns when a hook clears its own container's visibility.
+8. A method returning the sentinel skips its whole subtree, including a deeply
+   nested descendant, on the same pass.
+9. The container that returned the sentinel still ran; only its descendants
+   were skipped.
+10. A container that skipped its subtree recovers on a later pass with no
+    rebuild, so nothing gets stuck.
+11. The sentinel works in `updateScene` too, freezing a subtree's state advance.
+12. Visibility gates neither pass: a hidden subtree still refreshes, and a view
+    may set its own `visible` without deadlocking.
 8. Reassigning a hook after module load still invalidates (regression for 7.1).
 9. `refreshScene` is idempotent - three consecutive calls leave identical state.
 10. The two passes are independent - assigning `onUpdate` does not invalidate
@@ -648,23 +622,24 @@ Separate from the product work, and deliberately incremental.
 - **Do the `onUpdate` migration before the `onRefresh` one.** They are
   independent, and the 59 `view.onRender = refresh` sites can stay untouched
   indefinitely while `onUpdate` proves itself.
-- **The `onRefresh` migration carries one mechanical change** that `onUpdate`
-  does not. Views that hide themselves must stop (3.5). The current idiom is
+- **The `onRefresh` migration is mechanical: `view.onRender = refresh` becomes
+  `view.onRefresh = refresh`.** Nothing gates on visibility, so a view that
+  hides itself keeps working:
 
   ```ts
-  // scramble/views/bullet-view.ts, and five siblings
+  // scramble/views/bullet-view.ts, and five siblings - unchanged in shape
   function refresh(): void {
       const active = bindings.isActive();
-      view.visible = active;          // moves to the parent
+      view.visible = active;          // a view may set its own visible
       if (!active) return;
       view.position.set(bindings.getScreenX(), bindings.getScreenY());
   }
   ```
 
-  The visibility assignment moves up into `game-view.ts`, which already loops
-  over those containers. The early-out then becomes unnecessary, because a
-  hidden slot is not refreshed at all. Roughly a dozen views across the repo,
-  and each one gets shorter.
+  A view whose subtree is expensive to refresh while hidden can also return
+  `SKIP_DESCENDANTS` after `view.visible = false`, but for a shallow entity like
+  this the early-out is enough. Roughly a dozen views across the repo, each a
+  one-line hook rename.
 - The case for migrating is the failure mode, not the line count. Adding a view
   with presentation state today needs four coordinated edits, and missing any
   link means the animation silently never advances - no error, no failing test,

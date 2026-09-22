@@ -1,5 +1,4 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '#common';
 import { TILE_SIZE } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -19,22 +18,16 @@ export interface ExplosionViewBindings {
 
 export function createExplosionView(bindings: ExplosionViewBindings): Container {
     const maxRadius = TILE_SIZE * 0.8;
-    const watcher = watch({ active: bindings.isActive });
 
     const gfx = new Graphics();
     const view = new Container();
     view.addChild(gfx);
-    view.visible = false;
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.active.changed) {
-            view.visible = watched.active.value as boolean;
-        }
-        if (!view.visible) return;
+        const isActive = view.visible = bindings.isActive();
+        if (!isActive) return;
 
         const progress = bindings.getProgress();
         const radius = maxRadius * progress;

@@ -53,7 +53,7 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
     view.addChild(content);
 
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {

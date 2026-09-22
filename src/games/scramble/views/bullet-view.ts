@@ -18,7 +18,7 @@ export interface BulletViewBindings {
 export function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {
@@ -27,10 +27,8 @@ export function createBulletView(bindings: BulletViewBindings): Container {
     }
 
     function refresh(): void {
-        const active = bindings.isActive();
-        view.visible = active;
-        if (!active) return;
-
+        const isActive = view.visible = bindings.isActive();
+        if (!isActive) return;
         view.position.set(bindings.getScreenX(), bindings.getScreenY());
     }
 }

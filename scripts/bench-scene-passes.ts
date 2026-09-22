@@ -7,7 +7,7 @@ import {
     benchmarkArms,
     runBenchmarkArm,
     type BenchmarkResult,
-} from '../src/pixi-mvt-plugin/scene-passes-benchmark';
+} from '../src/pixi-mvt/scene-passes-benchmark';
 
 // ---------------------------------------------------------------------------
 // Driver
@@ -65,7 +65,7 @@ function runEveryArm(): void {
 
 function formatTable(results: BenchmarkResult[]): string {
     const lines: string[] = [
-        '| scenario | arm | us/frame | hook calls/frame |',
+        '| scenario | arm | us/frame | method calls/frame |',
         '| --- | --- | --- | --- |',
     ];
     for (let i = 0; i < results.length; i++) {

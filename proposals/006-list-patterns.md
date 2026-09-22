@@ -131,11 +131,12 @@ views are built once and never destroyed.
 ### Empty slots cost one check, not one per binding
 
 `<List>` owns slot visibility. It hides any slot whose `item(i)` is
-`undefined`, and the refresh pass prunes hidden subtrees, so **the bindings
-above do not run for an empty slot.** That is also why `slot()` needs no
-null check: it is only called while the slot is occupied.
+`undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh pass
+skips its subtree and **the bindings above do not run for an empty slot.** That
+is also why `slot()` needs no null check: it is only called while the slot is
+occupied.
 
-An empty slot therefore costs one `item(i)` lookup and one visibility check per
+An empty slot therefore costs one `item(i)` lookup and one presence check per
 frame, whatever the item view contains. The saving grows with the size of the
 item view rather than staying flat.
 
@@ -145,8 +146,9 @@ which used to be the only way to share an early-out across props, buys nothing
 here any more.
 
 ::: info
-This depends on `onRefresh` visibility gating. Before that landed, a hidden
-subtree still refreshed, and every binding needed its own guard.
+This depends on `onRefresh` and the `SKIP_DESCENDANTS` sentinel. Before that
+landed, a hidden subtree still refreshed, and every binding needed its own
+guard.
 :::
 
 ---
@@ -356,8 +358,8 @@ length={() => model.visibleCount}
 | Capturing item data when the slot is built | The slot's occupant changes later | Make it a getter (rule 1) |
 | Holding per-item cosmetic state in the slot closure | It follows the slot, not the item | View model keyed by item id (rule 2) |
 | `Map<id, state>` for that store | `update()` is a hot path | Array indexed by a dense integer id |
-| Guarding each binding in a slot | `<List>` already hides empty slots, and the refresh pass prunes them | Let the list do it. `slot()` is only called while occupied |
-| Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, which is not structure and invalidates nothing |
+| Guarding each binding in a slot | `<List>` already hides empty slots, and an empty slot skips its subtree via `SKIP_DESCENDANTS` | Let the list do it. `slot()` is only called while occupied |
+| Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, whose codegen returns `SKIP_DESCENDANTS` and invalidates nothing |
 | An allocating `length` getter | Runs every frame | Have the model maintain the count |
 | Expecting an exit animation from a removed item | Detached slots vanish instantly | Keep the item in the model with a `dying` timer |
 | Reading `items[index]` in a slot beyond the current length | Out of range | Fixed-capacity pool, or rely on detachment |

@@ -1,5 +1,4 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '#common';
 import { textures } from '../data';
 
 // ---------------------------------------------------------------------------
@@ -17,11 +16,9 @@ export interface ShipViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createShipView(bindings: ShipViewBindings): Container {
-    const watcher = watch({ alive: bindings.isAlive });
-
     const view = new Container();
     initialiseView();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function initialiseView(): void {
@@ -30,12 +27,8 @@ export function createShipView(bindings: ShipViewBindings): Container {
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-        if (watched.alive.changed) {
-            view.visible = watched.alive.value as boolean;
-        }
-        if (!view.visible) return;
-
+        const isAlive = view.visible = bindings.isAlive();
+        if (!isAlive) return;
         view.position.set(bindings.getScreenX(), bindings.getScreenY());
     }
 }

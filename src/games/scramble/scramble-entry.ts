@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { refreshScene, updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
@@ -37,7 +38,8 @@ export function createScrambleEntry(): GameEntry {
             return {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
-                    gameView.update(deltaMs);
+                    updateScene(gameView, deltaMs);
+                    refreshScene(gameView);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);

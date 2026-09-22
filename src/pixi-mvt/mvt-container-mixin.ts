@@ -1,14 +1,9 @@
 import { Container, extensions } from 'pixi.js';
-import type { RefreshHook, UpdateHook } from './mvt-types';
+import type { RefreshMethod, SubtreeInfo, UpdateMethod } from './mvt-types';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
-
-// Inside the `PixiMixins` namespace below, the name `Container` resolves to the
-// interface being declared there rather than to Pixi's class, so the memo lists
-// reach the class through this alias.
-type SceneNode = Container;
 
 // Pixi's own mixins declare `PixiMixins.Container` without type parameters even
 // though `Container.d.ts` references it as `PixiMixins.Container<C>`. That only
@@ -23,10 +18,11 @@ declare global {
              *
              * Fires every tick regardless of `visible`, `renderable` or
              * culling, because presentation state that stops advancing while
-             * hidden is stale when it reappears. To stop it, detach or destroy
-             * the container.
+             * hidden is stale when it reappears. Return `SKIP_DESCENDANTS` to
+             * deliberately freeze this container's descendants (a time-stopped
+             * or inactive subtree); their state does not advance while skipped.
              */
-            onUpdate: UpdateHook | undefined;
+            onUpdate: UpdateMethod | undefined;
 
             /**
              * Syncs this container's presentation output from model state.
@@ -34,21 +30,25 @@ declare global {
              * Called before any of this container's descendants' `onRefresh`.
              * Must be idempotent: it restates a fact rather than making a
              * change, so running it twice changes nothing.
+             *
+             * Nothing gates on visibility, so a view may set its own `visible`.
+             * Return `SKIP_DESCENDANTS` to skip refreshing this container's
+             * descendants (how a hidden or absent subtree opts out).
              */
-            onRefresh: RefreshHook | undefined;
+            onRefresh: RefreshMethod | undefined;
 
             /** @internal Backing field for `onUpdate`. */
-            _mvtOnUpdate: UpdateHook | undefined;
+            _mvtOnUpdate: UpdateMethod | undefined;
             /** @internal Backing field for `onRefresh`. */
-            _mvtOnRefresh: RefreshHook | undefined;
+            _mvtOnRefresh: RefreshMethod | undefined;
             /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
             _mvtHasUpdate: boolean | undefined;
-            /** @internal Preorder list of the `onUpdate` bearers in this subtree. */
-            _mvtUpdateList: SceneNode[] | undefined;
+            /** @internal Update walk for this subtree: preorder list plus skip table. `undefined` = dirty. */
+            _mvtUpdate: SubtreeInfo | undefined;
             /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
             _mvtHasRefresh: boolean | undefined;
-            /** @internal Preorder list of the `onRefresh` bearers in this subtree. */
-            _mvtRefreshList: SceneNode[] | undefined;
+            /** @internal Refresh walk for this subtree: preorder list plus skip table. `undefined` = dirty. */
+            _mvtRefresh: SubtreeInfo | undefined;
         }
     }
 }
@@ -57,11 +57,12 @@ declare global {
 // Install
 // ---------------------------------------------------------------------------
 
-// Installed at module load rather than lazily on first use. A hook assigned
-// before the accessors exist creates an own data property that shadows them for
-// the life of that container, so its setter - and with it invalidation - would
-// never fire again. Importing this module is the only ordering requirement, and
-// ES modules evaluate imports before the importing module's own code.
+// Installed at module load rather than lazily on first use. An update or
+// refresh method assigned before the accessors exist creates an own data
+// property that shadows them for the life of that container, so its setter -
+// and with it invalidation - would never fire again. Importing this module is
+// the only ordering requirement, and ES modules evaluate imports before the
+// importing module's own code.
 installMixin();
 
 /**
@@ -71,8 +72,9 @@ installMixin();
  * This file is the only one in the plugin that uses `this`, which the style
  * guide otherwise rules out. A prototype accessor and a wrapped prototype
  * method have no way to reach their instance without it. The exemption stops
- * here: hooks are invoked as plain calls, never with a receiver, so a view's
- * hook is an ordinary closure over its own state like every other view.
+ * here: the update and refresh methods are invoked as plain calls, so they stay
+ * ordinary closures over their own state - the receiver they close over is
+ * enough - exactly like a view's own `refresh`.
  */
 function installMixin(): void {
     extensions.mixin(Container, createMixinSource());
@@ -84,49 +86,49 @@ function installMixin(): void {
 // ---------------------------------------------------------------------------
 
 interface MvtContainerMixin {
-    _mvtOnUpdate: UpdateHook | undefined;
-    _mvtOnRefresh: RefreshHook | undefined;
+    _mvtOnUpdate: UpdateMethod | undefined;
+    _mvtOnRefresh: RefreshMethod | undefined;
     _mvtHasUpdate: boolean | undefined;
-    _mvtUpdateList: SceneNode[] | undefined;
+    _mvtUpdate: SubtreeInfo | undefined;
     _mvtHasRefresh: boolean | undefined;
-    _mvtRefreshList: SceneNode[] | undefined;
-    onUpdate: UpdateHook | undefined;
-    onRefresh: RefreshHook | undefined;
+    _mvtRefresh: SubtreeInfo | undefined;
+    onUpdate: UpdateMethod | undefined;
+    onRefresh: RefreshMethod | undefined;
 }
 
 /**
  * The property descriptors handed to `extensions.mixin`, which copies them onto
  * the prototype with `Object.defineProperties`, accessors intact.
  *
- * The hooks are accessors rather than plain fields because assigning one has to
- * invalidate the memoised lists above the container. Without that, hooking an
- * already-attached container would leave it out of a list built before it
- * carried a hook - which is exactly the ordering hole `onRender` has.
+ * The methods are accessors rather than plain fields because assigning one has
+ * to invalidate the memoised lists above the container. Without that, giving an
+ * already-attached container a method would leave it out of a list built before
+ * it carried one - which is exactly the ordering hole `onRender` has.
  */
 function createMixinSource(): MvtContainerMixin & ThisType<Container> {
     return {
         _mvtOnUpdate: undefined,
         _mvtOnRefresh: undefined,
         _mvtHasUpdate: undefined,
-        _mvtUpdateList: undefined,
+        _mvtUpdate: undefined,
         _mvtHasRefresh: undefined,
-        _mvtRefreshList: undefined,
+        _mvtRefresh: undefined,
 
-        get onUpdate(): UpdateHook | undefined {
+        get onUpdate(): UpdateMethod | undefined {
             return this._mvtOnUpdate;
         },
-        set onUpdate(hook: UpdateHook | undefined) {
-            if (this._mvtOnUpdate === hook) return;
-            this._mvtOnUpdate = hook;
+        set onUpdate(method: UpdateMethod | undefined) {
+            if (this._mvtOnUpdate === method) return;
+            this._mvtOnUpdate = method;
             invalidateUpdate(this);
         },
 
-        get onRefresh(): RefreshHook | undefined {
+        get onRefresh(): RefreshMethod | undefined {
             return this._mvtOnRefresh;
         },
-        set onRefresh(hook: RefreshHook | undefined) {
-            if (this._mvtOnRefresh === hook) return;
-            this._mvtOnRefresh = hook;
+        set onRefresh(method: RefreshMethod | undefined) {
+            if (this._mvtOnRefresh === method) return;
+            this._mvtOnRefresh = method;
             invalidateRefresh(this);
         },
     };
@@ -206,7 +208,7 @@ function wrapStructuralMethods(): void {
     };
 
     proto.destroy = function destroy(this: Container, options?: Parameters<typeof baseDestroy>[0]): void {
-        // Clearing the hooks is what stops a destroyed container being called
+        // Clearing the methods is what stops a destroyed container being called
         // again. Detaching alone is not enough: a container driven directly by
         // `updateScene(node)` has no parent to be detached from, so nothing
         // else would ever take it out of its own list. Doing it before the base
@@ -239,11 +241,11 @@ function invalidateUpdate(node: Container): void {
     // places it hands back `null`, so the climb tests truthiness.
     let cursor: Container | null = node;
     while (cursor) {
-        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdateList === undefined) return;
+        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdate === undefined) return;
         // Both fields of a kind are cleared together: they are maintained in
         // lockstep and the short-circuit above tests both.
         cursor._mvtHasUpdate = undefined;
-        cursor._mvtUpdateList = undefined;
+        cursor._mvtUpdate = undefined;
         cursor = cursor.parent;
     }
 }
@@ -252,9 +254,9 @@ function invalidateUpdate(node: Container): void {
 function invalidateRefresh(node: Container): void {
     let cursor: Container | null = node;
     while (cursor) {
-        if (cursor._mvtHasRefresh === undefined && cursor._mvtRefreshList === undefined) return;
+        if (cursor._mvtHasRefresh === undefined && cursor._mvtRefresh === undefined) return;
         cursor._mvtHasRefresh = undefined;
-        cursor._mvtRefreshList = undefined;
+        cursor._mvtRefresh = undefined;
         cursor = cursor.parent;
     }
 }

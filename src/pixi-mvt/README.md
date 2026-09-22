@@ -1,16 +1,17 @@
-# pixi-mvt-plugin
+# pixi-mvt
 
 > Per-frame logic that belongs to a container instead of to a ticker. For Pixi
 > developers; no architecture knowledge assumed. See
 > [the design notes](../../proposals/002-mvt-plugin-design-notes.md) for how it works and why it is built this
 > way.
 
-**Status: spike.** Nothing outside this folder and its demo imports it, and no
-existing view has been migrated.
+**Status: spike.** Used by its demo and by the Scramble game, which was migrated
+as a pilot. The other games and the shared views still refresh through Pixi's
+`onRender` and can migrate incrementally.
 
 ---
 
-Two optional hooks on every `Container`, and two functions that drive them
+Two optional methods on every `Container`, and two functions that drive them
 across a scene:
 
 ```ts
@@ -23,7 +24,7 @@ refreshScene(app.stage);         // runs every onRefresh in the subtree
 
 Both passes call a container before any of its descendants, run without a
 renderer or a ticker, and cost microseconds on a realistic scene. That is the
-whole API: four names.
+core API: four names, plus one optional sentinel (`SKIP_DESCENDANTS`, below).
 
 ## `onUpdate`: state that moves on its own
 
@@ -54,8 +55,8 @@ function createSpinner(): Container {
     const view = new Graphics().rect(-20, -20, 40, 40).fill(0x44aaff);
     let angle = 0;
 
-    view.onUpdate = (deltaMs) => angle += 0.002 * deltaMs; // state advances
-    view.onRefresh = () => view.rotation = angle;          // scene matches state
+    view.onUpdate = (deltaMs) => { angle += 0.002 * deltaMs; }; // state advances
+    view.onRefresh = () => { view.rotation = angle; };          // scene matches state
 
     return view;
 }
@@ -102,7 +103,7 @@ Nothing is subscribed on your behalf. The frame is yours:
 
 ```ts
 import { Application } from 'pixi.js';
-import { refreshScene, updateScene } from './pixi-mvt-plugin';
+import { refreshScene, updateScene } from './pixi-mvt';
 
 const app = new Application();
 await app.init({ width: 960, height: 600 });
@@ -176,7 +177,7 @@ To be fair to it: `onRender`'s ordering is better than it is often described.
 Whole subtrees are registered in preorder and nested render groups run
 parent-first, so late attachment, reparenting and sibling reordering are all
 fine. Point 5 is the one genuine hole, and this plugin closes it because
-assigning a hook goes through a setter that invalidates the cached list.
+assigning a method goes through a setter that invalidates the cached list.
 
 The positive case is simpler: `onUpdate` and `onRefresh` are a matched pair.
 Same traversal, same ordering guarantee, same invalidation, same testability,
@@ -226,7 +227,7 @@ it('shows a hurt bar in amber', () => {
 
 ```ts
 import { Container } from 'pixi.js';
-import { refreshScene, updateScene } from './pixi-mvt-plugin';
+import { refreshScene, updateScene } from './pixi-mvt';
 
 it('spins two radians per second', () => {
     const root = new Container();
@@ -247,32 +248,55 @@ time however you like, then render it.
 ## Rules of the road
 
 **Ordering.** Every container runs before any of its descendants. Sibling order
-is deliberately unspecified: a view whose hook depends on a sibling's hook is
-reading another view's output rather than reading state.
+is deliberately unspecified: a view whose refresh method depends on a sibling's
+is reading another view's output rather than reading state.
 
-**Gating.** Both hooks always fire, including on containers with
-`visible = false`, and regardless of culling or whether a render happened. An
-animation that pauses while hidden is wrong when it reappears. To stop a
-subtree, detach or destroy it - that costs nothing per tick, and a destroyed
-container never fires again.
+**Gating.** Neither pass gates on `visible`. Every container's method runs every
+frame, visible or not: `onUpdate` because presentation state that stops
+advancing while hidden is stale when it reappears, and `onRefresh` because a
+refresh only restates a fact, which is cheap and keeps the two passes symmetric.
+A view may therefore set its **own** `visible` - it is presentation output like
+position and scale, and hiding a container never removes it from its own walk.
+
+**Skipping a subtree.** To skip a container's descendants for a frame, return the
+`SKIP_DESCENDANTS` sentinel from its `onUpdate` or `onRefresh`:
+
+```ts
+import { SKIP_DESCENDANTS } from './pixi-mvt';
+
+slot.onRefresh = () => {
+    if (item === undefined) return SKIP_DESCENDANTS; // leave the empty slot's subtree alone
+    // ...otherwise project item into the subtree
+};
+```
+
+The container itself has already run, so only its descendants are skipped - it
+can stop returning the sentinel on a later frame and the subtree resumes, with
+no deadlock. It works the same on both passes: skipping a branch's refresh saves
+the work of restating hidden facts, and skipping its update freezes that
+branch's presentation state (which is then one frame stale when it resumes,
+exactly as a paused world is). The container a pass is driven from is never
+skipped by an outside caller; a driven root that returns the sentinel still
+skips only its descendants.
 
 **Mutation during a pass.** A pass walks a snapshot of the list taken before the
-first hook ran.
+first method ran.
 
-| A hook, during the pass...                | Behaviour                                     |
-| ----------------------------------------- | --------------------------------------------- |
-| adds a hooked child                       | Not in the snapshot; runs from the next pass  |
-| removes a **later** container             | Skipped                                       |
-| removes an **earlier** container          | No effect this pass                           |
-| clears a hook on a later container        | Skipped                                       |
-| reparents a container in the same subtree | Called once, from its snapshot position       |
-| destroys a container                      | Same as removing it                           |
-| re-enters the same pass on the same node  | Throws                                        |
+| A method, during the pass...               | Behaviour                                     |
+| ------------------------------------------ | --------------------------------------------- |
+| adds a child with a method                 | Not in the snapshot; runs from the next pass  |
+| removes a **later** container              | Skipped                                       |
+| removes an **earlier** container           | No effect this pass                           |
+| clears a method on a later container       | Skipped                                       |
+| reparents a container in the same subtree  | Called once, from its snapshot position       |
+| destroys a container                       | Same as removing it                           |
+| returns `SKIP_DESCENDANTS`                  | Its descendants are skipped for this pass     |
+| re-enters the same pass on the same node   | Throws                                        |
 
 A view that builds children inside `onRefresh` therefore has to give them their
 first frame itself, by refreshing them as it creates them. That is one line in
 the one place that knows it is needed;
-[the demo's entity view](../pixi-mvt-plugin-demo/swarm-view.ts) does it.
+[the demo's entity view](../pixi-mvt-demo/swarm-view.ts) does it.
 
 **Both run every frame**, so do not allocate in them. Index-based loops, no
 `array.map()`, no template strings.
@@ -290,22 +314,22 @@ stale list.
 Measured with `npm run bench`, one arm per process, microseconds per frame on a
 Windows laptop. A frame is one pass plus the scenario's churn.
 
-| Scenario                                          | naive walk | this plugin |
-| ------------------------------------------------- | ---------- | ----------- |
-| 20k containers, 200 hooked, static                 | 224 us     | **0.50 us** |
-| 2k containers, all hooked, static                  | 10.4 us    | **4.5 us**  |
-| 2k containers, all hooked, 100 swaps per frame     | **36.5 us**| 65.3 us     |
-| 100 hookless 25-container subtrees, re-attached    | 45.5 us    | **9.8 us**  |
+| Scenario                                           | naive walk | this plugin |
+| -------------------------------------------------- | ---------- | ----------- |
+| 20k containers, 200 with methods, static           | 224 us     | **0.50 us** |
+| 2k containers, all with methods, static            | 10.4 us    | **4.5 us**  |
+| 2k containers, all with methods, 100 swaps/frame   | **36.5 us**| 65.3 us     |
+| 100 method-free 25-container subtrees, re-attached | 45.5 us    | **9.8 us**  |
 
 The first row is the realistic shape - a large scene where few containers carry
-hooks - and it is why the list is cached rather than walked. The third row is
-the honest one: when every container is hooked *and* the tree changes every
-frame, the cache is rebuilt every frame and pure overhead. That case is
+a method - and it is why the list is cached rather than walked. The third row is
+the honest one: when every container carries a method *and* the tree changes
+every frame, the cache is rebuilt every frame and pure overhead. That case is
 structural and documented rather than fixed.
 
 Two baselines worth having:
 
-- **Dispatch against the incumbent.** 2000 hooks through Pixi's own `onRender`
+- **Dispatch against the incumbent.** 2000 methods through Pixi's own `onRender`
   list cost 2.7 us; the same 2000 through `refreshScene` cost 4.7 us. The
   difference is under a nanosecond per container, and buys the detachment check
   that makes mid-pass removal safe.
@@ -318,7 +342,7 @@ Two baselines worth having:
 
 | Command                              | What it does           |
 | ------------------------------------ | ---------------------- |
-| `npx vitest run src/pixi-mvt-plugin*` | 55 tests               |
+| `npx vitest run src/pixi-mvt*`        | 62 tests               |
 | `npm run bench`                      | The table above        |
 | `npm run dev`, then `/spike/`        | Visual demo            |
 
@@ -326,7 +350,7 @@ The demo page is dev-server only. To include it in `npm run build`, add
 `'spike': resolve(__dirname, 'spike/index.html')` to `rollupOptions.input` in
 `vite.config.ts`. That edit has deliberately not been made.
 
-The demo lives in [`src/pixi-mvt-plugin-demo/`](../pixi-mvt-plugin-demo/),
+The demo lives in [`src/pixi-mvt-demo/`](../pixi-mvt-demo/),
 beside the plugin rather than inside it: a demo is a consumer of the plugin, so
 nesting it would force an ancestor-barrel import, which
 [project-structure.md](../../docs/reference/project-structure.md) forbids.
@@ -338,5 +362,5 @@ nesting it would force an ancestor-barrel import, which
 - [the appraisal](../../proposals/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
   should adopt it at all.
 - Once game state outgrows a few closures, the rest of this repo shows the
-  model-and-view split these two hooks were designed for. You do not need it to
+  model-and-view split these two methods were designed for. You do not need it to
   use them.

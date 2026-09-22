@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createOverlayView, isTouchDevice, type StatefulPixiView } from '#common';
+import { createOverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
@@ -21,19 +21,11 @@ import { createHudView } from './hud-view';
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): StatefulPixiView {
-    const bulletContainers: Container[] = [];
-    const bombContainers: Container[] = [];
-    const rocketContainers: Container[] = [];
-    const ufoContainers: Container[] = [];
-    const fuelTankContainers: Container[] = [];
-    const explosionContainers: Container[] = [];
-    let deathFlashView: StatefulPixiView;
-    let sectionAnnouncementView: StatefulPixiView;
+export function createGameView(game: GameModel): Container {
     const view = new Container();
 
     initialiseView();
-    return Object.assign(view, { update });
+    return view;
 
     // ---- initialiseView ----------------------------------------------------
 
@@ -70,65 +62,55 @@ export function createGameView(game: GameModel): StatefulPixiView {
         // Bullet views (fixed pool)
         for (let i = 0; i < game.bullets.length; i++) {
             const idx = i;
-            const c = createBulletView({
+            playArea.addChild(createBulletView({
                 getScreenX: () => (game.bullets[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.bullets[idx].worldRow * TILE_SIZE,
                 isActive: () => game.bullets[idx].isActive,
-            });
-            playArea.addChild(c);
-            bulletContainers.push(c);
+            }));
         }
 
         // Bomb views (fixed pool)
         for (let i = 0; i < game.bombs.length; i++) {
             const idx = i;
-            const c = createBombView({
+            playArea.addChild(createBombView({
                 getScreenX: () => (game.bombs[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.bombs[idx].worldRow * TILE_SIZE,
                 isActive: () => game.bombs[idx].isActive,
-            });
-            playArea.addChild(c);
-            bombContainers.push(c);
+            }));
         }
 
         // Rocket views (fixed pool)
         for (let i = 0; i < game.rockets.length; i++) {
             const idx = i;
-            const c = createRocketView({
+            playArea.addChild(createRocketView({
                 getScreenX: () => (game.rockets[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.rockets[idx].worldRow * TILE_SIZE,
                 isActive: () => game.rockets[idx].isActive,
                 isAlive: () => game.rockets[idx].isAlive,
                 getPhase: () => game.rockets[idx].phase,
-            });
-            playArea.addChild(c);
-            rocketContainers.push(c);
+            }));
         }
 
         // UFO views (fixed pool)
         for (let i = 0; i < game.ufos.length; i++) {
             const idx = i;
-            const c = createUfoView({
+            playArea.addChild(createUfoView({
                 getScreenX: () => (game.ufos[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.ufos[idx].worldRow * TILE_SIZE,
                 isActive: () => game.ufos[idx].isActive,
                 isAlive: () => game.ufos[idx].isAlive,
-            });
-            playArea.addChild(c);
-            ufoContainers.push(c);
+            }));
         }
 
         // Fuel tank views (fixed pool)
         for (let i = 0; i < game.fuelTanks.length; i++) {
             const idx = i;
-            const c = createFuelTankView({
+            playArea.addChild(createFuelTankView({
                 getScreenX: () => (game.fuelTanks[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.fuelTanks[idx].worldRow * TILE_SIZE,
                 isActive: () => game.fuelTanks[idx].isActive,
                 isAlive: () => game.fuelTanks[idx].isAlive,
-            });
-            playArea.addChild(c);
-            fuelTankContainers.push(c);
+            }));
         }
 
         // Base target (large distinct structure at end of section 3)
@@ -144,14 +126,12 @@ export function createGameView(game: GameModel): StatefulPixiView {
         // Explosion views (fixed pool)
         for (let i = 0; i < game.explosions.length; i++) {
             const idx = i;
-            const c = createExplosionView({
+            playArea.addChild(createExplosionView({
                 getScreenX: () => (game.explosions[idx].worldCol - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => game.explosions[idx].worldRow * TILE_SIZE,
                 isActive: () => game.explosions[idx].isActive,
                 getProgress: () => game.explosions[idx].progress,
-            });
-            playArea.addChild(c);
-            explosionContainers.push(c);
+            }));
         }
 
         // HUD
@@ -184,20 +164,22 @@ export function createGameView(game: GameModel): StatefulPixiView {
         );
 
         // Section announcement (shows section name on entry)
-        sectionAnnouncementView = createSectionAnnouncementView({
-            getScreenWidth: () => SCREEN_WIDTH,
-            getScreenHeight: () => PLAY_HEIGHT,
-            getSectionIndex: () => game.sectionIndex,
-        });
-        view.addChild(sectionAnnouncementView);
+        view.addChild(
+            createSectionAnnouncementView({
+                getScreenWidth: () => SCREEN_WIDTH,
+                getScreenHeight: () => PLAY_HEIGHT,
+                getSectionIndex: () => game.sectionIndex,
+            }),
+        );
 
         // Death flash (white flash on ship death)
-        deathFlashView = createDeathFlashView({
-            getScreenWidth: () => SCREEN_WIDTH,
-            getScreenHeight: () => PLAY_HEIGHT,
-            isDying: () => game.phase === 'dying',
-        });
-        view.addChild(deathFlashView);
+        view.addChild(
+            createDeathFlashView({
+                getScreenWidth: () => SCREEN_WIDTH,
+                getScreenHeight: () => PLAY_HEIGHT,
+                isDying: () => game.phase === 'dying',
+            }),
+        );
 
         // Base alert (flashing "DESTROY THE BASE!" when scroll is clamped)
         view.addChild(
@@ -208,11 +190,5 @@ export function createGameView(game: GameModel): StatefulPixiView {
                 getScreenHeight: () => PLAY_HEIGHT,
             }),
         );
-    }
-
-    // ---- Update presentation state ----------------------------------------------------
-    function update(deltaMs: number): void {
-        deathFlashView.update(deltaMs);
-        sectionAnnouncementView.update(deltaMs);
     }
 }

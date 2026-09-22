@@ -1,7 +1,7 @@
 # Design notes
 
 > How the two passes work, what was tried and rejected, and what has been
-> measured. The product document is [README.md](../src/pixi-mvt-plugin/README.md); this page assumes
+> measured. The product document is [README.md](../src/pixi-mvt/README.md); this page assumes
 > you have read it. [the appraisal](./003-mvt-plugin-appraisal.md) is an independent review of
 > whether this repo should adopt any of it, and
 > [the rework plan](./001-mvt-plugin-rework-plan.md) is the plan this implementation follows.
@@ -35,10 +35,10 @@ Two fields per hook kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
-_mvtHasUpdate?: boolean;      // does my subtree contain any onUpdate? undefined = dirty
-_mvtUpdateList?: Container[]; // flat preorder list of hooked descendants
+_mvtHasUpdate?: boolean;   // does my subtree contain any onUpdate? undefined = dirty
+_mvtUpdate?: SubtreeInfo;   // preorder update list plus a skip table for SKIP_DESCENDANTS
 _mvtHasRefresh?: boolean;
-_mvtRefreshList?: Container[];
+_mvtRefresh?: SubtreeInfo;  // preorder refresh list plus the same skip table
 ```
 
 The lists are only populated on containers that have actually been driven,
@@ -48,43 +48,61 @@ read.
 
 ### Algorithms
 
-Shown for update; refresh is the same code against the other pair of fields.
-See [scene-passes.ts](../src/pixi-mvt-plugin/scene-passes.ts).
+Shown for update; refresh is the identical code with `pass = REFRESH` against
+the other pair of fields - the two passes are one implementation.
+See [scene-passes.ts](../src/pixi-mvt/scene-passes.ts).
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
-    let list = node._mvtUpdateList;
-    if (list === undefined) {
-        list = [];
-        collect(node, list);
-        node._mvtUpdateList = list;
+    let info = node._mvtUpdate;
+    if (info === undefined) {
+        info = buildSubtreeInfo(node, UPDATE);
+        node._mvtUpdate = info;
     }
-    for (let i = 0; i < list.length; i++) {
+    invokeSubtreeMethods(info, node, UPDATE, deltaMs);
+}
+
+// Walk the memoised list, each container before its descendants. A method that
+// returns SKIP_DESCENDANTS jumps past its whole subtree in one step (via the
+// skip table), having already run itself.
+function invokeSubtreeMethods(info: SubtreeInfo, node: Container, pass: Pass, deltaMs: number): void {
+    const { list, skip } = info;
+    for (let i = 0; i < list.length;) {
         const target = list[i];
-        if (!target.parent && target !== node) continue; // detached mid-pass
-        const hook = target.onUpdate;
-        if (hook === undefined) continue;
-        hook(deltaMs);
+        if (!target.parent && target !== node) { i = skip[i]; continue; } // detached mid-pass
+        const result = pass === UPDATE ? target.onUpdate?.(deltaMs) : target.onRefresh?.();
+        i = result === SKIP_DESCENDANTS ? skip[i] : i + 1;
     }
 }
 
-function collect(node: Container, out: Container[]): void {
-    if (node.onUpdate !== undefined) out.push(node);
+// Preorder list of hooked containers, plus a skip table: ends[i] is the list
+// index just past container i's subtree. Preorder makes a subtree contiguous,
+// so one number per entry is enough to jump over it.
+function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], ends: number[]): void {
+    const hook = pass === UPDATE ? node.onUpdate : node.onRefresh;
+    let selfIndex = -1;
+    if (hook !== undefined) {
+        selfIndex = out.length;
+        out.push(node);
+        ends.push(0); // overwritten once this subtree is fully collected
+    }
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (hasUpdate(ch[i])) collect(ch[i], out); // prune hookless subtrees
+        if (has(ch[i], pass)) collectSubtreeMethods(ch[i], pass, out, ends); // prune hookless subtrees
     }
+    if (selfIndex !== -1) ends[selfIndex] = out.length;
 }
 
-function hasUpdate(node: Container): boolean {
-    const cached = node._mvtHasUpdate;
+function has(node: Container, pass: Pass): boolean {
+    const cached = pass === UPDATE ? node._mvtHasUpdate : node._mvtHasRefresh;
     if (cached !== undefined) return cached;
-    let found = node.onUpdate !== undefined;
+    let found = (pass === UPDATE ? node.onUpdate : node.onRefresh) !== undefined;
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (hasUpdate(ch[i])) found = true; // no early exit, deliberately
+        if (has(ch[i], pass)) found = true; // no early exit, deliberately
     }
-    node._mvtHasUpdate = found;
+    if (pass === UPDATE) node._mvtHasUpdate = found;
+    else node._mvtHasRefresh = found;
     return found;
 }
 ```
@@ -92,16 +110,16 @@ function hasUpdate(node: Container): boolean {
 ### Invalidation
 
 One climb per hook kind, stopping at the first container already dirty for that
-kind. It lives in [mvt-container-mixin.ts](../src/pixi-mvt-plugin/mvt-container-mixin.ts), next to the
+kind. It lives in [mvt-container-mixin.ts](../src/pixi-mvt/mvt-container-mixin.ts), next to the
 setters and wrappers that trigger it:
 
 ```ts
 function invalidateUpdate(node: Container): void {
     let cursor: Container | null = node;
     while (cursor) {
-        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdateList === undefined) return;
+        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdate === undefined) return;
         cursor._mvtHasUpdate = undefined;
-        cursor._mvtUpdateList = undefined;
+        cursor._mvtUpdate = undefined;
         cursor = cursor.parent;
     }
 }
@@ -135,7 +153,7 @@ measured ~0% in the README's cost table.
 
 ### Two traps, both load-bearing
 
-- `hasUpdate` / `hasRefresh` **must not early-exit** on the first hooked child.
+- `has` **must not early-exit** on the first hooked child.
   Visiting all children is what caches all of them, and that cache is what makes
   later prunes O(1). An early exit silently degrades the design to O(subtree).
 - `invalidate` must clear **both** fields of its kind together. They are
@@ -167,7 +185,7 @@ updateScene(stage) -> stage's list is non-empty so it never rebuilds;
 The call count froze and never recovered across repeated calls. No error,
 nothing to diagnose. The new design holds no such state, so this cannot occur;
 the regression test for it is *stays correct when overlapping containers are
-driven alternately* in [scene-passes.test.ts](../src/pixi-mvt-plugin/scene-passes.test.ts), which the
+driven alternately* in [scene-passes.test.ts](../src/pixi-mvt/scene-passes.test.ts), which the
 old design fails.
 
 ### The accessor-shadowing defect
@@ -220,12 +238,29 @@ exists to keep out. It also makes synthetic stepping awkward (tests, thumbnails,
 replays), invites views to pick a different time base from their models via
 `ticker.speed`, and would give the core a hard dependency on Pixi's `Ticker`.
 
-**Neither hook is gated.** `onUpdate` must not be: presentation state that stops
-advancing while hidden is stale when it reappears, and gating would make state
-evolution a function of whether something was drawn. `onRefresh` could safely be
-gated since it is idempotent, but the cheap lever is already detachment, and
-Pixi's folded `globalDisplayStatus` is computed during the render pass, so
-reading it from a refresh gives last frame's answer.
+**Neither pass gates on visibility.** Both passes run every container in the
+subtree, visible or not. `onUpdate` must never gate: presentation state that
+stops advancing while hidden is stale when it reappears, and gating would make
+state evolution a function of whether something was drawn. `onRefresh` could in
+principle skip hidden subtrees - it is idempotent, so the next visible frame
+recovers - but the earlier design that did this had to fold `localDisplayStatus`
+as it walked, and forbade a view from clearing its own `visible` (a pruned
+container drops out of its own walk and deadlocks), which in turn needed a
+dev-mode `visible` setter guard to catch. Dropping the gate removed all of that:
+the two passes are now the same walk, a view sets its own `visible` like any
+other presentation output, and restating a hidden fact costs one method call
+that assigns a value nobody draws.
+
+**A method may return `SKIP_DESCENDANTS` to skip its subtree for a frame.** This
+replaces visibility gating with an explicit, symmetric opt-in. The container has
+already run when it returns the sentinel, so only its descendants are skipped -
+in one step, through the skip table - and it can stop skipping on a later frame
+with no deadlock. It is the mechanism a `<List>` slot uses to leave an empty
+slot's subtree alone, and the mechanism a hidden branch uses to save the cost of
+restating facts nobody will draw. In the update pass it freezes a subtree's
+state advance, so there it is an opt-in for deliberately frozen subtrees (which
+are then one frame stale on resume) rather than a routine tool. The container a
+pass is driven from is never skipped by an outside caller.
 
 **Re-entering a pass on the same container throws.** A hook that calls
 `refreshScene` on the container already being refreshed would run the same list
@@ -275,7 +310,7 @@ published from it was an artifact, and all of them have been deleted.
 [scripts/bench-scene-passes.ts](../scripts/bench-scene-passes.ts) spawns one
 child process **per arm**, each running exactly one implementation against one
 scenario, with the scenes and the measurement in
-[scene-passes-benchmark.ts](../src/pixi-mvt-plugin/scene-passes-benchmark.ts). Results are
+[scene-passes-benchmark.ts](../src/pixi-mvt/scene-passes-benchmark.ts). Results are
 microseconds per frame - not hz - reported as the median of seven batches, each
 batch sized from a warmup to run for about 100ms. One arm per process is also
 what lets the `patched` and `unpatched` arms differ by whether the plugin was
@@ -318,7 +353,7 @@ magnitude.
 
 Two style-guide rules needed a deliberate decision.
 
-**`this`** is confined to [mvt-container-mixin.ts](../src/pixi-mvt-plugin/mvt-container-mixin.ts). A
+**`this`** is confined to [mvt-container-mixin.ts](../src/pixi-mvt/mvt-container-mixin.ts). A
 prototype accessor and a wrapped prototype method cannot reach their instance
 without it. Hooks themselves are invoked as plain calls with no receiver, so a
 view's hook stays an ordinary closure. The side effect is that a hook defined as

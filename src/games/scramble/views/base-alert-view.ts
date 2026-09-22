@@ -16,7 +16,7 @@ export interface BaseAlertViewBindings {
 // ---------------------------------------------------------------------------
 
 export function createBaseAlertView(bindings: BaseAlertViewBindings): Container {
-    let flashTimer = 0;
+    let flashMs = 0;
 
     const label = new Text({
         text: 'DESTROY THE BASE!',
@@ -27,19 +27,16 @@ export function createBaseAlertView(bindings: BaseAlertViewBindings): Container 
 
     const view = new Container();
     view.addChild(label);
-    view.visible = false;
-    view.onRender = refresh;
-    return view;
 
-    function refresh(): void {
-        const shouldShow = bindings.isScrollClamped() && bindings.isBaseAlive();
-        view.visible = shouldShow;
-        if (!shouldShow) {
-            flashTimer = 0;
-            return;
-        }
-        // Flash the text by toggling alpha
-        flashTimer += 16;
-        view.alpha = (Math.sin(flashTimer * 0.008) + 1) * 0.5;
-    }
+    view.onUpdate = (deltaMs) => {
+        flashMs += deltaMs;
+    };
+
+    view.onRefresh = () => {
+        const isShown = view.visible = bindings.isScrollClamped() && bindings.isBaseAlive();
+        if (!isShown) return;
+        view.alpha = (Math.sin(flashMs * 0.008) + 1) * 0.5;
+    };
+
+    return view;
 }

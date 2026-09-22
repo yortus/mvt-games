@@ -1,8 +1,8 @@
-# Appraisal: pixi-mvt-plugin spike
+# Appraisal: pixi-mvt spike
 
 > Independent review of the spike in this folder. Verdict, business case, and
 > technical findings. Written before the rework, so the documents it calls
-> QUICK-START.md and README.md are now [README.md](../src/pixi-mvt-plugin/README.md) (the pitch) and
+> QUICK-START.md and README.md are now [README.md](../src/pixi-mvt/README.md) (the pitch) and
 > [the design notes](./002-mvt-plugin-design-notes.md) (the rationale).
 
 **Reviewed:** 2026-09-18, against Pixi 8.16.0, branch `pixi-mvt-plugin`.

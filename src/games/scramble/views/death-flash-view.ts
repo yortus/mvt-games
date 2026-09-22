@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createEdgeTween, type StatefulPixiView } from '#common';
+import { createEdgeTween } from '#common';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -21,7 +21,7 @@ const FLASH_DURATION_MS = 200;
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createDeathFlashView(bindings: DeathFlashViewBindings): StatefulPixiView {
+export function createDeathFlashView(bindings: DeathFlashViewBindings): Container {
     const tween = createEdgeTween({
         getSource: bindings.isDying,
         triggerValue: 1,
@@ -35,16 +35,15 @@ export function createDeathFlashView(bindings: DeathFlashViewBindings): Stateful
     gfx.fill({ color: 0xffffff });
     view.addChild(gfx);
 
-    view.visible = false;
-    view.onRender = refresh;
-    return Object.assign(view, { update });
-
-    function update(deltaMs: number): void {
+    view.onUpdate = (deltaMs) => {
         tween.update(deltaMs);
-    }
+    };
 
-    function refresh(): void {
-        view.visible = tween.value > 0;
+    view.onRefresh = () => {
+        // A full-screen flash that fades: it drives its own alpha each frame,
+        // since a smooth fade needs alpha rather than a visible toggle.
         view.alpha = tween.value;
-    }
+    };
+
+    return view;
 }

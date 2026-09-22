@@ -25,18 +25,18 @@ export interface BenchmarkArm {
 export interface BenchmarkResult extends BenchmarkArm {
     /** Microseconds per frame: the median of seven batches. */
     readonly usPerFrame: number;
-    /** Hook calls per frame, so arms can be compared like for like. */
+    /** Method calls per frame, so arms can be compared like for like. */
     readonly callsPerFrame: number;
 }
 
 /** Every arm, in the order a full run reports them. */
 export const benchmarkArms: readonly BenchmarkArm[] = [
-    // A. The realistic shape: a large scene, few hooks. Static.
+    // A. The realistic shape: a large scene, few methods. Static.
     { scenario: 'sparse', arm: 'naive' },
     { scenario: 'sparse', arm: 'memo' },
 
-    // B. Dense and static: every container hooked, so pruning prunes nothing
-    // and only the saved walk is left.
+    // B. Dense and static: every container carries a method, so pruning prunes
+    // nothing and only the saved walk is left.
     { scenario: 'dense', arm: 'naive' },
     { scenario: 'dense', arm: 'memo' },
 
@@ -45,7 +45,7 @@ export const benchmarkArms: readonly BenchmarkArm[] = [
     { scenario: 'churn', arm: 'naive' },
     { scenario: 'churn', arm: 'memo' },
 
-    // D. Whole subtrees attached and detached every frame, none of them hooked.
+    // D. Whole subtrees attached and detached every frame, none carrying a method.
     { scenario: 'attach', arm: 'naive' },
     { scenario: 'attach', arm: 'memo' },
 
@@ -150,12 +150,12 @@ function measure(frame: Frame): number {
     return batches[(BATCHES - 1) / 2];
 }
 
-function passFrame(size: number, hooked: number, swapsPerFrame: number, memo: boolean): Frame {
-    const scene = buildScene(size, hooked);
+function passFrame(size: number, withMethods: number, swapsPerFrame: number, memo: boolean): Frame {
+    const scene = buildScene(size, withMethods);
     const pass = memo ? requireRefreshScene() : naiveRefresh;
     let cursor = 0;
     return {
-        callsPerFrame: hooked,
+        callsPerFrame: withMethods,
         run() {
             if (swapsPerFrame > 0) cursor = churn(scene, swapsPerFrame, cursor);
             pass(scene.root);
@@ -164,10 +164,10 @@ function passFrame(size: number, hooked: number, swapsPerFrame: number, memo: bo
 }
 
 /**
- * 100 hookless subtrees of 25 containers, detached and re-attached every frame.
+ * 100 method-free subtrees of 25 containers, detached and re-attached every frame.
  *
  * The point of the scenario: attaching a subtree costs the depth of the
- * ancestor chain rather than the size of the subtree, and a hookless subtree
+ * ancestor chain rather than the size of the subtree, and a method-free subtree
  * whose own shape never changes keeps its cached answer throughout.
  */
 function attachFrame(memo: boolean): Frame {
@@ -203,10 +203,10 @@ function attachFrame(memo: boolean): Frame {
 
 function onRenderFrame(): Frame {
     const scene = buildScene(2000, 2000);
-    // Move the hooks over to Pixi's own mechanism, then drive its render group
-    // directly. `runOnRender` only forwards the renderer to the callback, so
-    // passing nothing measures dispatch and nothing else.
-    rehookToOnRender(scene.root);
+    // Move the methods over to Pixi's own mechanism, then drive its render
+    // group directly. `runOnRender` only forwards the renderer to the callback,
+    // so passing nothing measures dispatch and nothing else.
+    reassignToOnRender(scene.root);
     scene.root.enableRenderGroup();
     const renderGroup = scene.root.renderGroup;
     const renderer = undefined as unknown as Renderer;
@@ -246,8 +246,8 @@ function requireRefreshScene(): (node: Container) => void {
     return refreshScene;
 }
 
-/** A tree of `size` containers, three levels deep, `hooked` of them carrying a hook. */
-function buildScene(size: number, hooked: number): Scene {
+/** A tree of `size` containers, three levels deep, `withMethods` of them carrying one. */
+function buildScene(size: number, withMethods: number): Scene {
     const root = new Container();
     const branches: Container[] = [root];
     const leaves: Container[] = [];
@@ -267,11 +267,11 @@ function buildScene(size: number, hooked: number): Scene {
         leaves.push(leaf);
     }
 
-    // Spread the hooks through the leaves rather than clustering them, so
+    // Spread the methods through the leaves rather than clustering them, so
     // pruning has to work for its result.
-    const stride = Math.max(1, Math.floor(leaves.length / hooked));
+    const stride = Math.max(1, Math.floor(leaves.length / withMethods));
     let placed = 0;
-    for (let i = 0; i < leaves.length && placed < hooked; i += stride) {
+    for (let i = 0; i < leaves.length && placed < withMethods; i += stride) {
         leaves[i].onRefresh = bump;
         placed++;
     }
@@ -279,7 +279,7 @@ function buildScene(size: number, hooked: number): Scene {
     return { root, branches, leaves };
 }
 
-/** Swaps `count` leaves for fresh hooked ones, which is what dirties the memo. */
+/** Swaps `count` leaves for fresh ones carrying a method, which dirties the memo. */
 function churn(scene: Scene, count: number, cursor: number): number {
     let at = cursor;
     for (let i = 0; i < count; i++) {
@@ -296,22 +296,22 @@ function churn(scene: Scene, count: number, cursor: number): number {
 
 /** A recursive walk with no index and no memo, which is the baseline to beat. */
 function naiveRefresh(node: Container): void {
-    const hook = node.onRefresh;
-    if (hook !== undefined) hook();
+    const method = node.onRefresh;
+    if (method !== undefined) method();
     const children = node.children;
     for (let i = 0; i < children.length; i++) {
         naiveRefresh(children[i]);
     }
 }
 
-function rehookToOnRender(node: Container): void {
+function reassignToOnRender(node: Container): void {
     if (node.onRefresh !== undefined) {
         node.onRefresh = undefined;
         node.onRender = bump;
     }
     const children = node.children;
     for (let i = 0; i < children.length; i++) {
-        rehookToOnRender(children[i]);
+        reassignToOnRender(children[i]);
     }
 }
 

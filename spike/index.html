@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>pixi-mvt-plugin spike</title>
+        <title>pixi-mvt spike</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             html, body {
@@ -37,7 +37,7 @@
     </head>
     <body>
         <div class="wrap">
-            <h1>pixi-mvt-plugin spike</h1>
+            <h1>pixi-mvt spike</h1>
             <p class="sub">
                 Scene-wide <code>onUpdate(deltaMs)</code> and <code>onRefresh()</code> for Pixi containers,
                 guaranteed to run every container before any of its descendants.
@@ -57,10 +57,12 @@
                 <p><strong>What to watch.</strong></p>
                 <p>
                     <code>probe order</code> reads <code>p1 &gt; p2 &gt; p3 &gt; p4</code>. The chain is attached
-                    first and <code>p2</code> is hooked afterwards, once <code>p3</code> and <code>p4</code> are
-                    already listed. An append-ordered list, which is what Pixi's own <code>onRender</code> keeps,
-                    would call <code>p2</code> last. Those four containers are also <code>visible = false</code>,
-                    and refresh regardless: neither pass is gated on visibility, culling or rendering.
+                    first and <code>p2</code> is given its refresh method afterwards, once <code>p3</code> and
+                    <code>p4</code> are already listed. An append-ordered list, which is what Pixi's own
+                    <code>onRender</code> keeps, would call <code>p2</code> last; the trace shows it in tree
+                    position instead. <code>onUpdate</code> and <code>onRefresh</code> both fire on every
+                    container each tick, regardless of <code>visible</code>; either can return
+                    <code>SKIP_DESCENDANTS</code> to skip that container's descendants for the frame.
                 </p>
                 <p>
                     <code>update pass</code> and <code>refresh pass</code> are what each pass costs over the whole
@@ -76,6 +78,6 @@
             </div>
         </div>
 
-        <script type="module" src="/src/pixi-mvt-plugin-demo/main.ts"></script>
+        <script type="module" src="/src/pixi-mvt-demo/main.ts"></script>
     </body>
 </html>
