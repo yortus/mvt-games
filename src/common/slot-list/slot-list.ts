@@ -143,7 +143,7 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
             }
             lowestFreeHint = index + 1;
 
-            const record: MutableSlot<T> = { isLive: true, index, value, releaseAtMs: 0 };
+            const record: MutableSlot<T> = { isLive: true, index, value, releaseAtMs: 0, ordinal: -1 };
             slots[index] = record;
             liveCount += 1;
             return record;
@@ -230,11 +230,15 @@ const DEV = import.meta.env?.DEV === true;
 // almost certainly means update(deltaMs) was never wired into the tick loop.
 const PENDING_RELEASE_LEAK_THRESHOLD = 1024;
 
-interface MutableSlot<T> {
+// The record shared with the ordered variant. `ordinal` is inert for a plain
+// SlotList (left at -1) and owned by `createOrderedSlotList`; it is here so both
+// factories allocate one record shape.
+export interface MutableSlot<T> {
     isLive: boolean;
     index: number;
     value: T;
     releaseAtMs: number;
+    ordinal: number;
 }
 
 function heapPush<T>(heap: MutableSlot<T>[], record: MutableSlot<T>): void {

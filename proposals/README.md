@@ -13,7 +13,7 @@ Nothing here is a description of how the repo currently works. For that, see
 | 002 | [MVT plugin design notes](./002-mvt-plugin-design-notes.md) | Rationale for what was built |
 | 003 | [MVT plugin appraisal](./003-mvt-plugin-appraisal.md) | Independent review of whether this repo needs it |
 | 004 | [`<List>` proposal](./004-list-proposal.md) | Proposed. Depends on 001 |
-| 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | Collection **implemented** in `src/common/slot-list/` (shipped as `releaseDelayMs`, not `reuseDelayMs`); the `<List>` projection (section 5.3) still depends on 004 |
+| 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | Collection **implemented** in `src/common/slot-list/` (shipped as `releaseDelayMs`, not `reuseDelayMs`), and `OrderedSlotList` (the `Order` collaborator) implemented alongside it; the `<List>` projection (section 5.3) still depends on 004 |
 | 006 | [`<List>` patterns guide](./006-list-patterns.md) | Usage guide for 004 and 005 |
 
 ## Reading order

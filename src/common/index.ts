@@ -7,6 +7,7 @@ export { createPauseMenuView, type PauseMenuViewBindings } from './pause-menu-vi
 export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
 export { createSlotList, type Slot, type SlotList, type SlotListOptions } from './slot-list';
+export { createOrderedSlotList, type OrderedSlot, type OrderedSlotList } from './slot-list';
 export { type StatefulPixiView } from './stateful-pixi-view';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { createTouchInputView, type TouchInputViewBindings } from './touch-input-view';

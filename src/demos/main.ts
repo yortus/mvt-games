@@ -2,6 +2,7 @@ import { Application, Container, RenderTexture } from 'pixi.js';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
 import { createListSwapEntry } from './list-swap';
+import { createOrderedListEntry } from './ordered-list';
 import { createTsxPixiEntry } from './tsx-pixi';
 
 // ---------------------------------------------------------------------------
@@ -12,6 +13,7 @@ const demos: DemoEntry[] = [
     createBoidsEntry(),
     createTsxPixiEntry(),
     createListSwapEntry(),
+    createOrderedListEntry(),
 ];
 
 // ---------------------------------------------------------------------------

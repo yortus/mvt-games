@@ -18,8 +18,9 @@ tests. Deviations from this proposal as written:
 - `insert` scans from a cached lowest-free-index hint (amortised ~O(1), O(n)
   worst case); the bitmap in section 7 remains deferred.
 
-Still pending: the `<List>` projection (section 5.3, needs 004), the `Order`
-collaborator (section 5.2), and the game conversions (section 10, steps 3-4).
+Still pending: the `<List>` projection (section 5.3, needs 004) and the
+`scramble` conversion (section 10, step 4). `asteroids` (step 3) and a visual
+demo (`src/demos/ordered-list/`) are done.
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
 component. [the patterns guide](./006-list-patterns.md) for how the two
@@ -390,33 +391,44 @@ A ring is the same story: a fixed array plus a write index. Slot `i` holds one
 sample for `N` frames and its age is `(write - i + N) % N`, which the view reads
 directly. Trails and chat logs want that, not this.
 
-### 5.2 `Order`, for logical ordering
+### 5.2 `OrderedSlotList`, for logical ordering
 
-`SlotList` has no ordering, by design. Where a logical order is needed, compose
-rather than complicate:
+`SlotList` has no ordering, by design. Where a logical order is needed, use
+`OrderedSlotList<T>` (implemented in `src/common/slot-list/`), which composes a
+`SlotList` internally and layers an order on top:
 
 ```ts
-const hand = createSlotList<Card>({ maxSlots: 12 });
-const order = createOrder(hand);
+const hand = createOrderedSlotList<Card>({ maxSlots: 12 });
 
-order.append(slot);
-order.move(from, to);
-order.sort(byValue);
-order.rankOf(slot): number;      // O(1)
-order.at(rank): Slot<Card> | undefined;
+hand.append(card);                 // adds at the end of the order
+hand.insertAt(ordinal, card);      // adds at a position, shifting the rest up
+hand.move(from, to);
+hand.sort(byValue);
+hand.remove(slot);                 // detaches now; slot lingers per releaseDelayMs
+hand.atOrdinal(ordinal): OrderedSlot<Card> | undefined;
+hand.atSlotIndex(index): OrderedSlot<Card> | undefined;   // for <List>
 ```
 
-`createOrder` keeps a `Slot<Card>[]` in logical order and maintains a rank
-lookup, rewriting it on any mutation. `SlotList` stays unordered and unchanged;
-the view iterates slots and reads the rank for layout.
+Every live item has an `ordinal` in `[0, liveCount)`, written directly onto the
+slot: `OrderedSlot<T> extends Slot<T>` adds a `readonly ordinal`. Storage slots
+keep their stable `index` for identity and `<List>` projection, so the two index
+spaces stay distinct - storage index for identity, ordinal for layout - with one
+facade rather than two objects the caller must keep in sync.
 
-Two index spaces in one container is what made earlier versions of this design
-unwieldy. Two objects with one job each is not.
+The two index spaces living in one container is what made earlier versions of
+this design unwieldy - but only because ordering was pushed *into* `SlotList`.
+Here `SlotList` stays single-index and untouched; the second index space lives
+in the composing `OrderedSlotList`, which owns both sides so they cannot drift.
 
-Ordering and **paint order** are separate concerns. Rows that do not overlap
-need only `y={() => order.rankOf(slot()) * ROW_H}`. Only genuinely overlapping
-content, such as a fanned card hand, also needs `zIndex` with
-`sortableChildren` on the list container.
+`remove` detaches the item from the order at once (survivors renumber to close
+the gap) while its slot lingers pending release, so the view can still animate
+the exit; a detached slot's `ordinal` is -1.
+
+Ordering and **paint order** are separate concerns. Because `<List>` projects by
+stable storage index, rows that do not overlap need only
+`y={() => slot().ordinal * ROW_H}` and ease toward it, so the reorder animates
+for free. Only genuinely overlapping content, such as a fanned card hand, also
+needs `zIndex` with `sortableChildren` on the list container.
 
 ### 5.3 `<List>`, for projection
 
@@ -618,12 +630,16 @@ exist and `update` has never been called is the mitigation.
    own merits.
 2. **Implement `SlotList`** - **done**, in `src/common/slot-list/` with unit
    tests and no Pixi dependency.
-3. **Convert one game** - pending. `asteroids` is the honest test: it holds the
-   only genuinely variable-length list in the repo and currently destroys and
-   rebuilds every view on any length change.
-4. **Convert `scramble`** - pending. Six hand-rolled pools become six
-   declarations, and its explosions gain a real release delay.
-5. **`Order` only when a screen needs it** - pending. No game in the repo does.
+3. **Convert one game** - **done**. `asteroids` now stores its variable-length
+   asteroid collection in a `SlotList`; the view grows a pool by storage index
+   and redraws a slot only when its tenant changes, instead of destroying and
+   rebuilding every view on a length change. Its fixed bullet pool was left as-is.
+4. **Convert `scramble`** - pending, and the larger job: six hand-rolled pools
+   become six declarations, and its explosions gain a real release delay. Watch
+   the index-based collision logic and the base-fuel-tank special case.
+5. **`Order` only when a screen needs it** - **done** as `OrderedSlotList` in
+   `src/common/slot-list/` with unit tests, plus a visual demo in
+   `src/demos/ordered-list/` (reorder slide + exit fade). No game needs it yet.
 6. **Document in `docs/building-with-mvt/simulating-the-world/`** - pending,
    since this is a model-side structure, with a cross-link from the list
    patterns guide.
@@ -641,6 +657,10 @@ exist and `update` has never been called is the mitigation.
 3. **Should `clear()` respect release delays or release immediately?**
    *Resolved: immediate*, which is what a level transition wants. A fading
    variant could come later if a screen needs it.
-4. **Should `Order` maintain rank in a side table or write it onto the slot?**
-   Still open; `Order` is unbuilt. A side table keeps `Slot<T>` at three fields;
-   writing it back makes the view binding trivial. Leaning towards the side table.
+4. **Should ordering maintain the position in a side table or write it onto the slot?**
+   *Resolved: on the slot.* `OrderedSlot<T> extends Slot<T>` with a `readonly
+   ordinal` (renamed from `rank`, which overloaded scoring/matrix meanings). The
+   view reads `slot.ordinal` directly - no accessor threaded into the binding -
+   and it drops the `ordinalOf` method a side table would have needed. The cost
+   is an inert `ordinal` on every `SlotList` record (public `Slot<T>` still
+   hides it) and a shared internal record between the two co-located factories.
