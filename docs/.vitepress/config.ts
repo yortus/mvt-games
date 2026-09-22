@@ -80,6 +80,7 @@ export default withMermaid(defineConfig({
                         items: [
                             { text: 'Why Polling', link: '/building-with-mvt/reacting-to-changes/why-polling' },
                             { text: 'Change Detection', link: '/building-with-mvt/reacting-to-changes/change-detection' },
+                            { text: 'Deriving Values', link: '/building-with-mvt/reacting-to-changes/deriving-values' },
                             { text: 'Events and Signals', link: '/building-with-mvt/reacting-to-changes/events-and-signals' },
                         ],
                     },

@@ -6,6 +6,7 @@
 
 **Related:** [Reactivity: Why Polling](why-polling.md) -
 [Events and Signals](events-and-signals.md) -
+[Deriving Values](deriving-values.md) -
 [Bindings (Learn)](../presenting-the-world/bindings.md) -
 [Bindings in Depth](../presenting-the-world/bindings-in-depth.md) -
 [Hot Paths](../avoiding-pitfalls/hot-paths.md)
@@ -184,6 +185,13 @@ function refresh(): void {
 
 This avoids tearing down and recreating every child view on every frame. Only
 when the count actually changes does the rebuild run.
+
+## From Detection to Derivation
+
+Change detection tells you *when* something changed. When you need the *value*
+that change produces - a rebuilt structure that is read every frame - reach for
+the `derive()` helper, which memoises the result and rebuilds it only on a
+trigger change. See [Deriving Values](deriving-values.md).
 
 ---
 

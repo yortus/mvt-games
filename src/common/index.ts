@@ -1,4 +1,5 @@
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
+export { derive, type Derived, type DeriveOptions } from './derive';
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
 export { isTouchDevice } from './is-touch-device';
 export { createKeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
@@ -10,4 +11,4 @@ export { type StatefulPixiView } from './stateful-pixi-view';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { createTouchInputView, type TouchInputViewBindings } from './touch-input-view';
 export { type DeepReadonly } from './type-utils';
-export { watch } from './watch';
+export { watch, type Watchable, type WatchGetters, type Watcher, type WatchedValues, type WatchedProperty } from './watch';

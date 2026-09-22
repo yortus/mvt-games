@@ -5,6 +5,7 @@
 > state, compare to previous state, act on differences.
 
 **Related:** [Change Detection](change-detection.md) -
+[Deriving Values](deriving-values.md) -
 [Events and Signals](events-and-signals.md) -
 [The Game Loop](../the-game-loop.md) -
 [Hot Paths](../avoiding-pitfalls/hot-paths.md)

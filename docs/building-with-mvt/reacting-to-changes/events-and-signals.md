@@ -6,6 +6,7 @@
 
 **Related:** [Reactivity: Why MVT Uses Polling](why-polling.md) -
 [Change Detection](change-detection.md) -
+[Deriving Values](deriving-values.md) -
 [The Game Loop](../the-game-loop.md)
 
 ---

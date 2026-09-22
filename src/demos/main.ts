@@ -1,6 +1,7 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
+import { createDeriveEntry } from './derive';
 import { createTsxPixiEntry } from './tsx-pixi';
 
 // ---------------------------------------------------------------------------
@@ -9,6 +10,7 @@ import { createTsxPixiEntry } from './tsx-pixi';
 
 const demos: DemoEntry[] = [
     createBoidsEntry(),
+    createDeriveEntry(),
     createTsxPixiEntry(),
 ];
 

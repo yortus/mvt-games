@@ -162,6 +162,11 @@ function refresh(): void {
 Use change detection for infrequent, expensive updates. For cheap per-frame
 updates (position, alpha, visibility), read directly without watching.
 
+When you need the *value* a change produces (a rebuilt structure read every
+frame) rather than a side effect, reach for the `derive()` helper instead. It
+memoises the result and recomputes only when its triggers change. See
+[Deriving Values](../building-with-mvt/reacting-to-changes/deriving-values.md).
+
 ## Presentation State
 
 **[MVT requirement]** Most views are pure projections - read state, update

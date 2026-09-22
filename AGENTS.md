@@ -26,7 +26,7 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
-└── common/              Shared helpers, views, and models (e.g. change-detection watches, keyboard input)
+└── common/              Shared helpers, views, and models (e.g. change-detection watches, derived values, keyboard input)
 ```
 
 Full reference: [Project Structure](docs/reference/project-structure.md)
