@@ -636,9 +636,11 @@ exist and `update` has never been called is the mitigation.
    rebuilding every view on a length change. Its fixed bullet pool was left as-is.
 4. **Convert `scramble`** - **done**. Six hand-rolled pools became six `SlotList`
    declarations; the base-fuel-tank index-as-identity became a held `Slot`
-   reference; explosions use `releaseDelayMs` (born removed) for their fade. The
-   entity models keep their now-internal `isActive` flags - a later cleanup
-   could drop them.
+   reference whose `isLive` says whether the base stands; explosions use
+   `releaseDelayMs` (born removed) for their fade. The entity models dropped
+   their pool-era lifecycle (`isActive`, `isAlive`, `activate`, `kill`, ...) and
+   take their start state as factory options, and the entity views bind a single
+   `isPresent`.
 5. **`Order` only when a screen needs it** - **done** as `OrderedSlotList` in
    `src/common/slot-list/` with unit tests, plus a visual demo in
    `src/demos/ordered-list/` (reorder slide + exit fade). No game needs it yet.

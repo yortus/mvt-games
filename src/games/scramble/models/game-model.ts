@@ -23,6 +23,7 @@ import {
     MAX_ROCKETS,
     ROCKET_DETECT_RANGE,
     ROCKET_LAUNCH_SPEED,
+    ROCKET_EXIT_ROW,
     MAX_UFOS,
     UFO_SPEED,
     UFO_OSCILLATION_AMP,
@@ -188,7 +189,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return playerInput;
         },
         get isBaseAlive() {
-            return baseSlot !== undefined && baseSlot.isLive;
+            return isBaseLive();
         },
         get baseWorldCol() {
             return baseSlot !== undefined && baseSlot.isLive ? baseSlot.value.worldCol : -1;
@@ -279,15 +280,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
             updateEach(bombs, deltaMs);
             updateRockets(deltaMs);
             updateEach(ufos, deltaMs);
-            updateEach(fuelTanks, deltaMs);
             updateEach(explosions, deltaMs);
             explosions.update(deltaMs);
             fuelModel.update(deltaMs);
 
-            // Deactivate off-screen entities
-            deactivateOffscreenBullets();
-            deactivateOffscreenBombs();
-            deactivateOffscreenEnemies();
+            // Remove off-screen entities
+            removeOffscreenBullets();
+            removeOffscreenBombs();
+            removeOffscreenEnemies();
 
             // Collision detection
             if (gamePhase === 'playing') checkShipTerrainCollision();
@@ -347,9 +347,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         });
     }
 
-    function updateEach<T extends { update(deltaMs: number): void }>(pool: SlotList<T>, deltaMs: number): void {
-        for (let i = 0; i < pool.slotCount; i++) {
-            const slot = pool.at(i);
+    // Visits pending-release slots too, so born-removed explosions keep animating.
+    function updateEach<T extends { update(deltaMs: number): void }>(list: SlotList<T>, deltaMs: number): void {
+        for (let i = 0; i < list.slotCount; i++) {
+            const slot = list.at(i);
             if (slot !== undefined) slot.value.update(deltaMs);
         }
     }
@@ -365,8 +366,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function spawnExplosion(worldCol: number, worldRow: number): void {
         if (explosions.isFull) return;
-        const explosion = createExplosionModel({ durationMs: EXPLOSION_DURATION_MS });
-        explosion.spawn(worldCol, worldRow);
+        const explosion = createExplosionModel({ worldCol, worldRow, durationMs: EXPLOSION_DURATION_MS });
         // Born removed: the slot lingers for its release delay so the fade renders,
         // then frees itself. update() advances the explosion while it lingers.
         explosions.remove(explosions.insert(explosion));
@@ -391,36 +391,33 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         if (kind === 'rocket') {
             if (rockets.isFull) return;
-            const rocket = createRocketModel({
+            rockets.insert(createRocketModel({
+                worldCol: centredCol,
+                worldRow: groundRow,
                 detectRange: ROCKET_DETECT_RANGE,
                 launchSpeed: ROCKET_LAUNCH_SPEED,
-            });
-            rocket.activate(centredCol, groundRow);
-            rockets.insert(rocket);
+            }));
         }
         else if (kind === 'ufo') {
             if (ufos.isFull) return;
-            const ufo = createUfoModel({
+            ufos.insert(createUfoModel({
+                worldCol: centredCol,
+                worldRow: row,
                 speed: UFO_SPEED,
                 oscillationAmp: UFO_OSCILLATION_AMP,
                 oscillationFreq: UFO_OSCILLATION_FREQ,
-            });
-            ufo.activate(centredCol, row);
-            ufos.insert(ufo);
+            }));
         }
         else if (kind === 'fuel-tank') {
             if (fuelTanks.isFull) return;
-            const tank = createFuelTankModel();
-            tank.activate(centredCol, groundRow);
-            fuelTanks.insert(tank);
+            fuelTanks.insert(createFuelTankModel({ worldCol: centredCol, worldRow: groundRow }));
         }
         else if (kind === 'base') {
             // The base occupies a fuel-tank slot; hold the slot reference so its
-            // identity survives other tanks coming and going.
+            // identity survives other tanks coming and going, and its isLive flag
+            // says whether the base still stands.
             if (fuelTanks.isFull) return;
-            const tank = createFuelTankModel();
-            tank.activate(centredCol, groundRow);
-            baseSlot = fuelTanks.insert(tank);
+            baseSlot = fuelTanks.insert(createFuelTankModel({ worldCol: centredCol, worldRow: groundRow }));
         }
     }
 
@@ -428,25 +425,26 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function tryFireBullet(): void {
         if (!ship.isAlive || bullets.isFull) return;
-        const bullet = createBulletModel();
-        bullet.fire(ship.worldCol + 0.5, ship.worldRow, BULLET_SPEED);
-        bullets.insert(bullet);
+        bullets.insert(createBulletModel({
+            worldCol: ship.worldCol + 0.5,
+            worldRow: ship.worldRow,
+            speed: BULLET_SPEED,
+        }));
     }
 
     function tryDropBomb(): void {
         if (!ship.isAlive || bombs.isFull) return;
-        const bomb = createBombModel({ gravity: BOMB_GRAVITY });
-        bomb.fire(
-            ship.worldCol,
-            ship.worldRow + 0.5,
-            currentScrollSpeed + BOMB_FORWARD_SPEED,
-        );
-        bombs.insert(bomb);
+        bombs.insert(createBombModel({
+            worldCol: ship.worldCol,
+            worldRow: ship.worldRow + 0.5,
+            vCol: currentScrollSpeed + BOMB_FORWARD_SPEED,
+            gravity: BOMB_GRAVITY,
+        }));
     }
 
     // ---- Boundary management -----------------------------------------------
 
-    function deactivateOffscreenBullets(): void {
+    function removeOffscreenBullets(): void {
         const rightEdge = scrollCol + VISIBLE_COLS + 1;
         for (let i = 0; i < bullets.slotCount; i++) {
             const slot = bullets.at(i);
@@ -456,7 +454,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 
-    function deactivateOffscreenBombs(): void {
+    function removeOffscreenBombs(): void {
         for (let i = 0; i < bombs.slotCount; i++) {
             const slot = bombs.at(i);
             if (slot !== undefined && slot.value.worldRow > VISIBLE_ROWS) {
@@ -465,11 +463,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 
-    function deactivateOffscreenEnemies(): void {
+    function removeOffscreenEnemies(): void {
         const leftEdge = scrollCol - 2;
         for (let i = 0; i < rockets.slotCount; i++) {
             const slot = rockets.at(i);
-            if (slot !== undefined && slot.value.worldCol < leftEdge) {
+            if (slot !== undefined && (slot.value.worldCol < leftEdge || slot.value.worldRow < ROCKET_EXIT_ROW)) {
                 rockets.remove(slot);
             }
         }
@@ -482,7 +480,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         for (let i = 0; i < fuelTanks.slotCount; i++) {
             const slot = fuelTanks.at(i);
             if (slot !== undefined && slot.value.worldCol < leftEdge) {
-                if (slot === baseSlot) baseSlot = undefined;
                 fuelTanks.remove(slot);
             }
         }
@@ -706,13 +703,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function handleFuelTankKill(slot: Slot<FuelTankModel>): void {
         spawnExplosion(slot.value.worldCol, slot.value.worldRow);
+        fuelTanks.remove(slot);
         if (slot === baseSlot) {
-            baseSlot = undefined;
-            fuelTanks.remove(slot);
             score += SCORE_BASE;
         }
         else {
-            fuelTanks.remove(slot);
             score += SCORE_FUEL_TANK;
             fuelModel.addFuel(FUEL_REFILL_AMOUNT);
         }
@@ -724,7 +719,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         // Check if scroll has passed the end of the terrain
         if (scrollCol >= terrain.totalCols - VISIBLE_COLS) {
             // Section 3 end - require base destroyed to complete loop
-            if (baseSlot !== undefined && baseSlot.isLive) {
+            if (isBaseLive()) {
                 // Base not destroyed yet - clamp scroll
                 scrollCol = terrain.totalCols - VISIBLE_COLS;
                 scrollClamped = true;
@@ -745,8 +740,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 currentScrollSpeed = SCROLL_SPEED + loop * SPEED_INCREASE_PER_LOOP;
                 scrollCol = 0;
                 spawnCursor = 0;
-                baseSlot = undefined;
-                deactivateAllEntities();
+                clearEntities();
                 ship.respawn(
                     SHIP_START_COL,
                     SHIP_START_ROW,
@@ -779,7 +773,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                             const safeCol = scrollCol + SHIP_START_COL;
                             const safeRow = findSafeRow(safeCol);
                             ship.respawn(safeCol, safeRow);
-                            deactivateAllProjectiles();
+                            clearProjectiles();
                             fuelModel.addFuel(0.25);
                             gamePhase = 'playing';
                         },
@@ -796,17 +790,21 @@ export function createGameModel(options: GameModelOptions): GameModel {
         );
     }
 
-    function deactivateAllProjectiles(): void {
+    function clearProjectiles(): void {
         bullets.clear();
         bombs.clear();
     }
 
-    function deactivateAllEntities(): void {
-        deactivateAllProjectiles();
+    function clearEntities(): void {
+        clearProjectiles();
         rockets.clear();
         ufos.clear();
         fuelTanks.clear();
         baseSlot = undefined;
+    }
+
+    function isBaseLive(): boolean {
+        return baseSlot !== undefined && baseSlot.isLive;
     }
 
     function findSafeRow(worldCol: number): number {

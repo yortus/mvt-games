@@ -9,18 +9,8 @@ export interface RocketModel {
     readonly worldCol: number;
     /** World row position in tile units. */
     readonly worldRow: number;
-    /** Whether the rocket is alive (active and not destroyed). */
-    readonly isAlive: boolean;
-    /** Whether the rocket is currently in use (placed in the world). */
-    readonly isActive: boolean;
     /** Current phase of the rocket. */
     readonly phase: RocketPhase;
-    /** Place the rocket in the world at the given position. */
-    activate(worldCol: number, worldRow: number): void;
-    /** Remove the rocket from the world. */
-    deactivate(): void;
-    /** Destroy the rocket (killed by player). */
-    kill(): void;
     /** Advance rocket state. Launches when ship is within detect range. */
     update(deltaMs: number, shipWorldCol: number): void;
 }
@@ -30,6 +20,8 @@ export interface RocketModel {
 // ---------------------------------------------------------------------------
 
 export interface RocketModelOptions {
+    readonly worldCol: number;
+    readonly worldRow: number;
     /** Horizontal tile distance at which the rocket detects the ship. */
     readonly detectRange: number;
     /** Upward launch speed in tiles per second. */
@@ -41,12 +33,9 @@ export interface RocketModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createRocketModel(options: RocketModelOptions): RocketModel {
-    const { detectRange, launchSpeed } = options;
+    const { worldCol, detectRange, launchSpeed } = options;
 
-    let worldCol = 0;
-    let worldRow = 0;
-    let alive = false;
-    let active = false;
+    let worldRow = options.worldRow;
     let phase: RocketPhase = 'idle';
     let vRow = 0;
 
@@ -57,39 +46,11 @@ export function createRocketModel(options: RocketModelOptions): RocketModel {
         get worldRow() {
             return worldRow;
         },
-        get isAlive() {
-            return alive;
-        },
-        get isActive() {
-            return active;
-        },
         get phase() {
             return phase;
         },
 
-        activate(col: number, row: number): void {
-            worldCol = col;
-            worldRow = row;
-            alive = true;
-            active = true;
-            phase = 'idle';
-            vRow = 0;
-        },
-
-        deactivate(): void {
-            alive = false;
-            active = false;
-            phase = 'idle';
-        },
-
-        kill(): void {
-            alive = false;
-            active = false;
-        },
-
         update(deltaMs: number, shipWorldCol: number): void {
-            if (!active || !alive) return;
-
             const dt = deltaMs * 0.001;
 
             if (phase === 'idle') {
@@ -111,10 +72,6 @@ export function createRocketModel(options: RocketModelOptions): RocketModel {
 
             if (phase === 'flying') {
                 worldRow += vRow * dt;
-                // Deactivate when far off-screen above
-                if (worldRow < -3) {
-                    model.deactivate();
-                }
             }
         },
     };

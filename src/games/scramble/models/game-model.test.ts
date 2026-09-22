@@ -115,6 +115,20 @@ describe('GameModel', () => {
         });
     });
 
+    describe('rockets', () => {
+        it('removes a launched rocket once it flies off the top', () => {
+            const section: SectionProfile = {
+                ...makeSection(100),
+                spawns: [{ col: 10, row: 0, kind: 'rocket' }],
+            };
+            const g = createGameModel({ sections: [section] });
+            g.update(16); // spawn; ship is within detect range so it launches
+            expect(g.rockets.liveCount).toBe(1);
+            for (let i = 0; i < 30; i++) g.update(100); // ~3s at launch speed 8 clears the top
+            expect(g.rockets.liveCount).toBe(0);
+        });
+    });
+
     describe('fuel depletion', () => {
         it('fuel depletes during play', () => {
             const g = makeGame();

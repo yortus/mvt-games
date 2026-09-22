@@ -8,7 +8,7 @@ import { textures } from '../data';
 export interface BombViewBindings {
     getScreenX(): number;
     getScreenY(): number;
-    isActive(): boolean;
+    isPresent(): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,8 +27,8 @@ export function createBombView(bindings: BombViewBindings): Container {
     }
 
     function refresh(): void {
-        const isActive = view.visible = bindings.isActive();
-        if (!isActive) return;
+        const isPresent = view.visible = bindings.isPresent();
+        if (!isPresent) return;
         view.position.set(bindings.getScreenX(), bindings.getScreenY());
     }
 }

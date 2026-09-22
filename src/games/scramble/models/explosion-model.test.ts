@@ -1,20 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createExplosionModel } from './explosion-model';
 
+function makeExplosion() {
+    return createExplosionModel({ worldCol: 10, worldRow: 5, durationMs: 400 });
+}
+
 describe('ExplosionModel', () => {
     describe('initial state', () => {
-        it('starts inactive with zero progress', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            expect(e.isActive).toBe(false);
-            expect(e.progress).toBe(0);
-        });
-    });
-
-    describe('spawn', () => {
-        it('activates at given position with zero progress', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.spawn(10, 5);
-            expect(e.isActive).toBe(true);
+        it('starts at given position with zero progress', () => {
+            const e = makeExplosion();
             expect(e.worldCol).toBe(10);
             expect(e.worldRow).toBe(5);
             expect(e.progress).toBe(0);
@@ -23,46 +17,21 @@ describe('ExplosionModel', () => {
 
     describe('update', () => {
         it('advances progress toward 1', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.spawn(10, 5);
+            const e = makeExplosion();
             e.update(200);
             expect(e.progress).toBeCloseTo(0.5, 5);
-            expect(e.isActive).toBe(true);
         });
 
-        it('deactivates when duration completes', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.spawn(10, 5);
+        it('reaches 1 when duration completes', () => {
+            const e = makeExplosion();
             e.update(400);
-            expect(e.isActive).toBe(false);
+            expect(e.progress).toBe(1);
         });
 
-        it('deactivates when overshooting duration', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.spawn(10, 5);
+        it('clamps progress at 1 when overshooting duration', () => {
+            const e = makeExplosion();
             e.update(500);
-            expect(e.isActive).toBe(false);
-        });
-
-        it('does not advance when inactive', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.update(200);
-            expect(e.progress).toBe(0);
-        });
-    });
-
-    describe('reuse', () => {
-        it('can be spawned again after completing', () => {
-            const e = createExplosionModel({ durationMs: 400 });
-            e.spawn(10, 5);
-            e.update(500);
-            expect(e.isActive).toBe(false);
-
-            e.spawn(20, 8);
-            expect(e.isActive).toBe(true);
-            expect(e.worldCol).toBe(20);
-            expect(e.worldRow).toBe(8);
-            expect(e.progress).toBe(0);
+            expect(e.progress).toBe(1);
         });
     });
 });

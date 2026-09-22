@@ -9,8 +9,7 @@ import type { RocketPhase } from '../models';
 export interface RocketViewBindings {
     getScreenX(): number;
     getScreenY(): number;
-    isActive(): boolean;
-    isAlive(): boolean;
+    isPresent(): boolean;
     getPhase(): RocketPhase;
 }
 
@@ -36,8 +35,8 @@ export function createRocketView(bindings: RocketViewBindings): Container {
     }
 
     function refresh(): void {
-        const isShown = view.visible = bindings.isActive() && bindings.isAlive();
-        if (!isShown) return;
+        const isPresent = view.visible = bindings.isPresent();
+        if (!isPresent) return;
         const phase = bindings.getPhase();
         idleSprite.visible = phase === 'idle';
         launchSprite.visible = phase === 'launching' || phase === 'flying';

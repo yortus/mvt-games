@@ -7,12 +7,6 @@ export interface BombModel {
     readonly worldCol: number;
     /** World row position in tile units. */
     readonly worldRow: number;
-    /** Whether this bomb is currently in flight. */
-    readonly isActive: boolean;
-    /** Drop the bomb from a position with a given horizontal velocity. */
-    fire(worldCol: number, worldRow: number, vCol: number): void;
-    /** Deactivate the bomb immediately. */
-    deactivate(): void;
     update(deltaMs: number): void;
 }
 
@@ -21,6 +15,10 @@ export interface BombModel {
 // ---------------------------------------------------------------------------
 
 export interface BombModelOptions {
+    readonly worldCol: number;
+    readonly worldRow: number;
+    /** Horizontal speed in tiles per second. */
+    readonly vCol: number;
     /** Gravity in tiles per second squared. */
     readonly gravity: number;
 }
@@ -30,13 +28,11 @@ export interface BombModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createBombModel(options: BombModelOptions): BombModel {
-    const { gravity } = options;
+    const { vCol, gravity } = options;
 
-    let worldCol = 0;
-    let worldRow = 0;
-    let vCol = 0;
+    let worldCol = options.worldCol;
+    let worldRow = options.worldRow;
     let vRow = 0;
-    let active = false;
 
     const model: BombModel = {
         get worldCol() {
@@ -45,25 +41,8 @@ export function createBombModel(options: BombModelOptions): BombModel {
         get worldRow() {
             return worldRow;
         },
-        get isActive() {
-            return active;
-        },
-
-        fire(col: number, row: number, horizontalSpeed: number): void {
-            worldCol = col;
-            worldRow = row;
-            vCol = horizontalSpeed;
-            vRow = 0;
-            active = true;
-        },
-
-        deactivate(): void {
-            active = false;
-        },
 
         update(deltaMs: number): void {
-            if (!active) return;
-
             const dt = deltaMs * 0.001;
             vRow += gravity * dt;
             worldRow += vRow * dt;

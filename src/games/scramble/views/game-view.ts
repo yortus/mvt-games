@@ -73,7 +73,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createBulletView({
                 getScreenX: () => ((game.bullets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.bullets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.bullets.at(idx) !== undefined,
+                isPresent: () => game.bullets.at(idx) !== undefined,
             }));
         }
 
@@ -83,7 +83,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createBombView({
                 getScreenX: () => ((game.bombs.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.bombs.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.bombs.at(idx) !== undefined,
+                isPresent: () => game.bombs.at(idx) !== undefined,
             }));
         }
 
@@ -93,8 +93,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createRocketView({
                 getScreenX: () => ((game.rockets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.rockets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.rockets.at(idx) !== undefined,
-                isAlive: () => game.rockets.at(idx) !== undefined,
+                isPresent: () => game.rockets.at(idx) !== undefined,
                 getPhase: () => game.rockets.at(idx)?.value.phase ?? 'idle',
             }));
         }
@@ -105,8 +104,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createUfoView({
                 getScreenX: () => ((game.ufos.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.ufos.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.ufos.at(idx) !== undefined,
-                isAlive: () => game.ufos.at(idx) !== undefined,
+                isPresent: () => game.ufos.at(idx) !== undefined,
             }));
         }
 
@@ -116,8 +114,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createFuelTankView({
                 getScreenX: () => ((game.fuelTanks.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.fuelTanks.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.fuelTanks.at(idx) !== undefined,
-                isAlive: () => game.fuelTanks.at(idx) !== undefined,
+                isPresent: () => game.fuelTanks.at(idx) !== undefined,
             }));
         }
 
@@ -137,7 +134,7 @@ export function createGameView(game: GameModel): Container {
             playArea.addChild(createExplosionView({
                 getScreenX: () => ((game.explosions.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
                 getScreenY: () => (game.explosions.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isActive: () => game.explosions.at(idx) !== undefined,
+                isPresent: () => game.explosions.at(idx) !== undefined,
                 getProgress: () => game.explosions.at(idx)?.value.progress ?? 0,
             }));
         }

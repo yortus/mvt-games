@@ -8,8 +8,7 @@ import { textures } from '../data';
 export interface FuelTankViewBindings {
     getScreenX(): number;
     getScreenY(): number;
-    isActive(): boolean;
-    isAlive(): boolean;
+    isPresent(): boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,8 +27,8 @@ export function createFuelTankView(bindings: FuelTankViewBindings): Container {
     }
 
     function refresh(): void {
-        const isShown = view.visible = bindings.isActive() && bindings.isAlive();
-        if (!isShown) return;
+        const isPresent = view.visible = bindings.isPresent();
+        if (!isPresent) return;
         view.position.set(bindings.getScreenX(), bindings.getScreenY());
     }
 }

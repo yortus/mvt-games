@@ -8,7 +8,7 @@ import { TILE_SIZE } from './view-constants';
 export interface ExplosionViewBindings {
     getScreenX(): number;
     getScreenY(): number;
-    isActive(): boolean;
+    isPresent(): boolean;
     getProgress(): number;
 }
 
@@ -26,8 +26,8 @@ export function createExplosionView(bindings: ExplosionViewBindings): Container 
     return view;
 
     function refresh(): void {
-        const isActive = view.visible = bindings.isActive();
-        if (!isActive) return;
+        const isPresent = view.visible = bindings.isPresent();
+        if (!isPresent) return;
 
         const progress = bindings.getProgress();
         const radius = maxRadius * progress;

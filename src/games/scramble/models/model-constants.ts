@@ -73,6 +73,9 @@ export const ROCKET_DETECT_RANGE = 8;
 /** Rocket upward launch speed in tiles per second. */
 export const ROCKET_LAUNCH_SPEED = 8;
 
+/** Row above the screen past which a launched rocket is removed. */
+export const ROCKET_EXIT_ROW = -3;
+
 /** Maximum simultaneous UFOs. */
 export const MAX_UFOS = 6;
 
