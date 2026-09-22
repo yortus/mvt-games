@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createOrderedListDemoModel } from './ordered-list-model';
 import { createOrderedListView } from './ordered-list-view';
@@ -40,7 +41,7 @@ export function createOrderedListEntry(): DemoEntry {
             return {
                 update(deltaMs: number): void {
                     model.update(deltaMs);
-                    view.update(deltaMs);
+                    updateScene(view, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(view);

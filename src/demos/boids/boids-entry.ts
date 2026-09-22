@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { createBoidsView } from './boids-view';
@@ -63,6 +64,7 @@ export function createBoidsEntry(): DemoEntry {
             return {
                 update(deltaMs: number): void {
                     model.update(deltaMs * timeScale);
+                    updateScene(view, deltaMs);
                 },
                 resize(): void {
                     stage.removeChild(view);

@@ -175,7 +175,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     simBg.rect(0, 0, simWidth, simHeight).fill({ color: 0x111122 });
     simBg.rect(0, 0, simWidth, simHeight).stroke({ color: 0x333355, width: 1 });
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     // ---- Refresh -----------------------------------------------------------

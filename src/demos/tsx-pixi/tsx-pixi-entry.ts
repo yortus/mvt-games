@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createDemoModel } from './demo-model';
 import { createDemoView } from './demo-view';
@@ -50,6 +51,7 @@ export function createTsxPixiEntry(): DemoEntry {
             return {
                 update(deltaMs: number): void {
                     model.update(deltaMs);
+                    updateScene(view, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(view);

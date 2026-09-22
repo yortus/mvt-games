@@ -44,7 +44,10 @@ export function List<T>(props: ListProps<T>): Container {
     let prevVersion: unknown = VERSION_UNSET;
 
     reconcile();
-    container.onRender = reconcile;
+    // Runs before the refresh of any item below it, so items removed here are
+    // skipped by the pass and items added here start refreshing next frame
+    // (they are built with their initial values applied, so nothing is stale).
+    container.onRefresh = reconcile;
 
     return container;
 

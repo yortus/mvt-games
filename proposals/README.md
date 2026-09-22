@@ -9,10 +9,10 @@ Nothing here is a description of how the repo currently works. For that, see
 
 | | Document | Status |
 | --- | --- | --- |
-| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Implemented in `src/pixi-mvt/`; the section 3.5 visibility gating was superseded by the `SKIP_DESCENDANTS` sentinel. All games, the cabinet and `src/common/` migrated. What is left (a check by eye, updating `docs/`, the demos, `pixi-jsx`) is listed in section 13.1 |
+| 001 | [MVT plugin rework plan](./001-mvt-plugin-rework-plan.md) | Implemented in `src/pixi-mvt/`; the section 3.5 visibility gating was superseded by the `SKIP_DESCENDANTS` sentinel. All games, demos, the cabinet, `src/common/` and `pixi-jsx` migrated. What is left (a check by eye, updating `docs/`, the playground) is listed in section 13.1 |
 | 002 | [MVT plugin design notes](./002-mvt-plugin-design-notes.md) | Rationale for what was built |
 | 003 | [MVT plugin appraisal](./003-mvt-plugin-appraisal.md) | Independent review of whether this repo needs it |
-| 004 | [`<List>` proposal](./004-list-proposal.md) | Proposed. Its dependency on 001 is met, so it is unblocked |
+| 004 | [`<List>` proposal](./004-list-proposal.md) | Partly implemented. The runtime work (section 9, steps 0 to 2) is done: `onRefresh` with `SKIP_DESCENDANTS` codegen, and cached refresh functions. The new `<List>`, `<Switch>` and the demo migration (steps 3 to 7) remain |
 | 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | **Implemented** in `src/common/slot-list/` (`SlotList` + `OrderedSlotList`, shipped as `releaseDelayMs`); adopted in `asteroids` and `scramble`, with a demo in `src/demos/ordered-list/`. Only the `<List>` projection (section 5.3) remains, pending 004 |
 | 006 | [`<List>` patterns guide](./006-list-patterns.md) | Usage guide for 004 and 005 |
 

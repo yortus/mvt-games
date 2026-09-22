@@ -13,11 +13,12 @@
 complete: every game, the cabinet and the shared views in `src/common/` use
 `onRefresh`, and Cactii's hand-forwarded `update` chain is now `onUpdate`. Each
 game session runs `updateScene` over its own view, and `main.ts` runs one
-`refreshScene` over the whole stage per tick, paused or not. The demos
-(`src/demos/`, including the `pixi-jsx` runtime) still use `onRender` and
-`StatefulPixiView`; the JSX runtime moves as step 1 of
-[the `<List>` proposal](./004-list-proposal.md). The migration work still to do
-is listed in section 13.1; the other section 13 follow-ups are untouched. The
+`refreshScene` over the whole stage per tick, paused or not. The demos, their
+host and the `pixi-jsx` runtime follow the same wiring (done as steps 1 and 2 of
+[the `<List>` proposal](./004-list-proposal.md)), and `StatefulPixiView` has
+been deleted. Only `src/playground/` still uses `onRender`. The migration work
+still to do is listed in section 13.1; the other section 13 follow-ups are
+untouched. The
 plugin folder is now `src/pixi-mvt`. What shipped is described in
 [the design notes](./002-mvt-plugin-design-notes.md); the benchmark numbers there
 are freshly measured and supersede the design-time baselines in section 10.
@@ -700,6 +701,8 @@ The remaining items, roughly in priority order:
      hand-forwarding example at its "How to Implement It" section)
    - `docs/building-with-mvt/quickstart.md` and
      `iterating-with-confidence/testing-views.md`
+   - `docs/building-with-mvt/animating-transitions/complex-sequences.md`, whose
+     example still returns `StatefulPixiView`, a type that no longer exists
 
    Open question: should `docs/architecture/` (the language-neutral spec) and
    rule 2 in `AGENTS.md` keep describing presentation state as "the view gains
@@ -707,29 +710,25 @@ The remaining items, roughly in priority order:
    `onUpdate` is how this repo does it with Pixi. The probable answer is to
    keep the spec neutral and describe `onUpdate` in the Pixi-specific guide
    only. Decide that before rewriting anything.
-3. **Migrate the demo host and non-JSX demos.** `src/demos/main.ts` drives
-   `session.update` only and relies on `onRender` for refresh. Give it the same
-   wiring as `src/main.ts`, then move:
-   - `demos/boids/` (3 views)
-   - `demos/ordered-list/ordered-list-view.ts` (`StatefulPixiView` becomes
-     `onUpdate`)
-
-   Mixing is safe in the meantime: `onRender` still fires during rendering, so
-   nothing breaks while the two schemes coexist.
-4. **The JSX demos wait for 004.** `pixi-jsx` (`jsx-runtime.ts`, `list.ts`),
-   `demos/tsx-pixi/demo-view.tsx` and `demos/list-swap/` move with step 1 of
-   [the `<List>` proposal](./004-list-proposal.md). `list-swap/list.ts` is a
-   local copy that step 7 of that proposal deletes. Its `onRender` also relies
-   on running before Pixi rebuilds draw instructions, so do not rename it on
-   its own.
-5. **Retire `StatefulPixiView`** from `src/common/` once items 3 and 4 have
-   removed its last users (`demos/ordered-list/`, `demos/list-swap/`).
+3. ~~**Migrate the demo host and non-JSX demos.**~~ Done. `src/demos/main.ts`
+   has the same wiring as `src/main.ts`, and every demo entry runs
+   `updateScene` over its view.
+4. ~~**The JSX demos wait for 004.**~~ Done with steps 1 and 2 of
+   [the `<List>` proposal](./004-list-proposal.md). `list-swap/list.ts` (the
+   local copy that 004's step 7 deletes) moved to `onRefresh` at the same time.
+   It had to: once its items refresh in the pass, a list still shrinking in
+   `onRender` would let them read past the end for a frame. Check it by eye
+   along with item 1: `list-swap`, `tsx-pixi` (including its debug bounding
+   box, which now reads bounds during the refresh pass rather than at render),
+   `ordered-list` and `boids`.
+5. ~~**Retire `StatefulPixiView`.**~~ Done; `src/common/stateful-pixi-view.ts`
+   is deleted.
 6. **Migrate the playground.** `src/playground/presets.ts` has 6
    `view.onRender = refresh` sites in preset source. Whatever runs presets in
    `src/playground/sandbox/` then needs to drive `refreshScene` too.
-   Low priority, and separate from the rest.
-7. **Update 004's outdated wording.** Section 7.5 still says "Until `onUpdate`
-   lands", but it has landed.
+   Low priority, and separate from the rest. This is now the last `onRender`
+   user in the repo.
+7. ~~**Update 004's outdated wording.**~~ Done.
 
 ---
 

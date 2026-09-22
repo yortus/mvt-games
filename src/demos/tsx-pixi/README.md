@@ -65,7 +65,10 @@ the getter is polled, the result is compared against the previous value with
 strict equality, and the property is only written on change.
 
 **No reconciliation.** Unlike React or similar frameworks, the JSX here is evaluated only once to build the real Pixi scene graph. There is no virtual DOM, no diffing pass, and
-no re-rendering. Dynamic updates happen in-place through `onRender` callbacks.
+no re-rendering. Dynamic updates happen in-place through each element's
+`onRefresh` hook, driven by `refreshScene` from `src/pixi-mvt/`. An element
+with a `visible` binding evaluates it first and, while hidden, skips its other
+bindings and its whole subtree.
 
 **No reactive library.** The entire mechanism is plain polling. There are no
 signals, observables, effects, or subscriptions. Change detection is a simple

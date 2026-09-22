@@ -1,4 +1,5 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
+import { refreshScene } from '../pixi-mvt';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
 import { createListSwapEntry } from './list-swap';
@@ -128,6 +129,7 @@ async function generateThumbnails(): Promise<void> {
                 session.update(step);
                 remaining -= step;
             }
+            refreshScene(tempStage);
 
             const renderTexture = RenderTexture.create({
                 width: entry.screenWidth,
@@ -190,8 +192,11 @@ async function launchDemo(index: number): Promise<void> {
     await entry.load?.();
     const session = entry.start(app.stage);
 
+    // Sessions advance their own models and views (`onUpdate`); one refresh
+    // pass then syncs the whole stage.
     app.ticker.add((ticker) => {
         session.update(ticker.deltaMS);
+        refreshScene(app.stage);
     });
 
     activeApp = app;

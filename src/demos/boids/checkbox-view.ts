@@ -42,7 +42,7 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
         bindings.onToggled?.(!bindings.getIsChecked());
     });
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     // ---- Refresh -----------------------------------------------------------

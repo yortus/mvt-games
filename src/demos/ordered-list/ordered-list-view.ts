@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { type StatefulPixiView, type OrderedSlot } from '#common';
+import { type OrderedSlot } from '#common';
 import { type OrderedListDemoModel, type Card } from './ordered-list-model';
 
 // ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ import { type OrderedListDemoModel, type Card } from './ordered-list-model';
  * reachable by storage index while it lingers pending release, so it fades and
  * floats out as its former neighbours close the gap.
  */
-export function createOrderedListView(model: OrderedListDemoModel): StatefulPixiView {
+export function createOrderedListView(model: OrderedListDemoModel): Container {
     const view = new Container();
 
     const title = new Text({ text: 'OrderedSlotList', style: TITLE_STYLE });
@@ -35,7 +35,8 @@ export function createOrderedListView(model: OrderedListDemoModel): StatefulPixi
         sprites.push(sprite);
     }
 
-    return Object.assign(view, { update });
+    view.onUpdate = update;
+    return view;
 
     function update(deltaMs: number): void {
         caption.text = model.caption;

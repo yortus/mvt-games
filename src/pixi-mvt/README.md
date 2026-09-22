@@ -5,9 +5,9 @@
 > [the design notes](../../proposals/002-mvt-plugin-design-notes.md) for how it works and why it is built this
 > way.
 
-**Status: spike.** Used by its demo, every game, the cabinet and the shared
-views in `src/common/`. The other demos and the `pixi-jsx` runtime still refresh
-through Pixi's `onRender`.
+**Status: spike.** Used by its demo, every game and demo, the cabinet, the
+shared views in `src/common/`, and the `pixi-jsx` runtime. Only the playground
+still refreshes through Pixi's `onRender`.
 
 ---
 

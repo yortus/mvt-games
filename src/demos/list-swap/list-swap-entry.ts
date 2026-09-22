@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createSwapModel } from './swap-model';
 import { createSwapView } from './swap-view';
@@ -42,7 +43,7 @@ export function createListSwapEntry(): DemoEntry {
             return {
                 update(deltaMs: number): void {
                     model.update(deltaMs);
-                    view.update(deltaMs);
+                    updateScene(view, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(view);

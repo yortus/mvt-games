@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
+import { refreshScene } from '../pixi-mvt';
 import { List } from './list';
 
 // ---------------------------------------------------------------------------
@@ -27,7 +28,7 @@ function setup(count: number) {
         items,
         resetBuilds: () => { builds = 0; },
         builds: () => builds,
-        tick: () => list.onRender?.(undefined as never),
+        tick: () => refreshScene(list),
         // Each item is wrapped in a slot container.
         labels: () => list.children.map((slot) => slot.children[0]?.label),
     };
@@ -162,11 +163,11 @@ describe('List', () => {
         builds = 0;
 
         items.push({ id: 1 });
-        list.onRender?.(undefined as never);
+        refreshScene(list);
         expect(builds).toBe(0);
 
         version = 1;
-        list.onRender?.(undefined as never);
+        refreshScene(list);
         expect(builds).toBe(1);
     });
 });

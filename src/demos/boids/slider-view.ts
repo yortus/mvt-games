@@ -62,7 +62,7 @@ export function createSliderView(bindings: SliderViewBindings): Container {
     hitArea.on('pointerup', onPointerUp);
     hitArea.on('pointerupoutside', onPointerUp);
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     // ---- Refresh -----------------------------------------------------------

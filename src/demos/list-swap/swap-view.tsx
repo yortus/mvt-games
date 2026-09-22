@@ -1,7 +1,6 @@
 /** @jsxImportSource #pixi-jsx */
 
 import type { Container, Graphics } from 'pixi.js';
-import type { StatefulPixiView } from '#common';
 import type { SwapModel } from './swap-model';
 import { createSwapViewModel, type SwapViewModel } from './swap-view-model';
 import { List } from './list';
@@ -10,7 +9,7 @@ import { List } from './list';
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createSwapView(model: SwapModel): StatefulPixiView {
+export function createSwapView(model: SwapModel): Container {
     const slotKeyed = createSwapViewModel({
         getTileCount: () => model.tileCount,
         getTileId: (index) => model.getTile(index).id,
@@ -39,7 +38,8 @@ export function createSwapView(model: SwapModel): StatefulPixiView {
         </container>
     );
 
-    return Object.assign(view, { update });
+    view.onUpdate = update;
+    return view;
 
     function update(deltaMs: number): void {
         slotKeyed.update(deltaMs);

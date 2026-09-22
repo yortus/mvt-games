@@ -76,7 +76,9 @@ export function createDemoView(bindings: DemoViewBindings): Container {
             {/* ---- Debug bounding box around player (uses ref) ---- */}
             <graphics
                 ref={(g) => {
-                    g.onRender = () => {
+                    // Refreshed after the player container, which is earlier
+                    // in the tree, so the bounds are this frame's.
+                    g.onRefresh = () => {
                         g.clear();
                         if (!playerRef) return;
                         const b = playerRef.getBounds();

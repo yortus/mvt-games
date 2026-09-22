@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
+import { refreshScene } from '../../pixi-mvt';
 import { List } from './list';
 
 // ---------------------------------------------------------------------------
@@ -20,8 +21,8 @@ function setup() {
         },
     });
 
-    /** Drive the list the way Pixi's render pass would. */
-    const tick = (): void => list.onRender?.(undefined as never);
+    /** Drive the list the way the demo host's refresh pass does. */
+    const tick = (): void => refreshScene(list);
 
     return {
         list,

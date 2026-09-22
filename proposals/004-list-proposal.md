@@ -6,10 +6,13 @@
 > design depends on, the hard dependency on the `SKIP_DESCENDANTS` sentinel, and
 > a migration path.
 
-**Status:** proposed, not implemented. A working reference implementation of
-`<List>` runs in [`src/demos/list-swap/`](../src/demos/list-swap/README.md). One
-item here is already done: the cursor-aliasing defect described in section 2.2
-has been fixed in the shipping `<List>` independently of this proposal.
+**Status:** partly implemented. Migration steps 0 to 2 (section 9) are done:
+the cursor-aliasing defect in section 2.2 is fixed, the JSX runtime and the
+shipping `<List>` refresh through `onRefresh` with the section 7.6 codegen, and
+compiled refresh functions are cached (section 7.1). The new `<List>` itself,
+`<Switch>`, and the demo migration (steps 3 to 7) are still to do. A working
+reference implementation of the new `<List>` runs in
+[`src/demos/list-swap/`](../src/demos/list-swap/README.md).
 
 **Related:** [Patterns guide](./006-list-patterns.md) - how to apply this to common
 list shapes. [the `SlotList` proposal](./005-slot-list-proposal.md) - the
@@ -588,6 +591,16 @@ arrays.
 This matters far more once `<List>` builds slots lazily, because construction
 moves out of startup and into gameplay.
 
+**Implemented, and measured.** The cache is `compiledRefreshCache` in
+`jsx-runtime.ts`, and each element now allocates one closure. The saving is not
+where this section predicted. V8 already caches compilation by source string,
+so building an element only got about 11% cheaper (1.51 to 1.34 µs for three
+bindings). The real win is at refresh time: every element with a given shape
+now shares one function that warms up and gets optimised once, rather than
+each new element starting cold. With 1000 items, replacing 100 of them every
+frame, a frame dropped from 412 to 257 µs (about 38%). With no churn the two
+are close (86 versus 79 µs).
+
 While in there: `setupDynamicRefresh` allocates two closures per element, the
 `refresh` wrapper and the `onRender` arrow. Assigning
 `el.onRender = () => fn(el, getters, lastValues)` directly costs one.
@@ -650,10 +663,11 @@ call `update(deltaMs)`. Today that is worked around by hoisting such views out
 of the tree and forwarding ticks by hand. Since `<List>` builds slots during
 gameplay, there is no construction site to hoist from.
 
-Until `onUpdate` lands, keep per-item presentation state in a view model owned
-by the view that *contains* the list, as `src/demos/list-swap/` does and
-`cactii/views/board-view/` already does. That is the better factoring anyway,
-because the state is then testable without Pixi.
+`onUpdate` has since landed, and `StatefulPixiView` is gone, so an item view
+can now carry its own presentation state inside a `<List>`. Keeping per-item
+presentation state in a view model owned by the view that *contains* the list,
+as `src/demos/list-swap/` and `cactii/views/board-view/` do, is still often
+the better factoring, because the state is then testable without Pixi.
 
 ### 7.6 Codegen: `visible` first, then `SKIP_DESCENDANTS`
 
@@ -679,6 +693,11 @@ binding generates no such branch.
 
 This is the one runtime change the sentinel asks of the JSX codegen, and it
 costs a few lines in `buildRefreshFn` where the binding order is already fixed.
+
+**Implemented.** `jsx()` moves a `visible` getter to the front of the cheap
+bindings, whatever order the props were written in, and the compiled body
+returns the sentinel (passed in as a parameter) when it is false. Covered by
+`jsx-runtime.test.ts`.
 
 ---
 
@@ -720,11 +739,11 @@ the honest comparison and where the work moved from.
 0. **Already landed.** The cursor-aliasing defect in section 2.2 is fixed and
    covered by [`list.test.ts`](../src/pixi-jsx/list.test.ts). That fix stands on its own and
    is independent of whether this proposal is adopted.
-1. **Land `onRefresh` with `SKIP_DESCENDANTS`** in the plugin rework, and move
-   the JSX runtime's generated refresh from `onRender` to `onRefresh`. This is
-   a hard dependency (section 7.5), so nothing below can ship without it.
-2. Land section 7.1 next. It is independent, it is a clear win, and it de-risks
-   slot construction during gameplay.
+1. **Done.** ~~Land `onRefresh` with `SKIP_DESCENDANTS`~~ in the plugin rework,
+   and move the JSX runtime's generated refresh from `onRender` to
+   `onRefresh`, with the section 7.6 codegen. The shipping `<List>`, the demo
+   host (`src/demos/main.ts`) and every demo moved with it.
+2. **Done.** ~~Land section 7.1 next.~~ Measured results are in that section.
 3. Add `<Switch>` to `src/pixi-jsx/`. Purely additive.
 4. Replace `list.ts` with the section 4.3 implementation and update the barrel.
    `ListProps` changes shape, so this is a breaking change to the module's
