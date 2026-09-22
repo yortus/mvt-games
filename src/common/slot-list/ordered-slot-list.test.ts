@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createOrderedSlotList } from './ordered-slot-list';
+import { createOrderedSlotList, type OrderedSlot } from './ordered-slot-list';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -144,6 +144,75 @@ describe('createOrderedSlotList', () => {
             const a = list.append(1);
             list.remove(a);
             list.remove(a);
+            expect(list.liveCount).toBe(0);
+        });
+    });
+
+    describe('forEachLive', () => {
+        it('visits each live item in ordinal order', () => {
+            const list = createOrderedSlotList<string>();
+            list.append('a');
+            list.append('b');
+            list.append('c');
+            list.move(2, 0); // order becomes c, a, b
+
+            const seen: string[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual(['c', 'a', 'b']);
+        });
+
+        it('skips pending-release slots', () => {
+            const list = createOrderedSlotList<string>({ releaseDelayMs: 100 });
+            const a = list.append('a');
+            const b = list.append('b');
+            list.append('c');
+
+            list.remove(a, 0); // immediate -> freed
+            list.remove(b); // pending release -> detached from the order
+
+            const seen: string[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual(['c']);
+        });
+
+        it('passes the slot as the second argument', () => {
+            const list = createOrderedSlotList<number>();
+            const only = list.append(7);
+
+            let received: OrderedSlot<number> | undefined;
+            list.forEachLive((_value, slot) => {
+                received = slot;
+            });
+            expect(received).toBe(only);
+        });
+
+        it('allows removing the visited slot during iteration', () => {
+            const list = createOrderedSlotList<number>();
+            list.append(1);
+            list.append(2);
+            list.append(3);
+
+            list.forEachLive((value, slot) => {
+                if (value === 2) list.remove(slot);
+            });
+
+            const seen: number[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual([1, 3]);
+        });
+
+        it('visits every survivor when removing each visited slot', () => {
+            const list = createOrderedSlotList<number>({ releaseDelayMs: 100 });
+            list.append(1);
+            list.append(2);
+            list.append(3);
+
+            const seen: number[] = [];
+            list.forEachLive((value, slot) => {
+                seen.push(value);
+                list.remove(slot);
+            });
+            expect(seen).toEqual([1, 2, 3]);
             expect(list.liveCount).toBe(0);
         });
     });

@@ -33,6 +33,14 @@ export interface SlotList<T> {
     at(index: number): Slot<T> | undefined;
 
     /**
+     * Calls `visit` for each live item in storage-index order, skipping empty
+     * and pending-release slots. Safe to `remove` the visited slot during the
+     * walk; inserting during the walk is not. Pass a named callback to avoid a
+     * per-frame closure allocation.
+     */
+    forEachLive(visit: (value: T, slot: Slot<T>) => void): void;
+
+    /**
      * Places a value in an available slot and returns it. The list chooses the
      * slot (lowest available index). Throws when `isFull`; check it first.
      */
@@ -95,6 +103,7 @@ export interface SlotListOptions<T> {
  * with `n = slotCount` and `p` the number of slots pending release:
  *
  *   slotCount, liveCount, isFull, at   O(1)
+ *   forEachLive                        O(n)
  *   insert                             O(n) worst case, amortised ~O(1) via a lowest-free-index hint
  *   remove                             O(log p) delayed, amortised O(1) immediate
  *   clear                              O(n)
@@ -127,6 +136,13 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
         at(index) {
             if (index < 0 || index >= slotCount) return undefined;
             return slots[index];
+        },
+
+        forEachLive(visit) {
+            for (let i = 0; i < slotCount; i++) {
+                const slot = slots[i];
+                if (slot !== undefined && slot.isLive) visit(slot.value, slot);
+            }
         },
 
         insert(value) {

@@ -247,9 +247,14 @@ time however you like, then render it.
 
 ## Rules of the road
 
-**Ordering.** Every container runs before any of its descendants. Sibling order
-is deliberately unspecified: a view whose refresh method depends on a sibling's
-is reading another view's output rather than reading state.
+**Ordering.** Every container runs before any of its descendants, so a parent
+may create or configure descendants before their methods run. Sibling order is
+deliberately unspecified, and the parent-first guarantee is structural, not a
+data-flow promise: each method should be a pure state-to-output projection,
+correct regardless of what siblings or descendants did this pass. A view whose
+method depends on another view's output is reading a view instead of reading
+state - and any data-dependent ordering (aggregating over already-advanced
+children) belongs in the model's advance-then-orchestrate, not a view pass.
 
 **Gating.** Neither pass gates on `visible`. Every container's method runs every
 frame, visible or not: `onUpdate` because presentation state that stops

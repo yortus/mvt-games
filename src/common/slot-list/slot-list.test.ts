@@ -289,6 +289,59 @@ describe('createSlotList', () => {
         });
     });
 
+    describe('forEachLive', () => {
+        it('visits each live item in storage-index order', () => {
+            const list = createSlotList<string>();
+            list.insert('a');
+            list.insert('b');
+            list.insert('c');
+
+            const seen: string[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual(['a', 'b', 'c']);
+        });
+
+        it('skips empty and pending-release slots', () => {
+            const list = createSlotList<string>({ releaseDelayMs: 100 });
+            const a = list.insert('a');
+            const b = list.insert('b');
+            list.insert('c');
+
+            list.remove(a, 0); // immediate -> empty slot
+            list.remove(b); // pending release -> present but not live
+
+            const seen: string[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual(['c']);
+        });
+
+        it('passes the slot as the second argument', () => {
+            const list = createSlotList<number>();
+            const only = list.insert(7);
+
+            let received: Slot<number> | undefined;
+            list.forEachLive((_value, slot) => {
+                received = slot;
+            });
+            expect(received).toBe(only);
+        });
+
+        it('allows removing the visited slot during iteration', () => {
+            const list = createSlotList<number>();
+            list.insert(1);
+            list.insert(2);
+            list.insert(3);
+
+            list.forEachLive((value, slot) => {
+                if (value === 2) list.remove(slot);
+            });
+
+            const seen: number[] = [];
+            list.forEachLive((value) => seen.push(value));
+            expect(seen).toEqual([1, 3]);
+        });
+    });
+
     describe('forgotten-update guard', () => {
         it.runIf(import.meta.env.DEV)('throws when slots pile up pending release before update is called', () => {
             const list = createSlotList<number>({ releaseDelayMs: 100 });

@@ -32,6 +32,14 @@ export interface OrderedSlotList<T> {
     /** The live slot at a logical position, or undefined outside `[0, liveCount)`. */
     atOrdinal(ordinal: number): OrderedSlot<T> | undefined;
 
+    /**
+     * Calls `visit` for each live item in ordinal order, skipping pending-release
+     * slots (which are already detached from the order). Safe to `remove` the
+     * visited slot during the walk; inserting during the walk is not. Pass a
+     * named callback to avoid a per-frame closure allocation.
+     */
+    forEachLive(visit: (value: T, slot: OrderedSlot<T>) => void): void;
+
     /** Adds a value at the end of the order (ordinal `liveCount`). Throws when `isFull`. */
     append(value: T): OrderedSlot<T>;
 
@@ -73,6 +81,7 @@ export interface OrderedSlot<T> extends Slot<T> {
  * writing each slot's `ordinal` field as the order changes. With `n = liveCount`:
  *
  *   slotCount, liveCount, isFull, atSlotIndex, atOrdinal   O(1)
+ *   forEachLive                                            O(n)
  *   append                                                 O(1) ordering (plus insert)
  *   insertAt, move, remove                                 O(n)
  *   sort                                                   O(n log n) + O(n)
@@ -97,6 +106,17 @@ export function createOrderedSlotList<T>(options: SlotListOptions<T> = {}): Orde
         atOrdinal(ordinal) {
             if (ordinal < 0 || ordinal >= order.length) return undefined;
             return order[ordinal];
+        },
+
+        forEachLive(visit) {
+            // `order` compacts when the visited slot is removed, so re-read order[i]
+            // and only advance when it still holds the record we just visited.
+            let i = 0;
+            while (i < order.length) {
+                const record = order[i];
+                visit(record.value, record);
+                if (order[i] === record) i += 1;
+            }
         },
 
         append(value) {
