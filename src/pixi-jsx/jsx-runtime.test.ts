@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene } from '../pixi-mvt';
+import { refreshScene, updateScene } from '../pixi-mvt';
 import { jsx } from './jsx-runtime';
 
 // ---------------------------------------------------------------------------
@@ -123,6 +123,22 @@ describe('jsx runtime', () => {
             expect(parent.visible).toBe(true);
             expect(child.x).toBe(7);
         });
+    });
+
+    it('installs an onUpdate prop as the element\'s update hook, not a binding', () => {
+        const deltas: number[] = [];
+        const el = jsx('container', {
+            onUpdate: (deltaMs: number) => {
+                deltas.push(deltaMs);
+            },
+        });
+
+        refreshScene(el);
+        expect(deltas).toEqual([]);
+
+        updateScene(el, 16);
+        updateScene(el, 17);
+        expect(deltas).toEqual([16, 17]);
     });
 
     it('calls ref with the constructed element', () => {

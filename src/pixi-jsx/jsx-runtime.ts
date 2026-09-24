@@ -18,7 +18,7 @@
  */
 
 import { Container, type FederatedPointerEvent, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { SKIP_DESCENDANTS } from '../pixi-mvt';
+import { SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,6 +50,7 @@ interface BaseProps extends EventProps {
     zIndex?: MaybeGetter<number>;
     sortableChildren?: boolean;
     label?: string;
+    onUpdate?: UpdateMethod;
     children?: PixiNode | PixiChildren;
 }
 
@@ -182,6 +183,9 @@ function applyProp(el: Container, key: string, value: unknown): void {
         case 'label':
             el.label = value as string;
             break;
+        case 'onUpdate':
+            el.onUpdate = value as UpdateMethod | undefined;
+            break;
         default:
             // Fallback: direct property set (unsafe but extensible)
             (el as unknown as Record<string, unknown>)[key] = value;
@@ -189,7 +193,7 @@ function applyProp(el: Container, key: string, value: unknown): void {
 }
 
 /** Props that are functions but should NOT be treated as dynamic getters. */
-const NON_GETTER_PROPS = new Set(['ref']);
+const NON_GETTER_PROPS = new Set(['ref', 'onUpdate']);
 
 /** Props that are Pixi event handlers wired once at construction time. */
 const EVENT_PROP_MAP: Record<string, string> = {
