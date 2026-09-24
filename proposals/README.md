@@ -15,6 +15,8 @@ Nothing here is a description of how the repo currently works. For that, see
 | 004 | [`<List>` proposal](./004-list-proposal.md) | **Implemented** in `src/pixi-jsx/` (`list.ts`, `switch.ts`, and runtime sections 7.1 to 7.6); both JSX demos migrated. Two small differences from the section 4.3 reference code are noted at the end of that section; a single `items` prop replaced `length`/`item` (section 4.7); and construction is inert (section 7.7). `<Switch>` shipped as `<Switch>`/`<Match>` (section 5.4). Only step 8 (folding 006 into `docs/`) remains, deferred until the JSX runtime graduates. Parked ideas and settled questions are in section 11 |
 | 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | **Implemented** in `src/common/slot-list/` (`SlotList` + `OrderedSlotList`, shipped as `releaseDelayMs`, with indexed access through array-shaped `slots` and `ordered` properties); adopted in `asteroids` and `scramble`, with a demo in `src/demos/ordered-list/`. The `<List>` projection (section 5.3) is `<List items={list.slots}>`, covered by tests in `src/pixi-jsx/list.test.ts`; no game uses it, because the games are not written in JSX |
 | 006 | [`<List>` patterns guide](./006-list-patterns.md) | Usage guide for 004 and 005 |
+| 007 | [Authoring-convention bridge](./007-authoring-convention-bridge.md) | Proposed. A strongly-typed key-rename transform between imperative `bindings` views and JSX `props` views, so each is authored in its own idiom and consumed under the other |
+| 008 | [`Watch()` fluent builder](./008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection (`watch`), memoised derivation (`derive`), reactions (`ReactionBuilder`) and uniform lists. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
 | 010 | [Performance docs proposal](./010-performance-docs-proposal.md) | Proposed. Measurements done (polling costs, JSX runtime against hand-written hooks, polling against push, benchmarking pitfalls); the docs changes they support are not |
 
 ## Reading order
@@ -31,6 +33,11 @@ shapes each one wants.
 
 **002** and **003** are supporting material for 001 and can be skipped unless
 you are weighing whether the plugin is worth having.
+
+**007** and **008** are independent of the rest. 007 builds on 001 (uniform
+`onUpdate`/`onRefresh` hooks leave accessor naming as the only difference
+between the two view conventions) and touches the JSX runtime from 004. 008
+concerns the `watch()` change-detection helper in `src/common/`.
 
 **010** stands alone. Read its section 4 before running or trusting any
 benchmark in this repo.
@@ -50,6 +57,9 @@ is in progress.
 | `range()` helper, accessor lint rule, `<List>` wrapper merge, typed `matchOn<T>()` | 004 section 11, items 1-4 | Parked, each with a trigger |
 | Change-gate for idle subtrees (`refreshWhen`) | 010 section 8, item 5 | Parked, unmeasured |
 | Browsers, rendering cost, push memory cost, CI benchmarking | 010 section 8, items 1-4 | Open questions |
+| `Watch()` builder: six open design questions, docs to write, promotion and migration of ~38 `watch()` call sites | 008, "Handover: loose ends" | Open; decisions already made are listed there and should not be reopened |
+| 008's spike files (`watch-builder.spike.ts` and its test) are parked in `proposals/`, outside `tsconfig.json`'s `include`, so `npm run build` does not type-check them | Here | When work on 008 resumes, move both files under `src/` (e.g. `src/common/`) first, then fix 008's links |
+| 007 section 5's example uses the old `<List of={...} to={...}>` API | Here | Update to `<List items={model.ghosts}>{(ghost, i) => ...}</List>` (004 section 4.7) |
 | Duplicate task folder `tasks/active/002-documentation-overhaul/` | Here | Delete: the task is complete and archived in `tasks/archive/` |
 
 Settled questions that should not be reopened without new information are in
