@@ -12,14 +12,14 @@
 // ---------------------------------------------------------------------------
 
 export interface Tile {
-    /** Dense: ids run 0..tileCount-1 for the life of the list. */
+    /** Dense: ids run 0..tiles.length-1 for the life of the list. */
     readonly id: number;
     readonly label: string;
 }
 
 export interface SwapModel {
-    readonly tileCount: number;
-    getTile(index: number): Tile;
+    /** The tiles in their current order. The same array for the model's lifetime. */
+    readonly tiles: readonly Tile[];
     swap(a: number, b: number): void;
     /** Swap the tile at `index` with the one to its right, wrapping at the end. */
     swapWithNext(index: number): void;
@@ -50,16 +50,11 @@ export function createSwapModel(options: SwapModelOptions): SwapModel {
     let randomState = 0x2f6e2b1;
 
     return {
-        get tileCount() { return tiles.length; },
-        getTile,
+        tiles,
         swap,
         swapWithNext,
         update,
     };
-
-    function getTile(index: number): Tile {
-        return tiles[index];
-    }
 
     function swap(a: number, b: number): void {
         const tile = tiles[a];

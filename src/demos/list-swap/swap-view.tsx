@@ -3,7 +3,7 @@
 import type { Container, Graphics } from 'pixi.js';
 import type { SwapModel } from './swap-model';
 import { createSwapViewModel, type SwapViewModel } from './swap-view-model';
-import { List } from './list';
+import { List } from '#pixi-jsx';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -11,15 +11,15 @@ import { List } from './list';
 
 export function createSwapView(model: SwapModel): Container {
     const slotKeyed = createSwapViewModel({
-        getTileCount: () => model.tileCount,
-        getTileId: (index) => model.getTile(index).id,
+        getTileCount: () => model.tiles.length,
+        getTileId: (index) => model.tiles[index].id,
         keyBy: 'slot',
         pitchPx: TILE_PITCH_PX,
     });
 
     const itemKeyed = createSwapViewModel({
-        getTileCount: () => model.tileCount,
-        getTileId: (index) => model.getTile(index).id,
+        getTileCount: () => model.tiles.length,
+        getTileId: (index) => model.tiles[index].id,
         keyBy: 'item',
         pitchPx: TILE_PITCH_PX,
     });
@@ -59,8 +59,8 @@ export function createSwapView(model: SwapModel): Container {
 function tileRow(model: SwapModel, vm: SwapViewModel, y: number): Container {
     return (
         <container x={MARGIN_PX} y={y}>
-            <List length={() => model.tileCount}>
-                {(index) => (
+            <List items={model.tiles}>
+                {(tile, index) => (
                     <container
                         x={() => vm.getX(index) + HALF_TILE_PX}
                         y={HALF_TILE_PX}
@@ -70,7 +70,7 @@ function tileRow(model: SwapModel, vm: SwapViewModel, y: number): Container {
                         onPointerTap={() => model.swapWithNext(index)}
                     >
                         <graphics ref={drawTileFace} />
-                        <text text={() => model.getTile(index).label} x={17} y={10} style={TILE_STYLE} />
+                        <text text={() => tile().label} x={17} y={10} style={TILE_STYLE} />
                     </container>
                 )}
             </List>

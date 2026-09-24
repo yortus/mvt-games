@@ -9,9 +9,9 @@ describe('createSlotList', () => {
     describe('initial state', () => {
         it('starts empty', () => {
             const list = createSlotList<number>();
-            expect(list.slotCount).toBe(0);
+            expect(list.slots.length).toBe(0);
             expect(list.liveCount).toBe(0);
-            expect(list.at(0)).toBeUndefined();
+            expect(list.slots.at(0)).toBeUndefined();
         });
 
         it('is never full when unbounded', () => {
@@ -33,9 +33,9 @@ describe('createSlotList', () => {
             expect(slot.isLive).toBe(true);
             expect(slot.index).toBe(0);
             expect(slot.value).toBe('a');
-            expect(list.slotCount).toBe(1);
+            expect(list.slots.length).toBe(1);
             expect(list.liveCount).toBe(1);
-            expect(list.at(0)).toBe(slot);
+            expect(list.slots.at(0)).toBe(slot);
         });
 
         it('assigns ascending indices while growing', () => {
@@ -43,7 +43,7 @@ describe('createSlotList', () => {
             expect(list.insert(10).index).toBe(0);
             expect(list.insert(20).index).toBe(1);
             expect(list.insert(30).index).toBe(2);
-            expect(list.slotCount).toBe(3);
+            expect(list.slots.length).toBe(3);
             expect(list.liveCount).toBe(3);
         });
 
@@ -57,7 +57,7 @@ describe('createSlotList', () => {
             const d = list.insert(40);
 
             expect(d.index).toBe(1);
-            expect(list.slotCount).toBe(3);
+            expect(list.slots.length).toBe(3);
         });
 
         it('keeps filling the lowest available index across scattered removals', () => {
@@ -73,7 +73,7 @@ describe('createSlotList', () => {
             expect(list.insert(10).index).toBe(0); // lowest hole first
             expect(list.insert(11).index).toBe(2); // next hole
             expect(list.insert(12).index).toBe(4); // then append
-            expect(list.slotCount).toBe(5);
+            expect(list.slots.length).toBe(5);
         });
 
         it('throws when full and reports isFull first', () => {
@@ -87,7 +87,7 @@ describe('createSlotList', () => {
         it('grows on demand past a would-be bound when unbounded', () => {
             const list = createSlotList<number>();
             for (let i = 0; i < 100; i++) list.insert(i);
-            expect(list.slotCount).toBe(100);
+            expect(list.slots.length).toBe(100);
             expect(list.isFull).toBe(false);
         });
     });
@@ -101,8 +101,8 @@ describe('createSlotList', () => {
 
             expect(slot.isLive).toBe(false);
             expect(list.liveCount).toBe(0);
-            expect(list.at(0)).toBeUndefined();
-            expect(list.slotCount).toBe(0);
+            expect(list.slots.at(0)).toBeUndefined();
+            expect(list.slots.length).toBe(0);
         });
 
         it('trims the tail and skips interior holes', () => {
@@ -112,10 +112,10 @@ describe('createSlotList', () => {
             const c = list.insert(3);
 
             list.remove(b); // interior hole at index 1
-            expect(list.slotCount).toBe(3);
+            expect(list.slots.length).toBe(3);
 
             list.remove(c); // tail released, then trim walks back across the index-1 hole
-            expect(list.slotCount).toBe(1);
+            expect(list.slots.length).toBe(1);
 
             expect(a.isLive).toBe(true);
         });
@@ -129,7 +129,7 @@ describe('createSlotList', () => {
             list.remove(c);
             list.remove(b);
 
-            expect(list.slotCount).toBe(1);
+            expect(list.slots.length).toBe(1);
         });
 
         it('is a no-op on a second remove', () => {
@@ -149,14 +149,14 @@ describe('createSlotList', () => {
             list.remove(slot);
             expect(slot.isLive).toBe(false);
             expect(list.liveCount).toBe(0);
-            expect(list.at(0)).toBe(slot); // still readable while pending release
+            expect(list.slots.at(0)).toBe(slot); // still readable while pending release
 
             list.update(50);
-            expect(list.at(0)).toBe(slot);
+            expect(list.slots.at(0)).toBe(slot);
 
             list.update(50);
-            expect(list.at(0)).toBeUndefined();
-            expect(list.slotCount).toBe(0);
+            expect(list.slots.at(0)).toBeUndefined();
+            expect(list.slots.length).toBe(0);
         });
 
         it('does not reuse a slot that is pending release', () => {
@@ -174,7 +174,7 @@ describe('createSlotList', () => {
 
             list.remove(slot, 10);
             list.update(10);
-            expect(list.at(0)).toBeUndefined();
+            expect(list.slots.at(0)).toBeUndefined();
         });
 
         it('releases slots in release-time order regardless of removal order', () => {
@@ -187,11 +187,11 @@ describe('createSlotList', () => {
 
             list.update(150);
             expect(a.isLive).toBe(false);
-            expect(list.at(a.index)).toBe(a); // still pending release
-            expect(list.at(b.index)).toBeUndefined(); // released
+            expect(list.slots.at(a.index)).toBe(a); // still pending release
+            expect(list.slots.at(b.index)).toBeUndefined(); // released
 
             list.update(1000);
-            expect(list.at(a.index)).toBeUndefined();
+            expect(list.slots.at(a.index)).toBeUndefined();
         });
 
         it('supports the born-removed pattern', () => {
@@ -199,9 +199,9 @@ describe('createSlotList', () => {
             const slot = list.insert({ ageMs: 0 });
             list.remove(slot);
 
-            expect(list.at(slot.index)).toBe(slot);
+            expect(list.slots.at(slot.index)).toBe(slot);
             list.update(200);
-            expect(list.at(slot.index)).toBeUndefined();
+            expect(list.slots.at(slot.index)).toBeUndefined();
         });
     });
 
@@ -261,9 +261,9 @@ describe('createSlotList', () => {
 
             list.clear();
 
-            expect(list.slotCount).toBe(0);
+            expect(list.slots.length).toBe(0);
             expect(list.liveCount).toBe(0);
-            expect(list.at(0)).toBeUndefined();
+            expect(list.slots.at(0)).toBeUndefined();
             expect(a.isLive).toBe(false);
         });
 
@@ -387,7 +387,7 @@ describe('createSlotList', () => {
 
             expect(target.index).toBe(0);
             expect(target.isLive).toBe(true);
-            expect(list.at(0)).toBe(target);
+            expect(list.slots.at(0)).toBe(target);
         });
 
         it('reflects liveness on the same wrapper reference after removal', () => {

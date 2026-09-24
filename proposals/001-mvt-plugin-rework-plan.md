@@ -16,8 +16,9 @@ game session runs `updateScene` over its own view, and `main.ts` runs one
 `refreshScene` over the whole stage per tick, paused or not. The demos, their
 host and the `pixi-jsx` runtime follow the same wiring (done as steps 1 and 2 of
 [the `<List>` proposal](./004-list-proposal.md)), and `StatefulPixiView` has
-been deleted. Only `src/playground/` still uses `onRender`. The migration work
-still to do is listed in section 13.1; the other section 13 follow-ups are
+been deleted. The playground has moved too, so nothing in the repo uses
+`onRender` any more, and the `docs/` guide describes the hooks. Section 13.1
+(the migration's loose ends) is complete; the other section 13 follow-ups are
 untouched. The
 plugin folder is now `src/pixi-mvt`. What shipped is described in
 [the design notes](./002-mvt-plugin-design-notes.md); the benchmark numbers there
@@ -663,10 +664,21 @@ Revisit once v1 is complete and has been used:
    container, then after the loop rebuild and dispatch any entry whose epoch
    differs. Costs one integer write per hook per frame in the hot path, so it
    needs measuring against the numbers in section 10.
+
+   **Status (2026-09-24): still open, lower priority.** The two places that
+   build containers mid-pass, `<List>` and `<Switch>` in `src/pixi-jsx/`,
+   call `refreshScene` on what they build, which the plugin permits because
+   it is a different container. So nothing in the repo shows a frame of
+   constructor state today. A generic fix only matters if hand-written views
+   start building children inside their hooks.
 2. ~~**Migrating the 59 `onRender` sites to `onRefresh`**~~. Done for every
    game, the cabinet and `src/common/` (see section 13.1 for what is left).
-3. **`onRender` versus `onRefresh` dispatch cost**, if the benchmark from
-   section 10 shows anything surprising.
+3. ~~**`onRender` versus `onRefresh` dispatch cost**~~. Closed (2026-09-24):
+   nothing in the repo uses `onRender` for refresh any more, so the comparison
+   no longer informs any decision. Per-element pass overhead was measured
+   separately (about 0.5 ns over a plain loop); see
+   [the performance docs proposal](./010-performance-docs-proposal.md)
+   section 5.1.
 
 ### 13.1 Remaining migration work
 
@@ -682,8 +694,8 @@ wiring:
 
 The remaining items, roughly in priority order:
 
-1. **Check the games by eye.** The migration passes type-check, lint and
-   tests, but nobody has played it yet. The most likely places for a
+1. ~~**Check the games by eye.**~~ Done (2026-09-24): every game and demo
+   playtested and working. The list below was what to look for. The most likely places for a
    regression are:
    - Cactii's match effects (shake, flash, fireworks, banner) and dragging a
      piece, because that is where the `onUpdate` chain moved.
@@ -691,9 +703,12 @@ The remaining items, roughly in priority order:
    - The cabinet thumbnails.
    - Any view that only ran while visible under `onRender`. Nothing gates on
      `visible` now, so hidden views refresh too.
-2. **Rewrite the `docs/` guide to match.** The guide still teaches
-   `view.onRender = refresh` and passing `update()` down by hand. That is about
-   26 mentions across 9 pages. The main ones:
+2. ~~**Rewrite the `docs/` guide to match.**~~ Done (2026-09-24). The
+   canonical explanation is a new section in
+   `docs/building-with-mvt/the-game-loop.md` ("In This Project: `onUpdate`,
+   `onRefresh` and the Scene Passes"), linked from the other pages; the
+   glossary, `AGENTS.md`, `llms.txt` and the view skill match it. The pages
+   that were out of date:
    - `docs/ai-agents/skill-mvt-view.md` (its "Using `onRender`" section and
      every example)
    - `docs/building-with-mvt/presenting-the-world/views.md`
@@ -704,30 +719,29 @@ The remaining items, roughly in priority order:
    - `docs/building-with-mvt/animating-transitions/complex-sequences.md`, whose
      example still returns `StatefulPixiView`, a type that no longer exists
 
-   Open question: should `docs/architecture/` (the language-neutral spec) and
-   rule 2 in `AGENTS.md` keep describing presentation state as "the view gains
-   an `update(deltaMs)` method"? That is still true in the abstract, and
-   `onUpdate` is how this repo does it with Pixi. The probable answer is to
-   keep the spec neutral and describe `onUpdate` in the Pixi-specific guide
-   only. Decide that before rewriting anything.
+   **Decided (2026-09-24): the language-neutral spec stays neutral.**
+   `docs/architecture/` describes presentation state as "the view gains an
+   `update(deltaMs)` step" and refresh as "the view reads state each frame",
+   and must not mention `onUpdate`, `onRefresh`, `updateScene`,
+   `refreshScene` or anything else from `src/pixi-mvt/`. Those are this
+   repo's Pixi implementation of the spec, and belong in the Pixi-specific
+   guide (`docs/building-with-mvt/`), the agent skills, and `AGENTS.md`.
 3. ~~**Migrate the demo host and non-JSX demos.**~~ Done. `src/demos/main.ts`
    has the same wiring as `src/main.ts`, and every demo entry runs
    `updateScene` over its view.
 4. ~~**The JSX demos wait for 004.**~~ Done with steps 1 and 2 of
-   [the `<List>` proposal](./004-list-proposal.md). `list-swap/list.ts` (the
-   local copy that 004's step 7 deletes) moved to `onRefresh` at the same time.
-   It had to: once its items refresh in the pass, a list still shrinking in
-   `onRender` would let them read past the end for a frame. Check it by eye
+   [the `<List>` proposal](./004-list-proposal.md). The rest of 004 has since
+   landed too, and `list-swap` now uses the shipping `<List>`. Check it by eye
    along with item 1: `list-swap`, `tsx-pixi` (including its debug bounding
    box, which now reads bounds during the refresh pass rather than at render),
    `ordered-list` and `boids`.
 5. ~~**Retire `StatefulPixiView`.**~~ Done; `src/common/stateful-pixi-view.ts`
    is deleted.
-6. **Migrate the playground.** `src/playground/presets.ts` has 6
-   `view.onRender = refresh` sites in preset source. Whatever runs presets in
-   `src/playground/sandbox/` then needs to drive `refreshScene` too.
-   Low priority, and separate from the rest. This is now the last `onRender`
-   user in the repo.
+6. ~~**Migrate the playground.**~~ Done (2026-09-24). The six presets use
+   `onRefresh`, and `src/playground/sandbox/sandbox-runner.ts` runs the same
+   frame sequence as the main app (model, then `updateScene` while not
+   paused, then `refreshScene` every tick), reports errors from view hooks to
+   the console panel, and gives user code `SKIP_DESCENDANTS` as a global.
 7. ~~**Update 004's outdated wording.**~~ Done.
 
 ---

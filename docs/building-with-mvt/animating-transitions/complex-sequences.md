@@ -134,28 +134,26 @@ bindings.
 The parent view creates the sequence and passes it to child views:
 
 ```ts
-function createBoardView(bindings: BoardBindings): StatefulPixiView {
+function createBoardView(bindings: BoardBindings): Container {
     const matchSequence = createSequence(MATCH_EFFECT_STEPS);
 
-    const flash = createFlashOverlayView({
-        getMatchSequence: () => matchSequence,
-    });
-    const shake = createShakeView({
-        getMatchSequence: () => matchSequence,
-    });
-    const particles = createParticleView({
-        getMatchSequence: () => matchSequence,
-    });
+    const view = new Container();
+    view.addChild(
+        createFlashOverlayView({ getMatchSequence: () => matchSequence }),
+        createShakeView({ getMatchSequence: () => matchSequence }),
+        createParticleView({ getMatchSequence: () => matchSequence }),
+    );
 
-    // ...
+    // The parent's onUpdate runs before its children's hooks, so every child
+    // reads this frame's sequence state
+    view.onUpdate = update;
+    return view;
 
-    return Object.assign(view, {
-        update(deltaMs: number) {
-            // Trigger and advance the shared sequence
-            if (phaseChanged('matching')) matchSequence.start();
-            matchSequence.update(deltaMs);
-        },
-    });
+    function update(deltaMs: number) {
+        // Trigger and advance the shared sequence
+        if (phaseChanged('matching')) matchSequence.start();
+        matchSequence.update(deltaMs);
+    }
 }
 ```
 
@@ -213,8 +211,8 @@ const updateEffects = createSequenceReaction(matchSequence, {
     },
 });
 
-// Call in refresh():
-view.onRender = updateEffects;
+// Run as the view's refresh:
+view.onRefresh = updateEffects;
 ```
 
 The reaction tracks each step's phase (before, active, after) and fires
@@ -228,7 +226,7 @@ callbacks on transitions:
 - **`inactive`** - fires once when a step returns to rest. Use for
   cleanup: hiding graphics, resetting positions.
 
-The reaction is called inside `refresh()` (or `onRender`). It reads the
+The reaction is called as, or inside, the view's `refresh()`. It reads the
 sequence's current state each frame and dispatches accordingly - no
 subscriptions, no events, just polling.
 

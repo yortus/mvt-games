@@ -15,8 +15,8 @@ Tap a tile to swap it with the one to its right. Pairs also swap on a timer.
 
 ## What it shows
 
-The list has no notion of item identity. `<List length={...}>` is told only how
-many items there are; slot `N` renders whatever the model holds at index `N`
+The list has no notion of item identity. `<List items={model.tiles}>` reads the
+model's tile array; slot `N` renders whatever the array holds at index `N`
 and re-reads it every frame. A swap rebuilds nothing, moves nothing and
 destroys nothing - the list does no structural work at all, because the length
 never changed.
@@ -54,14 +54,12 @@ the store is a plain array and the lookup is an array index.
 
 | File | Purpose |
 |------|---------|
-| [`list.ts`](./list.ts) | The proposed index-addressed `<List>` - no `of`, no `version`, no reconciliation |
 | [`swap-model.ts`](./swap-model.ts) | Domain: an ordered list and `swap(a, b)` |
 | [`swap-view-model.ts`](./swap-view-model.ts) | Presentation state, keyed by slot or by item id |
 | [`swap-view.tsx`](./swap-view.tsx) | Both rows, built from one `tileRow` helper |
-| [`list.test.ts`](./list.test.ts) | Slot reuse, detach-on-shrink, no work when length is unchanged |
 | [`swap-view-model.test.ts`](./swap-view-model.test.ts) | Slide and pulse under item keying, neither under slot keying |
 
-`list.ts` is a local copy of the proposed implementation so this demo runs
-without changing `src/pixi-jsx/`. See
+The `<List>` itself is the shipping one in
+[`src/pixi-jsx/list.ts`](../../pixi-jsx/list.ts). See
 [the proposal](../../../proposals/004-list-proposal.md) for the design and
 [the patterns guide](../../../proposals/006-list-patterns.md) for how to apply it.

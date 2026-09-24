@@ -5,10 +5,16 @@
  * - Function-valued props become dynamic bindings polled each frame via the
  *   element's `onRefresh` hook (driven by `refreshScene` from `pixi-mvt`),
  *   with simple equality change-detection.
+ * - Construction is inert: static props are applied at once, but no getter
+ *   runs until the element's first refresh. Until then a bound property holds
+ *   Pixi's default. Hosts refresh the whole scene before every render, and
+ *   `<List>`/`<Switch>` refresh whatever they build mid-pass, so nothing is
+ *   ever drawn with defaults. Code that reads a bound property straight after
+ *   construction should call `refreshScene` on the tree first.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
- * - The `<List>` component manages a dynamic set of children driven by a
- *   getter that returns the current array of items.
+ * - The `<List>` and `<Switch>` components (`list.ts`, `switch.ts`) cover
+ *   dynamic structure: index-addressed slots, and slots whose shape varies.
  */
 
 import { Container, type FederatedPointerEvent, Graphics, Sprite, Text, type Texture } from 'pixi.js';
@@ -41,6 +47,8 @@ interface BaseProps extends EventProps {
     scale?: MaybeGetter<number>;
     pivotX?: MaybeGetter<number>;
     pivotY?: MaybeGetter<number>;
+    zIndex?: MaybeGetter<number>;
+    sortableChildren?: boolean;
     label?: string;
     children?: PixiNode | PixiChildren;
 }
@@ -63,6 +71,7 @@ interface SpriteProps extends BaseProps {
 interface TextProps extends BaseProps {
     text?: MaybeGetter<string>;
     style?: Record<string, unknown>;
+    anchor?: number;
     ref?: RefCallback<Text>;
 }
 
@@ -97,11 +106,13 @@ interface DynamicBinding {
     getter: () => unknown;
 }
 
-interface WatchedBinding {
-    key: string;
-    getter: () => unknown;
-    lastValue: unknown;
-}
+/**
+ * The "last value" of a watched binding before its first refresh. Unequal to
+ * anything a getter can return, so the first refresh always writes. Bindings
+ * are never evaluated at construction (see `jsx`), so there is no real initial
+ * value to seed with.
+ */
+const UNSET: unique symbol = Symbol('pixi-jsx.unset');
 
 /**
  * Props that are expensive to set on every tick and should only be written
@@ -178,7 +189,7 @@ function applyProp(el: Container, key: string, value: unknown): void {
 }
 
 /** Props that are functions but should NOT be treated as dynamic getters. */
-const NON_GETTER_PROPS = new Set(['view', 'of', 'ref']);
+const NON_GETTER_PROPS = new Set(['ref']);
 
 /** Props that are Pixi event handlers wired once at construction time. */
 const EVENT_PROP_MAP: Record<string, string> = {
@@ -241,91 +252,107 @@ function propAssign(key: string, val: string): string {
 }
 
 /**
- * A codegen'd refresh body. Parameterised over everything element-specific
- * (the element, its getters, its last watched values, and the skip sentinel),
- * so one compiled function serves every element with the same binding
- * signature.
+ * A codegen'd refresh factory. Called once per element with the element, the
+ * skip sentinel, the `UNSET` marker and the element's getters as separate
+ * arguments, it returns that element's refresh hook. The hook calls each
+ * getter it captured directly and keeps each watched binding's last value in
+ * a closure local, so a refresh involves no array lookups and no second call.
+ * Measured on 1000 elements with three bindings, one design per process (V8
+ * shares inline caches between designs run in one process, which skews the
+ * comparison): 7.8 us per frame, against 9.9 us for the previous design (a
+ * hook calling a shared body with an array of getters) and 5.6 us for
+ * hand-written hooks. The remaining ~2 ns per element is the cost of calling
+ * getters at all, confirmed by CPU profile.
  */
-type CompiledRefresh = (
-    e: Container,
-    g: (() => unknown)[],
-    v: unknown[],
-    s: typeof SKIP_DESCENDANTS,
-) => typeof SKIP_DESCENDANTS | void;
+type RefreshFactory = (...args: unknown[]) => () => typeof SKIP_DESCENDANTS | void;
 
 /**
- * Compiled refresh bodies keyed by binding signature. The generated source
+ * Compiled refresh factories keyed by binding signature. The generated source
  * depends only on the ordered cheap keys and the ordered watched keys, so
  * building the thousandth list item with a given shape costs a map lookup
  * rather than a JIT compile. Bounded by the number of distinct binding shapes
  * written in source, so it never needs evicting.
  */
-const compiledRefreshCache = new Map<string, CompiledRefresh>();
+const refreshFactoryCache = new Map<string, RefreshFactory>();
 
 /**
- * Get the codegen'd refresh function for a binding signature, compiling it on
- * first use. It applies all cheap bindings unconditionally and watched bindings
- * only on change - with zero loops or switch dispatch at runtime. A `visible`
- * binding is always first in `cheap` (see `jsx`), and returns the skip sentinel
- * when false so a hidden element skips its other bindings and its subtree.
+ * Get the codegen'd refresh factory for a binding signature, compiling it on
+ * first use. The hooks it makes apply all cheap bindings unconditionally and
+ * watched bindings only on change - with zero loops or switch dispatch at
+ * runtime. A `visible` binding is always first in `cheap` (see `jsx`), and
+ * returns the skip sentinel when false so a hidden element skips its other
+ * bindings and its subtree.
+ *
+ * Generated shape, for `x` (cheap) and `text` (watched):
+ *
+ *     function (e, s, u, g0, g1) {
+ *         var v0 = u;
+ *         return function () {
+ *             e.x = g0();
+ *             var _0 = g1(); if (_0 !== v0) { v0 = _0; e.text = _0; }
+ *         };
+ *     }
  *
  * Safe: prop keys originate from JSX intrinsic element type definitions,
  * not from user input.
  */
-function getCompiledRefresh(cheap: DynamicBinding[], watched: WatchedBinding[]): CompiledRefresh {
+function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): RefreshFactory {
     let signature = '';
     for (let i = 0; i < cheap.length; i++) signature += cheap[i].key + ',';
     signature += '|';
     for (let i = 0; i < watched.length; i++) signature += watched[i].key + ',';
 
-    let fn = compiledRefreshCache.get(signature);
-    if (fn !== undefined) return fn;
+    let factory = refreshFactoryCache.get(signature);
+    if (factory !== undefined) return factory;
 
-    const lines: string[] = [];
+    const params = ['e', 's', 'u'];
+    const locals: string[] = [];
+    const body: string[] = [];
     let gi = 0;
 
     for (let i = 0; i < cheap.length; i++) {
+        params.push(`g${gi}`);
         if (cheap[i].key === 'visible') {
-            lines.push(`e.visible=g[${gi}]();`, 'if(!e.visible)return s;');
+            body.push(`e.visible=g${gi}();`, 'if(!e.visible)return s;');
         }
         else {
-            lines.push(propAssign(cheap[i].key, `g[${gi}]()`) + ';');
+            body.push(propAssign(cheap[i].key, `g${gi}()`) + ';');
         }
         gi++;
     }
 
     for (let i = 0; i < watched.length; i++) {
-        lines.push(
-            `var _${i}=g[${gi}]();`,
-            `if(_${i}!==v[${i}]){v[${i}]=_${i};${propAssign(watched[i].key, `_${i}`)}}`,
+        params.push(`g${gi}`);
+        locals.push(`var v${i}=u;`);
+        body.push(
+            `var _${i}=g${gi}();`,
+            `if(_${i}!==v${i}){v${i}=_${i};${propAssign(watched[i].key, `_${i}`)}}`,
         );
         gi++;
     }
 
+    const source = `${locals.join('\n')}\nreturn function(){\n${body.join('\n')}\n};`;
+
     // Safe: prop keys originate from JSX intrinsic element type definitions.
-    fn = new Function('e', 'g', 'v', 's', lines.join('\n')) as CompiledRefresh;
-    compiledRefreshCache.set(signature, fn);
-    return fn;
+    factory = new Function(...params, source) as RefreshFactory;
+    refreshFactoryCache.set(signature, factory);
+    return factory;
 }
 
 /** Wire up a codegen'd per-frame refresh for dynamic bindings on an element. */
 function setupDynamicRefresh(
     el: Container,
     cheap: DynamicBinding[],
-    watched: WatchedBinding[],
+    watched: DynamicBinding[],
 ): void {
-    const fn = getCompiledRefresh(cheap, watched);
+    const factory = getRefreshFactory(cheap, watched);
 
-    const getters: (() => unknown)[] = [];
-    const lastValues: unknown[] = [];
-    for (let i = 0; i < cheap.length; i++) getters.push(cheap[i].getter);
-    for (let i = 0; i < watched.length; i++) {
-        getters.push(watched[i].getter);
-        lastValues.push(watched[i].lastValue);
-    }
+    // Construction only, so building this argument list is off the hot path.
+    const args: unknown[] = [el, SKIP_DESCENDANTS, UNSET];
+    for (let i = 0; i < cheap.length; i++) args.push(cheap[i].getter);
+    for (let i = 0; i < watched.length; i++) args.push(watched[i].getter);
 
-    // One closure per element: the compiled body is shared.
-    el.onRefresh = () => fn(el, getters, lastValues, SKIP_DESCENDANTS);
+    el.onRefresh = factory(...args);
 }
 
 // ---------------------------------------------------------------------------
@@ -342,9 +369,14 @@ export function jsx(
     type: string | typeof Fragment | ((props: Record<string, unknown>) => Container),
     props: Record<string, unknown>,
 ): Container {
-    // Component functions
+    // Component functions. The runtime calls `ref` on whatever the component
+    // returns, so components must never consume `ref` themselves.
     if (typeof type === 'function') {
-        return type(props);
+        const el = type(props);
+        if (typeof props.ref === 'function') {
+            (props.ref as RefCallback<Container>)(el);
+        }
+        return el;
     }
 
     // Fragment
@@ -357,15 +389,20 @@ export function jsx(
     // Standard elements: container, sprite, text, graphics
     const el = createElement(type);
     const cheap: DynamicBinding[] = [];
-    const watched: WatchedBinding[] = [];
+    const watched: DynamicBinding[] = [];
 
     for (const key in props) {
         if (key === 'children' || key === 'ref') continue;
         const value = props[key];
         if (isGetter(key, value)) {
-            const initial = value();
+            // Inert construction: record the getter but do not call it. Its
+            // first evaluation is the element's first refresh, which runs only
+            // once the whole tree exists, so an ancestor that hides or skips
+            // this element (a `visible` binding, an empty `<List>` slot, an
+            // unselected branch) can keep a binding that is not yet valid from
+            // ever running.
             if (WATCHED_PROPS.has(key)) {
-                watched.push({ key, getter: value, lastValue: initial });
+                watched.push({ key, getter: value });
             }
             else if (key === 'visible') {
                 // Evaluated first, so a hidden element skips everything else
@@ -374,7 +411,6 @@ export function jsx(
             else {
                 cheap.push({ key, getter: value });
             }
-            applyProp(el, key, initial);
         }
         else {
             applyProp(el, key, value);

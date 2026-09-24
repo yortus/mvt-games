@@ -71,9 +71,9 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_BULLETS; i++) {
             const idx = i;
             playArea.addChild(createBulletView({
-                getScreenX: () => ((game.bullets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.bullets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.bullets.at(idx) !== undefined,
+                getScreenX: () => ((game.bullets.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.bullets.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.bullets.slots.at(idx) !== undefined,
             }));
         }
 
@@ -81,9 +81,9 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_BOMBS; i++) {
             const idx = i;
             playArea.addChild(createBombView({
-                getScreenX: () => ((game.bombs.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.bombs.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.bombs.at(idx) !== undefined,
+                getScreenX: () => ((game.bombs.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.bombs.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.bombs.slots.at(idx) !== undefined,
             }));
         }
 
@@ -91,10 +91,10 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_ROCKETS; i++) {
             const idx = i;
             playArea.addChild(createRocketView({
-                getScreenX: () => ((game.rockets.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.rockets.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.rockets.at(idx) !== undefined,
-                getPhase: () => game.rockets.at(idx)?.value.phase ?? 'idle',
+                getScreenX: () => ((game.rockets.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.rockets.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.rockets.slots.at(idx) !== undefined,
+                getPhase: () => game.rockets.slots.at(idx)?.value.phase ?? 'idle',
             }));
         }
 
@@ -102,9 +102,9 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_UFOS; i++) {
             const idx = i;
             playArea.addChild(createUfoView({
-                getScreenX: () => ((game.ufos.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.ufos.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.ufos.at(idx) !== undefined,
+                getScreenX: () => ((game.ufos.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.ufos.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.ufos.slots.at(idx) !== undefined,
             }));
         }
 
@@ -112,9 +112,9 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_FUEL_TANKS; i++) {
             const idx = i;
             playArea.addChild(createFuelTankView({
-                getScreenX: () => ((game.fuelTanks.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.fuelTanks.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.fuelTanks.at(idx) !== undefined,
+                getScreenX: () => ((game.fuelTanks.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.fuelTanks.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.fuelTanks.slots.at(idx) !== undefined,
             }));
         }
 
@@ -132,10 +132,10 @@ export function createGameView(game: GameModel): Container {
         for (let i = 0; i < MAX_EXPLOSIONS; i++) {
             const idx = i;
             playArea.addChild(createExplosionView({
-                getScreenX: () => ((game.explosions.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
-                getScreenY: () => (game.explosions.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
-                isPresent: () => game.explosions.at(idx) !== undefined,
-                getProgress: () => game.explosions.at(idx)?.value.progress ?? 0,
+                getScreenX: () => ((game.explosions.slots.at(idx)?.value.worldCol ?? 0) - game.scrollCol) * TILE_SIZE,
+                getScreenY: () => (game.explosions.slots.at(idx)?.value.worldRow ?? 0) * TILE_SIZE,
+                isPresent: () => game.explosions.slots.at(idx) !== undefined,
+                getProgress: () => game.explosions.slots.at(idx)?.value.progress ?? 0,
             }));
         }
 

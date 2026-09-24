@@ -75,7 +75,8 @@ function frame(timestamp: number): void {
     // Cap to prevent spiral-of-death after backgrounding
     const clampedDelta = Math.min(deltaMs, 100);
 
-    gameSession.update(clampedDelta);
+    gameSession.update(clampedDelta);   // models, then views' onUpdate
+    refreshScene(app.stage);            // views' onRefresh
     app.render();
 
     requestAnimationFrame(frame);
@@ -128,12 +129,50 @@ The ticker can support **pausing** (stop calling `update()` but continue
 rendering) and **speed control** (multiply `deltaMs` before passing it).
 Models don't know or care - they only ever see the `deltaMs` they receive.
 
+## In This Project: `onUpdate`, `onRefresh` and the Scene Passes
+
+MVT requires the order above, not a particular mechanism. This project
+implements the view side with two optional hooks on every Pixi `Container`,
+from [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt).
+This is a **project convention**, not part of MVT itself.
+
+| Hook | MVT step | Runs | Driven by |
+| --- | --- | --- | --- |
+| `view.onUpdate = (deltaMs) => { ... }` | a view's `update(deltaMs)`: advance cosmetic presentation state | only on views that have presentation state | `updateScene(root, deltaMs)` |
+| `view.onRefresh = () => { ... }` | a view's `refresh()`: read state, write presentation output | on every view that shows state | `refreshScene(root)` |
+
+```ts
+// Each frame, in this order
+gameModel.update(deltaMs);        // 1. models advance
+updateScene(gameView, deltaMs);   // 2. every onUpdate in the tree
+refreshScene(app.stage);          // 3. every onRefresh in the tree
+// 4. Pixi renders
+```
+
+- **Nothing forwards calls down the tree.** Each pass walks the whole subtree
+  it is given and calls every hook it finds, parents before children. A view
+  anywhere in the tree takes part just by setting a hook; its parents do not
+  need to know it exists or pass anything on.
+- **Where the calls live here.** Each game session's `update()` runs its model
+  and then `updateScene` over its own view. The host (`src/main.ts`) runs one
+  `refreshScene` over the whole stage per tick, paused or not, so menus stay
+  correct while the game is paused.
+- **Skipping a subtree.** A hook may return `SKIP_DESCENDANTS` to skip its
+  container's descendants for that pass, for example a hidden panel whose
+  contents need not refresh. Visibility alone skips nothing.
+- **Why not Pixi's `onRender`?** It fires during rendering, so it is tied to
+  render cadence and cannot skip a subtree. The
+  [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)
+  explains the difference in full.
+
 ## Hierarchies
 
 In practice, models and views each form trees - a root model composes child
 models, and a root view composes child views. The ticker only talks to the
-root; each root delegates to its children. The frame sequence is the same
-regardless of tree depth.
+roots. Models delegate `update(deltaMs)` to their children explicitly, because
+the order of child updates and cross-model checks is domain logic. Views do not
+need to: in this project the scene passes walk the view tree for them (see
+above). The frame sequence is the same regardless of tree depth.
 
 ## Key Constraints at a Glance
 

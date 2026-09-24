@@ -4,7 +4,7 @@
 
 /**
  * A collection of live items where every item occupies a stable slot for its
- * whole lifetime. Slots are addressed by index over `[0, slotCount)`.
+ * whole lifetime. Slots are addressed by index over `[0, slots.length)`.
  *
  * A slot has two removal phases: `remove` takes an item out of the live set,
  * then after `releaseDelayMs` the slot is released - its value handed back via
@@ -20,17 +20,22 @@
  * live reference to.
  */
 export interface SlotList<T> {
-    /** Slots allocated. Indices are [0, slotCount). Shrinks when the tail frees. */
-    readonly slotCount: number;
+    /**
+     * Indexed access to the slots, shaped like a read-only array so `<List>`
+     * can project it directly (`items={bullets.slots}`). `slots.length` is the
+     * slots allocated, which shrinks when the tail frees; `slots.at(i)` is the
+     * slot at `i` - live or pending release - or undefined if available.
+     *
+     * `slots.length` counts empty and pending-release slots too, so it is not
+     * the number of items. That is `liveCount`.
+     */
+    readonly slots: IndexedSlots<Slot<T>>;
 
     /** Items in the live set. */
     readonly liveCount: number;
 
     /** True when no slot is available, so `insert` would throw. */
     readonly isFull: boolean;
-
-    /** The slot at `index` - live or pending release - or undefined if available. */
-    at(index: number): Slot<T> | undefined;
 
     /**
      * Calls `visit` for each live item in storage-index order, skipping empty
@@ -62,6 +67,16 @@ export interface SlotList<T> {
 
     /** Advances the release clock and releases slots whose delay has elapsed. */
     update(deltaMs: number): void;
+}
+
+/**
+ * Read-only indexed access over `[0, length)`, where an index may be empty
+ * (`at` returns undefined). Structurally the same shape `Array` has, so arrays
+ * and slot lists can be read, and projected by `<List>`, the same way.
+ */
+export interface IndexedSlots<S> {
+    readonly length: number;
+    at(index: number): S | undefined;
 }
 
 /**
@@ -100,22 +115,22 @@ export interface SlotListOptions<T> {
 
 /**
  * Array-backed implementation. Per-member complexity of this implementation,
- * with `n = slotCount` and `p` the number of slots pending release:
+ * with `n = slots.length` and `p` the number of slots pending release:
  *
- *   slotCount, liveCount, isFull, at   O(1)
- *   forEachLive                        O(n)
- *   insert                             O(n) worst case, amortised ~O(1) via a lowest-free-index hint
- *   remove                             O(log p) delayed, amortised O(1) immediate
- *   clear                              O(n)
- *   update                             O(1) idle, O(k log p) to release k slots
+ *   slots.length, slots.at, liveCount, isFull   O(1)
+ *   forEachLive                                 O(n)
+ *   insert                                      O(n) worst case, amortised ~O(1) via a lowest-free-index hint
+ *   remove                                      O(log p) delayed, amortised O(1) immediate
+ *   clear                                       O(n)
+ *   update                                      O(1) idle, O(k log p) to release k slots
  */
 export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T> {
     const maxSlots = options.maxSlots;
     const defaultReleaseDelayMs = options.releaseDelayMs ?? 0;
     const onRelease = options.onRelease;
 
-    // slots[i] holds the record while index i is live or pending release; undefined once available.
-    const slots: (MutableSlot<T> | undefined)[] = [];
+    // records[i] holds the record while index i is live or pending release; undefined once available.
+    const records: (MutableSlot<T> | undefined)[] = [];
 
     // Records pending release, ordered by releaseAtMs, so `update` releases only those now due.
     const pendingRelease: MutableSlot<T>[] = [];
@@ -128,19 +143,23 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
     // Lower bound on the lowest available index: every index below it is occupied.
     let lowestFreeHint = 0;
 
+    // Allocated once and handed out as `slots`, so projecting it costs nothing.
+    const slots: IndexedSlots<MutableSlot<T>> = {
+        get length() { return slotCount; },
+        at(index) {
+            if (index < 0 || index >= slotCount) return undefined;
+            return records[index];
+        },
+    };
+
     const list: SlotList<T> = {
-        get slotCount() { return slotCount; },
+        slots,
         get liveCount() { return liveCount; },
         get isFull() { return computeIsFull(); },
 
-        at(index) {
-            if (index < 0 || index >= slotCount) return undefined;
-            return slots[index];
-        },
-
         forEachLive(visit) {
             for (let i = 0; i < slotCount; i++) {
-                const slot = slots[i];
+                const slot = records[i];
                 if (slot !== undefined && slot.isLive) visit(slot.value, slot);
             }
         },
@@ -151,7 +170,7 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
             }
 
             let index = lowestFreeHint;
-            while (index < slotCount && slots[index] !== undefined) {
+            while (index < slotCount && records[index] !== undefined) {
                 index += 1;
             }
             if (index === slotCount) {
@@ -160,14 +179,14 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
             lowestFreeHint = index + 1;
 
             const record: MutableSlot<T> = { isLive: true, index, value, releaseAtMs: 0, ordinal: -1 };
-            slots[index] = record;
+            records[index] = record;
             liveCount += 1;
             return record;
         },
 
         remove(slot, releaseDelayMs) {
             const record = slot as MutableSlot<T>;
-            if (slots[record.index] !== record || !record.isLive) return;
+            if (records[record.index] !== record || !record.isLive) return;
 
             record.isLive = false;
             liveCount -= 1;
@@ -191,13 +210,13 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
 
         clear() {
             for (let i = 0; i < slotCount; i++) {
-                const record = slots[i];
+                const record = records[i];
                 if (record === undefined) continue;
                 record.isLive = false;
-                slots[i] = undefined;
+                records[i] = undefined;
                 onRelease?.(record.value);
             }
-            slots.length = 0;
+            records.length = 0;
             pendingRelease.length = 0;
             slotCount = 0;
             liveCount = 0;
@@ -225,10 +244,10 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
 
     function release(record: MutableSlot<T>): void {
         const index = record.index;
-        slots[index] = undefined;
+        records[index] = undefined;
         onRelease?.(record.value);
         if (index < lowestFreeHint) lowestFreeHint = index;
-        while (slotCount > 0 && slots[slotCount - 1] === undefined) {
+        while (slotCount > 0 && records[slotCount - 1] === undefined) {
             slotCount -= 1;
         }
     }

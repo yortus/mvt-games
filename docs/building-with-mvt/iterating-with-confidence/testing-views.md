@@ -27,7 +27,9 @@ different tradeoff profiles.
 ## Scene Graph Assertions
 
 The idea: create a view with mock bindings, trigger a refresh, then
-assert properties of the resulting display objects.
+assert properties of the resulting display objects. In this project,
+`refreshScene(view)` runs the view's `onRefresh` hook, and those of any views
+inside it, with no renderer needed.
 
 ```ts
 it('hides the entity when not visible', () => {
@@ -37,7 +39,7 @@ it('hides the entity when not visible', () => {
         isVisible: () => false,
     });
 
-    view.onRender();
+    refreshScene(view);
 
     expect(view.visible).toBe(false);
 });
@@ -52,11 +54,11 @@ it('positions the sprite at the bound coordinates', () => {
         isVisible: () => true,
     });
 
-    view.onRender();
+    refreshScene(view);
     expect(view.position.x).toBeCloseTo(50);
 
     x = 120;
-    view.onRender();
+    refreshScene(view);
     expect(view.position.x).toBeCloseTo(120);
 });
 ```
@@ -179,7 +181,10 @@ test('door view - halfway through fade-in', async ({ page }) => {
 ```
 
 The harness advances the view's `update(deltaMs)` by the specified
-amount, calls `refresh()`, renders, and waits for capture.
+amount, calls `refresh()`, renders, and waits for capture. In this project
+that means `updateScene(view, deltaMs)` in small steps, then
+`refreshScene(view)`: both work on any container, with no renderer or ticker
+needed.
 
 ## Choosing an Approach
 

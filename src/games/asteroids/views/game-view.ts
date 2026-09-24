@@ -87,17 +87,17 @@ export function createGameView(game: GameModel): Container {
     }
 
     function buildAsteroids(): void {
-        while (asteroidContainers.length < game.asteroids.slotCount) {
+        while (asteroidContainers.length < game.asteroids.slots.length) {
             const idx = asteroidContainers.length;
             const c = createAsteroidView({
-                isPresent: () => game.asteroids.at(idx) !== undefined,
-                getX: () => game.asteroids.at(idx)?.value.x ?? 0,
-                getY: () => game.asteroids.at(idx)?.value.y ?? 0,
-                getAngle: () => game.asteroids.at(idx)?.value.angle ?? 0,
-                getSize: () => game.asteroids.at(idx)?.value.size ?? 'large',
-                getRadius: () => game.asteroids.at(idx)?.value.radius ?? 0,
-                isAlive: () => game.asteroids.at(idx)?.value.isAlive ?? false,
-                getShapeSeed: () => game.asteroids.at(idx)?.value.shapeSeed ?? -1,
+                isPresent: () => game.asteroids.slots.at(idx) !== undefined,
+                getX: () => game.asteroids.slots.at(idx)?.value.x ?? 0,
+                getY: () => game.asteroids.slots.at(idx)?.value.y ?? 0,
+                getAngle: () => game.asteroids.slots.at(idx)?.value.angle ?? 0,
+                getSize: () => game.asteroids.slots.at(idx)?.value.size ?? 'large',
+                getRadius: () => game.asteroids.slots.at(idx)?.value.radius ?? 0,
+                isAlive: () => game.asteroids.slots.at(idx)?.value.isAlive ?? false,
+                getShapeSeed: () => game.asteroids.slots.at(idx)?.value.shapeSeed ?? -1,
             });
             view.addChild(c);
             asteroidContainers.push(c);

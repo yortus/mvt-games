@@ -1,4 +1,4 @@
-import { createSlotList, type Slot, type SlotListOptions, type MutableSlot } from './slot-list';
+import { createSlotList, type IndexedSlots, type Slot, type SlotListOptions, type MutableSlot } from './slot-list';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -17,20 +17,26 @@ import { createSlotList, type Slot, type SlotListOptions, type MutableSlot } fro
  * hand, a toast stack, an initiative tracker, a playlist.
  */
 export interface OrderedSlotList<T> {
-    /** Storage slots allocated, including those pending release. For `<List>`. */
-    readonly slotCount: number;
+    /**
+     * The slots in storage order, exactly as `SlotList.slots`: stable indices,
+     * including slots pending release. Project this with `<List>` when views
+     * should stay put and animate toward each slot's `ordinal`, so removed items
+     * can animate out.
+     */
+    readonly slots: IndexedSlots<OrderedSlot<T>>;
 
-    /** Items in the live set, which is also the length of the ordinal space. */
+    /**
+     * The live slots in logical order: `ordered.at(n)` is the slot at ordinal
+     * `n`, and `ordered.length` equals `liveCount`. Pending-release slots are
+     * not in it, having already left the order.
+     */
+    readonly ordered: IndexedSlots<OrderedSlot<T>>;
+
+    /** Items in the live set, which is also `ordered.length`. */
     readonly liveCount: number;
 
     /** True when no slot is available, so `append`/`insertAt` would throw. */
     readonly isFull: boolean;
-
-    /** The slot at a storage index - live or pending release - or undefined if available. */
-    atSlotIndex(index: number): OrderedSlot<T> | undefined;
-
-    /** The live slot at a logical position, or undefined outside `[0, liveCount)`. */
-    atOrdinal(ordinal: number): OrderedSlot<T> | undefined;
 
     /**
      * Calls `visit` for each live item in ordinal order, skipping pending-release
@@ -80,13 +86,13 @@ export interface OrderedSlot<T> extends Slot<T> {
  * Composes a `SlotList` and maintains an ordinal -> slot array beside it,
  * writing each slot's `ordinal` field as the order changes. With `n = liveCount`:
  *
- *   slotCount, liveCount, isFull, atSlotIndex, atOrdinal   O(1)
- *   forEachLive                                            O(n)
- *   append                                                 O(1) ordering (plus insert)
- *   insertAt, move, remove                                 O(n)
- *   sort                                                   O(n log n) + O(n)
- *   clear                                                  O(n)
- *   update                                                 forwards to SlotList
+ *   slots.*, ordered.*, liveCount, isFull   O(1)
+ *   forEachLive                             O(n)
+ *   append                                  O(1) ordering (plus insert)
+ *   insertAt, move, remove                  O(n)
+ *   sort                                    O(n log n) + O(n)
+ *   clear                                   O(n)
+ *   update                                  forwards to SlotList
  */
 export function createOrderedSlotList<T>(options: SlotListOptions<T> = {}): OrderedSlotList<T> {
     const list = createSlotList<T>(options);
@@ -94,19 +100,24 @@ export function createOrderedSlotList<T>(options: SlotListOptions<T> = {}): Orde
     // ordinal -> slot, dense over [0, liveCount). Each slot's ordinal field mirrors its position here.
     const order: MutableSlot<T>[] = [];
 
-    const ordered: OrderedSlotList<T> = {
-        get slotCount() { return list.slotCount; },
-        get liveCount() { return list.liveCount; },
-        get isFull() { return list.isFull; },
+    // Every record the inner list holds was created by this list, so each is an
+    // OrderedSlot; the inner `slots` can be handed out as-is.
+    const slots = list.slots as IndexedSlots<OrderedSlot<T>>;
 
-        atSlotIndex(index) {
-            return list.at(index) as OrderedSlot<T> | undefined;
-        },
-
-        atOrdinal(ordinal) {
+    // Allocated once and handed out as `ordered`, so projecting it costs nothing.
+    const byOrdinal: IndexedSlots<OrderedSlot<T>> = {
+        get length() { return order.length; },
+        at(ordinal) {
             if (ordinal < 0 || ordinal >= order.length) return undefined;
             return order[ordinal];
         },
+    };
+
+    const ordered: OrderedSlotList<T> = {
+        slots,
+        ordered: byOrdinal,
+        get liveCount() { return list.liveCount; },
+        get isFull() { return list.isFull; },
 
         forEachLive(visit) {
             // `order` compacts when the visited slot is removed, so re-read order[i]

@@ -39,8 +39,7 @@ be its own sub-view with a single responsibility.
 **Before** - one view doing too much:
 
 ```ts
-function createPlayerHudView(bindings: PlayerHudBindings):
-        Container & { update(deltaMs: number): void } {
+function createPlayerHudView(bindings: PlayerHudBindings): Container {
     // ... scene graph setup ...
 
     let displayedScore = 0;       // smooth score counter
@@ -61,35 +60,32 @@ function createPlayerHudView(bindings: PlayerHudBindings):
         // hard to tell which state drives which visual
     }
 
-    view.onRender = refresh;
-    return Object.assign(view, { update });
+    view.onUpdate = update;
+    view.onRefresh = refresh;
+    return view;
 }
 ```
 
 **After** - each concern in its own sub-view:
 
 ```ts
-function createPlayerHudView(bindings: PlayerHudBindings):
-        Container & { update(deltaMs: number): void } {
+function createPlayerHudView(bindings: PlayerHudBindings): Container {
     const view = new Container();
-    const scoreCounter = createSmoothScoreView(/* score bindings */);
-    const damageFlash = createDamageFlashView(/* health bindings */);
-    const statusIcon = createStatusIconView(/* buff bindings */);
-    view.addChild(scoreCounter, damageFlash, statusIcon);
-
-    function update(deltaMs) {
-        scoreCounter.update(deltaMs);
-        damageFlash.update(deltaMs);
-        statusIcon.update(deltaMs);
-    }
-
-    return Object.assign(view, { update });
+    view.addChild(
+        createSmoothScoreView(/* score bindings */),
+        createDamageFlashView(/* health bindings */),
+        createStatusIconView(/* buff bindings */),
+    );
+    return view;
 }
 ```
 
 Each sub-view has a single focus: one piece of presentation state, one edge
-to detect, one visual to update. The parent composes them without knowing
-their internals.
+to detect, one visual to update, each in its own `onUpdate` and `onRefresh`
+hooks. The parent composes them without knowing their internals, and without
+forwarding anything to them: this project's scene passes find each sub-view's
+hooks wherever it sits in the tree (see
+[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes)).
 
 **When this works:** the transitions are independent - they don't interact
 with each other and don't share state. Most transitions in practice are
@@ -243,8 +239,7 @@ The view creates the view model internally and delegates to it:
 
 ```ts
 // board-view.ts
-function createBoardView(bindings: BoardViewBindings):
-        Container & { update(deltaMs: number): void } {
+function createBoardView(bindings: BoardViewBindings): Container {
     const matchEffects = createMatchEffectsViewModel(
         () => bindings.getPhase() === 'matching',
     );
@@ -252,9 +247,9 @@ function createBoardView(bindings: BoardViewBindings):
     const view = new Container();
     // ... scene graph setup ...
 
-    function update(deltaMs) {
-        matchEffects.update(deltaMs);
-    }
+    view.onUpdate = matchEffects.update;   // the view model advances with the view
+    view.onRefresh = refresh;
+    return view;
 
     function refresh() {
         if (matchEffects.isActive) {
@@ -263,11 +258,11 @@ function createBoardView(bindings: BoardViewBindings):
             if (matchEffects.dustSpawned) spawnDustParticles();
         }
     }
-
-    view.onRender = refresh;
-    return Object.assign(view, { update });
 }
 ```
+
+The update pass runs a container's `onUpdate` before any of its descendants',
+so child views that read the view model see this frame's state.
 
 The view model is testable by calling `update()` with known deltas and
 asserting on its readable properties. No Pixi.js, no containers, no

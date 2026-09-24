@@ -1,133 +1,156 @@
 /**
- * Generic `<List>` function component for typed dynamic lists.
+ * Index-addressed `<List>` function component.
  *
- * Unlike the `<list>` intrinsic, TypeScript infers the item type `T` from the
- * `of` getter and flows it into the `to` callback - no manual annotation
- * needed.
+ * The list reads a source shaped like a read-only array - a `length` and an
+ * `at(i)` - which arrays already are. It never compares items, never diffs and
+ * never reconciles: slot `i` renders whatever is at index `i` right now,
+ * re-read every frame, so a reorder does no structural work at all.
  *
  * ```tsx
- * <List of={getStars} to={(star) => <sprite texture={starTex} x={() => star.x} />} />
+ * <List items={bullets.slots}>
+ *     {(slot) => <sprite texture={bulletTexture} x={() => slot().value.x} />}
+ * </List>
  * ```
+ *
+ * An item view must not capture item data at construction time: slot `i` will
+ * later hold a different item. Everything item-dependent must be a getter,
+ * which is why `children` receives an accessor rather than a value.
+ *
+ * See `proposals/004-list-proposal.md` for the design.
  */
 
 import { Container } from 'pixi.js';
+import { refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
+/**
+ * What a `<List>` projects: `length` slots, where `at(i)` is the item at `i`,
+ * or `undefined` for an empty slot. Arrays satisfy it as they are, and so do
+ * `SlotList.slots` and `OrderedSlotList.slots`/`.ordered`. Anything else is a
+ * two-member object literal:
+ *
+ * ```tsx
+ * <List items={{ length: () => model.enemyCount, at: (i) => model.getEnemy(i) }}>
+ *
+ * // Addressed by index alone: `at` returns the index, so every slot is present
+ * <List items={{ length: () => model.lives, at: (i) => i }}>
+ * ```
+ *
+ * `at` is deliberately required. Every function has a numeric `length` (its
+ * arity), so with `at` optional, any function would type-check as a source:
+ * `items={() => model.count}` would compile and silently render nothing.
+ */
+export interface ListSource<T> {
+    /**
+     * How many slots. A number is read as it is; a function is called once per
+     * frame, following the runtime's rule that a function is live. Either way
+     * the list reads it once per frame and shares it with every slot.
+     */
+    readonly length: number | (() => number);
+    at(index: number): T | undefined;
+}
+
 export interface ListProps<T> {
-    of: () => readonly T[];
-    to: (item: T, index: number) => Container;
-    /** Optional version getter. When provided, zip-compare is skipped unless the version changes. */
-    version?: () => unknown;
+    /**
+     * The items to project, as a source or a getter returning one.
+     *
+     * - **A source** (`items={model.tiles}`) is a fixed reference whose
+     *   contents are read every frame. Right for a collection the model
+     *   mutates in place, which is how models in this repo own collections.
+     * - **A getter** (`items={getStars}`) re-reads the reference every frame
+     *   too. Needed when the model replaces its collection rather than
+     *   mutating it. It should return a stored collection, not build a new
+     *   one, since it runs every frame.
+     *
+     * Read once per frame, then `at(i)` once per slot. The result is cached for
+     * that slot's bindings, so an item view costs one lookup however many
+     * bindings it has.
+     */
+    items: ListSource<T> | (() => ListSource<T>);
+    /**
+     * Builds the view for `index`. Called at most once per index, ever, on the
+     * first frame `length` covers it, occupied or not.
+     *
+     * Call the accessor only inside bindings and refresh hooks, never while
+     * building: the slot may be empty when it is built. Bindings are safe,
+     * because they first run on the slot's first refresh, and an empty slot
+     * skips its whole subtree.
+     */
+    children: (item: () => T, index: number) => Container;
+    /** Handle on the list's own container, e.g. to set `sortableChildren`. */
+    ref?: (el: Container) => void;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-/** Sentinel guaranteeing the first reconcile always runs. */
-const VERSION_UNSET: unique symbol = Symbol('VERSION_UNSET');
-
 export function List<T>(props: ListProps<T>): Container {
     const container = new Container();
+    const items = props.items;
 
-    // Snapshots of item references, double-buffered. `prev` is read-only for
-    // the duration of a reconcile and `next` accumulates the new snapshot.
-    // A single array cannot serve both: after an insertion the write cursor
-    // runs ahead of the read cursor, so writing the new snapshot in place
-    // clobbers old entries the delete cursor has not reached yet.
-    let prev: unknown[] = [];
-    let next: unknown[] = [];
+    // High-water-mark pool. Slot `i` is child `i`, built when `length` first
+    // covers it and never removed, detached or destroyed; an empty slot hides
+    // and skips its subtree instead (section 4.4 of the proposal).
+    const slots: Container[] = [];
 
-    let prevVersion: unknown = VERSION_UNSET;
+    // Resolved once per slot per frame, read by that slot's bindings.
+    const resolved: (T | undefined)[] = [];
 
-    reconcile();
-    // Runs before the refresh of any item below it, so items removed here are
-    // skipped by the pass and items added here start refreshing next frame
-    // (they are built with their initial values applied, so nothing is stale).
-    container.onRefresh = reconcile;
+    // Resolved once per frame by the list's own hook, which the refresh pass
+    // runs before any slot, then shared by every slot's presence check. Not
+    // read at construction: like every element, the list is inert until its
+    // first refresh, so an ancestor that skips it keeps `items` from running.
+    let source: ListSource<T> = EMPTY_SOURCE;
+    let currentLength = 0;
+
+    container.onRefresh = growPool;
 
     return container;
 
-    /** Wrap a view result in a slot so replacements are grandchild swaps. */
-    function createSlot(item: T, index: number): Container {
-        const slot = new Container();
-        slot.addChild(props.to(item, index));
-        return slot;
+    /** Builds any index below `length` that has no slot yet. */
+    function growPool(): void {
+        source = typeof items === 'function' ? items() : items;
+        const length = source.length;
+        currentLength = typeof length === 'function' ? length() : length;
+        while (slots.length < currentLength) buildSlot(slots.length);
     }
 
-    function reconcile(): void {
-        if (props.version !== undefined) {
-            const v = props.version();
-            if (v === prevVersion) return;
-            prevVersion = v;
-        }
+    function buildSlot(index: number): void {
+        // Safe even for an empty slot: construction evaluates no bindings, so
+        // nothing reads the item until the slot's own refresh below.
+        const slot = props.children(() => resolved[index] as T, index);
 
-        const items = props.of();
-        const newLen = items.length;
-        const oldLen = prev.length;
+        // The slot's presence check runs before its own refresh, so no item
+        // binding ever runs for an empty slot. When present, the item view's
+        // own refresh then runs as normal, including a `visible` binding of its
+        // own, which can only hide an occupied slot further.
+        const ownRefresh = slot.onRefresh;
+        slot.onRefresh = () => {
+            const current = index < currentLength ? source.at(index) : undefined;
+            resolved[index] = current;
+            const isPresent = current !== undefined;
+            slot.visible = isPresent; // Pixi's setter early-outs when unchanged
+            if (!isPresent) return SKIP_DESCENDANTS;
+            return ownRefresh?.();
+        };
 
-        // Single-pass zip-compare with two advancing indices.
-        // ni = position in new items (also the write position in container)
-        // oi = position in old prev
-        let ni = 0;
-        let oi = 0;
+        slots.push(slot);
+        container.addChild(slot);
 
-        while (ni < newLen && oi < oldLen) {
-            if (items[ni] === prev[oi]) {
-                next[ni] = items[ni];
-                ni++;
-                oi++;
-                continue;
-            }
-
-            // Single insertion: next new item matches current old
-            if (ni + 1 < newLen && items[ni + 1] === prev[oi]) {
-                container.addChildAt(createSlot(items[ni] as T, ni), ni);
-                next[ni] = items[ni];
-                ni++;
-                continue;
-            }
-
-            // Single deletion: current new matches next old
-            if (oi + 1 < oldLen && items[ni] === prev[oi + 1]) {
-                const slot = container.children[ni];
-                container.removeChild(slot);
-                slot.destroy({ children: true });
-                oi++;
-                continue;
-            }
-
-            // Replace: swap grandchild inside existing slot (no parent splice)
-            const slot = container.children[ni];
-            slot.children[0].destroy({ children: true });
-            slot.addChild(props.to(items[ni] as T, ni));
-            next[ni] = items[ni];
-            ni++;
-            oi++;
-        }
-
-        // Remaining new items: appends
-        while (ni < newLen) {
-            container.addChild(createSlot(items[ni] as T, ni));
-            next[ni] = items[ni];
-            ni++;
-        }
-
-        // Remaining old items: tail removals
-        while (oi < oldLen) {
-            const slot = container.children[container.children.length - 1];
-            container.removeChild(slot);
-            slot.destroy({ children: true });
-            oi++;
-        }
-
-        // Swap the buffers. No allocation: both arrays persist across frames.
-        next.length = newLen;
-        const spent = prev;
-        prev = next;
-        next = spent;
+        // Built mid-pass, so the running pass will not visit it until next
+        // frame, and until its first refresh its bindings have not run at all.
+        // Refresh it now so it is correct on the frame it appears.
+        refreshScene(slot);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** Stands in for the source until the list's first refresh resolves it. */
+const EMPTY_SOURCE: ListSource<never> = { length: 0, at: () => undefined };

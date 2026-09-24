@@ -16,9 +16,12 @@
 In MVT, the hot-path roots are:
 
 - **`update(deltaMs)`** in models - called every frame by the ticker.
-- **`refresh()`** in views - called every frame by the renderer.
-- **Everything they call** - helpers, binding accessors, child `update()` and
-  `refresh()` calls.
+- **`refresh()`** in views - called every frame, after the models update. In
+  this project, that is every `onRefresh` hook, run by `refreshScene`.
+- **`update(deltaMs)`** in views with presentation state - in this project,
+  every `onUpdate` hook, run by `updateScene`.
+- **Everything they call** - helpers, binding accessors, and child model
+  `update()` calls.
 
 Code that runs only at construction time, on user input, or in response to
 rare events is not on the hot path and does not need these considerations.

@@ -66,7 +66,7 @@ function createEntityView(bindings: EntityViewBindings): Container {
         view.position.set(bindings.getX(), bindings.getY());
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
@@ -166,7 +166,7 @@ function createGoodView(bindings: MyBindings): Container {
         // ...
     }
 
-    container.onRender = refresh;
+    container.onRefresh = refresh;
     return container;
 }
 ```

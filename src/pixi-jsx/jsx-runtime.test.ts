@@ -8,9 +8,26 @@ import { jsx } from './jsx-runtime';
 // ---------------------------------------------------------------------------
 
 describe('jsx runtime', () => {
-    it('applies dynamic bindings at construction and on each refresh', () => {
+    it('applies static props at construction', () => {
+        const el = jsx('container', { x: 3, label: 'fixed' });
+
+        expect(el.x).toBe(3);
+        expect(el.label).toBe('fixed');
+    });
+
+    it('runs no binding at construction, only from the first refresh on', () => {
+        let reads = 0;
         let x = 1;
-        const el = jsx('container', { x: () => x });
+        const el = jsx('container', {
+            x: () => {
+                reads++;
+                return x;
+            },
+        });
+        expect(reads).toBe(0);
+        expect(el.x).toBe(0); // Pixi's default until the first refresh
+
+        refreshScene(el);
         expect(el.x).toBe(1);
 
         x = 5;
@@ -18,9 +35,25 @@ describe('jsx runtime', () => {
         expect(el.x).toBe(5);
     });
 
-    it('writes watched bindings only when their value changes', () => {
+    it('lets a skipping ancestor keep a not-yet-valid binding from ever running', () => {
+        // The motivating case: a binding that throws until its data exists
+        const model: { boss?: { hp: number } } = {};
+        const child = jsx('text', { text: () => `HP ${model.boss!.hp}` });
+        const parent = jsx('container', { visible: () => model.boss !== undefined, children: child });
+
+        expect(() => refreshScene(parent)).not.toThrow();
+
+        model.boss = { hp: 9 };
+        refreshScene(parent);
+        expect((child as unknown as { text: string }).text).toBe('HP 9');
+    });
+
+    it('writes a watched binding on the first refresh, then only when it changes', () => {
         let label = 'a';
         const el = jsx('container', { label: () => label });
+
+        refreshScene(el);
+        expect(el.label).toBe('a');
 
         // A direct write is left alone while the binding is unchanged...
         el.label = 'overwritten';

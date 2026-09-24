@@ -86,7 +86,7 @@ function createGoodView(bindings: MyBindings): Container {
         // ...
     }
 
-    container.onRender = refresh;
+    container.onRefresh = refresh;
     return container;
 }
 ```

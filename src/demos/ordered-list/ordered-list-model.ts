@@ -97,7 +97,7 @@ export function createOrderedListDemoModel(): OrderedListDemoModel {
     }
 
     function removeOrdinal(ordinal: number): void {
-        const slot = list.atOrdinal(ordinal);
+        const slot = list.ordered.at(ordinal);
         if (slot !== undefined) list.remove(slot);
     }
 }

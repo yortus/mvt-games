@@ -6,8 +6,8 @@
 > way.
 
 **Status: spike.** Used by its demo, every game and demo, the cabinet, the
-shared views in `src/common/`, and the `pixi-jsx` runtime. Only the playground
-still refreshes through Pixi's `onRender`.
+shared views in `src/common/`, the `pixi-jsx` runtime and the playground.
+Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---
 

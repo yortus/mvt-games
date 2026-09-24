@@ -66,7 +66,7 @@ function createBallView(model: BallModel): Container {
     const gfx = new Graphics();
     const view = new Container();
     view.addChild(gfx);
-    view.onRender = refresh;
+    view.onRefresh = refresh;
 
     function refresh() {
         gfx.clear();
@@ -94,12 +94,19 @@ stage.addChild(view);
 
 app.ticker.add((ticker) => {
     ball.update(ticker.deltaMS);
+    refreshScene(app.stage);
 });
 ```
 
 The sequence every frame is: **update model** -> **refresh view** -> **render**.
-The ticker drives the model; Pixi's `onRender` hook drives the view. Neither
-the model nor the view knows about the other's internals.
+The ticker drives both: it advances the model, then `refreshScene` runs every
+view's `onRefresh` hook, and Pixi renders afterwards. Neither the model nor the
+view knows about the other's internals.
+
+`onRefresh` and `refreshScene` are this project's way of scheduling view
+refreshes in Pixi, from [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt).
+MVT only requires that views read the model after it updates and before the
+frame is drawn; any mechanism that does that works.
 
 ## Try It Live
 

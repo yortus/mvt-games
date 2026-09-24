@@ -24,7 +24,7 @@ export function createTsxPixiEntry(): DemoEntry {
             'Custom JSX runtime',
             'Function-valued props for dynamic bindings',
             'Per-frame change detection',
-            'Zip-compare list reconciliation',
+            'Index-addressed <List> with no reconciliation',
             'Memoized getters with auto-dep tracking',
         ],
         sourceUrl: 'https://github.com/yortus/mvt-games/tree/main/src/demos/tsx-pixi',

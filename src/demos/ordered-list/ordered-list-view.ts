@@ -8,7 +8,7 @@ import { type OrderedListDemoModel, type Card } from './ordered-list-model';
 
 /**
  * Renders an `OrderedSlotList` as a row of cards. Card views are pooled by
- * stable storage index (`atSlotIndex`), and each eases its rendered position
+ * stable storage index (`list.slots`), and each eases its rendered position
  * toward `slot.ordinal`, so a reorder slides for free. A removed card is still
  * reachable by storage index while it lingers pending release, so it fades and
  * floats out as its former neighbours close the gap.
@@ -42,12 +42,12 @@ export function createOrderedListView(model: OrderedListDemoModel): Container {
         caption.text = model.caption;
 
         const list = model.list;
-        const count = list.slotCount;
+        const count = list.slots.length;
         const k = 1 - Math.exp(-deltaMs / SMOOTH_MS);
 
         for (let i = 0; i < sprites.length; i++) {
             const sprite = sprites[i];
-            const slot = i < count ? list.atSlotIndex(i) : undefined;
+            const slot = i < count ? list.slots.at(i) : undefined;
 
             if (slot === undefined) {
                 if (sprite.owner !== undefined) {

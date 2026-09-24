@@ -23,7 +23,7 @@ export function createOrderedListEntry(): DemoEntry {
             + 'delay, so it fades and floats out while the survivors close the gap.',
         techniques: [
             'OrderedSlotList: storage index for identity, ordinal for layout',
-            'View pooled by stable storage index (atSlotIndex)',
+            'View pooled by stable storage index (list.slots)',
             'Reorder animates by easing toward slot.ordinal - no watch, no diff',
             'Exit effects via releaseDelayMs while the slot lingers',
             'All motion is view-side presentation state; the model is instantaneous',

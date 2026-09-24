@@ -162,7 +162,7 @@ function createView(model: any): any {
     });
 
     drawBall(false);
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
@@ -333,7 +333,7 @@ function createView(model: any): any {
         model.hit(e.globalX, e.globalY);
     });
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
@@ -448,7 +448,7 @@ function createView(model: any): any {
     const watcher = watch({ phase: () => model.phase });
 
     drawLights(model.phase);
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
@@ -576,7 +576,7 @@ function createView(model: any): any {
     view.addChild(hint);
 
     drawTriangle();
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
@@ -687,7 +687,7 @@ function createView(model: any): any {
     statusText.anchor.set(0.5, 0.5);
     view.addChild(statusText);
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {
@@ -805,7 +805,7 @@ function createView(model: any): any {
     face.circle(CENTRE_X, CENTRE_Y, 3);
     face.fill(0xff4444);
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {

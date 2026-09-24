@@ -6,13 +6,18 @@
 > design depends on, the hard dependency on the `SKIP_DESCENDANTS` sentinel, and
 > a migration path.
 
-**Status:** partly implemented. Migration steps 0 to 2 (section 9) are done:
-the cursor-aliasing defect in section 2.2 is fixed, the JSX runtime and the
-shipping `<List>` refresh through `onRefresh` with the section 7.6 codegen, and
-compiled refresh functions are cached (section 7.1). The new `<List>` itself,
-`<Switch>`, and the demo migration (steps 3 to 7) are still to do. A working
-reference implementation of the new `<List>` runs in
-[`src/demos/list-swap/`](../src/demos/list-swap/README.md).
+**Status:** implemented, apart from step 8 of the migration (folding the
+patterns guide into `docs/`, deferred until the JSX runtime graduates). The
+index-addressed `<List>` is `src/pixi-jsx/list.ts`, `<Switch>` is
+`src/pixi-jsx/switch.ts`, and sections 7.1 to 7.6 are all in the runtime. Both
+JSX demos use them, including [`src/demos/list-swap/`](../src/demos/list-swap/README.md),
+whose local copy of an earlier `<List>` is deleted. The shipped `<List>`
+differs from the section 4.3 reference implementation in two small ways; the
+note at the end of section 4.3 explains both. Its props also changed after
+implementation: a single `items` source replaced `length` and `item` (section
+4.7). Construction in the JSX runtime is now inert (section 7.7), and
+`<Switch>` shipped as `<Switch>`/`<Match>` rather than the `kind`/`cases` form
+of section 5.2 (section 5.4).
 
 **Related:** [Patterns guide](./006-list-patterns.md) - how to apply this to common
 list shapes. [the `SlotList` proposal](./005-slot-list-proposal.md) - the
@@ -380,6 +385,27 @@ first refreshes on the next pass, one frame after it appears. Without an `item`
 prop each slot's presence check reduces to a visibility write, and an unchanged
 `length` grows nothing.
 
+**Where the shipped implementation differs, and why.** `src/pixi-jsx/list.ts`
+keeps every rule in section 4.2.
+
+1. **Nothing happens at construction.** The list reads `items` and builds its
+   slots on its first refresh, not when it is built, as does `<Switch>` with
+   `kind()`. This follows from inert construction (section 7.7): an ancestor
+   that skips the list, such as an unselected branch, must be able to keep a
+   not-yet-valid `items` getter from running.
+2. **A slot is refreshed as soon as it is built.** The plugin allows a method
+   to drive a *different* container, so `list.ts` calls `refreshScene(slot)`
+   straight after building it. There is no one-frame lag, and hand-written
+   item views that only sync inside `onRefresh` are correct on their first
+   frame. The running pass does not visit the slot again, because it was not
+   in that pass's snapshot. `<Switch>` does the same when it attaches a
+   branch, which also covers re-attaching a retained branch that did not
+   refresh while it was detached.
+
+It also reads `length()` once per frame in the list's own hook, which the pass
+runs before any slot, and shares it with every slot's presence check, rather
+than calling `length()` once per slot.
+
 ### 4.4 Shrink policy: hide, never detach or destroy
 
 Three options, and the `SKIP_DESCENDANTS` sentinel in the refresh pass decides
@@ -448,6 +474,55 @@ The durable wins are smaller and less glamorous than the asymptotics suggest:
 - One fewer container per item. The slot wrapper exists only to make the
   Replace branch cheap, so with no Replace branch `N` containers leave the
   scene graph along with their transform and collection work.
+
+### 4.7 `items` replaced `length` and `item` (after implementation)
+
+Sections 4.1 to 4.3 are the original design record. The shipped `<List>` takes
+one prop in place of `length` and `item`:
+
+```ts
+export interface ListSource<T> {
+    readonly length: number | (() => number);
+    at(index: number): T | undefined;
+}
+
+items: ListSource<T> | (() => ListSource<T>);
+```
+
+```tsx
+<List items={getStars}>                  // an array, via a getter
+<List items={model.tiles}>               // an array, by reference
+<List items={bullets.slots}>             // a SlotList
+<List items={hand.ordered}>              // an OrderedSlotList, logical order
+<List items={{ length: () => model.enemyCount, at: (i) => model.getEnemy(i) }}>
+```
+
+- **The source shape is the one arrays already have.** `readonly T[]` is
+  assignable to `ListSource<T>` under the repo's ES2022 lib, and `at(i)`
+  measured the same as `[i]` (0.76 versus 0.77 ns per element; V8 inlines it;
+  **unverified**, measured in one process, see the performance docs proposal
+  section 5.4).
+  `SlotList` and `OrderedSlotList` expose `slots` (and `ordered`) in the same
+  shape, and dropped `slotCount`, `at`, `atSlotIndex` and `atOrdinal`, which
+  those replaced (see the `SlotList` proposal).
+- **A value is a fixed reference whose contents are read every frame; a getter
+  re-reads the reference too.** Models in this repo mutate their collections
+  in place, so the value form is usually right. A model that replaces its
+  collection needs the getter form; passing a value there would silently keep
+  reading the old collection.
+- **Semantics are otherwise unchanged.** `at(i)` returning `undefined` is an
+  empty slot, exactly as `item(i)` was, and it is still called once per slot
+  per frame. `length` is now read once per frame from the resolved source.
+- **`length` may be a number or a function.** Arrays and slot lists have a
+  number. A function is called once per frame, following the runtime's rule
+  that a function is live, so an inline literal can have a live length without
+  accessor syntax (`get length() { ... }`). The literal is evaluated once, like
+  every JSX prop, so it does not allocate per frame.
+- **Index-only lists need a source.** Where the old API allowed
+  `length={() => n}` with no `item`, a list now needs something to project:
+  usually a collection the model already has (`model.cells`), otherwise a
+  two-member object literal (`{ length: () => model.count, at: (i) => ... }`).
+  The patterns guide shows both.
 
 ---
 
@@ -534,6 +609,85 @@ For two or three variants that alternate rapidly, building all of them in the
 slot and toggling `visible` is cheaper still, because it avoids the instruction
 rebuild a structural change triggers.
 
+### 5.4 Shipped: `<Switch>`/`<Match>` (after implementation)
+
+Sections 5.1 to 5.3 are the original design record. `kind`/`cases` shipped
+first, was replaced before anything used it, and is gone. The shipped form, in
+`src/pixi-jsx/switch.ts`:
+
+```tsx
+<Switch>
+    <Match when={() => model.boss?.isEnraged === true}>
+        <text text={() => `ENRAGED ${model.boss!.hp}`} />
+    </Match>
+    <Match when={() => model.boss !== undefined}>
+        <text text={() => `HP ${model.boss!.hp}`} />
+    </Match>
+    <Match else>
+        <text text="No boss" />
+    </Match>
+</Switch>
+```
+
+**Evolution.** An earlier shipped form took the default branch as a
+`fallback` prop, as Solid does. It was replaced by `<Match else>`: one
+mechanism instead of two, the default written after the cases as in a
+`switch` statement, and the lazy function-child form available to it like any
+other branch. The name follows Kotlin's `when` expression, whose default
+branch is `else`. A subject-value form (`<Switch value={...}>` with
+`<Match case="ufo">`) was considered and rejected: JSX types children
+separately from their parent, so nothing could check a `case` against the
+subject's type, whereas TypeScript does reject `enemy().kind === 'uof'` in a
+`when` (error TS2367).
+
+**Why the section 5.1 objection no longer applies.** `<Match>` returns a real
+`Container` (the branch's wrapper) and records its `when` in a module-level
+`WeakMap`, so `JSX.Element` stays `Container`. `<Switch>` reads its children's
+entries from that table.
+
+**Why plain JSX children are safe.** JSX builds children before parents, so
+every branch exists before `<Switch>` does. With inert construction (section
+7.7) that is harmless: no binding runs at construction, and `<Switch>`'s own
+refresh, which runs before any branch, picks one branch and makes every other
+return `SKIP_DESCENDANTS`. A binding such as `model.boss!.hp` therefore only
+ever runs while its `when` holds.
+
+**Semantics.**
+
+1. `when`s are tested in order every frame, stopping at the first that holds;
+   no `when` runs at construction. The winner is shown; otherwise the
+   `<Match else>` branch if there is one; otherwise nothing. Showing nothing is
+   often what is meant (a one-branch switch works as "show this when"), so it
+   is not an error.
+2. Every branch is built up front and retained. Switching sets `visible`; the
+   scene is never restructured, so the old detach-and-attach and its
+   refresh-on-attach are gone.
+3. A newly selected branch refreshes on the frame it is selected, because the
+   switch's refresh precedes its branches' in the same pass.
+4. A `<Match>` child may be a function, built on the branch's first selection,
+   for branches too heavy to build in every slot of a list.
+5. A non-`<Match>` child throws at construction. A `<Match>` with no `<Switch>`
+   around it throws on its first refresh, since nothing would ever hide it.
+6. `<Match else>` is the default branch. Its props are typed as exclusive with
+   `when`, so a `<Match>` with neither (a silent catch-all) or both does not
+   compile. It must be the last `<Match>`, which also limits it to one; a
+   switch that breaks that rule throws at construction, since any branch after
+   it could never be shown.
+
+**What was traded.** Against `kind`/`cases`: coverage is no longer checked by
+TypeScript, and all branches are built up front (use a function child where
+that matters). Coverage can be recovered at runtime by a default branch whose
+child throws, since a function child only runs when its branch is selected:
+
+```tsx
+<Match else>{() => { throw new Error(`Unhandled kind: ${enemy().kind}`); }}</Match>
+```
+
+In return: any condition, plain JSX branches, a default branch, and switching
+with no structural change. With only a few
+cases, the per-frame cost (at most one `when` call per branch, plus a
+visibility write when the selection changes) does not matter.
+
 ---
 
 ## 6. `<Show>`: withdrawn
@@ -591,15 +745,51 @@ arrays.
 This matters far more once `<List>` builds slots lazily, because construction
 moves out of startup and into gameplay.
 
-**Implemented, and measured.** The cache is `compiledRefreshCache` in
-`jsx-runtime.ts`, and each element now allocates one closure. The saving is not
-where this section predicted. V8 already caches compilation by source string,
-so building an element only got about 11% cheaper (1.51 to 1.34 µs for three
-bindings). The real win is at refresh time: every element with a given shape
-now shares one function that warms up and gets optimised once, rather than
-each new element starting cold. With 1000 items, replacing 100 of them every
-frame, a frame dropped from 412 to 257 µs (about 38%). With no churn the two
-are close (86 versus 79 µs).
+**Implemented, and measured.** The cache was `compiledRefreshCache` in
+`jsx-runtime.ts` (since replaced, see below), and each element allocated one
+closure. The saving was not where this section predicted. V8 already caches
+compilation by source string, so building an element only got about 11%
+cheaper (1.51 to 1.34 µs for three bindings). The real win was at refresh
+time: every element with a given shape shared one function that warmed up and
+got optimised once, rather than each new element starting cold. With 1000
+items, replacing 100 of them every frame, a frame dropped from 412 to 257 µs
+(about 38%). With no churn the two were close (86 versus 79 µs).
+
+**These figures are unverified.** They were measured with the two designs in
+one process, a method later shown to distort comparisons (the performance docs
+proposal, section 4.1). Re-measuring them is listed in that proposal's section
+5.4. The direction is likely right; the percentages should not be quoted.
+
+**Revised: a cached factory instead of a cached body.** Each hook used to call
+the shared function, which called the getters through an array. The cache
+(`refreshFactoryCache`) now holds a generated *factory* per signature. Called
+once per element with the element and its getters as separate arguments, it
+returns the element's hook, which calls each getter it captured directly and
+keeps each watched value in a closure local.
+
+Measured on 1000 elements with three cheap bindings and no churn, **one design
+per process**, bundled to plain JavaScript, four runs each:
+
+| Design | Per frame |
+| --- | --- |
+| Shared body with a getter array (before) | 9.75-10.11 µs |
+| Cached factory (now) | 7.78-7.83 µs |
+| Hand-written hooks | 5.55-5.70 µs |
+
+About 21% faster, and the gap to hand-written hooks halves, from about 4.3 to
+about 2.2 ns per element. A CPU profile with inlining disabled attributes that
+remainder to the three getter calls themselves, which a runtime cannot avoid
+because getters are all it receives. The pass itself costs about 0.5 ns per
+element over a plain loop, and there were no deoptimisations after warm-up.
+
+**A measurement warning.** Earlier comparisons in this section ran several
+designs in one Vitest process, and reported larger gains (about 28 to 13 µs)
+plus about 5.6 ns per element of pass overhead that does not exist. Designs
+run side by side in one process share V8's inline caches and distort each
+other, as `scripts/bench-scene-passes.ts` already warns. Running under `tsx`
+also made timings bimodal (8 to 18 µs between identical runs), because its
+loader moves module loading into a worker thread. Trust only one-arm-per-process
+numbers from bundled JavaScript.
 
 While in there: `setupDynamicRefresh` allocates two closures per element, the
 `refresh` wrapper and the `onRender` arrow. Assigning
@@ -612,6 +802,8 @@ this proposal and `view` is not a prop on any current intrinsic element, so
 only `ref` still earns its place. This set affects intrinsic elements only:
 function components receive raw props and the runtime never classifies them.
 
+**Implemented.**
+
 ### 7.3 Declare props that already work but are untyped
 
 `zIndex` and `sortableChildren` reach Pixi through the default direct-set
@@ -623,6 +815,8 @@ is declared in the JSX prop types. Add `zIndex` and `sortableChildren` to
 `zIndex` becomes more useful under this proposal, as the alternative to lifting
 an item out of a list in order to draw it on top.
 
+**Implemented.** `zIndex` accepts a getter; `sortableChildren` is static.
+
 ### 7.4 Call `ref` for function components
 
 `jsx()` returns `type(props)` immediately for function components, so `ref` is
@@ -632,6 +826,8 @@ never consume `ref` themselves, to avoid a double call.
 
 Without this, a caller cannot reach a `<List>`'s own container to set, for
 example, `sortableChildren`.
+
+**Implemented**, and covered by a `ref` test in `list.test.ts`.
 
 ### 7.5 `onRefresh` with `SKIP_DESCENDANTS`: a hard dependency
 
@@ -699,6 +895,41 @@ bindings, whatever order the props were written in, and the compiled body
 returns the sentinel (passed in as a parameter) when it is false. Covered by
 `jsx-runtime.test.ts`.
 
+### 7.7 Inert construction (added after implementation)
+
+**Implemented.** `jsx()` applies static props at construction but calls no
+getter. Each binding first runs on the element's first refresh; watched
+bindings start from an `UNSET` sentinel so that refresh always writes. `<List>`
+and `<Switch>` are inert too: they read `items` and `kind()`, and build slots
+and branches, on their first refresh.
+
+**Why.** TSX builds children before their parents, so a binding evaluated at
+construction runs before any ancestor exists to skip it. A binding that is
+only valid under some condition (`model.boss!.hp`, valid only while a boss
+exists) would throw during construction even inside a hidden or unselected
+subtree. Deferring the first evaluation to the refresh pass, where parents run
+before children and can return `SKIP_DESCENDANTS`, means such a binding never
+runs while its guard says no. This is what makes a `<Switch>`/`<Match>` with
+plain JSX children safe.
+
+**What it changed elsewhere.**
+
+- `<List>` no longer seeds its item cache before `children()`, and no longer
+  delays building an empty index. Every index below `length` is built on the
+  refresh that first covers it, so slot `i` is child `i` again (rule 3 in
+  full) and the per-frame check for unfilled holes is gone.
+- Until its first refresh, a bound property holds Pixi's default. Nothing is
+  drawn that way: hosts refresh the whole scene before every render, and
+  `<List>`/`<Switch>` refresh what they build mid-pass. Code that reads a bound
+  property straight after construction (measuring a `<text>`, say) must call
+  `refreshScene` on the tree first. A `ref` callback sees defaults for the
+  same reason.
+- A `children` function must not call the item accessor while building, since
+  the slot may be empty then. Calling it inside bindings is always safe.
+
+**Cost.** None per frame. The first refresh does exactly the work
+construction used to.
+
 ---
 
 ## 8. Accepted limitations
@@ -721,34 +952,35 @@ which is what `reuseDelayMs` in
 [the `SlotList` proposal](./005-slot-list-proposal.md) exists for. Under
 rule 1 the model owns time, so an exit animation was never the view's to own.
 
-**Item roots cannot carry their own `visible` binding.** The list owns each
-slot's presence-visibility by wrapping the slot's refresh (section 4.3), so an
-item root that also drove `visible` would fight it. Drive `visible` on a child
-of the item root instead, or leave presence to the list.
+~~**Item roots cannot carry their own `visible` binding.**~~ Lifted by the
+section 7.6 codegen. The list's presence check runs first and returns before
+the item's own refresh when the slot is empty, so the item root's `visible`
+binding only runs for an occupied slot, after the list has shown it. The two
+compose as "present and visible", and neither overrides the other.
 
 **Per-frame cost is `O(slots)`, not `O(1)`.** Section 4.6 sets out why that is
 the honest comparison and where the work moved from.
 
-**Heterogeneous lists depend on `<Switch>`.** Until it ships, the simpler
-`<List>` is not a superset of the current one.
+~~**Heterogeneous lists depend on `<Switch>`.**~~ `<Switch>` has shipped.
 
 ---
 
 ## 9. Migration
 
-0. **Already landed.** The cursor-aliasing defect in section 2.2 is fixed and
-   covered by [`list.test.ts`](../src/pixi-jsx/list.test.ts). That fix stands on its own and
-   is independent of whether this proposal is adopted.
+0. **Already landed.** The cursor-aliasing defect in section 2.2 was fixed in
+   the reconciling `<List>`. That `<List>`, and its regression test, have since
+   been replaced by step 4.
 1. **Done.** ~~Land `onRefresh` with `SKIP_DESCENDANTS`~~ in the plugin rework,
    and move the JSX runtime's generated refresh from `onRender` to
    `onRefresh`, with the section 7.6 codegen. The shipping `<List>`, the demo
    host (`src/demos/main.ts`) and every demo moved with it.
 2. **Done.** ~~Land section 7.1 next.~~ Measured results are in that section.
-3. Add `<Switch>` to `src/pixi-jsx/`. Purely additive.
-4. Replace `list.ts` with the section 4.3 implementation and update the barrel.
-   `ListProps` changes shape, so this is a breaking change to the module's
-   public API.
-5. Update `src/demos/tsx-pixi/demo-view.tsx`, the only consumer:
+3. **Done.** ~~Add `<Switch>` to `src/pixi-jsx/`.~~ With `switch.test.ts`.
+   Sections 7.2 to 7.4 landed with it.
+4. **Done.** ~~Replace `list.ts` with the section 4.3 implementation~~, with the
+   three differences noted at the end of section 4.3. `list.test.ts` is
+   rewritten for the new semantics.
+5. **Done.** ~~Update `src/demos/tsx-pixi/demo-view.tsx`, the only consumer:~~
 
    ```tsx
    // before
@@ -756,8 +988,8 @@ the honest comparison and where the work moved from.
        <container x={() => star.x} y={() => star.y} alpha={() => star.alpha} />
    )} />
 
-   // after
-   <List length={() => getStars().length} item={(i) => getStars()[i]}>
+   // after (with the section 4.7 `items` prop)
+   <List items={getStars}>
        {(star) => (
            <container
                x={() => star().x}
@@ -768,9 +1000,11 @@ the honest comparison and where the work moved from.
    </List>
    ```
 
-6. Update `src/demos/tsx-pixi/README.md` and that demo's `techniques` list,
-   which both currently advertise zip-compare reconciliation.
-7. Point `src/demos/list-swap/list.ts` at the barrel and delete the local copy.
+6. **Done.** ~~Update `src/demos/tsx-pixi/README.md` and that demo's
+   `techniques` list.~~
+7. **Done.** ~~Point `src/demos/list-swap/list.ts` at the barrel and delete the
+   local copy.~~ Its tests went with it; `src/pixi-jsx/list.test.ts` covers the
+   same ground under the hide-not-detach policy.
 8. Fold [the patterns guide](./006-list-patterns.md) into
    `docs/building-with-mvt/` if and when the JSX runtime graduates from
    experimental. `docs/` currently makes no reference to `src/pixi-jsx/`.
@@ -794,9 +1028,8 @@ the honest comparison and where the work moved from.
 3. **Should the slot index reach the item as a binding rather than a
    closed-over constant?** It is a constant by construction, so a getter would
    be pure overhead. Recommend not.
-4. **Is `kind` the right prop name for `<Switch>`?** It follows the repo's
-   "`Kind` over `Type`" convention and avoids `on*`, which the runtime treats
-   as an event prefix on intrinsic elements.
+4. ~~**Is `kind` the right prop name for `<Switch>`?**~~ Moot: `<Switch>`
+   shipped as `<Switch>`/`<Match>` with no `kind` prop (section 5.4).
 5. **Should a `<KeyedList>` exist alongside the index-addressed one?**
    Question 1 asks whether to adopt keying *instead*. This asks whether to
    offer both, as Solid does with `<For>` and `<Index>`.
@@ -844,3 +1077,61 @@ the honest comparison and where the work moved from.
    re-derive; `BitmapText` or a texture swap does not solve it; and `onUpdate`
    has landed. At that point the case is measurable, and a `<KeyedList>` is
    roughly 40 lines on top of machinery that already exists.
+
+   **Decided (2026-09-24): no keyed list for now.** `onUpdate` has since
+   landed, so the fourth condition holds, but the other three do not.
+
+## 11. Parked ideas and settled questions (handoff)
+
+Recorded so a later session neither loses them nor re-litigates them. None is
+scheduled; each names what would justify picking it up.
+
+**Parked: pick up only when something needs it.**
+
+1. **A `range(length)` helper for lists addressed only by index.** Today the
+   idiom is a two-member source, `items={{ length: () => n, at: (i) => i }}`
+   (documented on `ListSource` in `list.ts`). A helper would shorten it
+   without weakening the type check. Trigger: the idiom appears in several
+   views.
+2. **A lint rule against calling the item accessor while building.** A
+   `children` function must call `item()` only inside bindings and hooks,
+   because a slot may be empty when it is built (section 7.7). Nothing checks
+   this mechanically. Trigger: the mistake happens in practice.
+3. **Merging `<List>`'s per-slot presence check into the item view's hook.**
+   Each slot's wrapper calls the item view's own `onRefresh`: one extra call
+   per slot per frame, likely a few nanoseconds. Unmeasured. Trigger: a
+   profile of a large list shows it, measured one design per process as
+   [the performance docs proposal](./010-performance-docs-proposal.md)
+   section 4.1 requires.
+4. **A typed `matchOn<T>()` factory for `case`-style matching.** The
+   subject-value form of `<Switch>` was rejected because nothing could check a
+   `case` against the subject's type (section 5.4). A factory such as
+   `const EnemyMatch = matchOn<EnemyKind>()`, returning a `<Match>` whose
+   `case` is typed `EnemyKind`, would restore the check at the cost of a
+   declaration per union. Trigger: a real view wants `case` brevity.
+
+**Settled: do not revisit without new information.**
+
+5. **Children receive an item accessor, not the item.** A slot's `children()`
+   runs once, and a closure keeps the value it was given, while the slot's
+   occupant keeps changing (splices, reorders, `SlotList` reuse). Inert
+   construction does not change this: it moves when bindings first run, not
+   what they capture. Every way of passing a plain value was examined and
+   rejected:
+   - A permanent stand-in object whose properties read the current item: it
+     lies about identity (`model.collect(item)` receives the stand-in), needs
+     a fixed item shape, and cannot represent primitives.
+   - A build-time rewrite of `item` to `item()`: it stops working silently
+     when the children function is moved or wrapped, and adds a compiler step.
+   - Permanent `Slot<T>` objects with a generation counter: they reintroduce
+     the ABA problem `SlotList` exists to prevent (Scramble's `baseSlot` and
+     the ordered-list demo both rely on fresh slot identity).
+   - Rebuilding a slot when its occupant changes: that is a keyed list
+     (question 5).
+6. **`ListSource.at` stays required.** Every function has a numeric `length`
+   (its arity), so with `at` optional, any function would type-check as a
+   source and `items={() => model.count}` would compile and render nothing.
+7. **`ListSource.length` is resolved once per frame, not normalised at
+   construction.** A getter-form `items` can change which source, and so which
+   kind of `length`, from frame to frame; and the check is one `typeof` per
+   frame, not per slot.

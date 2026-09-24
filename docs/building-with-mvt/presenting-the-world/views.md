@@ -50,7 +50,7 @@ function createEntityView(bindings: EntityViewBindings): Container {
         view.position.set(bindings.getX(), bindings.getY());
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
@@ -75,9 +75,9 @@ MVT imposes two architectural constraints on views:
    rules, or decide what happens next. That belongs in models.
 
 Everything else - whether you use factory functions or classes, Pixi.js
-containers or DOM elements, `onRender` hooks or manual call sites - is a style
+containers or DOM elements, `onRefresh` hooks or manual call sites - is a style
 choice. The examples on this page use this repo's conventions (factory
-functions, Pixi.js scene graphs, `onRender` hooks). See the
+functions, Pixi.js scene graphs, `onRefresh` hooks). See the
 [Style Guide](../../reference/style-guide.md) for this repo's specific
 conventions.
 
@@ -144,14 +144,23 @@ function createBulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.getX(), bindings.getY());
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
 
-The `onRender` property is Pixi's hook for per-frame updates. Setting it once
-at construction time means the view's `refresh()` runs automatically whenever
-the renderer draws a frame - no manual scheduling needed.
+`onRefresh` is this project's per-frame refresh hook, added to every Pixi
+`Container` by `src/pixi-mvt/`. Setting it once at construction means the
+view's `refresh()` runs every frame, as long as the view is in the scene: the
+host's `refreshScene` call finds it wherever it sits in the tree, with no
+parent passing calls on. See
+[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes)
+for how the passes are driven.
+
+`refresh()` may set the view's own `visible`, as above; nothing about hiding a
+view stops its hook running, so it can show itself again next frame. To also
+skip refreshing everything below it while hidden, return `SKIP_DESCENDANTS`
+from the hook instead of plain `return`.
 
 ## What Does NOT Belong in a View
 
@@ -182,7 +191,7 @@ smooth score count-up - those don't affect what happens next in the game.
 But they do need timers and progress values that advance with time, so
 the view maintains them.
 
-A view with presentation state gains an `update(deltaMs)` method - the
+A view with presentation state gains an `update(deltaMs)` step - the
 same time-advancement concept used by models - so the ticker can advance
 the view's state each frame:
 
@@ -192,6 +201,11 @@ Ticker loop:
   view.update(deltaMs)      -- view state advances (views that have it)
   view.refresh()            -- reads model + own state, writes to scene graph
 ```
+
+In this project, that step is the view's `onUpdate` hook
+(`view.onUpdate = update`), run by `updateScene` before any `onRefresh`. Like
+`onRefresh`, it is found wherever the view sits in the tree, so no parent has
+to forward `update(deltaMs)` to it.
 
 When the presentation logic grows complex enough to warrant separate testing,
 it can be extracted into a **view model** - a technique borrowed from the

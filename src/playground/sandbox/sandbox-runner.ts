@@ -8,6 +8,9 @@
 
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
 import { transform } from 'sucrase';
+// Also installs the `onUpdate`/`onRefresh` hooks on `Container`, before any
+// user view code runs
+import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../../pixi-mvt';
 import type { HostMessage, SandboxMessage } from './messages';
 
 // ---------------------------------------------------------------------------
@@ -157,6 +160,9 @@ function createUserGlobals(): Record<string, unknown> {
         Texture,
         Rectangle,
         TextStyle,
+        // Views set `onRefresh` (and `onUpdate`); a hook may return this to
+        // skip its container's descendants for that pass
+        SKIP_DESCENDANTS,
         // We include a minimal watch implementation so users can use it
         watch: createWatch,
         // Allow view code to set the canvas background colour
@@ -340,19 +346,26 @@ async function runCode(
 
     pixiApp.stage.addChild(view);
 
-    // Ticker loop
+    // Ticker loop: the MVT frame sequence, as the main app runs it. Time only
+    // advances when not paused; the refresh pass runs every tick regardless,
+    // so the view still reflects the model while paused.
     tickerCallback = (ticker) => {
-        if (paused) return;
+        let phase = 'model.update()';
         try {
-            if (typeof model.update === 'function') {
-                model.update(ticker.deltaMS * speedMultiplier);
+            if (!paused) {
+                const deltaMs = ticker.deltaMS * speedMultiplier;
+                if (typeof model.update === 'function') model.update(deltaMs);
+                phase = 'a view\'s onUpdate';
+                updateScene(view, deltaMs);
             }
+            phase = 'a view\'s onRefresh';
+            refreshScene(pixiApp.stage);
         }
         catch (err: unknown) {
             sendToHost({
                 kind: 'error',
-                message: `Runtime error in model.update(): ${err instanceof Error ? err.message : String(err)}`,
-                source: 'runtime',
+                message: `Runtime error in ${phase}: ${err instanceof Error ? err.message : String(err)}`,
+                source: phase === 'model.update()' ? 'runtime' : 'view',
             });
             // Stop the ticker to prevent error spam
             if (tickerCallback && pixiApp) {

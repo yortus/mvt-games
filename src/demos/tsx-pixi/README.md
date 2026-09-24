@@ -9,7 +9,8 @@ virtual DOM, no reactive library.
 
 - Declarative scene-graph construction from TSX
 - Static and dynamic props on `<container>`, `<sprite>`, `<text>`, `<graphics>`
-- Dynamic child lists via `<List>`
+- Dynamic child lists via the index-addressed `<List>`, and conditional
+  branches via `<Switch>`/`<Match>`
 - Memoized derived values via `memo()`
 - Pointer event handling (`onPointerTap`, etc.)
 - Callback refs for imperative access (`ref`)
@@ -35,11 +36,13 @@ function createDemoView(bindings: DemoViewBindings): Container {
             <container x={bindings.getPlayerX} y={bindings.getPlayerY}>
                 <graphics ref={drawPlayer} />
             </container>
-            <List of={bindings.getStars} to={(star) => (
-                <container x={() => star.x} y={() => star.y}>
-                    <graphics ref={drawStar} />
-                </container>
-            )} />
+            <List items={bindings.getStars}>
+                {(star) => (
+                    <container x={() => star().x} y={() => star().y}>
+                        <graphics ref={drawStar} />
+                    </container>
+                )}
+            </List>
         </container>
     );
 }
@@ -51,6 +54,13 @@ function createDemoView(bindings: DemoViewBindings): Container {
 function. Static values (`x={12}`) are applied once at construction. Getter
 functions (`x={() => star.x}` or `x={bindings.getPlayerX}`) are polled each
 frame. This is the only API - no signals, no subscriptions, no setState.
+
+**Inert construction.** Building the tree runs no getter. Each binding first
+runs on the element's first refresh, once the whole tree exists, so a hidden
+or skipped ancestor can keep a binding that is not yet valid (say,
+`model.boss!.hp` while there is no boss) from ever running. The host refreshes
+the scene before every render, so nothing is ever drawn before its bindings
+have run.
 
 **Direct per-tick updates for cheap props.** Position, alpha, rotation, and
 similar numeric props are cheap to write on a Pixi display object - just a
@@ -75,22 +85,23 @@ signals, observables, effects, or subscriptions. Change detection is a simple
 `!==` check on the getter's return value. This fits naturally with MVT's
 ticker loop and avoids the overhead of reactive dependency tracking.
 
-**Typed dynamic lists.** The `<List>` function component manages a dynamic set
-of children driven by a getter. TypeScript infers the item type from the `of`
-prop and flows it into the `to` callback. Internally it uses a zip-compare
-reconciliation algorithm optimized for common game mutations (append, remove,
-single insert/delete) with object-identity comparison - no keys needed.
+**Index-addressed lists.** The `<List>` function component reads `items`, a
+source shaped like a read-only array (a `length` and an `at(i)`, which arrays
+already have), or a getter returning one. It never compares items and never
+reconciles: slot `i` shows whatever is at index `i` right now, re-read every
+frame. When a star is spliced out of the middle of the array, the stars after
+it simply show up one slot earlier, with no nodes rebuilt or moved. TypeScript
+infers the item type from `items` and flows it into
+the children function, which receives an accessor (`star()`) rather than a
+value, as a reminder that the item is re-read each frame. Slots are built once
+per index and kept; a slot with nothing in it hides and skips its whole
+subtree, so its bindings never run.
 
-**Optimisation: Version-gated reconciliation.** The `<List>` component accepts an optional
-`version` getter. When provided, the zip-compare reconciliation is skipped
-entirely unless the version value has changed (by `===`). This collapses N
-per-item identity checks into a single comparison on unchanged frames - useful
-for lists that mutate infrequently. The model naturally knows when it mutates
-the list, so providing a version counter is straightforward.
-
-**Optimisation: Codegen'd refresh functions.** At construction time, the runtime builds a
-specialized refresh function (via `new Function`) for each element's exact set
-of bindings. This eliminates per-frame loop overhead, object lookups, and
+**Optimisation: Codegen'd refresh functions.** The runtime generates a
+specialized refresh factory (via `new Function`) for each distinct set of
+bindings, and caches it. Each element gets its own small closure from that
+factory, which calls its getters directly, so a refresh costs about the same
+as a hand-written one. This eliminates per-frame loop overhead, object lookups, and
 switch dispatch - the generated function is a flat sequence of white-listed safe assignments. This is an optional optimisation just for added performance.
 
 **Optimisation: Memoized getters.** The standalone `memo()` helper creates a cached getter with
@@ -103,7 +114,8 @@ returns a different value. It's totally optional, but useful when a dynamic prop
 | File | Purpose |
 |------|---------|
 | [`src/pixi-jsx/jsx-runtime.ts`](../../../pixi-jsx/jsx-runtime.ts) | JSX factory - creates Pixi objects, classifies props, wires up per-frame refresh |
-| [`src/pixi-jsx/list.ts`](../../../pixi-jsx/list.ts) | `<List>` component - typed dynamic children with zip-compare reconciliation |
+| [`src/pixi-jsx/list.ts`](../../../pixi-jsx/list.ts) | `<List>` component - index-addressed dynamic children, no reconciliation |
+| [`src/pixi-jsx/switch.ts`](../../../pixi-jsx/switch.ts) | `<Switch>`/`<Match>` components - show the first branch whose condition holds |
 | [`src/pixi-jsx/memo.ts`](../../../pixi-jsx/memo.ts) | `memo()` - memoized getter with automatic dependency tracking |
 | [`demo-view.tsx`](./demo-view.tsx) | This demo's view - shows all the patterns in action |
 | [`demo-model.ts`](./demo-model.ts) | This demo's model - bouncing player, coins, dynamic stars |

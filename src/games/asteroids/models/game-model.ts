@@ -261,8 +261,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function updateAsteroids(deltaMs: number): void {
-        for (let i = 0; i < asteroids.slotCount; i++) {
-            const slot = asteroids.at(i);
+        for (let i = 0; i < asteroids.slots.length; i++) {
+            const slot = asteroids.slots.at(i);
             if (slot !== undefined) slot.value.update(deltaMs);
         }
     }
@@ -280,8 +280,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const cy = Math.random() * arenaHeight;
 
             let minDist = Infinity;
-            for (let a = 0; a < asteroids.slotCount; a++) {
-                const slot = asteroids.at(a);
+            for (let a = 0; a < asteroids.slots.length; a++) {
+                const slot = asteroids.slots.at(a);
                 if (slot === undefined || !slot.value.isAlive) continue;
                 const d = distSq(cx, cy, slot.value.x, slot.value.y);
                 if (d < minDist) minDist = d;
@@ -397,8 +397,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const bullet = bullets[b];
             if (!bullet.isActive) continue;
 
-            for (let a = 0; a < asteroids.slotCount; a++) {
-                const slot = asteroids.at(a);
+            for (let a = 0; a < asteroids.slots.length; a++) {
+                const slot = asteroids.slots.at(a);
                 if (slot === undefined || !slot.value.isAlive) continue;
 
                 const ast = slot.value;
@@ -416,8 +416,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function checkShipVsAsteroids(): void {
         if (!ship.isAlive) return;
 
-        for (let a = 0; a < asteroids.slotCount; a++) {
-            const slot = asteroids.at(a);
+        for (let a = 0; a < asteroids.slots.length; a++) {
+            const slot = asteroids.slots.at(a);
             if (slot === undefined || !slot.value.isAlive) continue;
 
             const ast = slot.value;

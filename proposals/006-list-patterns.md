@@ -14,11 +14,20 @@ collection these patterns project.
 
 ## The model in one paragraph
 
-`<List length={...}>` is told only how many items there are. Slot `N` renders
-whatever the model holds at index `N`, and re-reads it every frame. Slots are
-built once per index and retained forever; on shrink they are detached, not
-destroyed. The list never inspects an item, never compares identities, and does
-no structural work while the length is unchanged.
+`<List items={...}>` reads a source with a `length` and an `at(i)`. Arrays
+already are one, and so are `SlotList.slots` and `OrderedSlotList.slots`/
+`.ordered`; anything else is a two-member literal, whose `length` may be a
+function for a live count (`{ length: () => model.count, at: ... }`). Slot `N` renders whatever `at(N)` returns,
+and re-reads it every frame; the item view receives an accessor (`item()`), not
+a value. Slots are built once per index and retained forever. A slot past the
+end, or whose `at(N)` is `undefined`, hides and skips its subtree; it is never
+detached or destroyed. The list never compares identities and does no
+structural work while the length is unchanged.
+
+`items` takes the source itself or a getter returning it. Pass the source
+(`items={model.tiles}`) when the model mutates one collection in place, which
+is how models in this repo own collections. Pass a getter (`items={getStars}`)
+when the model replaces its collection.
 
 ---
 
@@ -33,10 +42,10 @@ was built will not update.
 
 ```tsx
 // Wrong: the seed is baked in when the slot is built.
-{(index) => <graphics ref={(g) => drawAsteroid(g, model.getRock(index).seed)} />}
+{(rock) => <graphics ref={(g) => drawAsteroid(g, rock().seed)} />}
 
 // Right: the view redraws when its slot's occupant changes.
-{(index) => <AsteroidShape getSeed={() => model.getRock(index).seed} />}
+{(rock) => <AsteroidShape getSeed={() => rock().seed} />}
 ```
 
 Values derived from `index` alone are constants and are fine to capture,
@@ -71,22 +80,23 @@ game-like or UI-like.
 
 ## Fixed lists and grids
 
-The best case. The length getter returns a constant, so the list does one
-comparison per frame and never touches structure after the first.
+The best case. The length is constant, so the list does one comparison per
+frame and never touches structure after the first.
 
-A grid is a fixed list with an index-to-cell mapping. Derive `row` and `col`
-once, because `index` is constant for a slot:
+A grid is a fixed list with an index-to-cell mapping. Project the model's
+row-major cell array, and derive `row` and `col` once, because `index` is
+constant for a slot:
 
 ```tsx
-<List length={() => GRID_ROWS * GRID_COLS}>
-    {(index) => {
+<List items={model.cells}>
+    {(cell, index) => {
         // Constants: derived from index, which never changes for this slot.
         const row = (index / GRID_COLS) | 0;
         const col = index % GRID_COLS;
 
         return (
             <sprite
-                texture={() => tileTexture(model.getCell(row, col).kind)}
+                texture={() => tileTexture(cell().kind)}
                 x={col * CELL_PX}
                 y={row * CELL_PX}
             />
@@ -113,7 +123,7 @@ High churn, homogeneous items, potentially thousands of them. The shape is a
 a projection of it with no guard of any kind:
 
 ```tsx
-<List length={() => bullets.slotCount} item={(i) => bullets.at(i)}>
+<List items={bullets.slots}>
     {(slot) => (
         <sprite
             texture={bulletTexture}
@@ -130,13 +140,13 @@ views are built once and never destroyed.
 
 ### Empty slots cost one check, not one per binding
 
-`<List>` owns slot visibility. It hides any slot whose `item(i)` is
+`<List>` owns slot visibility. It hides any slot whose `at(i)` is
 `undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh pass
 skips its subtree and **the bindings above do not run for an empty slot.** That
 is also why `slot()` needs no null check: it is only called while the slot is
 occupied.
 
-An empty slot therefore costs one `item(i)` lookup and one presence check per
+An empty slot therefore costs one `at(i)` lookup and one presence check per
 frame, whatever the item view contains. The saving grows with the size of the
 item view rather than staying flat.
 
@@ -159,11 +169,11 @@ When capacity genuinely varies, let the length follow a live count and keep the
 live items packed at the front of the model's array.
 
 ```tsx
-<List length={() => model.liveCreepCount}>
-    {(index) => (
+<List items={model.creeps}>
+    {(creep) => (
         <CreepView
-            getX={() => model.getCreep(index).x}
-            getY={() => model.getCreep(index).y}
+            getX={() => creep().x}
+            getY={() => creep().y}
         />
     )}
 </List>
@@ -181,7 +191,7 @@ Under a pull model all three render correctly, because every binding re-reads.
 The difference is only how many slots change meaning, which matters when slots
 carry presentation state.
 
-**Exit animations belong in the model.** A detached slot vanishes instantly.
+**Exit animations belong in the model.** An emptied slot hides instantly.
 If an item should fade out, keep it in the model array with a `dying` timer and
 let the view read that. Under architecture rule 1 the model owns time, so an
 exit animation was never the view's to own.
@@ -242,11 +252,11 @@ function getX(index: number): number {
 The view is then ordinary:
 
 ```tsx
-<List length={() => model.tileCount}>
-    {(index) => (
+<List items={model.tiles}>
+    {(tile, index) => (
         <container x={() => vm.getX(index)} scale={() => vm.getScale(index)}>
             <graphics ref={drawTileFace} />
-            <text text={() => model.getTile(index).label} x={17} y={10} style={TILE_STYLE} />
+            <text text={() => tile().label} x={17} y={10} style={TILE_STYLE} />
         </container>
     )}
 </List>
@@ -282,30 +292,40 @@ built regardless of framework, so the constraint costs nothing.
 
 ## Items whose shape varies
 
-Index addressing cannot vary a slot's structure. Use `<Switch>` inside the
-slot, which scopes any rebuild to the one slot whose kind changed:
+Index addressing cannot vary a slot's structure. Put a `<Switch>` inside the
+slot, with one `<Match>` per shape:
 
 ```tsx
-<List length={() => model.enemyCount}>
-    {(index) => (
-        <Switch
-            kind={() => model.getEnemy(index).kind}
-            cases={{
-                asteroid: () => asteroidView(model, index),
-                ufo: () => ufoView(model, index),
-            }}
-        />
+<List items={model.enemies}>
+    {(enemy) => (
+        <Switch>
+            <Match when={() => enemy().kind === 'asteroid'}>
+                <AsteroidShape getSeed={() => enemy().seed} />
+            </Match>
+            <Match when={() => enemy().kind === 'ufo'}>
+                <sprite texture={ufoTexture} x={() => enemy().x} y={() => enemy().y} />
+            </Match>
+        </Switch>
     )}
 </List>
 ```
 
-Branches are built on first selection and retained, so alternating between them
-is free after warm-up. `cases` must cover every member of the union `kind()`
-returns; TypeScript enforces that.
-
-For two or three variants that alternate rapidly, build all of them in the slot
-and toggle `visible` instead. That avoids the instruction rebuild a structural
-change triggers.
+- **The first `<Match>` whose `when` holds is shown**, or a final
+  `<Match else>` if none does. Without one, nothing is shown.
+- **Every branch is built up front and kept.** Switching only changes which one
+  is visible, so it never restructures the scene, even when a slot's occupant
+  changes kind every frame.
+- **An unselected branch's bindings never run.** Construction is inert and the
+  switch skips unselected branches, so a binding valid only for one kind (a
+  UFO's shield, say) is safe to write.
+- **Coverage is not checked at compile time.** Nothing tells you a kind has no
+  `<Match>`. To make a missing case an error at runtime, give the switch a
+  default branch whose child throws; a function child only runs when its
+  branch is selected:
+  `` <Match else>{() => { throw new Error(`Unhandled kind: ${enemy().kind}`); }}</Match> ``.
+- **For a heavy branch in a long list,** building every branch in every slot
+  costs memory. Pass a function as the `<Match>` child to build it on first
+  selection instead: `<Match when={...}>{() => <HeavyView />}</Match>`.
 
 ---
 
@@ -315,20 +335,24 @@ A long scrolling list renders a constant number of slots over a sliding offset.
 This is one of the best cases for index addressing: the length never changes,
 so there is no structural work at all while scrolling.
 
+The source is a two-member object literal, built once. Its `length` is a
+constant, and `at` reads through the scroll offset:
+
 ```tsx
-<List length={() => VISIBLE_ROWS}>
-    {(index) => (
-        <text
-            text={() => model.getRow(model.scrollRow + index).label}
-            y={index * ROW_HEIGHT_PX}
-            style={ROW_STYLE}
-        />
+const visibleRows: ListSource<Row> = {
+    length: VISIBLE_ROWS,
+    at: (i) => model.rows.at(model.scrollRow + i),
+};
+
+<List items={visibleRows}>
+    {(row, index) => (
+        <text text={() => row().label} y={index * ROW_HEIGHT_PX} style={ROW_STYLE} />
     )}
 </List>
 ```
 
-Guard the accessor in the model so an offset near the end returns a blank row
-rather than reading past the array.
+Near the end of the data, `at` returns `undefined` for rows past the last one,
+so those slots hide themselves. No guard is needed in the model.
 
 ---
 
@@ -336,17 +360,17 @@ rather than reading past the array.
 
 A nav overlay, selection rings, or a filtered result set recomputed each frame
 produces all-new object identities every frame. Index addressing does not care:
-only the length matters, so the list does nothing on frames where the count is
-stable.
+only the length matters structurally, so the list does nothing on frames where
+the count is stable.
 
-Keep the count getter allocation-free. This is a hot path:
+Keep an `items` getter allocation-free. It runs every frame:
 
-```ts
-// Wrong: allocates an array every frame.
-length={() => items.filter((x) => x.isVisible).length}
+```tsx
+// Wrong: allocates a new array every frame.
+<List items={() => model.items.filter((x) => x.isVisible)}>
 
-// Right: the model maintains the count as it mutates.
-length={() => model.visibleCount}
+// Right: the model maintains the derived collection as it mutates.
+<List items={model.visibleItems}>
 ```
 
 ---
@@ -360,6 +384,7 @@ length={() => model.visibleCount}
 | `Map<id, state>` for that store | `update()` is a hot path | Array indexed by a dense integer id |
 | Guarding each binding in a slot | `<List>` already hides empty slots, and an empty slot skips its subtree via `SKIP_DESCENDANTS` | Let the list do it. `slot()` is only called while occupied |
 | Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, whose codegen returns `SKIP_DESCENDANTS` and invalidates nothing |
-| An allocating `length` getter | Runs every frame | Have the model maintain the count |
-| Expecting an exit animation from a removed item | Detached slots vanish instantly | Keep the item in the model with a `dying` timer |
-| Reading `items[index]` in a slot beyond the current length | Out of range | Fixed-capacity pool, or rely on detachment |
+| An allocating `items` getter | Runs every frame | Have the model maintain the collection |
+| Passing a value for a collection the model replaces | The list keeps reading the old one | Pass a getter: `items={getStars}` |
+| Expecting an exit animation from a removed item | Emptied slots hide instantly | Keep the item in the model with a `dying` timer, or use a `SlotList` release delay |
+| Reading the model by `index` in a slot beyond the current length | Out of range | Read through the item accessor, which only runs while the slot is occupied |

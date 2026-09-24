@@ -81,7 +81,7 @@ function createScoreView(bindings: ScoreViewBindings): Container {
         label.text = String(bindings.getScore());
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
@@ -112,7 +112,7 @@ function createEntityView(bindings: EntityViewBindings): Container {
         view.position.set(bindings.getX(), bindings.getY());
     }
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 }
 ```
@@ -123,18 +123,35 @@ Key points:
   text, tint) - do not recreate display objects.
 - Return the root `Container`. The parent view adds it to its own container.
 
-## Using `onRender`
+## Using `onRefresh` and `onUpdate`
 
-**[project convention]** This project hooks `refresh()` to Pixi's `onRender`
-callback, which fires once per frame during the render traversal:
+**[project convention]** `src/pixi-mvt/` adds two optional hooks to every Pixi
+`Container`. A view assigns `refresh()` to `onRefresh`, and, only if it has
+presentation state, `update(deltaMs)` to `onUpdate`:
 
 ```ts
-view.onRender = refresh;
+view.onUpdate = update;     // only for views with presentation state
+view.onRefresh = refresh;
 ```
 
-This avoids manual call-site management - the view refreshes automatically
-as long as it is in the scene graph. When removed from the scene graph, the
-callback stops firing.
+- The host drives them each frame: `model.update(deltaMs)`, then
+  `updateScene(root, deltaMs)` runs every `onUpdate` in the tree, then
+  `refreshScene(root)` runs every `onRefresh`. Each game session's `update()`
+  runs its model and `updateScene` over its view; `src/main.ts` runs one
+  `refreshScene` over the stage per tick.
+- **Never forward `update()` or `refresh()` to child views.** The passes walk
+  the whole tree, parents before children, and find every hook themselves.
+  A view is an ordinary `Container`; return it as one.
+- A hook may return `SKIP_DESCENDANTS` to skip its container's descendants for
+  that pass (a hidden subtree). Setting `visible = false` alone skips nothing,
+  and a view may set its own `visible` freely.
+- Do not use Pixi's `onRender` for view refresh. It is tied to render cadence
+  and cannot skip subtrees.
+- In tests, drive a view with `updateScene(view, deltaMs)` and
+  `refreshScene(view)`; no renderer or ticker is needed.
+
+The language-neutral spec (`docs/architecture/`) describes these only as a
+view's `update(deltaMs)` and `refresh()` steps, and must not mention the hooks.
 
 ## Change Detection (Watch)
 
@@ -169,9 +186,9 @@ scene graph. Occasionally a view needs its own state for a cosmetic transition
 that the model doesn't track (the model has no reason to track it because no
 domain outcome depends on it).
 
-Views with presentation state gain an `update(deltaMs)` method. The ticker
-calls `view.update(deltaMs)` after models update. Parent views propagate
-`update()` to children that have it.
+Views with presentation state gain an `update(deltaMs)` step, assigned to
+`view.onUpdate` in this project. `updateScene` runs it after models update and
+before any refresh. Parent views do not propagate it; the pass finds it.
 
 When the presentation logic grows complex enough to warrant separate testing,
 extract it into a **view model** - a technique borrowed from MVVM:
@@ -185,7 +202,8 @@ the view model and passes it to both views.
 
 For the simplest cases (a single tweened value with trivial logic), inline
 presentation state in the view is acceptable. The view gains an
-`update(deltaMs)` method so the ticker can advance its state:
+`update(deltaMs)` function, assigned to `view.onUpdate`, so the update pass
+can advance its state:
 
 ```ts
 let displayedScore = 0;
@@ -225,10 +243,10 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 | ------------------------------------------ | --------------- | --------------------------------------------- |
 | Domain state in a view                     | V-stateless     | Move to the model                             |
 | Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
-| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use `update(deltaMs)` on the view             |
+| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's `onUpdate(deltaMs)` hook      |
 | Caching binding values at construction     | V-reactive      | Read `get*()` inside `refresh()`              |
 | Mutating models in `refresh()`             | V-readonly      | Use `on*()` bindings for input relay          |
-| `setTimeout` / `setInterval` in a view     | V-stateless     | Use `update(deltaMs)` on the view             |
+| `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's `onUpdate(deltaMs)` hook      |
 | Computing own deltaMs from `Date.now()`    | V-presentation  | Receive `deltaMs` from the ticker             |
 | Using `class`                              | Style           | Factory function + plain record               |
 | Using `enum` or const-object enum          | Style           | String-literal union                          |
@@ -262,7 +280,7 @@ function createEntityView(bindings: EntityViewBindings): Container {
     gfx.circle(0, 0, 4).fill(0xffffff);
     view.addChild(gfx);
 
-    view.onRender = refresh;
+    view.onRefresh = refresh;
     return view;
 
     function refresh(): void {

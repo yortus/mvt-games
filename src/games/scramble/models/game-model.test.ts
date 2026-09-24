@@ -26,12 +26,12 @@ describe('GameModel', () => {
 
         it('pools start empty', () => {
             const g = makeGame();
-            expect(g.bullets.slotCount).toBe(0);
-            expect(g.bombs.slotCount).toBe(0);
-            expect(g.rockets.slotCount).toBe(0);
-            expect(g.ufos.slotCount).toBe(0);
-            expect(g.fuelTanks.slotCount).toBe(0);
-            expect(g.explosions.slotCount).toBe(0);
+            expect(g.bullets.slots.length).toBe(0);
+            expect(g.bombs.slots.length).toBe(0);
+            expect(g.rockets.slots.length).toBe(0);
+            expect(g.ufos.slots.length).toBe(0);
+            expect(g.fuelTanks.slots.length).toBe(0);
+            expect(g.explosions.slots.length).toBe(0);
         });
 
         it('starts with scroll at 0', () => {

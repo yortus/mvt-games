@@ -17,10 +17,17 @@ tests. Deviations from this proposal as written:
   the vocabulary minimal.
 - `insert` scans from a cached lowest-free-index hint (amortised ~O(1), O(n)
   worst case); the bitmap in section 7 remains deferred.
+- **Indexed access is a `slots` property, not `slotCount` and `at`.** Both
+  lists expose `slots`, shaped like a read-only array (`slots.length`,
+  `slots.at(i)`), so `<List items={bullets.slots}>` projects one directly.
+  `OrderedSlotList` also exposes `ordered` (`ordered.length === liveCount`,
+  `ordered.at(ordinal)`) in the same shape. `slotCount`, `at`, `atSlotIndex`
+  and `atOrdinal` were removed as redundant. The code below still uses the old
+  names: read `slotCount` as `slots.length` and `at(i)` as `slots.at(i)`.
 
-Still pending: the `<List>` projection (section 5.3, needs 004). `asteroids`
-(step 3), `scramble` (step 4), and a visual demo (`src/demos/ordered-list/`) are
-done.
+The `<List>` projection (section 5.3) is done and covered by tests in
+`src/pixi-jsx/list.test.ts`. `asteroids` (step 3), `scramble` (step 4), and a
+visual demo (`src/demos/ordered-list/`) are also done.
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
 component. [the patterns guide](./006-list-patterns.md) for how the two
@@ -259,7 +266,7 @@ function update(deltaMs: number): void {
 ```
 
 ```tsx
-<List length={() => bullets.slotCount} item={(i) => bullets.at(i)}>
+<List items={bullets.slots}>
     {(slot) => (
         <sprite
             texture={bulletTexture}
@@ -271,7 +278,7 @@ function update(deltaMs: number): void {
 </List>
 ```
 
-No guard prop, and no non-null assertion. `<List>` hides slots whose `item(i)`
+No guard prop, and no non-null assertion. `<List>` hides slots whose `at(i)`
 is `undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh
 pass skips its subtree and these bindings demonstrably do not run while the slot
 is empty.
@@ -303,7 +310,7 @@ function retarget(tower: Tower): void {
 ```
 
 ```tsx
-<List length={() => creeps.slotCount} item={(i) => creeps.at(i)}>
+<List items={creeps.slots}>
     {(slot) => (
         <container
             x={() => pathX(slot().value.distance)}
@@ -405,8 +412,8 @@ hand.insertAt(ordinal, card);      // adds at a position, shifting the rest up
 hand.move(from, to);
 hand.sort(byValue);
 hand.remove(slot);                 // detaches now; slot lingers per releaseDelayMs
-hand.atOrdinal(ordinal): OrderedSlot<Card> | undefined;
-hand.atSlotIndex(index): OrderedSlot<Card> | undefined;   // for <List>
+hand.ordered.at(ordinal): OrderedSlot<Card> | undefined;  // logical order
+hand.slots.at(index): OrderedSlot<Card> | undefined;      // storage order, for <List>
 ```
 
 Every live item has an `ordinal` in `[0, liveCount)`, written directly onto the
@@ -433,11 +440,11 @@ needs `zIndex` with `sortableChildren` on the list container.
 ### 5.3 `<List>`, for projection
 
 ```tsx
-<List length={() => list.slotCount} item={(i) => list.at(i)}>
+<List items={list.slots}>
 ```
 
 That is the whole integration. `<List>` owns slot visibility: it hides any slot
-where `item(i)` is `undefined` or whose index is past `length`, and an empty
+where `slots.at(i)` is `undefined` or whose index is past `slots.length`, and an empty
 slot returns `SKIP_DESCENDANTS` so the refresh pass skips its subtree. Three
 consequences:
 
@@ -543,7 +550,7 @@ policy for very high churn.
 | `remove` | O(1) |
 | Slot freeing and trim | O(1) amortised |
 | `at`, `isFull`, field reads | O(1), plain property loads, no getters |
-| `<List>` per frame | one `item(i)` call and one visibility write per slot |
+| `<List>` per frame | one `at(i)` call and one visibility write per slot |
 | A hidden slot's view cost | one visibility check, subtree pruned |
 
 `Slot<T>` is three plain fields, so hot-loop reads are direct property loads and

@@ -349,15 +349,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // Visits pending-release slots too, so born-removed explosions keep animating.
     function updateEach<T extends { update(deltaMs: number): void }>(list: SlotList<T>, deltaMs: number): void {
-        for (let i = 0; i < list.slotCount; i++) {
-            const slot = list.at(i);
+        for (let i = 0; i < list.slots.length; i++) {
+            const slot = list.slots.at(i);
             if (slot !== undefined) slot.value.update(deltaMs);
         }
     }
 
     function updateRockets(deltaMs: number): void {
-        for (let i = 0; i < rockets.slotCount; i++) {
-            const slot = rockets.at(i);
+        for (let i = 0; i < rockets.slots.length; i++) {
+            const slot = rockets.slots.at(i);
             if (slot !== undefined) slot.value.update(deltaMs, ship.worldCol);
         }
     }
@@ -446,8 +446,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function removeOffscreenBullets(): void {
         const rightEdge = scrollCol + VISIBLE_COLS + 1;
-        for (let i = 0; i < bullets.slotCount; i++) {
-            const slot = bullets.at(i);
+        for (let i = 0; i < bullets.slots.length; i++) {
+            const slot = bullets.slots.at(i);
             if (slot !== undefined && slot.value.worldCol > rightEdge) {
                 bullets.remove(slot);
             }
@@ -455,8 +455,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function removeOffscreenBombs(): void {
-        for (let i = 0; i < bombs.slotCount; i++) {
-            const slot = bombs.at(i);
+        for (let i = 0; i < bombs.slots.length; i++) {
+            const slot = bombs.slots.at(i);
             if (slot !== undefined && slot.value.worldRow > VISIBLE_ROWS) {
                 bombs.remove(slot);
             }
@@ -465,20 +465,20 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function removeOffscreenEnemies(): void {
         const leftEdge = scrollCol - 2;
-        for (let i = 0; i < rockets.slotCount; i++) {
-            const slot = rockets.at(i);
+        for (let i = 0; i < rockets.slots.length; i++) {
+            const slot = rockets.slots.at(i);
             if (slot !== undefined && (slot.value.worldCol < leftEdge || slot.value.worldRow < ROCKET_EXIT_ROW)) {
                 rockets.remove(slot);
             }
         }
-        for (let i = 0; i < ufos.slotCount; i++) {
-            const slot = ufos.at(i);
+        for (let i = 0; i < ufos.slots.length; i++) {
+            const slot = ufos.slots.at(i);
             if (slot !== undefined && slot.value.worldCol < leftEdge) {
                 ufos.remove(slot);
             }
         }
-        for (let i = 0; i < fuelTanks.slotCount; i++) {
-            const slot = fuelTanks.at(i);
+        for (let i = 0; i < fuelTanks.slots.length; i++) {
+            const slot = fuelTanks.slots.at(i);
             if (slot !== undefined && slot.value.worldCol < leftEdge) {
                 fuelTanks.remove(slot);
             }
@@ -515,8 +515,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         const shipRow = ship.worldRow;
         const hitDist = SHIP_HALF_SIZE + ENEMY_HALF_SIZE;
 
-        for (let i = 0; i < rockets.slotCount; i++) {
-            const slot = rockets.at(i);
+        for (let i = 0; i < rockets.slots.length; i++) {
+            const slot = rockets.slots.at(i);
             if (slot === undefined) continue;
             const r = slot.value;
             const dc = shipCol - r.worldCol;
@@ -536,8 +536,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         const shipRow = ship.worldRow;
         const hitDist = SHIP_HALF_SIZE + ENEMY_HALF_SIZE;
 
-        for (let i = 0; i < ufos.slotCount; i++) {
-            const slot = ufos.at(i);
+        for (let i = 0; i < ufos.slots.length; i++) {
+            const slot = ufos.slots.at(i);
             if (slot === undefined) continue;
             const u = slot.value;
             const dc = shipCol - u.worldCol;
@@ -552,8 +552,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkBulletsTerrainCollision(): void {
-        for (let i = 0; i < bullets.slotCount; i++) {
-            const slot = bullets.at(i);
+        for (let i = 0; i < bullets.slots.length; i++) {
+            const slot = bullets.slots.at(i);
             if (slot === undefined) continue;
             const b = slot.value;
             const col = Math.floor(b.worldCol);
@@ -565,8 +565,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkBombsTerrainCollision(): void {
-        for (let i = 0; i < bombs.slotCount; i++) {
-            const slot = bombs.at(i);
+        for (let i = 0; i < bombs.slots.length; i++) {
+            const slot = bombs.slots.at(i);
             if (slot === undefined) continue;
             const b = slot.value;
             const col = Math.floor(b.worldCol);
@@ -578,8 +578,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkBulletsVsEnemies(): void {
-        for (let b = 0; b < bullets.slotCount; b++) {
-            const bulletSlot = bullets.at(b);
+        for (let b = 0; b < bullets.slots.length; b++) {
+            const bulletSlot = bullets.slots.at(b);
             if (bulletSlot === undefined) continue;
 
             const bCol = bulletSlot.value.worldCol;
@@ -588,8 +588,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             let consumed = false;
 
             // vs rockets
-            for (let i = 0; i < rockets.slotCount; i++) {
-                const slot = rockets.at(i);
+            for (let i = 0; i < rockets.slots.length; i++) {
+                const slot = rockets.slots.at(i);
                 if (slot === undefined) continue;
                 const r = slot.value;
                 const dc = bCol - r.worldCol;
@@ -606,8 +606,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (consumed) continue;
 
             // vs UFOs
-            for (let i = 0; i < ufos.slotCount; i++) {
-                const slot = ufos.at(i);
+            for (let i = 0; i < ufos.slots.length; i++) {
+                const slot = ufos.slots.at(i);
                 if (slot === undefined) continue;
                 const u = slot.value;
                 const dc = bCol - u.worldCol;
@@ -624,8 +624,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (consumed) continue;
 
             // vs fuel tanks
-            for (let i = 0; i < fuelTanks.slotCount; i++) {
-                const slot = fuelTanks.at(i);
+            for (let i = 0; i < fuelTanks.slots.length; i++) {
+                const slot = fuelTanks.slots.at(i);
                 if (slot === undefined) continue;
                 const f = slot.value;
                 const dc = bCol - f.worldCol;
@@ -640,8 +640,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function checkBombsVsEnemies(): void {
-        for (let b = 0; b < bombs.slotCount; b++) {
-            const bombSlot = bombs.at(b);
+        for (let b = 0; b < bombs.slots.length; b++) {
+            const bombSlot = bombs.slots.at(b);
             if (bombSlot === undefined) continue;
 
             const bCol = bombSlot.value.worldCol;
@@ -650,8 +650,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             let consumed = false;
 
             // vs rockets
-            for (let i = 0; i < rockets.slotCount; i++) {
-                const slot = rockets.at(i);
+            for (let i = 0; i < rockets.slots.length; i++) {
+                const slot = rockets.slots.at(i);
                 if (slot === undefined) continue;
                 const r = slot.value;
                 const dc = bCol - r.worldCol;
@@ -668,8 +668,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (consumed) continue;
 
             // vs UFOs
-            for (let i = 0; i < ufos.slotCount; i++) {
-                const slot = ufos.at(i);
+            for (let i = 0; i < ufos.slots.length; i++) {
+                const slot = ufos.slots.at(i);
                 if (slot === undefined) continue;
                 const u = slot.value;
                 const dc = bCol - u.worldCol;
@@ -686,8 +686,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (consumed) continue;
 
             // vs fuel tanks (including base)
-            for (let i = 0; i < fuelTanks.slotCount; i++) {
-                const slot = fuelTanks.at(i);
+            for (let i = 0; i < fuelTanks.slots.length; i++) {
+                const slot = fuelTanks.slots.at(i);
                 if (slot === undefined) continue;
                 const f = slot.value;
                 const dc = bCol - f.worldCol;

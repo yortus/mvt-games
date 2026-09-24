@@ -13,8 +13,8 @@ function setup(keyBy: CosmeticKeyKind) {
     // autoSwapMs is effectively disabled so the tests drive swaps themselves.
     const model = createSwapModel({ labels: ['A', 'B', 'C'], autoSwapMs: 1e9 });
     const vm = createSwapViewModel({
-        getTileCount: () => model.tileCount,
-        getTileId: (index) => model.getTile(index).id,
+        getTileCount: () => model.tiles.length,
+        getTileId: (index) => model.tiles[index].id,
         keyBy,
         pitchPx: PITCH,
     });

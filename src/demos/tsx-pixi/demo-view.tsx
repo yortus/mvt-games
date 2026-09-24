@@ -54,14 +54,13 @@ export function createDemoView(bindings: DemoViewBindings): Container {
             ))}
 
             {/* ---- Stars (dynamic list) ---- */}
-            <List
-                of={getStars}
-                to={(star) => (
-                    <container x={() => star.x} y={() => star.y} alpha={() => star.alpha}>
+            <List items={getStars}>
+                {(star) => (
+                    <container x={() => star().x} y={() => star().y} alpha={() => star().alpha}>
                         <graphics ref={drawStar} />
                     </container>
                 )}
-            />
+            </List>
 
             {/* ---- Player ---- */}
             <container

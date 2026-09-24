@@ -119,19 +119,24 @@ Ticker loop:
 ```
 
 Views without presentation state are unchanged - they have no `update()`
-method, just `refresh()`.
+step, just `refresh()`.
+
+In this project, a view's `update(deltaMs)` step is its `onUpdate` hook, and
+its `refresh()` is its `onRefresh` hook. That is a project convention, not an
+MVT requirement; see
+[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes).
 
 ### Example: door fade
 
 ```ts
 const FADE_DURATION_MS = 300;
 
-function createDoorView(bindings: DoorBindings):
-        Container & { update(deltaMs: number): void } {
+function createDoorView(bindings: DoorBindings): Container {
     const view = new Container();
     const sprite = new Sprite(doorTexture);
     view.addChild(sprite);
-    view.onRender = refresh;
+    view.onUpdate = update;
+    view.onRefresh = refresh;
 
     // -- Presentation state --
     let fadeProgress = bindings.isOpen() ? 0 : 1; // start matching model
@@ -149,53 +154,50 @@ function createDoorView(bindings: DoorBindings):
         sprite.alpha = fadeProgress;
     }
 
-    return Object.assign(view, { update });
+    return view;
 }
 ```
 
 The presentation state is `fadeProgress` - a value between 0 (fully
 transparent, door open) and 1 (fully opaque, door closed). The `update()`
-method moves it toward the model's current state at a fixed rate. The
-`refresh()` method applies it to the sprite. If the model flips mid-fade,
+function moves it toward the model's current state at a fixed rate. The
+`refresh()` function applies it to the sprite. If the model flips mid-fade,
 the transition reverses smoothly.
 
-### Propagating `update()` through the view tree
+### No forwarding through the view tree
 
-Parent views propagate `update()` to children that have it:
+A view with presentation state is an ordinary `Container`. Its parent adds it
+like any other child and does nothing else:
 
 ```ts
-function createGameView(model: GameModel):
-        Container & { update(deltaMs: number): void } {
+function createGameView(model: GameModel): Container {
     const view = new Container();
-    const door = createDoorView(/* bindings */);
-    const scoreDisplay = createScoreDisplayView(/* bindings */);
-    view.addChild(door, scoreDisplay);
-    view.onRender = refresh;
-
-    function update(deltaMs: number) {
-        door.update(deltaMs);
-        scoreDisplay.update(deltaMs);
-    }
-
-    function refresh() {
-        // parent refresh logic...
-    }
-
-    return Object.assign(view, { update });
+    view.addChild(
+        createDoorView(/* bindings */),
+        createScoreDisplayView(/* bindings */),
+    );
+    return view;
 }
 ```
 
-The entry file stays clean:
+The entry file runs one update pass over the whole view tree, after the model:
 
 ```ts
 const gameView = createGameView(gameModel);
 return {
     update(deltaMs) {
         gameModel.update(deltaMs);
-        gameView.update(deltaMs);
+        updateScene(gameView, deltaMs);   // every onUpdate in the tree
     },
 };
 ```
+
+`updateScene` finds every `onUpdate` in the tree, however deep, and runs it
+before its descendants'. There is no chain of parents to keep in step: adding
+presentation state to a view deep in the tree needs no change anywhere else.
+Hand-forwarding `update()` through each parent, as earlier versions of this
+project did, fails silently when any link is missed - the animation simply
+never advances.
 
 ## When is Presentation State Really Domain State?
 
