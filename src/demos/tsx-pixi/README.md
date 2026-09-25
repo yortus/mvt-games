@@ -102,8 +102,9 @@ the list grows back.
 runtime makes: getter props, `<List>` presence checks and `<Switch>`
 conditions. It is off by default and costs a flag check per container while
 off, so it is sampled rather than left on: `countPropReads(() =>
-refreshScene(root))` counts one pass. A hidden container counts only its
-`visible` read, and a `memo()` getter counts as one.
+refreshScene(root))` counts one pass, and `createFrameStats` samples one frame
+in each window for a perfmon. A hidden container counts only its `visible`
+read, and a `memo()` getter counts as one.
 
 **Optimisation: Codegen'd refresh functions.** The runtime generates a
 specialized refresh factory (via `new Function`) for each distinct set of

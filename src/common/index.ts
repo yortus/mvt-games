@@ -1,9 +1,11 @@
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
+export { createFrameStats, type FrameStatKind, type FrameStats, type SampledCounter } from './frame-stats';
 export { isTouchDevice } from './is-touch-device';
 export { createKeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
 export { createOverlayView, type OverlayViewBindings } from './overlay-view';
 export { createPauseMenuView, type PauseMenuViewBindings } from './pause-menu-view';
+export { createPerfmonView, PERFMON_HEIGHT, PERFMON_WIDTH, type PerfmonViewBindings } from './perfmon-view';
 export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
 export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';
