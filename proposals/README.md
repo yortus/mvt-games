@@ -18,6 +18,7 @@ Nothing here is a description of how the repo currently works. For that, see
 | 007 | [Authoring-convention bridge](./007-authoring-convention-bridge.md) | Proposed. A strongly-typed key-rename transform between imperative `bindings` views and JSX `props` views, so each is authored in its own idiom and consumed under the other |
 | 008 | [`Watch()` fluent builder](./008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection (`watch`), memoised derivation (`derive`), reactions (`ReactionBuilder`) and uniform lists. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
 | 010 | [Performance docs proposal](./010-performance-docs-proposal.md) | Proposed. Measurements done (polling costs, JSX runtime against hand-written hooks, polling against push, benchmarking pitfalls); the docs changes they support are not |
+| 011 | [Multi-package repo](./011-multi-package-repo.md) | Proposed. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package and a decluttered top level. Includes a tooling briefing, a Vite+ lint trial (it can enforce this repo's own formatting without Oxfmt), and an eight-phase migration plan |
 
 ## Reading order
 
@@ -42,6 +43,10 @@ concerns the `watch()` change-detection helper in `src/common/`.
 **010** stands alone. Read its section 4 before running or trusting any
 benchmark in this repo.
 
+**011** is about the repo rather than the architecture, and can be read on
+its own. Its migration moves most of the paths the other proposals cite, which
+keep their old paths as a historical record.
+
 ## Open items (handoff)
 
 Everything known to be outstanding, with where each is recorded. Nothing here
@@ -61,9 +66,11 @@ is in progress.
 | 008's spike files (`watch-builder.spike.ts` and its test) are parked in `proposals/`, outside `tsconfig.json`'s `include`, so `npm run build` does not type-check them | Here | When work on 008 resumes, move both files under `src/` (e.g. `src/common/`) first, then fix 008's links |
 | 007 section 5's example uses the old `<List of={...} to={...}>` API | Here | Update to `<List items={model.ghosts}>{(ghost, i) => ...}</List>` (004 section 4.7) |
 | Duplicate task folder `tasks/active/002-documentation-overhaul/` | Here | Delete: the task is complete and archived in `tasks/archive/` |
+| Barrel rule (`import/no-internal-modules`) crashes ESLint on its first real violation: the `'#common'` and `'#pixi-jsx'` allow entries compile to `false` | 011 section 11.1 | Open. Deliberately left for the restructure (011 phase 1); verify with a deliberate violation when fixing |
+| Multi-package migration, and the Vite+ trial within it | 011 sections 9.3 and 12 | Proposed; no unresolved questions. Settled decisions are in section 13.2 |
 
 Settled questions that should not be reopened without new information are in
-004 section 11 (items 5-7) and 004 section 5.4 ("Evolution").
+004 section 11 (items 5-7), 004 section 5.4 ("Evolution") and 011 section 13.2.
 
 ## Related, but not proposals
 
