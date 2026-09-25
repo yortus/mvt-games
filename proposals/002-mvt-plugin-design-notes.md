@@ -13,17 +13,17 @@
 This is the whole thing. Everything else is implementation detail.
 
 - There is a graph whose nodes are Pixi `Container`s.
-- *Some* nodes carry hooks.
+- *Some* nodes have an `onUpdate` or `onRefresh` method.
 - `updateScene(N, dt)` / `refreshScene(N)` may be called on **any** node at
-  **any** time, and must run every corresponding hook in N's subtree, each
+  **any** time, and must run every corresponding method in N's subtree, each
   exactly once, with every node called before its descendants.
 
 There is no privileged root, no host, no ownership and no session. The answer
 for N is a pure function of N's subtree, so any cache has to be node-local and
 valid for whichever caller asks.
 
-Sibling order is deliberately unspecified. A view whose hook depends on a
-sibling's hook is reading another view's output rather than reading state, which
+Sibling order is deliberately unspecified. A view whose method depends on a
+sibling's method is reading another view's output rather than reading state, which
 is cross-talk the architecture already rules out. Ancestors are different: a
 parent legitimately sets a transform, layout or visibility that children read.
 
@@ -31,7 +31,7 @@ parent legitimately sets a transform, layout or visibility that children read.
 
 ### State
 
-Two fields per hook kind, both pure memoisation - derivable, discardable, and
+Two fields per method kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
@@ -75,20 +75,20 @@ function invokeSubtreeMethods(info: SubtreeInfo, node: Container, pass: Pass, de
     }
 }
 
-// Preorder list of hooked containers, plus a skip table: ends[i] is the list
+// Preorder list of the containers that have this pass's method, plus a skip table: ends[i] is the list
 // index just past container i's subtree. Preorder makes a subtree contiguous,
 // so one number per entry is enough to jump over it.
 function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], ends: number[]): void {
-    const hook = pass === UPDATE ? node.onUpdate : node.onRefresh;
+    const method = pass === UPDATE ? node.onUpdate : node.onRefresh;
     let selfIndex = -1;
-    if (hook !== undefined) {
+    if (method !== undefined) {
         selfIndex = out.length;
         out.push(node);
         ends.push(0); // overwritten once this subtree is fully collected
     }
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (has(ch[i], pass)) collectSubtreeMethods(ch[i], pass, out, ends); // prune hookless subtrees
+        if (has(ch[i], pass)) collectSubtreeMethods(ch[i], pass, out, ends); // skip subtrees with no method for this pass
     }
     if (selfIndex !== -1) ends[selfIndex] = out.length;
 }
@@ -109,7 +109,7 @@ function has(node: Container, pass: Pass): boolean {
 
 ### Invalidation
 
-One climb per hook kind, stopping at the first container already dirty for that
+One climb per method kind, stopping at the first container already dirty for that
 kind. It lives in [mvt-container-mixin.ts](../src/pixi-mvt/mvt-container-mixin.ts), next to the
 setters and wrappers that trigger it:
 
@@ -130,7 +130,7 @@ Triggered by:
 - **Structural mutation** (`addChild`, `addChildAt`, `removeChild`,
   `removeChildren`, `destroy`): invalidate **both** kinds, from the affected
   parent.
-- **Hook assignment** (the `onUpdate` / `onRefresh` setters): invalidate **that
+- **Method assignment** (the `onUpdate` / `onRefresh` setters): invalidate **that
   kind only**, from the container itself.
 
 The short-circuit relies on a per-kind invariant - *a container dirty for kind K
@@ -153,7 +153,7 @@ measured ~0% in the README's cost table.
 
 ### Two traps, both load-bearing
 
-- `has` **must not early-exit** on the first hooked child.
+- `has` **must not early-exit** on the first child found to have the method.
   Visiting all children is what caches all of them, and that cache is what makes
   later prunes O(1). An early exit silently degrades the design to O(subtree).
 - `invalidate` must clear **both** fields of its kind together. They are
@@ -190,7 +190,7 @@ old design fails.
 
 ### The accessor-shadowing defect
 
-The mixin used to install lazily, inside the scheduler factory. Any hook
+The mixin used to install lazily, inside the scheduler factory. Any method
 assigned **before** that call created an own data property that permanently
 shadowed the prototype accessor, so the setter never fired again for that
 container and invalidation was silently lost:
@@ -205,7 +205,7 @@ s.refresh();                                   // never called
 
 The mixin now installs at module load, so importing the plugin at all is the
 only ordering requirement, and ES modules evaluate imports before the importing
-module's own code. A dev-mode assertion during each rebuild catches an own hook
+module's own code. A dev-mode assertion during each rebuild catches an own method
 property however it arrived, since `Object.defineProperty` and a dynamically
 imported plugin can both still produce one.
 
@@ -262,27 +262,27 @@ state advance, so there it is an opt-in for deliberately frozen subtrees (which
 are then one frame stale on resume) rather than a routine tool. The container a
 pass is driven from is never skipped by an outside caller.
 
-**Re-entering a pass on the same container throws.** A hook that calls
+**Re-entering a pass on the same container throws.** A method that calls
 `refreshScene` on the container already being refreshed would run the same list
 twice and, in the usual case, recurse forever. Driving a *different* container
-from a hook is legitimate and is how a view refreshes something it has just
+from a method is legitimate and is how a view refreshes something it has just
 built, so the guard is a small stack of the containers with a pass in flight
 rather than a single flag. It is always on: one array push and pop per pass, not
 per container.
 
 ## Accepted limitations
 
-- **No drain-the-tail.** The old implementation re-ran hooks on containers
+- **No drain-the-tail.** The old implementation re-ran methods on containers
   attached during a pass, up to four rounds. It is gone, so a container created
-  by a hook starts on the next pass and a spawning view has to give its children
+  by a method starts on the next pass and a spawning view has to give its children
   their first frame itself. The exact fix, if it is ever wanted, is a per-pass
   epoch stamped on each dispatched container, then a rebuild-and-dispatch for
-  any entry whose epoch differs. That costs one integer write per hook per frame
+  any entry whose epoch differs. That costs one integer write per method per frame
   in the hot path, so it needs measuring against the numbers below.
 - **Dense-plus-churning scenes are slower than a naive walk.** When every
-  container is hooked and the tree is dirtied every frame, pruning prunes
+  container has an `onRefresh` and the tree is dirtied every frame, pruning prunes
   nothing and the list is rebuilt every frame, so caching is pure overhead:
-  65 us against 37 us on 2000 hooked containers with 100 swaps per frame. Two
+  65 us against 37 us on 2000 containers, all with an `onRefresh`, and 100 swaps per frame. Two
   fixes were tried during design and neither worked - dispatching during the
   rebuild was marginally *worse*, and reusing the array rather than allocating
   is noise, because building a 2000-entry list costs about the same either way.
@@ -307,37 +307,41 @@ published from it was an artifact, and all of them have been deleted.
 
 ### The method now
 
-[scripts/bench-scene-passes.ts](../scripts/bench-scene-passes.ts) spawns one
-child process **per arm**, each running exactly one implementation against one
-scenario, with the scenes and the measurement in
-[scene-passes-benchmark.ts](../src/pixi-mvt/scene-passes-benchmark.ts). Results are
-microseconds per frame - not hz - reported as the median of seven batches, each
-batch sized from a warmup to run for about 100ms. One arm per process is also
+The benchmark driver spawns one child process **per arm**, each running exactly
+one implementation against one scenario. The scenes are now the `scene-passes`
+suite in [benchmarks/](../benchmarks/README.md)
+(`benchmarks/suites/scene-passes.case.ts`), run with
+`npm run bench -- scene-passes`; they were first written as
+`src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`. Results
+are microseconds per frame - not hz - reported as the median of a set of
+batches, each batch sized from a warmup. One arm per process is also
 what lets the `patched` and `unpatched` arms differ by whether the plugin was
 ever imported.
 
 ### Results
 
-`npm run bench`, Windows laptop, Node 22. A frame is one pass plus the
-scenario's churn.
+Measured with the original driver, which timed under `tsx`, on a Windows
+laptop with Node 22. A frame is one pass plus the scenario's churn. Current
+numbers, from the consolidated suite, are in the plugin README and the docs'
+Performance Measurements page.
 
 | Scenario                                        | naive walk  | memo        | note                        |
 | ----------------------------------------------- | ----------- | ----------- | --------------------------- |
-| sparse: 20k containers, 200 hooked, static       | 224 us      | **0.50 us** | the realistic shape         |
-| dense: 2k containers, all hooked, static         | 10.4 us     | **4.5 us**  | nothing to prune            |
-| churn: 2k all hooked, 100 swaps per frame        | **36.5 us** | 65.3 us     | the case the memo loses     |
-| attach: 100 hookless 25-node subtrees re-attached| 45.5 us     | **9.8 us**  | O(depth), not O(subtree)    |
+| sparse: 20k containers, 200 with an `onRefresh`, static | 224 us      | **0.50 us** | the realistic shape         |
+| dense: 2k containers, all with an `onRefresh`, static   | 10.4 us     | **4.5 us**  | nothing to prune            |
+| churn: 2k, all with an `onRefresh`, 100 swaps per frame | **36.5 us** | 65.3 us     | the case the memo loses     |
+| attach: 100 subtrees of 25 nodes with no `onRefresh`, re-attached | 45.5 us     | **9.8 us**  | O(depth), not O(subtree)    |
 
 | Baseline                                        | incumbent   | this plugin |
 | ----------------------------------------------- | ----------- | ----------- |
-| dispatch: 2000 hooks, Pixi `onRender` vs pass    | 2.7 us      | 4.7 us      |
+| dispatch: 2000 methods, Pixi `onRender` vs pass    | 2.7 us      | 4.7 us      |
 | mutation: 100 attach/detach on an unmanaged tree | 13.4 us     | 13.7 us     |
 
 Notes on the two baselines, because both are adoption arguments rather than
 performance ones:
 
 - Pixi's `onRender` dispatch is a bare loop over an array calling a field. The
-  pass loop adds a detachment check and reads the hook through an accessor,
+  pass loop adds a detachment check and reads the method through an accessor,
   which is under a nanosecond per container. Reading the backing fields directly
   instead was tried and measured as noise, so the public property read stayed.
 - The structural wrappers cost an unmanaged tree nothing measurable. Every
@@ -355,12 +359,12 @@ Two style-guide rules needed a deliberate decision.
 
 **`this`** is confined to [mvt-container-mixin.ts](../src/pixi-mvt/mvt-container-mixin.ts). A
 prototype accessor and a wrapped prototype method cannot reach their instance
-without it. Hooks themselves are invoked as plain calls with no receiver, so a
-view's hook stays an ordinary closure. The side effect is that a hook defined as
+without it. Methods themselves are invoked as plain calls with no receiver, so a
+view's method stays an ordinary closure. The side effect is that a method defined as
 a subclass prototype method would not see its instance, which costs nothing here
 because the repo has no classes.
 
-**`null`** appears nowhere in the plugin's own surface: hooks and memo fields are
+**`null`** appears nowhere in the plugin's own surface: methods and memo fields are
 all `undefined`. `Container.parent` is typed `Container | null` by Pixi, so the
 three places that read it use a truthiness check rather than comparing.
 
@@ -381,7 +385,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   `addChildAt` splices a child out of its previous parent **without** calling
   `removeChild`, so it needs its own handling. `destroy` delegates to
   `removeChildren` and `removeFromParent`, and is wrapped only to clear the
-  hooks - a container driven directly has no parent to be detached from.
+  methods - a container driven directly has no parent to be detached from.
 - Pure sibling reorders (`swapChildren`, `sortChildren`, `setChildIndex`,
   `addChild` of an already-parented child) need **no** wrapper, since sibling
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself

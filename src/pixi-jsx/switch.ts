@@ -120,7 +120,7 @@ export function Switch(props: SwitchProps): Container {
         branch.visible = false;
         container.addChild(branch);
 
-        // Wraps the `<Match>`'s own hook (its misuse check and lazy build) in
+        // Wraps the `<Match>`'s own `onRefresh` (its misuse check and lazy build) in
         // a gate, so it only runs while its branch is selected.
         const ownRefresh = branch.onRefresh;
         branch.onRefresh = () => {
@@ -129,7 +129,7 @@ export function Switch(props: SwitchProps): Container {
         };
     }
 
-    // Runs before any branch's hook, so a newly selected branch refreshes on
+    // Runs before any branch's `onRefresh`, so a newly selected branch refreshes on
     // the frame it is selected, with no structural change and no lag.
     container.onRefresh = select;
 

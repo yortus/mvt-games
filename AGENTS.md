@@ -7,8 +7,8 @@
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
-- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, `refresh()` and `update(deltaMs)` are a view container's `onRefresh` and `onUpdate` hooks from `src/pixi-mvt/`
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. In this repo: `gameModel.update(deltaMs)`, then `updateScene(gameView, deltaMs)` (in each game session), then `refreshScene(app.stage)` (in `src/main.ts`), which run every `onUpdate` / `onRefresh` hook in the tree, parents first. Views never forward these calls to their children
+- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, `refresh()` and `update(deltaMs)` are a view container's `onRefresh` and `onUpdate` methods from `src/pixi-mvt/`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. In this repo: `gameModel.update(deltaMs)`, then `updateScene(gameView, deltaMs)` (in each game session), then `refreshScene(app.stage)` (in `src/main.ts`), which run every `onUpdate` / `onRefresh` method in the tree, parents first. Views never forward these calls to their children
 - **Bindings** - plain object bridging view and model: `get*()` methods read state, `on*()` methods relay user input
 
 Full reference: [Architecture Overview](docs/architecture/index.md) -
@@ -46,7 +46,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
-- **Bindings for reusable views** - leaf views (entity renderers, HUDs) accept a `get*()`/`on*()` bindings object; top-level application views accept the model directly (they're application-specific, never reused)
+- **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept a `get*()`/`on*()` bindings object; top-level application views accept the model directly (they're application-specific, never reused)
 - **`_` prefix** for intentionally unused parameters
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
@@ -60,6 +60,7 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 | `npm run build`        | Type-check + production build |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
+| `npm run bench`        | Performance benchmarks ([benchmarks/](benchmarks/README.md)) |
 
 ## Tasks
 
@@ -75,8 +76,8 @@ update its progress log, and move it to `archive/` when done.
 2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, `view.onUpdate`; never forwarded by hand from parent views). When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/building-with-mvt/adding-visual-polish/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/avoiding-pitfalls/hot-paths.md)
-6. **Model coordinates must be domain-level, not pixels.** Grid-based entities expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/performance/hot-paths.md)
+6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)
 
 Full rules: [Architecture Rules](docs/architecture/rules.md)
 

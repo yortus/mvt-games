@@ -29,17 +29,17 @@ presentation target. For the language-neutral specification, see
 
 ## A Minimal View
 
-Here is a simple entity view that tracks a moving object's position (using
+Here is a simple view that tracks a moving bullet's position (using
 Pixi.js, as the rest of this project does):
 
 ```ts
-interface EntityViewBindings {
+interface BulletViewBindings {
     getX(): number;
     getY(): number;
     isVisible(): boolean;
 }
 
-function createEntityView(bindings: EntityViewBindings): Container {
+function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     gfx.circle(0, 0, 4).fill(0xffffff);
@@ -75,9 +75,9 @@ MVT imposes two architectural constraints on views:
    rules, or decide what happens next. That belongs in models.
 
 Everything else - whether you use factory functions or classes, Pixi.js
-containers or DOM elements, `onRefresh` hooks or manual call sites - is a style
+containers or DOM elements, `onRefresh` methods or manual call sites - is a style
 choice. The examples on this page use this repo's conventions (factory
-functions, Pixi.js scene graphs, `onRefresh` hooks). See the
+functions, Pixi.js scene graphs, `onRefresh` methods). See the
 [Style Guide](../../reference/style-guide.md) for this repo's specific
 conventions.
 
@@ -149,7 +149,7 @@ function createBulletView(bindings: BulletViewBindings): Container {
 }
 ```
 
-`onRefresh` is this project's per-frame refresh hook, added to every Pixi
+`onRefresh` is this project's per-frame refresh method, added to every Pixi
 `Container` by `src/pixi-mvt/`. Setting it once at construction means the
 view's `refresh()` runs every frame, as long as the view is in the scene: the
 host's `refreshScene` call finds it wherever it sits in the tree, with no
@@ -158,9 +158,9 @@ parent passing calls on. See
 for how the passes are driven.
 
 `refresh()` may set the view's own `visible`, as above; nothing about hiding a
-view stops its hook running, so it can show itself again next frame. To also
+view stops its `onRefresh` running, so it can show itself again next frame. To also
 skip refreshing everything below it while hidden, return `SKIP_DESCENDANTS`
-from the hook instead of plain `return`.
+from `refresh()` instead of plain `return`.
 
 ## What Does NOT Belong in a View
 
@@ -202,7 +202,7 @@ Ticker loop:
   view.refresh()            -- reads model + own state, writes to scene graph
 ```
 
-In this project, that step is the view's `onUpdate` hook
+In this project, that step is the view's `onUpdate` method
 (`view.onUpdate = update`), run by `updateScene` before any `onRefresh`. Like
 `onRefresh`, it is found wherever the view sits in the tree, so no parent has
 to forward `update(deltaMs)` to it.
@@ -231,7 +231,7 @@ wire bindings for their child views. They are application-specific and have no
 reuse scenario, so the full bindings interface would add verbosity without
 benefit.
 
-**Leaf views** (like an entity renderer, HUD panel, or overlay) accept a
+**Leaf views** (like the view of a single ship or bullet, a HUD panel, or an overlay) accept a
 `get*()`/`on*()` bindings object. This keeps them decoupled from any particular
 model shape, making them reusable and independently testable with mock bindings.
 

@@ -42,7 +42,7 @@ is written and organized in this project.
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
-| Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`                  |
+| Binding accessors      | `get` + description          | `getScore()`, `getShipX()`                  |
 | Binding event handlers | `on` + description           | `onDirectionChanged()`, `onResetClicked()`    |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌|

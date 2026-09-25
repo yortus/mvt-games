@@ -31,7 +31,7 @@ export interface GameEntry {
      */
     readonly instructions?: string;
     /**
-     * Optional async hook called before `start()` to load assets
+     * Optional async method called before `start()` to load assets
      * (e.g. sprite sheets). Games without assets may omit this.
      */
     load?(): Promise<void>;

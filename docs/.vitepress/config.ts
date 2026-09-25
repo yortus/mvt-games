@@ -110,7 +110,15 @@ export default withMermaid(defineConfig({
                         text: 'Avoiding Pitfalls',
                         items: [
                             { text: 'Common Mistakes', link: '/building-with-mvt/avoiding-pitfalls/common-mistakes' },
-                            { text: 'Hot Paths', link: '/building-with-mvt/avoiding-pitfalls/hot-paths' },
+                        ],
+                    },
+                    {
+                        text: 'Performance',
+                        items: [
+                            { text: 'Why Performance Matters', link: '/building-with-mvt/performance/why-performance-matters' },
+                            { text: 'Hot Paths', link: '/building-with-mvt/performance/hot-paths' },
+                            { text: 'Performance Measurements', link: '/building-with-mvt/performance/measurements' },
+                            { text: 'Benchmarking Methods', link: '/building-with-mvt/performance/benchmarking-methods' },
                         ],
                     },
                 ],

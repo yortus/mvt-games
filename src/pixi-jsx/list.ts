@@ -74,7 +74,7 @@ export interface ListProps<T> {
      * Builds the view for `index`. Called at most once per index, ever, on the
      * first frame `length` covers it, occupied or not.
      *
-     * Call the accessor only inside bindings and refresh hooks, never while
+     * Call the accessor only inside bindings and refresh methods, never while
      * building: the slot may be empty when it is built. Bindings are safe,
      * because they first run on the slot's first refresh, and an empty slot
      * skips its whole subtree.
@@ -100,7 +100,7 @@ export function List<T>(props: ListProps<T>): Container {
     // Resolved once per slot per frame, read by that slot's bindings.
     const resolved: (T | undefined)[] = [];
 
-    // Resolved once per frame by the list's own hook, which the refresh pass
+    // Resolved once per frame by the list's own `onRefresh`, which the refresh pass
     // runs before any slot, then shared by every slot's presence check. Not
     // read at construction: like every element, the list is inert until its
     // first refresh, so an ancestor that skips it keeps `items` from running.

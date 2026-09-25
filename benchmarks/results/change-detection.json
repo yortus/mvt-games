@@ -1,0 +1,351 @@
+{
+    "suite": "change-detection",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 0,
+                "approach": "manual"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.5097181372549078,
+                    3.6148920600073136,
+                    3.696490584494985
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 0,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.53302980132449,
+                    11.704096989966526,
+                    11.914918228958916
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 0,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0003067814366798601,
+                    0.0003084499211979778,
+                    0.0003087593980097823
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 0,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.013762806566536752,
+                    0.013858460083536866,
+                    0.013985580097482015
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 1,
+                "approach": "manual"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.7076294277929156,
+                    3.7775963781039916,
+                    3.8074068808643715
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 1,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.894787107043346,
+                    12.187808098591546,
+                    12.88798165137612
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 1,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.11515059750701216,
+                    0.11707867269773369,
+                    0.11972321613820275
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 1,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.6414156142648851,
+                    0.6546967926243354,
+                    0.6669138340307854
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 10,
+                "approach": "manual"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    4.197667068031313,
+                    4.222329803328292,
+                    4.321635434412269
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 10,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.984133790737566,
+                    12.223157894736849,
+                    12.350841042893206
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 10,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.2708410594193649,
+                    1.284277467354057,
+                    1.347808422791081
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "discrete",
+                "changedPercent": 10,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.754091939806222,
+                    5.9825337985172276,
+                    6.223513050919987
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 0,
+                "approach": "recompute"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    10.645743865030669,
+                    10.681086142322105,
+                    10.791799709724227
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 0,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    72.46675191815855,
+                    73.45062656641622,
+                    76.09195979899486
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 0,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0003005622405549304,
+                    0.0003068260979599982,
+                    0.00031029483844701426
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 0,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0133980228691175,
+                    0.01349276774145844,
+                    0.013602605863192231
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 10,
+                "approach": "recompute"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    10.628744939271243,
+                    11.278805750092129,
+                    11.445375284306296
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 10,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    74.65456989247298,
+                    75.44059139784943,
+                    76.26913265306116
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 10,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.0234560032205036,
+                    1.0706254158349964,
+                    1.1011261103728047
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 10,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    27.766468842729996,
+                    27.84804413239719,
+                    28.080629301868232
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 100,
+                "approach": "recompute"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    13.30583294447038,
+                    13.324988168480845,
+                    13.776553672316375
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 100,
+                "approach": "watch"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    83.50423728813573,
+                    85.21859838274922,
+                    85.25989304812836
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 100,
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    8.832956972841018,
+                    9.383922086497194,
+                    9.392359767891671
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "derived",
+                "changedPercent": 100,
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    293.05,
+                    294.5733333333332,
+                    299.16421052631557
+                ]
+            }
+        }
+    ]
+}

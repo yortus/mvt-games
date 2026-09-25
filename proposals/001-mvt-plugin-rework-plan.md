@@ -17,7 +17,7 @@ game session runs `updateScene` over its own view, and `main.ts` runs one
 host and the `pixi-jsx` runtime follow the same wiring (done as steps 1 and 2 of
 [the `<List>` proposal](./004-list-proposal.md)), and `StatefulPixiView` has
 been deleted. The playground has moved too, so nothing in the repo uses
-`onRender` any more, and the `docs/` guide describes the hooks. Section 13.1
+`onRender` any more, and the `docs/` guide describes the methods. Section 13.1
 (the migration's loose ends) is complete; the other section 13 follow-ups are
 untouched. The
 plugin folder is now `src/pixi-mvt`. What shipped is described in
@@ -38,7 +38,7 @@ now fall out of the same skip table. The design notes are the authority.
 
 ## 1. Summary
 
-The plugin gives every Pixi `Container` two optional hooks and two functions to
+The plugin gives every Pixi `Container` two optional methods and two functions to
 drive them across a scene:
 
 ```ts
@@ -52,7 +52,7 @@ refreshScene(node);         // runs every onRefresh in node's subtree
 Both passes visit a container before any of its descendants, run without a
 renderer or a ticker, and cost microseconds on realistic scenes.
 
-The rework keeps the hooks and replaces the machinery behind them. The current
+The rework keeps the methods and replaces the machinery behind them. The current
 implementation assumes one privileged "host" container owns a subtree; that
 assumption is both unnecessary and **wrong**, and it causes a silent
 data-corruption bug (section 4.6). It is replaced by per-node memoisation,
@@ -60,7 +60,7 @@ which is smaller, faster on realistic scenes, and correct by construction.
 
 | Area | Disposition |
 | --- | --- |
-| `onUpdate` / `onRefresh` hooks | **Keep.** Unchanged, and both are first-class |
+| `onUpdate` / `onRefresh` methods | **Keep.** Unchanged, and both are first-class |
 | Container mixin and structural wrappers | **Keep**, fix install order (7.1) |
 | `SceneScheduler`, factory, `destroy`, host, `releaseScene` | **Delete** |
 | Two list strategies, slot indices, tombstones, compaction | **Delete** |
@@ -75,19 +75,19 @@ Net effect is roughly a 40% code reduction with a faster, simpler core.
 This is the whole thing. Everything else is implementation detail.
 
 - (a) There is a graph whose nodes are Pixi `Container`s.
-- (b) *Some* nodes carry hooks.
+- (b) *Some* nodes have an `onUpdate` or `onRefresh` method.
 - (c) `updateScene(N, dt)` / `refreshScene(N)` may be called on **any** node at
-  **any** time, and must run every corresponding hook in N's subtree, each
+  **any** time, and must run every corresponding method in N's subtree, each
   exactly once, with every node called before its descendants.
 
 There is no privileged root, no host, no ownership and no session. The answer
 for N is a pure function of N's subtree, so any cache must be node-local and
 valid for whichever caller asks.
 
-Sibling order is deliberately unspecified. A view whose hook depends on a
-sibling's hook is reading another view's output rather than reading state.
+Sibling order is deliberately unspecified. A view whose method depends on a
+sibling's method is reading another view's output rather than reading state.
 
-## 3. The two hooks
+## 3. The two methods
 
 ### 3.1 `onUpdate(deltaMs)` - state advances
 
@@ -159,7 +159,7 @@ sentinel jumps past a subtree in one step because the walk knows the tree's
 shape. Pixi's registry is flat with no parent links, so it cannot skip a subtree
 even in principle.
 
-### 3.4 Hook signatures - settled, do not revisit
+### 3.4 Method signatures - settled, do not revisit
 
 `onUpdate(deltaMs: number)`, never `onUpdate(ticker)`. A `Ticker` carries
 `lastTime`, `elapsedMS` and `FPS`, which is the wall clock that MVT rule 1
@@ -214,7 +214,7 @@ destroy it.
 
 ### 4.1 State
 
-Two fields per hook kind, both pure memoisation - derivable, discardable, and
+Two fields per method kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
@@ -249,7 +249,7 @@ way it was already stale, with no new failure mode.
 One case that looks dangerous and is not: `sortChildren` reorders siblings, so
 a freshly collected list would have a different order. The stale list keeps the
 old order, and its skip table still describes *that* list correctly, so nothing
-is skipped wrongly. Only refresh ordering among siblings is stale, and no hook
+is skipped wrongly. Only refresh ordering among siblings is stale, and no method
 depends on it.
 
 The lists are only populated on nodes that have actually been driven -
@@ -304,7 +304,7 @@ function collectSubtreeMethods(node: Container, out: Container[], ends: number[]
     }
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (hasUpdate(ch[i])) collectSubtreeMethods(ch[i], out, ends); // prune hookless subtrees
+        if (hasUpdate(ch[i])) collectSubtreeMethods(ch[i], out, ends); // skip subtrees with no onUpdate
     }
     if (selfIndex !== -1) ends[selfIndex] = out.length; // index just past this subtree
 }
@@ -324,7 +324,7 @@ function hasUpdate(node: Container): boolean {
 
 ### 4.3 Invalidation
 
-One climb per hook kind, stopping at the first node already dirty for that
+One climb per method kind, stopping at the first node already dirty for that
 kind:
 
 ```ts
@@ -346,7 +346,7 @@ Triggered by:
 - **Structural mutation** (`addChild`, `addChildAt`, `removeChild`,
   `removeChildren`, `destroy`): invalidate **both** kinds, from the affected
   parent.
-- **Hook assignment** (the `onUpdate` / `onRefresh` setters): invalidate **that
+- **Method assignment** (the `onUpdate` / `onRefresh` setters): invalidate **that
   kind only**, from the container itself.
 
 The short-circuit relies on a per-kind invariant - *a node dirty for kind K
@@ -362,7 +362,8 @@ calls either function pays one comparison per mutation.
 
 - **Attaching any subtree is O(depth), not O(subtree).** Nothing walks the
   attached subtree; only the ancestor chain is invalidated. This subsumes what
-  an earlier draft called the "hookless short-circuit optimisation", without
+  an earlier draft called the "short-circuit optimisation" for subtrees in which no container has
+  an `onUpdate` or `onRefresh`, without
   that optimisation's correctness hole.
 - **Reparenting N does not invalidate N's own cache.** N's subtree is
   unchanged, so its lists stay valid; only the old and new parents' chains go
@@ -372,7 +373,7 @@ calls either function pays one comparison per mutation.
 
 ### 4.5 Two implementation traps
 
-- `hasUpdate` / `hasRefresh` **must not early-exit** on the first hooked child.
+- `hasUpdate` / `hasRefresh` **must not early-exit** on the first child found to have the method.
   Visiting all children is what caches all of them, and that cache is what makes
   later prunes O(1). An early exit silently degrades the design to O(subtree).
 - `invalidate` must clear **both** fields of its kind together. They are
@@ -442,25 +443,25 @@ one-liners rather than features.
 
 The list is a snapshot taken at the start of the pass.
 
-| A hook, during the pass... | Behaviour |
+| An `onUpdate` or `onRefresh`, during the pass... | Behaviour |
 | --- | --- |
-| adds a hooked child | Not in the snapshot; runs next frame (see 6.3) |
+| adds a child that has its own | Not in the snapshot; runs next frame (see 6.3) |
 | removes a **later** container | Skipped by the `parent === null` guard |
 | removes an **earlier** container | No effect this frame |
-| clears a hook on a later container | Skipped by the `hook === undefined` guard |
+| clears a later container's | Skipped by the `method === undefined` guard |
 | reparents a container within the same subtree | Called once, from its snapshot position |
 | destroys a container | Same as removal; requires all five wrappers |
 | calls the same pass re-entrantly on the same node | Dev-mode guard: throw |
 
 ### 6.3 Accepted limitations
 
-- **No drain-the-tail in v1.** A container created by a hook starts on the next
+- **No drain-the-tail in v1.** A container created by an `onUpdate` or `onRefresh` starts on the next
   frame, so a spawning view may show one frame of constructor state. Revisit
   after v1 (section 13).
 - **Dense-plus-churning scenes are slower than a naive walk.** When every node
-  is hooked and the tree is dirtied every frame, pruning prunes nothing and the
+  has an `onRefresh` and the tree is dirtied every frame, pruning prunes nothing and the
   index is rebuilt every frame, so caching is pure overhead. Measured at 118µs
-  versus 81µs for the naive walk on 2000 hooked containers with 100 swaps per
+  versus 81µs for the naive walk on 2000 containers, all with an `onRefresh`, and 100 swaps per
   frame. Two fixes were tried and neither worked (section 10). It is
   structural. Accept it: the realistic shape is the opposite, where the cache
   wins by 420x.
@@ -477,11 +478,11 @@ The list is a snapshot taken at the start of the pass.
 ### 7.1 P0: accessor shadowing (verified, silent)
 
 `installMvtContainerMixin()` currently runs lazily inside the scheduler
-factory. Any hook assigned **before** install creates an own data property that
+factory. Any method assigned **before** install creates an own data property that
 permanently shadows the prototype accessor, so the setter never fires again for
 that container and invalidation is silently lost.
 
-Verified repro - hook never called, no error:
+Verified repro - method never called, no error:
 
 ```ts
 parent.onRefresh = () => {};
@@ -494,13 +495,13 @@ s.refresh();                                   // never called
 `Object.getOwnPropertyNames(parent)` confirms the own property.
 
 **Fix:** install the mixin at module load. Add a dev-mode assertion that no
-instance carries an own hook property, plus a regression test for the
+instance carries an own method property, plus a regression test for the
 reassign-after-install path.
 
 The appraisal claims this is "the exact construction order QUICK-START
 teaches". That part is **wrong** - QUICK-START's order works, because
 `collectSubtreeMethods` reads the public property. The real trigger is
-reassignment after install on a container hooked before install.
+reassignment after install on a container given an `onUpdate` or `onRefresh` before install.
 
 ### 7.2 Benchmark harness is invalid
 
@@ -538,7 +539,7 @@ achievable.
 
 **Core** (run against both `updateScene` and `refreshScene`)
 
-1. Calls every hook exactly once.
+1. Calls every method exactly once.
 2. Runs a parent before its child.
 3. **Can be driven from any node** - call on root, then a branch, assert the
    branch count is lower and correct, then call on root again and assert it is
@@ -549,7 +550,8 @@ achievable.
    design fails it.*
 5. Stays correct across 20 frames of churn.
 6. Drops a detached container, **and its descendants**, when detached mid-pass.
-7. Prunes hookless subtrees - 20k nodes / 200 hooked yields exactly 203 calls.
+7. Skips subtrees in which no container has the method - 20k nodes, 200 of
+   them with an `onRefresh`, yields exactly 203 calls.
 
 **SKIP_DESCENDANTS** (both passes)
 
@@ -565,7 +567,7 @@ deliberately.
 11. The sentinel works in `updateScene` too, freezing a subtree's state advance.
 12. Visibility gates neither pass: a hidden subtree still refreshes, and a view
     may set its own `visible` without deadlocking.
-8. Reassigning a hook after module load still invalidates (regression for 7.1).
+8. Reassigning a method after module load still invalidates (regression for 7.1).
 9. `refreshScene` is idempotent - three consecutive calls leave identical state.
 10. The two passes are independent - assigning `onUpdate` does not invalidate
     the refresh list, and vice versa.
@@ -578,13 +580,13 @@ One arm per process. Report µs/frame, not hz. Baselines measured during design:
 
 | Scenario | naive walk | **memo** | compiled closures |
 | --- | --- | --- | --- |
-| A: sparse 20k nodes / 200 hooked, static | 294 µs | **0.70 µs** | 1.36 µs |
-| B: dense 2000, all hooked, static | 12.2 µs | **6.22 µs** | 9.10 µs |
+| A: sparse 20k nodes, 200 with an `onRefresh`, static | 294 µs | **0.70 µs** | 1.36 µs |
+| B: dense 2000, all with an `onRefresh`, static | 12.2 µs | **6.22 µs** | 9.10 µs |
 | C: dense 2000, 100 swaps/frame | **81.0 µs** | 118 µs | 99.9 µs |
-| D: 100 hookless 25-node subtrees attached/detached | 50.1 µs | 14.8 µs | **13.1 µs** |
+| D: 100 subtrees of 25 nodes with no `onRefresh`, attached/detached | 50.1 µs | 14.8 µs | **13.1 µs** |
 
 Scenario A is the headline and the realistic shape: a large scene where few
-containers carry hooks.
+containers have an `onRefresh`.
 
 On scenario C, do not re-litigate without new information. Dispatching during
 the rebuild was marginally *worse* (8,506 vs 8,993 hz) and reusing the array
@@ -647,7 +649,7 @@ Separate from the product work, and deliberately incremental.
   A view whose subtree is expensive to refresh while hidden can also return
   `SKIP_DESCENDANTS` after `view.visible = false`, but for a shallow entity like
   this the early-out is enough. Roughly a dozen views across the repo, each a
-  one-line hook rename.
+  one-line method rename.
 - The case for migrating is the failure mode, not the line count. Adding a view
   with presentation state today needs four coordinated edits, and missing any
   link means the animation silently never advances - no error, no failing test,
@@ -662,7 +664,7 @@ Revisit once v1 is complete and has been used:
 1. **Drain-the-tail.** Deferred from v1 (6.3). If one-frame-late spawning turns
    out to matter, the exact fix is a per-pass epoch stamped on each dispatched
    container, then after the loop rebuild and dispatch any entry whose epoch
-   differs. Costs one integer write per hook per frame in the hot path, so it
+   differs. Costs one integer write per method per frame in the hot path, so it
    needs measuring against the numbers in section 10.
 
    **Status (2026-09-24): still open, lower priority.** The two places that
@@ -670,7 +672,7 @@ Revisit once v1 is complete and has been used:
    call `refreshScene` on what they build, which the plugin permits because
    it is a different container. So nothing in the repo shows a frame of
    constructor state today. A generic fix only matters if hand-written views
-   start building children inside their hooks.
+   start building children inside their methods.
 2. ~~**Migrating the 59 `onRender` sites to `onRefresh`**~~. Done for every
    game, the cabinet and `src/common/` (see section 13.1 for what is left).
 3. ~~**`onRender` versus `onRefresh` dispatch cost**~~. Closed (2026-09-24):
@@ -740,7 +742,7 @@ The remaining items, roughly in priority order:
 6. ~~**Migrate the playground.**~~ Done (2026-09-24). The six presets use
    `onRefresh`, and `src/playground/sandbox/sandbox-runner.ts` runs the same
    frame sequence as the main app (model, then `updateScene` while not
-   paused, then `refreshScene` every tick), reports errors from view hooks to
+   paused, then `refreshScene` every tick), reports errors from view methods to
    the console panel, and gives user code `SKIP_DESCENDANTS` as a global.
 7. ~~**Update 004's outdated wording.**~~ Done.
 
@@ -795,7 +797,7 @@ src/pixi-mvt-plugin/scene-scheduler.bench.ts      145   rewrite (invalid harness
 src/pixi-mvt-plugin/incremental-list-strategy.ts  104   delete
 src/pixi-mvt-plugin/rebuild-list-strategy.ts       61   delete
 src/pixi-mvt-plugin/mvt-application-plugin.ts      79   delete
-src/pixi-mvt-plugin/mvt-types.ts                  123   shrink to hook types
+src/pixi-mvt-plugin/mvt-types.ts                  123   shrink to method types
 src/pixi-mvt-plugin/mvt-container-mixin.ts        210   keep, fix install order
 src/pixi-mvt-plugin/index.ts                       11   shrink to four exports
 src/pixi-mvt-plugin-demo/                         663   rework toggle and stats

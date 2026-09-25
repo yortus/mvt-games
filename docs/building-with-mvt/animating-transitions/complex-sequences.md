@@ -144,7 +144,7 @@ function createBoardView(bindings: BoardBindings): Container {
         createParticleView({ getMatchSequence: () => matchSequence }),
     );
 
-    // The parent's onUpdate runs before its children's hooks, so every child
+    // The parent's onUpdate runs before its children's, so every child
     // reads this frame's sequence state
     view.onUpdate = update;
     return view;

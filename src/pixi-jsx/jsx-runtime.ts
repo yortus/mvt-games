@@ -3,7 +3,7 @@
  *
  * - Renders once (no diffing/reconciliation).
  * - Function-valued props become dynamic bindings polled each frame via the
- *   element's `onRefresh` hook (driven by `refreshScene` from `pixi-mvt`),
+ *   element's `onRefresh` method (driven by `refreshScene` from `pixi-mvt`),
  *   with simple equality change-detection.
  * - Construction is inert: static props are applied at once, but no getter
  *   runs until the element's first refresh. Until then a bound property holds
@@ -258,14 +258,14 @@ function propAssign(key: string, val: string): string {
 /**
  * A codegen'd refresh factory. Called once per element with the element, the
  * skip sentinel, the `UNSET` marker and the element's getters as separate
- * arguments, it returns that element's refresh hook. The hook calls each
+ * arguments, it returns that element's refresh method. The method calls each
  * getter it captured directly and keeps each watched binding's last value in
  * a closure local, so a refresh involves no array lookups and no second call.
  * Measured on 1000 elements with three bindings, one design per process (V8
  * shares inline caches between designs run in one process, which skews the
  * comparison): 7.8 us per frame, against 9.9 us for the previous design (a
- * hook calling a shared body with an array of getters) and 5.6 us for
- * hand-written hooks. The remaining ~2 ns per element is the cost of calling
+ * method calling a shared body with an array of getters) and 5.6 us for
+ * hand-written refresh methods. The remaining ~2 ns per element is the cost of calling
  * getters at all, confirmed by CPU profile.
  */
 type RefreshFactory = (...args: unknown[]) => () => typeof SKIP_DESCENDANTS | void;
@@ -281,7 +281,7 @@ const refreshFactoryCache = new Map<string, RefreshFactory>();
 
 /**
  * Get the codegen'd refresh factory for a binding signature, compiling it on
- * first use. The hooks it makes apply all cheap bindings unconditionally and
+ * first use. The methods it makes apply all cheap bindings unconditionally and
  * watched bindings only on change - with zero loops or switch dispatch at
  * runtime. A `visible` binding is always first in `cheap` (see `jsx`), and
  * returns the skip sentinel when false so a hidden element skips its other

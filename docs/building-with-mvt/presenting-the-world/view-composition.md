@@ -119,7 +119,7 @@ each frame rather than subscribing to events from other views.
 
 ## Dynamic Child Views
 
-When the number of entities changes at runtime (asteroids split, bullets fire
+When the number of game objects changes at runtime (asteroids split, bullets fire
 and expire), the parent view may use change detection to rebuild only the
 affected child lists:
 
@@ -148,7 +148,7 @@ presentation needs, which often differ from the model's domain structure.
 
 ### When 1:1 is natural
 
-For simple games, each model entity has a corresponding view - a ball model
+For simple games, each object in the model has a corresponding view - a ball model
 has a ball view, a paddle model has a paddle view. The view and model trees
 happen to look similar because the presentation maps directly to the domain.
 
@@ -163,7 +163,7 @@ happen to look similar because the presentation maps directly to the domain.
 - **Models with no view.** Some models are internal (e.g. a collision system
   or an AI planner) and are never rendered directly. Their effects are visible
   through other models that views do read.
-- **Different granularity.** A model might expose a flat list of entities,
+- **Different granularity.** A model might expose a flat list of game objects,
   while the view groups them by screen region for rendering efficiency. Or a
   model might have deeply nested children that a single view reads through
   bindings without mirroring the nesting.

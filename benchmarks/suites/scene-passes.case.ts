@@ -1,101 +1,46 @@
+import process from 'node:process';
 import { Container } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
+import { readParams, report, timeFrames } from '../harness/measure';
 
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
+// Measured file for the `scene-passes` suite: the cost of `refreshScene`
+// itself, against a plain recursive walk (`naive`) and Pixi's own `onRender`.
+// A frame is one pass plus whatever changes the scenario makes to the tree.
+//
+// The plugin is imported dynamically, and only by the approaches that use it:
+// importing it is what installs the mixin, and the `unpatched` approach has to
+// stay unpatched. The bundle keeps that import lazy.
 
-/**
- * One measurable arm: a scenario, and which implementation runs it.
- *
- * Arms are meant to be run one per process, which is not a detail. Declared
- * side by side in one process, the first arm to run keeps the shared inline
- * caches and beats the second by more than 2x whichever way round the two are
- * declared - the vitest harness this replaces published exactly that artifact
- * as its result. One arm per process also lets the structural-wrapper arms
- * differ by whether the plugin was ever imported at all.
- *
- * `scripts/bench-scene-passes.ts` is the driver that does that.
- */
-export interface BenchmarkArm {
-    readonly scenario: string;
-    readonly arm: string;
+const params = readParams();
+const scenario = String(params.scenario);
+const approach = String(params.approach);
+
+let refreshScene: ((node: Container) => void) | undefined;
+let skipDescendants: symbol | undefined;
+
+// Counts `onRefresh` calls. Read after timing, so the engine cannot drop their work.
+let sink = 0;
+
+function bump(): void {
+    sink++;
 }
 
-export interface BenchmarkResult extends BenchmarkArm {
-    /** Microseconds per frame: the median of seven batches. */
-    readonly usPerFrame: number;
-    /** Method calls per frame, so arms can be compared like for like. */
-    readonly callsPerFrame: number;
+if (approach !== 'naive' && approach !== 'onRender' && approach !== 'unpatched') {
+    const plugin = await import('../../src/pixi-mvt');
+    refreshScene = plugin.refreshScene;
+    skipDescendants = plugin.SKIP_DESCENDANTS as unknown as symbol;
+}
+else if (Object.getOwnPropertyDescriptor(Container.prototype, 'onRefresh') !== undefined) {
+    throw new Error('the plugin was installed in an approach that must not have it');
 }
 
-/** Every arm, in the order a full run reports them. */
-export const benchmarkArms: readonly BenchmarkArm[] = [
-    // A. The realistic shape: a large scene, few methods. Static.
-    { scenario: 'sparse', arm: 'naive' },
-    { scenario: 'sparse', arm: 'memo' },
-
-    // B. Dense and static: every container carries a method, so pruning prunes
-    // nothing and only the saved walk is left.
-    { scenario: 'dense', arm: 'naive' },
-    { scenario: 'dense', arm: 'memo' },
-
-    // C. Dense and churning, which is the shape the memo loses on: the list is
-    // rebuilt every frame and there is nothing to prune.
-    { scenario: 'churn', arm: 'naive' },
-    { scenario: 'churn', arm: 'memo' },
-
-    // D. Whole subtrees attached and detached every frame, none carrying a method.
-    { scenario: 'attach', arm: 'naive' },
-    { scenario: 'attach', arm: 'memo' },
-
-    // E. Dispatch against the incumbent: Pixi's own onRender list, driven
-    // through its render group so that no renderer is needed.
-    { scenario: 'dispatch', arm: 'onRender' },
-    { scenario: 'dispatch', arm: 'memo' },
-
-    // F. What the structural wrappers cost a tree that never calls either pass.
-    // The arms differ only in whether this process ever imported the plugin.
-    { scenario: 'mutation', arm: 'unpatched' },
-    { scenario: 'mutation', arm: 'patched' },
-];
+const frame = createFrame(scenario, approach);
+report({ usPerFrame: timeFrames(frame.run), callsPerFrame: frame.callsPerFrame });
+if (sink < 0) process.stdout.write('\n');
 
 // ---------------------------------------------------------------------------
-// Factory
+// Scenarios
 // ---------------------------------------------------------------------------
-
-/**
- * Builds one arm's scene, measures it, and reports microseconds per frame.
- *
- * A frame is one pass plus whatever churn the scenario applies. The result is
- * the median of seven batches, each batch sized from a warmup so that it runs
- * for roughly 100ms whether a frame costs 300us or half of one.
- */
-export async function runBenchmarkArm(scenario: string, arm: string): Promise<BenchmarkResult> {
-    // Imported dynamically, and only by the arms that want it: importing the
-    // plugin is what installs the mixin, and the unpatched arm has to stay
-    // unpatched.
-    if (arm === 'memo' || arm === 'patched') {
-        const module = await import('./scene-passes');
-        refreshScene = module.refreshScene;
-    }
-
-    const frame = createFrame(scenario, arm);
-    return {
-        scenario,
-        arm,
-        usPerFrame: measure(frame),
-        callsPerFrame: frame.callsPerFrame,
-    };
-}
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-const BATCHES = 7;
-const BATCH_TARGET_MS = 100;
-const WARMUP_MS = 50;
 
 interface Frame {
     run(): void;
@@ -108,46 +53,15 @@ interface Scene {
     readonly leaves: Container[];
 }
 
-let refreshScene: ((node: Container) => void) | undefined;
-
-let sink = 0;
-
-function bump(): void {
-    sink++;
-}
-
-function createFrame(scenario: string, arm: string): Frame {
-    const memo = arm === 'memo';
+function createFrame(scenario: string, approach: string): Frame {
+    const memo = approach === 'memo';
+    if (scenario === 'skip') return skipFrame(approach);
     if (scenario === 'sparse') return passFrame(20000, 200, 0, memo);
-    if (scenario === 'dense') return passFrame(2000, 2000, 0, memo);
+    if (scenario === 'dense') return approach === 'onRender' ? onRenderFrame() : passFrame(2000, 2000, 0, memo);
     if (scenario === 'churn') return passFrame(2000, 2000, 100, memo);
     if (scenario === 'attach') return attachFrame(memo);
     if (scenario === 'mutation') return mutationFrame();
-    if (scenario === 'dispatch') return arm === 'onRender' ? onRenderFrame() : passFrame(2000, 2000, 0, true);
     throw new Error(`unknown scenario: ${scenario}`);
-}
-
-function measure(frame: Frame): number {
-    const warmupEnd = performance.now() + WARMUP_MS;
-    let warmupFrames = 0;
-    while (performance.now() < warmupEnd) {
-        frame.run();
-        warmupFrames++;
-    }
-
-    // Size a batch from what the warmup managed, so a 300us arm and a 0.5us arm
-    // both get a batch long enough to swamp timer resolution.
-    const batchFrames = Math.max(1, Math.round((warmupFrames / WARMUP_MS) * BATCH_TARGET_MS));
-    const batches: number[] = [];
-    for (let batch = 0; batch < BATCHES; batch++) {
-        const start = performance.now();
-        for (let i = 0; i < batchFrames; i++) {
-            frame.run();
-        }
-        batches.push(((performance.now() - start) * 1000) / batchFrames);
-    }
-    batches.sort((a, b) => a - b);
-    return batches[(BATCHES - 1) / 2];
 }
 
 function passFrame(size: number, withMethods: number, swapsPerFrame: number, memo: boolean): Frame {
@@ -164,10 +78,11 @@ function passFrame(size: number, withMethods: number, swapsPerFrame: number, mem
 }
 
 /**
- * 100 method-free subtrees of 25 containers, detached and re-attached every frame.
+ * 100 subtrees of 25 containers, none of which has an `onRefresh`, detached
+ * and re-attached every frame.
  *
  * The point of the scenario: attaching a subtree costs the depth of the
- * ancestor chain rather than the size of the subtree, and a method-free subtree
+ * ancestor chain rather than the size of the subtree, and a subtree with no `onRefresh`
  * whose own shape never changes keeps its cached answer throughout.
  */
 function attachFrame(memo: boolean): Frame {
@@ -241,8 +156,45 @@ function mutationFrame(): Frame {
     };
 }
 
+/**
+ * 100 groups of 100 containers, each container with an `onRefresh` that reads a
+ * model value; 90 of the groups are inactive. `skip`: an inactive group's own
+ * `onRefresh` returns `SKIP_DESCENDANTS`, so its containers' methods do not run.
+ * `hidden`: inactive groups are only hidden (`visible = false`), so every
+ * `onRefresh` still runs.
+ */
+function skipFrame(approach: string): Frame {
+    const pass = requireRefreshScene();
+    const skip = approach === 'skip';
+    const root = new Container();
+    const model = { x: 0 };
+    let calls = 0;
+    for (let g = 0; g < 100; g++) {
+        const group = new Container();
+        const active = g < 10;
+        if (!active && skip) group.onRefresh = () => skipDescendants as never;
+        if (!active) group.visible = false;
+        for (let i = 0; i < 100; i++) {
+            const leaf = new Container();
+            leaf.onRefresh = () => {
+                leaf.x = model.x;
+            };
+            group.addChild(leaf);
+        }
+        calls += skip && !active ? 1 : 100;
+        root.addChild(group);
+    }
+    return {
+        callsPerFrame: calls,
+        run() {
+            model.x++;
+            pass(root);
+        },
+    };
+}
+
 function requireRefreshScene(): (node: Container) => void {
-    if (refreshScene === undefined) throw new Error('this arm needs the plugin, which was not imported');
+    if (refreshScene === undefined) throw new Error('this approach needs the plugin, which was not imported');
     return refreshScene;
 }
 
@@ -279,7 +231,7 @@ function buildScene(size: number, withMethods: number): Scene {
     return { root, branches, leaves };
 }
 
-/** Swaps `count` leaves for fresh ones carrying a method, which dirties the memo. */
+/** Swaps `count` leaves for fresh ones that have an `onRefresh`, which dirties the memo. */
 function churn(scene: Scene, count: number, cursor: number): number {
     let at = cursor;
     for (let i = 0; i < count; i++) {
@@ -314,5 +266,3 @@ function reassignToOnRender(node: Container): void {
         reassignToOnRender(children[i]);
     }
 }
-
-export { sink };

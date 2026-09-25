@@ -7,7 +7,8 @@
 **Related:** [Change Detection](change-detection.md) -
 [Events and Signals](events-and-signals.md) -
 [The Game Loop](../the-game-loop.md) -
-[Hot Paths](../avoiding-pitfalls/hot-paths.md)
+[Hot Paths](../performance/hot-paths.md) -
+[Performance Measurements](../performance/measurements.md)
 
 ---
 
@@ -76,7 +77,7 @@ risk of seeing a half-updated model - no glitches, no need for batching, no
 scheduler.
 
 Push-based systems must work harder for the same guarantee. Events can fire
-mid-mutation (see [Events and Signals - Sync Events](events-and-signals.md#challenge-sync-events-and-inconsistent-state)).
+mid-mutation (see [Events and Signals - Sync Events](events-and-signals.md#challenge-synchronous-events-and-inconsistent-state)).
 Signals need a scheduler and batching semantics to avoid glitch states.
 
 ### No subscriptions, no leaks
@@ -167,9 +168,20 @@ state, zero overhead for continuous state.
 
 ## Limitations and Tradeoffs
 
-**Idle cost.** Polling is not free. Every watcher getter runs every frame, even when nothing changed. At game-typical scale (up to hundreds of watched values), the cost is a negligible part of the frame budget. But it is a fixed cost per tick,
-unlike events and signals which have zero cost when idle. Conversely for
-continuously-changing values, polling is cheaper than events or signals.
+::: info About the figures
+The figures in this section and the next were measured in this repo on one
+2025 machine, in Node.js's V8 engine, with nothing drawn. Absolute times
+will differ elsewhere; the comparisons between polling and signals are what
+carry over. See [Performance Measurements](../performance/measurements.md).
+:::
+
+**Idle cost.** Polling is not free. Every getter runs every frame, even when
+nothing changed. Measured in this project, keeping 1000 Pixi containers in
+step with a model by polling costs about 5-8 µs per frame when nothing
+changes, about 0.05% of a 16.7 ms frame. That is a fixed cost per tick.
+Signals and events cost almost nothing when nothing changes. When values
+change continuously the picture reverses, and polling is cheaper than signals
+(see [When Push Wins](#when-push-wins)).
 
 **Derived state.** Derived state must be computed in the model or in getter expressions. There is no equivalent of `createMemo` that automatically caches and invalidates.
 In practice, model-layer derivation is straightforward and keeps complexity
@@ -182,12 +194,50 @@ sees only the cleared state. If the transient change matters to the view, the
 model must persist it for at least one frame (e.g. a `lastEvent` property) or
 a complementary mechanism like a message queue can be used.
 
-**Scaling to very large entity counts.** At typical game scale, watched
-getters are fast. At extreme scale (thousands of entities, each with many
-watched properties), the per-frame comparison cost grows linearly. In such
-cases, consider watching aggregate values (e.g. a collection version counter)
-rather than individual properties, or narrowing which entities are actively
-watched.
+**Scaling to very large scenes.** At typical game scale, polled
+getters are fast. The cost per container grows with the size of the scene,
+once it no longer fits in the CPU's caches: each container costs about 2.5 times
+as much at 10,000 containers as at 1,000, and about 8 times as much at
+100,000, where polling a scene at rest takes over a fifth of a 60fps frame. At that scale, skip inactive subtrees
+(`SKIP_DESCENDANTS`), or watch aggregate values (e.g. a collection version
+counter) rather than individual properties.
+
+## When Push Wins
+
+Push-based reactivity does its work when a value changes, and nothing
+otherwise. Polling does a small amount of work for every value, every frame.
+Which is cheaper depends on how much of the state changes each frame.
+
+Measured on 1000 Pixi containers, each with 3 dynamic properties,
+polling against Solid's signals and effects (µs per frame):
+
+| Changed per frame | Polling | Signals | Cheaper |
+| --- | --- | --- | --- |
+| 0% | 5-8 | almost nothing | Signals |
+| 1% | 5-9 | 1.3 | Signals, by 4-7x |
+| 10% | 6-9 | 13 | Polling, by 1.4-2.3x |
+| 100% | 10-15 | 130 | Polling, by 9-13x |
+
+The polling range covers hand-written `onRefresh` methods and this project's JSX
+runtime. The crossover is at about 4-6% of containers changed per frame, or
+about 10% when each container has only 1 dynamic property. Events, which notify
+only about what changed, were cheaper than both however many containers changed; their
+costs are in design rather than time (see [Events and Signals](events-and-signals.md)).
+The full tables are in [Performance Measurements](../performance/measurements.md#keeping-containers-in-step).
+
+- **Mostly idle state favours push.** A typical UI changes a handful of values
+  in response to input and is otherwise still. That is why UI frameworks use
+  signals or events.
+- **Continuously changing state favours polling.** In a game, positions and
+  animation progress change every frame, and polling is cheaper by an order of
+  magnitude. A game's discrete state (scores, phases) is small enough that
+  polling it costs almost nothing either way.
+- **Push also changes the model.** Its fields must become signals, so the
+  model is no longer plain state. That design cost is not in the timings.
+
+These numbers are from V8 under Node on one machine, with rendering excluded.
+Absolute times will differ elsewhere; the shape of the comparison is what
+carries over.
 
 ## Hybrid Approaches
 
@@ -231,10 +281,11 @@ see [Events and Signals](events-and-signals.md).
 In a frame-based game loop, polling is the simplest approach that works
 correctly by default.
 
-> **Empirical note:** the project includes benchmarks comparing watchers,
-> signals, and events for a typical game-entity workload. Results confirm
-> that watcher overhead is negligible at game-typical scale. See
-> `benchmarks/reactivity-simple.bench.ts` for the benchmark source.
+> **Empirical note:** the numbers on this page come from the `reactivity` and
+> `scaling` benchmarks (`npm run bench`). See
+> [Performance Measurements](../performance/measurements.md) for the full
+> results, and [Benchmarking Methods](../performance/benchmarking-methods.md) for
+> how they were measured.
 
 ---
 

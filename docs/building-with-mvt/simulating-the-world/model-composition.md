@@ -59,7 +59,7 @@ graph TD
 ```
 
 The tree can be as deep as needed. A game model might compose a physics model,
-which composes individual entity models. The ticker only talks to the root -
+which composes a model for each game object. The ticker only talks to the root -
 each level delegates to its children.
 
 ## Cross-Model Concerns

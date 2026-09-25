@@ -16,8 +16,8 @@ Nothing here is a description of how the repo currently works. For that, see
 | 005 | [`SlotList` proposal](./005-slot-list-proposal.md) | **Implemented** in `src/common/slot-list/` (`SlotList` + `OrderedSlotList`, shipped as `releaseDelayMs`, with indexed access through array-shaped `slots` and `ordered` properties); adopted in `asteroids` and `scramble`, with a demo in `src/demos/ordered-list/`. The `<List>` projection (section 5.3) is `<List items={list.slots}>`, covered by tests in `src/pixi-jsx/list.test.ts`; no game uses it, because the games are not written in JSX |
 | 006 | [`<List>` patterns guide](./006-list-patterns.md) | Usage guide for 004 and 005 |
 | 007 | [Authoring-convention bridge](./007-authoring-convention-bridge.md) | Proposed. A strongly-typed key-rename transform between imperative `bindings` views and JSX `props` views, so each is authored in its own idiom and consumed under the other |
-| 008 | [`Watch()` fluent builder](./008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection (`watch`), memoised derivation (`derive`), reactions (`ReactionBuilder`) and uniform lists. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
-| 010 | [Performance docs proposal](./010-performance-docs-proposal.md) | Proposed. Measurements done (polling costs, JSX runtime against hand-written hooks, polling against push, benchmarking pitfalls); the docs changes they support are not |
+| 008 | [`Watch()` fluent builder](./008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection (`watch`), memoised derivation (`derive`), reactions (`ReactionBuilder`) and uniform lists. The prototype and its tests are in `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
+| 010 | [Performance docs proposal](./010-performance-docs-proposal.md) | **Implemented, and superseded as the place to find numbers.** Re-running its harness found the original push numbers were too low (section 4.6). The benchmarks are now consolidated in [`benchmarks/`](../benchmarks/README.md) (`npm run bench`), with results in the docs' Performance group |
 | 011 | [Multi-package repo](./011-multi-package-repo.md) | Proposed. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package and a decluttered top level. Includes a tooling briefing, a Vite+ lint trial (it can enforce this repo's own formatting without Oxfmt), and an eight-phase migration plan |
 
 ## Reading order
@@ -36,7 +36,7 @@ shapes each one wants.
 you are weighing whether the plugin is worth having.
 
 **007** and **008** are independent of the rest. 007 builds on 001 (uniform
-`onUpdate`/`onRefresh` hooks leave accessor naming as the only difference
+`onUpdate`/`onRefresh` methods leave accessor naming as the only difference
 between the two view conventions) and touches the JSX runtime from 004. 008
 concerns the `watch()` change-detection helper in `src/common/`.
 
@@ -54,18 +54,15 @@ is in progress.
 
 | Item | Where it is recorded | Status |
 | --- | --- | --- |
-| Performance docs: commit the benchmark harness, re-measure three figures, write the docs pages, rework `benchmarks/` | 010 section 9 | Next step: commit the harness (010 Appendix A) |
-| Three figures in 004 measured with a flawed method | 010 section 5.4; flagged in place in 004 sections 4.7 and 7.1 | Re-measure one design per process |
-| Stale references in `benchmarks/` (`npm run bench`, `reactivity.bench.ts`, `docs/reactivity-guide/comparison.md`) | 010 section 2 | Fix with the benchmark rework |
+| Benchmarks in browsers, with rendering included | [`benchmarks/README.md`](../benchmarks/README.md), "What is excluded"; 010 section 8, items 1-2 | Open. Everything so far is V8 under Node with nothing rendered |
 | Drain-the-tail (refresh containers added mid-pass on the same frame) | 001 section 13, item 1 | Open, lower priority: `<List>` and `<Switch>` already refresh what they build |
 | Fold the `<List>` patterns guide into `docs/` | 004 section 9, step 8 | Deferred until the JSX runtime graduates |
 | `range()` helper, accessor lint rule, `<List>` wrapper merge, typed `matchOn<T>()` | 004 section 11, items 1-4 | Parked, each with a trigger |
 | Change-gate for idle subtrees (`refreshWhen`) | 010 section 8, item 5 | Parked, unmeasured |
-| Browsers, rendering cost, push memory cost, CI benchmarking | 010 section 8, items 1-4 | Open questions |
-| `Watch()` builder: six open design questions, docs to write, promotion and migration of ~38 `watch()` call sites | 008, "Handover: loose ends" | Open; decisions already made are listed there and should not be reopened |
-| 008's spike files (`watch-builder.spike.ts` and its test) are parked in `proposals/`, outside `tsconfig.json`'s `include`, so `npm run build` does not type-check them | Here | When work on 008 resumes, move both files under `src/` (e.g. `src/common/`) first, then fix 008's links |
-| 007 section 5's example uses the old `<List of={...} to={...}>` API | Here | Update to `<List items={model.ghosts}>{(ghost, i) => ...}</List>` (004 section 4.7) |
-| Duplicate task folder `tasks/active/002-documentation-overhaul/` | Here | Delete: the task is complete and archived in `tasks/archive/` |
+| Hot path rules that cost nothing in V8 (`for...of` over arrays, returned tuples): keep, soften, or drop? `AGENTS.md` critical rule 5 still bans `for...of` outright | 010 section 9, step 7; the docs' Hot Paths page | Open decision |
+| This repo's games allocate on the hot path: Pac-Man and Scramble about 2-3 KB per frame, International Karate about 1 KB | The `games` suite in [`benchmarks/`](../benchmarks/README.md) | Open. Unexplored; the allocation benchmark can find where it comes from |
+| CI benchmarking | 010 section 8, item 4 | Open question. Push memory cost (item 3) is now measured by the `memory` suite; browsers and rendering (items 1-2) are the row above |
+| `Watch()` builder: six open design questions, docs to write, promotion and migration of ~38 `watch()` call sites | 008, "Handover: loose ends" | Open; decisions already made are listed there and should not be reopened. New input: the `change-detection` benchmark measures `watch()` at about 8 ns per watched value per frame, over three times comparing by hand (see the docs' Performance Measurements) |
 | Barrel rule (`import/no-internal-modules`) crashes ESLint on its first real violation: the `'#common'` and `'#pixi-jsx'` allow entries compile to `false` | 011 section 11.1 | Open. Deliberately left for the restructure (011 phase 1); verify with a deliberate violation when fixing |
 | Multi-package migration, and the Vite+ trial within it | 011 sections 9.3 and 12 | Proposed; no unresolved questions. Settled decisions are in section 13.2 |
 

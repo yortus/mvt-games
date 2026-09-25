@@ -248,11 +248,11 @@ load-bearing: if an upgrade changes any of them, revisit the design.
 
 | Fact | Where | Consequence |
 | --- | --- | --- |
-| `onRender` hooks live in a flat per-render-group array, populated at `addChild`/`removeChild` time | `RenderGroup.addChild`, `addOnRender` | Refresh cost is proportional to attached hooked containers, independent of tree depth |
+| `onRender` callbacks live in a flat per-render-group array, populated at `addChild`/`removeChild` time | `RenderGroup.addChild`, `addOnRender` | Refresh cost is proportional to the attached containers that have an `onRender` callback, independent of tree depth |
 | `runOnRender` iterates that array unconditionally. **No display flag gates it.** Verified against `visible`, `renderable`, `alpha`, `culled`, `includeInBuild`, `measurable` and `RenderLayer` attach/detach, none of which alter the registry | `RenderGroup.runOnRender` | A flat registry has no parent links, so it structurally cannot skip a subtree. This is why subtree-skipping has to happen in a **walk**, which is what section 7.5 uses |
-| `isRenderGroup` and `cacheAsTexture` move a subtree's hooks into a child render group | probe against `RenderGroup` | The hooks are relocated, not disabled |
-| `cacheAsTexture` does **not** suppress its own group's hooks. `runOnRender` runs before the early return; only nested render groups are skipped | `RenderGroupSystem._updateRenderGroups` | There is no flag-based way to park a subtree in place |
-| `RenderGroup.removeChild` on a child that **is** a render group is O(1). It splices one entry from `renderGroupChildren` and returns without walking the subtree | `RenderGroup.removeChild` | Detach is far cheaper than a per-hook `indexOf` for render-group children. But render groups get their own instruction set, so making every list slot one **breaks batching**, which is why this is not a route to cheap detaching |
+| `isRenderGroup` and `cacheAsTexture` move a subtree's `onRender` callbacks into a child render group | probe against `RenderGroup` | The callbacks are relocated, not disabled |
+| `cacheAsTexture` does **not** suppress its own group's `onRender` callbacks. `runOnRender` runs before the early return; only nested render groups are skipped | `RenderGroupSystem._updateRenderGroups` | There is no flag-based way to park a subtree in place |
+| `RenderGroup.removeChild` on a child that **is** a render group is O(1). It splices one entry from `renderGroupChildren` and returns without walking the subtree | `RenderGroup.removeChild` | Detach is far cheaper than a per-method `indexOf` for render-group children. But render groups get their own instruction set, so making every list slot one **breaks batching**, which is why this is not a route to cheap detaching |
 | `collectRenderables` returns early on `globalDisplayStatus < 7` | `collectRenderablesMixin` | Hidden subtrees cost nothing to draw |
 | `set visible` sets `parentRenderGroup.structureDidChange = true` | `Container` | Toggling visibility forces the same instruction rebuild as `addChild`. Hiding is not cheaper than attaching |
 | `set x`/`set y` go through `ObservablePoint`, which compares before storing | `ObservablePoint` | Writing an unchanged position costs a comparison, not a dirty-flag cascade |
@@ -344,7 +344,7 @@ export function List<T>(props: ListProps<T>): Container {
 
     ensure(props.length());
 
-    // The list's own hook only grows the pool. Each slot resolves its own
+    // The list's own method only grows the pool. Each slot resolves its own
     // presence, so there is no per-slot loop here.
     container.onRefresh = () => { ensure(props.length()); };
 
@@ -402,7 +402,7 @@ keeps every rule in section 4.2.
    branch, which also covers re-attaching a retained branch that did not
    refresh while it was detached.
 
-It also reads `length()` once per frame in the list's own hook, which the pass
+It also reads `length()` once per frame in the list's own method, which the pass
 runs before any slot, and shares it with every slot's presence check, rather
 than calling `length()` once per slot.
 
@@ -498,10 +498,13 @@ items: ListSource<T> | (() => ListSource<T>);
 ```
 
 - **The source shape is the one arrays already have.** `readonly T[]` is
-  assignable to `ListSource<T>` under the repo's ES2022 lib, and `at(i)`
-  measured the same as `[i]` (0.76 versus 0.77 ns per element; V8 inlines it;
-  **unverified**, measured in one process, see the performance docs proposal
-  section 5.4).
+  assignable to `ListSource<T>` under the repo's ES2022 lib, and calling
+  `at(i)` costs nothing measurable in the list. Re-measured one design per
+  process (the performance docs proposal, section 5.4): in a bare loop `at(i)`
+  is about 0.2 ns per element slower than `[i]` (1.06 versus 0.86 ns), but
+  inside `<List>`'s slot method the difference is within noise, under about 1 ns
+  per slot. The first measurement, which found them equal (0.76 versus 0.77 ns),
+  ran both in one process.
   `SlotList` and `OrderedSlotList` expose `slots` (and `ordered`) in the same
   shape, and dropped `slotCount`, `at`, `atSlotIndex` and `atOrdinal`, which
   those replaced (see the `SlotList` proposal).
@@ -693,7 +696,7 @@ visibility write when the selection changes) does not matter.
 ## 6. `<Show>`: withdrawn
 
 An earlier draft proposed `<Show>` on the grounds that a hidden subtree still
-runs every hook it contains, so detaching was the only way to stop a subtree
+runs every method it contains, so detaching was the only way to stop a subtree
 refreshing without destroying it.
 
 The `SKIP_DESCENDANTS` sentinel in the refresh pass (section 7.5) makes that
@@ -755,16 +758,28 @@ got optimised once, rather than each new element starting cold. With 1000
 items, replacing 100 of them every frame, a frame dropped from 412 to 257 µs
 (about 38%). With no churn the two were close (86 versus 79 µs).
 
-**These figures are unverified.** They were measured with the two designs in
-one process, a method later shown to distort comparisons (the performance docs
-proposal, section 4.1). Re-measuring them is listed in that proposal's section
-5.4. The direction is likely right; the percentages should not be quoted.
+**Those figures were wrong in both places.** They were measured with the two
+designs in one process, a method later shown to distort comparisons (the
+performance docs proposal, section 4.1). The cached-body design no longer
+exists, so the re-measurement (that proposal's section 5.4) toggles the cache
+on the shipping cached-factory design instead, one design per process, three
+getters per element:
 
-**Revised: a cached factory instead of a cached body.** Each hook used to call
+| | Cached | Uncached |
+| --- | --- | --- |
+| Construction, per element | 0.42 µs | 1.35 µs |
+| 1000 elements, 100 destroyed and rebuilt per frame | 403 µs | 511 µs |
+| 1000 elements, no churn | 10.3 µs | 13.2 µs |
+
+So caching the generated code makes construction about 3x cheaper, not 11%,
+and saves about 21% under churn, not 38%. The prediction at the top of this
+section, that construction is where the cache pays, was right after all.
+
+**Revised: a cached factory instead of a cached body.** Each method used to call
 the shared function, which called the getters through an array. The cache
 (`refreshFactoryCache`) now holds a generated *factory* per signature. Called
 once per element with the element and its getters as separate arguments, it
-returns the element's hook, which calls each getter it captured directly and
+returns the element's method, which calls each getter it captured directly and
 keeps each watched value in a closure local.
 
 Measured on 1000 elements with three cheap bindings and no churn, **one design
@@ -774,9 +789,9 @@ per process**, bundled to plain JavaScript, four runs each:
 | --- | --- |
 | Shared body with a getter array (before) | 9.75-10.11 µs |
 | Cached factory (now) | 7.78-7.83 µs |
-| Hand-written hooks | 5.55-5.70 µs |
+| Hand-written methods | 5.55-5.70 µs |
 
-About 21% faster, and the gap to hand-written hooks halves, from about 4.3 to
+About 21% faster, and the gap to hand-written methods halves, from about 4.3 to
 about 2.2 ns per element. A CPU profile with inlining disabled attributes that
 remainder to the three getter calls themselves, which a runtime cannot avoid
 because getters are all it receives. The pass itself costs about 0.5 ns per
@@ -842,14 +857,14 @@ skips its subtree in O(1) via the pass's skip table. Nothing gates on `visible`,
 so `onUpdate` and `onRefresh` stay symmetric; a subtree skipped in the update
 pass simply freezes until it opts back in.
 
-**Hooks.** `<List>`, `<Switch>` and every element's generated refresh must use
+**Methods.** `<List>`, `<Switch>` and every element's generated refresh must use
 `onRefresh`, not `onRender`, or they sit outside the pass the plugin drives.
 
 Each slot is a wrapper container: its refresh returns `SKIP_DESCENDANTS` when its
 item is absent, and sets its own `visible` for drawing. The pass visits parents
 before children, so a slot that becomes present this frame is refreshed this
 frame, with no one-frame lag on reappearance. Because nothing gates on
-visibility, a slot that sets its own `visible = false` still runs its own hook
+visibility, a slot that sets its own `visible = false` still runs its own method
 next frame, so it can always reveal itself again.
 
 **Update-bearing views** are the second reason the plugin matters.
@@ -883,7 +898,7 @@ element.onRefresh = () => {
 
 The author keeps writing `visible={...}` and never thinks about the sentinel.
 Setting its own `visible` is safe - nothing gates on it, so the element runs its
-own hook again next frame and can reveal itself - and returning the sentinel
+own method again next frame and can reveal itself - and returning the sentinel
 saves the cost of refreshing a hidden subtree. An element with no `visible`
 binding generates no such branch.
 
@@ -1094,10 +1109,10 @@ scheduled; each names what would justify picking it up.
    without weakening the type check. Trigger: the idiom appears in several
    views.
 2. **A lint rule against calling the item accessor while building.** A
-   `children` function must call `item()` only inside bindings and hooks,
+   `children` function must call `item()` only inside bindings and methods,
    because a slot may be empty when it is built (section 7.7). Nothing checks
    this mechanically. Trigger: the mistake happens in practice.
-3. **Merging `<List>`'s per-slot presence check into the item view's hook.**
+3. **Merging `<List>`'s per-slot presence check into the item view's method.**
    Each slot's wrapper calls the item view's own `onRefresh`: one extra call
    per slot per frame, likely a few nanoseconds. Unmeasured. Trigger: a
    profile of a large list shows it, measured one design per process as

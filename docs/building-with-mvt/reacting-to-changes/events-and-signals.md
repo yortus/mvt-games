@@ -395,7 +395,7 @@ clean complement to polling.
 
 ### State machines / statecharts
 
-For discrete state like game phases, entity modes, and lifecycle stages,
+For discrete state like game phases, an enemy's behaviour mode, and lifecycle stages,
 formalised state machines (e.g. XState-style statecharts) offer structured
 transition logic and guard conditions. In MVT, the model often *is* a state
 machine internally - the view polls the current state each frame. State

@@ -1,0 +1,249 @@
+{
+    "suite": "scene-passes",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "scenario": "sparse",
+                "approach": "naive"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    193.40802919708017,
+                    200.42229729729743,
+                    246.69916666666674
+                ],
+                "callsPerFrame": [
+                    200,
+                    200,
+                    200
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "sparse",
+                "approach": "memo"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.5860962811905691,
+                    0.5975882496505512,
+                    0.6080171235179431
+                ],
+                "callsPerFrame": [
+                    200,
+                    200,
+                    200
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "dense",
+                "approach": "naive"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    9.254447702834822,
+                    9.389158163265316,
+                    9.738085742771682
+                ],
+                "callsPerFrame": [
+                    2000,
+                    2000,
+                    2000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "dense",
+                "approach": "onRender"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.095262280169803,
+                    2.117964429831121,
+                    2.161053586274657
+                ],
+                "callsPerFrame": [
+                    2000,
+                    2000,
+                    2000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "dense",
+                "approach": "memo"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    4.928970976253302,
+                    5.061277269528492,
+                    5.135009537020985
+                ],
+                "callsPerFrame": [
+                    2000,
+                    2000,
+                    2000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "churn",
+                "approach": "naive"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    34.018421052631574,
+                    35.99559322033895,
+                    37.120924855491324
+                ],
+                "callsPerFrame": [
+                    2000,
+                    2000,
+                    2000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "churn",
+                "approach": "memo"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    90.11192982456116,
+                    91.02173913043505,
+                    99.5174074074077
+                ],
+                "callsPerFrame": [
+                    2000,
+                    2000,
+                    2000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "attach",
+                "approach": "naive"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    41.70305676855892,
+                    42.34277456647398,
+                    42.623647604327736
+                ],
+                "callsPerFrame": [
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "attach",
+                "approach": "memo"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    9.103791615289776,
+                    9.57243022464264,
+                    9.823397863818409
+                ],
+                "callsPerFrame": [
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "mutation",
+                "approach": "unpatched"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.268899153194777,
+                    11.329579067121712,
+                    11.4620325203252
+                ],
+                "callsPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "mutation",
+                "approach": "patched"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.660922016372252,
+                    12.11225247524752,
+                    12.1246186440678
+                ],
+                "callsPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "skip",
+                "approach": "hidden"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    122.47123893805303,
+                    125.57467248908293,
+                    130.67098214285724
+                ],
+                "callsPerFrame": [
+                    10000,
+                    10000,
+                    10000
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "skip",
+                "approach": "skip"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    8.627004716981123,
+                    8.654925282098203,
+                    9.049686286226478
+                ],
+                "callsPerFrame": [
+                    1090,
+                    1090,
+                    1090
+                ]
+            }
+        }
+    ]
+}

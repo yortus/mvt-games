@@ -62,12 +62,4 @@ export default defineConfig({
             },
         },
     },
-    // Vitest resolves solid-js to the SSR build (Node export condition) where
-    // effects and memos are inert. Alias to the client runtime so benchmarks
-    // measure real reactive propagation.
-    test: {
-        alias: {
-            'solid-js': resolve(__dirname, 'node_modules/solid-js/dist/solid.js'),
-        },
-    },
 });

@@ -144,9 +144,9 @@ describe.each(drivers)('$kind pass', (driver) => {
         expectAncestorsFirst(rec.calls, root);
     });
 
-    it('calls an ancestor given a method after its descendants were listed before it', () => {
+    it('calls an ancestor given an onUpdate or onRefresh after its descendants were listed before it', () => {
         // The hole `onRender` has: its registration list is append-only, so
-        // giving an already-attached ancestor a method places it after its own
+        // giving an already-attached ancestor an `onRender` places it after its own
         // descendants.
         const root = node('root', driver, rec);
         const parent = container('parent');
@@ -322,11 +322,12 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls.length).toBe(4);
     });
 
-    it('prunes subtrees with no method', () => {
+    it('prunes subtrees in which no container has an onUpdate or onRefresh', () => {
         const root = container('root');
         const active: Container[] = [];
-        // 200 branches of 100 method-free containers each, with a method on every
-        // tenth branch: 20k containers, 200 of which are ever called.
+        // 200 branches of 100 containers each. Only every tenth branch has
+        // containers with the pass's method (10 leaves): 20k containers, 200 of
+        // which are ever called.
         for (let branchIndex = 0; branchIndex < 200; branchIndex++) {
             const branch = container(`branch${branchIndex}`);
             root.addChild(branch);

@@ -20,7 +20,7 @@ conventions.
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
-| Binding accessors      | `get` + description          | `getScore()`, `getEntityX()`                  |
+| Binding accessors      | `get` + description          | `getScore()`, `getShipX()`                  |
 | Binding event handlers | `on` + description           | `onDirectionChanged()`, `onResetClicked()`    |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` not `TileType`                     |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` not `state: GameState`     |

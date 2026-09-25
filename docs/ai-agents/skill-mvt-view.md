@@ -38,7 +38,7 @@ state:
 
 | Kind                    | State access               | When to use                        |
 | ----------------------- | -------------------------- | ---------------------------------- |
-| **Reusable leaf view**  | `bindings` object          | Entity renderers, HUD panels, any view that could be reused across contexts |
+| **Reusable leaf view**  | `bindings` object          | Views of single game objects (a ship, a bullet), HUD panels, any view that could be reused across contexts |
 | **Top-level app view**  | Model reference directly   | Application-specific root views that are never reused |
 
 Leaf views define a bindings interface. Top-level views accept the model type
@@ -101,7 +101,7 @@ function createScoreView(bindings: ScoreViewBindings): Container {
 graph once at construction time, then update it each frame in `refresh()`:
 
 ```ts
-function createEntityView(bindings: EntityViewBindings): Container {
+function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     gfx.circle(0, 0, 4).fill(0xffffff);
@@ -125,7 +125,7 @@ Key points:
 
 ## Using `onRefresh` and `onUpdate`
 
-**[project convention]** `src/pixi-mvt/` adds two optional hooks to every Pixi
+**[project convention]** `src/pixi-mvt/` adds two optional methods to every Pixi
 `Container`. A view assigns `refresh()` to `onRefresh`, and, only if it has
 presentation state, `update(deltaMs)` to `onUpdate`:
 
@@ -140,9 +140,9 @@ view.onRefresh = refresh;
   runs its model and `updateScene` over its view; `src/main.ts` runs one
   `refreshScene` over the stage per tick.
 - **Never forward `update()` or `refresh()` to child views.** The passes walk
-  the whole tree, parents before children, and find every hook themselves.
+  the whole tree, parents before children, and find every `onUpdate` and `onRefresh` themselves.
   A view is an ordinary `Container`; return it as one.
-- A hook may return `SKIP_DESCENDANTS` to skip its container's descendants for
+- Either method may return `SKIP_DESCENDANTS` to skip its container's descendants for
   that pass (a hidden subtree). Setting `visible = false` alone skips nothing,
   and a view may set its own `visible` freely.
 - Do not use Pixi's `onRender` for view refresh. It is tied to render cadence
@@ -151,7 +151,7 @@ view.onRefresh = refresh;
   `refreshScene(view)`; no renderer or ticker is needed.
 
 The language-neutral spec (`docs/architecture/`) describes these only as a
-view's `update(deltaMs)` and `refresh()` steps, and must not mention the hooks.
+view's `update(deltaMs)` and `refresh()` steps, and must not mention these methods.
 
 ## Change Detection (Watch)
 
@@ -243,10 +243,10 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 | ------------------------------------------ | --------------- | --------------------------------------------- |
 | Domain state in a view                     | V-stateless     | Move to the model                             |
 | Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
-| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's `onUpdate(deltaMs)` hook      |
+| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's `onUpdate(deltaMs)` method      |
 | Caching binding values at construction     | V-reactive      | Read `get*()` inside `refresh()`              |
 | Mutating models in `refresh()`             | V-readonly      | Use `on*()` bindings for input relay          |
-| `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's `onUpdate(deltaMs)` hook      |
+| `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's `onUpdate(deltaMs)` method      |
 | Computing own deltaMs from `Date.now()`    | V-presentation  | Receive `deltaMs` from the ticker             |
 | Using `class`                              | Style           | Factory function + plain record               |
 | Using `enum` or const-object enum          | Style           | String-literal union                          |
@@ -255,7 +255,7 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
 ## Complete Minimal Example
 
-A reusable entity view with position and visibility bindings:
+A reusable bullet view with position and visibility bindings:
 
 ```ts
 import { Container, Graphics } from 'pixi.js';
@@ -264,7 +264,7 @@ import { Container, Graphics } from 'pixi.js';
 // Bindings
 // ---------------------------------------------------------------------------
 
-interface EntityViewBindings {
+interface BulletViewBindings {
     getX(): number;
     getY(): number;
     isVisible(): boolean;
@@ -274,7 +274,7 @@ interface EntityViewBindings {
 // Factory
 // ---------------------------------------------------------------------------
 
-function createEntityView(bindings: EntityViewBindings): Container {
+function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     gfx.circle(0, 0, 4).fill(0xffffff);
@@ -300,4 +300,4 @@ function createEntityView(bindings: EntityViewBindings): Container {
 - [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../building-with-mvt/avoiding-pitfalls/hot-paths.md) - performance rules for `refresh()`
+- [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `refresh()`

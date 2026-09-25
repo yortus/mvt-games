@@ -13,9 +13,9 @@ MVT splits applications into three layers:
   state). refresh() runs each frame, must be idempotent and side-effect free.
 - **Ticker** - drives the frame loop: model.update(deltaMs) then
   view.update(deltaMs) (views with state) then view.refresh() then render.
-  In this repo, views set onUpdate / onRefresh hooks on their Pixi
-  containers, and updateScene / refreshScene (src/pixi-mvt/) run every hook
-  in the tree, parents first. Views never forward these calls by hand.
+  In this repo, views set onUpdate / onRefresh methods on their Pixi
+  containers, and updateScene / refreshScene (src/pixi-mvt/) run every such
+  method in the tree, parents first. Views never forward these calls by hand.
 - **Bindings** - contract between view and model. get*() reads state, on*()
   relays user input. Reusable views use bindings; top-level views access
   models directly.

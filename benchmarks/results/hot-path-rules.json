@@ -1,0 +1,519 @@
+{
+    "suite": "hot-path-rules",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "measure": "time",
+                "rule": "array-methods",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.173364169675101,
+                    3.23869108606557,
+                    3.244350282485873
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "array-methods",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.8153509829936076,
+                    0.8225763043611206,
+                    0.868064526292573
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "for-of",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.9827709721326746,
+                    0.983559659605287,
+                    1.017125041754816
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "for-of",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.9066713909698331,
+                    0.9147486259567719,
+                    0.9287600478878065
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "string-keys",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    41.84254703328512,
+                    42.41782178217828,
+                    42.49424460431655
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "string-keys",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.643342404053673,
+                    2.694709193245777,
+                    2.713092926490981
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "map-grid",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.473891854258518,
+                    6.55619967793882,
+                    6.597022512708786
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "map-grid",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.7148374726077455,
+                    2.7177089364987426,
+                    2.7407787474824925
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "closures",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.290292375310527,
+                    2.331413704912255,
+                    2.339473684210533
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "closures",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.363280642653535,
+                    2.4202187182095627,
+                    2.4526978107222863
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "object-keys",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    68.48188235294134,
+                    68.80572139303482,
+                    69.62488262910779
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "object-keys",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.5088970938542163,
+                    1.5541920995047784,
+                    1.5737667901806387
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "tuples",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.697732962447845,
+                    3.701724585062243,
+                    3.7590838509316793
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "tuples",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.156913850766925,
+                    3.1737023836043643,
+                    3.3686337543054026
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "recompute",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.4309446674080879,
+                    0.4315153196071393,
+                    0.4423768440463637
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "recompute",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.020378079929623583,
+                    0.020734835792039347,
+                    0.021281740034194616
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "text",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.6787985195027051,
+                    0.6851608636084487,
+                    0.7070020171457383
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "rule": "text",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.15948495238095262,
+                    0.1612273317825722,
+                    0.16459964875519148
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "array-methods",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    24462.610358974358,
+                    24462.63435897436,
+                    24462.63435897436
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "array-methods",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0.025599999999999956,
+                    0.2896
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "for-of",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0,
+                    0.011199999999999988
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "for-of",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.025599999999999956,
+                    0.2752,
+                    0.29919999999999997
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "string-keys",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    48173.88222222222,
+                    48173.88222222222,
+                    48173.88222222222
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "string-keys",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.2896,
+                    0.2896,
+                    0.2896
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "map-grid",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.2896,
+                    0.2896,
+                    0.304
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "map-grid",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0.2896,
+                    0.2896
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "closures",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    56.3024,
+                    56.3024,
+                    56.3024
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "closures",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.29919999999999997,
+                    0.29919999999999997,
+                    0.29919999999999997
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "object-keys",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    80008.2753846154,
+                    80008.2753846154,
+                    80008.2753846154
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "object-keys",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.025599999999999956,
+                    0.29919999999999997,
+                    0.29919999999999997
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "tuples",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.2896,
+                    0.2896,
+                    0.2896
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "tuples",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.2896,
+                    0.2896,
+                    0.304
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "recompute",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "recompute",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "text",
+                "variant": "avoid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.6352,
+                    0.6376,
+                    0.6519999999999999
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "rule": "text",
+                "variant": "prefer"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.6328,
+                    0.6328,
+                    0.6352
+                ]
+            }
+        }
+    ]
+}

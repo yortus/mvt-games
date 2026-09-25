@@ -287,16 +287,16 @@ skips only its descendants.
 **Mutation during a pass.** A pass walks a snapshot of the list taken before the
 first method ran.
 
-| A method, during the pass...               | Behaviour                                     |
-| ------------------------------------------ | --------------------------------------------- |
-| adds a child with a method                 | Not in the snapshot; runs from the next pass  |
-| removes a **later** container              | Skipped                                       |
-| removes an **earlier** container           | No effect this pass                           |
-| clears a method on a later container       | Skipped                                       |
-| reparents a container in the same subtree  | Called once, from its snapshot position       |
-| destroys a container                       | Same as removing it                           |
-| returns `SKIP_DESCENDANTS`                  | Its descendants are skipped for this pass     |
-| re-enters the same pass on the same node   | Throws                                        |
+| An `onUpdate` or `onRefresh`, during the pass... | Behaviour                                    |
+| ------------------------------------------------ | -------------------------------------------- |
+| adds a child that has its own                    | Not in the snapshot; runs from the next pass |
+| removes a **later** container                    | Skipped                                      |
+| removes an **earlier** container                 | No effect this pass                          |
+| clears a later container's                       | Skipped                                      |
+| reparents a container in the same subtree        | Called once, from its snapshot position      |
+| destroys a container                             | Same as removing it                          |
+| returns `SKIP_DESCENDANTS`                       | Its descendants are skipped for this pass    |
+| re-enters the same pass on the same node         | Throws                                       |
 
 A view that builds children inside `onRefresh` therefore has to give them their
 first frame itself, by refreshing them as it creates them. That is one line in
@@ -316,39 +316,47 @@ stale list.
 
 ## What it costs
 
-Measured with `npm run bench`, one arm per process, microseconds per frame on a
-Windows laptop. A frame is one pass plus the scenario's churn.
+Measured with `npm run bench -- scene-passes`: each case in its own process,
+bundled to plain JavaScript, microseconds per frame on a 2025 machine
+(2026-09-25). A frame is one pass plus the scenario's changes to the tree.
 
-| Scenario                                           | naive walk | this plugin |
-| -------------------------------------------------- | ---------- | ----------- |
-| 20k containers, 200 with methods, static           | 224 us     | **0.50 us** |
-| 2k containers, all with methods, static            | 10.4 us    | **4.5 us**  |
-| 2k containers, all with methods, 100 swaps/frame   | **36.5 us**| 65.3 us     |
-| 100 method-free 25-container subtrees, re-attached | 45.5 us    | **9.8 us**  |
+| Scenario                                                       | naive walk  | this plugin |
+| -------------------------------------------------------------- | ----------- | ----------- |
+| 20k containers, 200 with an `onRefresh`, static                | 200 us      | **0.60 us** |
+| 2k containers, all with an `onRefresh`, static                 | 9.4 us      | **5.1 us**  |
+| 2k containers, all with an `onRefresh`, 100 swaps/frame        | **36.0 us** | 91.0 us     |
+| 100 subtrees of 25 containers with no `onRefresh`, re-attached | 42.3 us     | **9.6 us**  |
 
-The first row is the realistic shape - a large scene where few containers carry
-a method - and it is why the list is cached rather than walked. The third row is
-the honest one: when every container carries a method *and* the tree changes
+The first row is the realistic shape - a large scene where few containers have
+an `onRefresh` - and it is why the list is cached rather than walked. The third row is
+the honest one: when every container has one *and* the tree changes
 every frame, the cache is rebuilt every frame and pure overhead. That case is
 structural and documented rather than fixed.
 
-Two baselines worth having:
+Three more worth having:
 
 - **Dispatch against the incumbent.** 2000 methods through Pixi's own `onRender`
-  list cost 2.7 us; the same 2000 through `refreshScene` cost 4.7 us. The
-  difference is under a nanosecond per container, and buys the detachment check
-  that makes mid-pass removal safe.
+  list cost 2.1 us; the same 2000 through `refreshScene` cost 5.1 us. The
+  difference is about 1.5 ns per container, and buys the detachment check that
+  makes mid-pass removal safe.
 - **What the monkey-patch costs a tree that never uses it.** 100 attach and
-  detach pairs on an unmanaged tree: 13.4 us unpatched, 13.7 us patched, which
-  is inside the run-to-run noise. The patch is the main adoption objection, and
-  the objection is about trust rather than speed, so the number is here.
+  detach pairs on an unmanaged tree: 11.3 us unpatched, 12.1 us patched, about
+  8 ns per pair. Small, but measurable. The patch is the main adoption
+  objection, and the objection is about trust rather than speed, so the number
+  is here.
+- **Skipping subtrees.** 10k containers, each with an `onRefresh`, in 100 groups, 90 of them
+  inactive: 126 us when the inactive groups are only hidden, 8.7 us when they
+  return `SKIP_DESCENDANTS`.
+
+The full results, and the other benchmarks, are in the docs'
+[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
 
 ## Running it
 
 | Command                              | What it does           |
 | ------------------------------------ | ---------------------- |
 | `npx vitest run src/pixi-mvt*`        | 62 tests               |
-| `npm run bench`                      | The table above        |
+| `npm run bench -- scene-passes`      | The table above        |
 | `npm run dev`, then `/spike/`        | Visual demo            |
 
 The demo page is dev-server only. To include it in `npm run build`, add

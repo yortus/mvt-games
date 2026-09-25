@@ -28,12 +28,12 @@ different tradeoff profiles.
 
 The idea: create a view with mock bindings, trigger a refresh, then
 assert properties of the resulting display objects. In this project,
-`refreshScene(view)` runs the view's `onRefresh` hook, and those of any views
+`refreshScene(view)` runs the view's `onRefresh` method, and those of any views
 inside it, with no renderer needed.
 
 ```ts
-it('hides the entity when not visible', () => {
-    const view = createEntityView({
+it('hides the bullet when not visible', () => {
+    const view = createBulletView({
         getX: () => 100,
         getY: () => 200,
         isVisible: () => false,
@@ -48,7 +48,7 @@ it('hides the entity when not visible', () => {
 ```ts
 it('positions the sprite at the bound coordinates', () => {
     let x = 50;
-    const view = createEntityView({
+    const view = createBulletView({
         getX: () => x,
         getY: () => 100,
         isVisible: () => true,
@@ -64,7 +64,7 @@ it('positions the sprite at the bound coordinates', () => {
 ```
 
 Mock bindings make it easy to test edge cases: what happens when the
-score is zero? When the entity is at the boundary? When progress is
+score is zero? When the bullet is at the edge of the screen? When progress is
 exactly 1.0?
 
 ### The value problem
@@ -90,15 +90,15 @@ the implementation - it's testing *how* the view achieves its result, not
 instantly; the programmatic test only catches it if it happens to assert
 the exact property that changed.
 
-**Are they reliable?** Consider this common assertion: `expect(entity.visible).toBe(true)`.
-Suppose it passes. But the entity might be invisible to the player for any of these reasons:
+**Are they reliable?** Consider this common assertion: `expect(bullet.visible).toBe(true)`.
+Suppose it passes. But the bullet might be invisible to the player for any of these reasons:
 
-- `entity.alpha` is 0
+- `bullet.alpha` is 0
 - A parent container's `visible` is `false`
 - A parent container's `alpha` is 0
-- The entity's position is off-screen
+- The bullet's position is off-screen
 - Another display object is drawn on top of it
-- The entity has zero scale
+- The bullet has zero scale
 - A mask or filter hides it
 
 The assertion checks one property on one node. Actual visibility is a

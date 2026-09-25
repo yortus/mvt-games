@@ -76,7 +76,7 @@ strict equality, and the property is only written on change.
 
 **No reconciliation.** Unlike React or similar frameworks, the JSX here is evaluated only once to build the real Pixi scene graph. There is no virtual DOM, no diffing pass, and
 no re-rendering. Dynamic updates happen in-place through each element's
-`onRefresh` hook, driven by `refreshScene` from `src/pixi-mvt/`. An element
+`onRefresh` method, driven by `refreshScene` from `src/pixi-mvt/`. An element
 with a `visible` binding evaluates it first and, while hidden, skips its other
 bindings and its whole subtree.
 

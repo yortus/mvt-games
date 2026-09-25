@@ -19,7 +19,8 @@ The docs are organized into five sections. Place new content in the right one:
 | **building-with-mvt/adding-visual-polish/** | Presentation state, view models | Progressive, self-contained |
 | **building-with-mvt/animating-transitions/** | Transitions and sequences | Progressive, self-contained |
 | **building-with-mvt/iterating-with-confidence/** | Testing approaches | Progressive, self-contained |
-| **building-with-mvt/avoiding-pitfalls/** | Mistakes and performance | Progressive, self-contained |
+| **building-with-mvt/avoiding-pitfalls/** | Common mistakes | Progressive, self-contained |
+| **building-with-mvt/performance/** | Why performance matters, hot path rules, measured costs, benchmarking methods | Progressive, self-contained |
 | **reference/** | Quick-lookup resources | Terse, scannable, complete |
 | **ai-agents/** | Agent orientation and skills files | Compressed, task-oriented |
 

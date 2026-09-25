@@ -166,11 +166,12 @@ current view maps 1 world-unit to 1 pixel, that is a view-layer decision.
 
 ### Grid-based example
 
-For grid-based entities, a model could expose fractional `row`/`col`. An integer
-means "centred on that tile"; a fraction means "between tiles":
+For objects that move on a grid, such as the ghosts in Pac-Man, a model could
+expose fractional `row`/`col`. An integer means "centred on that tile"; a
+fraction means "between tiles":
 
 ```ts
-interface EntityModel {
+interface GhostModel {
     /** Row position - fractional while moving between tiles. */
     readonly row: number;
     /** Column position - fractional while moving between tiles. */
@@ -196,7 +197,7 @@ For open-arena games, define an abstract world-coordinate system and let the
 view apply a scale factor:
 
 ```ts
-// Model: arena and entities defined in world-units
+// Model: arena and game objects defined in world-units
 const ARENA_WIDTH  = 400;  // world-units
 const ARENA_HEIGHT = 400;  // world-units
 const SHIP_RADIUS  = 10;   // world-units

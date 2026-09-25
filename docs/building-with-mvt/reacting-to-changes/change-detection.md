@@ -8,7 +8,7 @@
 [Events and Signals](events-and-signals.md) -
 [Bindings (Learn)](../presenting-the-world/bindings.md) -
 [Bindings in Depth](../presenting-the-world/bindings-in-depth.md) -
-[Hot Paths](../avoiding-pitfalls/hot-paths.md)
+[Hot Paths](../performance/hot-paths.md)
 
 ---
 
@@ -24,8 +24,8 @@
 ## The Problem
 
 Re-evaluating every binding every frame is correct but not always efficient.
-Some bindings represent continuous state that changes every frame (entity
-positions), while others represent discrete state that changes rarely
+Some bindings represent continuous state that changes every frame (the
+positions of moving objects), while others represent discrete state that changes rarely
 (dimensions, configuration, game phase). For discrete changes that trigger
 expensive work - rebuilding a grid, tearing down and recreating child views -
 running that work every frame wastes resources.
@@ -126,7 +126,7 @@ instead.
 
 | Situation                                                     | Approach                                                          |
 | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Continuous state (entity x/y)                                 | Read binding directly - change detection adds overhead for no gain |
+| Continuous state (a moving object's x/y)                      | Read binding directly - change detection adds overhead for no gain |
 | Discrete state, reaction is cheap (text label)                | Compare previous value - skip redundant updates                   |
 | Discrete state, reaction is expensive (presentation rebuild)  | Essential - avoid rebuilding 60 times per second                  |
 
@@ -188,4 +188,4 @@ when the count actually changes does the rebuild run.
 ---
 
 For the basics of bindings, see [Bindings (Learn)](../presenting-the-world/bindings.md).
-For hot-path considerations, see [Hot Paths](../avoiding-pitfalls/hot-paths.md).
+For hot-path considerations, see [Hot Paths](../performance/hot-paths.md).

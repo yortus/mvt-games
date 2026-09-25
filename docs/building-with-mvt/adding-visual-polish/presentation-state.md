@@ -75,7 +75,7 @@ to show a gradual transition.
 ::: info Not all animation needs presentation state
 Many animations are driven directly from model values with no extra state.
 A moving character reads model position. A shrinking health bar reads model
-health. An entity flickering while invulnerable reads a model flag and
+health. A ship flickering while invulnerable reads a model flag and
 timer progress.
 
 Presentation state is only needed when the view introduces a transition
@@ -121,8 +121,8 @@ Ticker loop:
 Views without presentation state are unchanged - they have no `update()`
 step, just `refresh()`.
 
-In this project, a view's `update(deltaMs)` step is its `onUpdate` hook, and
-its `refresh()` is its `onRefresh` hook. That is a project convention, not an
+In this project, a view's `update(deltaMs)` step is its `onUpdate` method, and
+its `refresh()` is its `onRefresh` method. That is a project convention, not an
 MVT requirement; see
 [The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes).
 

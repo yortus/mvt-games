@@ -197,7 +197,7 @@ architecture and engineering concerns.
 | Booleans | `is` / `has` / `can` prefix |
 | Bindings | `get*()` for accessors, `on*()` for event handlers |
 | Enum-like types | String-literal unions; use `Kind` not `Type` |
-| Lifecycle props | Use `phase` not `state` |
+| Lifecycle properties | Use `phase` not `state` |
 | Unused params | `_` prefix |
 
 #### Other conventions
@@ -269,7 +269,7 @@ Within each section, list findings as bullet points with:
 
 - [Architecture Rules](../reference/architecture-rules.md) - all MVT rules
 - [Style Guide](../reference/style-guide.md) - code conventions
-- [Hot Paths](../building-with-mvt/avoiding-pitfalls/hot-paths.md) - performance considerations
+- [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance considerations
 - [Bindings in Depth](../building-with-mvt/presenting-the-world/bindings-in-depth.md) - bindings patterns
 - [Model Composition](../building-with-mvt/simulating-the-world/model-composition.md) - model hierarchy
 - [View Composition](../building-with-mvt/presenting-the-world/view-composition.md) - view hierarchy

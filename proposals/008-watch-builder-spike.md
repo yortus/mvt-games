@@ -1,13 +1,12 @@
 # 008 - `Watch()` fluent builder (spike)
 
-> Status: **Spike / design investigation.** A working prototype lives beside
-> this proposal in
-> [`watch-builder.spike.ts`](./watch-builder.spike.ts)
+> Status: **Spike / design investigation.** A working prototype lives in
+> [`src/common/watch-builder.spike.ts`](../src/common/watch-builder.spike.ts)
 > with tests in
-> [`watch-builder.spike.test.ts`](./watch-builder.spike.test.ts)
-> (tsc + eslint + vitest green). Nothing is wired into `#common`, and nothing in
-> `src/` imports it. The tests run with the normal `npm test`, but `npm run build`
-> does not type-check it, because `tsconfig.json` includes only `src/`.
+> [`src/common/watch-builder.spike.test.ts`](../src/common/watch-builder.spike.test.ts)
+> (tsc + eslint + vitest green). It is not exported from the `#common` barrel,
+> and nothing else in `src/` imports it. Living under `src/` means
+> `npm run build` type-checks it and `npm test` runs its tests.
 
 ## The question
 
@@ -387,8 +386,9 @@ without a new reason.
 
 ### Promotion work
 
-- Move the spike into a real module under `src/common/`, export it from the
-  `#common` barrel, and keep the spike tests. Decide what happens to the existing
+- Turn the spike (already in `src/common/`) into a real module: drop the
+  `.spike` suffix, export it from the `#common` barrel, and keep the spike
+  tests. Decide what happens to the existing
   `watch()` / `Watcher` in `src/common/watch.ts` (remove after migration, or keep
   as a deprecated alias).
 - Migrate the ~38 files using `watch()`: simple sites to `.changes().then(...)`,
@@ -404,6 +404,8 @@ without a new reason.
 
 ### Housekeeping
 
-- Add a row for 008 to [proposals/README.md](./README.md).
+- ~~Add a row for 008 to [proposals/README.md](./README.md).~~ Done.
+- ~~Move the spike files from `proposals/` to `src/common/`.~~ Done
+  (2026-09-24), so `npm run build` type-checks them.
 - The first-poll benchmark was an inline Node script, not saved. Re-create it
   under `benchmarks/` if the number needs to be reproducible.

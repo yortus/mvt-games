@@ -1,0 +1,575 @@
+{
+    "suite": "memory",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 0,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 0,
+                "approach": "jsx"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 0,
+                "approach": "events"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 0,
+                "approach": "solid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    63.6888,
+                    63.6888,
+                    63.6888
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 0,
+                "approach": "wasteful"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    96621.60711794872,
+                    96621.60711794872,
+                    96621.60711794872
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 10,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 10,
+                "approach": "jsx"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    8.264,
+                    8.288,
+                    8.288
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 10,
+                "approach": "events"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 10,
+                "approach": "solid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    32183.45327179487,
+                    37781.812246153844,
+                    37815.6584
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 10,
+                "approach": "wasteful"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    96656.68404102564,
+                    96656.68404102564,
+                    96656.68404102564
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "jsx"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    8.288,
+                    8.288,
+                    8.288
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "events"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.26400000000000007,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "solid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    382800.5472888889,
+                    382800.5472888889,
+                    383124.9917333333
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "wasteful"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    96655.6584,
+                    96655.6584,
+                    96655.6584
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "discrete",
+                "changedPercent": 10,
+                "approach": "manual"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "discrete",
+                "changedPercent": 10,
+                "approach": "watch"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0.28800000000000003,
+                    0.28800000000000003,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "discrete",
+                "changedPercent": 10,
+                "approach": "events"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    0,
+                    0.009599999999999997,
+                    0.28800000000000003
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "discrete",
+                "changedPercent": 10,
+                "approach": "solid"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    13632.068656410256,
+                    17818.095938461538,
+                    17818.11993846154
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "pool",
+                "spawnPerFrame": 50,
+                "approach": "list"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    5602.116738461538,
+                    5602.116738461538,
+                    5602.116738461538
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "scene": "pool",
+                "spawnPerFrame": 50,
+                "approach": "rebuild"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    60042.88596923077,
+                    60143.50135384616,
+                    60182.88596923077
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "jsx"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "events"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "solid"
+            },
+            "metrics": {
+                "minorGcs": [
+                    167,
+                    167,
+                    167
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    22.294399857521057,
+                    24.00819981098175,
+                    31.327098965644836
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "synced",
+                "changedPercent": 100,
+                "approach": "wasteful"
+            },
+            "metrics": {
+                "minorGcs": [
+                    42,
+                    42,
+                    42
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    4.391599655151367,
+                    4.925199627876282,
+                    5.478300333023071
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "pool",
+                "spawnPerFrame": 50,
+                "approach": "list"
+            },
+            "metrics": {
+                "minorGcs": [
+                    5,
+                    5,
+                    5
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0.5033001899719238,
+                    0.7618001699447632,
+                    0.8048001527786255
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "scene": "pool",
+                "spawnPerFrame": 50,
+                "approach": "rebuild"
+            },
+            "metrics": {
+                "minorGcs": [
+                    13,
+                    13,
+                    13
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    4.563499927520752,
+                    4.659099698066711,
+                    4.981499671936035
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "retained",
+                "scene": "synced",
+                "approach": "container-only"
+            },
+            "metrics": {
+                "bytesPerContainer": [
+                    710.3128,
+                    710.4808,
+                    710.4808
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "retained",
+                "scene": "synced",
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "bytesPerContainer": [
+                    879.964,
+                    879.964,
+                    879.964
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "retained",
+                "scene": "synced",
+                "approach": "jsx"
+            },
+            "metrics": {
+                "bytesPerContainer": [
+                    1125.9368,
+                    1125.9392,
+                    1125.9416
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "retained",
+                "scene": "synced",
+                "approach": "events"
+            },
+            "metrics": {
+                "bytesPerContainer": [
+                    872.6296,
+                    872.6512,
+                    872.9384
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "retained",
+                "scene": "synced",
+                "approach": "solid"
+            },
+            "metrics": {
+                "bytesPerContainer": [
+                    2544.8992,
+                    2545.0144,
+                    2545.1168
+                ]
+            }
+        }
+    ]
+}

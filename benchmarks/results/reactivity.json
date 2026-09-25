@@ -1,0 +1,1015 @@
+{
+    "suite": "reactivity",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 0,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0011020868741467619,
+                    0.0011035922423878466,
+                    0.0011038507979907457
+                ],
+                "nsPerContainer": [
+                    0.0011020868741467619,
+                    0.0011035922423878466,
+                    0.0011038507979907457
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 0,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    4.615585295612406,
+                    4.669282025653829,
+                    4.674013538055141
+                ],
+                "nsPerContainer": [
+                    4.615585295612406,
+                    4.669282025653829,
+                    4.674013538055141
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 0,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    7.857435046987271,
+                    8.015399774774796,
+                    8.135877024430417
+                ],
+                "nsPerContainer": [
+                    7.857435046987271,
+                    8.015399774774796,
+                    8.135877024430417
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 0,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0011472297725447717,
+                    0.0011492013249614769,
+                    0.0011509525574693118
+                ],
+                "nsPerContainer": [
+                    0.0011472297725447717,
+                    0.001149201324961477,
+                    0.0011509525574693118
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 0,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.013785339291663281,
+                    0.014029789076027078,
+                    0.014147571964249607
+                ],
+                "nsPerContainer": [
+                    0.013785339291663281,
+                    0.014029789076027078,
+                    0.014147571964249607
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 1,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.014176817656142848,
+                    0.014542778335276133,
+                    0.01456678807572707
+                ],
+                "nsPerContainer": [
+                    0.014176817656142848,
+                    0.014542778335276133,
+                    0.01456678807572707
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 1,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.1196227783823005,
+                    5.251841638763044,
+                    5.2759859933652775
+                ],
+                "nsPerContainer": [
+                    5.1196227783823005,
+                    5.251841638763044,
+                    5.2759859933652775
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 1,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    8.187791044776104,
+                    8.722979109900095,
+                    8.959223880597028
+                ],
+                "nsPerContainer": [
+                    8.187791044776104,
+                    8.722979109900095,
+                    8.959223880597028
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 1,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.11342976492637977,
+                    0.11471995395517852,
+                    0.1151258119215959
+                ],
+                "nsPerContainer": [
+                    0.11342976492637977,
+                    0.11471995395517852,
+                    0.1151258119215959
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 1,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.2785438294306575,
+                    1.3433589943480804,
+                    1.3590950750084398
+                ],
+                "nsPerContainer": [
+                    1.2785438294306575,
+                    1.3433589943480804,
+                    1.3590950750084398
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 10,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.13940016655383408,
+                    0.1405394505279626,
+                    0.1421918327684683
+                ],
+                "nsPerContainer": [
+                    0.13940016655383408,
+                    0.1405394505279626,
+                    0.1421918327684683
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 10,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.515854616895882,
+                    5.540088459991957,
+                    5.62260234480106
+                ],
+                "nsPerContainer": [
+                    5.515854616895882,
+                    5.540088459991957,
+                    5.62260234480106
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 10,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    8.71235240690282,
+                    8.976248850750853,
+                    9.021401028277644
+                ],
+                "nsPerContainer": [
+                    8.71235240690282,
+                    8.976248850750853,
+                    9.021401028277644
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 10,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.2965814123057953,
+                    1.3405132610329664,
+                    1.3498418498118556
+                ],
+                "nsPerContainer": [
+                    1.2965814123057953,
+                    1.3405132610329664,
+                    1.3498418498118556
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 10,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    12.469314236111146,
+                    12.828926394749182,
+                    13.12486085343227
+                ],
+                "nsPerContainer": [
+                    12.469314236111146,
+                    12.828926394749182,
+                    13.12486085343227
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 50,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.6603273502839752,
+                    0.6801707779886155,
+                    0.6904507360051585
+                ],
+                "nsPerContainer": [
+                    0.6603273502839752,
+                    0.6801707779886155,
+                    0.6904507360051585
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 50,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    7.131845161290321,
+                    7.332482721956399,
+                    7.446983449012272
+                ],
+                "nsPerContainer": [
+                    7.131845161290321,
+                    7.332482721956399,
+                    7.446983449012272
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 50,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    11.379115977291162,
+                    11.48044099632502,
+                    11.697523345513593
+                ],
+                "nsPerContainer": [
+                    11.379115977291162,
+                    11.48044099632502,
+                    11.697523345513593
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 50,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    3.637466133402151,
+                    3.802764562170501,
+                    6.698605230386055
+                ],
+                "nsPerContainer": [
+                    3.637466133402151,
+                    3.802764562170501,
+                    6.698605230386055
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 50,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    67.71815980629555,
+                    68.68311345646445,
+                    71.87153846153845
+                ],
+                "nsPerContainer": [
+                    67.71815980629555,
+                    68.68311345646445,
+                    71.87153846153845
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 100,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1.3390154260275389,
+                    1.4050370076002139,
+                    1.424047922508282
+                ],
+                "nsPerContainer": [
+                    1.3390154260275389,
+                    1.4050370076002139,
+                    1.424047922508282
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 100,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    9.641798215511308,
+                    9.800598380851795,
+                    9.844274809160304
+                ],
+                "nsPerContainer": [
+                    9.641798215511308,
+                    9.800598380851795,
+                    9.844274809160304
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 100,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    14.741302083333322,
+                    15.109879253567529,
+                    15.18985278654051
+                ],
+                "nsPerContainer": [
+                    14.741302083333322,
+                    15.109879253567529,
+                    15.18985278654051
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 100,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.9817630714827015,
+                    7.1317492936038995,
+                    7.300439560439566
+                ],
+                "nsPerContainer": [
+                    6.9817630714827015,
+                    7.1317492936038995,
+                    7.300439560439566
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 3,
+                "changedPercent": 100,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    128.33364055299523,
+                    129.50229357798156,
+                    134.03588516746422
+                ],
+                "nsPerContainer": [
+                    128.33364055299523,
+                    129.50229357798156,
+                    134.03588516746422
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 0,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0011012981347266228,
+                    0.0011145812711021211,
+                    0.0011194219304081906
+                ],
+                "nsPerContainer": [
+                    0.0011012981347266228,
+                    0.0011145812711021211,
+                    0.0011194219304081906
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 0,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.2304243620470805,
+                    5.305191029900333,
+                    5.363582760072999
+                ],
+                "nsPerContainer": [
+                    5.2304243620470805,
+                    5.305191029900333,
+                    5.363582760072999
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 0,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.993244274809164,
+                    6.332332439678281,
+                    6.439063616869195
+                ],
+                "nsPerContainer": [
+                    5.993244274809164,
+                    6.332332439678281,
+                    6.439063616869195
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 0,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.0011160499189055086,
+                    0.0011176858188555105,
+                    0.001148627884923483
+                ],
+                "nsPerContainer": [
+                    0.0011160499189055086,
+                    0.0011176858188555105,
+                    0.001148627884923483
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 0,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.013420028708630858,
+                    0.013556838063211445,
+                    0.014036727240305505
+                ],
+                "nsPerContainer": [
+                    0.013420028708630858,
+                    0.013556838063211445,
+                    0.014036727240305507
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 1,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.010631621582615419,
+                    0.010763419069251982,
+                    0.010867559997987468
+                ],
+                "nsPerContainer": [
+                    0.010631621582615419,
+                    0.010763419069251982,
+                    0.010867559997987468
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 1,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.2053273213093,
+                    5.240385164051354,
+                    5.295687970974042
+                ],
+                "nsPerContainer": [
+                    5.2053273213093,
+                    5.240385164051354,
+                    5.295687970974042
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 1,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.282250088308003,
+                    6.344642857142842,
+                    6.397139347139355
+                ],
+                "nsPerContainer": [
+                    6.282250088308003,
+                    6.344642857142842,
+                    6.397139347139355
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 1,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.03985046670551228,
+                    0.040019258856539966,
+                    0.040670047689584043
+                ],
+                "nsPerContainer": [
+                    0.03985046670551228,
+                    0.040019258856539966,
+                    0.040670047689584043
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 1,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.5759230736319685,
+                    0.6088722041847046,
+                    0.6154756291955729
+                ],
+                "nsPerContainer": [
+                    0.5759230736319685,
+                    0.6088722041847046,
+                    0.6154756291955729
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 10,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.10093744461316634,
+                    0.10288480945744617,
+                    0.10439750859189244
+                ],
+                "nsPerContainer": [
+                    0.10093744461316634,
+                    0.10288480945744617,
+                    0.10439750859189244
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 10,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.615439429928742,
+                    5.636026686434394,
+                    5.810775997486648
+                ],
+                "nsPerContainer": [
+                    5.615439429928742,
+                    5.636026686434394,
+                    5.810775997486648
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 10,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.394626379591108,
+                    6.427766672723961,
+                    6.725876010781665
+                ],
+                "nsPerContainer": [
+                    6.394626379591108,
+                    6.427766672723961,
+                    6.725876010781665
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 10,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.5104570647992586,
+                    0.5412505623031936,
+                    0.6271510295279003
+                ],
+                "nsPerContainer": [
+                    0.5104570647992586,
+                    0.5412505623031936,
+                    0.6271510295279003
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 10,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    5.448456194519491,
+                    5.543740157480323,
+                    5.5439812096300685
+                ],
+                "nsPerContainer": [
+                    5.448456194519491,
+                    5.543740157480323,
+                    5.5439812096300685
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 50,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.4838338895068583,
+                    0.4844307956006276,
+                    0.497530315422637
+                ],
+                "nsPerContainer": [
+                    0.4838338895068583,
+                    0.4844307956006276,
+                    0.497530315422637
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 50,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.3769203286888345,
+                    6.532311669128513,
+                    6.552465047829282
+                ],
+                "nsPerContainer": [
+                    6.3769203286888345,
+                    6.532311669128513,
+                    6.552465047829282
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 50,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.772992075390869,
+                    6.893148345784417,
+                    6.99552553820178
+                ],
+                "nsPerContainer": [
+                    6.772992075390869,
+                    6.893148345784417,
+                    6.99552553820178
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 50,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    2.0436009174311884,
+                    2.205444798123643,
+                    2.2550981783771
+                ],
+                "nsPerContainer": [
+                    2.0436009174311884,
+                    2.205444798123643,
+                    2.2550981783771
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 50,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    26.73652924256954,
+                    26.992689784442412,
+                    27.429377990430574
+                ],
+                "nsPerContainer": [
+                    26.73652924256954,
+                    26.992689784442412,
+                    27.429377990430574
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 100,
+                "approach": "model-only",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    0.9606941309255094,
+                    0.9715153452685421,
+                    0.9849675278836644
+                ],
+                "nsPerContainer": [
+                    0.9606941309255094,
+                    0.9715153452685421,
+                    0.9849675278836644
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 100,
+                "approach": "hand-written",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    6.825129475343382,
+                    7.131447811447824,
+                    7.144005328596804
+                ],
+                "nsPerContainer": [
+                    6.825129475343382,
+                    7.131447811447824,
+                    7.144005328596804
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 100,
+                "approach": "jsx",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    7.534334541688259,
+                    7.588275862068966,
+                    7.919927637072068
+                ],
+                "nsPerContainer": [
+                    7.534334541688259,
+                    7.588275862068966,
+                    7.919927637072068
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 100,
+                "approach": "events",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    4.104562622752678,
+                    4.108308925543403,
+                    4.276978998384488
+                ],
+                "nsPerContainer": [
+                    4.104562622752678,
+                    4.108308925543403,
+                    4.276978998384488
+                ]
+            }
+        },
+        {
+            "params": {
+                "dynamicProperties": 1,
+                "changedPercent": 100,
+                "approach": "solid",
+                "count": 1000
+            },
+            "metrics": {
+                "usPerFrame": [
+                    53.81233644859804,
+                    56.010826771653576,
+                    56.27291280148421
+                ],
+                "nsPerContainer": [
+                    53.81233644859804,
+                    56.010826771653576,
+                    56.27291280148421
+                ]
+            }
+        }
+    ]
+}

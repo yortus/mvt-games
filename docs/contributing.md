@@ -73,7 +73,8 @@ Use this table to decide where new content belongs:
 | **building-with-mvt/adding-visual-polish/** | Presentation state and view models | Presentation state, taming complex views |
 | **building-with-mvt/animating-transitions/** | Phase-based, open-ended, sequences | Phase-based transitions, open-ended phases, complex sequences |
 | **building-with-mvt/iterating-with-confidence/** | Testing approaches and patterns | Testing, testing models, testing views |
-| **building-with-mvt/avoiding-pitfalls/** | Common mistakes and performance | Common mistakes, hot paths |
+| **building-with-mvt/avoiding-pitfalls/** | Common mistakes | Common mistakes |
+| **building-with-mvt/performance/** | Performance | Why performance matters, hot paths, performance measurements, benchmarking methods |
 | **architecture/** | Transferable MVT specification | Overview, models, views, bindings, ticker, rules, heritage |
 | **reference/** | Terse, scannable, linkable. Complete coverage. | Architecture rules, style guide, glossary, project structure |
 | **ai-agents/** | AI agent orientation and skills files | Agent index, skill-mvt-model, skill-mvt-view |

@@ -8,7 +8,7 @@
 
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
 import { transform } from 'sucrase';
-// Also installs the `onUpdate`/`onRefresh` hooks on `Container`, before any
+// Also installs the `onUpdate`/`onRefresh` methods on `Container`, before any
 // user view code runs
 import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../../pixi-mvt';
 import type { HostMessage, SandboxMessage } from './messages';
@@ -160,7 +160,7 @@ function createUserGlobals(): Record<string, unknown> {
         Texture,
         Rectangle,
         TextStyle,
-        // Views set `onRefresh` (and `onUpdate`); a hook may return this to
+        // Views set `onRefresh` (and `onUpdate`); either may return this to
         // skip its container's descendants for that pass
         SKIP_DESCENDANTS,
         // We include a minimal watch implementation so users can use it

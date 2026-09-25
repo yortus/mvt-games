@@ -100,7 +100,7 @@ app.ticker.add((ticker) => {
 
 The sequence every frame is: **update model** -> **refresh view** -> **render**.
 The ticker drives both: it advances the model, then `refreshScene` runs every
-view's `onRefresh` hook, and Pixi renders afterwards. Neither the model nor the
+view's `onRefresh` method, and Pixi renders afterwards. Neither the model nor the
 view knows about the other's internals.
 
 `onRefresh` and `refreshScene` are this project's way of scheduling view

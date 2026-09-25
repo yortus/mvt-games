@@ -117,7 +117,7 @@ describe('jsx runtime', () => {
             refreshScene(parent);
             expect(child.x).toBe(0);
 
-            // A hidden element still runs its own hook, so it can show itself
+            // A hidden element still runs its own `onRefresh`, so it can show itself
             visible = true;
             refreshScene(parent);
             expect(parent.visible).toBe(true);
@@ -125,7 +125,7 @@ describe('jsx runtime', () => {
         });
     });
 
-    it('installs an onUpdate prop as the element\'s update hook, not a binding', () => {
+    it('installs an onUpdate prop as the element\'s update method, not a binding', () => {
         const deltas: number[] = [];
         const el = jsx('container', {
             onUpdate: (deltaMs: number) => {

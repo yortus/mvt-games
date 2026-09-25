@@ -82,9 +82,9 @@ function createPlayerHudView(bindings: PlayerHudBindings): Container {
 
 Each sub-view has a single focus: one piece of presentation state, one edge
 to detect, one visual to update, each in its own `onUpdate` and `onRefresh`
-hooks. The parent composes them without knowing their internals, and without
+methods. The parent composes them without knowing their internals, and without
 forwarding anything to them: this project's scene passes find each sub-view's
-hooks wherever it sits in the tree (see
+methods wherever it sits in the tree (see
 [The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes)).
 
 **When this works:** the transitions are independent - they don't interact

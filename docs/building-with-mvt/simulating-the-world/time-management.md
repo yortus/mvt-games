@@ -4,7 +4,7 @@
 > forbidden time mechanisms, GSAP timeline recipes, and the
 > advance-then-orchestrate pattern.
 
-**Related:** [Models](models.md) · [Hot Paths](../avoiding-pitfalls/hot-paths.md) ·
+**Related:** [Models](models.md) · [Hot Paths](../performance/hot-paths.md) ·
 [Common Mistakes](../avoiding-pitfalls/common-mistakes.md) ·
 [Phase-Based Transitions](../animating-transitions/phase-based-transitions.md)
 

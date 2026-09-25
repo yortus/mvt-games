@@ -26,7 +26,7 @@ export interface DemoEntry {
      */
     readonly thumbnailAdvanceMs?: number;
     /**
-     * Optional async hook called before `start()` to load assets.
+     * Optional async method called before `start()` to load assets.
      */
     load?(): Promise<void>;
     /** Create and start a running demo session, mounting visuals on `stage`. */

@@ -1,0 +1,136 @@
+{
+    "suite": "construction",
+    "environment": {
+        "date": "2026-09-25",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "scenario": "build",
+                "approach": "container-only"
+            },
+            "metrics": {
+                "usPerContainer": [
+                    0.12725972222222237,
+                    0.13310616113744098,
+                    0.13712039800995018
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "build",
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "usPerContainer": [
+                    0.19874104477611948,
+                    0.2059338582677164,
+                    0.21175606060606098
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "build",
+                "approach": "jsx"
+            },
+            "metrics": {
+                "usPerContainer": [
+                    0.42661093749999957,
+                    0.43622063492063484,
+                    0.46762903225806357
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "build",
+                "approach": "events"
+            },
+            "metrics": {
+                "usPerContainer": [
+                    0.13514213197969568,
+                    0.13520155440414547,
+                    0.14446292682926848
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "build",
+                "approach": "solid"
+            },
+            "metrics": {
+                "usPerContainer": [
+                    0.4454475409836076,
+                    0.4650736842105257,
+                    0.4956109090909091
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "pool",
+                "spawnPerFrame": 5,
+                "approach": "list"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    13.603298350824575,
+                    14.192711518858296,
+                    14.50367159612441
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "pool",
+                "spawnPerFrame": 5,
+                "approach": "rebuild"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    19.200650759219062,
+                    19.726638176638158,
+                    20.589043963712488
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "pool",
+                "spawnPerFrame": 50,
+                "approach": "list"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    14.577290181020311,
+                    14.581502890173356,
+                    14.961105263157874
+                ]
+            }
+        },
+        {
+            "params": {
+                "scenario": "pool",
+                "spawnPerFrame": 50,
+                "approach": "rebuild"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    90.48827361563517,
+                    90.99934853420216,
+                    96.87756410256426
+                ]
+            }
+        }
+    ]
+}

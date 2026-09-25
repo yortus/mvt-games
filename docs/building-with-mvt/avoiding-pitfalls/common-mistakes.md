@@ -3,8 +3,8 @@
 > A quick-reference table of mistakes commonly made in MVT codebases, with
 > symptoms, causes, and fixes.
 
-**Related:** [Time Management](../simulating-the-world/time-management.md) · [Hot Paths](hot-paths.md) ·
-[Bindings in Depth](../presenting-the-world/bindings-in-depth.md)
+**Related:** [Time Management](../simulating-the-world/time-management.md) · [Hot Paths](../performance/hot-paths.md) ·
+[Why Performance Matters](../performance/why-performance-matters.md) · [Bindings in Depth](../presenting-the-world/bindings-in-depth.md)
 
 ---
 
@@ -14,19 +14,19 @@
 
 | # | Mistake | Symptom | Fix |
 |---|---------|---------|-----|
-| 1 | [Using `setTimeout` in a model](#1-using-settimeout-in-a-model) | Non-deterministic behaviour, tests are flaky | Use paused GSAP timeline or manual timer |
-| 2 | [Caching a binding value at construction](#2-caching-a-binding-at-construction) | View shows stale data after model changes | Re-read bindings in `refresh()` |
-| 3 | [Pixel coordinates in a model](#3-pixel-coordinates-in-a-model) | Model tied to screen resolution | Use domain units |
-| 4 | [Per-tick allocations in `refresh()`](#4-per-tick-allocations-in-refresh) | GC pressure, frame drops under load | Use index-based loops, pre-allocate |
-| 5 | [Forgetting to advance the timeline](#5-forgetting-to-advance-the-timeline) | GSAP tweens never play, model state stalls | Call `timeline.time()` in `update()` |
-| 6 | [Zero-duration GSAP tweens](#6-zero-duration-gsap-tweens) | `set()` callbacks skipped silently | Floor distance to avoid zero duration |
-| 7 | [Auto-playing a GSAP timeline](#7-auto-playing-a-gsap-timeline) | Model advances on wall-clock time | Create timeline with `paused: true` |
-| 8 | [Domain logic in a view](#8-domain-logic-in-a-view) | Untestable logic, broken layer separation | Move logic to the model |
-| 9 | [View holding domain state](#9-view-holding-domain-state) | State lost on view recreation, untestable | Move state to the model |
+| 1 | [Using `setTimeout` in a model](#using-settimeout-in-a-model) | Non-deterministic behaviour, tests are flaky | Use paused GSAP timeline or manual timer |
+| 2 | [Caching a binding at construction](#caching-a-binding-at-construction) | View shows stale data after model changes | Re-read bindings in `refresh()` |
+| 3 | [Pixel coordinates in a model](#pixel-coordinates-in-a-model) | Model tied to screen resolution | Use domain units |
+| 4 | [Avoidable work every frame](#avoidable-work-every-frame) | Stutter, high CPU usage, frames that slow down as the scene grows | Follow the hot path rules, skip inactive subtrees, reuse containers |
+| 5 | [Forgetting to advance the timeline](#forgetting-to-advance-the-timeline) | GSAP tweens never play, model state stalls | Call `timeline.time()` in `update()` |
+| 6 | [Zero-duration GSAP tweens](#zero-duration-gsap-tweens) | `set()` callbacks skipped silently | Floor distance to avoid zero duration |
+| 7 | [Auto-playing a GSAP timeline](#auto-playing-a-gsap-timeline) | Model advances on wall-clock time | Create timeline with `paused: true` |
+| 8 | [Domain logic in a view](#domain-logic-in-a-view) | Untestable logic, broken layer separation | Move logic to the model |
+| 9 | [View holding domain state](#view-holding-domain-state) | State lost on view recreation, untestable | Move state to the model |
 
 ---
 
-## 1. Using `setTimeout` in a model
+## Using `setTimeout` in a model
 
 **Symptom:** Behaviour depends on real time, not model time. Tests that run
 fast may pass, but tests on slow machines fail. Pausing the ticker does not
@@ -54,12 +54,12 @@ update(deltaMs) {
 
 See [Time Management](../simulating-the-world/time-management.md).
 
-## 2. Caching a binding at construction
+## Caching a binding at construction
 
 **Symptom:** The view displays the initial value correctly but never updates
 when the model changes (e.g. score stays at 0).
 
-**Cause:** The binding's return value was captured once at construction and
+**Cause:** The binding's return value is captured once at construction and
 never re-read.
 
 **Fix:** Always read bindings inside `refresh()`:
@@ -76,13 +76,13 @@ function refresh(): void {
 
 See [Bindings in Depth](../presenting-the-world/bindings-in-depth.md).
 
-## 3. Pixel coordinates in a model
+## Pixel coordinates in a model
 
 **Symptom:** Model tests break when screen resolution changes. Model is tied
 to a specific rendering setup.
 
-**Cause:** Position, size, or velocity expressed in pixels rather than domain
-units.
+**Cause:** Position, size, or velocity is expressed in pixels rather than
+domain units.
 
 **Fix:** Use domain-appropriate units (tiles, world-units, grid indices). Let
 the view convert to pixels:
@@ -97,35 +97,51 @@ container.position.x = bindings.getX() * SCALE;
 
 See [Models (Learn)](../simulating-the-world/models.md).
 
-## 4. Per-tick allocations in `refresh()`
+## Avoidable work every frame
 
-**Symptom:** Garbage collection pauses, frame drops under heavy load. Profiler
-shows high allocation rate in refresh functions.
+**Symptom:** Occasional stutter, from garbage collection pauses. High CPU
+usage. Frames that get slower as the scene grows, even when little is
+changing.
 
-**Cause:** Array methods (`map`, `filter`, `slice`), template strings, spread
-operators, or inline closures called every frame.
+**Cause:** Code that runs every frame doing work it does not need to:
 
-**Fix:** Use index-based `for` loops, arithmetic keys, and pre-allocated
-structures:
+- **Allocating per game object:** building strings, calling
+  `Object.values()`, or using array methods such as `.map()` and `.filter()`
+  for every enemy, bullet or particle creates garbage every frame. With a
+  thousand game objects that can be tens of kilobytes per frame, which the
+  engine must pause to collect.
+- **Repeating work that hasn't changed:** `update()` and `refresh()` run every
+  frame, so do as little in them as the frame needs. For example, skip hidden
+  or inactive parts of the scene by returning `SKIP_DESCENDANTS`, recompute a
+  derived value only when its inputs change, and use
+  [change detection](../reacting-to-changes/change-detection.md) to skip
+  expensive updates when nothing has changed.
+- **Rebuilding short-lived items:** building and destroying a container for
+  each bullet or particle can be several times slower than reusing containers
+  from a pool.
+
+**Fix:** Follow the [hot path rules](../performance/hot-paths.md):
 
 ```ts
 // Wrong - allocates every frame
-const positions = entities.map(e => e.position);
+const positions = enemies.map(e => e.position);
 
 // Correct - no allocation
-for (let i = 0; i < entities.length; i++) {
-    views[i].position.set(entities[i].x, entities[i].y);
+for (let i = 0; i < enemies.length; i++) {
+    views[i].position.set(enemies[i].x, enemies[i].y);
 }
 ```
 
-See [Hot Paths](hot-paths.md).
+Before rewriting anything, check what it actually costs: see
+[Performance Measurements](../performance/measurements.md). Most games never
+get near the limits ([Why Performance Matters](../performance/why-performance-matters.md)).
 
-## 5. Forgetting to advance the timeline
+## Forgetting to advance the timeline
 
 **Symptom:** GSAP tweens are appended but never play. Model state stays at
 initial values despite `update()` being called.
 
-**Cause:** The timeline was created with `paused: true` (correct) but
+**Cause:** The timeline is created with `paused: true` (correct), but
 `timeline.time()` is never called in `update()`.
 
 **Fix:**
@@ -139,7 +155,7 @@ update(deltaMs) {
 
 See [Time Management](../simulating-the-world/time-management.md).
 
-## 6. Zero-duration GSAP tweens
+## Zero-duration GSAP tweens
 
 **Symptom:** A `set()` call after a tween is silently skipped. State
 transitions that should happen at the end of a movement never fire.
@@ -155,13 +171,13 @@ const dist = Math.abs(targetCol - state.x) + Math.abs(targetRow - state.y) || 0.
 
 See [Time Management](../simulating-the-world/time-management.md).
 
-## 7. Auto-playing a GSAP timeline
+## Auto-playing a GSAP timeline
 
 **Symptom:** Model state advances on real time regardless of the ticker.
 Pausing the game does not pause animations. Tests are non-deterministic.
 
-**Cause:** Timeline created without `paused: true`, so GSAP's global ticker
-drives it.
+**Cause:** The timeline is created without `paused: true`, so GSAP's global
+ticker drives it.
 
 **Fix:**
 
@@ -175,7 +191,7 @@ const tl = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
 See [Time Management](../simulating-the-world/time-management.md).
 
-## 8. Domain logic in a view
+## Domain logic in a view
 
 **Symptom:** Game behaviour depends on the view existing. Removing or
 replacing the view changes how the game plays.
@@ -188,12 +204,12 @@ and update the presentation.
 
 See [Views (Learn)](../presenting-the-world/views.md).
 
-## 9. View holding domain state
+## View holding domain state
 
 **Symptom:** State is lost when a view is destroyed and recreated (e.g. on
 screen resize). Tests need a full rendering setup to verify behaviour.
 
-**Cause:** Application state stored in view closures rather than in the
+**Cause:** Application state is stored in view closures rather than in the
 model.
 
 **Fix:** Move the state to the model. Views should be replaceable without

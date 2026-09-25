@@ -216,7 +216,7 @@ src/games/<name>/
 ├── models/
 │   ├── index.ts          Barrel - re-exports all models, types, and model constants
 │   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
-│   ├── common.ts         Domain types (directions, entity kinds, phases)
+│   ├── common.ts         Domain types (directions, kinds of game object, phases)
 │   └── game-model.ts     Root model - composes all child models
 └── views/
     ├── index.ts           Barrel - re-exports createGameView and view constants

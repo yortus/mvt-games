@@ -128,11 +128,11 @@ function createGameView(game: GameModel): Container {
         getLives: () => game.score.lives,
     });
 
-    for (let i = 0; i < game.entities.length; i++) {
-        const entity = game.entities[i];
-        createEntityView({
-            getX: () => entity.x,
-            getY: () => entity.y,
+    for (let i = 0; i < game.bullets.length; i++) {
+        const bullet = game.bullets[i];
+        createBulletView({
+            getX: () => bullet.x,
+            getY: () => bullet.y,
         });
     }
 }
@@ -140,7 +140,7 @@ function createGameView(game: GameModel): Container {
 
 ### Why leaf views use bindings
 
-Smaller, focused views - entity renderers, HUD panels, overlays - are natural
+Smaller, focused views - views of single game objects, HUD panels, overlays - are natural
 candidates for reuse. The `get*()`/`on*()` bindings interface gives them an
 adapter layer: if a model's property is named `posX` but the view expects
 `getX()`, only the wiring changes - neither the model nor the view needs

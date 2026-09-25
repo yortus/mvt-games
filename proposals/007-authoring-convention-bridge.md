@@ -12,7 +12,7 @@ run and type-checked; nothing has been added to `src/`.
 **Related:** [`src/pixi-jsx/`](../src/pixi-jsx/index.ts) (the JSX runtime and its
 prop model) and [001 - MVT plugin rework](./001-mvt-plugin-rework-plan.md), now
 implemented: the `mvt-container` mixin gives every `Container` uniform
-`onUpdate`/`onRefresh` hooks, which is what leaves accessor key naming as the
+`onUpdate`/`onRefresh` methods, which is what leaves accessor key naming as the
 *only* divergence for this transform to bridge (section 6).
 
 ---
@@ -25,8 +25,8 @@ implemented: the `mvt-container` mixin gives every `Container` uniform
 | Read accessor | `getThing(): T` | `thing: () => T` |
 | Event handler | `onWaa(x): void` | `onWaa(x): void` |
 | Return | `Container` | `Container` |
-| Refresh hook | `view.onRefresh = refresh` | per-prop `onRefresh` codegen |
-| Update hook (if stateful) | `view.onUpdate = update` | `view.onUpdate = update` |
+| Refresh method | `view.onRefresh = refresh` | per-prop `onRefresh` codegen |
+| Update method (if stateful) | `view.onUpdate = update` | `view.onUpdate = update` |
 
 The two conventions differ in exactly one respect that a machine can see: the
 **key name** of a read accessor (`getThing` vs `thing`). Everything else - the
@@ -40,7 +40,7 @@ identical. That single fact is the whole basis of this proposal:
    at a construction boundary so a view written in one convention is consumable
    under the other.
 3. Nothing else needs bridging. Since 001 shipped, presentation state rides on
-   the mixin's `onUpdate` hook and refresh on `onRefresh` - both uniform across
+   the mixin's `onUpdate` method and refresh on `onRefresh` - both uniform across
    the two conventions - so accessor key naming is the one remaining difference.
 
 Net effect: zero migration of the 50 existing `*ViewBindings` interfaces, the
@@ -53,7 +53,7 @@ JSX runtime is untouched, and cross-consumption becomes a typed one-liner.
 ### 2.1 Imperative bindings-view
 
 A leaf view takes a `bindings` record of `get*` accessors and `on*` handlers,
-and self-refreshes through a Pixi container hook. From
+and self-refreshes through a Pixi container method. From
 [ghost-view.ts](../src/games/pacman/views/ghost-view.ts):
 
 ```ts
@@ -287,17 +287,16 @@ const Ghost = componentFromView(createGhostView);
 export function createBoardView(model: BoardModel): Container {
     return (
         <container label="board">
-            <List
-                of={() => model.ghosts}
-                to={(g, i) => (
+            <List items={model.ghosts}>
+                {(ghost, i) => (
                     <Ghost
-                        row={() => model.ghosts[i].row}
-                        col={() => model.ghosts[i].col}
+                        row={() => ghost().row}
+                        col={() => ghost().col}
                         color={() => GHOST_COLORS[i]}
                         tileSize={() => TILE_SIZE}
                     />
                 )}
-            />
+            </List>
         </container>
     );
 }
@@ -305,7 +304,7 @@ export function createBoardView(model: BoardModel): Container {
 
 At runtime `jsx(Ghost, props)` calls `Ghost(props)`, which renames the props back
 to bindings and calls `createGhostView`. The returned container already wired its
-own `onRefresh` hook, so it refreshes inside the tree like any other node - the
+own `onRefresh` method, so it refreshes inside the tree like any other node - the
 JSX runtime adds no second refresh path for a function-component result.
 
 ### 5.5 Example: a JSX component used by imperative callers
@@ -332,15 +331,15 @@ parent.addChild(stars);
   was first drafted, presentation state lived in a `StatefulPixiView = Container
   & { update }`, whose `update` half was erased at the JSX boundary
   (`JSX.Element = Container`). Since 001 shipped that type is gone: every
-  `Container` carries an `onUpdate` hook from the mixin, driven by `updateScene`,
+  `Container` carries an `onUpdate` method from the mixin, driven by `updateScene`,
   so a stateful view - bindings or JSX - just sets `view.onUpdate` and composes
   natively. There is no intersection type to erase and nothing for the bridge to
   reconcile. The adapters pass the container through untouched, `onUpdate` and
   all.
 
 - **It does not change how refresh is driven.** Both conventions now refresh
-  through the mixin's `onRefresh` hook (driven by `refreshScene`); the adapted
-  view keeps the hook it already installed. The bridge is naming-only; which pass
+  through the mixin's `onRefresh` method (driven by `refreshScene`); the adapted
+  view keeps the method it already installed. The bridge is naming-only; which pass
   ticks the tree is the host loop's business.
 
 - **It does not wire non-pointer `on*` as events.** On intrinsic elements only

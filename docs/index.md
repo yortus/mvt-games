@@ -60,7 +60,8 @@ The progressive guide takes you from a working example to advanced topics:
 6. **Adding Visual Polish** - [Presentation State](building-with-mvt/adding-visual-polish/presentation-state.md), [Taming Complex Views](building-with-mvt/adding-visual-polish/taming-complex-views.md)
 7. **Animating Transitions** - [Phase-Based](building-with-mvt/animating-transitions/phase-based-transitions.md), [Open-Ended Phases](building-with-mvt/animating-transitions/open-ended-phases.md), [Complex Sequences](building-with-mvt/animating-transitions/complex-sequences.md)
 8. **Iterating with Confidence** - [Testing](building-with-mvt/iterating-with-confidence/testing.md), [Testing Models](building-with-mvt/iterating-with-confidence/testing-models.md), [Testing Views](building-with-mvt/iterating-with-confidence/testing-views.md)
-9. **Avoiding Pitfalls** - [Common Mistakes](building-with-mvt/avoiding-pitfalls/common-mistakes.md), [Hot Paths](building-with-mvt/avoiding-pitfalls/hot-paths.md)
+9. **Avoiding Pitfalls** - [Common Mistakes](building-with-mvt/avoiding-pitfalls/common-mistakes.md)
+10. **Performance** - [Why Performance Matters](building-with-mvt/performance/why-performance-matters.md), [Hot Paths](building-with-mvt/performance/hot-paths.md), [Performance Measurements](building-with-mvt/performance/measurements.md), [Benchmarking Methods](building-with-mvt/performance/benchmarking-methods.md)
 
 ### Reference
 

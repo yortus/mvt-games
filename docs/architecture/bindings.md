@@ -41,7 +41,7 @@ A bindings object is a plain object with two kinds of members:
 Example:
 
 ```
-EntityViewBindings:
+BulletViewBindings:
     getX: () -> number
     getY: () -> number
     getVisible: () -> boolean

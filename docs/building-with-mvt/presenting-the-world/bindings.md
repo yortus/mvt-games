@@ -46,16 +46,16 @@ sequenceDiagram
 
 ## A Minimal Example
 
-A view that tracks a moving entity's position:
+A view that tracks a moving bullet's position:
 
 ```ts
-interface EntityViewBindings {
+interface BulletViewBindings {
     getX(): number;
     getY(): number;
     isVisible(): boolean;
 }
 
-function createEntityView(bindings: EntityViewBindings): Container {
+function createBulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     gfx.circle(0, 0, 4).fill(0xffffff);
@@ -128,7 +128,7 @@ function createGameView(game: GameModel): Container {
         }),
     );
 
-    // Wire entity bindings from a child model
+    // Wire the ship's bindings from a child model
     const shipView = createShipView({
         getX: () => game.ship.x,
         getY: () => game.ship.y,
@@ -189,7 +189,7 @@ specific application's sub-views together. They're also the views with the
 largest bindings surface area. Letting them read model properties directly
 eliminates an entire adapter layer.
 
-**Leaf views** (entity renderers, HUD panels, overlays) are natural reuse
+**Leaf views** (views of single game objects, HUD panels, overlays) are natural reuse
 candidates. The bindings interface gives them an adapter layer: if a model's
 property is named `posX` but the view expects `getX()`, only the wiring
 changes.

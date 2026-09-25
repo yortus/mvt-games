@@ -257,5 +257,5 @@ Re-export through the directory's barrel file (`index.ts`).
 - [Model Composition](../building-with-mvt/simulating-the-world/model-composition.md) - parent-child delegation
 - [Architecture Rules](../architecture/rules.md) - all model rules (M-time through M-composition)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../building-with-mvt/avoiding-pitfalls/hot-paths.md) - performance rules for `update()`
+- [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `update()`
 - [Testing Models](../building-with-mvt/iterating-with-confidence/testing-models.md) - testing models, `advanceTime` helper

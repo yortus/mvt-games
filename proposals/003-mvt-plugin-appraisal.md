@@ -21,7 +21,7 @@ The spike ships three ideas. Only one of them is the product:
 | `onRefresh()` as a render-decoupled refresh pass | Worth keeping, weak on its own. `onRender` already covers most of it. |
 | Two interchangeable call-list strategies | **Cut.** The performance difference does not register against a frame budget. |
 
-Recommended shape: two hooks, one strategy, eager mixin install, QUICK-START as
+Recommended shape: two methods, one strategy, eager mixin install, QUICK-START as
 the front door. That is roughly a 40% code reduction with no measurable change
 in behaviour, and it turns a spike into something maintainable.
 
@@ -36,7 +36,7 @@ JSX scenes at all. See [the JSX composition note](#b-mvt-devs-and-the-games-in-t
 ### (a) General Pixi devs, no MVT knowledge
 
 **`onUpdate` is the pitch, and it is a good one.** Pixi has no per-container
-update hook. Today, time-based logic owned by a display object means
+update method. Today, time-based logic owned by a display object means
 `Ticker.shared.add(fn)` plus remembering to remove it. Forgotten unsubscribes
 are a well-known Pixi bug class: leaks, and ghost animations that keep running
 after a scene is torn down. Scoping a subscription to scene-graph membership
@@ -70,7 +70,7 @@ that; only a track record does.
 better than most released plugins ship with. Its one structural problem is
 order: it leads with `onRefresh`, which is the philosophically load-bearing but
 harder sell, and follows with `onUpdate`, which is the "I have this problem
-today" hook. Lead with the pain.
+today" selling point. Lead with the pain.
 
 ### (b) MVT devs and the games in this repo
 
@@ -128,7 +128,7 @@ reaches for `ref` to escape into imperative access for a far smaller reason
 (drawing a debug bounding box).
 
 With `onUpdate`, the problem disappears rather than being worked around. An
-update-bearing view becomes an ordinary `Container` carrying a hook, so it
+update-bearing view becomes an ordinary `Container` with an `onUpdate` method, so it
 composes into JSX like anything else, at any depth, inside a `<List>`, with no
 ref, no hoisting, and no forwarding. The scheduler finds it by walking the tree
 that JSX just built. This is the only benefit identified in this review that
@@ -149,10 +149,10 @@ blocked.
 
 ## Technical findings
 
-### 1. Real bug: prototype accessor shadowing causes silent hook loss
+### 1. Real bug: prototype accessor shadowing causes silent method loss
 
 `installMvtContainerMixin()` is lazy, running inside `createSceneScheduler`.
-Any hook assigned *before* install creates an own data property on the instance
+Any method assigned *before* install creates an own data property on the instance
 which permanently shadows the prototype accessor. From then on `hookChanged()`
 never fires for that container.
 
@@ -205,7 +205,7 @@ per strategy, or a warm-up phase that touches both before either is measured.
 
 ### 3. Performance is a non-issue, and that should be the headline
 
-2000 hooked containers, both passes: about **9 microseconds per frame**.
+2000 containers, each with an `onUpdate` and an `onRefresh`, both passes: about **9 microseconds per frame**.
 Against a 16.7ms budget that is 0.05%. Even the losing strategy under heavy
 churn costs about 97 microseconds.
 
@@ -230,8 +230,8 @@ README.
 
 ### 5. `hookChanged` re-seats the entire subtree, undocumented
 
-Assigning `onRefresh` to an attached root with 5 hooked descendants takes the
-slot list from 5 entries to 11 (5 tombstones plus 6 live). Late hook assignment
+Assigning `onRefresh` to an attached root with 5 descendants that have an `onRefresh` takes the
+slot list from 5 entries to 11 (5 tombstones plus 6 live). Late method assignment
 is therefore O(subtree), and doing it per-frame thrashes compaction: 50
 reassignments produced 25 compactions.
 

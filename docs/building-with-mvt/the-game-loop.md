@@ -5,7 +5,7 @@
 > top-level loop that runs your game.
 
 **Related:** [Architecture: The Ticker](../architecture/ticker.md) ·
-[Time Management](simulating-the-world/time-management.md) · [Hot Paths](avoiding-pitfalls/hot-paths.md)
+[Time Management](simulating-the-world/time-management.md) · [Hot Paths](performance/hot-paths.md)
 
 ---
 
@@ -92,7 +92,7 @@ models to over-advance and potentially break assumptions.
 The strict update-then-refresh sequence provides three guarantees:
 
 **Models settle first.** When views read state, every model has finished
-advancing. No view sees a half-updated world where one entity has moved but
+advancing. No view sees a half-updated world where one object has moved but
 another hasn't.
 
 **Multiple views stay in sync.** Two views reading the same model property
@@ -132,11 +132,11 @@ Models don't know or care - they only ever see the `deltaMs` they receive.
 ## In This Project: `onUpdate`, `onRefresh` and the Scene Passes
 
 MVT requires the order above, not a particular mechanism. This project
-implements the view side with two optional hooks on every Pixi `Container`,
+implements the view side with two optional methods on every Pixi `Container`,
 from [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt).
 This is a **project convention**, not part of MVT itself.
 
-| Hook | MVT step | Runs | Driven by |
+| Method | MVT step | Runs | Driven by |
 | --- | --- | --- | --- |
 | `view.onUpdate = (deltaMs) => { ... }` | a view's `update(deltaMs)`: advance cosmetic presentation state | only on views that have presentation state | `updateScene(root, deltaMs)` |
 | `view.onRefresh = () => { ... }` | a view's `refresh()`: read state, write presentation output | on every view that shows state | `refreshScene(root)` |
@@ -150,14 +150,14 @@ refreshScene(app.stage);          // 3. every onRefresh in the tree
 ```
 
 - **Nothing forwards calls down the tree.** Each pass walks the whole subtree
-  it is given and calls every hook it finds, parents before children. A view
-  anywhere in the tree takes part just by setting a hook; its parents do not
+  it is given and calls every `onUpdate` or `onRefresh` it finds, parents before
+  children. A view anywhere in the tree takes part just by setting one; its parents do not
   need to know it exists or pass anything on.
 - **Where the calls live here.** Each game session's `update()` runs its model
   and then `updateScene` over its own view. The host (`src/main.ts`) runs one
   `refreshScene` over the whole stage per tick, paused or not, so menus stay
   correct while the game is paused.
-- **Skipping a subtree.** A hook may return `SKIP_DESCENDANTS` to skip its
+- **Skipping a subtree.** Either method may return `SKIP_DESCENDANTS` to skip its
   container's descendants for that pass, for example a hidden panel whose
   contents need not refresh. Visibility alone skips nothing.
 - **Why not Pixi's `onRender`?** It fires during rendering, so it is tied to
@@ -189,7 +189,7 @@ above). The frame sequence is the same regardless of tree depth.
 
 - **Hot paths stay lean.** `update()` and `refresh()` run every frame. Avoid
   per-tick heap allocations.
-  ([Hot Paths](avoiding-pitfalls/hot-paths.md))
+  ([Hot Paths](performance/hot-paths.md))
 
 For the language-neutral specification, see the
 [Architecture](../architecture/index.md) section.

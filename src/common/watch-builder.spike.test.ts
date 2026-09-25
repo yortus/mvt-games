@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Watch, PREVIOUS } from './watch-builder.spike.ts';
+import { Watch, PREVIOUS } from './watch-builder.spike';
 
 // ---------------------------------------------------------------------------
 // Tests: SPIKE `Watch()` builder
