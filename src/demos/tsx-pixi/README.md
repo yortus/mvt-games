@@ -69,8 +69,8 @@ unconditionally each frame without change detection, avoiding the overhead of
 a cache lookup for something that costs almost nothing to apply.
 
 **Watch for expensive props.** A few props (`text`, `style`, `texture`,
-`width`, `height`) are expensive to set because they trigger layout
-measurement or texture upload. These are treated like MVT's `watch()` pattern:
+`tint`, `width`, `height`) are expensive to set because they trigger layout
+measurement, texture upload or colour parsing. These are treated like MVT's `watch()` pattern:
 the getter is polled, the result is compared against the previous value with
 strict equality, and the property is only written on change.
 
@@ -95,7 +95,15 @@ infers the item type from `items` and flows it into
 the children function, which receives an accessor (`star()`) rather than a
 value, as a reminder that the item is re-read each frame. Slots are built once
 per index and kept; a slot with nothing in it hides and skips its whole
-subtree, so its bindings never run.
+subtree, so its bindings never run, and slots past the end are detached until
+the list grows back.
+
+**Counting prop reads.** `propReadCounter` counts the prop reads the
+runtime makes: getter props, `<List>` presence checks and `<Switch>`
+conditions. It is off by default and costs a flag check per container while
+off, so it is sampled rather than left on: `countPropReads(() =>
+refreshScene(root))` counts one pass. A hidden container counts only its
+`visible` read, and a `memo()` getter counts as one.
 
 **Optimisation: Codegen'd refresh functions.** The runtime generates a
 specialized refresh factory (via `new Function`) for each distinct set of

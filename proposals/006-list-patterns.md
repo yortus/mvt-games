@@ -19,10 +19,11 @@ already are one, and so are `SlotList.slots` and `OrderedSlotList.slots`/
 `.ordered`; anything else is a two-member literal, whose `length` may be a
 function for a live count (`{ length: () => model.count, at: ... }`). Slot `N` renders whatever `at(N)` returns,
 and re-reads it every frame; the item view receives an accessor (`item()`), not
-a value. Slots are built once per index and retained forever. A slot past the
-end, or whose `at(N)` is `undefined`, hides and skips its subtree; it is never
-detached or destroyed. The list never compares identities and does no
-structural work while the length is unchanged.
+a value. Slots are built once per index and retained forever. A slot whose
+`at(N)` is `undefined` hides and skips its subtree; a slot past the end is
+detached, and reattached rather than rebuilt when the list grows back. The list
+never compares identities and does no structural work while the length is
+unchanged.
 
 `items` takes the source itself or a getter returning it. Pass the source
 (`items={model.tiles}`) when the model mutates one collection in place, which

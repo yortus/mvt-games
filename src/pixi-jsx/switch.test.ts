@@ -1,6 +1,7 @@
 import { Container, type Text } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { refreshScene } from '../pixi-mvt';
+import { countPropReads } from './prop-reads';
 import { jsx } from './jsx-runtime';
 import { Match, Switch } from './switch';
 
@@ -114,6 +115,30 @@ describe('Switch', () => {
         refreshScene(t.sw);
 
         expect(t.whenCalls()).toBe(1);
+    });
+
+    it('counts each `when` it calls as a prop read; selecting the default reads nothing', () => {
+        let isFirst = false;
+        let isSecond = true;
+        const sw = Switch({
+            children: [
+                Match({ when: () => isFirst, children: jsx('container', { x: () => 1 }) }),
+                Match({ when: () => isSecond, children: jsx('container', { x: () => 2 }) }),
+                Match({ else: true, children: jsx('container', { x: () => 3 }) }),
+            ],
+        });
+        refreshScene(sw);
+
+        // Two conditions, then the second branch's one binding
+        expect(countPropReads(() => refreshScene(sw))).toBe(3);
+
+        // Both conditions, then the default, which has no condition, and its one binding
+        isSecond = false;
+        expect(countPropReads(() => refreshScene(sw))).toBe(3);
+
+        // The first condition holds: one condition, one binding
+        isFirst = true;
+        expect(countPropReads(() => refreshScene(sw))).toBe(2);
     });
 
     it('never restructures: switching only changes visibility', () => {

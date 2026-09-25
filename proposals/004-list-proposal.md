@@ -432,6 +432,18 @@ skips the subtree without mutating the tree.
 So slots are built once and never removed. There is no `trim()`, and no policy
 to choose.
 
+> **Revised 2026-09-25: detach the tail, hide the holes.** Measurement
+> overturned half of this. A parked slot is not free: it still costs a refresh
+> call per frame. After the falling-sand demo filled to 20,000 grains and was
+> cleared to 180, its refresh pass took about 970 µs per frame, almost all of
+> it parked slots; detaching them brought it to about 10 µs. So slots past
+> `length` are now detached (kept, not destroyed) and reattached, not rebuilt,
+> when the list grows back. Holes below `length` are still hidden, since the
+> memo argument above still holds for them. The memo rebuild happens only when
+> the length changes, and the `construction` suite's churning `SlotList` pool
+> measured within noise of the hide-only version. Detached slots are destroyed
+> with the list, since `destroy({ children: true })` no longer reaches them.
+
 ### 4.5 The authoring rule this imposes
 
 > An item view must not capture item data at construction time. Everything
@@ -1035,11 +1047,10 @@ the honest comparison and where the work moved from.
    the grounds that no list in the repo needs it and MVT wants identity-keyed
    state in view models anyway. That recommendation rests on how this repo
    builds views, so it should be revisited if that changes.
-2. **Should hidden slots ever be reclaimed?** They are never detached or
-   destroyed, so a list that peaks at 5000 holds 5000 slots for its lifetime,
-   each costing one visibility check per frame. A `trim()` would reclaim them
-   at the price of invalidating the memoised traversal. No workload in the repo
-   peaks hard enough to need it. Recommend deferring.
+2. ~~**Should hidden slots ever be reclaimed?**~~ Partly resolved: slots past
+   `length` are now detached, so they cost nothing per frame (see the revision
+   note in section 4.4). They are still kept for reuse rather than destroyed,
+   so a list that peaked at 5000 still holds 5000 slots' memory.
 3. **Should the slot index reach the item as a binding rather than a
    closed-over constant?** It is a constant by construction, so a getter would
    be pure overhead. Recommend not.

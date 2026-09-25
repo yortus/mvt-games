@@ -40,6 +40,7 @@
 
 import { Container } from 'pixi.js';
 import { refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
+import { propReadCounter } from './prop-reads';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -142,6 +143,7 @@ export function Switch(props: SwitchProps): Container {
         let next = -1;
         for (let i = 0; i < conditions.length; i++) {
             const when = conditions[i];
+            if (when !== undefined && propReadCounter.isCounting) propReadCounter.count++;
             if (when === undefined || when()) {
                 next = i;
                 break;

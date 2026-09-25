@@ -16,11 +16,17 @@
  * later hold a different item. Everything item-dependent must be a getter,
  * which is why `children` receives an accessor rather than a value.
  *
+ * Slots are built once and kept. A slot inside `length` whose item is absent
+ * (a hole) is hidden and skips its subtree. Slots past `length` are detached,
+ * so a list that was once long costs nothing for its unused tail, and are
+ * reattached, not rebuilt, when the list grows back.
+ *
  * See `proposals/004-list-proposal.md` for the design.
  */
 
 import { Container } from 'pixi.js';
 import { refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
+import { propReadCounter } from './prop-reads';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -90,61 +96,105 @@ export interface ListProps<T> {
 
 export function List<T>(props: ListProps<T>): Container {
     const container = new Container();
-    const items = props.items;
+    // The `items` prop as passed: a source, or a getter returning one.
+    const itemsProp = props.items;
 
-    // High-water-mark pool. Slot `i` is child `i`, built when `length` first
-    // covers it and never removed, detached or destroyed; an empty slot hides
-    // and skips its subtree instead (section 4.4 of the proposal).
+    // High-water-mark pool: every slot ever built, by index, kept for reuse.
+    // Slot `i` is child `i` for every `i` below `attachedCount`, which is the
+    // list's length after each refresh. Slots at or past it are detached: a
+    // parked tail of hidden slots would still cost a refresh call each per
+    // frame. Holes below the length are hidden instead.
     const slots: Container[] = [];
+    let attachedCount = 0;
 
-    // Resolved once per slot per frame, read by that slot's bindings.
-    const resolved: (T | undefined)[] = [];
+    // Each slot's current item, by index. A slot's presence check looks its
+    // item up once per frame and stores it here; every binding in the slot then
+    // reads it back through the slot's `item()` accessor, without calling `at()`.
+    const slotItems: (T | undefined)[] = [];
 
-    // Resolved once per frame by the list's own `onRefresh`, which the refresh pass
-    // runs before any slot, then shared by every slot's presence check. Not
-    // read at construction: like every element, the list is inert until its
-    // first refresh, so an ancestor that skips it keeps `items` from running.
-    let source: ListSource<T> = EMPTY_SOURCE;
+    // The source and its length, read once per frame by the list's own
+    // `onRefresh`, which the refresh pass runs before any slot, then shared by
+    // every slot's presence check. Not read at construction: like every
+    // element, the list is inert until its first refresh, so an ancestor that
+    // skips it keeps `items` from running.
+    let currentSource: ListSource<T> = EMPTY_SOURCE;
     let currentLength = 0;
 
-    container.onRefresh = growPool;
+    container.onRefresh = fitToLength;
+    // Detached slots are not the container's children, so destroying the
+    // container would not reach them.
+    container.on('destroyed', destroyDetachedSlots);
 
     return container;
 
-    /** Builds any index below `length` that has no slot yet. */
-    function growPool(): void {
-        source = typeof items === 'function' ? items() : items;
-        const length = source.length;
-        currentLength = typeof length === 'function' ? length() : length;
-        while (slots.length < currentLength) buildSlot(slots.length);
+    /** Attaches exactly the slots below `length`, building any that do not exist yet. */
+    function fitToLength(): void {
+        currentSource = typeof itemsProp === 'function' ? itemsProp() : itemsProp;
+        const lengthOrGetter = currentSource.length;
+        currentLength = typeof lengthOrGetter === 'function' ? lengthOrGetter() : lengthOrGetter;
+        if (attachedCount > currentLength) detachTail();
+        while (attachedCount < currentLength) attachSlot(attachedCount);
+        // Prop reads: one of `items`, and one presence check per attached
+        // slot, which every one of them runs this frame. Counted here, once,
+        // rather than in the slot's refresh, where even an untaken branch
+        // costs V8's inlining budget.
+        if (propReadCounter.isCounting) propReadCounter.count += (1 + attachedCount);
     }
 
-    function buildSlot(index: number): void {
-        // Safe even for an empty slot: construction evaluates no bindings, so
+    function detachTail(): void {
+        // Removed mid-pass: the refresh pass skips a container detached
+        // earlier in the same pass, so none of these refresh this frame.
+        container.removeChildren(currentLength, attachedCount);
+        // Forget the detached slots' items, which would otherwise stay alive.
+        slotItems.length = attachedCount = currentLength;
+    }
+
+    function attachSlot(index: number): void {
+        const slot = index < slots.length ? slots[index] : buildSlot(index);
+        container.addChild(slot);
+        attachedCount++;
+
+        // Attached mid-pass, so the running pass will not visit it until next
+        // frame, and a new slot's bindings have not run at all yet. Refresh it
+        // now so it is correct on the frame it appears.
+        refreshScene(slot);
+    }
+
+    function destroyDetachedSlots(): void {
+        for (let i = attachedCount; i < slots.length; i++) slots[i].destroy({ children: true });
+    }
+
+    function buildSlot(index: number): Container {
+        // The accessor reads the item the slot's presence check stored. Safe
+        // even for an empty slot: construction evaluates no bindings, so
         // nothing reads the item until the slot's own refresh below.
-        const slot = props.children(() => resolved[index] as T, index);
+        const slot = props.children(() => slotItems[index] as T, index);
 
         // The slot's presence check runs before its own refresh, so no item
         // binding ever runs for an empty slot. When present, the item view's
         // own refresh then runs as normal, including a `visible` binding of its
         // own, which can only hide an occupied slot further.
-        const ownRefresh = slot.onRefresh;
+        const itemViewRefresh = slot.onRefresh;
+        // Whether the slot held an item at its last refresh; a new slot starts
+        // visible, as Pixi containers do. Unchanged while detached, as is the
+        // slot's `visible`, so the two still agree when it is reattached.
+        let wasPresent = true;
         slot.onRefresh = () => {
-            const current = index < currentLength ? source.at(index) : undefined;
-            resolved[index] = current;
-            const isPresent = current !== undefined;
-            slot.visible = isPresent; // Pixi's setter early-outs when unchanged
+            const item = index < currentLength ? currentSource.at(index) : undefined;
+            slotItems[index] = item;
+            const isPresent = item !== undefined;
+            // Written only on a change of presence. The item view may hide an
+            // occupied slot with a `visible` binding of its own; writing
+            // `visible` back to true every frame would undo that and re-hide
+            // it each frame, and every such flip makes Pixi rebuild the render
+            // group. It also keeps the steady-state path free of setter calls.
+            if (isPresent !== wasPresent) wasPresent = slot.visible = isPresent;
             if (!isPresent) return SKIP_DESCENDANTS;
-            return ownRefresh?.();
+            return itemViewRefresh?.();
         };
 
         slots.push(slot);
-        container.addChild(slot);
-
-        // Built mid-pass, so the running pass will not visit it until next
-        // frame, and until its first refresh its bindings have not run at all.
-        // Refresh it now so it is correct on the frame it appears.
-        refreshScene(slot);
+        return slot;
     }
 }
 

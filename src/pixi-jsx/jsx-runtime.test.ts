@@ -1,6 +1,7 @@
-import type { Container } from 'pixi.js';
+import { type Container, Rectangle, type Sprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { refreshScene, updateScene } from '../pixi-mvt';
+import { countPropReads, propReadCounter } from './prop-reads';
 import { jsx } from './jsx-runtime';
 
 // ---------------------------------------------------------------------------
@@ -9,10 +10,11 @@ import { jsx } from './jsx-runtime';
 
 describe('jsx runtime', () => {
     it('applies static props at construction', () => {
-        const el = jsx('container', { x: 3, label: 'fixed' });
+        const el = jsx('container', { x: 3, label: 'fixed', isRenderGroup: true });
 
         expect(el.x).toBe(3);
         expect(el.label).toBe('fixed');
+        expect(el.isRenderGroup).toBe(true);
     });
 
     it('runs no binding at construction, only from the first refresh on', () => {
@@ -64,6 +66,22 @@ describe('jsx runtime', () => {
         label = 'b';
         refreshScene(el);
         expect(el.label).toBe('b');
+    });
+
+    it('writes a tint binding only when it changes', () => {
+        let tint = 0xff0000;
+        const el = jsx('sprite', { tint: () => tint }) as Sprite;
+
+        refreshScene(el);
+        expect(el.tint).toBe(0xff0000);
+
+        el.tint = 0x00ff00;
+        refreshScene(el);
+        expect(el.tint).toBe(0x00ff00);
+
+        tint = 0x0000ff;
+        refreshScene(el);
+        expect(el.tint).toBe(0x0000ff);
     });
 
     it('keeps per-element state separate when elements share a binding shape', () => {
@@ -139,6 +157,71 @@ describe('jsx runtime', () => {
         updateScene(el, 16);
         updateScene(el, 17);
         expect(deltas).toEqual([16, 17]);
+    });
+
+    it('wires pointer event props as listeners and makes the element interactive', () => {
+        const received: string[] = [];
+        const el = jsx('container', {
+            onPointerMove: () => received.push('move'),
+            onGlobalPointerMove: () => received.push('global move'),
+            onPointerUpOutside: () => received.push('up outside'),
+            onPointerCancel: () => received.push('cancel'),
+        });
+
+        el.emit('pointermove', {} as never);
+        el.emit('globalpointermove', {} as never);
+        el.emit('pointerupoutside', {} as never);
+        el.emit('pointercancel', {} as never);
+
+        expect(el.eventMode).toBe('static');
+        expect(received).toEqual(['move', 'global move', 'up outside', 'cancel']);
+    });
+
+    it('applies hitArea statically and cursor as a binding', () => {
+        const hitArea = new Rectangle(0, 0, 10, 20);
+        let cursor: 'pointer' | 'crosshair' = 'pointer';
+        const el = jsx('container', { hitArea, cursor: () => cursor });
+
+        expect(el.hitArea).toBe(hitArea);
+
+        refreshScene(el);
+        expect(el.cursor).toBe('pointer');
+
+        cursor = 'crosshair';
+        refreshScene(el);
+        expect(el.cursor).toBe('crosshair');
+    });
+
+    describe('prop read counting', () => {
+        it('counts every prop read while counting, and only the visible read while hidden', () => {
+            let isShown = true;
+            const el = jsx('container', { visible: () => isShown, x: () => 1, label: () => 'a' });
+
+            expect(countPropReads(() => refreshScene(el))).toBe(3);
+            isShown = false;
+            expect(countPropReads(() => refreshScene(el))).toBe(1);
+        });
+
+        it('counts nothing while off', () => {
+            const el = jsx('container', { x: () => 1, y: () => 2 });
+            const before = propReadCounter.count;
+
+            refreshScene(el);
+
+            expect(propReadCounter.isCounting).toBe(false);
+            expect(propReadCounter.count).toBe(before);
+        });
+
+        it('restores the previous on/off state after counting', () => {
+            propReadCounter.isCounting = true;
+            try {
+                countPropReads(() => undefined);
+                expect(propReadCounter.isCounting).toBe(true);
+            }
+            finally {
+                propReadCounter.isCounting = false;
+            }
+        });
     });
 
     it('calls ref with the constructed element', () => {
