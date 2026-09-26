@@ -4,10 +4,12 @@ import { countPropReads } from '../../src/pixi-jsx';
 import { refreshScene, updateScene } from '../../src/pixi-mvt';
 import { readParams, report } from '../harness/measure';
 
-// Measured file for the `falling-sand` suite: the falling-sand demo, headless,
-// with its tank filled to a given number of grains. One sprite per grain, so
-// the refresh pass does work for every grain every frame, while the model only
-// does work for the grains that are moving.
+// Measured file for the `falling-sand-scaling` suite: the falling-sand demo,
+// headless, with its tank filled to a given number of grains. Builds the
+// model and view directly, as the `scaling` suite builds its scene, since the
+// demo's entry has no way to set a grain count or flip on a schedule. One
+// sprite per grain, so the refresh pass does work for every grain every
+// frame, while the model only does work for the grains that are moving.
 //
 // scenario `settled`: every grain asleep; nothing in the tank moves.
 // scenario `flipping`: the tank flips every 3 seconds, so most grains are

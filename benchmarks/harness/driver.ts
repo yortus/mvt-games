@@ -110,9 +110,9 @@ async function bundleEntry(entry: string, outDir: string): Promise<string> {
 }
 
 /**
- * Loading a spritesheet needs a browser. For the games suite, every texture
- * becomes Pixi's 1x1 `Texture.WHITE`: models do not read textures, and the
- * benchmarks exclude rendering, so this changes only what would be drawn.
+ * Loading a spritesheet needs a browser. For the games and demos, every
+ * texture becomes Pixi's 1x1 `Texture.WHITE`: models do not read textures, and
+ * the benchmarks exclude rendering, so this changes only what would be drawn.
  */
 const stubTextureRegistry: Plugin = {
     name: 'stub-texture-registry',

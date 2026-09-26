@@ -1,0 +1,879 @@
+{
+    "suite": "games-and-demos",
+    "environment": {
+        "date": "2026-09-26",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.16.0",
+        "solid": "1.9.11"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "asteroids"
+            },
+            "metrics": {
+                "updateUs": [
+                    1.0997499999998006,
+                    1.1040833333333528,
+                    1.4546944444444776
+                ],
+                "refreshUs": [
+                    4.172972222222254,
+                    4.8292222222220165,
+                    5.611972222222189
+                ],
+                "totalUs": [
+                    5.272722222222054,
+                    5.933305555555369,
+                    7.0666666666666655
+                ],
+                "containers": [
+                    39,
+                    39,
+                    43
+                ],
+                "methods": [
+                    17,
+                    17,
+                    19
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "cactii"
+            },
+            "metrics": {
+                "updateUs": [
+                    0.8843888888885942,
+                    0.947083333333387,
+                    1.0403611111110245
+                ],
+                "refreshUs": [
+                    10.02325000000027,
+                    10.102694444444474,
+                    10.191666666666974
+                ],
+                "totalUs": [
+                    11.049777777777862,
+                    11.063611111111294,
+                    11.076055555555568
+                ],
+                "containers": [
+                    306,
+                    306,
+                    306
+                ],
+                "methods": [
+                    74,
+                    74,
+                    74
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "digdug"
+            },
+            "metrics": {
+                "updateUs": [
+                    1.7213333333328507,
+                    2.054166666666314,
+                    2.097888888888772
+                ],
+                "refreshUs": [
+                    4.244000000000187,
+                    4.522083333333495,
+                    4.620500000000176
+                ],
+                "totalUs": [
+                    5.965333333333038,
+                    6.576249999999809,
+                    6.718388888888947
+                ],
+                "containers": [
+                    36,
+                    36,
+                    36
+                ],
+                "methods": [
+                    11,
+                    11,
+                    11
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "galaga"
+            },
+            "metrics": {
+                "updateUs": [
+                    4.957888888888814,
+                    5.401305555555618,
+                    5.462361111111108
+                ],
+                "refreshUs": [
+                    3.5361111111112113,
+                    3.837055555555532,
+                    3.9696944444444346
+                ],
+                "totalUs": [
+                    8.494000000000025,
+                    9.299416666666641,
+                    9.371000000000052
+                ],
+                "containers": [
+                    73,
+                    75,
+                    75
+                ],
+                "methods": [
+                    34,
+                    34,
+                    34
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "ik"
+            },
+            "metrics": {
+                "updateUs": [
+                    2.2192222222222093,
+                    2.6420277777779133,
+                    3.424888888888782
+                ],
+                "refreshUs": [
+                    2.8782777777777784,
+                    3.0576111111111675,
+                    3.1788333333334506
+                ],
+                "totalUs": [
+                    5.097499999999988,
+                    5.699638888889081,
+                    6.603722222222233
+                ],
+                "containers": [
+                    27,
+                    27,
+                    27
+                ],
+                "methods": [
+                    4,
+                    4,
+                    4
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "pacman"
+            },
+            "metrics": {
+                "updateUs": [
+                    5.361027777778015,
+                    5.983277777777711,
+                    6.738361111111209
+                ],
+                "refreshUs": [
+                    4.486499999999695,
+                    5.262499999999919,
+                    5.607611111111134
+                ],
+                "totalUs": [
+                    9.84752777777771,
+                    11.24577777777763,
+                    12.345972222222343
+                ],
+                "containers": [
+                    232,
+                    232,
+                    232
+                ],
+                "methods": [
+                    9,
+                    9,
+                    9
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "scramble"
+            },
+            "metrics": {
+                "updateUs": [
+                    2.088500000000207,
+                    2.1414166666667276,
+                    2.372833333333521
+                ],
+                "refreshUs": [
+                    8.805999999999854,
+                    8.869638888888744,
+                    8.922194444444141
+                ],
+                "totalUs": [
+                    10.94741666666658,
+                    11.010694444444347,
+                    11.242472222222265
+                ],
+                "containers": [
+                    135,
+                    135,
+                    135
+                ],
+                "methods": [
+                    46,
+                    46,
+                    46
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "demo",
+                "entry": "boids"
+            },
+            "metrics": {
+                "updateUs": [
+                    928.6156944444436,
+                    1039.5800555555595,
+                    1218.4542777777815
+                ],
+                "refreshUs": [
+                    128.46469444444645,
+                    132.90569444444304,
+                    132.9831666666637
+                ],
+                "totalUs": [
+                    1057.08038888889,
+                    1172.4857500000023,
+                    1351.4374444444452
+                ],
+                "containers": [
+                    75,
+                    75,
+                    75
+                ],
+                "methods": [
+                    9,
+                    9,
+                    9
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "demo",
+                "entry": "falling-sand"
+            },
+            "metrics": {
+                "updateUs": [
+                    2.4884166666663057,
+                    2.499861111111651,
+                    2.8061666666665035
+                ],
+                "refreshUs": [
+                    190.30622222222195,
+                    191.89608333333382,
+                    222.10061111111003
+                ],
+                "totalUs": [
+                    192.8060833333336,
+                    194.38450000000014,
+                    224.90677777777657
+                ],
+                "containers": [
+                    3822,
+                    3822,
+                    3822
+                ],
+                "methods": [
+                    3776,
+                    3776,
+                    3776
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "demo",
+                "entry": "list-swap"
+            },
+            "metrics": {
+                "updateUs": [
+                    0.5106666666666134,
+                    0.6904166666666869,
+                    0.858166666666437
+                ],
+                "refreshUs": [
+                    1.517805555555493,
+                    1.6051666666668043,
+                    1.6123333333333731
+                ],
+                "totalUs": [
+                    2.1229999999999865,
+                    2.20822222222218,
+                    2.4633333333332414
+                ],
+                "containers": [
+                    59,
+                    59,
+                    59
+                ],
+                "methods": [
+                    35,
+                    35,
+                    35
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "demo",
+                "entry": "ordered-list"
+            },
+            "metrics": {
+                "updateUs": [
+                    1.5025277777776262,
+                    1.6071944444443176,
+                    1.8877499999999099
+                ],
+                "refreshUs": [
+                    0.23080555555561075,
+                    0.24200000000004784,
+                    0.26722222222202974
+                ],
+                "totalUs": [
+                    1.733333333333237,
+                    1.8744166666663473,
+                    2.129749999999958
+                ],
+                "containers": [
+                    41,
+                    41,
+                    41
+                ],
+                "methods": [
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "demo",
+                "entry": "tsx-pixi"
+            },
+            "metrics": {
+                "updateUs": [
+                    0.7167500000000299,
+                    0.7439166666664655,
+                    0.7748055555556377
+                ],
+                "refreshUs": [
+                    6.587666666666776,
+                    6.626138888888988,
+                    6.632444444444382
+                ],
+                "totalUs": [
+                    7.331583333333241,
+                    7.349194444444412,
+                    7.400944444444626
+                ],
+                "containers": [
+                    24,
+                    24,
+                    24
+                ],
+                "methods": [
+                    13,
+                    13,
+                    13
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "asteroids"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    64.404,
+                    64.444,
+                    64.444
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "cactii"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    32.297599999999996,
+                    32.297599999999996,
+                    32.297599999999996
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "digdug"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    130.2328,
+                    176.412,
+                    176.412
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "galaga"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    178.1272,
+                    320.2104,
+                    720.0568
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "ik"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    784.2648,
+                    816.2648,
+                    816.316
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "pacman"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    2070.522194871795,
+                    2170.1119384615386,
+                    2208.1119384615386
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "scramble"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    2619.283425641026,
+                    2731.334707692308,
+                    2827.12957948718
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "demo",
+                "entry": "boids"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    358400.6712410256,
+                    361454.41483076924,
+                    361600.4661128205
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "demo",
+                "entry": "falling-sand"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    16.2896,
+                    16.2896,
+                    16.2896
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "demo",
+                "entry": "list-swap"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    16.5608,
+                    16.6,
+                    16.6064
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "demo",
+                "entry": "ordered-list"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    68.5392,
+                    68.6024,
+                    68.6704
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "demo",
+                "entry": "tsx-pixi"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    1961.9036102564103,
+                    1962.7241230769232,
+                    1965.2369435897438
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "asteroids"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "cactii"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    1
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0.22049999237060547
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "digdug"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    1
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0.17309999465942383
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "galaga"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    1
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0.15340006351470947
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "ik"
+            },
+            "metrics": {
+                "minorGcs": [
+                    1,
+                    2,
+                    2
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0.18980002403259277,
+                    0.2352999448776245,
+                    0.25300002098083496
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "pacman"
+            },
+            "metrics": {
+                "minorGcs": [
+                    2,
+                    3,
+                    3
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0.39730000495910645,
+                    0.5805000066757202,
+                    0.6951000690460205
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "scramble"
+            },
+            "metrics": {
+                "minorGcs": [
+                    2,
+                    2,
+                    3
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0.34070003032684326,
+                    0.48489999771118164,
+                    0.717400074005127
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "demo",
+                "entry": "boids"
+            },
+            "metrics": {
+                "minorGcs": [
+                    87,
+                    88,
+                    89
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    30.673500180244446,
+                    33.63119995594025,
+                    36.23990035057068
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "demo",
+                "entry": "falling-sand"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "demo",
+                "entry": "list-swap"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "demo",
+                "entry": "ordered-list"
+            },
+            "metrics": {
+                "minorGcs": [
+                    0,
+                    1,
+                    1
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0,
+                    0.1312999725341797,
+                    0.14409995079040527
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "demo",
+                "entry": "tsx-pixi"
+            },
+            "metrics": {
+                "minorGcs": [
+                    4,
+                    4,
+                    4
+                ],
+                "majorGcs": [
+                    0,
+                    0,
+                    0
+                ],
+                "gcPauseMs": [
+                    0.5379999876022339,
+                    0.5489000082015991,
+                    0.5827999114990234
+                ]
+            }
+        }
+    ]
+}

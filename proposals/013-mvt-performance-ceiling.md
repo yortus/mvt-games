@@ -233,7 +233,7 @@ model-owns-state rule does not accommodate directly.
 
 | Test | What it settles | Effort |
 | --- | --- | --- |
-| Measure the TypeScript view at 40-50k grains | Whether the extrapolation to 100k and 1M holds (section 4.1's weakest TypeScript figures) | Small: a larger grid in the `falling-sand` benchmark suite |
+| Measure the TypeScript view at 40-50k grains | Whether the extrapolation to 100k and 1M holds (section 4.1's weakest TypeScript figures) | Small: a larger grid in the `falling-sand-scaling` benchmark suite |
 | Prototype a flat-array view in TypeScript: read the model's arrays, write a `Float32Array`, draw one instanced mesh | The central claim that most of the cost is design, not language or architecture (estimated 1.5-4 ns per grain) | Medium: a custom Pixi mesh and shader |
 | Implement [012](./012-falling-sand-performance-findings.md) section 2 (cached methods in the pass loop) | How much of the faithful design's cost is recoverable without changing the design | Small to medium; prototype already measured |
 | Profile a native sprite batcher, or port the view to Rust or C++ | The compiled estimates in sections 4.1 and 4.2 | Large |

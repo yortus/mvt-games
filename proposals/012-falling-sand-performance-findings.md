@@ -127,8 +127,8 @@ example) take the slower live path, as today.
 
 1. Implement the counter and the cached methods; the failing test is the
    acceptance test.
-2. Re-run the `scene-passes`, `scaling` and `falling-sand` suites and update
-   the saved results.
+2. Re-run the `scene-passes`, `scaling` and `falling-sand-scaling` suites and
+   update the saved results.
 3. Consider whether the mixin should give every container its `_mvt*` fields
    at construction, so they never change shape at runtime.
 

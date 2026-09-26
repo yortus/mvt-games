@@ -241,3 +241,14 @@ GPU.
   (`FooView(props: FooViewProps)`, `getBar` bindings -> `bar` props).
   `grainTint` -> `pickGrainTint`, `grainShade` -> `lookUpShade`,
   `fitRotated` -> `scaleToFitRotated`.
+- 2026-09-26: Views decoupled from `DemoModel`: `TankView` and `ToolbarView`
+  take getter props and relay gestures through `on*` props; `DemoView` wires
+  them to the model. Function members in types now use property syntax
+  (style guide rule added; repo-wide migration tracked in `proposals/`).
+  Benchmarks restructured: the `games` suite became `games-and-demos`, running
+  every game and demo through its entry (demos unattended), and the
+  `falling-sand` suite became `falling-sand-scaling`. Pixi's text measurement
+  is stubbed under Node (`benchmarks/harness/text-measurement.ts`) so Boids,
+  which reads a text's width, can run. Both suites saved. As shipped, falling
+  sand takes about 190 µs per frame (3,800 containers); the sweep's settled
+  10,000 grains took 959 µs this run, against 849-922 µs in earlier runs.

@@ -3,7 +3,7 @@
 > MVT cost measurements: keeping Pixi containers in step with a
 > model, reacting to changes, building and reusing containers, the scene
 > passes, each hot path rule, memory and garbage collection, and the games
-> themselves. The tables come straight from this repo's
+> and demos themselves. The tables come straight from this repo's
 > [benchmark suites](https://github.com/yortus/mvt-games/tree/main/benchmarks), and each section says what the
 > numbers mean.
 
@@ -76,7 +76,7 @@ Re-run the benchmarks on your own machine to get your own numbers; see
   per game object, `Object.values()`, array methods and recomputing unchanged values
   cost several to tens of times more, and the first three leave kilobytes of
   garbage per frame. `for...of` and returned tuples cost nothing extra.
-- **This repo's games take 5-10 µs per frame** before drawing.
+- **This repo's games take 5-11 µs per frame** before drawing.
 
 ## Keeping Containers in Step
 
@@ -287,32 +287,45 @@ happens.
   including the record itself; the JSX runtime adds about 420, and signals
   and an effect about 1,800.
 
-## The Games
+## The Games and Demos
 
-This repo's games, run under Node with nothing drawn, driven by a fixed
-pattern of simulated input: directions changing every half second and buttons
-pressed every second or so. Each frame is what
-[the game loop](../the-game-loop.md) runs: the game session's update (its
-model, then `updateScene` over its view), then `refreshScene`. The first 10
-seconds are a warm-up, and times are averaged over the minute after.
+This repo's games and demos as they ship, each started through its entry and
+run under Node with nothing drawn. The games are driven by a fixed pattern of
+simulated input: directions changing every half second and buttons pressed
+every second or so. The demos run unattended, as they do before anyone touches
+them. Each frame is what [the game loop](../the-game-loop.md) runs: the
+session's update (its model, then `updateScene` over its view), then
+`refreshScene`. The first 10 seconds are a warm-up, and times are averaged over
+the minute after.
 
-<!--@include: ../../../benchmarks/results/games.md#time-->
+<!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
 
-- **Each game takes 5-10 µs per frame**, well under 0.1% of a 60fps frame,
+- **Each game takes 5-11 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
 - **`refreshScene` takes the larger share in most games**, since that is
   where the views read the model and set their properties. The updates take
-  1-5 µs; in Galaga and Pac-Man, with more going on in their models, they
-  take about as long as the refresh.
-- **The games allocate a little every frame**, from nothing to about 2.8 KB.
+  1-6 µs; in Galaga and Pac-Man, with more going on in their models, they
+  take as long as the refresh or longer.
+- **Two demos cost far more than any game, for different reasons.** Falling
+  sand has a sprite per grain, about 3,800 containers once its opening scene
+  settles, and its refresh takes about 190 µs, about 50 ns per container with
+  nothing moving. How that grows with the number of grains is in the
+  [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
+  about 3.4 ms at 20,000 grains. Boids takes about 1.2 ms, almost all of it in
+  its model, which compares every pair of its 200 boids each frame.
+- **The games allocate a little every frame**, from nothing to about 2.7 KB.
   The hot path rules aim for none, and the allocation benchmark is a way to
   find where it comes from. At these rates the engine collects at most three
-  times a minute, for under half a millisecond in total.
+  times a minute, for under a millisecond in total.
+- **Boids allocates about 360 KB per frame**, and the engine collects 88 times
+  a minute, for about 34 ms in total. Its model allocates nothing per frame;
+  its view redraws all 200 boids into a Pixi `Graphics` every frame, and Pixi
+  builds new shape data each time.
 
-<!--@include: ../../../benchmarks/results/games.md#allocation-->
+<!--@include: ../../../benchmarks/results/games-and-demos.md#allocation-->
 
-<!--@include: ../../../benchmarks/results/games.md#gc-->
+<!--@include: ../../../benchmarks/results/games-and-demos.md#gc-->
 
 ## What Is Not Measured
 
@@ -322,8 +335,10 @@ seconds are a warm-up, and times are averaged over the minute after.
 - **Browsers.** Everything is V8 under Node on one machine. Other engines, and
   the same engine in a browser, may differ; ratios travel better than absolute
   times.
-- **Game textures.** The games run with every texture replaced by a 1x1 white
-  texture, because loading a spritesheet needs a browser.
+- **Textures and text.** The games and demos run with every texture replaced
+  by a 1x1 white texture, because loading a spritesheet needs a browser, and
+  with text widths estimated from the font size, because measuring text needs
+  a canvas.
 
 To re-run any of this, see
 [Benchmarking Methods - Running the Repo's Benchmarks](benchmarking-methods.md#running-the-repo-s-benchmarks).

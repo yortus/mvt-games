@@ -9,7 +9,9 @@ in the model and its own sprite in the view, so pouring more grains makes
 every frame do more work. The panel under the tank shows the grain count,
 how many grains are moving, and frame timing: frames per second, CPU and GPU
 milliseconds per frame, and `RPF`, the prop reads per frame (about four
-per grain). `npm run bench -- falling-sand` measures the same thing headless.
+per grain). `npm run bench -- falling-sand-scaling` measures the same thing
+headless, from 1,000 to 20,000 grains; the demo as it ships is in the
+`games-and-demos` suite.
 
 ## What it shows
 

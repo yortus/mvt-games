@@ -7,17 +7,27 @@ import {
     createIkEntry,
     createPacmanEntry,
     createScrambleEntry,
-    type GameEntry,
     type GameInputConfig,
 } from '../../src/games';
+import {
+    createBoidsEntry,
+    createFallingSandEntry,
+    createListSwapEntry,
+    createOrderedListEntry,
+    createTsxPixiEntry,
+} from '../../src/demos';
 import { refreshScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
+import { stubTextMeasurement } from '../harness/text-measurement';
 
-// Measured file for the `games` suite: the games in this repo, run headless
-// under Node with scripted input. Textures are stubbed (see the driver), and
-// nothing is rendered, so this is the game's own frame work: the session's
-// update (model, then `updateScene` over its view) and `refreshScene` over the
-// stage, as `src/main.ts` runs them.
+// Measured file for the `games-and-demos` suite: the games and demos in this
+// repo, as they ship, each started through its entry and run headless under
+// Node. The games get scripted input; the demos run unattended, as they do
+// before anyone touches them. Textures and text measurement are stubbed (see
+// the driver and `stubTextMeasurement`), and nothing is rendered, so this is
+// each one's own frame work: the session's update (model, then `updateScene`
+// over its view) and `refreshScene` over the stage, as `src/main.ts` and
+// `src/demos/main.ts` run them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
 //   after a 10-second warm-up, split into the two passes.
@@ -34,9 +44,11 @@ type VerticalDirection = 'up' | 'none' | 'down';
 const X_PATTERN: readonly Direction[] = ['left', 'none', 'right', 'none'];
 const Y_PATTERN: readonly VerticalDirection[] = ['up', 'none', 'down', 'none'];
 
+stubTextMeasurement();
+
 const params = readParams();
 const measure = String(params.measure);
-const entry = createEntry(String(params.game));
+const entry = createEntry(String(params.entry));
 
 await entry.load?.();
 const stage = new Container();
@@ -84,22 +96,40 @@ else {
 // Internals
 // ---------------------------------------------------------------------------
 
-function createEntry(game: string): GameEntry {
-    if (game === 'asteroids') return createAsteroidsEntry();
-    if (game === 'cactii') return createCactiiEntry();
-    if (game === 'digdug') return createDigdugEntry();
-    if (game === 'galaga') return createGalagaEntry();
-    if (game === 'ik') return createIkEntry();
-    if (game === 'pacman') return createPacmanEntry();
-    if (game === 'scramble') return createScrambleEntry();
-    throw new Error(`unknown game: ${game}`);
+/** What this file needs from a game's or a demo's entry. */
+interface RunnableEntry {
+    load?: () => Promise<void>;
+    start: (stage: Container) => RunnableSession;
+}
+
+/** What this file needs from a running game or demo. Only games have `inputConfig`. */
+interface RunnableSession {
+    update: (deltaMs: number) => void;
+    readonly inputConfig?: GameInputConfig;
+}
+
+function createEntry(id: string): RunnableEntry {
+    if (id === 'asteroids') return createAsteroidsEntry();
+    if (id === 'cactii') return createCactiiEntry();
+    if (id === 'digdug') return createDigdugEntry();
+    if (id === 'galaga') return createGalagaEntry();
+    if (id === 'ik') return createIkEntry();
+    if (id === 'pacman') return createPacmanEntry();
+    if (id === 'scramble') return createScrambleEntry();
+    if (id === 'boids') return createBoidsEntry();
+    if (id === 'falling-sand') return createFallingSandEntry();
+    if (id === 'list-swap') return createListSwapEntry();
+    if (id === 'ordered-list') return createOrderedListEntry();
+    if (id === 'tsx-pixi') return createTsxPixiEntry();
+    throw new Error(`unknown game or demo: ${id}`);
 }
 
 /**
- * A fixed, repeating input pattern, so every process plays the same way: the
- * horizontal direction changes every half second, the vertical every 0.7
- * seconds, and the primary and secondary buttons are pressed briefly every
- * second and every 1.5 seconds. Only changes are sent, as real input would be.
+ * A fixed, repeating input pattern for the games, so every process plays the
+ * same way: the horizontal direction changes every half second, the vertical
+ * every 0.7 seconds, and the primary and secondary buttons are pressed briefly
+ * every second and every 1.5 seconds. Only changes are sent, as real input
+ * would be. Demos have no `inputConfig`, so they get none.
  */
 function createInputScript(config: GameInputConfig | undefined): (frame: number) => void {
     return (f) => {

@@ -2,7 +2,7 @@
 
 Performance benchmarks for MVT in this repo: keeping Pixi containers in step
 with a model, the scene passes, the hot path rules, memory and garbage
-collection, and the games themselves. The results, with what they mean, are in
+collection, and the games and demos themselves. The results, with what they mean, are in
 [Performance Measurements](../docs/building-with-mvt/performance/measurements.md).
 How they are measured, and why, is in
 [Benchmarking Methods](../docs/building-with-mvt/performance/benchmarking-methods.md).
@@ -36,8 +36,8 @@ include).
 | `scene-passes` | `refreshScene` against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
-| `games` | This repo's games, run headless with scripted input: time per frame, allocation and garbage collection |
-| `falling-sand` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and prop reads per frame |
+| `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
+| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and prop reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count |
 
 ## Layout
 
@@ -47,7 +47,8 @@ benchmarks/
 ├── harness/
 │   ├── suite.ts        Suite, Case and TableSpec types
 │   ├── driver.ts       Bundles a suite's measured file, runs each case in its own process, prints and saves tables
-│   └── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
+│   ├── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
+│   └── text-measurement.ts  Lets Pixi measure text under Node, for games and demos that read a text's size
 ├── shared/             Scenes used by more than one suite
 ├── suites/
 │   ├── index.ts        Every suite, in run order
@@ -74,6 +75,7 @@ that allocates on every `+=`, and a reactive library that never reacted.
 
 Rendering: nothing is drawn, so Pixi's transform updates and draw calls are not
 in any number. Only V8 under Node has been measured, on one machine per saved
-result; browsers and other engines have not. For the games, textures are
-stubbed with Pixi's 1x1 `Texture.WHITE`, because loading a spritesheet needs a
-browser.
+result; browsers and other engines have not. For the games and demos,
+textures are stubbed with Pixi's 1x1 `Texture.WHITE`, because loading a
+spritesheet needs a browser, and text widths are estimated from the font size,
+because measuring text needs a canvas.

@@ -90,5 +90,5 @@ a real bottleneck.
 | Page | Answers |
 | --- | --- |
 | [Hot Paths](hot-paths.md) | What to avoid in code that runs every frame, and what to do instead |
-| [Performance Measurements](measurements.md) | What things cost in this repo: polling, signals and events, scene size, the hot path rules, memory, and the games |
+| [Performance Measurements](measurements.md) | What things cost in this repo: polling, signals and events, scene size, the hot path rules, memory, and the games and demos |
 | [Benchmarking Methods](benchmarking-methods.md) | How those costs were measured, and how to measure your own code without fooling yourself |

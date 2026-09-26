@@ -1,8 +1,8 @@
 import type { Suite } from '../harness/suite';
 import { changeDetectionSuite } from './change-detection';
 import { constructionSuite } from './construction';
-import { fallingSandSuite } from './falling-sand';
-import { gamesSuite } from './games';
+import { fallingSandScalingSuite } from './falling-sand-scaling';
+import { gamesAndDemosSuite } from './games-and-demos';
 import { hotPathRulesSuite } from './hot-path-rules';
 import { memorySuite } from './memory';
 import { reactivitySuite } from './reactivity';
@@ -18,6 +18,6 @@ export const suites: readonly Suite[] = [
     scenePassesSuite,
     hotPathRulesSuite,
     memorySuite,
-    gamesSuite,
-    fallingSandSuite,
+    gamesAndDemosSuite,
+    fallingSandScalingSuite,
 ];

@@ -10,11 +10,15 @@ const METRICS: readonly MetricColumn[] = [
     { key: 'readsPerFrame', title: 'Prop reads per frame', maxDecimals: 0 },
 ];
 
-/** The falling-sand demo: one sprite per grain, from 1,000 to 20,000 grains. */
-export const fallingSandSuite: Suite = {
-    name: 'falling-sand',
+/**
+ * How the falling-sand demo's frame cost scales with its grain count: one
+ * sprite per grain, from 1,000 to 20,000 grains. The demo as it ships is in
+ * the `games-and-demos` suite.
+ */
+export const fallingSandScalingSuite: Suite = {
+    name: 'falling-sand-scaling',
     description: 'the falling-sand demo headless, from 1,000 to 20,000 grains, settled and flipping',
-    entry: 'falling-sand.case.ts',
+    entry: 'falling-sand-scaling.case.ts',
     cases: combinations({
         scenario: ['settled', 'flipping'],
         grains: [1000, 5000, 10000, 20000],
