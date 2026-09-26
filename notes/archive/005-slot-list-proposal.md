@@ -487,8 +487,9 @@ into domain design, and view models translating from item keys to slot indices.
 
 ## 6. Scenario analysis
 
-Against the 37-scenario survey, with plain arrays for permanent collections and
-`Order` for ordering, every scenario has a workable solution in three tiers.
+Against the 37-scenario survey in [appendix A](#appendix-a-the-37-scenario-survey),
+with plain arrays for permanent collections and ordering where it is needed, every
+scenario has a workable solution in three tiers.
 
 **Tier 1, plain fixed array (10).** The index is the meaning, either a position
 or an age. Tilemap, parallax layers, Tetris board, hotbar, settings rows, trail
@@ -501,13 +502,13 @@ minimap blips, selection rings, nav overlay, filtered results, achievements,
 autocomplete, damage numbers, enter/exit transitions, animated enemies.
 
 **Tier 3, plus composition (7).** Leaderboard, sortable table, toast stack, card
-hand, kanban and form field array need `Order`. Remote players needs a
+hand, kanban and form field array need `OrderedSlotList`. Remote players needs a
 `Map<networkId, Slot<Player>>` alongside, for packet routing and reconnection,
 cleaned on release.
 
 Two observations worth recording. All seven tier-3 scenarios are UI-shaped and
-the repo's seven games contain none of them, so `Order` is a
-build-it-when-a-screen-needs-it item. And `clear()` followed by refill gives
+the repo's seven games contain none of them, which is why ordering was
+sequenced last rather than treated as a launch requirement. And `clear()` followed by refill gives
 slot order equal to insertion order, which is why the re-derived lists sit in
 tier 2 rather than tier 3.
 
@@ -675,3 +676,123 @@ exist and `update` has never been called is the mitigation.
    and it drops the `ordinalOf` method a side table would have needed. The cost
    is an inert `ordinal` on every `SlotList` record (public `Slot<T>` still
    hides it) and a shared internal record between the two co-located factories.
+
+---
+
+## Appendix A: The 37-scenario survey
+
+Section 6 summarises this survey but the survey itself lived in a working
+document that never made it into the repo. Recovered here so the tier counts in
+section 6 can be checked, and so the boundaries drawn in sections 5.1 and 5.2
+can be traced back to the cases that motivated them.
+
+The axis that predicts behaviour is the **mutation shape**, not whether a
+scenario is game-like or interface-like.
+
+| Shape | Meaning |
+| --- | --- |
+| Fixed | Length never changes. Contents may |
+| Ring | Fixed length, a write head advances through it |
+| Windowed | Fixed length, content slides past |
+| Append-only | Items arrive and stay |
+| Churn | Items arrive and leave, order irrelevant |
+| Reorder | Length constant, order changes |
+| Re-derive | Rebuilt wholesale from something else |
+| FIFO | Append at the tail, drop from the head |
+
+Two modifiers cut across those: **heterogeneous** (the shape of an item varies,
+so the view needs a `Switch`) and **referenced** (something outside the
+collection holds an item, so identity must survive removal).
+
+### The scenarios
+
+| # | Scenario | Shape | Tier |
+| --- | --- | --- | --- |
+| 1 | Tilemap / static grid | Fixed | 1 |
+| 2 | Parallax layers | Fixed | 1 |
+| 3 | Tetris board cells | Fixed | 1 |
+| 4 | Hotbar / equipment slots | Fixed, contents swap | 1 |
+| 5 | ECS sprite pool | Fixed pool | 2 |
+| 6 | Settings menu rows | Fixed, heterogeneous | 1 |
+| 7 | Dialogue choice buttons | Re-derive, heterogeneous | 2 |
+| 8 | Bullet-hell projectiles | Churn | 2 |
+| 9 | Particle burst / debris | Churn | 2 |
+| 10 | Explosions | Churn | 2 |
+| 11 | Trail / ribbon | Ring | 1 |
+| 12 | Replay ghosts | Fixed pool | 2 |
+| 13 | Tower defense: towers | Append-only, referenced | 2 |
+| 14 | Tower defense: creeps | Churn, referenced | 2 |
+| 15 | Loot drops on ground | Churn | 2 |
+| 16 | Enemy wave spawner | Churn, heterogeneous | 2 |
+| 17 | Health bars over N enemies | Parallel to another collection | 2 |
+| 18 | Minimap blips | Re-derive | 2 |
+| 19 | RTS selection rings | Re-derive | 2 |
+| 20 | Nav / path debug overlay | Re-derive, every frame | 2 |
+| 21 | Leaderboard, live re-sort | Reorder | 3 |
+| 22 | Sortable table | Reorder | 3 |
+| 23 | Filtered search results | Re-derive | 2 |
+| 24 | Achievements with filters | Re-derive | 2 |
+| 25 | Autocomplete dropdown | Re-derive | 2 |
+| 26 | Virtualised infinite scroll | Windowed | 1 |
+| 27 | Level change / grid resize | Fixed, occasional resize | 1 |
+| 28 | Kill feed / chat log | FIFO | 1 |
+| 29 | Toast notification stack | FIFO, with exit effects | 3 |
+| 30 | Floating damage numbers | Churn, with exit effects | 2 |
+| 31 | List enter/exit transitions | Churn, with exit effects | 2 |
+| 32 | Enemies with per-instance animation | Churn, per-item timer | 2 |
+| 33 | Remote players joining / leaving | Churn, external ids | 3 |
+| 34 | Card hand | Reorder, drag, overlapping | 3 |
+| 35 | Inventory drag-and-drop | Fixed, grid positions | 1 |
+| 36 | Kanban drag-and-drop | Reorder, unbounded | 3 |
+| 37 | Form field array with focus | Reorder, focus state | 3 |
+
+Tier 1 is 10 scenarios (1, 2, 3, 4, 6, 11, 26, 27, 28, 35), tier 2 is 20, and
+tier 3 is 7 (21, 22, 29, 33, 34, 36, 37). Of the tier-3 cases, six need
+`OrderedSlotList` and one (33) needs an id index.
+
+### Notes on the less obvious calls
+
+**Grids are tier 1 because `insert` chooses the slot.** Wherever the index *is*
+the domain meaning, a `SlotList` cannot express the collection at all. That is
+scenarios 1, 3, 4 and 35, and it is the boundary section 5.1 draws.
+
+**Scenario 35 is tier 1, not tier 3.** An inventory's order *is* its grid
+position, so a drag is `cells[to] = cells[from]` and there is no separate
+ordering to maintain. It was misfiled as an ordering problem on a first pass.
+
+**Ordering and paint order are separate concerns.** Scenarios 21, 22 and 29 lay
+out rows that do not overlap, so they need only a position derived from the
+ordinal. Only 34 genuinely overlaps, and only 34 additionally needs `zIndex`
+with `sortableChildren`. An earlier pass marked all the ordered scenarios down
+for paint order, which was wrong.
+
+**Rings are a fixed array plus a write index.** Slot `i` holds one sample for
+`N` frames, and its age is `(write - i + N) % N`, which the view reads
+directly. Stable slot, no reordering, nothing to reconcile. That is why 11 and
+28 are tier 1 rather than ordering problems.
+
+**Scenario 26 wants two structures, not one.** A plain array as the backing
+store, and a small fixed pool of rows recycled across positions. It is the only
+row whose best answers are complementary rather than competing.
+
+**Scenario 17 needs no identity of its own.** Because `slot.index` is stable
+for an item's lifetime and readable from the slot, parallel data indexes by it
+with no lookup, no join and no id. See section 5.4.
+
+**Scenario 33 needs a `Map<networkId, Slot<Player>>` alongside.** Slot
+references handle join and leave correctly within a session, but packet routing
+and reconnection are keyed on ids that arrive from the network, and that map
+must be cleaned on release or it retains departed players.
+
+**Re-derived lists sit in tier 2 for a specific reason.** `clear()` followed by
+refill hands out slots in call order, so insertion order equals slot order and
+the ordering machinery is unnecessary. The cost is that every rebuild produces
+fresh values, so per-item view state resets and enter effects replay. Fine for
+a nav overlay (20), possibly wrong for a search box that refilters on every
+keystroke (23).
+
+**All seven tier-3 scenarios are interface-shaped**, and the repo's seven games
+contain none of them. At the time of the survey that was the argument for
+treating ordering as something to build when a screen needed it. It has since
+been built anyway, as `OrderedSlotList` in `src/common/slot-list/`, so the
+observation now only explains why it was sequenced last.
