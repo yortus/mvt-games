@@ -1,6 +1,7 @@
 import type { Suite } from '../harness/suite';
 import { changeDetectionSuite } from './change-detection';
 import { constructionSuite } from './construction';
+import { fallingSandSuite } from './falling-sand';
 import { gamesSuite } from './games';
 import { hotPathRulesSuite } from './hot-path-rules';
 import { memorySuite } from './memory';
@@ -18,4 +19,5 @@ export const suites: readonly Suite[] = [
     hotPathRulesSuite,
     memorySuite,
     gamesSuite,
+    fallingSandSuite,
 ];

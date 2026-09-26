@@ -19,6 +19,7 @@ contains a description, acceptance criteria checklist, and a progress log.
 | #   | Task                                                                          | Priority | Updated    |
 | --- | ----------------------------------------------------------------------------- | -------- | ---------- |
 | 002 | [Documentation Overhaul](active/002-documentation-overhaul/task.md)           | high     | 2026-04-17 |
+| 003 | [Falling Sand Demo](active/003-falling-sand-demo/task.md)                     | high     | 2026-09-25 |
 
 ## Backlog
 

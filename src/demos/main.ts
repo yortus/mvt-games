@@ -2,6 +2,7 @@ import { Application, Container, RenderTexture } from 'pixi.js';
 import { refreshScene } from '../pixi-mvt';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
+import { createFallingSandEntry } from './falling-sand';
 import { createListSwapEntry } from './list-swap';
 import { createOrderedListEntry } from './ordered-list';
 import { createTsxPixiEntry } from './tsx-pixi';
@@ -15,6 +16,7 @@ const demos: DemoEntry[] = [
     createTsxPixiEntry(),
     createListSwapEntry(),
     createOrderedListEntry(),
+    createFallingSandEntry(),
 ];
 
 // ---------------------------------------------------------------------------
@@ -180,6 +182,7 @@ async function launchDemo(index: number): Promise<void> {
     });
     app.canvas.style.touchAction = 'none';
     runnerEl.appendChild(app.canvas);
+    fitCanvas(app, entry);
 
     // Back button
     const backBtn = document.createElement('button');
@@ -190,7 +193,7 @@ async function launchDemo(index: number): Promise<void> {
     runnerEl.appendChild(backBtn);
 
     await entry.load?.();
-    const session = entry.start(app.stage);
+    const session = entry.start(app.stage, { renderer: app.renderer, ticker: app.ticker });
 
     // Sessions advance their own models and views (`onUpdate`); one refresh
     // pass then syncs the whole stage.
@@ -207,9 +210,7 @@ async function launchDemo(index: number): Promise<void> {
     resizeHandler = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            const w = entry.screenWidth;
-            const h = entry.screenHeight;
-            app.renderer.resize(w, h);
+            fitCanvas(app, entry);
             session.resize?.();
         }, 150);
     };
@@ -223,6 +224,30 @@ async function launchDemo(index: number): Promise<void> {
     };
     window.addEventListener('keydown', escapeHandler);
 }
+
+/**
+ * Size the canvas to the demo, shrunk to fit the runner if need be, and
+ * render at the pixel density it is displayed at. Rendering at a resolution
+ * of 1 and letting the browser scale the canvas blurs everything, text most
+ * visibly, on any screen whose device pixel ratio is not 1.
+ */
+function fitCanvas(app: Application, entry: DemoEntry): void {
+    const width = entry.screenWidth;
+    const height = entry.screenHeight;
+    const scale = Math.min(
+        1,
+        (runnerEl.clientWidth - CANVAS_MARGIN_PX * 2) / width,
+        (runnerEl.clientHeight - CANVAS_MARGIN_PX * 2) / height,
+    );
+    const dpr = window.devicePixelRatio || 1;
+
+    app.renderer.resize(width, height, scale * dpr);
+    app.canvas.style.width = `${Math.floor(width * scale)}px`;
+    app.canvas.style.height = `${Math.floor(height * scale)}px`;
+}
+
+/** Space kept clear around the canvas, matching the runner's CSS. */
+const CANVAS_MARGIN_PX = 12;
 
 function exitDemo(): void {
     if (resizeHandler) {

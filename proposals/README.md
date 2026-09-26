@@ -19,6 +19,8 @@ Nothing here is a description of how the repo currently works. For that, see
 | 008 | [`Watch()` fluent builder](./008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection (`watch`), memoised derivation (`derive`), reactions (`ReactionBuilder`) and uniform lists. The prototype and its tests are in `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
 | 010 | [Performance docs proposal](./010-performance-docs-proposal.md) | **Implemented, and superseded as the place to find numbers.** Re-running its harness found the original push numbers were too low (section 4.6). The benchmarks are now consolidated in [`benchmarks/`](../benchmarks/README.md) (`npm run bench`), with results in the docs' Performance group |
 | 011 | [Multi-package repo](./011-multi-package-repo.md) | Proposed. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package and a decluttered top level. Includes a tooling briefing, a Vite+ lint trial (it can enforce this repo's own formatting without Oxfmt), and an eight-phase migration plan |
+| 012 | [Performance findings from the falling-sand demo](./012-falling-sand-performance-findings.md) | Proposed. Caching each container's method in the pixi-mvt pass loop (prototyped: 30-40% cheaper refresh in mixed scenes), a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
+| 013 | [Does the MVT architecture limit game performance?](./013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame (about 1-2 ms per million items per core with flat data), and that the costs measured in this repo come from the implementation: about 5x from the language and runtime, about 25x from an object per game object and a scene graph |
 
 ## Reading order
 
@@ -47,6 +49,15 @@ benchmark in this repo.
 its own. Its migration moves most of the paths the other proposals cite, which
 keep their old paths as a historical record.
 
+**012** follows on from 001 and 010. Its section 2 changes 001's pass loop,
+and its section 3 qualifies the `scaling` numbers that came out of 010's
+harness.
+
+**013** builds on 012's measurements to ask whether MVT itself, rather than
+this repo's implementation of it, limits performance. It can be read on its
+own; section 3 separates what the architecture requires from what this repo
+chose.
+
 ## Open items (handoff)
 
 Everything known to be outstanding, with where each is recorded. Nothing here
@@ -65,6 +76,15 @@ is in progress.
 | `Watch()` builder: six open design questions, docs to write, promotion and migration of ~38 `watch()` call sites | 008, "Handover: loose ends" | Open; decisions already made are listed there and should not be reopened. New input: the `change-detection` benchmark measures `watch()` at about 8 ns per watched value per frame, over three times comparing by hand (see the docs' Performance Measurements) |
 | Barrel rule (`import/no-internal-modules`) crashes ESLint on its first real violation: the `'#common'` and `'#pixi-jsx'` allow entries compile to `false` | 011 section 11.1 | Open. Deliberately left for the restructure (011 phase 1); verify with a deliberate violation when fixing |
 | Multi-package migration, and the Vite+ trial within it | 011 sections 9.3 and 12 | Proposed; no unresolved questions. Settled decisions are in section 13.2 |
+| Cache each container's method in the pass loop, with a counter for methods assigned mid-pass | 012 sections 2.3-2.4 | Proposed; prototype measured, one test defines the remaining work |
+| Mixed-scene variant of the `scaling` suite, and a best-case caveat on its numbers | 012 section 3.2 | Proposed |
+| Docs note: text and graphics changes rebuild a Pixi render group | 012 section 4.2 | Proposed |
+| The perfmon's GPU row misleads on NVIDIA laptop GPUs: drop it, or mark it indicative | 012 section 5.3 | Decision needed. Hypotheses already ruled out are in section 5.4 |
+| Compare the workshop repo's falling-sand story on the same machine | 012 section 6 | Optional |
+| Measure the TypeScript falling-sand view at 40-50k grains, to test the extrapolation in 013 | 013 section 8 | Proposed |
+| Prototype a flat-array, instanced view of the falling-sand grains in TypeScript | 013 section 8 | Proposed. Tests 013's central claim |
+| How MVT should treat gameplay-relevant state that lives on the GPU | 013 section 6.2 | Open question |
+| Function members in types still use method syntax in 537 places across 120 files (about 310 in the games), against the style guide's "Function-Valued Properties in Types". Convert them, then enable `@typescript-eslint/method-signature-style` set to `'property'` | The style guide; count with `npx eslint --rule '{"@typescript-eslint/method-signature-style":["error","property"]}' src benchmarks scripts` | Open. Mechanical: the lint rule's auto-fix converts them all. Type-check afterwards, since the stricter parameter checks may surface real errors |
 
 Settled questions that should not be reopened without new information are in
 004 section 11 (items 5-7), 004 section 5.4 ("Evolution") and 011 section 13.2.

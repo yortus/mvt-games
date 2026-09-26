@@ -37,6 +37,7 @@ include).
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
 | `games` | This repo's games, run headless with scripted input: time per frame, allocation and garbage collection |
+| `falling-sand` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and prop reads per frame |
 
 ## Layout
 
