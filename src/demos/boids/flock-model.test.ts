@@ -18,19 +18,7 @@ function defaultOptions() {
         maxSpeed: 20,
         minSpeed: 0,
         perceptionRadius: 10,
-        random: createSeededRandom(1),
-    };
-}
-
-/** Mulberry32: a small seeded PRNG, so every test sees the same flock. */
-function createSeededRandom(seed: number): () => number {
-    let state = seed >>> 0;
-    return () => {
-        state = (state + 0x6D2B79F5) >>> 0;
-        let t = state;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        seed: 1,
     };
 }
 
@@ -191,7 +179,7 @@ describe('FlockModel', () => {
         });
     });
 
-    it('is reproducible from a seeded random source', () => {
+    it('is reproducible from a seed', () => {
         const a = createFlockModel({ ...defaultOptions(), wander: 5 });
         const b = createFlockModel({ ...defaultOptions(), wander: 5 });
         stepMs(a, 1000);

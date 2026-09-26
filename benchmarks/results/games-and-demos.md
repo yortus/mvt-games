@@ -9,16 +9,16 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Model and view updates (µs) | `refreshScene` (µs) | Total (µs) | Pixi containers | `onUpdate` and `onRefresh` methods |
 | --- | --- | --- | --- | --- | --- | --- |
-| Game | Asteroids | 1.17 ±17% | 4.12 ±23% | 5.29 ±22% | 41 ±10% | 18 ±11% |
-|  | Kwazy Cactii | 0.88 ±11% | 9.77 | 10.7 | 306 | 74 |
-|  | Dig Dug | 1.9 ±8% | 4.43 | 6.09 | 36 | 11 |
-|  | Galaga | 5.04 ±25% | 4.05 ±17% | 9.1 ±21% | 73 | 34 |
-|  | International Karate | 2.68 | 2.91 ±17% | 5.78 ±8% | 27 | 4 |
-|  | Pac-Man | 5.78 ±9% | 4.88 | 10.7 | 232 | 9 |
-|  | Scramble | 2.02 ±13% | 9.36 ±10% | 11.8 ±9% | 135 | 46 |
-| Demo | Boids | 873 | 122 | 995 | 93 | 17 |
-|  | Falling sand | 2.33 | 191 ±8% | 193 ±8% | 3,820 | 3,780 |
-|  | Reordering lists | 1 ±8% | 2.79 ±13% | 3.78 ±12% | 46 | 37 |
+| Game | Asteroids | 1.5 | 4.36 | 5.92 | 39 | 17 ±6% |
+|  | Kwazy Cactii | 0.93 ±10% | 9.84 | 10.6 | 306 | 74 |
+|  | Dig Dug | 1.79 | 4.28 | 6.07 | 36 | 11 |
+|  | Galaga | 5.5 ±38% | 3.75 ±18% | 9.25 ±30% | 73 | 34 |
+|  | International Karate | 3.12 ±14% | 3.29 ±8% | 6.39 | 27 | 4 |
+|  | Pac-Man | 4.95 | 4.26 | 9.53 | 232 | 9 |
+|  | Scramble | 2.2 ±6% | 8.18 | 10.3 | 135 | 46 |
+| Demo | Boids | 549 ±8% | 15 | 564 ±8% | 293 | 17 |
+|  | Falling sand | 2.23 ±8% | 195 | 198 | 3,820 | 3,780 |
+|  | Reordering lists | 0.94 ±20% | 2.94 ±20% | 4.02 ±13% | 46 | 37 |
 <!-- #endregion time -->
 
 <!-- #region allocation -->
@@ -28,14 +28,14 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | --- | --- | --- |
 | Game | Asteroids | 64 |
 |  | Kwazy Cactii | 32 |
-|  | Dig Dug | 130 ±6% |
-|  | Galaga | 201 ±151% |
-|  | International Karate | 818 ±9% |
+|  | Dig Dug | 130 ±39% |
+|  | Galaga | 209 ±17% |
+|  | International Karate | 960 ±8% |
 |  | Pac-Man | 2,090 |
 |  | Scramble | 2,730 |
-| Demo | Boids | 361,000 |
+| Demo | Boids | 34 |
 |  | Falling sand | 16 |
-|  | Reordering lists | 178 |
+|  | Reordering lists | 176 |
 <!-- #endregion allocation -->
 
 <!-- #region gc -->
@@ -44,13 +44,13 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | Kind | Name | Young-generation collections | Full collections | Time in collections (ms) |
 | --- | --- | --- | --- | --- |
 | Game | Asteroids | 0 | 0 | 0 |
-|  | Kwazy Cactii | 1 ±50% | 0 | 0.2 ±80% |
+|  | Kwazy Cactii | 1 | 0 | 0.2 ±9% |
 |  | Dig Dug | 0 | 0 | 0 |
 |  | Galaga | 0 | 0 | 0 |
-|  | International Karate | 1 ±50% | 0 | 0.3 ±30% |
-|  | Pac-Man | 2 | 0 | 0.3 ±7% |
-|  | Scramble | 3 ±17% | 0 | 0.4 ±33% |
-| Demo | Boids | 88 | 0 | 30 |
+|  | International Karate | 2 ±25% | 0 | 0.3 ±34% |
+|  | Pac-Man | 2 ±25% | 0 | 0.4 ±11% |
+|  | Scramble | 2 ±25% | 0 | 0.4 ±21% |
+| Demo | Boids | 1 ±50% | 0 | 0.2 ±58% |
 |  | Falling sand | 0 | 0 | 0 |
 |  | Reordering lists | 0 | 0 | 0 |
 <!-- #endregion gc -->

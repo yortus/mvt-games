@@ -2,13 +2,20 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A single boid in the flock. */
+/**
+ * A single boid in the flock. A plain record of numbers, written in place by
+ * the flock model each step. It has no getters on purpose: when `speed` and
+ * `direction` were getters on this literal, the flock's per-step writes to
+ * the other fields allocated about 34 KB per frame for 200 boids, likely
+ * because V8 kept the record in a slower form that boxes each fractional
+ * number.
+ */
 export interface BoidModel {
     /** Position in metres. */
     position: { x: number; y: number };
-    /** Scalar speed in m/s. */
+    /** Scalar speed in m/s, as of the last step. */
     speed: number;
-    /** Direction of travel in radians. */
+    /** Direction of travel in radians, as of the last step. */
     direction: number;
 
     /** Velocity x-component in m/s. */
@@ -57,10 +64,10 @@ export function createBoidModel(options: BoidModelOptions): BoidModel {
     const { position, speed, direction, wanderAngle } = options;
     return {
         position: { x: position.x, y: position.y },
+        speed,
+        direction,
         vx: Math.cos(direction) * speed,
         vy: Math.sin(direction) * speed,
-        get speed() { return Math.sqrt(this.vx * this.vx + this.vy * this.vy); },
-        get direction() { return Math.atan2(this.vy, this.vx); },
         wanderAngle,
         separationDx: 0,
         separationDy: 0,

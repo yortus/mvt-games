@@ -57,6 +57,17 @@ export function createSliderView(bindings: SliderViewBindings): Container {
     let isDragging = false;
     let trackingPointerId = -1;
 
+    // What was last drawn. Redrawing a Graphics or reformatting a label
+    // allocates, so refresh does nothing until one of these changes.
+    let drawnWidth = NaN;
+    let drawnMin = NaN;
+    let drawnMax = NaN;
+    let drawnValue = NaN;
+    let drawnStep = NaN;
+    let drawnMode: SliderScaleMode | undefined;
+    let drawnLabel: string | undefined;
+    let drawnIsDragging = false;
+
     hitArea.on('pointerdown', onPointerDown);
     hitArea.on('pointermove', onPointerMove);
     hitArea.on('pointerup', onPointerUp);
@@ -73,13 +84,29 @@ export function createSliderView(bindings: SliderViewBindings): Container {
         const max = bindings.getMax();
         const value = bindings.getValue();
         const mode = bindings.getScaleMode();
+        const step = bindings.getStep();
+        const label = bindings.getLabel();
+
+        if (
+            w === drawnWidth && min === drawnMin && max === drawnMax && value === drawnValue
+            && step === drawnStep && mode === drawnMode && label === drawnLabel
+            && isDragging === drawnIsDragging
+        ) return;
+        drawnWidth = w;
+        drawnMin = min;
+        drawnMax = max;
+        drawnValue = value;
+        drawnStep = step;
+        drawnMode = mode;
+        drawnLabel = label;
+        drawnIsDragging = isDragging;
 
         // Label (top-left)
-        nameText.text = bindings.getLabel();
+        nameText.text = label;
         nameText.position.set(0, 0);
 
         // Value (top-right)
-        valueText.text = formatValue(value, bindings.getStep());
+        valueText.text = formatValue(value, step);
         valueText.position.set(w - valueText.width, 0);
 
         // Track
@@ -116,11 +143,11 @@ export function createSliderView(bindings: SliderViewBindings): Container {
 
         // Min label (bottom-left)
         const bottomY = trackY + TRACK_HEIGHT + TRACK_MARGIN_BOTTOM;
-        minText.text = formatValue(min, bindings.getStep());
+        minText.text = formatValue(min, step);
         minText.position.set(trackLeft, bottomY);
 
         // Max label (bottom-right)
-        maxText.text = formatValue(max, bindings.getStep());
+        maxText.text = formatValue(max, step);
         maxText.position.set(trackRight - maxText.width, bottomY);
     }
 

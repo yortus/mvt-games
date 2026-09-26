@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, GraphicsContext } from 'pixi.js';
 import { createPerfmonView, type FrameStats } from '#common';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
@@ -49,11 +49,21 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     const simBg = new Graphics();
     simContainer.addChild(simBg);
 
-    const boidGfx = new Graphics();
-    simContainer.addChild(boidGfx);
+    // One Graphics per boid, all sharing one triangle drawn once and pointing
+    // along +x, so a frame only positions and turns them. Redrawing every boid
+    // into one Graphics each frame made Pixi build new shape data each time:
+    // about 270 KB of garbage per frame.
+    const boidContext = new GraphicsContext();
+    drawBoidTriangle(boidContext, BOID_SIZE, 0x44ccff);
+    const boidLayer = new Container();
+    simContainer.addChild(boidLayer);
+    const boidGfxs: Graphics[] = [];
+    // The shared context is not owned by any one Graphics, so none destroys it.
+    view.on('destroyed', () => boidContext.destroy());
 
     const debugGfx = new Graphics();
     simContainer.addChild(debugGfx);
+    let isDebugDrawn = false;
 
     // Mask so debug vectors don't bleed past the arena edges
     const simMask = new Graphics();
@@ -78,7 +88,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     const countSlider = createSliderView({
         getLabel: () => 'Boid Count',
         getMin: () => 1,
-        getMax: () => 1000,
+        getMax: () => 5000,
         getStep: () => 1,
         getValue: () => model.boidCount,
         getScaleMode: () => 'linear',
@@ -193,19 +203,15 @@ export function createBoidsView(options: BoidsViewOptions): Container {
         const boids = model.boids;
         const count = boids.length;
 
-        // Draw boids as small directional triangles
-        boidGfx.clear();
-        for (let i = 0; i < count; i++) {
-            const b = boids[i];
-            const px = b.position.x * pxPerMetre;
-            const py = b.position.y * pxPerMetre;
+        refreshBoids(pxPerMetre, boids, count);
 
-            drawBoidTriangle(boidGfx, px, py, b.direction, BOID_SIZE, 0x44ccff);
-        }
-
-        // Debug overlay - weighted acceleration vectors with arrowheads
-        debugGfx.clear();
-        if (getIsShowingInfluences()) {
+        // Debug overlay - weighted acceleration vectors with arrowheads. Redrawn
+        // every frame while shown; cleared once when hidden, since even an
+        // empty clear() allocates.
+        const isShowingInfluences = getIsShowingInfluences();
+        if (isShowingInfluences || isDebugDrawn) debugGfx.clear();
+        isDebugDrawn = isShowingInfluences;
+        if (isShowingInfluences) {
             for (let i = 0; i < count; i++) {
                 const b = boids[i];
                 const px = b.position.x * pxPerMetre;
@@ -225,6 +231,34 @@ export function createBoidsView(options: BoidsViewOptions): Container {
                 const ry = (b.separationDy + b.alignmentDy + b.cohesionDy) * s;
                 drawArrow(debugGfx, px, py, rx, ry, 0xffffff);
             }
+        }
+    }
+
+    /** Positions and turns one pooled Graphics per boid. */
+    function refreshBoids(pxPerMetre: number, boids: FlockModel['boids'], count: number): void {
+        // Grow the pool to the flock size; boids beyond the flock are hidden.
+        while (boidGfxs.length < count) {
+            const g = new Graphics(boidContext);
+            boidLayer.addChild(g);
+            boidGfxs.push(g);
+        }
+        for (let i = 0; i < boidGfxs.length; i++) {
+            const g = boidGfxs[i];
+            const isInFlock = i < count;
+            // Written only on a change: each flip makes Pixi rebuild the render group.
+            if (g.visible !== isInFlock) g.visible = isInFlock;
+            if (!isInFlock) continue;
+
+            const b = boids[i];
+            g.position.set(b.position.x * pxPerMetre, b.position.y * pxPerMetre);
+            // Turned by skew rather than `rotation`: skew (-a, a) with no
+            // rotation is the same matrix as rotation a. Writing `rotation`
+            // here allocated 16 bytes per boid per frame, even when the value
+            // was unchanged, so the cost was in the call itself: likely V8 not
+            // inlining the setter and boxing its argument. `skew.set`, like
+            // `position.set`, goes through an ObservablePoint and allocates
+            // nothing.
+            g.skew.set(-b.direction, b.direction);
         }
     }
 }
@@ -263,15 +297,15 @@ function perceptionToPercent(radius: number, vision: number): number {
     return Math.round((rPct + vPct) / 2);
 }
 
-function drawBoidTriangle(g: Graphics, x: number, y: number, angle: number, size: number, color: number): void {
-    const tipX = x + Math.cos(angle) * size * 1.5;
-    const tipY = y + Math.sin(angle) * size * 1.5;
-    const leftX = x + Math.cos(angle + 2.5) * size;
-    const leftY = y + Math.sin(angle + 2.5) * size;
-    const rightX = x + Math.cos(angle - 2.5) * size;
-    const rightY = y + Math.sin(angle - 2.5) * size;
+/** A small directional triangle centred on the origin, pointing along +x. */
+function drawBoidTriangle(g: GraphicsContext, size: number, color: number): void {
+    const tipX = size * 1.5;
+    const leftX = Math.cos(2.5) * size;
+    const leftY = Math.sin(2.5) * size;
+    const rightX = Math.cos(-2.5) * size;
+    const rightY = Math.sin(-2.5) * size;
 
-    g.moveTo(tipX, tipY).lineTo(leftX, leftY).lineTo(rightX, rightY).closePath().fill({ color });
+    g.moveTo(tipX, 0).lineTo(leftX, leftY).lineTo(rightX, rightY).closePath().fill({ color });
 }
 
 function drawArrow(g: Graphics, x: number, y: number, dx: number, dy: number, color: number): void {

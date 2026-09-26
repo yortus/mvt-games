@@ -21,15 +21,16 @@ Settled questions that should not be reopened without new information are in
 
 ### Fix
 
-- **Boids allocates about 360 KB per frame** (high priority), causing 88
-  garbage collections a minute (about 30 ms in total). Every game allocates
-  under 3 KB. Suspected, not yet confirmed by measurement: the flock model
-  allocates nothing per frame, but the view clears and redraws all 200 boids
-  into one Pixi `Graphics` every frame, and Pixi builds new shape data each
-  time. A likely fix is a sprite per boid, positioned and rotated rather than
-  redrawn. Separately, the model takes about 1 ms per frame comparing every
-  pair of boids. Measured by the `games-and-demos` suite in
-  [benchmarks/](../../../benchmarks/README.md).
+- ~~**Boids allocates about 360 KB per frame**~~ Done 2026-09-26: now about
+  34 bytes, and about one collection a minute. Five causes, measured one at a
+  time: the view redrawing every boid into one `Graphics` (about 270 KB; now
+  a pooled `Graphics` per boid over a shared `GraphicsContext`), the sliders
+  redrawing unchanged (about 50 KB; now gated on change), getters on the boid
+  record making the model's writes box numbers (about 34 KB; now plain
+  fields), a `random()` function called per boid (3.2 KB; now an inline
+  generator over a `Uint32Array`), and Pixi's `rotation` setter (3.2 KB;
+  boids are now turned with `skew`). The model still takes about
+  0.5 ms per frame comparing every pair of boids.
 - **The games allocate on the hot path.** Pac-Man and Scramble about 2-3 KB
   per frame, International Karate about 1 KB. Unexplored; the allocation
   benchmark can find where it comes from.
@@ -79,7 +80,7 @@ Settled questions that should not be reopened without new information are in
 
 ## Acceptance Criteria
 
-- [ ] Boids allocation fixed, or its cause measured and recorded
+- [x] Boids allocation fixed, or its cause measured and recorded
 - [ ] Games' hot-path allocations found, and fixed or recorded
 - [ ] Method-syntax members converted and `method-signature-style` enabled
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
@@ -90,3 +91,5 @@ Settled questions that should not be reopened without new information are in
 
 - 2026-09-26: Created from the "Open items" table in `proposals/README.md`
   when the finished proposals were archived.
+- 2026-09-26: Boids allocation fixed (361 KB to 34 bytes per frame); see the
+  Fix item.
