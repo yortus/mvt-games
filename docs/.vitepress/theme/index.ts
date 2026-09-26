@@ -14,6 +14,7 @@ export default {
             return () => h(DefaultTheme.Layout, null, {
                 'nav-bar-content-before': () => h('div', { class: 'site-cross-nav vp-raw' }, [
                     h('a', { href: __SITE_ROOT__ + 'games/', class: 'site-cross-link' }, 'Games'),
+                    h('a', { href: __SITE_ROOT__ + 'demos/', class: 'site-cross-link' }, 'Demos'),
                     h('a', { href: __SITE_ROOT__ + 'docs/', class: 'site-cross-link active' }, 'Docs'),
                     h('a', { href: __SITE_ROOT__ + 'playground/', class: 'site-cross-link' }, 'Playground'),
                 ]),

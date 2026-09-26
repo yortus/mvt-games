@@ -29,7 +29,7 @@ export default withMermaid(defineConfig({
     },
 
     themeConfig: {
-        // Cross-site nav (Games / Docs / Playground) is rendered by the custom
+        // Cross-site nav (Games / Demos / Docs / Playground) is rendered by the custom
         // Layout via the nav-bar-content-before slot so the links are plain
         // <a> tags not intercepted by VitePress's SPA router.
         nav: [],
