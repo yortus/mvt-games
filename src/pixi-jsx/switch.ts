@@ -35,7 +35,7 @@
  * For a heavy branch, pass a function as the `<Match>` child to build it on
  * first selection instead: `<Match when={...}>{() => <Heavy />}</Match>`.
  *
- * See section 5 of `proposals/004-list-proposal.md` for the design.
+ * See section 5 of `notes/archive/004-list-proposal.md` for the design.
  */
 
 import { Container } from 'pixi.js';

@@ -7,7 +7,7 @@
 
 ## Documentation Structure
 
-The docs are organized into five sections. Place new content in the right one:
+The docs are organized into four published sections, plus unpublished drafts in `articles/`. Place new content in the right one:
 
 | Section | Purpose | Content style |
 | --- | --- | --- |
@@ -23,6 +23,7 @@ The docs are organized into five sections. Place new content in the right one:
 | **building-with-mvt/performance/** | Why performance matters, hot path rules, measured costs, benchmarking methods | Progressive, self-contained |
 | **reference/** | Quick-lookup resources | Terse, scannable, complete |
 | **ai-agents/** | Agent orientation and skills files | Compressed, task-oriented |
+| **articles/** | Essays for a general audience. Unpublished drafts, excluded from the VitePress build | Narrative, self-contained; not part of the guide's reading chain |
 
 ## Page Template
 

@@ -29,6 +29,10 @@ src/
 └── common/              Shared helpers, views, and models (e.g. change-detection watches, keyboard input)
 ```
 
+Top level: `src/` (all TypeScript), `site/` (HTML pages and site CSS; Vite's
+root), `docs/` (VitePress), `benchmarks/`, `scripts/` (texture generation,
+Vite plugin), `notes/` (proposals and tasks).
+
 Full reference: [Project Structure](docs/reference/project-structure.md)
 
 ## Cabinet Architecture
@@ -63,12 +67,14 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm run bench`        | Performance benchmarks ([benchmarks/](benchmarks/README.md)) |
 
-## Tasks
+## Notes: Proposals and Tasks
 
-The `tasks/` directory contains a lightweight task board. Check
-[tasks/README.md](tasks/README.md) for the current backlog, active work, and
-archive. To pick up a task, move it from `backlog/` to `active/`, work on it,
-update its progress log, and move it to `archive/` when done.
+The `notes/` directory holds planning material: `proposals/` (designs not yet
+implemented), `tasks/backlog/` and `tasks/active/` (a lightweight task board),
+and `archive/` (everything finished). Check [notes/README.md](notes/README.md)
+for the index and how it works. To pick up a task, move it from `backlog/` to
+`active/`, work on it, update its progress log, and move it to `archive/` when
+done. Proposals and tasks share one number sequence.
 
 ## Critical Rules (Do Not Violate)
 

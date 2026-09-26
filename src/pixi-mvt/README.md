@@ -2,10 +2,10 @@
 
 > Per-frame logic that belongs to a container instead of to a ticker. For Pixi
 > developers; no architecture knowledge assumed. See
-> [the design notes](../../proposals/002-mvt-plugin-design-notes.md) for how it works and why it is built this
+> [the design notes](./design-notes.md) for how it works and why it is built this
 > way.
 
-**Status: spike.** Used by its demo, every game and demo, the cabinet, the
+**Status: spike.** Used by every game and demo, the cabinet, the
 shared views in `src/common/`, the `pixi-jsx` runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
@@ -301,7 +301,7 @@ first method ran.
 A view that builds children inside `onRefresh` therefore has to give them their
 first frame itself, by refreshing them as it creates them. That is one line in
 the one place that knows it is needed;
-[the demo's entity view](../pixi-mvt-demo/swarm-view.ts) does it.
+`<List>` and `<Switch>` in [`src/pixi-jsx/`](../pixi-jsx/list.ts) do it.
 
 **Both run every frame**, so do not allocate in them. Index-based loops, no
 `array.map()`, no template strings.
@@ -355,24 +355,14 @@ The full results, and the other benchmarks, are in the docs'
 
 | Command                              | What it does           |
 | ------------------------------------ | ---------------------- |
-| `npx vitest run src/pixi-mvt*`        | 62 tests               |
+| `npx vitest run src/pixi-mvt`         | 57 tests               |
 | `npm run bench -- scene-passes`      | The table above        |
-| `npm run dev`, then `/spike/`        | Visual demo            |
-
-The demo page is dev-server only. To include it in `npm run build`, add
-`'spike': resolve(__dirname, 'spike/index.html')` to `rollupOptions.input` in
-`vite.config.ts`. That edit has deliberately not been made.
-
-The demo lives in [`src/pixi-mvt-demo/`](../pixi-mvt-demo/),
-beside the plugin rather than inside it: a demo is a consumer of the plugin, so
-nesting it would force an ancestor-barrel import, which
-[project-structure.md](../../docs/reference/project-structure.md) forbids.
 
 ## Next
 
-- [the design notes](../../proposals/002-mvt-plugin-design-notes.md) - how the traversal is memoised, what was
+- [the design notes](./design-notes.md) - how the traversal is memoised, what was
   tried and rejected, the benchmark method, and the open questions.
-- [the appraisal](../../proposals/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
+- [the appraisal](../../notes/archive/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
   should adopt it at all.
 - Once game state outgrows a few closures, the rest of this repo shows the
   model-and-view split these two methods were designed for. You do not need it to

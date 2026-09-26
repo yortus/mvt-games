@@ -61,5 +61,5 @@ the store is a plain array and the lookup is an array index.
 
 The `<List>` itself is the shipping one in
 [`src/pixi-jsx/list.ts`](../../pixi-jsx/list.ts). See
-[the proposal](../../../proposals/004-list-proposal.md) for the design and
-[the patterns guide](../../../proposals/006-list-patterns.md) for how to apply it.
+[the proposal](../../../notes/archive/004-list-proposal.md) for the design and
+[the patterns guide](../../pixi-jsx/list-patterns.md) for how to apply it.

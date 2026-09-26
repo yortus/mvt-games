@@ -59,6 +59,15 @@ Learn the architecture, conventions, and patterns:
 ## Project Structure
 
 ```
+src/          All TypeScript: games, demos, playground, and the shared libraries
+site/         HTML pages and site CSS (Vite's root)
+docs/         Documentation (VitePress)
+benchmarks/   Performance benchmarks (npm run bench)
+scripts/      Texture generation and the spritesheet Vite plugin
+notes/        Proposals, tasks, and the archive of finished work
+```
+
+```
 src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)

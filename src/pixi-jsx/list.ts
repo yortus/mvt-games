@@ -21,7 +21,7 @@
  * so a list that was once long costs nothing for its unused tail, and are
  * reattached, not rebuilt, when the list grows back.
  *
- * See `proposals/004-list-proposal.md` for the design.
+ * See `notes/archive/004-list-proposal.md` for the design.
  */
 
 import { Container } from 'pixi.js';

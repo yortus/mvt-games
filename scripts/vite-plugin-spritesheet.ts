@@ -163,13 +163,18 @@ function discoverGameTextureDirs(root: string): { gameName: string; dir: string 
 // Plugin
 // ---------------------------------------------------------------------------
 
-export function spritesheetPlugin(): Plugin {
+export interface SpritesheetPluginOptions {
+    /** Directory containing `src/games/`. Defaults to Vite's root. */
+    readonly projectRoot?: string;
+}
+
+export function spritesheetPlugin(options: SpritesheetPluginOptions = {}): Plugin {
     let config: ResolvedConfig;
     const sheets = new Map<string, PackedSheet>();
 
     function buildSheets(): void {
         sheets.clear();
-        const dirs = discoverGameTextureDirs(config.root);
+        const dirs = discoverGameTextureDirs(options.projectRoot ?? config.root);
         for (const { gameName, dir } of dirs) {
             const packed = packSprites(dir, gameName);
             if (packed) {
@@ -191,7 +196,7 @@ export function spritesheetPlugin(): Plugin {
             buildSheets();
 
             // Watch texture source directories for changes
-            const dirs = discoverGameTextureDirs(config.root);
+            const dirs = discoverGameTextureDirs(options.projectRoot ?? config.root);
             for (const { dir } of dirs) {
                 server.watcher.add(dir);
             }

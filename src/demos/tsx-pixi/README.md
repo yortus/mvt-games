@@ -122,10 +122,10 @@ returns a different value. It's totally optional, but useful when a dynamic prop
 
 | File | Purpose |
 |------|---------|
-| [`src/pixi-jsx/jsx-runtime.ts`](../../../pixi-jsx/jsx-runtime.ts) | JSX factory - creates Pixi objects, classifies props, wires up per-frame refresh |
-| [`src/pixi-jsx/list.ts`](../../../pixi-jsx/list.ts) | `<List>` component - index-addressed dynamic children, no reconciliation |
-| [`src/pixi-jsx/switch.ts`](../../../pixi-jsx/switch.ts) | `<Switch>`/`<Match>` components - show the first branch whose condition holds |
-| [`src/pixi-jsx/memo.ts`](../../../pixi-jsx/memo.ts) | `memo()` - memoized getter with automatic dependency tracking |
+| [`src/pixi-jsx/jsx-runtime.ts`](../../pixi-jsx/jsx-runtime.ts) | JSX factory - creates Pixi objects, classifies props, wires up per-frame refresh |
+| [`src/pixi-jsx/list.ts`](../../pixi-jsx/list.ts) | `<List>` component - index-addressed dynamic children, no reconciliation |
+| [`src/pixi-jsx/switch.ts`](../../pixi-jsx/switch.ts) | `<Switch>`/`<Match>` components - show the first branch whose condition holds |
+| [`src/pixi-jsx/memo.ts`](../../pixi-jsx/memo.ts) | `memo()` - memoized getter with automatic dependency tracking |
 | [`demo-view.tsx`](./demo-view.tsx) | This demo's view - shows all the patterns in action |
 | [`demo-model.ts`](./demo-model.ts) | This demo's model - bouncing player, coins, dynamic stars |
 | [`tsx-pixi-entry.ts`](./tsx-pixi-entry.ts) | Demo entry point - wires model to view via bindings |
