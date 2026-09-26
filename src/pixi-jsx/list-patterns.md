@@ -6,7 +6,7 @@
 > varies. Each section gives the shape, a short example, and the cost.
 
 **Related:** [Proposal](../../notes/archive/004-list-proposal.md) - the design and its rationale.
-[Demo](../demos/list-swap/README.md) - a runnable reordering example.
+[Demo](../demos/reordering-lists/README.md) - a runnable reordering example, both ways.
 [the `SlotList` proposal](../../notes/archive/005-slot-list-proposal.md) - the model-side
 collection these patterns project.
 
@@ -57,7 +57,9 @@ not.
 keyed by item id.**
 
 State held in a slot's closure follows the slot. If the list can reorder, that
-is the wrong thing for it to follow. See
+is the wrong thing for it to follow. A `SlotList` or `OrderedSlotList` already
+gives each item a storage index that is stable for its lifetime, and that index
+serves as the key. See
 [Lists whose items carry presentation state](#lists-whose-items-carry-presentation-state).
 
 ---
@@ -273,8 +275,50 @@ Three things make this work:
   however many bindings an item has.
 - **Nothing detects the swap.** The slide falls out of the targets changing.
 
-`cactii/views/board-view/pieces-view-model.ts` is the production example, and
-`src/demos/list-swap/` is the minimal one.
+`cactii/views/board-view/pieces-view-model.ts` is the production example.
+
+### Keyed by storage index: `OrderedSlotList`
+
+A list with an order of its own, such as a sortable table, a card hand or a
+toast stack, can instead be held in an `OrderedSlotList`, with `<List>`
+projecting its `slots` rather than its `ordered`. Each item keeps its storage
+slot for its whole lifetime and carries its position as `slot.ordinal`, so the
+storage index already is the item's identity:
+
+```ts
+// Cosmetic state per storage slot, indexed as `slots` is, one per slot.
+const cosmetics: SlotCosmetic[] = [];
+
+function update(deltaMs: number): void {
+    const ease = 1 - Math.exp(-deltaMs / SMOOTH_MS);
+    for (let i = 0; i < slots.length; i++) {
+        const slot = slots.at(i);
+        if (slot === undefined) continue;
+
+        // A different slot object means a new item: start afresh, not from
+        // wherever the slot's last item was.
+        const cosmetic = cosmetics[i];
+        if (cosmetic.owner !== slot) resetCosmetic(cosmetic, slot);
+
+        if (slot.isLive) cosmetic.x += (slot.ordinal * PITCH - cosmetic.x) * ease;
+        else cosmetic.alpha += (0 - cosmetic.alpha) * ease; // removed: fade out
+    }
+}
+```
+
+Compared with the array form:
+
+- **No ids.** The model mints nothing, and one reference comparison per slot
+  notices a new item.
+- **No republication.** `<List>` slot `i` is storage slot `i`, so the view's
+  bindings read `cosmetics[index]` directly.
+- **Exits.** A removed item leaves the order at once, so the rest close the
+  gap, but keeps its slot, no longer live, for the list's `releaseDelayMs`. Its
+  view is still there to animate out. From a plain array, a removed item is
+  simply gone.
+
+[`src/demos/reordering-lists/`](../demos/reordering-lists/README.md) runs both
+forms side by side, driven by the same script.
 
 ### Drag and drop
 
@@ -381,7 +425,7 @@ Keep an `items` getter allocation-free. It runs every frame:
 | Mistake | Why it breaks | Instead |
 | --- | --- | --- |
 | Capturing item data when the slot is built | The slot's occupant changes later | Make it a getter (rule 1) |
-| Holding per-item cosmetic state in the slot closure | It follows the slot, not the item | View model keyed by item id (rule 2) |
+| Holding per-item cosmetic state in the slot closure | It follows the slot, not the item | View model keyed by item id, or by storage index for a `SlotList` (rule 2) |
 | `Map<id, state>` for that store | `update()` is a hot path | Array indexed by a dense integer id |
 | Guarding each binding in a slot | `<List>` already hides empty slots, and an empty slot skips its subtree via `SKIP_DESCENDANTS` | Let the list do it. `slot()` is only called while occupied |
 | Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, whose codegen returns `SKIP_DESCENDANTS` and invalidates nothing |

@@ -3,9 +3,7 @@ import { refreshScene } from '../pixi-mvt';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
 import { createFallingSandEntry } from './falling-sand';
-import { createListSwapEntry } from './list-swap';
-import { createOrderedListEntry } from './ordered-list';
-import { createTsxPixiEntry } from './tsx-pixi';
+import { createReorderingListsEntry } from './reordering-lists';
 
 // ---------------------------------------------------------------------------
 // Demo registry
@@ -13,10 +11,8 @@ import { createTsxPixiEntry } from './tsx-pixi';
 
 const demos: DemoEntry[] = [
     createBoidsEntry(),
-    createTsxPixiEntry(),
-    createListSwapEntry(),
-    createOrderedListEntry(),
     createFallingSandEntry(),
+    createReorderingListsEntry(),
 ];
 
 // ---------------------------------------------------------------------------

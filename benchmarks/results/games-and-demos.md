@@ -9,18 +9,16 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Model and view updates (µs) | `refreshScene` (µs) | Total (µs) | Pixi containers | `onUpdate` and `onRefresh` methods |
 | --- | --- | --- | --- | --- | --- | --- |
-| Game | Asteroids | 1.1 ±16% | 4.83 ±15% | 5.93 ±15% | 39 | 17 ±6% |
-|  | Kwazy Cactii | 0.95 ±8% | 10.1 | 11.1 | 306 | 74 |
-|  | Dig Dug | 2.05 ±9% | 4.52 | 6.58 ±6% | 36 | 11 |
-|  | Galaga | 5.4 | 3.84 ±6% | 9.3 | 75 | 34 |
-|  | International Karate | 2.64 ±23% | 3.06 | 5.7 ±13% | 27 | 4 |
-|  | Pac-Man | 5.98 ±12% | 5.26 ±11% | 11.3 ±11% | 232 | 9 |
-|  | Scramble | 2.14 ±7% | 8.87 | 11 | 135 | 46 |
-| Demo | Boids | 1,040 ±14% | 133 | 1,170 ±13% | 75 | 9 |
-|  | Falling sand | 2.5 ±6% | 192 ±8% | 194 ±8% | 3,820 | 3,780 |
-|  | List swap | 0.69 ±25% | 1.61 | 2.21 ±8% | 59 | 35 |
-|  | Ordered list | 1.61 ±12% | 0.24 ±8% | 1.87 ±11% | 41 | 1 |
-|  | TSX Pixi | 0.74 | 6.63 | 7.35 | 24 | 13 |
+| Game | Asteroids | 1.17 ±17% | 4.12 ±23% | 5.29 ±22% | 41 ±10% | 18 ±11% |
+|  | Kwazy Cactii | 0.88 ±11% | 9.77 | 10.7 | 306 | 74 |
+|  | Dig Dug | 1.9 ±8% | 4.43 | 6.09 | 36 | 11 |
+|  | Galaga | 5.04 ±25% | 4.05 ±17% | 9.1 ±21% | 73 | 34 |
+|  | International Karate | 2.68 | 2.91 ±17% | 5.78 ±8% | 27 | 4 |
+|  | Pac-Man | 5.78 ±9% | 4.88 | 10.7 | 232 | 9 |
+|  | Scramble | 2.02 ±13% | 9.36 ±10% | 11.8 ±9% | 135 | 46 |
+| Demo | Boids | 873 | 122 | 995 | 93 | 17 |
+|  | Falling sand | 2.33 | 191 ±8% | 193 ±8% | 3,820 | 3,780 |
+|  | Reordering lists | 1 ±8% | 2.79 ±13% | 3.78 ±12% | 46 | 37 |
 <!-- #endregion time -->
 
 <!-- #region allocation -->
@@ -30,16 +28,14 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | --- | --- | --- |
 | Game | Asteroids | 64 |
 |  | Kwazy Cactii | 32 |
-|  | Dig Dug | 176 ±13% |
-|  | Galaga | 320 ±85% |
-|  | International Karate | 816 |
-|  | Pac-Man | 2,170 |
+|  | Dig Dug | 130 ±6% |
+|  | Galaga | 201 ±151% |
+|  | International Karate | 818 ±9% |
+|  | Pac-Man | 2,090 |
 |  | Scramble | 2,730 |
 | Demo | Boids | 361,000 |
 |  | Falling sand | 16 |
-|  | List swap | 17 |
-|  | Ordered list | 69 |
-|  | TSX Pixi | 1,960 |
+|  | Reordering lists | 178 |
 <!-- #endregion allocation -->
 
 <!-- #region gc -->
@@ -48,15 +44,13 @@ Measured 2026-09-26 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | Kind | Name | Young-generation collections | Full collections | Time in collections (ms) |
 | --- | --- | --- | --- | --- |
 | Game | Asteroids | 0 | 0 | 0 |
-|  | Kwazy Cactii | 0 | 0 | 0 |
+|  | Kwazy Cactii | 1 ±50% | 0 | 0.2 ±80% |
 |  | Dig Dug | 0 | 0 | 0 |
 |  | Galaga | 0 | 0 | 0 |
-|  | International Karate | 2 ±25% | 0 | 0.2 ±13% |
-|  | Pac-Man | 3 ±17% | 0 | 0.6 ±26% |
-|  | Scramble | 2 ±25% | 0 | 0.5 ±39% |
-| Demo | Boids | 88 | 0 | 33.6 ±8% |
+|  | International Karate | 1 ±50% | 0 | 0.3 ±30% |
+|  | Pac-Man | 2 | 0 | 0.3 ±7% |
+|  | Scramble | 3 ±17% | 0 | 0.4 ±33% |
+| Demo | Boids | 88 | 0 | 30 |
 |  | Falling sand | 0 | 0 | 0 |
-|  | List swap | 0 | 0 | 0 |
-|  | Ordered list | 1 ±50% | 0 | 0.1 ±55% |
-|  | TSX Pixi | 4 | 0 | 0.5 |
+|  | Reordering lists | 0 | 0 | 0 |
 <!-- #endregion gc -->

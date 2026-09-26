@@ -198,7 +198,7 @@ section 13.2.
 | From | Notes |
 | --- | --- |
 | `src/pixi-mvt/` | Mixin, `updateScene`, `refreshScene`, `SKIP_DESCENDANTS` |
-| `src/pixi-jsx/` | JSX runtime, `<List>`, `<Switch>`, `memo` |
+| `src/pixi-jsx/` | JSX runtime, `<List>`, `<Switch>` |
 | `src/common/texture-registry.ts` | Generic Pixi helper, used by six games |
 | `src/pixi-mvt/scene-passes-benchmark.ts`, `scripts/bench-scene-passes.ts` | To `packages/pixi/bench/`. The benchmark stays outside the public API |
 
@@ -273,8 +273,7 @@ would mostly produce compatibility questions. Revisit at 1.0.
 
 **Known points of generalisation, not to be acted on yet.** `list.ts` and
 `switch.ts` depend on Pixi's `Container` and `refreshScene`, but their logic
-(index-addressed slots, matching on a key) is not Pixi-specific, and `memo.ts`
-has no Pixi import at all. The `onUpdate`/`onRefresh` tree walk is the same
+(index-addressed slots, matching on a key) is not Pixi-specific. The `onUpdate`/`onRefresh` tree walk is the same
 idea on any scene graph. When a second renderer arrives, these are the parts
 that may move into `@mvtjs/utils` behind a small host interface. Abstracting them before
 then would be guessing.

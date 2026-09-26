@@ -12,9 +12,7 @@ import {
 import {
     createBoidsEntry,
     createFallingSandEntry,
-    createListSwapEntry,
-    createOrderedListEntry,
-    createTsxPixiEntry,
+    createReorderingListsEntry,
 } from '../../src/demos';
 import { refreshScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
@@ -118,9 +116,7 @@ function createEntry(id: string): RunnableEntry {
     if (id === 'scramble') return createScrambleEntry();
     if (id === 'boids') return createBoidsEntry();
     if (id === 'falling-sand') return createFallingSandEntry();
-    if (id === 'list-swap') return createListSwapEntry();
-    if (id === 'ordered-list') return createOrderedListEntry();
-    if (id === 'tsx-pixi') return createTsxPixiEntry();
+    if (id === 'reordering-lists') return createReorderingListsEntry();
     throw new Error(`unknown game or demo: ${id}`);
 }
 

@@ -6,7 +6,7 @@ import type { Container, Renderer, Ticker } from 'pixi.js';
 
 /** Descriptor for a demo that can be registered in the demos gallery. */
 export interface DemoEntry {
-    /** Unique identifier (e.g. 'tsx-pixi'). */
+    /** Unique identifier (e.g. 'falling-sand'). */
     readonly id: string;
     /** Human-readable display name. */
     readonly name: string;

@@ -2,7 +2,6 @@
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { createPerfmonView, type FrameStats, PERFMON_WIDTH } from '#common';
-import { memo } from '#pixi-jsx';
 import { lookUpShade } from './grain-colors';
 import { BUTTON_GAP, BUTTON_SIZE, STATS_Y, TOOLBAR_WIDTH, TOOLBAR_X, TOOLBAR_Y } from './view-constants';
 import type { ToolKind } from './demo-model';
@@ -36,8 +35,8 @@ export interface ToolbarViewProps {
  */
 export function ToolbarView(props: ToolbarViewProps): Container {
     // Formatted only when the count changes, not every frame.
-    const getGrainText = memo(props, (p) => COUNT_FORMAT.format(p.grainCount()));
-    const getMovingText = memo(props, (p) => COUNT_FORMAT.format(p.movingCount()));
+    const getGrainText = mapOnChange(props.grainCount, formatCount);
+    const getMovingText = mapOnChange(props.movingCount, formatCount);
 
     // Flip, Reset and Clear share the width the palette leaves.
     const actionsX = TOOLS.length * (BUTTON_SIZE + BUTTON_GAP);
@@ -96,6 +95,30 @@ const TOOLS: readonly ToolKind[] = ['sand', 'water', 'wall', 'erase'];
  * which costs tens of microseconds; the moving count changes most frames.
  */
 const COUNT_FORMAT = new Intl.NumberFormat('en-US');
+
+function formatCount(count: number): string {
+    return COUNT_FORMAT.format(count);
+}
+
+/**
+ * A getter returning `map(read())`, where `map` runs only when `read()` returns
+ * something new (compared with `===`), and the last result is returned
+ * otherwise. Polling it costs one `read()` and one comparison.
+ */
+function mapOnChange<V, T>(read: () => V, map: (value: V) => T): () => T {
+    let isFirst = true;
+    let lastValue: V;
+    let lastResult: T;
+    return () => {
+        const value = read();
+        if (isFirst || value !== lastValue) {
+            isFirst = false;
+            lastValue = value;
+            lastResult = map(value);
+        }
+        return lastResult;
+    };
+}
 
 const TOOL_LABELS: Readonly<Record<ToolKind, string>> = {
     sand: 'SAND',

@@ -1,9 +1,10 @@
 import type { Container } from 'pixi.js';
+import { createFrameStats, PERFMON_HEIGHT } from '#common';
 import { updateScene } from '../../pixi-mvt';
-import type { DemoEntry, DemoSession } from '../demo-entry';
+import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { createBoidsView } from './boids-view';
-import { PANEL_PADDING, SLIDER_WIDTH } from './layout-constants';
+import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -24,13 +25,15 @@ export function createBoidsEntry(): DemoEntry {
             'Separation / Alignment / Cohesion',
             'Interactive parameter tuning',
             'Domain coordinates in metres',
+            'Frame timing panel (perfmon)',
         ],
         get screenWidth() { return computeLayout().screenWidth; },
         get screenHeight() { return computeLayout().screenHeight; },
         thumbnailAdvanceMs: 2000,
 
-        start(stage: Container): DemoSession {
+        start(stage: Container, host?: DemoHost): DemoSession {
             const layout = computeLayout();
+            const frameStats = host === undefined ? undefined : createFrameStats(host);
 
             const model = createFlockModel({
                 arenaWidth: ARENA_WIDTH,
@@ -58,6 +61,7 @@ export function createBoidsEntry(): DemoEntry {
                 onTimeScaleChanged: (v) => { timeScale = v; },
                 getIsShowingInfluences: () => isShowingInfluences,
                 onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
+                getFrameStats: () => frameStats,
             });
             stage.addChild(view);
 
@@ -80,10 +84,12 @@ export function createBoidsEntry(): DemoEntry {
                         onTimeScaleChanged: (v) => { timeScale = v; },
                         getIsShowingInfluences: () => isShowingInfluences,
                         onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
+                        getFrameStats: () => frameStats,
                     });
                     stage.addChild(view);
                 },
                 destroy(): void {
+                    frameStats?.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },
@@ -101,7 +107,8 @@ const ARENA_WIDTH = 100;
 const ARENA_HEIGHT = 82;
 
 const PANEL_TOTAL = SLIDER_WIDTH + PANEL_PADDING * 2;
-const CONTROLS_HEIGHT = 460;
+/** Seven sliders, the influence checkbox and the perfmon panel, with padding. */
+const CONTROLS_HEIGHT = 7 * SLIDER_SPACING + PERFMON_GAP + PERFMON_HEIGHT + PANEL_PADDING * 2;
 
 // Viewport sizing
 const NAV_HEIGHT = 48;

@@ -10,7 +10,6 @@
  *
  * - A hidden container counts only its `visible` read, since its other props
  *   and its subtree are skipped.
- * - A `memo()` getter counts as one read, however many values it tracks.
  * - Hand-written `onRefresh` methods are not counted; they are not props.
  *
  * Counting is turned off by default. To measure, switch `isCounting` on for a

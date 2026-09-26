@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
+import { createPerfmonView, type FrameStats } from '#common';
 import type { FlockModel } from './flock-model';
-import { PANEL_PADDING, SLIDER_WIDTH } from './layout-constants';
+import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { createSliderView } from './slider-view';
 import { createCheckboxView } from './checkbox-view';
 
@@ -26,6 +27,8 @@ export interface BoidsViewOptions {
     getIsShowingInfluences(): boolean;
     /** Called when the user toggles the influence-vector checkbox. */
     onShowInfluencesToggled?(isShowing: boolean): void;
+    /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
+    getFrameStats: () => FrameStats | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,7 +37,7 @@ export interface BoidsViewOptions {
 
 /** Create the main boids demo view including simulation area and control panel. */
 export function createBoidsView(options: BoidsViewOptions): Container {
-    const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged, getIsShowingInfluences, onShowInfluencesToggled } = options;
+    const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged, getIsShowingInfluences, onShowInfluencesToggled, getFrameStats } = options;
     const view = new Container();
     view.label = 'boids-demo';
 
@@ -75,7 +78,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     const countSlider = createSliderView({
         getLabel: () => 'Boid Count',
         getMin: () => 1,
-        getMax: () => 300,
+        getMax: () => 1000,
         getStep: () => 1,
         getValue: () => model.boidCount,
         getScaleMode: () => 'linear',
@@ -168,6 +171,11 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     }
     influenceCheckbox.position.set(0, yOffset);
     controlsContainer.addChild(influenceCheckbox);
+    yOffset += PERFMON_GAP;
+
+    const perfmon = createPerfmonView({ getFrameStats });
+    perfmon.position.set(0, yOffset);
+    controlsContainer.addChild(perfmon);
 
     // ---- Draw static background --------------------------------------------
 
@@ -225,7 +233,6 @@ export function createBoidsView(options: BoidsViewOptions): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const SLIDER_SPACING = 55;
 const BOID_SIZE = 5;
 
 /** Visual scaling for weighted acceleration vectors (m/s^2 -> pixels). */

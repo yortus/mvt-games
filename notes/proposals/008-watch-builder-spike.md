@@ -131,6 +131,55 @@ its one meaning: the previous *watched* value.
 
 `poll()` returns the value; `.changed` reports whether the last poll rebuilt.
 
+#### Derived values as JSX props (from `memo`)
+
+The JSX runtime had a `memo()` helper, removed on 2026-09-26, and its one good
+idea belongs here: **a derived value that is itself a getter**, so it can be
+passed straight to a JSX prop and polled by the prop's binding. The use case
+is formatting a changing number for a `<text>`, where formatting every frame
+costs a string allocation and an `Intl` call:
+
+```tsx
+const getGrainText = memo(props, (p) => COUNT_FORMAT.format(p.grainCount()));
+<text text={getGrainText} />
+```
+
+Its implementation found the inputs automatically, by running `compute` once
+through a Proxy of `source` and recording the methods it called. That was
+unsound in three ways, each failing silently:
+
+- **Only method calls were tracked.** A getter property (`get score()`, how
+  this repo's models expose state) returned its value through the Proxy
+  untracked, so `memo(model, (m) => fmt(m.score))` never updated.
+- **Inputs were found on the first run only.** An input read only in a branch
+  the first run did not take was never tracked.
+- **Arguments were dropped.** Tracked methods were called with none, so
+  `p.at(3)` called `at()`.
+
+Explicit inputs, as `Watch()` already has, fix all three. The falling-sand
+toolbar now uses a local stand-in, `mapOnChange(read, map)` in
+[toolbar-view.tsx](../../src/demos/falling-sand/toolbar-view.tsx): one
+selector, one `===` comparison, and `map` run only on a change. Promotion should
+replace it with `Watch()`, which today would read:
+
+```tsx
+const grainText = Watch().when(() => props.grainCount()).derive('', (_, count) => formatCount(count));
+<text text={grainText.poll} />
+```
+
+Two things this asks of `.derive()`:
+
+1. **A pure mapping form.** `derive(initial, (derived, value, previous) => ...)`
+   is shaped for rebuilding a structure in place. Mapping a value to a result
+   is the common case in views and should not need a dummy `initial` or an
+   ignored first argument. A `.map(fn)` terminal, or a `derive(fn)` overload
+   without `initial`, would cover it. The Naming table already lists `.map` as
+   an alternative name for `derive`; this would be a second terminal instead.
+2. **`poll` usable detached, as a getter.** `text={grainText.poll}` works
+   because the spike's `createDerived` closes over its state rather than using
+   `this`. Keep that a documented guarantee on promotion, or have the mapping
+   terminal return a plain getter.
+
 ### 3. React
 
 The transition filter carried over from `ReactionBuilder`:
@@ -368,6 +417,10 @@ without a new reason.
    `changes`, `PREVIOUS`).
 6. **Many reactions mean many `poll()` calls** in `refresh()`. Consider a
    grouping helper only if migration shows it gets noisy.
+7. **A pure mapping terminal, and derived values as JSX props.** Decide between
+   `.map(fn)` and a `derive(fn)` overload, and whether it returns a `Derived`
+   (with a detached-safe `poll`) or a plain getter. See
+   [Derived values as JSX props](#derived-values-as-jsx-props-from-memo).
 
 ### Documentation to write (on promotion)
 
@@ -395,6 +448,8 @@ without a new reason.
   interleaved ones (e.g. `src/common/pause-menu-view.ts`,
   `src/common/touch-input-view.ts`) to `.detect()`. Watch for `return` moving
   into a callback, where it no longer exits `refresh()`.
+- Replace `mapOnChange` in the falling-sand toolbar with the mapping terminal
+  and delete it.
 - Port `derive` from the `derive-util` branch: its docs
   (`docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
   (`src/demos/derive/`) onto `.derive(...)`.

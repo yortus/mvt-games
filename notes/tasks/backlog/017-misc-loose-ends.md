@@ -22,7 +22,7 @@ Settled questions that should not be reopened without new information are in
 ### Fix
 
 - **Boids allocates about 360 KB per frame** (high priority), causing 88
-  garbage collections a minute (about 34 ms in total). Every game allocates
+  garbage collections a minute (about 30 ms in total). Every game allocates
   under 3 KB. Suspected, not yet confirmed by measurement: the flock model
   allocates nothing per frame, but the view clears and redraws all 200 boids
   into one Pixi `Graphics` every frame, and Pixi builds new shape data each

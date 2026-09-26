@@ -79,30 +79,22 @@ ik). It is the load-bearing convention of the repo.
 
 The same idea in JSX drops the `get` prefix - a prop is a bare getter - because
 intrinsic elements already name their props after Pixi's own container
-properties. From [demo-view.tsx](../../src/demos/tsx-pixi/demo-view.tsx) and the
-runtime's prop model in [jsx-runtime.ts](../../src/pixi-jsx/jsx-runtime.ts):
+properties. From the falling-sand demo's
+[demo-view.tsx](../../src/demos/falling-sand/demo-view.tsx) and the runtime's
+prop model in [jsx-runtime.ts](../../src/pixi-jsx/jsx-runtime.ts):
 
 ```tsx
-<container x={getPlayerX} y={getPlayerY} rotation={getPlayerAngle}>
-    <graphics ref={drawPlayer} />
-</container>
+<ToolbarView
+    grainCount={() => model.grainCount}
+    canFlip={() => model.phase === 'running'}
+    onFlipPressed={() => model.flip()}
+/>
 ```
 
-where `getPlayerX` is a getter closure over the model, wired in
-[tsx-pixi-entry.ts](../../src/demos/tsx-pixi/tsx-pixi-entry.ts):
-
-```ts
-const view = createDemoView({
-    getPlayerX: () => model.playerX,
-    getPlayerY: () => model.playerY,
-    // ...
-    onCoinTap: (index) => model.collectCoin(index),
-});
-```
-
-Note the same getter, `() => model.playerX`, is written into a `getPlayerX`
-binding and read through an `x={...}` prop with no change. The two worlds
-already exchange the identical function; only the key it lives under differs.
+Note the getter `() => model.grainCount` is exactly what an imperative view
+would receive as a `getGrainCount` binding, and it is read by the JSX view with
+no change. The two worlds already exchange the identical function; only the
+key it lives under differs.
 
 ---
 
@@ -149,9 +141,7 @@ mechanical blocker, not a preference.
 
 ### 4.2 JSX-only everywhere (bare `thing` in imperative code too) - too costly
 
-Migrating 50 `*ViewBindings` interfaces plus the `memo()` helper (which proxies
-bindings by method name, [memo.ts](../../src/pixi-jsx/memo.ts)) buys little and
-loses signal: `get`/`on` distinguishes a poll-me accessor from an event handler
+Migrating 50 `*ViewBindings` interfaces buys little and loses signal: `get`/`on` distinguishes a poll-me accessor from an event handler
 in a plain record, and `bindings.getRow()` reads more clearly than
 `bindings.row()` at an imperative call site. There is also a hazard: the JSX
 runtime treats only `onPointer*` as events; any other `on*` prop on an
@@ -426,9 +416,10 @@ does not depend on the rest of the proposal landing.
   Left out of the core; if wanted, add it as a separate opt-in `Widen<...>`
   decorator rather than folding it into `PropsFromBindings`.
 - **Do nothing** - keep hand-writing parallel interfaces and closures at every
-  boundary, as [tsx-pixi-entry.ts](../../src/demos/tsx-pixi/tsx-pixi-entry.ts) does
-  today. Fine at one demo's scale; the transform removes the boilerplate and the
-  drift risk once more than a couple of views cross the boundary.
+  boundary, as the falling-sand demo's
+  [demo-view.tsx](../../src/demos/falling-sand/demo-view.tsx) does today. Fine
+  at one demo's scale; the transform removes the boilerplate and the drift risk
+  once more than a couple of views cross the boundary.
 
 ---
 

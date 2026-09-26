@@ -76,7 +76,7 @@ Re-run the benchmarks on your own machine to get your own numbers; see
   per game object, `Object.values()`, array methods and recomputing unchanged values
   cost several to tens of times more, and the first three leave kilobytes of
   garbage per frame. `for...of` and returned tuples cost nothing extra.
-- **This repo's games take 5-11 µs per frame** before drawing.
+- **This repo's games take 5-12 µs per frame** before drawing.
 
 ## Keeping Containers in Step
 
@@ -300,7 +300,7 @@ the minute after.
 
 <!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
 
-- **Each game takes 5-11 µs per frame**, well under 0.1% of a 60fps frame,
+- **Each game takes 5-12 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
 - **`refreshScene` takes the larger share in most games**, since that is
@@ -312,14 +312,14 @@ the minute after.
   settles, and its refresh takes about 190 µs, about 50 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 3.4 ms at 20,000 grains. Boids takes about 1.2 ms, almost all of it in
+  about 2.6 ms at 20,000 grains. Boids takes about 1 ms, almost all of it in
   its model, which compares every pair of its 200 boids each frame.
-- **The games allocate a little every frame**, from nothing to about 2.7 KB.
-  The hot path rules aim for none, and the allocation benchmark is a way to
-  find where it comes from. At these rates the engine collects at most three
-  times a minute, for under a millisecond in total.
+- **The games allocate a little every frame**, from tens of bytes to about
+  2.7 KB. The hot path rules aim for none, and the allocation benchmark is a
+  way to find where it comes from. At these rates the engine collects at most
+  three times a minute, for under a millisecond in total.
 - **Boids allocates about 360 KB per frame**, and the engine collects 88 times
-  a minute, for about 34 ms in total. Its model allocates nothing per frame;
+  a minute, for about 30 ms in total. Its model allocates nothing per frame;
   its view redraws all 200 boids into a Pixi `Graphics` every frame, and Pixi
   builds new shape data each time.
 
