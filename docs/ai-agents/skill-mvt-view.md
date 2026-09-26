@@ -69,7 +69,7 @@ Key principles:
 
 ```ts
 interface ScoreViewBindings {
-    getScore(): number;
+    getScore: () => number;
 }
 
 function createScoreView(bindings: ScoreViewBindings): Container {
@@ -265,9 +265,9 @@ import { Container, Graphics } from 'pixi.js';
 // ---------------------------------------------------------------------------
 
 interface BulletViewBindings {
-    getX(): number;
-    getY(): number;
-    isVisible(): boolean;
+    getX: () => number;
+    getY: () => number;
+    isVisible: () => boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -34,9 +34,9 @@ Pixi.js, as the rest of this project does):
 
 ```ts
 interface BulletViewBindings {
-    getX(): number;
-    getY(): number;
-    isVisible(): boolean;
+    getX: () => number;
+    getY: () => number;
+    isVisible: () => boolean;
 }
 
 function createBulletView(bindings: BulletViewBindings): Container {

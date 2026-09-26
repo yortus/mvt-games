@@ -211,7 +211,7 @@ interface MatchEffectsViewModel {
     readonly shakeProgress: number;  // 0..1
     readonly popupProgress: number;  // 0..1
     readonly dustSpawned: boolean;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 function createMatchEffectsViewModel(

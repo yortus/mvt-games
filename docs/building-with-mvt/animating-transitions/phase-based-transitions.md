@@ -35,8 +35,8 @@ view handles the transition entirely as presentation state (see
 ```ts
 interface DoorModel {
     readonly isOpen: boolean;
-    open(): void;
-    close(): void;
+    open: () => void;
+    close: () => void;
     // ...
 }
 ```
@@ -61,8 +61,8 @@ type BannerPhase = 'closed' | 'opening' | 'open' | 'closing';
 interface BannerModel {
     readonly phase: BannerPhase;
     readonly progress: number;
-    show(): void;
-    update(deltaMs: number): void;
+    show: () => void;
+    update: (deltaMs: number) => void;
 }
 ```
 
@@ -107,8 +107,8 @@ type BannerPhase = 'closed' | 'opening' | 'open' | 'closing';
 interface BannerModel {
     readonly phase: BannerPhase;
     readonly progress: number;
-    show(): void;
-    update(deltaMs: number): void;
+    show: () => void;
+    update: (deltaMs: number) => void;
 }
 
 const OPEN_DURATION_MS = 300;

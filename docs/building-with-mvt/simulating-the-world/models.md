@@ -32,7 +32,7 @@ interface TimerModel {
     readonly remainingMs: number;
     /** True once the timer has reached zero. */
     readonly isExpired: boolean;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 function createTimerModel(durationMs: number): TimerModel {
@@ -178,7 +178,7 @@ interface GhostModel {
     readonly col: number;
     /** Current movement direction. */
     readonly direction: Direction;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 ```
 

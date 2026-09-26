@@ -63,8 +63,8 @@ interface Sequence {
     };
     readonly isActive: boolean;         // overall flag
     progress: number;                   // overall 0..1
-    start(): void;
-    update(deltaMs: number): void;
+    start: () => void;
+    update: (deltaMs: number) => void;
 }
 ```
 

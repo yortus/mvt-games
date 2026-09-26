@@ -41,9 +41,9 @@ interface ChestModel {
     readonly progress: number;
     /** Milliseconds elapsed in the current phase. */
     readonly elapsedMs: number;
-    open(): void;
-    close(): void;
-    update(deltaMs: number): void;
+    open: () => void;
+    close: () => void;
+    update: (deltaMs: number) => void;
 }
 ```
 

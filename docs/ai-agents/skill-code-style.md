@@ -111,8 +111,8 @@ Private state lives in the closure:
 // ✅ Preferred
 interface CounterModel {
     readonly count: number;
-    increment(): void;
-    update(deltaMs: number): void;
+    increment: () => void;
+    update: (deltaMs: number) => void;
 }
 
 function createCounterModel(): CounterModel {
@@ -134,6 +134,30 @@ class CounterModel {
     update(deltaMs: number) { /* ... */ }
 }
 ```
+
+## Function-Valued Properties in Types
+
+In interfaces and type declarations (models, bindings, props, options), write
+function members as properties holding a function, never with method syntax:
+
+```ts
+// ✅ Preferred
+interface ToolbarViewProps {
+    selectedTool: () => ToolKind;
+    onToolPressed?: (tool: ToolKind) => void;
+}
+
+// ❌ Avoid
+interface ToolbarViewProps {
+    selectedTool(): ToolKind;
+    onToolPressed?(tool: ToolKind): void;
+}
+```
+
+Method signatures get looser parameter checks, even in strict mode, and
+suggest a `this`-bound method, which this project never has. Object literals
+implementing the interface may still use method shorthand. Not yet enforced by
+lint, so check by hand; much existing code still uses method syntax.
 
 ## Easily Confused Names
 

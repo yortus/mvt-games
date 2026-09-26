@@ -17,7 +17,7 @@ interface BallModel {
     readonly x: number;      // metres
     readonly y: number;      // metres
     readonly radius: number; // metres
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 function createBallModel(): BallModel {

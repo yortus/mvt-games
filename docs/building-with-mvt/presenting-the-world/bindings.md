@@ -50,9 +50,9 @@ A view that tracks a moving bullet's position:
 
 ```ts
 interface BulletViewBindings {
-    getX(): number;
-    getY(): number;
-    isVisible(): boolean;
+    getX: () => number;
+    getY: () => number;
+    isVisible: () => boolean;
 }
 
 function createBulletView(bindings: BulletViewBindings): Container {
@@ -86,15 +86,15 @@ clicks). Each `on*()` binding relays a user input back out, typically to a model
 
 ```ts
 interface ButtonViewBindings {
-    getLabel(): string;
-    isEnabled(): boolean;
-    onClicked?(): void;
+    getLabel: () => string;
+    isEnabled: () => boolean;
+    onClicked?: () => void;
 }
 
 interface DragViewBindings {
-    getX(): number;
-    getY(): number;
-    onDragged?(x: number, y: number): void;
+    getX: () => number;
+    getY: () => number;
+    onDragged?: (x: number, y: number) => void;
 }
 ```
 

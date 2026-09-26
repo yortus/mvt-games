@@ -44,6 +44,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **Barrel imports only** - never import past a directory's `index.ts`; enforced by ESLint `import/no-internal-modules`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
+- **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Much existing code still uses method syntax; don't copy it
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept a `get*()`/`on*()` bindings object; top-level application views accept the model directly (they're application-specific, never reused)

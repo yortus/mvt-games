@@ -205,6 +205,9 @@ architecture and engineering concerns.
 - **No classes** - factory functions returning plain records.
 - **No `null`** - use `undefined`.
 - **No `enum`** - string-literal unions.
+- **Function-valued properties in types** - `onPressed?: () => void`, not
+  `onPressed?(): void`. Flag new or changed interfaces only; much existing
+  code still uses method syntax.
 - **Barrel imports only** - never import past a directory's `index.ts`.
 - **No `.ts` extensions** in module specifiers.
 - **4-space indentation.**

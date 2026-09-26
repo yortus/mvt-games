@@ -30,6 +30,7 @@ is written and organized in this project.
 | Unused parameters     | `_deltaMs`                             | [Naming Conventions](#naming-conventions)      |
 | No `null`             | `undefined` over `null`                | [No `null`](#no-null)                          |
 | No `this`             | Closures over `this` bindings          | [No `this`](#no-this)                          |
+| Function members      | `update: (deltaMs: number) => void`    | [Function-Valued Properties in Types](#function-valued-properties-in-types) |
 
 ## Naming Conventions
 
@@ -198,6 +199,54 @@ const combined = {
 These patterns work because every function closes over its own state rather
 than relying on a `this` binding at the call site.
 
+## Function-Valued Properties in Types
+
+In interfaces and type declarations, write each function member as a
+property holding a function, not with method syntax. This applies to every
+kind of interface: models, bindings, props and options.
+
+```ts
+// ✅ Preferred
+interface ToolbarViewProps {
+    selectedTool: () => ToolKind;
+    onToolPressed?: (tool: ToolKind) => void;
+}
+
+// ❌ Avoid
+interface ToolbarViewProps {
+    selectedTool(): ToolKind;
+    onToolPressed?(tool: ToolKind): void;
+}
+```
+
+Why:
+
+- **Stricter checking.** TypeScript checks the parameters of a method
+  signature loosely, even in strict mode: it accepts a function whose
+  parameter is narrower than what it will be passed. A function-valued
+  property gets the full check.
+
+  ```ts
+  interface Loose { onToolPressed?(tool: ToolKind): void }
+  interface Strict { onToolPressed?: (tool: ToolKind) => void }
+
+  const handler = (tool: 'sand') => { /* ... */ };
+  const a: Loose = { onToolPressed: handler };  // accepted, though 'water' can arrive
+  const b: Strict = { onToolPressed: handler }; // ❌ error, as it should be
+  ```
+
+- **It says what the member is.** Nothing in this project uses `this`
+  ([No `this`](#no-this)), so every function member is a plain value that can
+  be destructured, passed as a callback or stored. Property syntax says so;
+  method syntax suggests a method that needs its object.
+
+The rule is about types only. An object literal implementing the interface may
+still use method shorthand (`update(deltaMs) { ... }`), and accessors
+(`get count()`) are unaffected.
+
+Not yet enforced by lint. The `@typescript-eslint/method-signature-style` rule,
+set to `'property'`, checks and auto-fixes it.
+
 ## Factory Functions
 
 This project uses factory functions and plain records instead of classes.
@@ -213,8 +262,8 @@ This is a project convention, not an MVT requirement.
 interface CounterModel {
     readonly count: number;
     readonly rate: number;
-    increment(): void;
-    update(deltaMs: number): void;
+    increment: () => void;
+    update: (deltaMs: number) => void;
 }
 
 interface CounterModelOptions {
@@ -266,7 +315,7 @@ interface FlockModel {
 // ❌ Avoid - getter + setX() method
 interface FlockModel {
     readonly separation: number;
-    setSeparation(value: number): void;
+    setSeparation: (value: number) => void;
 }
 ```
 

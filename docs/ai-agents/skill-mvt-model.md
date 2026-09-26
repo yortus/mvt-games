@@ -183,7 +183,7 @@ classes:
 interface TimerModel {
     readonly remainingMs: number;
     readonly isExpired: boolean;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

@@ -30,8 +30,8 @@ interface GameEntry {
     readonly screenWidth: number;     // desired canvas width in pixels
     readonly screenHeight: number;    // desired canvas height in pixels
     readonly thumbnailAdvanceMs?: number;  // ms to advance for thumbnail
-    load?(): Promise<void>;           // optional asset loading
-    start(stage: Container): GameSession;
+    load?: () => Promise<void>;           // optional asset loading
+    start: (stage: Container) => GameSession;
 }
 ```
 
@@ -39,8 +39,8 @@ interface GameEntry {
 
 ```ts
 interface GameSession {
-    update(deltaMs: number): void;    // advance game state
-    destroy(): void;                  // tear down and clean up
+    update: (deltaMs: number) => void;    // advance game state
+    destroy: () => void;                  // tear down and clean up
 }
 ```
 
@@ -160,8 +160,8 @@ Create leaf views for each presentation entity, accepting bindings:
 
 ```ts
 interface BallViewBindings {
-    getX(): number;
-    getY(): number;
+    getX: () => number;
+    getY: () => number;
 }
 
 function createBallView(bindings: BallViewBindings): Container {

@@ -24,8 +24,8 @@ Inside the view, call optional `on*()` bindings with optional chaining:
 
 ```ts
 interface InputViewBindings {
-    onDirectionChange?(dir: Direction): void;
-    onFireChange?(pressed: boolean): void;
+    onDirectionChange?: (dir: Direction) => void;
+    onFireChange?: (pressed: boolean) => void;
 }
 
 // In the view's event handler:
@@ -44,9 +44,9 @@ apply it with a nullish-coalescing fallback:
 
 ```ts
 interface PanelViewBindings {
-    getLabel(): string;         // required - no sensible default
-    getOpacity?(): number;      // optional - defaults to 1 (fully opaque)
-    getVisible?(): boolean;     // optional - defaults to true
+    getLabel: () => string;         // required - no sensible default
+    getOpacity?: () => number;      // optional - defaults to 1 (fully opaque)
+    getVisible?: () => boolean;     // optional - defaults to true
 }
 
 // In the view's refresh():
