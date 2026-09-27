@@ -1,18 +1,18 @@
 # Proposal: Falling sand as an implementation lab
 
 > The falling-sand demo can now run with other implementations of its model
-> and its view, chosen in the page's URL. The model stores grains either as a record
-> per grain or as a typed array per field, behind one interface. The view
-> draws them either as a sprite per grain or as a pixel per cell. A third
-> choice sizes the tank up to 246,240 cells. Each is fixed for the demo's
-> life; changing one reloads the page. This proposal records what was
-> built, what it measured, two V8 findings that matter beyond the demo, and
-> how a SolidJS / pixi-solid view would fit, which is designed for but not
-> built.
+> and its view, chosen in the page's URL. The model stores grains as a record
+> per grain, as a typed array per field, or in a SolidJS store, behind one
+> interface. The view draws them as a sprite per grain or as a pixel per
+> cell: polled every frame, MVT's way, or, for a store, pushed changes by
+> SolidJS effects. A third choice sizes the tank up to 246,240 cells. Each is
+> fixed for the demo's life; changing one reloads the page. This proposal
+> records what was built, what it measured, and three findings that matter
+> beyond the demo.
 
-**Status:** implemented in part. The two model variants, the two view
-variants, the tank sizes and the benchmark are built, on the `sand-variants`
-branch. The pixi-solid variant is proposed only (section 7).
+**Status:** implemented. The three model variants, the polled and SolidJS
+views, the tank sizes and the benchmark are built, on the `sand-variants`
+branch. Section 8 lists follow-up experiments.
 
 **Written:** 2026-09-27. Measured on an Intel Core Ultra 9 185H: headless in
 Node.js 22.11 through `npm run bench -- falling-sand-scaling`, and in Chrome
@@ -34,32 +34,34 @@ against the Vite dev server, driven through the DevTools protocol.
 | 2 | Two models behind one interface, chosen at start-up | Built. Two grids, identical step for step (tested by comparing `save()` snapshots) | 2 |
 | 3 | Two views, chosen at start-up | Built. Sprite per grain, or pixel per cell. The choice is the view's, a `DemoView` prop | 3 |
 | 3.1 | Fixed for the demo's life, chosen in the URL | Built. A switch reloads the page. Runtime swapping was built first and withdrawn (6.2) | 3.1 |
-| 4 | What the variants cost | Measured. At about 115,000 grains in Chrome: 17.5 ms settled with objects and sprites, 2.7 ms with arrays and pixels. The pixel view is 20-35x cheaper to refresh than sprites at scale. The typed-array model is only 1.04-1.4x faster than objects headless (2x beside the sprite view's heap): the rules, not the layout, are the model's cost | 4, 5 |
+| 4 | What the variants cost | Measured. At about 115,000 grains in Chrome: 17.5 ms settled with objects and sprites, 2.7 ms with arrays and pixels. The pixel view is 20-35x cheaper to refresh than sprites at scale. The typed-array model is only 1.1-1.6x faster than objects headless (1.9x beside the sprite view's heap): the rules, not the layout, are the model's cost | 4, 5 |
 | 6.1 | Object literals with getters are slow in V8 | Found. Dictionary mode, no inlining through them. Fixed in `Grains` (3x on the pixel view); the rest of the repo has the same pattern | 6.1 |
 | 6.2 | Swapping implementations in a running page | Found. Call sites that have seen both implementations stop inlining, so an in-page A/B favours whichever ran first. Why the choice is now fixed per page | 6.2 |
 | 6.3 | 013's estimate for a flat view (1.5-4 ns per grain) | Nearly reached through the shared interface: 4.5 ns per grain with arrays at 200,000 grains in the benchmark, 6.4 with objects. The calls through `Grains` are most of it | 6.3 |
-| 7 | A pixi-solid view | Feasible, and designed for. Slots into the view axis as a third grain view; needs a signal bridge and a second JSX compiler | 7 |
+| 7 | A SolidJS store model, with pixi-solid views | Built, as a Solid developer would write it. Settled, it costs about 4 µs a frame at any grain count, against 90 µs to 2.8 ms polled at 20,000 grains. Moving, it is about 190x slower than arrays: the store's own reads and writes, about 11.5 µs per moving grain. Pushing beats polling only while under about 0.15% (pixels) to 5% (sprites) of grains change per frame | 7 |
 | 8 | Next experiments | Proposed | 8 |
 
 ---
 
 ## 2. The model axis
 
-### 2.1 One interface, two implementations
+### 2.1 One interface, three implementations
 
 `DemoModel`, the demo's top-level model, owns the tank's fixed timestep,
 pouring, the flip and saving. By convention every demo now has a top-level
 `DemoModel`, and this one sets the standard. It steps a `GrainGrid`, which
-has two implementations, in `models/grain-grid/`:
+has three implementations, in `models/grain-grid/` (the third, `store`, is
+section 7's):
 
 | Storage | File | Layout |
 | --- | --- | --- |
 | `objects` | `object-grain-grid.ts` | The original grid: a record per grain (`col`, `row`, `kind`, `fallSpeed`, ...), a pool of them allocated up front, the moving grains as an array of records |
 | `arrays` | `array-grain-grid.ts` | One typed array per field, indexed by grain id (`Int32Array` columns and rows, `Uint8Array` kinds, `Float64Array` fall speeds, ...), the moving grains as an `Int32Array` of ids |
+| `store` | `store-grain-grid.ts` | A SolidJS store holding records per grain and the board of cells, read and written through the store, so reads are tracked |
 
-The rules are the same line for line; only the data layout differs, so the
-experiment varies one thing. The tests run every grid test against both,
-and check that the two produce identical snapshots after 300 busy steps
+The rules are the same line for line; only how the state is held differs,
+so the experiment varies one thing. The tests run every grid test against
+all three, and check that they produce identical snapshots after 300 busy steps
 (adds, removes, walls, half turns). `Float64Array` rather than
 `Float32Array` for fall speeds is what makes them identical: speeds
 accumulate by 0.4 per step, and single precision floors differently.
@@ -171,45 +173,43 @@ Total µs per frame (model, update pass and refresh pass):
 
 | Grains | Settled: objects, sprites | Settled: arrays, pixels | Flipping: objects, sprites | Flipping: arrays, sprites | Flipping: objects, pixels | Flipping: arrays, pixels |
 | --- | --- | --- | --- | --- | --- | --- |
-| 10,000 | 768 | 51 | 1,680 | 1,670 | 780 | 703 |
-| 50,000 | 7,540 | 231 | 14,000 | 11,500 | 4,400 | 3,780 |
-| 200,000 | 31,300 | 915 | 42,200 | 33,700 | 8,070 | 5,590 |
+| 10,000 | 747 | 49 | 1,670 | 1,600 | 816 | 756 |
+| 50,000 | 7,780 | 337 | 14,800 | 13,400 | 4,830 | 3,820 |
+| 200,000 | 30,900 | 893 | 45,400 | 35,700 | 9,600 | 5,780 |
 
 The model alone, flipping (µs per frame; 63,000 grains moving at 200,000):
 
 | Grains | objects (with sprites) | arrays (with sprites) | objects (with pixels) | arrays (with pixels) |
 | --- | --- | --- | --- | --- |
-| 10,000 | 772 | 713 | 709 | 647 |
-| 50,000 | 5,510 | 4,040 | 4,000 | 3,520 |
-| 200,000 | 11,600 | 5,680 | 6,630 | 4,680 |
+| 10,000 | 780 | 686 | 746 | 690 |
+| 50,000 | 5,880 | 4,410 | 4,410 | 3,510 |
+| 200,000 | 11,700 | 6,170 | 7,940 | 4,860 |
 
 - **The view is where scale bites.** Settled, the sprite view's refresh
-  costs 45 ns per grain at 1,000 grains and 156 at 200,000; the pixel view's
-  4.5-9 ns, falling as the grain count grows. At 200,000 grains, 31 ms
+  costs 47 ns per grain at 1,000 grains and 155 at 200,000; the pixel view's
+  4.4-8 ns, falling as the grain count grows. At 200,000 grains, 31 ms
   against under 1 ms.
 - **The model's layout helps less than hoped.** Beside the pixel view,
-  arrays are 1.04-1.14x faster than objects up to 20,000 grains and
-  1.14-1.4x from 50,000 to 200,000. The simulation's cost is its rules:
+  arrays are about 1.1x faster than objects up to 20,000 grains, 1.26x at
+  50,000 and 1.6x at 200,000. The simulation's cost is mostly its rules:
   unpredictable branches and neighbour scans, which 013 section 4.2
   predicted would cost the same in any layout. The hypothesis that typed
   arrays would be "much faster at scale" does not hold for the model on its
   own; see section 8 for an algorithm change that might.
 - **The objects model suffers from the sprite view's heap.** Beside 200,000
-  sprites the objects model costs 11.6 ms, against 6.6 ms beside the pixel
-  view; the arrays model 5.7 against 4.7. Records scattered through a large
+  sprites the objects model costs 11.7 ms, against 7.9 ms beside the pixel
+  view; the arrays model 6.2 against 4.9. Records scattered through a large
   heap, among the sprites and their closures, lose more to cache misses and
   garbage collection than a few flat arrays do. So the layout gain is
-  largest exactly where the object-heavy view is (2x at 100,000 and 200,000
-  grains), which is why the browser figures in section 4, where the heap is
-  largest, show more.
-- **Together**, arrays and pixels are 34x cheaper than objects and sprites
-  at 200,000 settled grains, and 7.5x while flipping, when the model
+  largest exactly where the object-heavy view is (1.9x at 200,000 grains),
+  which is why the browser figures in section 4, where the heap is largest,
+  show more.
+- **Together**, arrays and pixels are 35x cheaper than objects and sprites
+  at 200,000 settled grains, and 8x while flipping, when the model
   dominates.
 
-These figures are from the second run of the suite, after the variants were
-fixed per process. The first run filled every tank with arrays and switched
-to the measured storage in-process; it gave the same picture, with the
-objects model somewhat less penalised beside sprites (1.6x rather than 2x).
+These figures are from the suite's third run, on the code as merged with
+`main`. The earlier runs gave the same picture within noise.
 
 ## 6. Findings
 
@@ -226,6 +226,10 @@ through its function-valued properties are not inlined.
 per grain at 200,000 grains (arrays) and from 30.3 to 11.2 (objects). Each
 grid now keeps `grains.length` as a plain field, updated wherever its
 highest id changes.
+
+Where an accessor is needed, adding it with `Object.defineProperty` to an
+object literal without one keeps the object fast (`%HasFastProperties` is
+true). The store grid does this for its tracked `length` (7.1).
 
 This is wider than the demo. The repo's style (the model skill, the style
 guide's `createCounterModel` example) builds models as object literals with
@@ -285,166 +289,157 @@ is the trade this experiment is about.
 - `createRandom` now returns `{ next, state }`, so a tank's random numbers
   can be saved and resumed.
 
-## 7. A SolidJS / pixi-solid variant: feasibility
+## 7. The SolidJS variant
 
-Not built. The design above was shaped so that it can be.
+### 7.1 What was built
 
-### 7.1 What pixi-solid is
+- **A store model** (`models/grain-grid/store-grain-grid.ts`), written as a
+  SolidJS developer would write it: the grains and the board of cells in
+  one `createStore`, read through the store and written with its path
+  setter, bulk changes (a half turn) with `produce`. Only the simulation's
+  own bookkeeping, which nothing presents, stays in plain arrays: the order
+  it visits moving grains in, and the free ids. Both are part of the rules,
+  and keep the three storages identical, step for step (tested).
+- **Tracked reads through the same interface.** The store's `Grains` reads
+  through the store, so a Solid effect that calls `grains.colOf(id)`
+  subscribes to that grain. `length` is a tracked accessor, added with
+  `defineProperty` so the object stays in fast mode (6.1). `at(id)` does not
+  read the id bound, so that effects checking one grain do not all re-run
+  whenever the highest id changes.
+- **SolidJS views** (`views/solid-grain-sprites-view.ts`,
+  `views/solid-grain-pixels-view.ts`). Sprites: pixi-solid, an `<Index>`
+  over the grain ids, a `<Sprite>` per grain with getter props. Pixels: an
+  effect per grain id that erases the grain's old pixel and writes its new
+  one, the texture uploaded in the refresh pass only on frames when a pixel
+  changed. Each is built in its own Solid root, inside an ordinary Pixi
+  container, and disposed with it. The tests check both draw exactly what
+  the polled views draw, frame by frame, through pouring and a flip.
+- **Views follow the model.** A store gets the Solid views, the other
+  storages the polled ones: a store is only worth having if something
+  subscribes to it, and the Solid views only update from tracked reads. The
+  benchmark adds one diagnostic the demo does not offer, a store drawn by
+  the polled views, to measure the store alone.
+- **One batch per frame.** `GrainGrid` gained `batch(edits)`; `DemoModel`
+  makes each update's changes inside it. For a store it is Solid's `batch`,
+  so effects run once, after the whole step. For the others it just calls
+  `edits`.
+- **No JSX compiler.** The Solid views call pixi-solid's components as
+  Solid's compiler would compile JSX: `createComponent(Sprite, { get x()
+  { ... } })` for `<Sprite x={...} />`. The runtime cost is the same, and the
+  build is unchanged.
+- **Tooling.** Vitest and the benchmark bundler both load Solid's browser
+  build (Node would pick its server build, where effects never run), and
+  one copy of it for pixi-solid and our code alike: a test alias in
+  `vite.config.ts`, and a small esbuild plugin in the benchmark driver.
 
-`pixi-solid` 1.0.0 (peer dependencies `pixi.js >=8.14.3 <9`,
-`solid-js >=1.9.10 <2`; both match this repo) wraps each Pixi display object
-as a Solid component. Its components construct and return plain Pixi
-instances, binding each prop with a `createRenderEffect` (checked in
-`dist/components/factories.js`). Only its hooks (`onTick`, `getPixiApp`)
-need its application context. So a pixi-solid tree can be built inside a
-`createRoot` and added to an existing Pixi container, without its
-`<PixiCanvas>`.
+### 7.2 Where the effects run
 
-### 7.2 Where it slots in
+The model makes its changes in one Solid batch, so the Solid views' effects
+run at the end of `update()`, inside the model's update, not in the refresh
+pass. With a store, the model is in effect pushing to its views: a reactive
+architecture, which is what this variant exists to compare with MVT's
+polling. It keeps MVT's guarantee that no view sees a half-updated world,
+since the batch ends only after the whole step. In the benchmark, the
+effects' cost shows in the model column.
 
-As a third grain view, `GrainsViewKind = 'solid'`, beside the other two in
-`TankView`, chosen in the URL like them (`?view=solid`):
+### 7.3 What it costs
 
-```tsx
-{props.grainsView === 'solid' && <SolidGrainsHost grains={props.grains} />}
-```
+Headless, total µs per frame; the store at up to 20,000 grains, since it
+steps too slowly to fill larger tanks in reasonable time:
 
-`SolidGrainsHost` is an ordinary Pixi container (built with pixi-jsx or by
-hand) that creates a Solid root, adds the pixi-solid tree's root object as
-its child, and disposes the root when destroyed. It takes the same props as
-the other grain views. That is the constraint this design keeps: **a grain
-view is a function from `grains: () => Grains` to a Pixi container**, and
-what renders inside is its own business. The model axis needs nothing new.
+| Grains | Scenario | arrays, pixels | objects, sprites | store, Solid pixels | store, Solid sprites | store, polled pixels |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1,000 | settled | 8.7 | 48 | 4.5 | 4.2 | 1,340 |
+| 20,000 | settled | 90 | 2,810 | 4.4 | 3.9 | 27,900 |
+| 1,000 | flipping | 57 | 91 | 6,220 | 6,410 | 7,500 |
+| 20,000 | flipping | 979 | 4,510 | 185,000 | 213,000 | 177,000 |
 
-Swapping the whole demo view for a Solid one would work the same way one
-level up, but the grains are the only part that scales, so swapping the
-grain layer keeps the comparison to one variable.
+The store's rows measure fewer frames (two flip cycles, against ten), so
+their average count of moving grains differs a little from the others'
+(12,900 against 14,300 at 20,000 grains). That is the measurement window,
+not the simulation, which the tests show to be identical.
 
-### 7.3 Feeding it: polling into signals
+- **At rest, pushing wins by orders of magnitude.** A settled store with
+  Solid views costs about 4 µs a frame at any grain count: nothing is
+  polled, and no effect runs. The polled views pay for every grain every
+  frame: 90 µs for arrays and pixels at 20,000 grains, 2.8 ms for objects
+  and sprites.
+- **Moving, the store is the cost.** With the polled views, so no effects
+  run, the store model takes about 11.5 µs per moving grain, against about
+  61 ns for arrays: roughly 190x. The effects add about 3-4 µs per changed
+  grain on top (the difference between the Solid and the polled-store
+  rows).
+- **Polling a store is slow too.** A polled view reading through the store
+  costs 1,400-1,650 ns per grain per frame, against 5 ns (pixels) and 143 ns
+  (sprites) for arrays.
+- **In the browser**, with Vite's development build of Solid: at about
+  5,000 grains a settled store holds 60 fps, and a flip drops it to about
+  6 fps. Pouring into the large tank (about 32,000 grains) costs about
+  90 ms a frame with Solid pixels and 210 ms with Solid sprites, and the
+  Solid sprite view's heap is about 357 MB, about 11 KB per grain, several
+  times the polled sprite view's.
 
-Solid updates through signals; the models are read by polling. The
-recommended first bridge keeps the models untouched:
+### 7.4 Why the store is slow
 
-- The host's `onRefresh` (a normal MVT refresh step) reads every grain
-  through `Grains` and writes per-grain signals inside one `batch()`.
-  Solid's equality check drops unchanged values, so only grains that moved
-  run their effects.
-- Cost: the same O(grains) polling as the pixel view (section 6.3), plus a
-  signal write per grain per field, plus an effect per changed property.
-  The `reactivity` suite puts Solid at about 43 ns per changed property and
-  near zero when nothing changes.
-- It is MVT as it stands: the refresh step reads the model and writes
-  presentation state, which the signals are. It works with either storage.
-- Only the chosen grain view is built, so the Solid runtime does no work
-  in the other variants' pages.
+Timed in isolation, in Vitest with Solid's production build: a read through
+the store costs about 300-360 ns, against 1.9 ns for a plain array; a path
+write `setState('cells', i, value)` about 250 ns, and a merge
+`setState('grains', id, { col, row })` about 1 µs. The rules make roughly
+40 store operations per moving grain, which accounts for the 11.5 µs.
+Solid's store proxy appears to look each property up with
+`getOwnPropertyDescriptor` on every untracked read, which is likely most of
+the read cost; this was read from its source, not profiled. Setting a store
+value to `undefined` deletes the key, leaving holes in the board; that
+turned out not to matter (reads after deletes were slightly faster).
 
-Expectation (not measured): at rest, about the pixel view's polling cost
-plus the signal writes, with Pixi's per-sprite render cost unchanged, since
-pixi-solid still has a sprite per grain. Flipping, worse than the sprite
-view: every moving grain pays a signal write and an effect on top of the
-sprite.
+A Solid developer who knew this could read the raw state in the
+simulation's hot loop (`unwrap`) and keep the store for what views read.
+That would be a fourth variant, not the idiomatic one measured here.
 
-### 7.4 Feeding it: a change feed, the experiment worth doing next
+### 7.5 The crossover
 
-Polling keeps a Solid view O(grains) per frame, which is the cost Solid
-exists to avoid. The alternative that keeps views technology-neutral is a
-change feed in the model interface: the ids of the grains that changed in
-the last `update()`. Both grids can record it cheaply where they already
-touch a grain (`moveTo`, `swapWith`, `add`, `remove`), deduplicated with a
-per-id stamp. It is model state, not view knowledge, so it fits MVT. The
-bridge then updates only changed grains' signals, O(changed); the pixel
-view could use it too, to redraw only changed pixels.
+Pushing a change through a Solid effect costs about 3 µs; polling costs
+about 5 ns a grain for the pixel view and 143 ns for the sprite view. So,
+leaving the store's own slowness aside, pushing wins while fewer than about
+0.15% of grains change per frame against the pixel view, and about 5%
+against the sprite view. The sprite figure agrees with 013 section 5's
+estimate of 4-10%. A settled tank is far below both; a flipping one, with
+90% of grains moving, far above.
 
-That is where the architectural question of 013 section 5 becomes
-measurable in this demo: polling against change-driven updates, on the same
-model, at a known fraction of grains changing.
+### 7.6 pixi-solid at scale
 
-### 7.5 Reconsidered: a Signals model
-
-This section first rejected a third storage kind holding Solid signals, on
-three grounds. On reflection, only one of them holds:
-
-- *It ties the model to one view technology's library.* Weak. Solid's
-  reactive core is a general reactivity library, like MobX. While
-  `update(deltaMs)` stays the model's only source of time, signals are an
-  implementation detail behind `Grains`.
-- *Every simulation move pays a notification.* True, and exactly the cost
-  worth measuring.
-- *An object per grain per field.* A real memory cost, which the design
-  below avoids.
-
-What does hold is architectural. With a Signals model and a Solid view, a
-signal written inside `update()` runs the view's effects then and there:
-presentation changes during the model's update, not in a refresh pass, and
-the model is in effect pushing to the view. That pairing is a reactive
-architecture, not MVT. Measuring it against MVT is the point, and the demo
-and its docs should say so.
-
-A design that keeps the comparison like-for-like:
-
-- **The arrays grid, plus notification.** The same typed arrays and rules,
-  with one "changed" signal per grain id, bumped wherever the grid moves,
-  adds, removes or turns a grain. Signals then differs from Arrays by
-  exactly the notification cost.
-- **Tracked reads through the same interface.** `colOf(id)` reads the
-  grain's signal, then the array. A Solid effect calling it subscribes; an
-  MVT view calling it just polls, paying one more call.
-- **One signal per grain, made on first use of its id**, not one per field
-  per cell: the large tank has 246,240 cells.
-- **Each `update()` in one `batch()`**, so effects run once per frame, after
-  the whole step, and never see a half-stepped tank.
-
-Whether the view choice should follow the model choice, or the two stay
-independent, is open (section 9).
-
-### 7.6 Tooling
-
-**Decided: no Solid compiler for now.** The Solid views call pixi-solid's
-components as functions, with hand-written getter props:
-`Sprite({ texture, get x() { return grains.colOf(id); } })`. That is what
-Solid's compiled JSX produces, so the runtime cost is the same, and the
-build is unchanged. If the Solid views grow, the alternative is
-`vite-plugin-solid` limited to, say, `*.solid.tsx`, with a matching Solid
-plugin in the benchmark's esbuild setup (which already aliases `solid-js`
-to its browser build, for the `reactivity` suite).
-- **No Solid ticker for time.** pixi-solid's `onTick` would bypass
-  `update(deltaMs)`. A Solid view should take cosmetic time from its host's
-  `onUpdate`, as every other view here does.
-
-### 7.7 Risks
-
-- Memory: a render effect per sprite prop, on top of a sprite per grain,
-  and a signal per grain in a Signals model (or per grain per field in a
-  polling bridge). Several hundred bytes per grain more than the sprite
-  view, which is already about 1.4 KB.
-- pixi-solid 1.0.0 is new. Its per-prop effects and cleanup at 100,000
-  instances are untested here.
+pixi-solid binds a container's children with one effect. Whenever the
+children change, it re-adds every child with `addChildAt(child, i)`, and
+checks each previous child against the new list with `includes`: both O(n)
+per child, O(n²) per change. Settled or flipping, the grain list does not
+change and this costs nothing; while pouring, the list grows most frames.
+At about 32,000 sprites, pouring was about 120 ms a frame slower with Solid
+sprites than with Solid pixels, and the reconciliation is likely much of
+that, though the sprites' own effects contribute too. That is how
+pixi-solid is meant to be used, so it is measured as it is, not worked
+around.
 
 ## 8. Next experiments
 
 | Experiment | What it settles | Effort |
 | --- | --- | --- |
 | Audit per-item models for getter literals (6.1), and measure the sprite view with plain-field models | How much of the "faithful" refresh cost is dictionary-mode objects rather than the design | Small |
-| A bulk-read or read-only-arrays path in `Grains` for the pixel view | Whether 013's 1.5-4 ns per grain is reachable, and what it costs the interface | Small |
-| The change feed (7.4), used by the pixel view | Polling against change-driven updates on one model | Medium |
-| The pixi-solid grain view (7.2, 7.3), then with the change feed | Solid's cost and benefit against MVT polling, at scale | Medium to large |
+| A store variant that reads raw state (`unwrap`) in the simulation's hot loop | How much of the store's cost an expert Solid developer would avoid, and what is left for the notifications | Small |
+| A change feed in the model interface (ids changed in the last update), used by the polled pixel view | Change-driven updates without a reactive library, on the same model | Medium |
+| A bulk-read or read-only-arrays path in `Grains` for the pixel view | Whether the rest of 013's 1.5-4 ns per grain is reachable, and what it costs the interface | Small |
 | An arrays grid that scans cells, not a moving list | 013's "chunked scan" estimate of 5-20 ns per active cell; a new algorithm, not a new layout | Medium |
 | An instanced-mesh grain view from a `Float32Array` | The per-entity flat view 013 described, for cases a texture does not fit | Medium |
 
 ## 9. Open questions
 
-- **Should the view choice follow the model choice?** One option: Solid
-  versions of the sprite and pixel views whenever the model is Signals.
-  The other: independent axes (views Sprites, Pixels, Solid sprites), where
-  a Solid view on a non-signal model is fed by polling (7.3). Independent
-  axes make every combination measurable: Signals with MVT views isolates
-  the notification cost, and Arrays with a Solid view isolates the cost of
-  Solid's effects. Following the model changes two things at once.
+None outstanding.
 
 Settled 2026-09-27:
 
+- The view follows the model: a store gets the Solid views, the others the
+  polled views (7.1). A store with polled views is a benchmark diagnostic
+  only.
 - `save()`/`load()` stay on `DemoModel`. The tests use them to prove the
-  storages equivalent, and a Signals model will need the same proof.
-- `notes/README.md` lists 018-020; merge conflicts with the main checkout
-  are resolved when merging.
-- No Solid compiler for now (7.6).
+  three storages equivalent.
+- `notes/README.md` lists 018-020.
+- No Solid compiler (7.1).

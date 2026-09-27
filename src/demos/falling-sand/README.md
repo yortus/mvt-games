@@ -117,9 +117,29 @@ large tank, one variant per page load:
 
 Settled, the view is nearly all the cost, and the model's layout hardly
 matters. With grains falling, the model's layout matters too, though less
-than the view: headless, typed arrays make the model 1.04-1.4x faster, and
-2x beside the sprite view's large heap. The headless suite breaks each frame
-down into model and refresh.
+than the view: headless, typed arrays make the model 1.1-1.6x faster, and
+1.9x beside the sprite view's large heap. The headless suite breaks each
+frame down into model and refresh.
+
+**What the store costs.** Headless, at 20,000 grains:
+
+| Model, view | Settled, per frame | Flipping, per frame |
+| --- | --- | --- |
+| objects, sprites (polled) | 2.8 ms | 4.5 ms |
+| arrays, pixels (polled) | 90 µs | 1.0 ms |
+| store, Solid pixels (pushed) | 4 µs | 185 ms |
+| store, Solid sprites (pushed) | 4 µs | 213 ms |
+
+At rest, pushing wins by orders of magnitude: nothing is polled and no
+effect runs, whatever the grain count. Moving, the store loses by about as
+much, and not because of the pushing: the store's own reads and writes cost
+about 300 ns to 1 µs each, against a couple of nanoseconds for a plain
+array, and the rules make about 40 of them per moving grain. Solid's
+effects add a few microseconds per changed grain on top. Leaving the store
+aside, a pushed change costs about 3 µs against a few nanoseconds (pixels)
+or about 140 ns (sprites) to poll a grain, so pushing wins only while fewer
+than about 0.15% or 5% of grains change per frame. See
+[020](../../../notes/proposals/020-falling-sand-variants.md), section 7.
 
 **`Grains.length` is a field, not a getter.** V8 keeps an object literal
 that has a getter in slow dictionary mode, and cannot inline calls through
