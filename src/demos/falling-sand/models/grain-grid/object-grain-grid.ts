@@ -1,88 +1,22 @@
-import type { IndexedSlots } from '#common';
+import type { GrainGrid, GrainGridOptions, GrainGridSnapshot, GrainKind, Grains } from './grain-grid';
 import {
     FLOW_SIGHT_CELLS, GRAVITY, MAX_FALL_SPEED, MAX_FLOW_CELLS, SINK_CHANCE, STEPS_TO_SLEEP,
-} from './model-constants';
-
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
-/** What a grain is made of. */
-export type GrainKind = 'sand' | 'water' | 'wall';
-
-/** One grain in the grid, as the view sees it. */
-export interface Grain {
-    /** Stable for the grain's whole life, and its index in `GrainGrid.grains`. */
-    readonly id: number;
-    /** Cell column, from 0 at the left. */
-    readonly col: number;
-    /** Cell row, from 0 at the top. Gravity pulls toward higher rows. */
-    readonly row: number;
-    readonly kind: GrainKind;
-}
-
-/**
- * A grid of cells holding at most one grain each, and the rules that move
- * them: one call to `step()` advances every moving grain by one discrete tick.
- *
- * `step()` visits only the grains that are moving. A grain that cannot move
- * for a few steps falls asleep and costs the simulation nothing until a
- * neighbouring cell empties and wakes it. So a settled pile of thousands of
- * grains steps in the time it takes to step its handful of moving ones.
- *
- * Not a model. An MVT model advances only through `update(deltaMs)`; this has
- * no notion of time at all, only discrete steps. `DemoModel` owns it and calls
- * `step()` on a fixed timestep, so the grid is the demo model's simulation of
- * the grains, kept separate so the rules can be tested one step at a time.
- */
-export interface GrainGrid {
-    readonly cols: number;
-    readonly rows: number;
-
-    /**
-     * Every grain, addressed by id and shaped like a read-only array, so a
-     * `<List>` can project it directly. An id no grain holds is `undefined`.
-     * A grain keeps its id, and so its slot, for its whole life.
-     */
-    readonly grains: IndexedSlots<Grain>;
-    /** How many grains are in the grid. */
-    readonly grainCount: number;
-    /** How many grains the next `step()` will visit. The rest are asleep. */
-    readonly movingCount: number;
-
-    /** The kind of grain in a cell, or `undefined` if the cell is empty or outside the grid. */
-    kindAt: (col: number, row: number) => GrainKind | undefined;
-    /**
-     * Put a grain in an empty cell, optionally already falling at `fallSpeed`
-     * cells per step. Returns false if the cell is taken or outside the grid.
-     */
-    add: (col: number, row: number, kind: GrainKind, fallSpeed?: number) => boolean;
-    /** Remove the grain in a cell, if any, and wake the grains that can now move into it. */
-    remove: (col: number, row: number) => void;
-    /** Advance every moving grain by one tick. */
-    step: () => void;
-    /** Turn the grid upside down: every grain moves to the diametrically opposite cell and wakes. */
-    rotateHalfTurn: () => void;
-    /** Remove every grain. */
-    clear: () => void;
-}
-
-// ---------------------------------------------------------------------------
-// Options
-// ---------------------------------------------------------------------------
-
-export interface GrainGridOptions {
-    readonly cols: number;
-    readonly rows: number;
-    /** Source of random numbers in `[0, 1)`. Seed it for reproducible runs. */
-    readonly random: () => number;
-}
+} from '../model-constants';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createGrainGrid(options: GrainGridOptions): GrainGrid {
+/**
+ * A `GrainGrid` that keeps a record per grain, as most JavaScript code would:
+ * each grain's column, row, kind and motion together in one object, and the
+ * moving grains in an array of those objects. The records are allocated up
+ * front, one per cell, so adding a grain never allocates.
+ *
+ * Its rules are the same as `createArrayGrainGrid`'s, line for line; only the
+ * data layout differs. Keep the two in step.
+ */
+export function createObjectGrainGrid(options: GrainGridOptions): GrainGrid {
     const { cols, rows, random } = options;
     const capacity = cols * rows;
 
@@ -98,8 +32,6 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
     const freeIds = new Int32Array(capacity);
     let freeCount = 0;
 
-    // Ids below this bound may be live; ids at or above it are all free.
-    let idBound = 0;
     let grainCount = 0;
 
     // The grains `step()` visits, packed, with swap-remove on sleep.
@@ -109,18 +41,25 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
     const stepBatch: MutableGrain[] = [];
     let isScanReversed = false;
 
-    const grains: IndexedSlots<Grain> = {
-        get length() { return idBound; },
-        at(index) {
-            if (index < 0 || index >= idBound) return undefined;
-            const grain = pool[index];
-            return grain.isLive ? grain : undefined;
+    // `length` bounds the ids that may be live; ids at or above it are all
+    // free. A plain field the grid keeps up to date, not a getter: V8 keeps an
+    // object literal with a getter in dictionary mode, and then cannot inline
+    // calls through it, which views make for every grain every frame.
+    const grains: MutableGrains = {
+        length: 0,
+        at(id) {
+            if (id < 0 || id >= grains.length) return undefined;
+            return pool[id].isLive ? id : undefined;
         },
+        colOf: (id) => pool[id].col,
+        rowOf: (id) => pool[id].row,
+        kindOf: (id) => pool[id].kind,
     };
 
     const grid: GrainGrid = {
         cols,
         rows,
+        storage: 'objects',
         grains,
         get grainCount() { return grainCount; },
         get movingCount() { return moving.length; },
@@ -130,6 +69,8 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
         step,
         rotateHalfTurn,
         clear,
+        save,
+        load,
     };
 
     clear();
@@ -158,7 +99,7 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
         grain.flowDir = random() < 0.5 ? -1 : 1;
         occupant[row * cols + col] = grain.id + 1;
         grainCount++;
-        if (grain.id >= idBound) idBound = grain.id + 1;
+        if (grain.id >= grains.length) grains.length = grain.id + 1;
 
         if (kind !== 'wall') startMoving(grain);
         return true;
@@ -176,9 +117,9 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
         grainCount--;
         freeIds[freeCount++] = grain.id;
 
-        // Keep `idBound` tight, so a list projecting `grains` does not visit
+        // Keep `grains.length` tight, so a list projecting `grains` does not visit
         // a tail of empty slots.
-        while (idBound > 0 && !pool[idBound - 1].isLive) idBound--;
+        while (grains.length > 0 && !pool[grains.length - 1].isLive) grains.length--;
 
         wakeNeighboursOf(col, row);
     }
@@ -194,7 +135,7 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
             freeIds[id] = capacity - 1 - id;
         }
         freeCount = capacity;
-        idBound = 0;
+        grains.length = 0;
         grainCount = 0;
     }
 
@@ -203,7 +144,7 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
         // cleared and restamped with no collisions.
         occupant.fill(0);
         moving.length = 0;
-        for (let id = 0; id < idBound; id++) {
+        for (let id = 0; id < grains.length; id++) {
             const grain = pool[id];
             if (!grain.isLive) continue;
             grain.col = cols - 1 - grain.col;
@@ -214,6 +155,67 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
             occupant[grain.row * cols + grain.col] = id + 1;
             if (grain.kind !== 'wall') startMoving(grain);
         }
+    }
+
+    // --- Saving and loading -------------------------------------------------
+
+    function save(): GrainGridSnapshot {
+        const kinds: (GrainKind | undefined)[] = [];
+        const grainCols = new Int32Array(grains.length);
+        const grainRows = new Int32Array(grains.length);
+        const fallSpeeds = new Float64Array(grains.length);
+        const stillSteps = new Int32Array(grains.length);
+        const flowDirs = new Int8Array(grains.length);
+        for (let id = 0; id < grains.length; id++) {
+            const grain = pool[id];
+            kinds.push(grain.isLive ? grain.kind : undefined);
+            grainCols[id] = grain.col;
+            grainRows[id] = grain.row;
+            fallSpeeds[id] = grain.fallSpeed;
+            stillSteps[id] = grain.stillSteps;
+            flowDirs[id] = grain.flowDir;
+        }
+        const movingIds = new Int32Array(moving.length);
+        for (let i = 0; i < moving.length; i++) movingIds[i] = moving[i].id;
+        return {
+            cols,
+            rows,
+            kinds,
+            grainCols,
+            grainRows,
+            fallSpeeds,
+            stillSteps,
+            flowDirs,
+            moving: movingIds,
+            freeIds: freeIds.slice(0, freeCount),
+            isScanReversed,
+        };
+    }
+
+    function load(snapshot: GrainGridSnapshot): void {
+        if (snapshot.cols !== cols || snapshot.rows !== rows) {
+            throw new Error(`Cannot load a ${snapshot.cols} x ${snapshot.rows} grid into a ${cols} x ${rows} one`);
+        }
+        clear();
+        grains.length = snapshot.kinds.length;
+        for (let id = 0; id < grains.length; id++) {
+            const kind = snapshot.kinds[id];
+            if (kind === undefined) continue;
+            const grain = pool[id];
+            grain.col = snapshot.grainCols[id];
+            grain.row = snapshot.grainRows[id];
+            grain.kind = kind;
+            grain.isLive = true;
+            grain.fallSpeed = snapshot.fallSpeeds[id];
+            grain.stillSteps = snapshot.stillSteps[id];
+            grain.flowDir = snapshot.flowDirs[id];
+            occupant[grain.row * cols + grain.col] = id + 1;
+            grainCount++;
+        }
+        for (let i = 0; i < snapshot.moving.length; i++) startMoving(pool[snapshot.moving[i]]);
+        freeIds.set(snapshot.freeIds);
+        freeCount = snapshot.freeIds.length;
+        isScanReversed = snapshot.isScanReversed;
     }
 
     // --- Stepping -----------------------------------------------------------
@@ -372,8 +374,9 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
         occupant[other.row * cols + other.col] = other.id + 1;
         other.fallSpeed = 0;
         wake(other);
+        // The grain's old cell now holds water, which sand above can sink
+        // into. Its new cell is full, as it was.
         wakeNeighboursOf(col, row);
-        wakeNeighboursOf(other.col, other.row);
     }
 
     /**
@@ -460,6 +463,9 @@ export function createGrainGrid(options: GrainGridOptions): GrainGrid {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** `Grains`, as the grid that keeps its `length` up to date sees it. */
+type MutableGrains = { -readonly [K in keyof Grains]: Grains[K] };
 
 interface MutableGrain {
     readonly id: number;

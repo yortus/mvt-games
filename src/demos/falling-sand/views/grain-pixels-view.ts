@@ -1,0 +1,66 @@
+import { BufferImageSource, type Container, Sprite, Texture } from 'pixi.js';
+import type { Grains } from '../models';
+import { pickGrainPixel } from './grain-colors';
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+export interface GrainPixelsViewProps {
+    /** The tank's size in cells, and so the texture's size in pixels. Read once, when the view is built. */
+    cols: number;
+    rows: number;
+    /** Every grain, addressed by id. */
+    grains: () => Grains;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+/**
+ * The grains as one texture with a pixel per cell: each frame, clear the
+ * pixels, write one for every grain, and upload the lot. Drawn in cells, like
+ * `GrainSpritesView`: the texture is `cols` x `rows` pixels, and whoever
+ * places this view scales cells to pixels.
+ *
+ * Still an MVT view, and still polling: it reads every grain every frame,
+ * settled or not, and changes nothing but its own pixels. What it drops is
+ * the object per grain on the view side (a sprite, its bindings, its place
+ * in Pixi's scene graph), leaving a loop over the model's grains that writes
+ * into a flat array, and one draw call.
+ */
+export function GrainPixelsView(props: GrainPixelsViewProps): Container {
+    const { cols, rows } = props;
+
+    // The texture's pixel data, and a view of it as one 32-bit RGBA pixel per cell.
+    const bytes = new Uint8Array(cols * rows * 4);
+    const pixels = new Int32Array(bytes.buffer);
+    const source = new BufferImageSource({
+        resource: bytes,
+        width: cols,
+        height: rows,
+        // Hard-edged cells when scaled up, as the sprites are.
+        scaleMode: 'nearest',
+        // Every pixel is either opaque or all zeroes, so it is already premultiplied.
+        alphaMode: 'premultiplied-alpha',
+    });
+    const texture = new Texture({ source });
+
+    const sprite = new Sprite(texture);
+    sprite.onRefresh = refresh;
+    // A sprite does not destroy its texture unless told to.
+    sprite.on('destroyed', () => texture.destroy(true));
+    return sprite;
+
+    function refresh(): void {
+        const grains = props.grains();
+        pixels.fill(0);
+        const length = grains.length;
+        for (let id = 0; id < length; id++) {
+            if (grains.at(id) === undefined) continue;
+            pixels[grains.rowOf(id) * cols + grains.colOf(id)] = pickGrainPixel(grains.kindOf(id), id);
+        }
+        source.update();
+    }
+}

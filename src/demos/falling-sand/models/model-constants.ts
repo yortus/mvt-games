@@ -8,9 +8,25 @@ import type { ToolKind } from './demo-model';
 
 // --- The tank -----------------------------------------------------------------
 
-/** Tank size in cells. 152 x 180 cells hold up to 27,360 grains. */
-export const TANK_COLS = 152;
-export const TANK_ROWS = 180;
+/** The tank sizes to choose from. */
+export type TankSizeKind = 'small' | 'medium' | 'large';
+
+/**
+ * The tank sizes to choose from, in cells. Each is drawn the same size on
+ * screen, with smaller cells for more of them. `brushScale` widens the brush
+ * with the tank, so pouring fills each about as fast for its size.
+ */
+export const TANK_SIZES: Readonly<Record<TankSizeKind, TankSize>> = {
+    small: { cols: 152, rows: 180, brushScale: 1 },
+    medium: { cols: 228, rows: 270, brushScale: 1.5 },
+    large: { cols: 456, rows: 540, brushScale: 3 },
+};
+
+export interface TankSize {
+    readonly cols: number;
+    readonly rows: number;
+    readonly brushScale: number;
+}
 
 // --- Time ---------------------------------------------------------------------
 

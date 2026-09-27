@@ -2,8 +2,8 @@
 
 import type { Container } from 'pixi.js';
 import type { FrameStats } from '#common';
-import type { DemoModel } from './demo-model';
-import { TankView } from './tank-view';
+import type { DemoModel, GrainStorageKind, TankSizeKind } from '../models';
+import { type GrainsViewKind, TankView } from './tank-view';
 import { ToolbarView } from './toolbar-view';
 
 // ---------------------------------------------------------------------------
@@ -12,8 +12,20 @@ import { ToolbarView } from './toolbar-view';
 
 export interface DemoViewProps {
     model: DemoModel;
+    /** How to draw the grains. Read once, when the view is built. */
+    grainsView: GrainsViewKind;
+    /** The size the tank was made at, to show on its switch. */
+    tankSize: TankSizeKind;
     /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
     frameStats: () => FrameStats | undefined;
+    /**
+     * A switch asked for a different storage, grains view or tank size.
+     * Implementations are fixed for the demo's life, so whoever handles
+     * these starts a new demo with the new choice.
+     */
+    onStoragePressed?: (storage: GrainStorageKind) => void;
+    onGrainsViewPressed?: (grainsView: GrainsViewKind) => void;
+    onTankSizePressed?: (tankSize: TankSizeKind) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,16 +47,23 @@ export function DemoView(props: DemoViewProps): Container {
                 grainCount={() => model.grainCount}
                 movingCount={() => model.movingCount}
                 frameStats={props.frameStats}
+                storage={model.storage}
+                grainsView={props.grainsView}
+                tankSize={props.tankSize}
                 onToolPressed={(tool) => { model.tool = tool; }}
                 onFlipPressed={() => model.flip()}
                 onResetPressed={() => model.reset()}
                 onClearPressed={() => model.clear()}
+                onStoragePressed={props.onStoragePressed}
+                onGrainsViewPressed={props.onGrainsViewPressed}
+                onTankSizePressed={props.onTankSizePressed}
             />
             {/* Last, so a flipping tank turns in front of the toolbar. */}
             <TankView
                 cols={model.cols}
                 rows={model.rows}
                 grains={() => model.grains}
+                grainsView={props.grainsView}
                 flipProgress={() => model.flipProgress}
                 isFlipping={() => model.phase === 'flipping'}
                 isPouring={() => model.isPouring}

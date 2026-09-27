@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { createGrainGrid, type GrainGrid } from './grain-grid';
-import { createRandom } from './random';
+import { createGrainGrid, type GrainGrid, type GrainStorageKind } from './grain-grid';
+import { createRandom } from '../random';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function setup(cols = 5, rows = 5): GrainGrid {
-    return createGrainGrid({ cols, rows, random: createRandom(7) });
+const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays'];
+
+function create(storage: GrainStorageKind, cols: number, rows: number, seed: number): GrainGrid {
+    return createGrainGrid(storage, { cols, rows, random: createRandom(seed).next });
 }
 
 function stepTimes(grid: GrainGrid, count: number): void {
@@ -28,7 +30,9 @@ function countKind(grid: GrainGrid, kind: string): number {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('grain grid', () => {
+describe.each(STORAGES)('grain grid, storing %s', (storage) => {
+    const setup = (cols = 5, rows = 5): GrainGrid => create(storage, cols, rows, 7);
+
     describe('adding and removing', () => {
         it('puts a grain in an empty cell and refuses a taken or outside one', () => {
             const grid = setup();
@@ -48,11 +52,13 @@ describe('grain grid', () => {
             grid.add(1, 0, 'wall');
 
             expect(grid.grains.length).toBe(2);
-            expect(grid.grains.at(1)?.col).toBe(1);
+            expect(grid.grains.at(1)).toBe(1);
+            expect(grid.grains.colOf(1)).toBe(1);
+            expect(grid.grains.kindOf(1)).toBe('wall');
 
             grid.remove(0, 0);
             expect(grid.grains.at(0)).toBeUndefined();
-            expect(grid.grains.at(1)?.col).toBe(1);
+            expect(grid.grains.colOf(1)).toBe(1);
             expect(grid.grainCount).toBe(1);
         });
 
@@ -64,7 +70,7 @@ describe('grain grid', () => {
 
             grid.remove(0, 0);
             grid.add(3, 0, 'wall');
-            expect(grid.grains.at(0)?.col).toBe(3);
+            expect(grid.grains.colOf(0)).toBe(3);
 
             grid.remove(2, 0);
             expect(grid.grains.length).toBe(2);
@@ -73,38 +79,37 @@ describe('grain grid', () => {
         it('keeps a grain\'s id while it moves', () => {
             const grid = setup();
             grid.add(2, 0, 'sand');
-            const grain = grid.grains.at(0);
 
             stepTimes(grid, 10);
 
-            expect(grain?.row).toBe(4);
-            expect(grid.grains.at(0)).toBe(grain);
+            expect(grid.grains.at(0)).toBe(0);
+            expect(grid.grains.rowOf(0)).toBe(4);
+            expect(grid.grains.length).toBe(1);
         });
     });
 
     describe('sand', () => {
         it('falls to the floor, speeding up as it goes', () => {
-            const grid = createGrainGrid({ cols: 1, rows: 40, random: createRandom(1) });
+            const grid = create(storage, 1, 40, 1);
             grid.add(0, 0, 'sand');
-            const grain = grid.grains.at(0)!;
 
             const rowsPerStep: number[] = [];
             let lastRow = 0;
             for (let i = 0; i < 8; i++) {
                 grid.step();
-                rowsPerStep.push(grain.row - lastRow);
-                lastRow = grain.row;
+                rowsPerStep.push(grid.grains.rowOf(0) - lastRow);
+                lastRow = grid.grains.rowOf(0);
             }
 
             expect(rowsPerStep[0]).toBe(1);
             expect(rowsPerStep[7]).toBeGreaterThan(1);
 
             stepTimes(grid, 40);
-            expect(grain.row).toBe(39);
+            expect(grid.grains.rowOf(0)).toBe(39);
         });
 
         it('never passes through a grain in its way, however fast it falls', () => {
-            const grid = createGrainGrid({ cols: 1, rows: 40, random: createRandom(1) });
+            const grid = create(storage, 1, 40, 1);
             grid.add(0, 30, 'wall');
             grid.add(0, 0, 'sand');
 
@@ -280,7 +285,7 @@ describe('grain grid', () => {
     describe('determinism', () => {
         it('replays exactly from the same seed', () => {
             const run = (): string => {
-                const grid = createGrainGrid({ cols: 12, rows: 12, random: createRandom(3) });
+                const grid = create(storage, 12, 12, 3);
                 for (let col = 3; col < 9; col++) {
                     grid.add(col, 0, 'sand');
                     grid.add(col, 1, 'water');
@@ -295,5 +300,66 @@ describe('grain grid', () => {
 
             expect(run()).toBe(run());
         });
+    });
+});
+
+describe('grain grid storages', () => {
+    /**
+     * A busy run: sand and water sprayed in along the top, walls added and
+     * cells emptied all over, a half turn now and then, and a step each
+     * time. The edits come from their own seeded source, so every grid given
+     * the same seed gets the same edits.
+     */
+    function play(grid: GrainGrid, steps: number, seed: number): void {
+        const edits = createRandom(seed + 1);
+        const pick = (n: number): number => Math.floor(edits.next() * n);
+        for (let s = 0; s < steps; s++) {
+            for (let i = 0; i < 6; i++) grid.add(pick(grid.cols), pick(8), edits.next() < 0.6 ? 'sand' : 'water', 2);
+            if (s % 7 === 0) grid.add(pick(grid.cols), pick(grid.rows), 'wall');
+            if (s % 5 === 0) grid.remove(pick(grid.cols), pick(grid.rows));
+            if (s % 90 === 89) grid.rotateHalfTurn();
+            grid.step();
+        }
+    }
+
+    it('behave identically, step for step', () => {
+        const objects = create('objects', 40, 30, 5);
+        const arrays = create('arrays', 40, 30, 5);
+
+        for (let round = 0; round < 6; round++) {
+            play(objects, 50, round);
+            play(arrays, 50, round);
+            expect(arrays.save()).toEqual(objects.save());
+        }
+        // Enough going on to mean something: a tank's worth of grains, some still moving.
+        expect(objects.grainCount).toBeGreaterThan(500);
+        expect(objects.movingCount).toBeGreaterThan(0);
+    });
+
+    it.each([
+        ['objects', 'arrays'],
+        ['arrays', 'objects'],
+    ] as const)('carry on exactly, from %s to %s, from a snapshot taken mid-run', (from, to) => {
+        const straight = create(from, 40, 30, 9);
+        play(straight, 150, 1);
+        play(straight, 150, 2);
+
+        // The same run, handed over half way. The grid taking over draws
+        // from the same random numbers, from where the first grid left off.
+        const random = createRandom(9);
+        const first = createGrainGrid(from, { cols: 40, rows: 30, random: random.next });
+        play(first, 150, 1);
+        const second = createGrainGrid(to, { cols: 40, rows: 30, random: random.next });
+        second.load(first.save());
+        expect(second.save()).toEqual(first.save());
+        play(second, 150, 2);
+
+        expect(second.save()).toEqual(straight.save());
+    });
+
+    it('refuse a snapshot of a different size', () => {
+        const grid = create('arrays', 10, 10, 1);
+        const wider = create('objects', 12, 10, 1);
+        expect(() => grid.load(wider.save())).toThrow();
     });
 });

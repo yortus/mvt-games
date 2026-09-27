@@ -1,4 +1,4 @@
-import type { GrainKind } from './grain-grid';
+import type { GrainKind } from '../models';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -18,6 +18,22 @@ export function pickGrainTint(kind: GrainKind, id: number): number {
         case 'sand': return SAND_SHADES[shade];
         case 'water': return WATER_SHADES[shade];
         case 'wall': return WALL_SHADES[shade];
+    }
+}
+
+/**
+ * The same colour as `pickGrainTint`, as an opaque pixel: four bytes, red
+ * first, packed into one number for an `Int32Array` over RGBA pixel data.
+ * Assumes a little-endian platform, as every browser runs on. Signed, so
+ * that V8 keeps it a small integer rather than boxing it: with alpha 255 the
+ * value is a small negative number.
+ */
+export function pickGrainPixel(kind: GrainKind, id: number): number {
+    const shade = Math.imul(id, 0x9e3779b1) >>> (32 - SHADE_BITS);
+    switch (kind) {
+        case 'sand': return SAND_PIXELS[shade];
+        case 'water': return WATER_PIXELS[shade];
+        case 'wall': return WALL_PIXELS[shade];
     }
 }
 
@@ -54,3 +70,17 @@ function scaleColor(color: number, factor: number): number {
 const SAND_SHADES = makeShades(0xdcb86a, 0.28);
 const WATER_SHADES = makeShades(0x3d8fe0, 0.18);
 const WALL_SHADES = makeShades(0x7c8496, 0.2);
+
+const SAND_PIXELS = toPixels(SAND_SHADES);
+const WATER_PIXELS = toPixels(WATER_SHADES);
+const WALL_PIXELS = toPixels(WALL_SHADES);
+
+/** `0xRRGGBB` colours as opaque little-endian RGBA pixels, `0xAABBGGRR`, signed. */
+function toPixels(colors: readonly number[]): Int32Array {
+    const pixels = new Int32Array(colors.length);
+    for (let i = 0; i < colors.length; i++) {
+        const color = colors[i];
+        pixels[i] = 0xff000000 | ((color & 0xff) << 16) | (color & 0xff00) | ((color >> 16) & 0xff);
+    }
+    return pixels;
+}

@@ -312,7 +312,7 @@ the minute after.
   settles, and its refresh takes about 190 µs, about 50 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 2.6 ms at 20,000 grains. Boids takes about 0.55 ms, almost all of it
+  about 2.4 ms at 20,000 grains. Boids takes about 0.55 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
   2.7 KB. The hot path rules aim for none, and the allocation benchmark is a

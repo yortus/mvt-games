@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoModel, type DemoModel } from './demo-model';
+import type { GrainStorageKind } from './grain-grid';
+import { createDemoModel, type DemoModel, type DemoModelOptions } from './demo-model';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -7,9 +8,7 @@ import { createDemoModel, type DemoModel } from './demo-model';
 
 const STEP_MS = 1000 / 60;
 
-function setupEmpty(cols = 40, rows = 40): DemoModel {
-    return createDemoModel({ cols, rows, scene: 'empty' });
-}
+const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays'];
 
 function advance(model: DemoModel, totalMs: number): void {
     const frameMs = 16;
@@ -20,9 +19,16 @@ function advance(model: DemoModel, totalMs: number): void {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('demo model', () => {
+describe.each(STORAGES)('demo model, storing %s', (storage) => {
+    const create = (options: DemoModelOptions): DemoModel => createDemoModel({ ...options, storage });
+    const setupEmpty = (cols = 40, rows = 40): DemoModel => create({ cols, rows, scene: 'empty' });
+
+    it('stores its grains the way it was asked to', () => {
+        expect(setupEmpty().storage).toBe(storage);
+    });
+
     it('opens with the starting scene', () => {
-        const model = createDemoModel({ cols: 60, rows: 80 });
+        const model = create({ cols: 60, rows: 80 });
 
         expect(model.grainCount).toBeGreaterThan(0);
         expect(model.phase).toBe('running');
@@ -94,7 +100,7 @@ describe('demo model', () => {
 
             expect(poured).toBeGreaterThan(0);
             expect(model.grainCount).toBe(poured);
-            expect(model.grains.at(0)?.kind).toBe('water');
+            expect(model.grains.kindOf(0)).toBe('water');
         });
 
         it('draws an unbroken wall along a fast drag', () => {
@@ -106,15 +112,15 @@ describe('demo model', () => {
             model.endPour();
 
             const wallCols = new Set<number>();
-            for (let id = 0; id < model.grains.length; id++) {
-                const grain = model.grains.at(id);
-                if (grain?.row === 20) wallCols.add(grain.col);
+            const { grains } = model;
+            for (let id = 0; id < grains.length; id++) {
+                if (grains.at(id) !== undefined && grains.rowOf(id) === 20) wallCols.add(grains.colOf(id));
             }
             for (let col = 2; col <= 37; col++) expect(wallCols.has(col)).toBe(true);
         });
 
         it('erases grains under the brush', () => {
-            const model = createDemoModel({ cols: 60, rows: 80 });
+            const model = create({ cols: 60, rows: 80 });
             const before = model.grainCount;
             model.tool = 'erase';
             model.startPour(30, 78);
@@ -138,22 +144,22 @@ describe('demo model', () => {
             model.startPour(5, 9);
             model.update(STEP_MS);
             model.endPour();
-            const wall = model.grains.at(0)!;
-            const { col, row } = wall;
+            const col = model.grains.colOf(0);
+            const row = model.grains.rowOf(0);
 
             model.flip();
             advance(model, 240);
 
             expect(model.phase).toBe('flipping');
             expect(model.flipProgress).toBeCloseTo(240 / 500, 1);
-            expect(wall.row).toBe(row);
+            expect(model.grains.rowOf(0)).toBe(row);
 
             advance(model, 300);
 
             expect(model.phase).toBe('running');
             expect(model.flipProgress).toBe(0);
-            expect(wall.col).toBe(9 - col);
-            expect(wall.row).toBe(9 - row);
+            expect(model.grains.colOf(0)).toBe(9 - col);
+            expect(model.grains.rowOf(0)).toBe(9 - row);
         });
 
         it('ignores a second flip while flipping', () => {
@@ -178,7 +184,7 @@ describe('demo model', () => {
     });
 
     it('clears the tank completely, whatever scene it started with', () => {
-        const model = createDemoModel({ cols: 60, rows: 80 });
+        const model = create({ cols: 60, rows: 80 });
         model.flip();
         advance(model, 100);
 
@@ -194,7 +200,7 @@ describe('demo model', () => {
     });
 
     it('resets to the starting scene', () => {
-        const model = createDemoModel({ cols: 60, rows: 80 });
+        const model = create({ cols: 60, rows: 80 });
         const opening = model.grainCount;
         model.tool = 'sand';
         model.startPour(30, 5);
@@ -207,5 +213,49 @@ describe('demo model', () => {
         expect(model.grainCount).toBe(opening);
         expect(model.phase).toBe('running');
         expect(model.flipProgress).toBe(0);
+    });
+});
+
+describe('tank storages', () => {
+    /** Pour sand then water back and forth across the tank, flipping it part way through. */
+    function play(model: DemoModel, fromFrame: number, toFrame: number): void {
+        for (let f = fromFrame; f < toFrame; f++) {
+            if (f === 0) {
+                model.tool = 'sand';
+                model.startPour(20, 10);
+            }
+            if (f === 90) {
+                model.endPour();
+                model.tool = 'water';
+                model.startPour(100, 10);
+            }
+            if (f === 150) model.flip();
+            model.movePour(20 + ((f * 3) % 110), 10);
+            model.update(STEP_MS);
+        }
+    }
+
+    it('behave identically, pouring, flipping and all', () => {
+        const objects = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
+        const arrays = createDemoModel({ cols: 152, rows: 180, storage: 'arrays' });
+
+        play(objects, 0, 240);
+        play(arrays, 0, 240);
+
+        expect(arrays.save()).toEqual(objects.save());
+        expect(objects.grainCount).toBeGreaterThan(4000);
+    });
+
+    it('resume exactly from each other\'s snapshots', () => {
+        const straight = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
+        play(straight, 0, 240);
+
+        const first = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
+        play(first, 0, 120);
+        const second = createDemoModel({ cols: 152, rows: 180, storage: 'arrays' });
+        second.load(first.save());
+        play(second, 120, 240);
+
+        expect(second.save()).toEqual(straight.save());
     });
 });

@@ -2,9 +2,12 @@
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { createPerfmonView, type FrameStats, PERFMON_WIDTH } from '#common';
+import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
-import { BUTTON_GAP, BUTTON_SIZE, STATS_Y, TOOLBAR_WIDTH, TOOLBAR_X, TOOLBAR_Y } from './view-constants';
-import type { ToolKind } from './demo-model';
+import type { GrainsViewKind } from './tank-view';
+import {
+    BUTTON_GAP, BUTTON_SIZE, SEGMENT_HEIGHT, STATS_Y, TOOLBAR_WIDTH, TOOLBAR_X, TOOLBAR_Y, VARIANTS_Y,
+} from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -18,10 +21,25 @@ export interface ToolbarViewProps {
     movingCount: () => number;
     /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
     frameStats: () => FrameStats | undefined;
+    /**
+     * The implementations and tank size the demo is running with. Fixed for
+     * the demo's life, so read once, when the view is built.
+     */
+    storage: GrainStorageKind;
+    grainsView: GrainsViewKind;
+    tankSize: TankSizeKind;
     onToolPressed?: (tool: ToolKind) => void;
     onFlipPressed?: () => void;
     onResetPressed?: () => void;
     onClearPressed?: () => void;
+    /**
+     * A different storage, grains view or tank size was pressed. Whoever
+     * handles these starts the demo afresh with it; without them, pressing a
+     * switch does nothing.
+     */
+    onStoragePressed?: (storage: GrainStorageKind) => void;
+    onGrainsViewPressed?: (grainsView: GrainsViewKind) => void;
+    onTankSizePressed?: (tankSize: TankSizeKind) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -29,9 +47,10 @@ export interface ToolbarViewProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Everything below the tank: the tool palette, Flip, Reset and Clear, the grain
- * counts, and frame timing. Presses are relayed; what they do is up to
- * whoever handles them.
+ * Everything below the tank: the tool palette, Flip, Reset and Clear, the
+ * switches showing which implementations are running, the grain counts, and
+ * frame timing. Presses are relayed; what they do is up to whoever handles
+ * them.
  */
 export function ToolbarView(props: ToolbarViewProps): Container {
     // Formatted only when the count changes, not every frame.
@@ -70,12 +89,38 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <ActionButtonView label="CLEAR" width={actionWidth} onPressed={() => props.onClearPressed?.()} />
             </container>
 
+            <container y={VARIANTS_Y}>
+                <SegmentedView
+                    label="MODEL"
+                    options={STORAGE_OPTIONS}
+                    selected={props.storage}
+                    onSelected={(storage) => props.onStoragePressed?.(storage)}
+                />
+                <container x={SEGMENT_GROUP_PITCH}>
+                    <SegmentedView
+                        label="VIEW"
+                        options={GRAINS_VIEW_OPTIONS}
+                        selected={props.grainsView}
+                        onSelected={(grainsView) => props.onGrainsViewPressed?.(grainsView)}
+                    />
+                </container>
+                <container x={SEGMENT_GROUP_PITCH * 2}>
+                    <SegmentedView
+                        label="TANK CELLS"
+                        options={TANK_SIZE_OPTIONS}
+                        selected={props.tankSize}
+                        onSelected={(tankSize) => props.onTankSizePressed?.(tankSize)}
+                    />
+                </container>
+            </container>
+
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
                 <text text={getGrainText} x={72} y={4} style={COUNT_STYLE} />
                 <text text="MOVING" y={32} style={LABEL_STYLE} />
                 <text text={getMovingText} x={72} y={28} style={COUNT_STYLE} />
-                <text text="Tap, hold and drag to pour" y={54} style={HINT_STYLE} />
+                <text text="Tap, hold and drag to pour" y={52} style={HINT_STYLE} />
+                <text text="Switches restart the demo" y={66} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
                     {createPerfmonView({ getFrameStats: () => props.frameStats() })}
                 </container>
@@ -226,4 +271,90 @@ function ActionButtonView(props: ActionButtonViewProps): Container {
 
 function drawButton(g: Graphics, width: number, fill: number): void {
     g.roundRect(0, 0, width, BUTTON_SIZE, 8).fill(fill);
+}
+
+// --- Segmented switch ---------------------------------------------------------
+
+interface SegmentOption<T extends string> {
+    readonly value: T;
+    readonly label: string;
+}
+
+const STORAGE_OPTIONS: readonly SegmentOption<GrainStorageKind>[] = [
+    { value: 'objects', label: 'OBJECTS' },
+    { value: 'arrays', label: 'ARRAYS' },
+];
+
+const GRAINS_VIEW_OPTIONS: readonly SegmentOption<GrainsViewKind>[] = [
+    { value: 'sprites', label: 'SPRITES' },
+    { value: 'pixels', label: 'PIXELS' },
+];
+
+const TANK_SIZE_OPTIONS: readonly SegmentOption<TankSizeKind>[] = [
+    { value: 'small', label: formatCells('small') },
+    { value: 'medium', label: formatCells('medium') },
+    { value: 'large', label: formatCells('large') },
+];
+
+/** A tank size by its number of cells, in thousands: `27K`. */
+function formatCells(size: TankSizeKind): string {
+    const { cols, rows } = TANK_SIZES[size];
+    return `${Math.round((cols * rows) / 1000)}K`;
+}
+
+/**
+ * Three switches share the toolbar's width, the widest (tank size) with
+ * three segments and the others two, at a common pitch.
+ */
+const SEGMENT_WIDTH = 60;
+const SEGMENT_GROUP_PITCH = (TOOLBAR_WIDTH - SEGMENT_WIDTH * 3) / 2;
+const SEGMENT_LABEL_HEIGHT = 16;
+
+interface SegmentedViewProps<T extends string> {
+    label: string;
+    options: readonly SegmentOption<T>[];
+    /** The selected option. Read once, when the view is built. */
+    selected: T;
+    onSelected?: (value: T) => void;
+}
+
+/** A label, and a row of segments, one of them selected. Pressing another relays its value. */
+function SegmentedView<T extends string>(props: SegmentedViewProps<T>): Container {
+    return (
+        <container>
+            <text text={props.label} style={LABEL_STYLE} />
+            {props.options.map((option, i) => (
+                <container
+                    x={i * SEGMENT_WIDTH}
+                    y={SEGMENT_LABEL_HEIGHT}
+                    cursor={option.value === props.selected ? 'default' : 'pointer'}
+                    hitArea={new Rectangle(0, 0, SEGMENT_WIDTH, SEGMENT_HEIGHT)}
+                    onPointerTap={() => {
+                        if (option.value !== props.selected) props.onSelected?.(option.value);
+                    }}
+                >
+                    <graphics
+                        ref={(g) => drawSegment(g, option.value === props.selected ? BUTTON_SELECTED_FILL : BUTTON_FILL)}
+                    />
+                    <text
+                        text={option.label}
+                        x={SEGMENT_WIDTH / 2}
+                        y={SEGMENT_HEIGHT / 2}
+                        anchor={0.5}
+                        style={BUTTON_LABEL_STYLE}
+                    />
+                    <graphics ref={drawSelectedSegmentRing} visible={option.value === props.selected} />
+                </container>
+            ))}
+        </container>
+    );
+}
+
+/** One segment, with a hairline gap to the next. */
+function drawSegment(g: Graphics, fill: number): void {
+    g.roundRect(1, 0, SEGMENT_WIDTH - 2, SEGMENT_HEIGHT, 5).fill(fill);
+}
+
+function drawSelectedSegmentRing(g: Graphics): void {
+    g.roundRect(1, 0, SEGMENT_WIDTH - 2, SEGMENT_HEIGHT, 5).stroke({ color: SELECTED_RING, width: 1.5 });
 }

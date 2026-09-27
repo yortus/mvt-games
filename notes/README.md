@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**018**.
+**021**.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
@@ -72,13 +72,18 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Proposed, with its top-level tidy-up already done. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Proposed. Caching each container's method in the pixi-mvt pass loop (prototyped: 30-40% cheaper refresh in mixed scenes), a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
+| 018 | [One view convention for the repo](./proposals/018-one-view-convention.md) | Accepted 2026-09-27, being implemented; supersedes 007. Every view is a function `FooView(bindings)` returning a Pixi container, with JSX bodies by default. Remaining steps in its section 16 |
+| 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed; spiked and measured, nothing kept. A dot-product vision test and a uniform grid (exact, 2.7-3.8x faster), and an opt-in neighbour limit (near-linear, but changes the flock) |
+| 020 | [Falling sand as an implementation lab](./proposals/020-falling-sand-variants.md) | Implemented in part. The demo runs with a record-per-grain or typed-array model and a sprite or pixel view, chosen in the URL, with a benchmark of every combination. Records two V8 findings (getter literals are slow; swapping implementations defeats inlining) and designs a Signals model and pixi-solid views, not yet built |
 
-**How they relate.** All five can be read on their own. 007 builds on the
+**How they relate.** Each can be read on its own. 007 builds on the
 pixi-mvt plugin (001) and touches the `<List>` JSX runtime (004). 008 concerns
 the `watch()` helper in `src/common/`. 011 is about the repo rather than the
 architecture; its migration moves most of the paths the other notes cite. 012
 changes 001's pass loop and qualifies the `scaling` numbers from 010's
-harness. 013 builds on 012's measurements.
+harness. 013 builds on 012's measurements, and 020 runs the experiments 013
+proposed. 018 settles how views are written across the repo. 019 concerns
+the boids demo's model only.
 
 ## Tasks
 

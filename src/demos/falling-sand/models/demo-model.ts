@@ -1,5 +1,6 @@
-import type { IndexedSlots } from '#common';
-import { createGrainGrid, type Grain, type GrainKind } from './grain-grid';
+import {
+    createGrainGrid, type GrainGridSnapshot, type GrainKind, type Grains, type GrainStorageKind,
+} from './grain-grid';
 import {
     BRUSH_RADIUS, FLIP_DURATION_MS, MAX_STEPS_PER_UPDATE, POUR_FALL_SPEED, SPRAY_GRAINS_PER_STEP, STEP_MS,
 } from './model-constants';
@@ -21,7 +22,8 @@ export type SceneKind = 'starting' | 'empty';
 
 /**
  * The demo's whole model: an aquarium, the tank, of falling sand, water and
- * walls.
+ * walls. The top-level model, which the entry creates and the top-level
+ * view reads.
  *
  * The grains advance on a fixed timestep (60 steps per second, whatever the
  * frame rate), so a run depends only on the sequence of `update()` calls and
@@ -31,13 +33,22 @@ export type SceneKind = 'starting' | 'empty';
  *
  * Everything is in cells. The view converts pointer positions to cells before
  * calling `startPour`/`movePour`, and cells to pixels when drawing.
+ *
+ * The same interface whichever way the tank stores its grains (`storage`,
+ * fixed when the tank is created), and the same behaviour, step for step.
+ * Nothing that reads the tank can tell the two apart, except by timing them.
+ * `save()` captures the whole tank as plain data, which is how the tests
+ * check that two tanks driven the same way stay identical, and `load()`
+ * resumes from it, in a tank of either storage kind.
  */
 export interface DemoModel {
     readonly cols: number;
     readonly rows: number;
+    /** How the tank stores its grains. Fixed for the tank's life. */
+    readonly storage: GrainStorageKind;
 
-    /** Every grain, addressed by id. See `GrainGrid.grains`. */
-    readonly grains: IndexedSlots<Grain>;
+    /** Every grain, addressed by id. See `Grains`. */
+    readonly grains: Grains;
     readonly grainCount: number;
     /** Grains the simulation is still moving; the rest are asleep. */
     readonly movingCount: number;
@@ -72,7 +83,27 @@ export interface DemoModel {
     /** Empty the tank of every grain, walls included. */
     clear: () => void;
 
+    /** A copy of the tank's whole state, grains, pour, flip and random numbers included. */
+    save: () => DemoSnapshot;
+    /** Resume from a snapshot of a tank the same size, of either storage kind. Throws if the sizes differ. */
+    load: (snapshot: DemoSnapshot) => void;
+
     update: (deltaMs: number) => void;
+}
+
+/** Everything a tank holds, in plain data. See `DemoModel.save`. */
+export interface DemoSnapshot {
+    readonly grid: GrainGridSnapshot;
+    readonly randomState: number;
+    readonly phase: TankPhase;
+    readonly flipElapsedMs: number;
+    readonly stepAccumulatorMs: number;
+    readonly tool: ToolKind;
+    readonly isPouring: boolean;
+    readonly pourCol: number;
+    readonly pourRow: number;
+    readonly stampedCol: number;
+    readonly stampedRow: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -82,10 +113,18 @@ export interface DemoModel {
 export interface DemoModelOptions {
     readonly cols: number;
     readonly rows: number;
+    /** Defaults to `'objects'`. */
+    readonly storage?: GrainStorageKind;
     /** Seed for the random choices grains make. Defaults to 1. */
     readonly seed?: number;
     /** Defaults to `'starting'`: a dune, two ledges, and sand and water pouring off them. */
     readonly scene?: SceneKind;
+    /**
+     * Scales every brush's radius, and the number of grains sprayed per step
+     * with the brush's area, so a tank of many small cells fills about as
+     * fast, for its size, as one of few large cells. Defaults to 1.
+     */
+    readonly brushScale?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -93,9 +132,10 @@ export interface DemoModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createDemoModel(options: DemoModelOptions): DemoModel {
-    const { cols, rows, scene = 'starting' } = options;
+    const { cols, rows, storage = 'objects', scene = 'starting', brushScale = 1 } = options;
     const random = createRandom(options.seed ?? 1);
-    const grid = createGrainGrid({ cols, rows, random });
+    const grid = createGrainGrid(storage, { cols, rows, random: random.next });
+    const sprayCount = Math.round(SPRAY_GRAINS_PER_STEP * brushScale * brushScale);
 
     let phase: TankPhase = 'running';
     let flipElapsedMs = 0;
@@ -112,6 +152,7 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
     const model: DemoModel = {
         cols,
         rows,
+        storage,
         grains: grid.grains,
         get grainCount() { return grid.grainCount; },
         get movingCount() { return grid.movingCount; },
@@ -121,7 +162,7 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
         },
         get tool() { return tool; },
         set tool(value) { tool = value; },
-        get brushRadius() { return BRUSH_RADIUS[tool]; },
+        get brushRadius() { return BRUSH_RADIUS[tool] * brushScale; },
         get isPouring() { return isPouring; },
         get pourCol() { return pourCol; },
         get pourRow() { return pourRow; },
@@ -152,6 +193,8 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
             grid.clear();
             standUpright();
         },
+        save,
+        load,
         update,
     };
 
@@ -202,6 +245,38 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
         stepAccumulatorMs = 0;
     }
 
+    // --- Saving and loading -------------------------------------------------
+
+    function save(): DemoSnapshot {
+        return {
+            grid: grid.save(),
+            randomState: random.state,
+            phase,
+            flipElapsedMs,
+            stepAccumulatorMs,
+            tool,
+            isPouring,
+            pourCol,
+            pourRow,
+            stampedCol,
+            stampedRow,
+        };
+    }
+
+    function load(snapshot: DemoSnapshot): void {
+        grid.load(snapshot.grid);
+        random.state = snapshot.randomState;
+        phase = snapshot.phase;
+        flipElapsedMs = snapshot.flipElapsedMs;
+        stepAccumulatorMs = snapshot.stepAccumulatorMs;
+        tool = snapshot.tool;
+        isPouring = snapshot.isPouring;
+        pourCol = snapshot.pourCol;
+        pourRow = snapshot.pourRow;
+        stampedCol = snapshot.stampedCol;
+        stampedRow = snapshot.stampedRow;
+    }
+
     // --- Pouring ------------------------------------------------------------
 
     function applyPour(): void {
@@ -218,10 +293,10 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
      * spout: already falling, so they clear the brush for the next ones.
      */
     function spray(kind: GrainKind): void {
-        const radius = BRUSH_RADIUS[kind];
-        for (let i = 0; i < SPRAY_GRAINS_PER_STEP; i++) {
-            const dx = (random() * 2 - 1) * radius;
-            const dy = (random() * 2 - 1) * radius;
+        const radius = BRUSH_RADIUS[kind] * brushScale;
+        for (let i = 0; i < sprayCount; i++) {
+            const dx = (random.next() * 2 - 1) * radius;
+            const dy = (random.next() * 2 - 1) * radius;
             if (dx * dx + dy * dy > radius * radius) continue;
             grid.add(Math.floor(pourCol + dx), Math.floor(pourRow + dy), kind, POUR_FALL_SPEED);
         }
@@ -241,7 +316,7 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
     }
 
     function stampDisc(col: number, row: number): void {
-        const radius = BRUSH_RADIUS[tool];
+        const radius = BRUSH_RADIUS[tool] * brushScale;
         const reach = Math.floor(radius);
         for (let dy = -reach; dy <= reach; dy++) {
             for (let dx = -reach; dx <= reach; dx++) {

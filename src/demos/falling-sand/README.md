@@ -4,13 +4,17 @@ An aquarium of sand, water and walls. Tap, hold and drag in the tank to pour
 the selected material, draw walls or erase. Flip turns the tank upside down;
 Reset restores the opening scene.
 
-It is also a stress test for the MVT game loop. Every grain is its own item
-in the model and its own sprite in the view, so pouring more grains makes
-every frame do more work. The panel under the tank shows the grain count,
+It is also a stress test for the MVT game loop, and a lab for comparing
+implementations of it. It runs with one of two implementations of its model,
+one of two views of its grains, and one of three tank sizes, up to 246,240
+cells, all fixed for the demo's life and chosen in the page's URL
+(`/demos/?storage=arrays&view=pixels&tank=large#falling-sand`). The switches
+under the buttons show the running choice; pressing one reloads the page with
+another. The panel under the tank shows the grain count,
 how many grains are moving, and frame timing: frames per second, CPU and GPU
-milliseconds per frame, and `RPF`, the prop reads per frame (about four
-per grain). `npm run bench -- falling-sand-scaling` measures the same thing
-headless, from 1,000 to 20,000 grains; the demo as it ships is in the
+milliseconds per frame, and `RPF`, the prop reads per frame.
+`npm run bench -- falling-sand-scaling` measures every combination headless,
+from 1,000 to 200,000 grains; the demo as it ships is in the
 `games-and-demos` suite.
 
 ## What it shows
@@ -19,18 +23,18 @@ headless, from 1,000 to 20,000 grains; the demo as it ships is in the
 them.** A grain that cannot move for a couple of steps falls asleep, and the
 simulation stops visiting it until a neighbouring cell empties. A settled
 pile of thousands of grains costs the model almost nothing. The view is
-different. Each grain's sprite has three bindings:
+different. With the sprite view, each grain's sprite has three bindings:
 
 ```tsx
-<List items={model.grains}>
-    {(grain, id) => (
+<List items={readGrains}>
+    {(_item, id) => (
         <sprite
             texture={Texture.WHITE}
-            width={CELL_SIZE}
-            height={CELL_SIZE}
-            x={() => grain().col * CELL_SIZE}
-            y={() => grain().row * CELL_SIZE}
-            tint={() => pickGrainTint(grain().kind, id)}
+            width={1}
+            height={1}
+            x={() => grains.colOf(id)}
+            y={() => grains.rowOf(id)}
+            tint={() => pickGrainTint(grains.kindOf(id), id)}
         />
     )}
 </List>
@@ -43,6 +47,62 @@ once.
 
 All the sprites share one texture and differ only by tint, so Pixi draws the
 whole tank in a few batches. The limit you reach is CPU time, not GPU time.
+
+**One model interface, two implementations.** The tank stores its grains
+one of two ways, chosen by `storage` when it is created:
+
+- **Objects**: a record per grain, as most JavaScript code would write it
+  ([`object-grain-grid.ts`](./models/grain-grid/object-grain-grid.ts)).
+- **Arrays**: one typed array per field, indexed by grain id, as an
+  entity-component system would lay it out
+  ([`array-grain-grid.ts`](./models/grain-grid/array-grain-grid.ts)).
+
+The two follow the same rules, line for line, and behave identically, step
+for step: the tests drive one of each the same way and compare their
+`save()` snapshots. Both serve the same `Grains` interface, which reads a
+grain's fields by its id (`grains.colOf(id)`) rather than through an object
+per grain, so that the arrays can serve reads without creating objects.
+Nothing that reads the model can tell the two apart, except by timing them.
+
+**Two views of the same grains.** The grains are drawn as a sprite per grain
+([`grain-sprites-view.tsx`](./views/grain-sprites-view.tsx)), or as one
+texture with a pixel per cell, rewritten and uploaded every frame
+([`grain-pixels-view.ts`](./views/grain-pixels-view.ts)), chosen when the
+view is built. Both are MVT views that read every grain every frame; the
+pixel view drops the object per grain on the view side. The choice is the
+view's, not the model's: `DemoView` takes it as a prop.
+
+**Why the choice needs a new page.** V8 inlines a call only while the call
+site has seen one function there. If a page switched implementations while
+running, the views' calls through `Grains` would have seen both
+implementations' functions and stop being inlined, and whichever ran second
+would look slower than it is. Measured that way, arrays with sprites came out
+slower than objects with sprites; each in a fresh page, it is faster. So the
+choice is fixed for the demo's life, and read from the URL
+([`variants.ts`](./variants.ts)).
+
+**What the variants cost.** In Chrome, with about 115,000 grains in the
+large tank, one variant per page load:
+
+| Model, view | CPU per frame, settled | CPU per frame, grains falling after a flip | JS heap |
+| --- | --- | --- | --- |
+| objects, sprites | 17.5 ms | about 83 ms | 240 MB |
+| arrays, sprites | 18.1 ms | about 50 ms | 232 MB |
+| objects, pixels | 3.8 ms | about 20 ms | 81 MB |
+| arrays, pixels | 2.7 ms | about 9 ms | 65 MB |
+
+Settled, the view is nearly all the cost, and the model's layout hardly
+matters. With grains falling, the model's layout matters too, though less
+than the view: headless, typed arrays make the model 1.04-1.4x faster, and
+2x beside the sprite view's large heap. The headless suite breaks each frame
+down into model and refresh.
+
+**`Grains.length` is a field, not a getter.** V8 keeps an object literal
+that has a getter in slow dictionary mode, and cannot inline calls through
+it. With `get length()` on `Grains`, as the grid first had it, every
+`grains.at(id)` and `grains.colOf(id)` in the views was an uninlined lookup:
+the pixel view's loop cost about 24 ns per grain, timed on its own; with a
+plain field, about 8, and 4.5 in the benchmark.
 
 **Three things that cost more than the bindings did.** Measured with 10,000
 grains, before each fix:
@@ -60,9 +120,9 @@ grains, before each fix:
 - **`toLocaleString` built a number formatter on every call**, tens of
   microseconds each time. The counts now share one `Intl.NumberFormat`.
 
-**An index-addressed list with a pool behind it.** The model keeps one grain
-record per cell, allocated up front, and hands out ids from a free list.
-`model.grains` is shaped like a read-only array indexed by id, which `<List>`
+**An index-addressed list with a pool behind it.** Each grid allocates its
+storage up front, one grain's worth per cell, and hands out ids from a free
+list. `grains` is shaped like a read-only array indexed by id, which `<List>`
 projects directly: a grain keeps its id, and so its sprite, for its whole
 life, and a removed grain's slot hides and skips its bindings. Adding and
 removing grains allocates nothing. When the highest ids free up (after Clear,
@@ -102,17 +162,25 @@ does not jump.
 
 | File | Purpose |
 |------|---------|
-| [`grain-grid.ts`](./grain-grid.ts) | The grid of grains, their pool, sleeping and waking, and the rules. Not a model: it has no notion of time, and the demo model steps it. One `step()` is one tick |
-| [`demo-model.ts`](./demo-model.ts) | The fixed timestep, pouring, tools, flip and reset |
-| [`starting-scene.ts`](./starting-scene.ts) | The opening scene |
-| [`random.ts`](./random.ts) | Seeded random numbers |
-| [`demo-view.tsx`](./demo-view.tsx) | The whole demo: tank above, toolbar below |
-| [`tank-view.tsx`](./tank-view.tsx) | Grains, glass, pointer input, brush ring and flip rotation |
-| [`toolbar-view.tsx`](./toolbar-view.tsx) | Tool palette, Flip, Reset, Clear, counts and frame timing |
-| [`grain-colors.ts`](./grain-colors.ts) | Colours by kind, with a stable shade per grain |
-| [`model-constants.ts`](./model-constants.ts) | The tank's size in cells, the timestep, pouring and flipping, and the rules grains move by |
-| [`view-constants.ts`](./view-constants.ts) | Sizes and positions in pixels; `CELL_SIZE` sets how large each grain is drawn |
-| [`falling-sand-entry.ts`](./falling-sand-entry.ts) | Demo entry point |
+| [`falling-sand-entry.ts`](./falling-sand-entry.ts) | Demo entry point: builds the model and view with the variants in the URL, and reloads the page when a switch asks for others |
+| [`variants.ts`](./variants.ts) | The storage, grains view and tank size, read from and written to a URL's query string |
+| **`models/`** | |
+| [`demo-model.ts`](./models/demo-model.ts) | The demo's top-level model, `DemoModel`: the tank's fixed timestep, pouring, tools, flip, reset, and snapshots of the whole tank |
+| **`models/grain-grid/`** | |
+| [`grain-grid.ts`](./models/grain-grid/grain-grid.ts) | The grid's interface, `Grains`, and snapshots. Not a model: it has no notion of time, and `DemoModel` steps it. One `step()` is one tick |
+| [`object-grain-grid.ts`](./models/grain-grid/object-grain-grid.ts) | The grid, with a record per grain |
+| [`array-grain-grid.ts`](./models/grain-grid/array-grain-grid.ts) | The grid, with a typed array per field |
+| [`starting-scene.ts`](./models/starting-scene.ts) | The opening scene |
+| [`random.ts`](./models/random.ts) | Seeded random numbers, with a state that can be saved |
+| [`model-constants.ts`](./models/model-constants.ts) | The tank sizes in cells, the timestep, pouring and flipping, and the rules grains move by |
+| **`views/`** | |
+| [`demo-view.tsx`](./views/demo-view.tsx) | The whole demo: tank above, toolbar below |
+| [`tank-view.tsx`](./views/tank-view.tsx) | Glass, pointer input, brush ring and flip rotation, and the chosen grain view |
+| [`grain-sprites-view.tsx`](./views/grain-sprites-view.tsx) | The grains as a sprite per grain |
+| [`grain-pixels-view.ts`](./views/grain-pixels-view.ts) | The grains as a pixel per cell in one texture |
+| [`toolbar-view.tsx`](./views/toolbar-view.tsx) | Tool palette, Flip, Reset, Clear, the variant switches, counts and frame timing |
+| [`grain-colors.ts`](./views/grain-colors.ts) | Colours by kind, with a stable shade per grain, as tints and as pixels |
+| [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |
 
 The frame timing comes from `createFrameStats` and `createPerfmonView` in
 [`src/common/`](../../common/index.ts), which any demo or game can use.
