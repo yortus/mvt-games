@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-09-26 |
+| Updated  | 2026-09-27 |
 
 ## Description
 
@@ -62,6 +62,58 @@ Settled questions that should not be reopened without new information are in
   recommended treating the harness as an on-demand tool. 010 section 8, item
   4.
 
+### Investigate
+
+- **Fractional numbers boxed depending on unrelated code.** Twice, writing a
+  fractional number cost a 16-byte heap allocation that a standalone copy of
+  the same code did not. V8 stores whole numbers up to about a billion
+  without allocating, but can box a fractional number when it stores or
+  passes one, and here whether it does depends on code nearby.
+  - **Boids, `rotation`.** Setting `rotation` on the boids' pooled `Graphics`
+    allocated 16 bytes per boid per frame, even when the value was unchanged,
+    so the cost was in the call. 200 fresh `Graphics`, parented or not, with
+    the whole app loaded or not, allocated nothing. Worked around by turning
+    the boids with `skew` (see `boids-view.ts`).
+  - **The `memory` suite's synced scene, fractional values.** With the `jsx`
+    approach, the model's own `x += step` and `y += step` writes allocate
+    about 32 bytes per changed item (32 KB per frame for 1000). With
+    `hand-written`, nothing. It is not the JSX runtime: it stays with the view
+    refresh removed, with static-only JSX, and with no JSX at all (closures
+    over each item and a plain `Container`), but goes when the `jsx` approach
+    runs the hand-written view code. A tidier standalone copy of the JSX setup
+    allocates nothing. Reproduce with
+    [`benchmarks/repro/fractional-boxing.ts`](../../../benchmarks/repro/fractional-boxing.ts)
+    (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
+    process and both allocate). Kept out of the suite until explained, so it
+    is not read as a JSX cost.
+  - **A clue from the attempt to add it to the suite.** Giving the synced
+    scene a `values` option, with whole and fractional rules in two object
+    literals of the same shape, made even the whole-number runs store boxed
+    numbers: memory kept per container rose by about 48 bytes (three boxed
+    numbers), and the "wasteful" approach's garbage from 97 to 161 KB per
+    frame. Reading `step` and `offset` from an object whose fields also held
+    fractions turned whole numbers fractional as far as V8 was concerned. The
+    option was removed and the scene restored.
+  - **Ruled out** (do not reopen without new information): hidden-class
+    variety (all 200 boid `Graphics` share one map), field widening
+    (`--trace-generalization` shows none for the fields involved), and, for
+    the synced scene, deoptimisation (`--trace-deopt` shows none; its
+    `changeItems` is optimised by TurboFan once, in both approaches, and stays
+    so). The sampling heap profiler, with collected objects included,
+    attributes the allocations to `refreshBoids` for boids, and to the synced
+    scene's `frame`, which calls `changeItems`.
+  - **Next steps.** Compare the optimised code of the allocating and the
+    non-allocating versions (`--print-opt-code`, or Turbolizer with
+    `--trace-turbo`), or ask on the V8 issue tracker with the synced-scene
+    reproducer. If it proves to be something code can avoid, record the rule
+    on the Hot Paths page.
+- **Related, fixed:** the JSX runtime's watched props boxed fractional
+  `width` and `height` values every frame (16 bytes per element), changed or
+  not, because their last value lived in a closure variable that started as
+  a symbol. They now use a `Float64Array` (see `FRACTIONAL_WATCHED_PROPS` in
+  `src/pixi-jsx/jsx-runtime.ts`), guarded by the `memory` suite's
+  `allocation-watched` table.
+
 ### Parked (pick up only when the trigger happens)
 
 - **Drain-the-tail**: refresh containers added mid-pass on the same frame.
@@ -85,6 +137,7 @@ Settled questions that should not be reopened without new information are in
 - [ ] Method-syntax members converted and `method-signature-style` enabled
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
 - [ ] Browser benchmarking and CI benchmarking each decided
+- [ ] Fractional-number boxing explained, and fixed or recorded as a rule
 - [ ] Parked items each still parked, or moved into their own task
 
 ## Progress Log
@@ -93,3 +146,5 @@ Settled questions that should not be reopened without new information are in
   when the finished proposals were archived.
 - 2026-09-26: Boids allocation fixed (361 KB to 34 bytes per frame); see the
   Fix item.
+- 2026-09-27: Added the unexplained fractional-number boxing (Investigate),
+  and fixed the related boxing in the JSX runtime's watched props.

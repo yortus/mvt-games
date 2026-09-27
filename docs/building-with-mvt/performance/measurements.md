@@ -272,12 +272,19 @@ happens.
   allocate nothing per frame, and the JSX runtime a constant 8 bytes per
   frame, however much changes. Over a simulated minute with everything
   changed each frame, the engine never needed to collect.
-- **Signals allocate on every change.** Solid's effects left about 380 bytes
-  of garbage per changed container per frame, and 64 bytes per frame even at
-  rest. With everything changed each frame, that is 167 collections a minute, about
-  24 ms of pauses: four times the garbage of the deliberately wasteful refresh methods.
+- **Signals allocate on every change.** Solid's effects left 330-380 bytes
+  of garbage per changed container per frame (it varies between runs), and 64
+  bytes per frame even at rest. With everything changed each frame, that is
+  167 collections a minute, about 25 ms of pauses: three to four times the
+  garbage of the deliberately wasteful refresh methods.
 - **Events allocate nothing** in this benchmark, because each record's
   listener is created once and called with the record.
+- **These scenes use whole numbers.** V8 stores whole numbers without
+  allocating, but can box a fractional number in a small heap object when it
+  stores or passes one, and whether it does can depend on code nearby. The
+  JSX runtime keeps fractional values unboxed in the props it writes only on
+  a change, such as `width`: 1000 sprites with a fractional `width` allocate
+  nothing per frame, changed or not.
 - **Reusing containers avoids most of a pool's garbage.** With `<List>` over a
   `SlotList`, the only allocation is the new model records (5.6 KB per frame at
   50 new items). Building and destroying a container per item allocates about

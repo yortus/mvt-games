@@ -1,4 +1,4 @@
-import { type Container, Rectangle, type Sprite } from 'pixi.js';
+import { type Container, Rectangle, type Sprite, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { refreshScene, updateScene } from '../pixi-mvt';
 import { countPropReads, propReadCounter } from './prop-reads';
@@ -82,6 +82,34 @@ describe('jsx runtime', () => {
         tint = 0x0000ff;
         refreshScene(el);
         expect(el.tint).toBe(0x0000ff);
+    });
+
+    it('writes fractional width and height bindings only when they change, per element', () => {
+        // Same keys in the same order, so both share one compiled function,
+        // which keeps these last values in a typed array rather than closure
+        // variables. Height starts at 0, which the first refresh must still write.
+        let width = 10.25;
+        let height = 0;
+        const a = jsx('sprite', { texture: Texture.WHITE, width: () => width, height: () => height, label: () => 'a' }) as Sprite;
+        const b = jsx('sprite', { texture: Texture.WHITE, width: () => 3.5, height: () => 7.75, label: () => 'b' }) as Sprite;
+
+        refreshScene(a);
+        refreshScene(b);
+        expect(a.width).toBeCloseTo(10.25);
+        expect(a.height).toBe(0);
+        expect(a.label).toBe('a');
+        expect(b.width).toBeCloseTo(3.5);
+        expect(b.height).toBeCloseTo(7.75);
+
+        a.width = 99;
+        refreshScene(a);
+        expect(a.width).toBe(99);
+
+        width = 10.62;
+        height = 4.5;
+        refreshScene(a);
+        expect(a.width).toBeCloseTo(10.62);
+        expect(a.height).toBeCloseTo(4.5);
     });
 
     it('keeps per-element state separate when elements share a binding shape', () => {
