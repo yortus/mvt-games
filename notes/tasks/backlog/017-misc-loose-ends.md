@@ -194,10 +194,12 @@ Settled questions that should not be reopened without new information are in
 - ~~**Fold the `<List>` patterns guide into `docs/`.**~~ Done 2026-09-27,
   with 018's Building with MVT rewrite: it is now
   [Presenting Collections](../../../docs/building-with-mvt/presenting-the-world/collections.md).
-- **`<List>` follow-ups**: a `range()` helper, a lint rule against calling
-  the item accessor while building, merging the per-slot presence check into
-  the item view's method, and a typed `matchOn<T>()`. Each names its trigger.
-  004 section 11, items 1-4.
+- **`<List>` follow-ups**: a `range()` helper, merging the per-slot presence
+  check into the item view's method, and a typed `matchOn<T>()`. Each names its
+  trigger. 004 section 11, items 1, 3 and 4. Item 2, a lint rule against
+  calling the item accessor while building, is no longer needed: a slot's view
+  is now built the first time the slot holds an item, with that item in place
+  (018 section 21.3).
 - **A change-gate for idle subtrees** (`refreshWhen`). Unmeasured. Trigger: an
   idle-heavy UI appears. 010 section 8, item 5.
 

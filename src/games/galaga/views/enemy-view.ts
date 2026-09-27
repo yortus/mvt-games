@@ -34,10 +34,7 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        // No texture yet: the view may be built before it has an enemy (in a
-        // list slot, say). The first refresh sets it, since the watcher reports
-        // every value as changed on its first poll.
-        sprite = new Sprite({ anchor: 0.5 });
+        sprite = new Sprite({ texture: enemyTextures[bindings.kind()], anchor: 0.5 });
         view.addChild(sprite);
     }
 

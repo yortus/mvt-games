@@ -32,9 +32,7 @@ export function AsteroidView(bindings: AsteroidViewBindings): Container {
     function initialiseView(): void {
         bodyGfx = new Graphics();
         view.addChild(bodyGfx);
-        // Not drawn yet: its slot may be empty when it is built. The watcher
-        // reports every value as changed on its first poll, so the first
-        // refresh draws it.
+        drawAsteroid();
     }
 
     function refresh(): void {

@@ -210,16 +210,88 @@ describe('List', () => {
             expect(t.visible()).toEqual([true, false]);
         });
 
-        it('builds a hole with the rest, hidden until it fills, so slot i is child i', () => {
+        it('builds a hole\'s view when it first fills, keeping slot i as child i', () => {
             const t = setup([{ id: 1 }, undefined, { id: 3 }]);
-            expect(t.built).toEqual([0, 1, 2]);
+            expect(t.built).toEqual([0, 2]);
+            expect(t.list.children.length).toBe(3);
             expect(t.visible()).toEqual([true, false, true]);
 
             t.items[1] = { id: 2 };
             refreshScene(t.list);
 
-            expect(t.built).toEqual([0, 1, 2]);
+            expect(t.built).toEqual([0, 2, 1]);
             expect(t.labels()).toEqual(['item-1', 'item-2', 'item-3']);
+            expect(t.visible()).toEqual([true, true, true]);
+
+            // Built once: emptied and refilled, the slot keeps its view
+            const view = t.list.children[1];
+            t.items[1] = undefined;
+            refreshScene(t.list);
+            t.items[1] = { id: 4 };
+            refreshScene(t.list);
+            expect(t.built).toEqual([0, 2, 1]);
+            expect(t.list.children[1]).toBe(view);
+            expect(t.labels()).toEqual(['item-1', 'item-4', 'item-3']);
+        });
+
+        it('lets an item view read its item while it is being built, holes included', () => {
+            const items: (Item | undefined)[] = [{ id: 1 }, undefined];
+            const seen: number[] = [];
+            const list = List<Item>({
+                items,
+                children: (item) => {
+                    seen.push(item().id);
+                    return new Container();
+                },
+            });
+            refreshScene(list);
+            expect(seen).toEqual([1]);
+
+            items[1] = { id: 2 };
+            items.push({ id: 3 });
+            refreshScene(list);
+            expect([...seen].sort()).toEqual([1, 2, 3]);
+        });
+
+        it('builds a hole\'s view when it is reattached holding an item', () => {
+            const t = setup([{ id: 1 }, undefined]);
+            t.items.length = 1;
+            refreshScene(t.list);
+
+            t.items.push({ id: 2 });
+            refreshScene(t.list);
+
+            expect(t.built).toEqual([0, 1]);
+            expect(t.labels()).toEqual(['item-1', 'item-2']);
+        });
+
+        it('keeps refreshing a filled hole on later frames, driven from an ancestor', () => {
+            const t = setup([{ id: 1 }, undefined]);
+            const root = new Container();
+            root.addChild(t.list);
+            refreshScene(root);
+
+            t.items[1] = { id: 2 };
+            refreshScene(root);
+            expect(t.labels()).toEqual(['item-1', 'item-2']);
+
+            t.items[1] = { id: 5 };
+            refreshScene(root);
+            expect(t.labels()).toEqual(['item-1', 'item-5']);
+        });
+
+        it('destroys a never-filled hole along with the list', () => {
+            const t = setup([undefined, undefined, undefined]);
+            const attached = t.list.children[0];
+            const detached = t.list.children[2];
+            t.items.length = 1;
+            refreshScene(t.list);
+
+            t.list.destroy({ children: true });
+
+            expect(t.built).toEqual([]);
+            expect(attached.destroyed).toBe(true);
+            expect(detached.destroyed).toBe(true);
         });
 
         it('accepts a plain array as the source', () => {

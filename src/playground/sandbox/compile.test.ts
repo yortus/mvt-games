@@ -1,7 +1,7 @@
-import { type Container, Rectangle } from 'pixi.js';
+import { type Container, Container as ContainerClass, Rectangle } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { refreshScene } from '../../pixi-mvt';
-import { presets } from '../presets';
+import { newProjectTemplate, presets } from '../presets';
 import { jsxGlobals, transpile } from './compile';
 
 describe('sandbox compile', () => {
@@ -96,6 +96,21 @@ describe('sandbox compile', () => {
         refreshScene(view);
         expect(model.held).toBe(true);
         expect([ball.children[0].visible, ball.children[1].visible]).toEqual([false, true]);
+    });
+
+    it('starts a new project from a model and view that run', () => {
+        const globals = { ...jsxGlobals, Container: ContainerClass };
+        const names = Object.keys(globals);
+        const values = Object.values(globals);
+        const createModel = new Function(...names, `${transpile(newProjectTemplate.modelCode, 'model')}\nreturn createModel;`)(...values);
+        const createView = new Function(...names, `${transpile(newProjectTemplate.viewCode, 'view')}\nreturn createView;`)(...values);
+        const model = createModel() as { update: (deltaMs: number) => void };
+        const view = createView(model) as unknown;
+
+        // The sandbox rejects a view that is not a Container.
+        expect(view).toBeInstanceOf(ContainerClass);
+        model.update(16);
+        refreshScene(view as Container);
     });
 
     it('leaves JSX out of model code', () => {

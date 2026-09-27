@@ -993,9 +993,10 @@ The conversion caught three problems, each now covered by the docs:
    slot's view before the slot's first refresh, when its item accessor still
    returns `undefined`, so Galaga's and Dig Dug's enemy views (which chose a
    texture from `kind` at construction) and the asteroid view (which drew its
-   outline) threw. Each now leaves that to its first refresh, where its
-   watcher reports every value as changed. This is the Presenting
-   Collections page's first rule, met in practice.
+   outline) threw. Each was changed to leave that to its first refresh, where
+   its watcher reports every value as changed. `<List>` has since been
+   changed so that this cannot happen, and the three views are back as they
+   were (section 21.3).
 2. **Collections the model replaces.** All four games build new arrays on
    reset (`ghosts = buildGhosts(...)`), so passing the array itself would have
    kept the list showing the old one after a restart. Each array-backed list

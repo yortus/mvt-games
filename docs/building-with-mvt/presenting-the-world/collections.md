@@ -83,6 +83,11 @@ Values derived from `index` alone are constants and are fine to capture,
 because `index` never changes for a slot. Values derived from the *item* are
 not.
 
+Reading the item while the view is being built is fine, to set it up: a slot's
+view is built the first time the slot holds an item, and `rock()` returns that
+item. What the rule forbids is relying on it afterwards. Whatever the view
+reads at construction, it must also follow when refreshing.
+
 **Rule 2. Presentation state that belongs to an item must be keyed to the
 item, not held by its slot.**
 
@@ -166,8 +171,9 @@ any kind:
 </List>
 ```
 
-The model inserts into a free slot and removes when the bullet expires. Slot
-views are built once and never destroyed.
+The model inserts into a free slot and removes when the bullet expires. A
+slot's view is built the first time the slot holds a bullet, and never
+destroyed.
 
 ### Empty slots cost one check, not one per binding
 

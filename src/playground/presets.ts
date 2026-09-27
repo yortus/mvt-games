@@ -946,6 +946,33 @@ function drawHousing(g: any): void {
 `,
 };
 
+/** What "New project" starts from: an empty model and view that run as they are. */
+export const newProjectTemplate: Pick<Preset, 'modelCode' | 'viewCode'> = {
+    modelCode: `// Model - owns state and logic
+// Advance state in update(deltaMs).
+
+function createModel(): any {
+    return {
+        update(deltaMs: number) {
+        },
+    };
+}
+`,
+    viewCode: `// View - reads the model and updates the scene
+// Return a Pixi Container. Its onRefresh runs every frame, after the model
+// updates: read the model there, and set the container's properties.
+// (Or write the view in JSX; see the (JSX) presets.)
+
+function createView(model: any): any {
+    const view = new Container();
+
+    view.onRefresh = () => {
+    };
+    return view;
+}
+`,
+};
+
 export const presets: readonly Preset[] = [
     bouncingBallJsx,
     bouncingBall,
