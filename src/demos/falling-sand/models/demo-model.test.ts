@@ -56,8 +56,8 @@ describe.each(STORAGES)('demo model, storing %s', (storage) => {
                 return model.grainCount;
             };
 
-            // One second at 60 frames per second, and at 30.
-            expect(pourFor(60, STEP_MS)).toBe(pourFor(30, STEP_MS * 2));
+            // A fifth of a second at 60 frames per second, and at 30.
+            expect(pourFor(12, STEP_MS)).toBe(pourFor(6, STEP_MS * 2));
         });
 
         it('does not step until a whole step of time has passed', () => {
@@ -92,11 +92,11 @@ describe.each(STORAGES)('demo model, storing %s', (storage) => {
             const model = setupEmpty();
             model.tool = 'water';
             model.startPour(20, 5);
-            advance(model, 200);
+            advance(model, 100);
             model.endPour();
             const poured = model.grainCount;
 
-            advance(model, 200);
+            advance(model, 100);
 
             expect(poured).toBeGreaterThan(0);
             expect(model.grainCount).toBe(poured);
@@ -200,11 +200,11 @@ describe.each(STORAGES)('demo model, storing %s', (storage) => {
     });
 
     it('resets to the starting scene', () => {
-        const model = create({ cols: 60, rows: 80 });
+        const model = create({ cols: 30, rows: 40 });
         const opening = model.grainCount;
         model.tool = 'sand';
-        model.startPour(30, 5);
-        advance(model, 500);
+        model.startPour(15, 5);
+        advance(model, 200);
         model.flip();
         advance(model, 100);
 
@@ -217,23 +217,25 @@ describe.each(STORAGES)('demo model, storing %s', (storage) => {
 });
 
 describe('tank storages', () => {
-    // Small, since the store is slow: about 15 µs per moving grain per step.
-    const SMALL_TANK = { cols: 72, rows: 90 };
+    // Small and short, since the store is slow: about 10 µs per moving grain
+    // per step, some 50 times what the others take. A half-size brush keeps
+    // the pours in proportion.
+    const SMALL_TANK = { cols: 20, rows: 24, brushScale: 0.5, scene: 'empty' } as const;
 
     /** Pour sand then water back and forth across the tank, flipping it part way through. */
     function play(model: DemoModel, fromFrame: number, toFrame: number): void {
         for (let f = fromFrame; f < toFrame; f++) {
             if (f === 0) {
                 model.tool = 'sand';
-                model.startPour(10, 6);
+                model.startPour(5, 3);
             }
-            if (f === 90) {
+            if (f === 20) {
                 model.endPour();
                 model.tool = 'water';
-                model.startPour(50, 6);
+                model.startPour(15, 3);
             }
-            if (f === 150) model.flip();
-            model.movePour(8 + ((f * 3) % 56), 6);
+            if (f === 40) model.flip();
+            model.movePour(4 + ((f * 3) % 12), 3);
             model.update(STEP_MS);
         }
     }
@@ -243,13 +245,13 @@ describe('tank storages', () => {
         const arrays = createDemoModel({ ...SMALL_TANK, storage: 'arrays' });
         const store = createDemoModel({ ...SMALL_TANK, storage: 'store' });
 
-        play(objects, 0, 240);
-        play(arrays, 0, 240);
-        play(store, 0, 240);
+        play(objects, 0, 80);
+        play(arrays, 0, 80);
+        play(store, 0, 80);
 
         expect(arrays.save()).toEqual(objects.save());
         expect(store.save()).toEqual(objects.save());
-        expect(objects.grainCount).toBeGreaterThan(1500);
+        expect(objects.grainCount).toBeGreaterThan(150);
     });
 
     it.each([
@@ -258,13 +260,15 @@ describe('tank storages', () => {
         ['store', 'objects'],
     ] as const)('resume exactly from each other\'s snapshots, %s to %s', (from, to) => {
         const straight = createDemoModel({ ...SMALL_TANK, storage: from });
-        play(straight, 0, 240);
+        play(straight, 0, 80);
 
+        // Handed over mid-flip.
         const first = createDemoModel({ ...SMALL_TANK, storage: from });
-        play(first, 0, 120);
+        play(first, 0, 50);
+        expect(first.phase).toBe('flipping');
         const second = createDemoModel({ ...SMALL_TANK, storage: to });
         second.load(first.save());
-        play(second, 120, 240);
+        play(second, 50, 80);
 
         expect(second.save()).toEqual(straight.save());
     });

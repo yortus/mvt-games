@@ -304,6 +304,11 @@ describe.each(STORAGES)('grain grid, storing %s', (storage) => {
 });
 
 describe('grain grid storages', () => {
+    // Small and short, since the store is slow: about 10 µs per moving grain
+    // per step, some 50 times what the others take.
+    const COLS = 16;
+    const ROWS = 12;
+
     /**
      * A busy run: sand and water sprayed in along the top, walls added and
      * cells emptied all over, a half turn now and then, and a step each
@@ -314,28 +319,28 @@ describe('grain grid storages', () => {
         const edits = createRandom(seed + 1);
         const pick = (n: number): number => Math.floor(edits.next() * n);
         for (let s = 0; s < steps; s++) {
-            for (let i = 0; i < 6; i++) grid.add(pick(grid.cols), pick(8), edits.next() < 0.6 ? 'sand' : 'water', 2);
+            for (let i = 0; i < 2; i++) grid.add(pick(grid.cols), pick(4), edits.next() < 0.6 ? 'sand' : 'water', 2);
             if (s % 7 === 0) grid.add(pick(grid.cols), pick(grid.rows), 'wall');
             if (s % 5 === 0) grid.remove(pick(grid.cols), pick(grid.rows));
-            if (s % 90 === 89) grid.rotateHalfTurn();
+            if (s % 30 === 19) grid.rotateHalfTurn();
             grid.step();
         }
     }
 
     it('behave identically, step for step', () => {
-        const objects = create('objects', 40, 30, 5);
-        const arrays = create('arrays', 40, 30, 5);
-        const store = create('store', 40, 30, 5);
+        const objects = create('objects', COLS, ROWS, 5);
+        const arrays = create('arrays', COLS, ROWS, 5);
+        const store = create('store', COLS, ROWS, 5);
 
-        for (let round = 0; round < 6; round++) {
-            play(objects, 50, round);
-            play(arrays, 50, round);
-            play(store, 50, round);
+        for (let round = 0; round < 3; round++) {
+            play(objects, 30, round);
+            play(arrays, 30, round);
+            play(store, 30, round);
             expect(arrays.save()).toEqual(objects.save());
             expect(store.save()).toEqual(objects.save());
         }
         // Enough going on to mean something: a tank's worth of grains, some still moving.
-        expect(objects.grainCount).toBeGreaterThan(500);
+        expect(objects.grainCount).toBeGreaterThan(100);
         expect(objects.movingCount).toBeGreaterThan(0);
     });
 
@@ -345,19 +350,19 @@ describe('grain grid storages', () => {
         ['objects', 'store'],
         ['store', 'arrays'],
     ] as const)('carry on exactly, from %s to %s, from a snapshot taken mid-run', (from, to) => {
-        const straight = create(from, 40, 30, 9);
-        play(straight, 150, 1);
-        play(straight, 150, 2);
+        const straight = create(from, COLS, ROWS, 9);
+        play(straight, 45, 1);
+        play(straight, 45, 2);
 
         // The same run, handed over half way. The grid taking over draws
         // from the same random numbers, from where the first grid left off.
         const random = createRandom(9);
-        const first = createGrainGrid(from, { cols: 40, rows: 30, random: random.next });
-        play(first, 150, 1);
-        const second = createGrainGrid(to, { cols: 40, rows: 30, random: random.next });
+        const first = createGrainGrid(from, { cols: COLS, rows: ROWS, random: random.next });
+        play(first, 45, 1);
+        const second = createGrainGrid(to, { cols: COLS, rows: ROWS, random: random.next });
         second.load(first.save());
         expect(second.save()).toEqual(first.save());
-        play(second, 150, 2);
+        play(second, 45, 2);
 
         expect(second.save()).toEqual(straight.save());
     });

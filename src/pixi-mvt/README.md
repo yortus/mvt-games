@@ -189,8 +189,8 @@ not control.
 
 This is the one thing with no workaround. The experimental
 [`src/pixi-jsx/`](../pixi-jsx/) runtime types `JSX.Element` as `Container`, and
-`ListProps.to` as `(item, index) => Container`. Every composition point is
-therefore blind to a view that carries its own `update()` method: the
+`ListBindings.children` as `(item, index) => Container`. Every composition
+point is therefore blind to a view that carries its own `update()` method: the
 `& { update }` half of the type is erased the moment the value enters a JSX
 tree, and `addChildren()` just calls `parent.addChild(child)`.
 
@@ -314,6 +314,29 @@ about tree changes from `addChild`, `addChildAt`, `removeChild`,
 `removeChildren` and `destroy`. Splicing the array behind their backs leaves a
 stale list.
 
+## Counting reads
+
+A refresh pass that polls does work in proportion to what it reads, so
+`readCounter` keeps a count of those reads, for a measure of how much polling
+a scene does per frame. It is a manual counter: code that polls reports its
+own reads with `addReads`, which costs a flag check while nothing is
+measuring.
+
+```ts
+import { addReads, countReads } from './pixi-mvt';
+
+view.onRefresh = () => {
+    for (let i = 0; i < dots.length; i++) drawDot(i, dots.at(i));
+    addReads(dots.length);
+};
+
+const reads = countReads(() => refreshScene(app.stage));
+```
+
+The [`pixi-jsx`](../pixi-jsx/) runtime has this built in: it counts every
+function attribute it calls, so a JSX scene is counted without any code of
+its own.
+
 ## What it costs
 
 Measured with `npm run bench -- scene-passes`: each case in its own process,
@@ -355,7 +378,7 @@ The full results, and the other benchmarks, are in the docs'
 
 | Command                              | What it does           |
 | ------------------------------------ | ---------------------- |
-| `npx vitest run src/pixi-mvt`         | 57 tests               |
+| `npx vitest run src/pixi-mvt`         | 61 tests               |
 | `npm run bench -- scene-passes`      | The table above        |
 
 ## Next

@@ -1,7 +1,6 @@
 import type { Container } from 'pixi.js';
 import { createFrameStats } from '#common';
-import { propReadCounter } from '#pixi-jsx';
-import { updateScene } from '../../pixi-mvt';
+import { readCounter, updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createDemoModel, TANK_SIZES } from './models';
 import { DEFAULT_VARIANTS, type DemoVariants, formatVariants, parseVariants } from './variants';
@@ -44,7 +43,7 @@ export function createFallingSandEntry(): DemoEntry {
             const restartWith = host === undefined ? undefined : restartPageWith;
 
             const model = createDemoModel({ ...TANK_SIZES[variants.tankSize], storage: variants.storage });
-            const frameStats = host === undefined ? undefined : createFrameStats({ ...host, readCounter: propReadCounter });
+            const frameStats = host === undefined ? undefined : createFrameStats({ ...host, readCounter });
             const view = DemoView({
                 model,
                 grainsView: variants.grainsView,

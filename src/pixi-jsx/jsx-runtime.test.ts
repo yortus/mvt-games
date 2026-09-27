@@ -1,7 +1,6 @@
 import { type Container, Rectangle, type Sprite, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../pixi-mvt';
-import { countPropReads, propReadCounter } from './prop-reads';
+import { countReads, readCounter, refreshScene, SKIP_DESCENDANTS, updateScene } from '../pixi-mvt';
 import { jsx } from './jsx-runtime';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +8,7 @@ import { jsx } from './jsx-runtime';
 // ---------------------------------------------------------------------------
 
 describe('jsx runtime', () => {
-    it('applies static props at construction', () => {
+    it('applies static attributes at construction', () => {
         const el = jsx('container', { x: 3, label: 'fixed', isRenderGroup: true });
 
         expect(el.x).toBe(3);
@@ -171,7 +170,7 @@ describe('jsx runtime', () => {
         });
     });
 
-    it('installs an onUpdate prop as the element\'s update method, not a binding', () => {
+    it('installs an onUpdate attribute as the element\'s update method, not a binding', () => {
         const deltas: number[] = [];
         const el = jsx('container', {
             onUpdate: (deltaMs: number) => {
@@ -187,7 +186,7 @@ describe('jsx runtime', () => {
         expect(deltas).toEqual([16, 17]);
     });
 
-    describe('onRefresh prop', () => {
+    describe('onRefresh attribute', () => {
         it('installs the step as the refresh method of an element with no bindings', () => {
             let calls = 0;
             const el = jsx('container', {
@@ -261,7 +260,7 @@ describe('jsx runtime', () => {
         });
     });
 
-    it('wires pointer event props as listeners and makes the element interactive', () => {
+    it('wires pointer event attributes as listeners and makes the element interactive', () => {
         const received: string[] = [];
         const el = jsx('container', {
             onPointerMove: () => received.push('move'),
@@ -294,35 +293,24 @@ describe('jsx runtime', () => {
         expect(el.cursor).toBe('crosshair');
     });
 
-    describe('prop read counting', () => {
-        it('counts every prop read while counting, and only the visible read while hidden', () => {
+    describe('read counting', () => {
+        it('counts every function attribute read while counting, and only the visible read while hidden', () => {
             let isShown = true;
             const el = jsx('container', { visible: () => isShown, x: () => 1, label: () => 'a' });
 
-            expect(countPropReads(() => refreshScene(el))).toBe(3);
+            expect(countReads(() => refreshScene(el))).toBe(3);
             isShown = false;
-            expect(countPropReads(() => refreshScene(el))).toBe(1);
+            expect(countReads(() => refreshScene(el))).toBe(1);
         });
 
         it('counts nothing while off', () => {
             const el = jsx('container', { x: () => 1, y: () => 2 });
-            const before = propReadCounter.count;
+            const before = readCounter.count;
 
             refreshScene(el);
 
-            expect(propReadCounter.isCounting).toBe(false);
-            expect(propReadCounter.count).toBe(before);
-        });
-
-        it('restores the previous on/off state after counting', () => {
-            propReadCounter.isCounting = true;
-            try {
-                countPropReads(() => undefined);
-                expect(propReadCounter.isCounting).toBe(true);
-            }
-            finally {
-                propReadCounter.isCounting = false;
-            }
+            expect(readCounter.isCounting).toBe(false);
+            expect(readCounter.count).toBe(before);
         });
     });
 

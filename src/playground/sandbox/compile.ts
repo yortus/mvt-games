@@ -59,16 +59,17 @@ const VIEW_OPTIONS: Options = {
 };
 
 /**
- * Classic JSX's call, `h(type, props, ...children)`, adapted to the JSX
- * runtime's `jsx(type, props)`, which takes children in `props.children`.
+ * Classic JSX's call, `h(type, attributes, ...children)`, adapted to the JSX
+ * runtime's `jsx(type, attributes)`, which takes children in
+ * `attributes.children`.
  */
 function h(
     type: Parameters<typeof jsx>[0],
-    props: Record<string, unknown> | null,
+    attributes: Record<string, unknown> | null,
     ...children: unknown[]
 ): Container {
-    const allProps = props ?? {};
-    if (children.length === 1) allProps.children = children[0];
-    else if (children.length > 1) allProps.children = children;
-    return jsx(type, allProps);
+    const allAttributes = attributes ?? {};
+    if (children.length === 1) allAttributes.children = children[0];
+    else if (children.length > 1) allAttributes.children = children;
+    return jsx(type, allAttributes);
 }

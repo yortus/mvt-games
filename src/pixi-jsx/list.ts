@@ -26,8 +26,7 @@
  */
 
 import { Container } from 'pixi.js';
-import { refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
-import { propReadCounter } from './prop-reads';
+import { readCounter, refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -60,7 +59,7 @@ export interface ListSource<T> {
     at: (index: number) => T | undefined;
 }
 
-export interface ListProps<T> {
+export interface ListBindings<T> {
     /**
      * The items to project, as a source or a getter returning one.
      *
@@ -96,10 +95,10 @@ export interface ListProps<T> {
 // Component
 // ---------------------------------------------------------------------------
 
-export function List<T>(props: ListProps<T>): Container {
+export function List<T>(bindings: ListBindings<T>): Container {
     const container = new Container();
-    // The `items` prop as passed: a source, or a getter returning one.
-    const itemsProp = props.items;
+    // The `items` binding as passed: a source, or a getter returning one.
+    const itemsBinding = bindings.items;
 
     // High-water-mark pool: every slot ever built, by index, kept for reuse.
     // Slot `i` is child `i` for every `i` below `attachedCount`, which is the
@@ -131,16 +130,16 @@ export function List<T>(props: ListProps<T>): Container {
 
     /** Attaches exactly the slots below `length`, building any that do not exist yet. */
     function fitToLength(): void {
-        currentSource = typeof itemsProp === 'function' ? itemsProp() : itemsProp;
+        currentSource = typeof itemsBinding === 'function' ? itemsBinding() : itemsBinding;
         const lengthOrGetter = currentSource.length;
         currentLength = typeof lengthOrGetter === 'function' ? lengthOrGetter() : lengthOrGetter;
         if (attachedCount > currentLength) detachTail();
         while (attachedCount < currentLength) attachSlot(attachedCount);
-        // Prop reads: one of `items`, and one presence check per attached
+        // Reads: one of `items`, and one presence check per attached
         // slot, which every one of them runs this frame. Counted here, once,
         // rather than in the slot's refresh, where even an untaken branch
         // costs V8's inlining budget.
-        if (propReadCounter.isCounting) propReadCounter.count += (1 + attachedCount);
+        if (readCounter.isCounting) readCounter.count += (1 + attachedCount);
     }
 
     function detachTail(): void {
@@ -208,7 +207,7 @@ export function List<T>(props: ListProps<T>): Container {
         // here first too, so the item view can read its item while it is being
         // built.
         slotItems[index] = item;
-        const slot = props.children(() => slotItems[index] as T, index);
+        const slot = bindings.children(() => slotItems[index] as T, index);
 
         // The slot's presence check runs before its own refresh, so no item
         // binding ever runs for an empty slot. When present, the item view's

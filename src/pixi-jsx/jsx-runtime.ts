@@ -2,10 +2,10 @@
  * Custom JSX runtime that targets Pixi.js scene-graph construction.
  *
  * - Renders once (no diffing/reconciliation).
- * - Function-valued props become dynamic bindings polled each frame via the
- *   element's `onRefresh` method (driven by `refreshScene` from `pixi-mvt`),
- *   with simple equality change-detection.
- * - Construction is inert: static props are applied at once, but no getter
+ * - Function-valued attributes become dynamic bindings polled each frame via
+ *   the element's `onRefresh` method (driven by `refreshScene` from
+ *   `pixi-mvt`), with simple equality change-detection.
+ * - Construction is inert: static attributes are applied at once, but no getter
  *   runs until the element's first refresh. Until then a bound property holds
  *   Pixi's default. Hosts refresh the whole scene before every render, and
  *   `<List>`/`<Switch>` refresh whatever they build mid-pass, so nothing is
@@ -13,7 +13,7 @@
  *   construction should call `refreshScene` on the tree first.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
- * - An `onRefresh` prop adds a per-frame step of the element's own, which
+ * - An `onRefresh` attribute adds a per-frame step of the element's own, which
  *   receives the element and runs after its bindings (and is skipped with them
  *   while it is hidden).
  * - The `<List>` and `<Switch>` components (`list.ts`, `switch.ts`) cover
@@ -22,8 +22,7 @@
 
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Cursor, FederatedPointerEvent, IHitArea, Texture } from 'pixi.js';
-import { type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
-import { propReadCounter } from './prop-reads';
+import { readCounter, type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -34,10 +33,10 @@ export declare namespace JSX {
     type Element = Container;
 
     interface IntrinsicElements {
-        container: BaseProps;
-        sprite: SpriteProps;
-        text: TextProps;
-        graphics: BaseProps<Graphics>;
+        container: BaseAttributes;
+        sprite: SpriteAttributes;
+        text: TextAttributes;
+        graphics: BaseAttributes<Graphics>;
     }
 }
 
@@ -55,15 +54,15 @@ export type ValueOrGetter<T> = T | (() => T);
 export const Fragment = Symbol.for('pixi-jsx.fragment');
 
 export function jsx(
-    type: string | typeof Fragment | ((props: Record<string, unknown>) => Container),
-    props: Record<string, unknown>,
+    type: string | typeof Fragment | ((attributes: Record<string, unknown>) => Container),
+    attributes: Record<string, unknown>,
 ): Container {
     // Component functions. The runtime calls `ref` on whatever the component
     // returns, so components must never consume `ref` themselves.
     if (typeof type === 'function') {
-        const el = type(props);
-        if (typeof props.ref === 'function') {
-            (props.ref as RefCallback<Container>)(el);
+        const el = type(attributes);
+        if (typeof attributes.ref === 'function') {
+            (attributes.ref as RefCallback<Container>)(el);
         }
         return el;
     }
@@ -71,7 +70,7 @@ export function jsx(
     // Fragment
     if (type === Fragment) {
         const container = new Container();
-        addChildren(container, props.children);
+        addChildren(container, attributes.children);
         return container;
     }
 
@@ -80,9 +79,9 @@ export function jsx(
     const cheap: DynamicBinding[] = [];
     const watched: DynamicBinding[] = [];
 
-    for (const key in props) {
+    for (const key in attributes) {
         if (key === 'children' || key === 'ref' || key === 'onRefresh') continue;
-        const value = props[key];
+        const value = attributes[key];
         if (isGetter(key, value)) {
             // Inert construction: record the getter but do not call it. Its
             // first evaluation is the element's first refresh, which runs only
@@ -90,7 +89,7 @@ export function jsx(
             // this element (a `visible` binding, an empty `<List>` slot, an
             // unselected branch) can keep a binding that is not yet valid from
             // ever running.
-            if (WATCHED_PROPS.has(key)) {
+            if (WATCHED_ATTRIBUTES.has(key)) {
                 watched.push({ key, getter: value });
             }
             else if (key === 'visible') {
@@ -102,23 +101,23 @@ export function jsx(
             }
         }
         else {
-            applyProp(el, key, value);
+            applyAttribute(el, key, value);
         }
     }
 
-    addChildren(el, props.children);
-    applyEventProps(el, props);
+    addChildren(el, attributes.children);
+    applyEventAttributes(el, attributes);
 
     if (cheap.length > 0 || watched.length > 0) {
         setupDynamicRefresh(el, cheap, watched);
     }
 
-    if (typeof props.onRefresh === 'function') {
-        addRefreshStep(el, props.onRefresh as RefreshStep<Container>);
+    if (typeof attributes.onRefresh === 'function') {
+        addRefreshStep(el, attributes.onRefresh as RefreshStep<Container>);
     }
 
-    if (typeof props.ref === 'function') {
-        (props.ref as RefCallback<Container>)(el);
+    if (typeof attributes.ref === 'function') {
+        (attributes.ref as RefCallback<Container>)(el);
     }
 
     return el;
@@ -134,9 +133,9 @@ export const jsxDEV = jsx;
 // Internals
 // ---------------------------------------------------------------------------
 
-// --- Props accepted by the intrinsic elements -----------------------------
+// --- Attributes accepted by the intrinsic elements ------------------------
 
-interface SpriteProps extends BaseProps<Sprite> {
+interface SpriteAttributes extends BaseAttributes<Sprite> {
     texture?: ValueOrGetter<Texture>;
     tint?: ValueOrGetter<number>;
     anchor?: number;
@@ -144,14 +143,14 @@ interface SpriteProps extends BaseProps<Sprite> {
     height?: ValueOrGetter<number>;
 }
 
-interface TextProps extends BaseProps<Text> {
+interface TextAttributes extends BaseAttributes<Text> {
     text?: ValueOrGetter<string>;
     style?: Record<string, unknown>;
     anchor?: number;
 }
 
-/** Props every intrinsic element accepts. `T` is the element's own type, which `ref` and `onRefresh` receive. */
-interface BaseProps<T extends Container = Container> extends EventProps {
+/** Attributes every intrinsic element accepts. `T` is the element's own type, which `ref` and `onRefresh` receive. */
+interface BaseAttributes<T extends Container = Container> extends EventAttributes {
     x?: ValueOrGetter<number>;
     y?: ValueOrGetter<number>;
     alpha?: ValueOrGetter<number>;
@@ -172,7 +171,7 @@ interface BaseProps<T extends Container = Container> extends EventProps {
     children?: PixiNode | PixiChildren;
 }
 
-interface EventProps {
+interface EventAttributes {
     onPointerDown?: (e: FederatedPointerEvent) => void;
     onPointerUp?: (e: FederatedPointerEvent) => void;
     onPointerUpOutside?: (e: FederatedPointerEvent) => void;
@@ -209,7 +208,7 @@ interface DynamicBinding {
 
 /**
  * A codegen'd refresh factory. Called once per element with the element, the
- * skip sentinel, the `UNSET` marker, the prop read counter and the
+ * skip sentinel, the `UNSET` marker, the read counter and the
  * element's getters as separate arguments, it returns that element's refresh
  * method. The method calls each
  * getter it captured directly and keeps each watched binding's last value in
@@ -232,15 +231,15 @@ type RefreshFactory = (...args: unknown[]) => () => typeof SKIP_DESCENDANTS | vo
 const UNSET: unique symbol = Symbol('pixi-jsx.unset');
 
 /**
- * Props that are expensive to set on every tick and should only be written
+ * Attributes that are expensive to set on every tick and should only be written
  * when the value actually changes. Everything else is cheap enough (a number
  * or boolean assignment plus a dirty flag) to set unconditionally each frame.
  */
-const WATCHED_PROPS = new Set(['text', 'style', 'texture', 'tint', 'width', 'height', 'label']);
+const WATCHED_ATTRIBUTES = new Set(['text', 'style', 'texture', 'tint', 'width', 'height', 'label']);
 
 /**
- * Watched props whose values are numbers that may be fractional. Their last
- * value is kept in a `Float64Array` that starts as `NaN`, not in a closure
+ * Watched attributes whose values are numbers that may be fractional. Their
+ * last value is kept in a `Float64Array` that starts as `NaN`, not in a closure
  * variable that starts as `UNSET`. V8 boxes a fractional number in a new heap
  * object when it is stored in a closure variable, and when it is compared with
  * one that might hold a symbol: 16 bytes per element per frame for a
@@ -248,13 +247,13 @@ const WATCHED_PROPS = new Set(['text', 'style', 'texture', 'tint', 'width', 'hei
  * first refresh still always writes. `tint` is a colour, a whole number, which
  * V8 stores without boxing.
  */
-const FRACTIONAL_WATCHED_PROPS = new Set(['width', 'height']);
+const FRACTIONAL_WATCHED_ATTRIBUTES = new Set(['width', 'height']);
 
-/** Props that are functions but should NOT be treated as dynamic getters. */
-const NON_GETTER_PROPS = new Set(['ref', 'onUpdate']);
+/** Attributes that are functions but should NOT be treated as dynamic getters. */
+const NON_GETTER_ATTRIBUTES = new Set(['ref', 'onUpdate']);
 
-/** Props that are Pixi event handlers wired once at construction time. */
-const EVENT_PROP_MAP: Record<string, string> = {
+/** Attributes that are Pixi event handlers wired once at construction time. */
+const EVENT_ATTRIBUTE_MAP: Record<string, string> = {
     onPointerDown: 'pointerdown',
     onPointerUp: 'pointerup',
     onPointerUpOutside: 'pointerupoutside',
@@ -288,15 +287,15 @@ function createElement(kind: string): Container {
 }
 
 function isGetter(key: string, value: unknown): value is () => unknown {
-    return typeof value === 'function' && !NON_GETTER_PROPS.has(key) && !isEventProp(key);
+    return typeof value === 'function' && !NON_GETTER_ATTRIBUTES.has(key) && !isEventAttribute(key);
 }
 
-function isEventProp(key: string): boolean {
-    return key in EVENT_PROP_MAP;
+function isEventAttribute(key: string): boolean {
+    return key in EVENT_ATTRIBUTE_MAP;
 }
 
-/** Apply a single prop to a Pixi display object. */
-function applyProp(el: Container, key: string, value: unknown): void {
+/** Apply a single attribute to a Pixi display object. */
+function applyAttribute(el: Container, key: string, value: unknown): void {
     switch (key) {
         case 'x':
             el.x = value as number;
@@ -373,17 +372,17 @@ function addChildren(parent: Container, children: unknown): void {
     }
 }
 
-/** Wire event handler props onto an element, enabling interaction. */
-function applyEventProps(el: Container, props: Record<string, unknown>): void {
+/** Wire event handler attributes onto an element, enabling interaction. */
+function applyEventAttributes(el: Container, attributes: Record<string, unknown>): void {
     let hasEvents = false;
-    for (const key in EVENT_PROP_MAP) {
-        const handler = props[key];
+    for (const key in EVENT_ATTRIBUTE_MAP) {
+        const handler = attributes[key];
         if (typeof handler === 'function') {
             if (!hasEvents) {
                 el.eventMode = 'static';
                 hasEvents = true;
             }
-            el.on(EVENT_PROP_MAP[key], handler as (e: FederatedPointerEvent) => void);
+            el.on(EVENT_ATTRIBUTE_MAP[key], handler as (e: FederatedPointerEvent) => void);
         }
     }
 }
@@ -409,7 +408,7 @@ function setupDynamicRefresh(
     const factory = getRefreshFactory(cheap, watched);
 
     // Construction only, so building this argument list is off the hot path.
-    const args: unknown[] = [el, SKIP_DESCENDANTS, UNSET, propReadCounter];
+    const args: unknown[] = [el, SKIP_DESCENDANTS, UNSET, readCounter];
     for (let i = 0; i < cheap.length; i++) args.push(cheap[i].getter);
     for (let i = 0; i < watched.length; i++) args.push(watched[i].getter);
 
@@ -438,12 +437,12 @@ function setupDynamicRefresh(
  *     }
  *
  * `width` keeps its last value in `n`, not a closure variable; see
- * {@link FRACTIONAL_WATCHED_PROPS}.
+ * {@link FRACTIONAL_WATCHED_ATTRIBUTES}.
  *
  * With a `visible` binding, the count is split around the visibility check,
  * so a hidden element counts only the one read it made.
  *
- * Safe: prop keys originate from JSX intrinsic element type definitions,
+ * Safe: attribute keys originate from JSX intrinsic element type definitions,
  * not from user input.
  */
 function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): RefreshFactory {
@@ -471,7 +470,7 @@ function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): 
             if (readCount > 1) body.push(`if(c.isCounting)c.count+=${readCount - 1};`);
         }
         else {
-            body.push(propAssign(cheap[i].key, `g${gi}()`) + ';');
+            body.push(attributeAssignment(cheap[i].key, `g${gi}()`) + ';');
         }
         gi++;
     }
@@ -481,7 +480,7 @@ function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): 
         params.push(`g${gi}`);
         // Where the last value written is kept.
         let last: string;
-        if (FRACTIONAL_WATCHED_PROPS.has(watched[i].key)) {
+        if (FRACTIONAL_WATCHED_ATTRIBUTES.has(watched[i].key)) {
             last = `n[${numericCount++}]`;
         }
         else {
@@ -490,7 +489,7 @@ function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): 
         }
         body.push(
             `var _${i}=g${gi}();`,
-            `if(_${i}!==${last}){${last}=_${i};${propAssign(watched[i].key, `_${i}`)}}`,
+            `if(_${i}!==${last}){${last}=_${i};${attributeAssignment(watched[i].key, `_${i}`)}}`,
         );
         gi++;
     }
@@ -498,18 +497,18 @@ function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): 
 
     const source = `${locals.join('\n')}\nreturn function(){\n${body.join('\n')}\n};`;
 
-    // Safe: prop keys originate from JSX intrinsic element type definitions.
+    // Safe: attribute keys come from JSX intrinsic element type definitions.
     factory = new Function(...params, source) as RefreshFactory;
     refreshFactoryCache.set(signature, factory);
     return factory;
 }
 
 /**
- * Map a prop key to its inline JS assignment expression. Most props are
- * simple `e.key=val`; a few need special handling for nested properties
- * or method calls.
+ * Map an attribute key to its inline JS assignment expression. Most
+ * attributes are simple `e.key=val`; a few need special handling for nested
+ * properties or method calls.
  */
-function propAssign(key: string, val: string): string {
+function attributeAssignment(key: string, val: string): string {
     switch (key) {
         case 'pivotX': return `e.pivot.x=${val}`;
         case 'pivotY': return `e.pivot.y=${val}`;

@@ -1,4 +1,5 @@
 import { BufferImageSource, type Container, Sprite, Texture } from 'pixi.js';
+import { addReads } from '../../../pixi-mvt';
 import type { Grains } from '../models';
 import { pickGrainPixel } from './grain-colors';
 
@@ -29,6 +30,11 @@ export interface GrainPixelsViewBindings {
  * the object per grain on the view side (a sprite, its bindings, its place
  * in Pixi's scene graph), leaving a loop over the model's grains that writes
  * into a flat array, and one draw call.
+ *
+ * It counts its reads with `addReads`, as `GrainSpritesView`'s JSX
+ * counts them: `grains` once, a presence check per id, and three reads
+ * (column, row and kind) per grain. The two views read the same, and their
+ * reads per frame say so.
  */
 export function GrainPixelsView(bindings: GrainPixelsViewBindings): Container {
     const { cols, rows } = bindings;
@@ -57,10 +63,13 @@ export function GrainPixelsView(bindings: GrainPixelsViewBindings): Container {
         const grains = bindings.grains();
         pixels.fill(0);
         const length = grains.length;
+        let drawnCount = 0;
         for (let id = 0; id < length; id++) {
             if (grains.at(id) === undefined) continue;
             pixels[grains.rowOf(id) * cols + grains.colOf(id)] = pickGrainPixel(grains.kindOf(id), id);
+            drawnCount++;
         }
+        addReads(1 + length + 3 * drawnCount);
         source.update();
     }
 }

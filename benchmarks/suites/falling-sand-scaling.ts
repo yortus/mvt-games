@@ -7,7 +7,7 @@ const METRICS: readonly MetricColumn[] = [
     { key: 'refreshUs', title: '`refreshScene` (µs)' },
     { key: 'totalUs', title: 'Total (µs)' },
     { key: 'refreshNsPerGrain', title: 'Refresh per grain (ns)' },
-    { key: 'readsPerFrame', title: 'Prop reads per frame', maxDecimals: 0 },
+    { key: 'readsPerFrame', title: 'Reads per frame', maxDecimals: 0 },
 ];
 
 /**

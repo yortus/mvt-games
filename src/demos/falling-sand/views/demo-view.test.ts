@@ -1,7 +1,9 @@
 import { type Container, Sprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene } from '../../../pixi-mvt';
-import { createDemoModel, type DemoModel, type GrainStorageKind, TANK_SIZES, type TankSizeKind } from '../models';
+import { countReads, refreshScene } from '../../../pixi-mvt';
+import {
+    createDemoModel, type DemoModel, type GrainStorageKind, TANK_SIZES, type TankSize, type TankSizeKind,
+} from '../models';
 import { DemoView } from './demo-view';
 import { pickGrainPixel } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -14,8 +16,8 @@ interface SetupOptions {
     readonly grainsView: GrainsViewKind;
     readonly storage?: GrainStorageKind;
     readonly tankSize?: TankSizeKind;
-    /** Overrides the tank size's cells, for a smaller, faster tank. */
-    readonly cells?: { readonly cols: number; readonly rows: number };
+    /** Overrides the tank size's cells and brush, for a smaller, faster tank. */
+    readonly tank?: TankSize;
     readonly isReactive?: boolean;
 }
 
@@ -27,7 +29,7 @@ interface Setup {
 
 function setup(options: SetupOptions): Setup {
     const { grainsView, storage = 'objects', tankSize = 'small', isReactive } = options;
-    const model = createDemoModel({ ...(options.cells ?? TANK_SIZES[tankSize]), storage });
+    const model = createDemoModel({ ...(options.tank ?? TANK_SIZES[tankSize]), storage });
     const view = DemoView({ model, grainsView, tankSize, isReactive, frameStats: () => undefined });
     refreshScene(view);
     const grainsLayer = view.getChildByLabel('grains', true);
@@ -40,11 +42,11 @@ function play({ model, view }: Setup, fromFrame: number, toFrame: number): void 
     for (let f = fromFrame; f < toFrame; f++) {
         if (f === 0) {
             model.tool = 'sand';
-            model.startPour(20, 6);
+            model.startPour(8, 3);
         }
-        if (f === 40) model.endPour();
-        if (f === 50) model.flip();
-        model.movePour(10 + ((f * 3) % 50), 6);
+        if (f === 25) model.endPour();
+        if (f === 30) model.flip();
+        model.movePour(4 + ((f * 3) % 16), 3);
         model.update(1000 / 60);
         refreshScene(view);
     }
@@ -80,8 +82,14 @@ function countLit(pixels: Int32Array): number {
     return lit;
 }
 
-/** Small, since the store is slow. */
-const SMALL_CELLS = { cols: 72, rows: 90 };
+/**
+ * Small, since the store is slow: about 10 µs per moving grain per step, some
+ * 50 times what the others take. A half-size brush keeps the pours in proportion.
+ */
+const SMALL_TANK: TankSize = { cols: 24, rows: 30, brushScale: 0.5 };
+
+/** Frames `play` takes to pour, flip, land and settle a little. */
+const PLAY_FRAMES = 75;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -115,34 +123,54 @@ describe('demo view', () => {
         expect(readPixels(arrays.grainsLayer)).toEqual(readPixels(objects.grainsLayer));
     });
 
+    it('counts the same reads per frame whichever way it draws the grains', () => {
+        const sprites = setup({ grainsView: 'sprites', tank: SMALL_TANK });
+        const pixels = setup({ grainsView: 'pixels', tank: SMALL_TANK });
+        play(sprites, 0, 20);
+        play(pixels, 0, 20);
+        // Some ids empty, so the presence checks count for more than the grains.
+        sprites.model.tool = pixels.model.tool = 'erase';
+        sprites.model.startPour(12, 28);
+        pixels.model.startPour(12, 28);
+        sprites.model.update(1000 / 60);
+        pixels.model.update(1000 / 60);
+
+        const spriteReads = countReads(() => refreshScene(sprites.view));
+        const pixelReads = countReads(() => refreshScene(pixels.view));
+
+        expect(pixels.model.grains.length).toBeGreaterThan(pixels.model.grainCount);
+        expect(pixelReads).toBe(spriteReads);
+        expect(pixelReads).toBeGreaterThan(3 * pixels.model.grainCount);
+    });
+
     describe('with a store model and SolidJS views', () => {
         it('draws the same pixels as the polled view, frame after frame, pouring and flipping', () => {
-            const polled = setup({ grainsView: 'pixels', storage: 'arrays', cells: SMALL_CELLS });
-            const reactive = setup({ grainsView: 'pixels', storage: 'store', cells: SMALL_CELLS });
+            const polled = setup({ grainsView: 'pixels', storage: 'arrays', tank: SMALL_TANK });
+            const reactive = setup({ grainsView: 'pixels', storage: 'store', tank: SMALL_TANK });
             expect(readPixels(reactive.grainsLayer)).toEqual(readPixels(polled.grainsLayer));
 
-            for (let frame = 0; frame < 120; frame += 10) {
-                play(polled, frame, frame + 10);
-                play(reactive, frame, frame + 10);
+            for (let frame = 0; frame < PLAY_FRAMES; frame += 15) {
+                play(polled, frame, frame + 15);
+                play(reactive, frame, frame + 15);
                 expect(readPixels(reactive.grainsLayer)).toEqual(readPixels(polled.grainsLayer));
             }
             expect(reactive.model.grainCount).toBeGreaterThan(polled.model.grainCount / 2);
         });
 
         it('draws the same sprites as the polled view, frame after frame, pouring and flipping', () => {
-            const polled = setup({ grainsView: 'sprites', storage: 'arrays', cells: SMALL_CELLS });
-            const reactive = setup({ grainsView: 'sprites', storage: 'store', cells: SMALL_CELLS });
+            const polled = setup({ grainsView: 'sprites', storage: 'arrays', tank: SMALL_TANK });
+            const reactive = setup({ grainsView: 'sprites', storage: 'store', tank: SMALL_TANK });
             expect(describeSprites(reactive.grainsLayer)).toEqual(describeSprites(polled.grainsLayer));
 
-            for (let frame = 0; frame < 120; frame += 20) {
-                play(polled, frame, frame + 20);
-                play(reactive, frame, frame + 20);
+            for (let frame = 0; frame < PLAY_FRAMES; frame += 25) {
+                play(polled, frame, frame + 25);
+                play(reactive, frame, frame + 25);
                 expect(describeSprites(reactive.grainsLayer)).toEqual(describeSprites(polled.grainsLayer));
             }
         });
 
         it('erases every pixel when the tank is cleared, and redraws on reset', () => {
-            const { model, view, grainsLayer } = setup({ grainsView: 'pixels', storage: 'store', cells: SMALL_CELLS });
+            const { model, view, grainsLayer } = setup({ grainsView: 'pixels', storage: 'store', tank: SMALL_TANK });
             expect(countLit(readPixels(grainsLayer))).toBe(model.grainCount);
 
             model.clear();
@@ -155,8 +183,8 @@ describe('demo view', () => {
         });
 
         it('can still be polled, to measure the store alone', () => {
-            const polledArrays = setup({ grainsView: 'pixels', storage: 'arrays', cells: SMALL_CELLS });
-            const polledStore = setup({ grainsView: 'pixels', storage: 'store', cells: SMALL_CELLS, isReactive: false });
+            const polledArrays = setup({ grainsView: 'pixels', storage: 'arrays', tank: SMALL_TANK });
+            const polledStore = setup({ grainsView: 'pixels', storage: 'store', tank: SMALL_TANK, isReactive: false });
 
             play(polledArrays, 0, 60);
             play(polledStore, 0, 60);

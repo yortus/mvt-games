@@ -23,16 +23,17 @@ export interface GrainSpritesViewBindings {
  * Drawn in cells: each sprite is one unit square at its grain's column and
  * row, and whoever places this view scales cells to pixels.
  *
- * Each sprite has three getter props (`x`, `y`, `tint`), so the refresh pass
- * does work for every grain in the tank every frame, settled or not, while
+ * Each sprite has three function attributes (`x`, `y`, `tint`), so the refresh
+ * pass does work for every grain in the tank every frame, settled or not, while
  * the simulation only does work for the grains that move. All sprites share
  * one white texture and differ only by tint, so Pixi draws them in a handful
  * of batches.
  */
 export function GrainSpritesView(bindings: GrainSpritesViewBindings): Container {
     // The grains, as the list read them this frame. The list reads its items
-    // once per frame, before any of its slots refresh, so every slot's props
-    // share that one read rather than each reading `bindings.grains()` again.
+    // once per frame, before any of its slots refresh, so every slot's
+    // attributes share that one read rather than each reading
+    // `bindings.grains()` again.
     let grains: Grains = NO_GRAINS;
 
     return (

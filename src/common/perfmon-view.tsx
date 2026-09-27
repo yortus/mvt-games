@@ -22,7 +22,7 @@ export const PERFMON_HEIGHT = 80;
 
 /**
  * A small panel of frame timing: frames per second, CPU and GPU milliseconds
- * per frame, and prop reads per frame (`RPF`, e.g. `21K`), each with a
+ * per frame, and reads per frame (`RPF`, e.g. `21K`), each with a
  * sparkline of recent values. CPU and GPU sparklines are scaled to at least
  * one 60fps frame (16.7 ms), marked by a faint line.
  *

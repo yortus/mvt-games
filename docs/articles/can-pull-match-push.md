@@ -96,8 +96,8 @@ exceptions. A ticker drives the whole thing in a loop, the way a game loop
 always has.
 
 There's a JSX runtime for it, `mvt-jsx`, which builds a real scene graph once
-and never diffs it. Props that are plain values get set at construction. Props
-that are functions get called every frame:
+and never diffs it. Attributes that are plain values get set at construction.
+Attributes that are functions get called every frame:
 
 ```tsx
 <sprite texture={shipTexture} x={() => ship.x} y={() => ship.y} />

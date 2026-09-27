@@ -1,8 +1,7 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { createOrderedSlotList, createSlotList } from '#common';
-import { refreshScene } from '../pixi-mvt';
-import { countPropReads } from './prop-reads';
+import { countReads, refreshScene } from '../pixi-mvt';
 import { jsx } from './jsx-runtime';
 import { List } from './list';
 
@@ -458,13 +457,13 @@ describe('List', () => {
         t.items[1] = undefined;
 
         // `items` + 3 presence checks + a label getter for each of the 2 present items
-        expect(countPropReads(() => refreshScene(t.list))).toBe(1 + 3 + 2);
+        expect(countReads(() => refreshScene(t.list))).toBe(1 + 3 + 2);
     });
 
     it('passes its own container to ref', () => {
         let received: Container | undefined;
-        // Called the way compiled TSX calls it, which erases the prop types
-        const list = jsx(List as unknown as (props: Record<string, unknown>) => Container, {
+        // Called the way compiled TSX calls it, which erases the attribute types
+        const list = jsx(List as unknown as (attributes: Record<string, unknown>) => Container, {
             items: [],
             children: () => new Container(),
             ref: (el: Container) => { received = el; },

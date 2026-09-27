@@ -2,8 +2,7 @@ import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoModel, DemoView, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
 } from '../../src/demos/falling-sand';
-import { countPropReads } from '../../src/pixi-jsx';
-import { refreshScene, updateScene } from '../../src/pixi-mvt';
+import { countReads, refreshScene, updateScene } from '../../src/pixi-mvt';
 import { readParams, report } from '../harness/measure';
 
 // Measured file for the `falling-sand-scaling` suite: the falling-sand demo,
@@ -30,7 +29,7 @@ import { readParams, report } from '../harness/measure';
 // Reports mean µs per frame over 30 simulated seconds (9 above 20,000 grains,
 // and 6 for a store, to keep the slowest variants' runs to a few minutes),
 // after a warm-up (6 seconds; 3 for a store), split into the model, the update pass and the refresh pass as the
-// demo runs them; and prop reads per frame, counted over a further cycle
+// demo runs them; and reads per frame, counted over a further cycle
 // that is not timed, so counting cannot skew the times.
 
 const FRAME_MS = 1000 / 60;
@@ -88,7 +87,7 @@ for (let f = 0; f < MEASURED_FRAMES; f++) {
     movingTotal += model.movingCount;
 }
 
-const readsPerFrame = countPropReads(() => {
+const readsPerFrame = countReads(() => {
     for (let f = 0; f < CYCLE_FRAMES; f++) frame();
 }) / CYCLE_FRAMES;
 

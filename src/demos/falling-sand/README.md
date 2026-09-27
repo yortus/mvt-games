@@ -16,7 +16,9 @@ polling; the others are polled, as MVT views are. The switches
 under the buttons show the running choice; pressing one reloads the page with
 another. The panel under the tank shows the grain count,
 how many grains are moving, and frame timing: frames per second, CPU and GPU
-milliseconds per frame, and `RPF`, the prop reads per frame.
+milliseconds per frame, and `RPF`, the reads of the model the view makes per
+frame (the pixel view counts its own reads the way the JSX runtime counts the
+sprite view's, so the two compare).
 `npm run bench -- falling-sand-scaling` measures every combination headless,
 from 1,000 to 200,000 grains; the demo as it ships is in the
 `games-and-demos` suite.
@@ -82,7 +84,7 @@ views, whose effects re-run only for the grains that changed
 ([`solid-grain-sprites-view.ts`](./views/solid-grain-sprites-view.ts), with
 pixi-solid, and [`solid-grain-pixels-view.ts`](./views/solid-grain-pixels-view.ts)).
 The choice of view is the view's, not the model's: `DemoView` takes it as a
-prop, and picks the Solid views for a store.
+binding, and picks the Solid views for a store.
 
 The Solid views are written without Solid's JSX compiler, as the calls it
 would compile JSX to: `createComponent(Sprite, { get x() { ... } })` for

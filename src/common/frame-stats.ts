@@ -8,8 +8,8 @@ import { type Renderer, RendererType, type Ticker, UPDATE_PRIORITY, type WebGLRe
 export type FrameStatKind = 'fps' | 'cpu' | 'gpu' | 'reads';
 
 /**
- * Something that counts events while switched on, such as the JSX runtime's
- * `propReadCounter`. `FrameStats` switches it on for one frame in each
+ * Something that counts events while switched on, such as `pixi-mvt`'s
+ * `readCounter`. `FrameStats` switches it on for one frame in each
  * window and reports the count for that frame.
  */
 export interface SampledCounter {
@@ -56,7 +56,7 @@ export interface FrameStats {
      */
     readonly gpuMs: number | undefined;
     /**
-     * Prop reads (or whatever `readCounter` counts) in one frame, sampled
+     * Reads (or whatever `readCounter` counts) in one frame, sampled
      * once per window, or `undefined` without a `readCounter`.
      */
     readonly readsPerFrame: number | undefined;
@@ -84,7 +84,7 @@ export interface FrameStatsOptions {
     readonly windowMs?: number;
     /** How many windows to keep for `historyAt`. Defaults to 60. */
     readonly historyLength?: number;
-    /** A counter to sample for `readsPerFrame`, e.g. `propReadCounter` from `#pixi-jsx`. */
+    /** A counter to sample for `readsPerFrame`, e.g. `readCounter` from `src/pixi-mvt/`. */
     readonly readCounter?: SampledCounter;
 }
 

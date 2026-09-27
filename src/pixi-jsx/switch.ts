@@ -39,14 +39,13 @@
  */
 
 import { Container } from 'pixi.js';
-import { refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
-import { propReadCounter } from './prop-reads';
+import { readCounter, refreshScene, SKIP_DESCENDANTS } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-export interface SwitchProps {
+export interface SwitchBindings {
     /**
      * `<Match>` elements, tested in order; the first whose `when` holds wins.
      * A final `<Match else>` wins if none does.
@@ -61,7 +60,7 @@ export interface SwitchProps {
  * The two are exclusive in the type, so a `<Match>` with neither, which would
  * otherwise be a silent catch-all, does not compile.
  */
-export type MatchProps = MatchBaseProps & (
+export type MatchBindings = MatchBaseBindings & (
     | {
         /** Whether this branch applies. Polled every frame by the enclosing `<Switch>`. */
         when: () => boolean;
@@ -74,7 +73,7 @@ export type MatchProps = MatchBaseProps & (
     }
 );
 
-interface MatchBaseProps {
+interface MatchBaseBindings {
     /**
      * The branch. Plain JSX children are built up front, like any element.
      * A function is called on the branch's first selection, for branches too
@@ -89,7 +88,7 @@ interface MatchBaseProps {
 // Components
 // ---------------------------------------------------------------------------
 
-export function Switch(props: SwitchProps): Container {
+export function Switch(bindings: SwitchBindings): Container {
     const container = new Container();
 
     // Collected at construction: the children already exist, since JSX builds
@@ -97,7 +96,7 @@ export function Switch(props: SwitchProps): Container {
     // refresh. `undefined` in `conditions` marks the default branch.
     const branches: Container[] = [];
     const conditions: ((() => boolean) | undefined)[] = [];
-    const children = props.children === undefined ? [] : Array.isArray(props.children) ? props.children : [props.children];
+    const children = bindings.children === undefined ? [] : Array.isArray(bindings.children) ? bindings.children : [bindings.children];
     for (let i = 0; i < children.length; i++) {
         const match = matches.get(children[i]);
         if (match === undefined) {
@@ -143,7 +142,7 @@ export function Switch(props: SwitchProps): Container {
         let next = -1;
         for (let i = 0; i < conditions.length; i++) {
             const when = conditions[i];
-            if (when !== undefined && propReadCounter.isCounting) propReadCounter.count++;
+            if (when !== undefined && readCounter.isCounting) readCounter.count++;
             if (when === undefined || when()) {
                 next = i;
                 break;
@@ -157,13 +156,13 @@ export function Switch(props: SwitchProps): Container {
     }
 }
 
-export function Match(props: MatchProps): Container {
+export function Match(bindings: MatchBindings): Container {
     const container = new Container();
     // `else` is a reserved word, so it is read as a property, never destructured
-    const entry: MatchEntry = { when: props.else === true ? undefined : props.when, isAdopted: false };
+    const entry: MatchEntry = { when: bindings.else === true ? undefined : bindings.when, isAdopted: false };
     matches.set(container, entry);
 
-    const children = props.children;
+    const children = bindings.children;
     let build: (() => Container) | undefined;
     if (typeof children === 'function') {
         // Lazy branch: built on first selection

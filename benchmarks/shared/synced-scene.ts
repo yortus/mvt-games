@@ -13,7 +13,8 @@ import { refreshScene } from '../../src/pixi-mvt';
  * - `model-only`: the model changes, and there is no view at all.
  * - `hand-written`: an `onRefresh` method per container reads the model and
  *   assigns its properties, run by `refreshScene`. What a compiler would emit.
- * - `jsx`: the same, built with this repo's JSX runtime from getter props.
+ * - `jsx`: the same, built with this repo's JSX runtime from function
+ *   attributes.
  * - `solid`: the model's fields are Solid signals, and one render effect per
  *   container assigns its properties when they change.
  * - `events`: the model calls a listener per item after changing it, and the

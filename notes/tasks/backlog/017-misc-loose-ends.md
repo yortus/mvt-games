@@ -178,11 +178,11 @@ Settled questions that should not be reopened without new information are in
     `--trace-turbo`), or ask on the V8 issue tracker with the synced-scene
     reproducer. If it proves to be something code can avoid, record the rule
     on the Hot Paths page.
-- **Related, fixed:** the JSX runtime's watched props boxed fractional
+- **Related, fixed:** the JSX runtime's watched attributes boxed fractional
   `width` and `height` values every frame (16 bytes per element), changed or
   not, because their last value lived in a closure variable that started as
-  a symbol. They now use a `Float64Array` (see `FRACTIONAL_WATCHED_PROPS` in
-  `src/pixi-jsx/jsx-runtime.ts`), guarded by the `memory` suite's
+  a symbol. They now use a `Float64Array` (see
+  `FRACTIONAL_WATCHED_ATTRIBUTES` in `src/pixi-jsx/jsx-runtime.ts`), guarded by the `memory` suite's
   `allocation-watched` table.
 
 - **Object literals with getters are slow in V8.** Found by
