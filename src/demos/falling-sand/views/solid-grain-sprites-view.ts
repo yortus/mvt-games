@@ -25,10 +25,43 @@ export interface SolidGrainSpritesViewBindings {
  * no refresh, and a settled tank costs it nothing per frame. Drawn in cells,
  * like `GrainSpritesView`.
  *
- * Written without Solid's JSX compiler, as the calls the compiler would
- * make: `createComponent(Sprite, { get x() { ... } })` is what
- * `<Sprite x={...} />` compiles to. The tree is built in its own Solid root,
- * inside an ordinary Pixi container, and disposed with it.
+ * The tree is built in its own Solid root, inside an ordinary Pixi
+ * container, and disposed with it.
+ *
+ * A Solid developer would write the tree as JSX:
+ *
+ * ```tsx
+ * const grainSprites = (
+ *     <SolidContainer>
+ *         <Index each={ids()}>
+ *             {(_item, id) => (
+ *                 <Sprite
+ *                     texture={Texture.WHITE}
+ *                     width={1}
+ *                     height={1}
+ *                     visible={bindings.grains().at(id) !== undefined}
+ *                     x={colOf(bindings.grains(), id)}
+ *                     y={rowOf(bindings.grains(), id)}
+ *                     tint={tintOf(bindings.grains(), id)}
+ *                 />
+ *             )}
+ *         </Index>
+ *     </SolidContainer>
+ * );
+ * ```
+ *
+ * The code below is exactly what Solid's JSX compiler (`babel-preset-solid`
+ * 1.9.15) turns that into, checked against the compiler's output: the same
+ * `createComponent` calls, a getter for every attribute the compiler cannot
+ * prove unchanging (including `Texture.WHITE`, since any property read might
+ * be reactive), and plain values for the rest. So it runs exactly as the
+ * JSX would. It is written out by hand only so that this repo needs neither
+ * Solid's compiler nor the Babel toolchain it runs on. The repo's own JSX
+ * runtime needs no compiler beyond the TypeScript transform every build
+ * already has.
+ *
+ * When editing, keep it in that form: an attribute that reads state must
+ * stay a getter, or it is read once and never updates.
  */
 export function SolidGrainSpritesView(bindings: SolidGrainSpritesViewBindings): Container {
     const host = new Container();
@@ -44,7 +77,7 @@ export function SolidGrainSpritesView(bindings: SolidGrainSpritesViewBindings): 
                 return createComponent(Index, {
                     get each() { return ids(); },
                     children: (_item: () => number, id: number) => createComponent(Sprite, {
-                        texture: Texture.WHITE,
+                        get texture() { return Texture.WHITE; },
                         width: 1,
                         height: 1,
                         get visible() { return bindings.grains().at(id) !== undefined; },

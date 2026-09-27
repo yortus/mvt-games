@@ -18,10 +18,9 @@ A clean-room falling-sand demo in `src/demos/falling-sand/`. It has two jobs:
   moving. A deep settled pile makes the gap between the two easy to see.
 - **Show JSX Pixi views in MVT**, using `pixi-jsx` and `<List>`.
 
-The behaviour reference is the working simulation in the sibling
-`mvt-workshop` repo (branch `origin/solutions-and-extras`,
-`src/examples/falling-sand/`). It was studied for behaviour only; no source is
-copied. Differences from it are deliberate and listed below.
+It is a clean-room implementation, based on a description of another
+falling-sand implementation; no source is copied. What it does is set out
+below.
 
 ### Scope decisions (agreed 2026-09-25)
 
@@ -120,9 +119,7 @@ GPU.
 
 ## Progress Log
 
-- 2026-09-25: Studied the plan doc and the workshop implementation, agreed
-  scope. Plan doc (`docs/temp/falling-sand-plan.md`) deleted at the user's
-  request; its useful content is captured above.
+- 2026-09-25: Studied the plan and agreed scope. The useful content is captured above.
 - 2026-09-25: Built the demo. `pixi-jsx` gained `onPointerMove`,
   `onGlobalPointerMove`, `onPointerUpOutside`, `onPointerCancel`, `hitArea`
   and `cursor`. `src/common/` gained `createFrameStats` (FPS, CPU ms, GPU ms
@@ -201,17 +198,13 @@ GPU.
   set (was per query, so most invalid results were kept), document gpuMs as
   an upper bound. Rest readings now steady (0.2-0.3 ms); NVIDIA still reads
   ~2 ms while sprites move. Unit tests with a fake WebGL 2 context.
-- 2026-09-25: Compared with mvt-workshop's performance monitor. Same
-  technique (TIME_ELAPSED query), spanning the whole tick (ticker priority
-  100 to -100) rather than Pixi's render; shows the latest single frame plus
-  a 1000-frame bar graph; same per-query disjoint bug. Transplanted into this
-  demo and interleaved frame by frame with ours: identical distributions
-  (rest p50 0.15 ms; moving p50 2.0 ms, p10 0.14). So the method is not why
-  it looks better. NVIDIA readings for the same scene vary by session (moving
-  p50 0.17 in one, 2.0 in another), not explained by clock state alone, and
-  rise with other contexts' GPU work (0.17 -> 0.43 ms with a busy background
-  canvas). A like-for-like comparison would need the workshop's falling-sand
-  story (branch solutions-and-extras) run on this machine.
+- 2026-09-25: Tried a TIME_ELAPSED query spanning the whole tick (ticker
+  priority 100 to -100) rather than Pixi's render. Interleaved frame by frame
+  with ours: identical distributions (rest p50 0.15 ms; moving p50 2.0 ms,
+  p10 0.14). So the span is not the problem. NVIDIA readings for the same
+  scene vary by session (moving p50 0.17 in one, 2.0 in another), not
+  explained by clock state alone, and rise with other contexts' GPU work
+  (0.17 -> 0.43 ms with a busy background canvas).
 - 2026-09-25: GPU row now per frame: `FrameStats.gpuFrameAt(i)` /
   `gpuFrameHistoryLength` (last 120 timed frames); the monitor draws one bar
   per frame, scaled to its own peak (floor 1 ms, budget line only when

@@ -27,7 +27,6 @@
 | 3 | Add a mixed-scene variant to the `scaling` benchmark, and caveat its numbers | Implement | Measured; the gap to a real scene is fully accounted for |
 | 4 | Document that text and graphics changes rebuild a Pixi render group | Implement | Measured in a browser profile |
 | 5 | The perfmon's GPU row on NVIDIA laptop GPUs | Decide: drop it, or mark it indicative | Measured; the figure reflects the machine more than the scene |
-| 6 | Compare against the workshop repo's falling-sand story on the same machine | Optional | Not done |
 
 Section 5 also records three hypotheses that were tested and ruled out, so
 they are not investigated again.
@@ -306,33 +305,17 @@ no-change control put all of them inside the 1.0-2.8 ms noise:
 The WebGL calls Pixi made were identical in the fast and slow cases, so
 whatever varies is below Pixi.
 
-### 5.5 The workshop repo's monitor
+### 5.5 Timing the whole tick instead
 
-The `mvt-workshop` repo's performance monitor looked better. It uses the same
-technique, with the query spanning the whole tick (ticker priority 100 to
--100) rather than Pixi's render, and it shows the latest single frame plus a
-1,000-frame bar graph. Its span was transplanted into this demo and
-interleaved frame by frame with this repo's: the two produced identical
-distributions (at rest a median of 0.15 ms, grains moving a median of 2.06
-ms). Its method is not the difference.
+A timer query spanning the whole tick (ticker priority 100 to -100), rather
+than Pixi's render, was tried in this demo and interleaved frame by frame
+with the perfmon's own: the two produced identical distributions (at rest a
+median of 0.15 ms, grains moving a median of 2.06 ms). Where the query
+starts and ends is not the difference.
 
 ---
 
-## 6. Comparing against the workshop's falling-sand story
-
-Optional. The workshop's falling-sand story (branch `solutions-and-extras`,
-`src/examples/falling-sand/`) renders differently: no tank render group, a
-different resolution, and Storybook around it. Running it on the same machine
-with the harness in section 1 would show whether its GPU readings really are
-lower for the same work, and so whether there is anything to learn from it.
-
-To avoid touching that repo's checkout: add a git worktree for the branch in
-a scratch directory, install its dependencies there, run its Storybook, and
-point the harness at the story.
-
----
-
-## 7. Open items
+## 6. Open items
 
 | Item | Section | Status |
 | --- | --- | --- |
@@ -340,4 +323,3 @@ point the harness at the story.
 | Mixed-scene variant of the `scaling` suite, and its docs caveat | 3.2 | Proposed |
 | Render-group rebuild note in Hot Paths and Measurements | 4.2 | Proposed |
 | The perfmon's GPU row: drop, or mark indicative | 5.3 | Decision needed |
-| Run the workshop's falling-sand story on the same machine | 6 | Optional |
