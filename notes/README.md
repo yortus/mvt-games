@@ -71,17 +71,15 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Proposed, with its top-level tidy-up already done. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Proposed. Caching each container's method in the pixi-mvt pass loop (prototyped: 30-40% cheaper refresh in mixed scenes), a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
-| 018 | [One view convention](./proposals/018-one-view-convention.md) | Accepted, being implemented. Every view becomes `FooView(bindings)`, with query bindings named for what they return and each one's type saying whether it takes a fixed value, a function or either; each body is JSX or plain TypeScript, whichever suits the view. Architecture docs, convention docs, every module's migration, and the Building with MVT rewrite (with the `<List>` guide now a docs page) done; JSX in the playground and optional JSX bodies remain. Supersedes 007 |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
 
-**How they relate.** All six can be read on their own. 008 concerns
-the `watch()` helper in `src/common/`. 011 is about the repo rather than the
-architecture; its migration moves most of the paths the other notes cite. 012
-changes 001's pass loop and qualifies the `scaling` numbers from 010's
-harness. 013 builds on 012's measurements. 018 answers the question 007
-asked (now archived) the other way; it also absorbs 017's method-syntax
-item. 019 follows 017's boids allocation fix and touches only
-the boids demo.
+**How they relate.** All five can be read on their own. 008 concerns
+the `watch()` helper in `src/common/`, and now also whether `memoiseLast`
+(from 018, archived) should give way to its mapping terminal. 011 is about the
+repo rather than the architecture; its migration moves most of the paths the
+other notes cite. 012 changes 001's pass loop and qualifies the `scaling`
+numbers from 010's harness. 013 builds on 012's measurements. 019 follows
+017's boids allocation fix and touches only the boids demo.
 
 ## Tasks
 
@@ -108,6 +106,7 @@ the boids demo.
 | 014 | [Review: Kwazy Cactii](archive/014-review-cactii.md) | 2026-04-10 |
 | 015 | [Documentation Overhaul](archive/015-documentation-overhaul/task.md) | 2026-04-19 |
 | 016 | [Falling Sand Demo](archive/016-falling-sand-demo/task.md) | 2026-09-26 |
+| 018 | [Proposal: one view convention](archive/018-one-view-convention.md) | 2026-09-27 |
 
 ## Elsewhere
 

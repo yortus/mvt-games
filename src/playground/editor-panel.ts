@@ -76,7 +76,7 @@ export function createEditorPanel(): EditorPanel {
                 keymap.of([indentWithTab]),
                 indentUnit.of('    '),
                 EditorState.tabSize.of(4),
-                javascript({ typescript: true }),
+                javascript({ typescript: true, jsx: true }),
                 oneDark,
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
@@ -123,7 +123,7 @@ export function createEditorPanel(): EditorPanel {
         // Globals hint banner
         globalsHint = document.createElement('div');
         globalsHint.className = 'pg-editor-globals';
-        globalsHint.textContent = 'Available: Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle, watch, setBackground';
+        globalsHint.textContent = 'Available: Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle, watch, setBackground. View code may also use JSX, with List, Switch and Match';
         container.appendChild(globalsHint);
 
         // Tab bar

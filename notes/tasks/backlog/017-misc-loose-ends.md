@@ -150,6 +150,13 @@ Settled questions that should not be reopened without new information are in
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.
+  - **Pac-Man, after its game view became JSX (2026-09-27).** It allocates
+    about 384 bytes per frame, up from 234. Its update alone allocates
+    nothing, and so does its refresh alone; together they allocate about 160
+    bytes more: five actors (Pac-Man and four ghosts) each writing a
+    fractional `row` and `col` through `TileMove`, 16 bytes each. Replacing
+    the view's `<List>` with fixed views changes nothing, so it is the JSX
+    setup nearby, as in the synced scene. See 018 section 21.2.
   - **A clue from the attempt to add it to the suite.** Giving the synced
     scene a `values` option, with whole and fractional rules in two object
     literals of the same shape, made even the whole-number runs store boxed

@@ -837,9 +837,120 @@ function createView(model: any): any {
 // Registry
 // ---------------------------------------------------------------------------
 
+const bouncingBallJsx: Preset = {
+    id: 'bouncing-ball-jsx',
+    name: 'Bouncing Ball (JSX)',
+    description: 'The bouncing ball, with its view written in JSX. The ball and its shadow are drawn once; each frame only moves, scales and fades them. Click and drag to grab, move, and throw the ball.',
+    canvasWidth: 400,
+    canvasHeight: 300,
+    modelCode: bouncingBall.modelCode,
+    viewCode: `// Bouncing Ball - View, written in JSX
+// The ball and its shadow are drawn once. Each frame, attributes given as
+// functions move, scale and fade them, and show the held or the free ball.
+// Click and drag to grab, move, and throw the ball.
+
+function createView(model: any): any {
+    setBackground(0x0a1628);
+    const radius = model.radius; // never changes, so drawn once at this size
+    const nearness = (): number => 1 - (300 - model.y) / 400; // 1 on the ground
+
+    return (
+        <container
+            hitArea={new Rectangle(0, 0, 400, 300)}
+            onPointerDown={(e: any) => model.grab(e.globalX, e.globalY)}
+            onPointerMove={(e: any) => model.drag(e.globalX, e.globalY)}
+            onPointerUp={() => model.release()}
+            onPointerUpOutside={() => model.release()}
+        >
+            {/* Shadow on the ground: wider and darker as the ball comes down */}
+            <graphics
+                x={() => model.x}
+                y={300 - radius * 0.3}
+                scale={() => 0.6 + 0.4 * nearness()}
+                alpha={() => 0.25 * (0.3 + 0.7 * nearness())}
+                ref={(g: any) => g.ellipse(0, 0, radius, radius * 0.2).fill(0x000000)}
+            />
+            <container x={() => model.x} y={() => model.y}>
+                <graphics visible={() => !model.held} ref={(g: any) => drawBall(g, radius, false)} />
+                <graphics visible={() => model.held} ref={(g: any) => drawBall(g, radius, true)} />
+            </container>
+        </container>
+    );
+}
+
+function drawBall(g: any, radius: number, held: boolean): void {
+    g.circle(0, 0, radius);
+    g.fill(held ? 0x66ccff : 0x44aaff);
+    // Highlight
+    g.circle(-4, -4, radius * 0.35);
+    g.fill({ color: 0xffffff, alpha: 0.4 });
+    if (held) {
+        g.circle(0, 0, radius + 3);
+        g.stroke({ color: 0xffffff, width: 1.5, alpha: 0.5 });
+    }
+}
+`,
+};
+
+const trafficLightJsx: Preset = {
+    id: 'traffic-light-jsx',
+    name: 'Traffic Light (JSX)',
+    description: 'The traffic light again, with its view written in JSX: each light is its own view, whose lit and dim states follow the model with no redrawing.',
+    canvasWidth: 200,
+    canvasHeight: 400,
+    modelCode: trafficLight.modelCode,
+    viewCode: `// Traffic Light - View, written in JSX
+// Each light is a LightView. Its dim and lit states are drawn once, and a
+// \`visible\` function shows whichever one matches the model's phase.
+
+function createView(model: any): any {
+    setBackground(0x0f1a0f);
+    return (
+        <container>
+            <graphics ref={drawHousing} />
+            <LightView color={0xff0000} y={100} isOn={() => model.phase === 'red'} />
+            <LightView color={0xffcc00} y={200} isOn={() => model.phase === 'yellow'} />
+            <LightView color={0x00cc00} y={300} isOn={() => model.phase === 'green'} />
+        </container>
+    );
+}
+
+interface LightViewBindings {
+    color: number;
+    y: number;
+    isOn: () => boolean;
+}
+
+// A view named in PascalCase can be used as a JSX tag.
+function LightView(bindings: LightViewBindings): any {
+    const { color, y } = bindings;
+    return (
+        <container>
+            <graphics
+                visible={() => !bindings.isOn()}
+                ref={(g: any) => g.circle(100, y, 35).fill({ color, alpha: 0.15 })}
+            />
+            <container visible={bindings.isOn}>
+                <graphics ref={(g: any) => g.circle(100, y, 35).fill({ color })} />
+                <graphics ref={(g: any) => g.circle(100, y, 40).fill({ color, alpha: 0.2 })} />
+            </container>
+        </container>
+    );
+}
+
+function drawHousing(g: any): void {
+    g.roundRect(50, 30, 100, 320, 16);
+    g.fill(0x333333);
+    g.stroke({ color: 0x555555, width: 3 });
+}
+`,
+};
+
 export const presets: readonly Preset[] = [
+    bouncingBallJsx,
     bouncingBall,
     scoreCounter,
+    trafficLightJsx,
     trafficLight,
     keyboardSprite,
     countdownTimer,

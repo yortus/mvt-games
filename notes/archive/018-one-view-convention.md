@@ -9,18 +9,19 @@
 > returning a Pixi container, its accessors are named for what they return,
 > and its body is JSX where JSX fits and imperative where it does not.
 
-**Status:** accepted 2026-09-27, being implemented. It supersedes 007, now
-archived. Done: the architecture docs (section 12), the `ValueOrGetter`
-rename, the `onRefresh` attribute, the convention docs, and every module's
-migration: Scramble as the pilot (section 17), `common/` (section 18), and
-the demos, the cabinet and the other games (section 19), and the Building
-with MVT rewrite, with the `<List>` guide now a docs page (section 20).
-Remaining (section 16): JSX in the playground, and optional JSX bodies.
+**Status:** implemented 2026-09-27, and archived. It supersedes 007. Done:
+the architecture docs (section 12), the `ValueOrGetter` rename, the
+`onRefresh` attribute, the convention docs, every module's migration
+(Scramble as the pilot, section 17; `common/`, section 18; the demos, the
+cabinet and the other games, section 19), the Building with MVT rewrite with
+the `<List>` guide as a docs page (section 20), and JSX in the playground with
+the four game views that rebuilt their children now JSX with `<List>`
+(section 21). Loose ends are in 017.
 
 **Written:** 2026-09-26, against the `vnext` branch at `4b633e6` plus the
 uncommitted boids changes. Counts are from `grep` over `src/`.
 
-**Related:** [007 - Authoring-convention bridge](../archive/007-authoring-convention-bridge.md) (superseded),
+**Related:** [007 - Authoring-convention bridge](./007-authoring-convention-bridge.md) (superseded),
 [`src/pixi-jsx/`](../../src/pixi-jsx/index.ts),
 [Architecture: Bindings](../../docs/architecture/bindings.md),
 [Bindings](../../docs/building-with-mvt/presenting-the-world/bindings.md) and
@@ -28,7 +29,7 @@ uncommitted boids changes. Counts are from `grep` over `src/`.
 [Style Guide](../../docs/reference/style-guide.md),
 [017 - Miscellaneous loose ends](../tasks/backlog/017-misc-loose-ends.md) (the
 method-syntax item and the parked `<List>` guide item),
-[011 - Multi-package repo](./011-multi-package-repo.md).
+[011 - Multi-package repo](../proposals/011-multi-package-repo.md).
 
 ---
 
@@ -406,7 +407,7 @@ do not, and that it is ambiguous when `T` is itself a function type.
 **The views that read getters once are bugs, not a style.** Rule
 [V-reactive](../../docs/architecture/rules.md#view-rules) already forbids it:
 
-- [overlay-view.ts](../../src/common/overlay-view.ts) reads `getWidth()` and
+- [overlay-view.ts](../../src/common/overlay-view.tsx) reads `getWidth()` and
   `getHeight()` once, to lay itself out.
 - [terrain-view.ts](../../src/games/scramble/views/terrain-view.ts) reads
   `getTileSize()`, `getVisibleCols()` and `getVisibleRows()` once, to size
@@ -655,19 +656,20 @@ All settled 2026-09-27. Do not reopen without new information.
 2. ~~Update the style guide, `AGENTS.md`, glossary and the `mvt-view` and
    `code-style` skills with the convention, so new code follows it from the
    start.~~ Done 2026-09-27.
-3. Graduate the JSX runtime: ~~the `ValueOrGetter` rename~~ (done
-   2026-09-27), ~~the `onRefresh` attribute (open question 2)~~ (done
-   2026-09-27, section 18), playground JSX support, and ~~the `<List>` guide
-   into `docs/`~~ (done 2026-09-27, section 20).
+3. ~~Graduate the JSX runtime: the `ValueOrGetter` rename, the `onRefresh`
+   attribute (open question 2), playground JSX support, and the `<List>` guide
+   into `docs/`.~~ Done 2026-09-27 (sections 18, 20 and 21).
 4. Migrate outsides, one module at a time: function names, query binding
    names, fixed answers, and property syntax. Type-check and run the
    benchmarks after each. ~~Scramble, as the pilot.~~ Done 2026-09-27; see
    section 17. ~~`common/`.~~ Done 2026-09-27; see section 18. ~~Each demo,
    the cabinet (with open question 5), and the other games.~~ Done
    2026-09-27; see section 19.
-5. Where a view's body would read better in JSX (section 10's guidance),
+5. ~~Where a view's body would read better in JSX (section 10's guidance),
    convert it, starting with the game views that rebuild children on a count
-   change. Optional, view by view; a plain TypeScript body is never wrong.
+   change.~~ Done 2026-09-27 for those four game views (section 21). Beyond
+   them this stays a judgement per view, not a step: a plain TypeScript body
+   is never wrong.
 6. ~~Rewrite the architecture bindings page by member role.~~ Done
    2026-09-27 (section 12). ~~Rewrite the Building with MVT views and
    bindings pages for the new convention.~~ Done 2026-09-27 (section 20).
@@ -946,3 +948,73 @@ checkbox, the reordering-lists card faces and the falling-sand brush ring.
 - *Revised 2026-09-27, from review:* the page first published as "Lists"
   (`lists.md`) is now "Presenting Collections" (`collections.md`), a name that
   says what it is for rather than naming the component.
+
+---
+
+## 21. JSX in the playground, and the last game views
+
+*Done 2026-09-27.*
+
+### 21.1 JSX in the playground
+
+- **View code may use JSX.** The sandbox compiles each editor with Sucrase;
+  view code now also gets the JSX transform, in its classic form, which calls
+  a function by name (`h`) rather than inserting an import the sandbox could
+  not resolve. A small adapter turns `h(type, props, ...children)` into the
+  runtime's `jsx(type, props)`. Model code stays TypeScript only.
+- **The globals** gain `h`, `Fragment`, `List`, `Switch` and `Match`, and the
+  editor hint says so. Both editors highlight JSX.
+- **The compile step moved** into `src/playground/sandbox/compile.ts`, free of
+  the DOM, with tests: every preset compiles; JSX, fragments and `<List>`
+  with a function child work; and the new preset runs end to end.
+- **A new preset, Traffic Light (JSX),** shares Traffic Light's model, with
+  its view in JSX: each light a `LightView` whose dim and lit states swap
+  through `visible` bindings, so nothing is redrawn. The Views page links it
+  beside the plain TypeScript original.
+- The sandbox's own entry point, `createView(model)`, is unchanged: it is the
+  playground's contract with the code it runs, not a view.
+
+### 21.2 The four game views
+
+Asteroids, Dig Dug, Galaga and Pac-Man each destroyed and rebuilt a pool of
+child views whenever a count changed. Each game view is now a JSX body with
+a `<List>` per collection, as Scramble's is.
+
+| | Before | After |
+| --- | --- | --- |
+| Galaga, total per frame | 8.4 µs | 6.3 µs |
+| Asteroids | 6.5 µs | 5.0-6.7 µs (noisy) |
+| Dig Dug | 5.8 µs | 5.6 µs |
+| Pac-Man | 5.2 µs | 5.0 µs |
+
+The conversion caught three problems, each now covered by the docs:
+
+1. **Views that read their item while being built.** A `<List>` builds a
+   slot's view before the slot's first refresh, when its item accessor still
+   returns `undefined`, so Galaga's and Dig Dug's enemy views (which chose a
+   texture from `kind` at construction) and the asteroid view (which drew its
+   outline) threw. Each now leaves that to its first refresh, where its
+   watcher reports every value as changed. This is the Presenting
+   Collections page's first rule, met in practice.
+2. **Collections the model replaces.** All four games build new arrays on
+   reset (`ghosts = buildGhosts(...)`), so passing the array itself would have
+   kept the list showing the old one after a restart. Each array-backed list
+   takes a function instead (`items={() => model.ghosts}`), as the page
+   advises. The `SlotList`s (Asteroids' asteroids, Scramble's pools) are made
+   once and cleared, so they are passed as they are. Nothing in the tests or
+   the headless benchmark restarts a game, so only reading the models found
+   this.
+3. **Drawing order.** Galaga and Asteroids re-added rebuilt children at the
+   end of the scene, so after the first rebuild their bullets and new
+   asteroids drew over the HUD and the game-over overlay. A `<List>` keeps
+   each collection where it sits in the tree. Pac-Man adds its ghosts after
+   the overlay, so they draw over it; that is kept as it was.
+
+**Pac-Man now allocates about 384 bytes per frame, up from 234.** Not from
+`<List>`: replacing it with four fixed ghost views changes nothing. The
+update alone and the refresh alone each allocate nothing; together they
+allocate about 160 bytes more, which is five actors each writing a fractional
+row and column, boxed. That matches 017's open investigation, "fractional
+numbers boxed depending on unrelated code", where the JSX setup was already
+one known trigger; recorded there. It is still a fifth of Pac-Man's 2.1 KB
+before this proposal, with no collections.

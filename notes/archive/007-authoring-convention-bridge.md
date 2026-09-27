@@ -7,7 +7,7 @@
 > identical, so it is total, reversible, and costs one construction-time pass.
 
 **Status:** superseded 2026-09-27 by
-[018 - One view convention](../proposals/018-one-view-convention.md), which
+[018 - One view convention](./018-one-view-convention.md), which
 removes the difference this bridge would cross: every view now has the same
 outside, so there is nothing to bridge (018 section 11). Never implemented.
 The type-level work is kept for one case 018 leaves open: an adapter for

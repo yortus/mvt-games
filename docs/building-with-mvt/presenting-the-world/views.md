@@ -205,6 +205,10 @@ and while it returns `false` the element's other attributes and everything
 below it are skipped, as the hand-written version's early `return` does.
 `ref` receives the element once it is built, here to draw it.
 
+> **Try it live:** <PlaygroundLink preset="traffic-light-jsx" label="Traffic Light (JSX) in Playground" /> -
+> a view written in JSX, next to the plain TypeScript
+> <PlaygroundLink preset="traffic-light" label="Traffic Light" /> it matches.
+
 Neither kind of body is required. Both give the same outside, a function
 taking bindings and returning a container, so callers cannot tell which a
 view uses, and a view can choose whichever suits it:
