@@ -10,17 +10,18 @@
 > records what was built, what it measured, and three findings that matter
 > beyond the demo.
 
-**Status:** implemented. The three model variants, the polled and SolidJS
-views, the tank sizes and the benchmark are built, on the `sand-variants`
-branch. Section 8 lists follow-up experiments.
+**Status:** implemented, and archived 2026-09-27. The three model variants,
+the polled and SolidJS views, the tank sizes and the benchmark are built.
+The follow-ups in sections 6.1 and 8 are tracked in
+[017](../tasks/backlog/017-misc-loose-ends.md).
 
 **Written:** 2026-09-27. Measured on an Intel Core Ultra 9 185H: headless in
 Node.js 22.11 through `npm run bench -- falling-sand-scaling`, and in Chrome
 against the Vite dev server, driven through the DevTools protocol.
 
 **Related:** [`src/demos/falling-sand/`](../../src/demos/falling-sand/README.md),
-[012 - Performance findings from the falling-sand demo](./012-falling-sand-performance-findings.md),
-[013 - Does the MVT architecture limit game performance?](./013-mvt-performance-ceiling.md)
+[012 - Performance findings from the falling-sand demo](../proposals/012-falling-sand-performance-findings.md),
+[013 - Does the MVT architecture limit game performance?](../proposals/013-mvt-performance-ceiling.md)
 (section 8 proposed this experiment),
 [`benchmarks/results/falling-sand-scaling.md`](../../benchmarks/results/falling-sand-scaling.md),
 [`benchmarks/results/reactivity.md`](../../benchmarks/results/reactivity.md).
@@ -34,7 +35,7 @@ against the Vite dev server, driven through the DevTools protocol.
 | 2 | Two models behind one interface, chosen at start-up | Built. Two grids, identical step for step (tested by comparing `save()` snapshots) | 2 |
 | 3 | Two views, chosen at start-up | Built. Sprite per grain, or pixel per cell. The choice is the view's, a `DemoView` prop | 3 |
 | 3.1 | Fixed for the demo's life, chosen in the URL | Built. A switch reloads the page. Runtime swapping was built first and withdrawn (6.2) | 3.1 |
-| 4 | What the variants cost | Measured. At about 115,000 grains in Chrome: 17.5 ms settled with objects and sprites, 2.7 ms with arrays and pixels. The pixel view is 20-35x cheaper to refresh than sprites at scale. The typed-array model is only 1.1-1.6x faster than objects headless (1.9x beside the sprite view's heap): the rules, not the layout, are the model's cost | 4, 5 |
+| 4 | What the variants cost | Measured. At about 115,000 grains in Chrome: 18.3 ms settled with objects and sprites, 3.0 ms with arrays and pixels. The pixel view is 20-35x cheaper to refresh than sprites at scale. The typed-array model is only 1.1-1.6x faster than objects headless (1.9x beside the sprite view's heap): the rules, not the layout, are the model's cost | 4, 5 |
 | 6.1 | Object literals with getters are slow in V8 | Found. Dictionary mode, no inlining through them. Fixed in `Grains` (3x on the pixel view); the rest of the repo has the same pattern | 6.1 |
 | 6.2 | Swapping implementations in a running page | Found. Call sites that have seen both implementations stop inlining, so an in-page A/B favours whichever ran first. Why the choice is now fixed per page | 6.2 |
 | 6.3 | 013's estimate for a flat view (1.5-4 ns per grain) | Nearly reached through the shared interface: 4.5 ns per grain with arrays at 200,000 grains in the benchmark, 6.4 with objects. The calls through `Grains` are most of it | 6.3 |
@@ -141,26 +142,32 @@ variants side by side, each in its own page.
 
 ## 4. In the browser
 
-Chrome, Vite dev server, one variant per page load (section 6.2), about
-115,000 grains in the large tank, 3,700 of them still trickling off the
-ledges. CPU is main-thread task time per frame, from `Performance.getMetrics`,
-so it includes Pixi's render. Flipping is the mean over three windows of
-1.5 s, starting 0.7 s after each flip.
+Chrome, Vite dev server, one variant per page load, chosen in the URL
+(sections 3.1, 6.2), each tank poured to about 115,000-120,000 grains in the
+large tank, about 3,900 of them still trickling off the ledges. CPU is
+main-thread task time per frame, from `Performance.getMetrics`, so it
+includes Pixi's render. Flipping is the mean over three windows of 1.5 s,
+starting 0.7 s after each flip. Measured on the code as merged with `main`.
 
 | Model, view | Settled: CPU / fps | Flipping: CPU / fps | JS heap |
 | --- | --- | --- | --- |
-| objects, sprites | 17.5 ms / 57 | 83 ms / 12 | 240 MB |
-| arrays, sprites | 18.1 ms / 55 | 50 ms / 20 | 232 MB |
-| objects, pixels | 3.8 ms / 60 | 20 ms / 48 | 81 MB |
-| arrays, pixels | 2.7 ms / 60 | 9 ms / 60 | 65 MB |
+| objects, sprites | 18.3 ms / 55 | 59 ms / 18 | 240 MB |
+| arrays, sprites | 16.8 ms / 60 | 44 ms / 23 | 224 MB |
+| objects, pixels | 3.6 ms / 60 | 11 ms / 60 | 23 MB |
+| arrays, pixels | 3.0 ms / 60 | 9 ms / 60 | 9 MB |
 
-- **At rest, the view is the cost.** Pixels are 4.6x cheaper than sprites;
-  the model's layout makes no difference to a sleeping tank.
-- **Moving, both matter.** Arrays cut the flipping frame by 1.7x under
-  sprites and 2.2x under pixels. Together, 9x.
-- **Memory follows the view.** About 1.4 KB per grain for the sprite view.
-  The objects grid preallocates a record per cell, about 16 MB at 246,240
-  cells.
+- **At rest, the view is the cost.** Pixels are 5-6x cheaper than sprites;
+  the model's layout makes little difference to a sleeping tank.
+- **Moving, both matter.** Arrays cut the flipping frame by 1.3x under
+  sprites and 1.2x under pixels. Together, 6.5x.
+- **Memory follows the view.** About 1.8 KB per grain for the sprite view.
+  The objects grid preallocates a record per cell, about 14 MB at 246,240
+  cells (the objects-pixels heap, less the arrays-pixels one).
+
+An earlier run, before the merge and with the choice made by switches in a
+running page, read higher for flipping (83 ms for objects and sprites) and
+for the pixel views' heaps (81 and 65 MB). Those pages had first built the
+default sprite view, which stayed alive after the switch.
 
 ## 5. Headless
 

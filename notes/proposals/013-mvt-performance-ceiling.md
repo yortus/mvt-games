@@ -244,6 +244,6 @@ model-owns-state rule does not accommodate directly.
 
 | Item | Section | Status |
 | --- | --- | --- |
-| Measure the TypeScript view at 40-50k grains | 8 | Proposed |
-| Prototype a flat-array, instanced view of the grains in TypeScript | 8 | Proposed |
+| Measure the TypeScript view at 40-50k grains | 8 | Done by [020](../archive/020-falling-sand-variants.md), up to 200k: the sprite view's refresh levels off at about 155 ns per grain from 50k to 200k, so about 15 ms at 100k settled, below section 4.1's estimate of 20-30 ms |
+| Prototype a flat-array, instanced view of the grains in TypeScript | 8 | Done in part by [020](../archive/020-falling-sand-variants.md): a texture with a pixel per cell rather than an instanced mesh, at 4.4-6.5 ns per grain through a shared model interface, near this proposal's 1.5-4 ns. The instanced mesh is tracked in 017 |
 | Decide how MVT should treat gameplay-relevant state that lives on the GPU | 6.2 | Open question |

@@ -110,10 +110,10 @@ large tank, one variant per page load:
 
 | Model, view | CPU per frame, settled | CPU per frame, grains falling after a flip | JS heap |
 | --- | --- | --- | --- |
-| objects, sprites | 17.5 ms | about 83 ms | 240 MB |
-| arrays, sprites | 18.1 ms | about 50 ms | 232 MB |
-| objects, pixels | 3.8 ms | about 20 ms | 81 MB |
-| arrays, pixels | 2.7 ms | about 9 ms | 65 MB |
+| objects, sprites | 18.3 ms | about 59 ms | 240 MB |
+| arrays, sprites | 16.8 ms | about 44 ms | 224 MB |
+| objects, pixels | 3.6 ms | about 11 ms | 23 MB |
+| arrays, pixels | 3.0 ms | about 9 ms | 9 MB |
 
 Settled, the view is nearly all the cost, and the model's layout hardly
 matters. With grains falling, the model's layout matters too, though less
@@ -139,7 +139,7 @@ effects add a few microseconds per changed grain on top. Leaving the store
 aside, a pushed change costs about 3 µs against a few nanoseconds (pixels)
 or about 140 ns (sprites) to poll a grain, so pushing wins only while fewer
 than about 0.15% or 5% of grains change per frame. See
-[020](../../../notes/proposals/020-falling-sand-variants.md), section 7.
+[020](../../../notes/archive/020-falling-sand-variants.md), section 7.
 
 **`Grains.length` is a field, not a getter.** V8 keeps an object literal
 that has a getter in slow dictionary mode, and cannot inline calls through

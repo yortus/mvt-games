@@ -73,16 +73,15 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
 | 018 | [One view convention](./proposals/018-one-view-convention.md) | Accepted, being implemented. Every view becomes `FooView(bindings)`, with query bindings named for what they return and each one's type saying whether it takes a fixed value, a function or either; each body is JSX or plain TypeScript, whichever suits the view. Architecture docs, convention docs and every module's migration done; the rest of the JSX runtime's graduation, optional JSX bodies, and the Building with MVT rewrite remain. Supersedes 007 |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
-| 020 | [Falling sand as an implementation lab](./proposals/020-falling-sand-variants.md) | Implemented in part. The demo runs with a record-per-grain or typed-array model and a sprite or pixel view, chosen in the URL, with a benchmark of every combination. Records two V8 findings (getter literals are slow; swapping implementations defeats inlining) and designs a Signals model and pixi-solid views, not yet built |
 
-**How they relate.** All seven can be read on their own. 008 concerns
+**How they relate.** All six can be read on their own. 008 concerns
 the `watch()` helper in `src/common/`. 011 is about the repo rather than the
 architecture; its migration moves most of the paths the other notes cite. 012
 changes 001's pass loop and qualifies the `scaling` numbers from 010's
 harness. 013 builds on 012's measurements. 018 answers the question 007
 asked (now archived) the other way; it also absorbs 017's method-syntax
 item. 019 follows 017's boids allocation fix and touches only
-the boids demo. 020 runs the falling-sand experiments 013 proposed.
+the boids demo. 013's falling-sand experiments were run by 020, now archived.
 
 ## Tasks
 
@@ -109,6 +108,7 @@ the boids demo. 020 runs the falling-sand experiments 013 proposed.
 | 014 | [Review: Kwazy Cactii](archive/014-review-cactii.md) | 2026-04-10 |
 | 015 | [Documentation Overhaul](archive/015-documentation-overhaul/task.md) | 2026-04-19 |
 | 016 | [Falling Sand Demo](archive/016-falling-sand-demo/task.md) | 2026-09-26 |
+| 020 | [Proposal: falling sand as an implementation lab](archive/020-falling-sand-variants.md) | 2026-09-27 |
 
 ## Elsewhere
 

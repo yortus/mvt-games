@@ -36,7 +36,6 @@
         "glob": "^13.0.6",
         "mermaid": "^11.13.0",
         "pngjs": "^7.0.0",
-        "solid-js": "^1.9.11",
         "tsx": "^4.21.0",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.56.1",
@@ -53,6 +52,7 @@
         "lz-string": "^1.5.0",
         "pixi-solid": "^1.0.0",
         "pixi.js": "^8.16.0",
+        "solid-js": "^1.9.11",
         "sucrase": "^3.35.1"
     },
     "optionalDependencies": {

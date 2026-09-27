@@ -316,10 +316,10 @@ the minute after.
   longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
-  settles, and its refresh takes about 190 µs, about 50 ns per container with
+  settles, and its refresh takes about 170 µs, about 45 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 2.8 ms at 20,000 grains. Boids takes about 0.55 ms, almost all of it
+  about 2.8 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
   800 bytes. The hot path rules aim for none, and the allocation benchmark is a

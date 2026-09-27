@@ -178,6 +178,47 @@ Settled questions that should not be reopened without new information are in
   `src/pixi-jsx/jsx-runtime.ts`), guarded by the `memory` suite's
   `allocation-watched` table.
 
+- **Object literals with getters are slow in V8.** Found by
+  [020](../../archive/020-falling-sand-variants.md) section 6.1: V8 12.4
+  keeps an object literal that has a `get` accessor in dictionary mode
+  (`%HasFastProperties` is false), so reads from it are hash lookups and
+  calls through it are never inlined. Removing one getter made the
+  falling-sand pixel view 3x cheaper. The repo's models are object literals
+  with getters by convention (the style guide's `createCounterModel`, the
+  model skill), which does not matter for a model read a few times a frame,
+  but does for per-item models read by per-item views. Next steps: list the
+  per-item models and their views; measure one sprite-per-item view with its
+  model's getters replaced by plain fields; if it pays, record a rule (plain
+  fields on per-item records, or accessors added with
+  `Object.defineProperty`, which keeps the object fast). Possibly related to
+  the boxing item above: the boids' record with getters also boxed numbers
+  written to it.
+
+### Experiments (from 020)
+
+Follow-ups to [020](../../archive/020-falling-sand-variants.md), in the
+falling-sand demo. Each is a new variant, measured with
+`npm run bench -- falling-sand-scaling`.
+
+- **A store that reads raw state in the simulation loop** (`unwrap`), keeping
+  the store for what views read. How much of the store's 190x an experienced
+  Solid developer would avoid, and what is left for the notifications.
+- **A change feed in the model interface**: the ids of the grains that
+  changed in the last update, used by the polled pixel view to redraw only
+  those. Change-driven updates without a reactive library, on the same model.
+- **A bulk-read or read-only-arrays path in `Grains`** for the pixel view:
+  whether the rest of 013's 1.5-4 ns per grain is reachable, and what it
+  costs the interface.
+- **An arrays grid that scans cells** rather than keeping a moving list: 013's
+  "chunked scan" estimate of 5-20 ns per active cell. A new algorithm, not a
+  new layout.
+- **An instanced-mesh grain view** from a `Float32Array`: the per-entity flat
+  view 013 described, for cases a texture does not fit.
+- **Optional: report pixi-solid's child reconciliation upstream.** Whenever a
+  container's children change, it re-adds every child and checks each old
+  one with `includes`: O(n²) per change, costly while pouring into a large
+  tank (020 section 7.6).
+
 ### Parked (pick up only when the trigger happens)
 
 - **Drain-the-tail**: refresh containers added mid-pass on the same frame.
@@ -203,6 +244,8 @@ Settled questions that should not be reopened without new information are in
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
 - [ ] Browser benchmarking and CI benchmarking each decided
 - [ ] Fractional-number boxing explained, and fixed or recorded as a rule
+- [ ] Getter literals on per-item models measured, and fixed or recorded as a rule
+- [ ] 020's experiments each run, or dropped
 - [ ] Parked items each still parked, or moved into their own task
 
 ## Progress Log
@@ -231,3 +274,6 @@ Settled questions that should not be reopened without new information are in
 - 2026-09-27: Fixed Pac-Man's allocation (a model cause, not a view one), the
   overlay's `requestAnimationFrame` release, and the cabinet's self-playing
   transitions. Added the short-press question (Decide).
+- 2026-09-27: Archived 020 (falling sand as an implementation lab) and took
+  in its follow-ups: the getter-literal finding (Investigate) and its
+  experiments (Experiments).
