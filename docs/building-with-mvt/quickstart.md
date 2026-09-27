@@ -60,7 +60,8 @@ The view reads the model each frame and converts domain coordinates (metres)
 to pixel positions:
 
 ```ts
-function createBallView(model: BallModel): Container {
+function BallView(bindings: { model: BallModel }): Container {
+    const { model } = bindings;
     const SCALE = 100;   // pixels per metre
 
     const gfx = new Graphics();
@@ -78,6 +79,11 @@ function createBallView(model: BallModel): Container {
 }
 ```
 
+In this project, a view is a function that takes one bindings object and
+returns a Pixi container. This one is the whole application's view, so its one
+binding is the model itself; smaller, reusable views take bindings that read
+just what they need (see [Bindings](presenting-the-world/bindings.md)).
+
 The view owns the **metres-to-pixels conversion**. The model says "the ball is
 at 2m, 1.5m with radius 0.15m" and the view multiplies by `SCALE` to get pixel
 coordinates. Change `SCALE` and the ball gets bigger or smaller - the model
@@ -89,7 +95,7 @@ The ticker wires model and view together in a frame loop:
 
 ```ts
 const ball = createBallModel();
-const view = createBallView(ball);
+const view = BallView({ model: ball });
 stage.addChild(view);
 
 app.ticker.add((ticker) => {

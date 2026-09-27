@@ -256,7 +256,7 @@ audioManager.on('enemy-destroyed', () => playSound('boom'));
 
 // The view reads state through bindings - always correct, every frame.
 function refresh(): void {
-    sprite.x = bindings.getX() * TILE_SIZE;
+    sprite.x = bindings.x() * TILE_SIZE;
 }
 ```
 

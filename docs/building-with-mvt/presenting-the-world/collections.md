@@ -1,40 +1,70 @@
-# Working with `<List>`
+# Presenting Collections
 
-> How to express common list shapes with an index-addressed `<List>`: fixed
-> lists and grids, bullet layers and particle pools, lists that grow and
-> shrink, lists whose items carry presentation state, and items whose shape
-> varies. Each section gives the shape, a short example, and the cost.
+> Games show many things of the same kind at once: bullets, enemies, tiles,
+> cards. This page shows how a view presents a collection like that with
+> `<List>`, which gives each item a view and reuses those views as items come,
+> go and move. It then works through common kinds of collection, from fixed
+> grids to lists that reorder, each with an example and what it costs.
 
-**Related:** [Proposal](../../notes/archive/004-list-proposal.md) - the design and its rationale.
-[Demo](../demos/reordering-lists/README.md) - a runnable reordering example, both ways.
-[the `SlotList` proposal](../../notes/archive/005-slot-list-proposal.md) - the model-side
-collection these patterns project.
-
----
-
-## The model in one paragraph
-
-`<List items={...}>` reads a source with a `length` and an `at(i)`. Arrays
-already are one, and so are `SlotList.slots` and `OrderedSlotList.slots`/
-`.ordered`; anything else is a two-member literal, whose `length` may be a
-function for a live count (`{ length: () => model.count, at: ... }`). Slot `N` renders whatever `at(N)` returns,
-and re-reads it every frame; the item view receives an accessor (`item()`), not
-a value. Slots are built once per index and retained forever. A slot whose
-`at(N)` is `undefined` hides and skips its subtree; a slot past the end is
-detached, and reattached rather than rebuilt when the list grows back. The list
-never compares identities and does no structural work while the length is
-unchanged.
-
-`items` takes the source itself or a getter returning it. Pass the source
-(`items={model.tiles}`) when the model mutates one collection in place, which
-is how models in this repo own collections. Pass a getter (`items={getStars}`)
-when the model replaces its collection.
+**Related:** [Views](views.md) · [View Composition](view-composition.md) ·
+[Bindings in Depth](bindings-in-depth.md) ·
+[Presentation State](../adding-visual-polish/presentation-state.md)
 
 ---
 
-## The two rules
+*Assumes familiarity with [Views](views.md), including
+[writing the body in JSX](views.md#writing-the-body-in-jsx).*
 
-Everything in this guide follows from these.
+## Why a List Needs Care
+
+A view of one bullet is simple. A view of every bullet on screen has to keep
+up with a collection that changes: bullets are fired and expire, enemies
+spawn and die, cards are shuffled. The obvious approach, building a child view
+for each new item and destroying it when the item goes, is costly when items
+come and go every frame, and easy to get wrong when they move.
+
+`<List>` takes a different approach. It keeps one child view per position in
+the collection and reuses it: each frame, the view at position 3 shows
+whatever item is at position 3 now. Views are built only when the collection
+grows longer than it has been before, and are kept for as long as the list is.
+
+## How `<List>` Works
+
+```tsx
+<List items={model.bullets}>
+    {(bullet) => <BulletView x={() => bullet().x} y={() => bullet().y} />}
+</List>
+```
+
+- **`items` is the collection to present**, and the `(bullet) => ...` function
+  builds the view for one position. It is called once per position, the first
+  time the collection is that long.
+- **Each position is a slot.** The function receives an accessor, `bullet()`,
+  rather than a bullet, because the item in a slot can change from one frame
+  to the next. The accessor always returns the slot's current item.
+- **An empty slot hides itself.** If the collection has no item at a position
+  (`bullet() === undefined`), that slot's view is hidden, and none of its bindings run.
+- **A shrinking list keeps its views.** Slots past the end are set aside, and
+  put back when the list grows again.
+- **Nothing is compared or rearranged.** When items move, each slot simply
+  shows a different item. The list does no work of its own while the
+  collection's length stays the same.
+
+`items` can be anything with a `length` and an `at(index)`: an array, the
+`slots` of a `SlotList`, the `slots` or `ordered` of an `OrderedSlotList` (both
+from `src/common/`), or an object literal such as
+`{ length: () => model.count, at: (i) => model.enemyAt(i) }`. Pass the
+collection itself when the model changes it in place, which is how models in
+this project own their collections. Pass a function returning it
+(`items={() => model.stars}`) when the model replaces it with a new one.
+
+`List` is a view function like any other, so a view with a plain TypeScript
+body can call it too: `List({ items: model.bullets.slots, children: (slot) => BulletView({ ... }) })`.
+
+## Two Rules for Item Views
+
+Because a slot's view is reused for whatever item is in the slot, an item
+view has to follow two rules.
 
 **Rule 1. Nothing item-dependent may be captured at construction.**
 
@@ -46,42 +76,42 @@ was built will not update.
 {(rock) => <graphics ref={(g) => drawAsteroid(g, rock().seed)} />}
 
 // Right: the view redraws when its slot's occupant changes.
-{(rock) => <AsteroidShape getSeed={() => rock().seed} />}
+{(rock) => <AsteroidShape seed={() => rock().seed} />}
 ```
 
 Values derived from `index` alone are constants and are fine to capture,
 because `index` never changes for a slot. Values derived from the *item* are
 not.
 
-**Rule 2. Presentation state that must follow an item belongs in a view model,
-keyed by item id.**
+**Rule 2. Presentation state that belongs to an item must be keyed to the
+item, not held by its slot.**
 
-State held in a slot's closure follows the slot. If the list can reorder, that
-is the wrong thing for it to follow. A `SlotList` or `OrderedSlotList` already
-gives each item a storage index that is stable for its lifetime, and that index
-serves as the key. See
+State kept in a slot's view stays with the slot. That is fine while each item
+keeps its slot for its lifetime, as in a `SlotList`, provided the view resets
+the state when a new item arrives. When items can move between slots, as in a
+list that reorders or packs its items to the front, store the state by the
+item's identity instead: an id the model gives each item, or a `SlotList`'s
+storage index. A [view model](../adding-visual-polish/presentation-state.md)
+is a natural home for that store when its logic deserves its own tests, but
+the rule is about the key, not where the store lives. See
 [Lists whose items carry presentation state](#lists-whose-items-carry-presentation-state).
 
----
+## Which Kind of Collection Is It?
 
-## Pick the shape first
-
-| Your list | Shape | Section |
+| Your list | How it behaves | Section |
 | --- | --- | --- |
 | Tilemap, board, hotbar, settings rows | Fixed length | [Fixed lists and grids](#fixed-lists-and-grids) |
-| Bullets, particles, debris, explosions | Fixed pool, model tombstones | [Bullet layers and pools](#bullet-layers-and-pools) |
+| Bullets, particles, debris, explosions | Fixed pool; expired items leave gaps | [Bullet layers and pools](#bullet-layers-and-pools) |
 | Loot drops, enemy waves, tower creeps | Grows and shrinks | [Lists that grow and shrink](#lists-that-grow-and-shrink) |
 | Card hand, inventory, leaderboard, kanban | Reorders, items carry state | [Items carrying presentation state](#lists-whose-items-carry-presentation-state) |
-| Mixed enemy types, mixed menu rows | Shape varies per slot | [Items whose shape varies](#items-whose-shape-varies) |
+| Mixed enemy types, mixed menu rows | Items of different kinds | [Items of different kinds](#items-of-different-kinds) |
 | Long scrolling list, chat backlog | Windowed | [Windowed lists](#windowed-lists) |
 | Nav overlay, selection rings, filtered results | Re-derived each frame | [Re-derived lists](#re-derived-lists) |
 
-The axis that predicts behaviour is the mutation shape, not whether the list is
-game-like or UI-like.
+What matters is how the collection changes, not whether it belongs to a game
+or a menu.
 
----
-
-## Fixed lists and grids
+## Fixed Lists and Grids
 
 The best case. The length is constant, so the list does one comparison per
 frame and never touches structure after the first.
@@ -108,8 +138,8 @@ constant for a slot:
 </List>
 ```
 
-`x` and `y` are static values here, applied once, because the layout is fixed.
-Only the texture is a getter.
+`x` and `y` are plain values here, set once, because the layout is fixed.
+Only the texture is a function.
 
 **Resizing a grid** (a level change) is just a length change. Slots up to the
 old high-water mark are reused; only genuinely new indices are built.
@@ -117,16 +147,14 @@ old high-water mark are reused; only genuinely new indices are built.
 **Cost:** one call and one comparison per frame for the list, plus the item
 refreshes.
 
----
+## Bullet Layers and Pools
 
-## Bullet layers and pools
-
-High churn, homogeneous items, potentially thousands of them. The shape is a
-[`SlotList`](../../notes/archive/005-slot-list-proposal.md) in the model, and the view is
-a projection of it with no guard of any kind:
+Items that come and go constantly, all of one kind, potentially thousands of
+them. The model holds them in a `SlotList`, and the view is a projection of it with no guard of
+any kind:
 
 ```tsx
-<List items={bullets.slots}>
+<List items={model.bullets.slots}>
     {(slot) => (
         <sprite
             texture={bulletTexture}
@@ -150,43 +178,26 @@ is also why `slot()` needs no null check: it is only called while the slot is
 occupied.
 
 An empty slot therefore costs one `at(i)` lookup and one presence check per
-frame, whatever the item view contains. The saving grows with the size of the
-item view rather than staying flat.
+frame, whatever the item view contains. Item views need no presence binding
+of their own: Scramble's bullets, bombs, rockets and explosions are each a
+`<List>` over a `SlotList`, and their views have only position bindings.
 
-This replaces two older patterns. A per-element guard prop is unnecessary,
-because the list guards once for the whole slot. And a hand-written leaf view,
-which used to be the only way to share an early-out across props, buys nothing
-here any more.
+## Lists that Grow and Shrink
 
-::: info
-This depends on `onRefresh` and the `SKIP_DESCENDANTS` sentinel. Before that
-landed, a hidden subtree still refreshed, and every binding needed its own
-guard.
-:::
-
----
-
-## Lists that grow and shrink
-
-When capacity genuinely varies, let the length follow a live count and keep the
+When capacity genuinely varies, let the length follow a changing count and keep the
 live items packed at the front of the model's array.
 
 ```tsx
 <List items={model.creeps}>
-    {(creep) => (
-        <CreepView
-            getX={() => creep().x}
-            getY={() => creep().y}
-        />
-    )}
+    {(creep) => <CreepView x={() => creep().x} y={() => creep().y} />}
 </List>
 ```
 
-The model's removal policy decides how much slot meaning churns:
+How the model removes an item decides how many slots change item:
 
 | Removal policy | Slots that change occupant | Use when |
 | --- | --- | --- |
-| Tombstone (`isActive = false`) | none | High churn. Prefer this |
+| Mark it inactive (`isActive = false`) | none | Items come and go often. Prefer this |
 | Swap-remove (`a[i] = a[last]; a.pop()`) | two | Order does not matter |
 | Splice | every slot after `i` | Order matters and the list is short |
 
@@ -194,14 +205,17 @@ Under a pull model all three render correctly, because every binding re-reads.
 The difference is only how many slots change meaning, which matters when slots
 carry presentation state.
 
-**Exit animations belong in the model.** An emptied slot hides instantly.
-If an item should fade out, keep it in the model array with a `dying` timer and
-let the view read that. Under architecture rule 1 the model owns time, so an
-exit animation was never the view's to own.
+**An exit animation needs the item kept around.** An emptied slot hides
+instantly, so to animate an item out, something must keep it in the
+collection until the animation is done. Either the model keeps it, with a
+`dying` timer the view reads, or a `SlotList`'s release delay keeps its slot
+while a view model fades it out as
+[presentation state](../adding-visual-polish/presentation-state.md). Which to
+choose depends on whether anything else in the game cares that the item is
+leaving: if so, the model should know; if the fade is purely cosmetic, the view
+can own it.
 
----
-
-## Lists whose items carry presentation state
+## Lists Whose Items Carry Presentation State
 
 This is the case reconciliation is usually invoked for. Here it is handled by
 keeping identity out of the scene graph and putting it in data instead. Note
@@ -214,6 +228,8 @@ slot, and a swap cannot move anything: the slot's eased position is already
 exactly where the slot is. Keyed to the item, each item is simply easing toward
 a different target after the swap, so it slides there.
 
+The state lives in a [view model](../adding-visual-polish/presentation-state.md):
+
 ```ts
 // Cosmetic state per item, indexed by dense integer id. `update()` is a hot
 // path, so this is an array index and never a hash lookup.
@@ -223,11 +239,11 @@ const cosmetics: TileCosmetic[] = [];
 const slotX: number[] = [];
 
 function update(deltaMs: number): void {
-    const count = options.getTileCount();
+    const count = options.count();
     const ease = 1 - Math.exp(-EASE_RATE * deltaMs / 1000);
 
     for (let i = 0; i < count; i++) {
-        const id = options.getTileId(i);
+        const id = options.idAt(i);
         let cosmetic = cosmetics[id];
         if (cosmetic === undefined) {
             // Seed at the target so a new item does not slide in from nowhere.
@@ -247,7 +263,7 @@ function update(deltaMs: number): void {
     }
 }
 
-function getX(index: number): number {
+function xAt(index: number): number {
     return slotX[index];
 }
 ```
@@ -257,7 +273,7 @@ The view is then ordinary:
 ```tsx
 <List items={model.tiles}>
     {(tile, index) => (
-        <container x={() => vm.getX(index)} scale={() => vm.getScale(index)}>
+        <container x={() => vm.xAt(index)} scale={() => vm.scaleAt(index)}>
             <graphics ref={drawTileFace} />
             <text text={() => tile().label} x={17} y={10} style={TILE_STYLE} />
         </container>
@@ -275,7 +291,9 @@ Three things make this work:
   however many bindings an item has.
 - **Nothing detects the swap.** The slide falls out of the targets changing.
 
-`cactii/views/board-view/pieces-view-model.ts` is the production example.
+Kwazy Cactii's pieces view model
+(`src/games/cactii/views/board-view/pieces-view-model.ts`) is the production
+example.
 
 ### Keyed by storage index: `OrderedSlotList`
 
@@ -317,8 +335,8 @@ Compared with the array form:
   view is still there to animate out. From a plain array, a removed item is
   simply gone.
 
-[`src/demos/reordering-lists/`](../demos/reordering-lists/README.md) runs both
-forms side by side, driven by the same script.
+The [reordering-lists demo](https://github.com/yortus/mvt-games/blob/main/src/demos/reordering-lists/README.md)
+runs both forms side by side, driven by the same script.
 
 ### Drag and drop
 
@@ -333,19 +351,18 @@ of the gesture to the container, not the slot:
 The slot the item came from renders as a gap. This is how drag and drop is
 built regardless of framework, so the constraint costs nothing.
 
----
+## Items of Different Kinds
 
-## Items whose shape varies
-
-Index addressing cannot vary a slot's structure. Put a `<Switch>` inside the
-slot, with one `<Match>` per shape:
+A slot's view is built once, so it cannot become a different kind of view when
+a different kind of item arrives. Put a `<Switch>` inside the slot, with one
+`<Match>` per kind:
 
 ```tsx
 <List items={model.enemies}>
     {(enemy) => (
         <Switch>
             <Match when={() => enemy().kind === 'asteroid'}>
-                <AsteroidShape getSeed={() => enemy().seed} />
+                <AsteroidShape seed={() => enemy().seed} />
             </Match>
             <Match when={() => enemy().kind === 'ufo'}>
                 <sprite texture={ufoTexture} x={() => enemy().x} y={() => enemy().y} />
@@ -372,12 +389,10 @@ slot, with one `<Match>` per shape:
   costs memory. Pass a function as the `<Match>` child to build it on first
   selection instead: `<Match when={...}>{() => <HeavyView />}</Match>`.
 
----
-
-## Windowed lists
+## Windowed Lists
 
 A long scrolling list renders a constant number of slots over a sliding offset.
-This is one of the best cases for index addressing: the length never changes,
+This is one of the best cases for `<List>`: the length never changes,
 so there is no structural work at all while scrolling.
 
 The source is a two-member object literal, built once. Its `length` is a
@@ -399,12 +414,14 @@ const visibleRows: ListSource<Row> = {
 Near the end of the data, `at` returns `undefined` for rows past the last one,
 so those slots hide themselves. No guard is needed in the model.
 
----
+The same trick covers a count with nothing to project: a source whose `at`
+returns its index shows one slot per unit. Scramble's HUD draws its lives this
+way, with `{ length: bindings.lives, at: (i) => i }`.
 
-## Re-derived lists
+## Re-derived Lists
 
 A nav overlay, selection rings, or a filtered result set recomputed each frame
-produces all-new object identities every frame. Index addressing does not care:
+produces all-new objects every frame. `<List>` does not care:
 only the length matters structurally, so the list does nothing on frames where
 the count is stable.
 
@@ -418,18 +435,16 @@ Keep an `items` getter allocation-free. It runs every frame:
 <List items={model.visibleItems}>
 ```
 
----
-
-## Common mistakes
+## Common Mistakes
 
 | Mistake | Why it breaks | Instead |
 | --- | --- | --- |
 | Capturing item data when the slot is built | The slot's occupant changes later | Make it a getter (rule 1) |
-| Holding per-item cosmetic state in the slot closure | It follows the slot, not the item | View model keyed by item id, or by storage index for a `SlotList` (rule 2) |
+| Holding per-item cosmetic state in the slot's view when items move between slots | It follows the slot, not the item | A store keyed by item id, or by storage index for a `SlotList` (rule 2) |
 | `Map<id, state>` for that store | `update()` is a hot path | Array indexed by a dense integer id |
 | Guarding each binding in a slot | `<List>` already hides empty slots, and an empty slot skips its subtree via `SKIP_DESCENDANTS` | Let the list do it. `slot()` is only called while occupied |
-| Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, whose codegen returns `SKIP_DESCENDANTS` and invalidates nothing |
+| Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, which returns `SKIP_DESCENDANTS` and invalidates nothing |
 | An allocating `items` getter | Runs every frame | Have the model maintain the collection |
-| Passing a value for a collection the model replaces | The list keeps reading the old one | Pass a getter: `items={getStars}` |
-| Expecting an exit animation from a removed item | Emptied slots hide instantly | Keep the item in the model with a `dying` timer, or use a `SlotList` release delay |
+| Passing a value for a collection the model replaces | The list keeps reading the old one | Pass a function: `items={() => model.stars}` |
+| Expecting an exit animation from a removed item | Emptied slots hide instantly | Keep the item around: in the model with a `dying` timer, or with a `SlotList` release delay while a view model fades it |
 | Reading the model by `index` in a slot beyond the current length | Out of range | Read through the item accessor, which only runs while the slot is occupied |

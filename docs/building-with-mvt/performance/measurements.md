@@ -282,7 +282,7 @@ happens.
 - **These scenes use whole numbers.** V8 stores whole numbers without
   allocating, but can box a fractional number in a small heap object when it
   stores or passes one, and whether it does can depend on code nearby. The
-  JSX runtime keeps fractional values unboxed in the props it writes only on
+  JSX runtime keeps fractional values unboxed in the attributes it writes only on
   a change, such as `width`: 1000 sprites with a fractional `width` allocate
   nothing per frame, changed or not.
 - **Reusing containers avoids most of a pool's garbage.** With `<List>` over a

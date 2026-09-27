@@ -71,7 +71,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Proposed, with its top-level tidy-up already done. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Proposed. Caching each container's method in the pixi-mvt pass loop (prototyped: 30-40% cheaper refresh in mixed scenes), a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
-| 018 | [One view convention](./proposals/018-one-view-convention.md) | Accepted, being implemented. Every view becomes `FooView(bindings)`, with query bindings named for what they return and each one's type saying whether it takes a fixed value, a function or either; each body is JSX or plain TypeScript, whichever suits the view. Architecture docs, convention docs and every module's migration done; the rest of the JSX runtime's graduation, optional JSX bodies, and the Building with MVT rewrite remain. Supersedes 007 |
+| 018 | [One view convention](./proposals/018-one-view-convention.md) | Accepted, being implemented. Every view becomes `FooView(bindings)`, with query bindings named for what they return and each one's type saying whether it takes a fixed value, a function or either; each body is JSX or plain TypeScript, whichever suits the view. Architecture docs, convention docs, every module's migration, and the Building with MVT rewrite (with the `<List>` guide now a docs page) done; JSX in the playground and optional JSX bodies remain. Supersedes 007 |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
 
 **How they relate.** All six can be read on their own. 008 concerns
@@ -111,9 +111,10 @@ the boids demo.
 
 ## Elsewhere
 
-- **002** and **006** turned out to describe shipped code, so they live next
-  to it: [src/pixi-mvt/design-notes.md](../src/pixi-mvt/design-notes.md) and
-  [src/pixi-jsx/list-patterns.md](../src/pixi-jsx/list-patterns.md).
+- **002** and **006** turned out to describe shipped code. 002 lives next
+  to it, [src/pixi-mvt/design-notes.md](../src/pixi-mvt/design-notes.md); 006,
+  the `<List>` patterns guide, is now the docs page
+  [Presenting Collections](../docs/building-with-mvt/presenting-the-world/collections.md).
 - **009** was never used.
 - Tasks 014-016 were numbered 001-003 before 2026-09-26.
 - [Can pull match push?](../docs/articles/can-pull-match-push.md), a write-up

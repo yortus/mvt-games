@@ -373,7 +373,7 @@ view.addChild(ShipView({ screenX: () => ship.x * TILE_SIZE, screenY: () => ship.
 
 | Element | Rule | Example |
 | --- | --- | --- |
-| View function | `PascalCase` noun ending in `View`. Needed for a JSX tag: a lowercase tag is an intrinsic element | `HudView`, `TerrainView` |
+| View function | `PascalCase` noun ending in `View`, so it can be used as a JSX tag: a tag calls your own function only if its name starts with a capital letter | `HudView`, `TerrainView` |
 | Bindings type and parameter | `XxxViewBindings`, parameter `bindings`. Never `props`, even in JSX files | `HudViewBindings` |
 | Query binding | Named for what it returns. No `get` prefix | `score`, `screenX`, `phase` |
 | Boolean query binding | `is` / `has` / `can`, as for [Boolean Properties](#boolean-properties) | `isAlive`, `canFlip` |
@@ -387,27 +387,28 @@ the same object *props*; this project does not, because the architecture's
 word is *bindings*, and because an attribute on an intrinsic element sets a
 Pixi *property*.
 
-### Fixed and Changing Answers
+### Fixed and Changeable Binding Values
 
-Each query binding's type says what the view accepts, and so what it
-supports:
+Each query binding's type says whether the view supports its value changing:
 
 | Type | Use for | The view |
 | --- | --- | --- |
-| `() => T` | Model state, which changes | Calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
-| `T` | Values the view is built around: a size that shapes its structure, a label | Reads it once, at construction |
-| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both kinds of answer, where the convenience at many call sites repays the extra work | Handles both |
+| `() => T` | Model state, which changes | Supports change: calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
+| `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
+| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
+
+Supporting change is the more flexible choice. Declare `T` only as an honest
+statement that the view does not support the value changing, and relax it
+when it does: widening `T` to `ValueOrGetter<T>` does not break callers.
 
 Never declare a query binding as a function and then read it only once: the
 view silently stops following a value its bindings promise to follow. That
-breaks [V-reactive](../architecture/rules.md#view-rules). If the view only
-handles a fixed value, declare it as `T`; widening it to `ValueOrGetter<T>`
-later does not break callers. See
-[Changing and Fixed Answers](../architecture/bindings.md#changing-and-fixed-answers).
+breaks [V-reactive](../architecture/rules.md#view-rules). See
+[Fixed and Changeable Binding Values](../architecture/bindings.md#fixed-and-changeable-binding-values).
 
 ### Top-Level Views
 
-A top-level view takes the model as a fixed answer in its bindings, so it has
+A top-level view takes the model as a fixed value in its bindings, so it has
 the same signature as every other view:
 
 ```ts
@@ -477,14 +478,12 @@ And before writing a per-frame redraw, check whether drawing once and then
 scaling, tinting or resizing would do. The
 [`mvt-view` skill](../ai-agents/skill-mvt-view.md) covers both kinds of body.
 
-### Older Examples
+### Enforcement
 
-Every view in `src/` follows this convention, and lint enforces its naming
-(except in the playground, which builds DOM views). The Building with MVT
-pages still show the older `createXxxView(bindings)` factories and `get*()`
-query bindings until they are rewritten
-([proposal 018](https://github.com/yortus/mvt-games/blob/main/notes/proposals/018-one-view-convention.md));
-follow this section rather than those examples.
+Every view in `src/` follows this convention, and lint enforces its naming:
+no `createXxxView` functions, no `get*` members in `XxxViewBindings`,
+`XxxViewModel` or `XxxViewModelOptions` interfaces, and no `XxxViewProps`.
+The playground is exempt, since it builds DOM views.
 
 ## Code Organisation
 

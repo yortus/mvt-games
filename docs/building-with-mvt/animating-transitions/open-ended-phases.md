@@ -115,9 +115,9 @@ motion directly:
 
 ```ts
 function refresh() {
-    const phase = bindings.getPhase();
-    const progress = bindings.getProgress();
-    const elapsed = bindings.getElapsedMs();
+    const phase = bindings.phase();
+    const progress = bindings.progress();
+    const elapsed = bindings.elapsedMs();
 
     if (phase === 'closed') {
         popup.visible = false;

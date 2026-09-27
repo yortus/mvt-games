@@ -72,38 +72,44 @@ is the bullet, is it visible, what is the score. It never changes anything; it
 only returns a value. That is what lets `refresh()` read every query binding
 as often as it likes without side effects.
 
-### Changing and Fixed Answers
+### Fixed and Changeable Binding Values
 
-A query binding can be answered in one of two ways:
+A query binding's value can be given in one of two ways:
 
-- **With a function.** The view calls it whenever it needs the current value,
+- **As a function.** The view calls it whenever it needs the current value,
   which in practice means every `refresh()`. This is how a query binding
   follows state that changes, such as a position.
-- **With a fixed value.** The view reads it once, at construction. This suits
-  values the view is built around that never change for its lifetime, such as
-  a grid size or a button's label.
+- **As a fixed value.** The view reads it once, at construction, and does not
+  follow any later change.
 
-The view's bindings type declares which answers each query binding accepts.
-There are three choices:
+The view's bindings type declares which it accepts for each query binding,
+and so whether the view supports that value changing. There are three
+choices:
 
 | Declared as | Callers pass | For callers | For the view |
 |---|---|---|---|
-| Function only: `() -> T` | A function. A fixed value must be wrapped: `() -> 42` | Can supply anything, but wrapping fixed values is a little clumsy, and the wiring no longer shows which values are fixed | Must handle a changing value for every query binding, even one that in practice never changes. [Change detection](views.md#immediate-mode-data-flow-retained-mode-output) keeps rarely-changing query bindings cheap, but supporting a change to something structural, such as a grid size, can mean rebuilding |
-| Value only: `T` | A fixed value | Cannot supply anything that changes | The simplest: read once at construction |
-| Either: `T or () -> T` | Whichever suits | The most convenient, and the wiring shows which values are fixed and which change | Must handle both forms. Wrapping fixed values in functions at construction is simple, but reads them every frame; keeping the distinction lets the view skip per-frame work for fixed values |
+| Function only: `() -> T` | A function. A fixed value must be wrapped: `() -> 42` | Can supply anything, but wrapping fixed values is a little clumsy, and the wiring no longer shows which values are fixed | Supports the value changing, for every query binding. [Change detection](views.md#immediate-mode-data-flow-retained-mode-output) keeps rarely-changing values cheap, though following a change to something structural, such as a grid size, can mean rebuilding |
+| Value only: `T` | A fixed value | Cannot supply a value that changes | Does not support the value changing. The simplest to write, but a limitation every caller has to live with |
+| Either: `T or () -> T` | Whichever suits | The most convenient, and the wiring shows which values are fixed and which change | Supports the value changing, and handles both forms. Wrapping fixed values in functions at construction is simple, but reads them every frame; keeping the distinction lets the view skip per-frame work for fixed values |
+
+Supporting change is the more flexible choice: the view can be used wherever
+the value comes from, fixed or not. A value-only query binding is an honest
+statement of a limitation instead, useful where following a change would
+cost more than it is worth for now.
 
 A few consequences follow:
 
 - **A query binding declared as a function may change, and the view must treat
   it so.** A view that reads a function once at construction and keeps the
   result breaks [V-reactive](rules.md#view-rules): its bindings promise to
-  follow a value that it silently stops following. If the view can only handle
-  a fixed value, it must declare the query as value-only, so its bindings
-  state what it actually supports.
-- **Widening a query binding to "either" does not break callers.** Every call
-  site that passed a function, or a fixed value, still passes something the
-  view accepts. The view's implementation changes; its callers do not.
-  Changing directly between function-only and value-only does break callers.
+  follow a value that it silently stops following. If the view does not
+  support the value changing, it must declare the query binding as
+  value-only, so its bindings state the limitation.
+- **The limitation can be relaxed later without breaking callers.** Widening
+  a value-only query binding to "either" leaves every call site passing
+  something the view accepts, as does widening a function-only one. The
+  view's implementation changes; its callers do not. Changing directly
+  between function-only and value-only does break callers.
 - **"Either" depends on the language.** It needs a type that is a union of a
   value and a function, and a way to tell them apart at run time. TypeScript
   and dynamically typed languages such as JavaScript, Python and Lua have
@@ -116,7 +122,8 @@ A few consequences follow:
 As a rule of thumb: declare what the view actually supports. Accepting either
 form is the most convenient for callers and suits widely reused views, where
 the extra work in the view is repaid at many call sites. A value-only query
-binding can be widened later without breaking anyone.
+binding states a limitation that can be relaxed later without breaking
+anyone.
 
 ## Relay Bindings and Input Handling
 
@@ -151,12 +158,13 @@ createGameView(gameModel):
         x: () -> gameModel.ship.x * SCALE,
         y: () -> gameModel.ship.y * SCALE,
         isVisible: () -> gameModel.ship.isAlive,
-        size: SHIP_SIZE,                         -- a fixed answer
+        size: SHIP_SIZE,                         -- a fixed value
     })
 ```
 
-Each changing answer is a simple function that reads a model property. The
-view doesn't know the model exists - it only sees its bindings interface.
+Each value that changes is given as a simple function that reads a model
+property. The view doesn't know the model exists - it only sees its bindings
+interface.
 
 ## When NOT to Use Bindings
 
@@ -172,5 +180,5 @@ So the cost vs benefit is in favour of direct model access in this case.
 - **Application constants.** Applications typically have ambient constants that never vary at runtime
 (e.g. fixed grid dimensions, cell sizes, etc). For views that are specific to the application,
 these constants may be imported directly. A reusable view takes such values
-as fixed answers to its query bindings instead, so each construction site decides
-them.
+as fixed values of its query bindings instead, so each construction site
+decides them.

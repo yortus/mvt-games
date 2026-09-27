@@ -184,9 +184,9 @@ Settled questions that should not be reopened without new information are in
   Lower priority, because `<List>` and `<Switch>` already refresh what they
   build. Trigger: hand-written views start building children inside their
   methods. [001](../../archive/001-mvt-plugin-rework-plan.md) section 13, item 1.
-- **Fold the `<List>` patterns guide into `docs/`.** The guide is
-  [src/pixi-jsx/list-patterns.md](../../../src/pixi-jsx/list-patterns.md).
-  Trigger: the JSX runtime graduates. 004 section 9, step 8.
+- ~~**Fold the `<List>` patterns guide into `docs/`.**~~ Done 2026-09-27,
+  with 018's Building with MVT rewrite: it is now
+  [Presenting Collections](../../../docs/building-with-mvt/presenting-the-world/collections.md).
 - **`<List>` follow-ups**: a `range()` helper, a lint rule against calling
   the item accessor while building, merging the per-slot presence check into
   the item view's method, and a typed `matchOn<T>()`. Each names its trigger.

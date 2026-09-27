@@ -260,8 +260,9 @@ export function GameView(bindings: GameViewBindings): Container {
 }
 ```
 
-`width={PADDLE_WIDTH}` is a fixed answer: `PaddleViewBindings` declares
-`width: number`, so the paddle view reads it once, at construction.
+`width={PADDLE_WIDTH}` is a fixed value: `PaddleViewBindings` declares
+`width: number`, so the paddle view reads it once, at construction, and does
+not support it changing.
 
 ## Step 4: Create the Entry Point
 

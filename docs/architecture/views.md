@@ -35,10 +35,10 @@ The contract:
 
 - **Reactive.** Every value that may change between frames must be re-read in
   `refresh()`, never cached at construction time. That covers model state
-  read directly and query bindings answered with functions. Only a value the
-  view is given as fixed, such as a query binding answered with a fixed
-  value, may be read once at construction (see
-  [Bindings](bindings.md#changing-and-fixed-answers)).
+  read directly, and query bindings given as functions. The one exception is
+  a query binding the view declares as a fixed value: the view reads it once,
+  at construction, and does not support it changing (see
+  [Bindings](bindings.md#fixed-and-changeable-binding-values)).
 - **Idempotent.** Calling `refresh()` twice with the same model state
   produces the same output.
 - **No side effects.** `refresh()` reads state and writes to the presentation

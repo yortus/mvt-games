@@ -33,9 +33,9 @@ inside it, with no renderer needed.
 
 ```ts
 it('hides the bullet when not visible', () => {
-    const view = createBulletView({
-        getX: () => 100,
-        getY: () => 200,
+    const view = BulletView({
+        x: () => 100,
+        y: () => 200,
         isVisible: () => false,
     });
 
@@ -48,9 +48,9 @@ it('hides the bullet when not visible', () => {
 ```ts
 it('positions the sprite at the bound coordinates', () => {
     let x = 50;
-    const view = createBulletView({
-        getX: () => x,
-        getY: () => 100,
+    const view = BulletView({
+        x: () => x,
+        y: () => 100,
         isVisible: () => true,
     });
 

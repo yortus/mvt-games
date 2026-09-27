@@ -169,8 +169,8 @@ The view reads `phase` and `progress` and maps them to visual properties:
 
 ```ts
 function refresh() {
-    const phase = bindings.getPhase();
-    const progress = bindings.getProgress();
+    const phase = bindings.phase();
+    const progress = bindings.progress();
 
     if (phase === 'closed') {
         banner.visible = false;

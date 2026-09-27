@@ -94,12 +94,15 @@ total duration and pre-allocates all step state. No per-tick allocations.
 
 ## Using Step Progress in Views
 
-Each step's `progress` drives a piece of the visual effect. Views read
-it in `refresh()` the same way they read any other binding:
+Each step's `progress` drives a piece of the visual effect. The sequence
+object itself never changes, so a view takes it as a fixed value
+(`matchSequence: Sequence<...>`, not a function; see
+[Bindings in Depth](../presenting-the-world/bindings-in-depth.md#fixed-and-changeable-binding-values)),
+and reads its steps' progress in `refresh()` every frame:
 
 ```ts
 function refresh() {
-    const seq = bindings.getMatchSequence();
+    const seq = bindings.matchSequence;
 
     // Flash: bright overlay that fades out
     if (seq.steps.flash.isActive) {
@@ -134,14 +137,14 @@ bindings.
 The parent view creates the sequence and passes it to child views:
 
 ```ts
-function createBoardView(bindings: BoardBindings): Container {
+function BoardView(bindings: BoardViewBindings): Container {
     const matchSequence = createSequence(MATCH_EFFECT_STEPS);
 
     const view = new Container();
     view.addChild(
-        createFlashOverlayView({ getMatchSequence: () => matchSequence }),
-        createShakeView({ getMatchSequence: () => matchSequence }),
-        createParticleView({ getMatchSequence: () => matchSequence }),
+        FlashOverlayView({ matchSequence }),
+        ShakeView({ matchSequence }),
+        ParticleView({ matchSequence }),
     );
 
     // The parent's onUpdate runs before its children's, so every child
@@ -181,7 +184,7 @@ const updateEffects = createSequenceReaction(matchSequence, {
     dust: {
         entering: () => {
             // One-shot: position dust particles at matched cells
-            positionDustAt(bindings.getMatchedCells());
+            positionDustAt(bindings.matchedCells());
         },
         active: (progress) => {
             // Continuous: expand and fade dust each frame
@@ -199,7 +202,7 @@ const updateEffects = createSequenceReaction(matchSequence, {
     },
     popup: {
         entering: () => {
-            label.text = `+${bindings.getPoints()}`;
+            label.text = `+${bindings.points()}`;
         },
         active: (progress) => {
             label.position.y = -RISE_PX * progress;
@@ -236,7 +239,7 @@ A sequence is typically triggered by a model state change. The view (or
 parent view) watches for the change and calls `start()`:
 
 ```ts
-const phaseWatcher = watch({ phase: bindings.getPhase });
+const phaseWatcher = watch({ phase: bindings.phase });
 
 function update(deltaMs: number) {
     const { phase } = phaseWatcher.poll();
@@ -310,7 +313,7 @@ step state as usual:
 
 ```ts
 function refresh() {
-    clearSequence.progress = bindings.getProgress(); // 0..1 from the model
+    clearSequence.progress = bindings.progress(); // 0..1 from the model
 
     if (clearSequence.steps.flash.isActive) {
         overlay.visible = true;

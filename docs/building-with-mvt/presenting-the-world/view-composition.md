@@ -6,7 +6,7 @@
 > needs, not model structure.
 
 **Related:** [Views (Learn)](views.md) ·
-[Model Composition](../simulating-the-world/model-composition.md) · [Bindings in Depth](bindings-in-depth.md) ·
+[Model Composition](../simulating-the-world/model-composition.md) · [Bindings in Depth](bindings-in-depth.md) · [Presenting Collections](collections.md) ·
 [Taming Complex Views](../adding-visual-polish/taming-complex-views.md)
 
 ---
@@ -18,42 +18,33 @@
 Views compose hierarchically. A parent view creates child views, each with its
 own bindings, and adds them to the presentation layer.
 
-The top-level application view typically receives model(s) directly and wires
+The top-level application view typically takes the model(s) itself and wires
 bindings for each child. Child views know nothing about the model tree - they
-only see their own `get*()`/`on*()` bindings:
+only see their own query and relay bindings:
 
-```ts
-function createGameView(game: GameModel): Container {
-    const container = new Container();
-
-    container.addChild(
-        createGridView({
-            getRows: () => game.grid.rows,
-            getCols: () => game.grid.cols,
-            getTileKind: (r, c) => game.grid.tileAt(r, c),
-        }),
+```tsx
+function GameView(bindings: GameViewBindings): Container {
+    const { model } = bindings;
+    return (
+        <container>
+            <GridView
+                rows={() => model.grid.rows}
+                cols={() => model.grid.cols}
+                tileKindAt={(r, c) => model.grid.tileAt(r, c)}
+            />
+            <HudView score={() => model.score.score} />
+            <KeyboardInputView
+                onDirectionChanged={(dir) => { model.playerInput.direction = dir; }}
+            />
+        </container>
     );
-
-    container.addChild(
-        createHudView({
-            getScore: () => game.score.score,
-        }),
-    );
-
-    container.addChild(
-        createKeyboardInputView({
-            onDirectionChange: (dir) => {
-                game.playerInput.direction = dir;
-            },
-        }),
-    );
-
-    return container;
 }
 ```
 
-Each child view is independent - it only knows about the `get*()` and `on*()`
-members it needs.
+Each child view is independent - it only knows about the bindings it needs.
+The parent could equally build its container in plain TypeScript and call
+`GridView({ ... })` and the rest, adding each result as a child; see
+[Views](views.md#writing-the-body-in-jsx).
 
 ## View Hierarchy
 
@@ -68,8 +59,8 @@ graph TD
     Hud --> Lives["LivesDisplay"]
 ```
 
-The top-level view is application-specific and receives the model directly.
-Leaf views are reusable and receive bindings. This matches the access
+The top-level view is application-specific and takes the model itself.
+Leaf views are reusable and take query and relay bindings. This matches the access
 patterns described in [Bindings in Depth](bindings-in-depth.md).
 
 ## Multiple Views, One Model
@@ -93,17 +84,10 @@ A game phase property might be read by two views:
 
 Both are wired to the same model property:
 
-```ts
+```tsx
 // In the top-level view
-createGridView({
-    getPhase: () => game.phase,
-    // ...
-});
-
-createOverlayView({
-    getPhase: () => game.phase,
-    // ...
-});
+<GridView phase={() => model.phase} /* ... */ />
+<OverlayView phase={() => model.phase} /* ... */ />
 ```
 
 The same model property drives two independent presentational responses - no
@@ -119,13 +103,30 @@ each frame rather than subscribing to events from other views.
 
 ## Dynamic Child Views
 
-When the number of game objects changes at runtime (asteroids split, bullets fire
-and expire), the parent view may use change detection to rebuild only the
-affected child lists:
+When the number of game objects changes at runtime (asteroids split, bullets
+fire and expire), the parent view needs a child view per object. The simplest
+way is a `<List>`, which projects a collection: one item view per slot, built
+once and reused as the collection grows, shrinks and changes:
+
+```tsx
+<List items={model.asteroids}>
+    {(asteroid) => (
+        <AsteroidView x={() => asteroid().x} y={() => asteroid().y} radius={() => asteroid().radius} />
+    )}
+</List>
+```
+
+The item view receives `asteroid`, an accessor for whatever occupies its slot
+this frame, so its bindings always follow the current item. See
+[Presenting Collections](collections.md) for the shapes of list this covers, and what each costs.
+
+A parent with a plain TypeScript body can call `List({ items, children })`
+just the same, or manage its child views by hand, using change detection to
+rebuild them only when the count changes:
 
 ```ts
 const watcher = watch({
-    asteroidCount: () => game.asteroids.length,
+    asteroidCount: () => model.asteroids.length,
 });
 
 function refresh(): void {
@@ -169,7 +170,7 @@ happen to look similar because the presentation maps directly to the domain.
   bindings without mirroring the nesting.
 
 The key principle: **bindings decouple the view tree from the model tree.**
-Because views read state through `get*()` accessors rather than navigating
+Because views read state through query bindings rather than navigating
 model internals directly, the two trees can be shaped independently.
 
 ---

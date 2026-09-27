@@ -38,7 +38,7 @@ The simplest approach is tracking the previous value yourself:
 let prevScore = -1;
 
 function refresh(): void {
-    const score = bindings.getScore();
+    const score = bindings.score();
     if (score !== prevScore) {
         prevScore = score;
         label.text = String(score);
@@ -57,9 +57,9 @@ re-evaluated and the result reports which values changed:
 
 ```ts
 const watcher = watch({
-    rows: bindings.getRows,
-    cols: bindings.getCols,
-    phase: bindings.getPhase,
+    rows: bindings.rows,
+    cols: bindings.cols,
+    phase: bindings.phase,
 });
 
 function refresh(): void {
@@ -146,7 +146,7 @@ know anyone is listening:
 
 ```ts
 const watcher = watch({
-    phase: bindings.getGamePhase,
+    phase: bindings.gamePhase,
 });
 
 function refresh(): void {
