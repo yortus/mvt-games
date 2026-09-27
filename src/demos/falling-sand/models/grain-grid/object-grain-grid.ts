@@ -69,6 +69,8 @@ export function createObjectGrainGrid(options: GrainGridOptions): GrainGrid {
         step,
         rotateHalfTurn,
         clear,
+        // Nothing tracks these reads, so there is no one to tell.
+        batch: (edits) => edits(),
         save,
         load,
     };
@@ -169,6 +171,8 @@ export function createObjectGrainGrid(options: GrainGridOptions): GrainGrid {
         for (let id = 0; id < grains.length; id++) {
             const grain = pool[id];
             kinds.push(grain.isLive ? grain.kind : undefined);
+            // A free id's fields mean nothing; saved as zeroes, as allocated.
+            if (!grain.isLive) continue;
             grainCols[id] = grain.col;
             grainRows[id] = grain.row;
             fallSpeeds[id] = grain.fallSpeed;

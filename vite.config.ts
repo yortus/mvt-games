@@ -75,5 +75,14 @@ export default defineConfig({
     },
     test: {
         root: PROJECT_ROOT,
+        // Node resolves solid-js to its server build, where effects never
+        // run. Tests get the browser build, as a page does, and Vite loads
+        // solid-js and pixi-solid itself so that they share that one copy.
+        alias: [
+            { find: /^solid-js$/, replacement: resolve(PROJECT_ROOT, 'node_modules/solid-js/dist/solid.js') },
+            { find: /^solid-js\/store$/, replacement: resolve(PROJECT_ROOT, 'node_modules/solid-js/store/dist/store.js') },
+            { find: /^solid-js\/web$/, replacement: resolve(PROJECT_ROOT, 'node_modules/solid-js/web/dist/web.js') },
+        ],
+        server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
     },
 });

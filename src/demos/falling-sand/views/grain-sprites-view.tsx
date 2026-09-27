@@ -6,16 +6,16 @@ import { pickGrainTint } from './grain-colors';
 import type { Grains } from '../models';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface GrainSpritesViewProps {
+export interface GrainSpritesViewBindings {
     /** Every grain, addressed by id: slot `id` shows the grain with id `id`. */
     grains: () => Grains;
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -29,10 +29,10 @@ export interface GrainSpritesViewProps {
  * one white texture and differ only by tint, so Pixi draws them in a handful
  * of batches.
  */
-export function GrainSpritesView(props: GrainSpritesViewProps): Container {
+export function GrainSpritesView(bindings: GrainSpritesViewBindings): Container {
     // The grains, as the list read them this frame. The list reads its items
     // once per frame, before any of its slots refresh, so every slot's props
-    // share that one read rather than each reading `props.grains()` again.
+    // share that one read rather than each reading `bindings.grains()` again.
     let grains: Grains = NO_GRAINS;
 
     return (
@@ -51,7 +51,7 @@ export function GrainSpritesView(props: GrainSpritesViewProps): Container {
     );
 
     function readGrains(): Grains {
-        grains = props.grains();
+        grains = bindings.grains();
         return grains;
     }
 }

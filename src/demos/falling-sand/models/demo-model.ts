@@ -140,6 +140,8 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
     let phase: TankPhase = 'running';
     let flipElapsedMs = 0;
     let stepAccumulatorMs = 0;
+    // The current update's elapsed time, for `advance`, which takes no arguments.
+    let pendingDeltaMs = 0;
 
     let tool: ToolKind = 'sand';
     let isPouring = false;
@@ -204,6 +206,15 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
     // --- Update -------------------------------------------------------------
 
     function update(deltaMs: number): void {
+        // However many steps this takes, one change for anything tracking the
+        // grains, so it never sees the tank half stepped. `advance` is a
+        // named function, not a closure, so no frame allocates one.
+        pendingDeltaMs = deltaMs;
+        grid.batch(advance);
+    }
+
+    function advance(): void {
+        const deltaMs = pendingDeltaMs;
         if (phase === 'flipping') {
             advanceFlip(deltaMs);
             return;
@@ -233,9 +244,13 @@ export function createDemoModel(options: DemoModelOptions): DemoModel {
     }
 
     function reset(): void {
+        grid.batch(rebuildScene);
+        standUpright();
+    }
+
+    function rebuildScene(): void {
         grid.clear();
         if (scene === 'starting') addStartingScene(grid);
-        standUpright();
     }
 
     /** Stand the tank upright and idle, after its contents are replaced. */

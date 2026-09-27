@@ -4,10 +4,12 @@ import { type Container, type FederatedPointerEvent, type Graphics, Point, Recta
 import type { Grains } from '../models';
 import { GrainPixelsView } from './grain-pixels-view';
 import { GrainSpritesView } from './grain-sprites-view';
+import { SolidGrainPixelsView } from './solid-grain-pixels-view';
+import { SolidGrainSpritesView } from './solid-grain-sprites-view';
 import { TANK_HEIGHT, TANK_WIDTH, TANK_X, TANK_Y } from './view-constants';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
 /**
@@ -18,7 +20,7 @@ import { TANK_HEIGHT, TANK_WIDTH, TANK_X, TANK_Y } from './view-constants';
  */
 export type GrainsViewKind = 'sprites' | 'pixels';
 
-export interface TankViewProps {
+export interface TankViewBindings {
     /**
      * The tank's size in cells. Read once, when the view is built. The tank
      * is always drawn `TANK_WIDTH` x `TANK_HEIGHT` pixels, so more cells are
@@ -30,6 +32,13 @@ export interface TankViewProps {
     grains: () => Grains;
     /** Which view draws the grains. Read once, when the view is built. */
     grainsView: GrainsViewKind;
+    /**
+     * Draw the grains with SolidJS effects, which re-run when a grain
+     * changes, rather than by polling every grain every frame. Needs grains
+     * whose reads are tracked (a `'store'` model). Read once, when the view is
+     * built.
+     */
+    isReactive: boolean;
     /** How far through a flip the tank is, from 0 to 1. 0 when upright. */
     flipProgress: () => number;
     /** Whether the tank is flipping. The brush ring hides while it does. */
@@ -47,7 +56,7 @@ export interface TankViewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -55,12 +64,14 @@ export interface TankViewProps {
  * Pointer gestures are relayed in cells, through the tank's rotation; what
  * they do is up to whoever handles them.
  *
- * The grains are drawn by one of two views, chosen by `grainsView` when the
- * tank view is built: a sprite per grain (`GrainSpritesView`), or one texture
- * with a pixel per cell (`GrainPixelsView`). Both draw in cells, inside a
- * container that scales cells to pixels, so neither knows the tank's size on
- * screen. Only the chosen one is built; changing it means building a new
- * tank view.
+ * The grains are drawn by one of four views, chosen by `grainsView` and
+ * `isReactive` when the tank view is built: a sprite per grain, or one
+ * texture with a pixel per cell, each either polled every frame
+ * (`GrainSpritesView`, `GrainPixelsView`) or driven by SolidJS effects
+ * (`SolidGrainSpritesView`, `SolidGrainPixelsView`). All draw in cells,
+ * inside a container that scales cells to pixels, so none knows the tank's
+ * size on screen. Only the chosen one is built; changing it means building
+ * a new tank view.
  *
  * During a flip the whole tank turns half a turn as `flipProgress` runs
  * from 0 to 1, easing in and out, and shrinking as it
@@ -72,11 +83,11 @@ export interface TankViewProps {
  * rebuild of every grain's batch. A render group's own transform is also
  * applied on the GPU, so turning the tank does not re-transform every grain.
  */
-export function TankView(props: TankViewProps): Container {
+export function TankView(bindings: TankViewBindings): Container {
     const width = TANK_WIDTH;
     const height = TANK_HEIGHT;
     // Pixels per cell, the same both ways: every tank size divides the tank's pixel size evenly.
-    const cellSize = width / props.cols;
+    const cellSize = width / bindings.cols;
 
     // Presentation state: where the pointer is over the tank, in pixels, for the brush ring.
     let pointerX = 0;
@@ -111,12 +122,10 @@ export function TankView(props: TankViewProps): Container {
             >
                 <graphics ref={(g) => drawWater(g, width, height)} />
                 <container label="grains" scale={cellSize}>
-                    {props.grainsView === 'sprites'
-                        ? <GrainSpritesView grains={props.grains} />
-                        : <GrainPixelsView cols={props.cols} rows={props.rows} grains={props.grains} />}
+                    {createGrainsView()}
                 </container>
                 <graphics
-                    visible={() => (isPointerOver || props.isPouring()) && !props.isFlipping()}
+                    visible={() => (isPointerOver || bindings.isPouring()) && !bindings.isFlipping()}
                     x={() => pointerX}
                     y={() => pointerY}
                     ref={setUpBrushRing}
@@ -126,9 +135,22 @@ export function TankView(props: TankViewProps): Container {
         </container>
     );
 
+    /** The chosen grain view. */
+    function createGrainsView(): Container {
+        const { cols, rows, grains } = bindings;
+        if (bindings.isReactive) {
+            return bindings.grainsView === 'sprites'
+                ? <SolidGrainSpritesView grains={grains} />
+                : <SolidGrainPixelsView cols={cols} rows={rows} grains={grains} />;
+        }
+        return bindings.grainsView === 'sprites'
+            ? <GrainSpritesView grains={grains} />
+            : <GrainPixelsView cols={cols} rows={rows} grains={grains} />;
+    }
+
     /** Upright at 0, upside down at pi; slow to start and slow to land. */
     function getTankAngle(): number {
-        const t = props.flipProgress();
+        const t = bindings.flipProgress();
         return Math.PI * t * t * (3 - 2 * t);
     }
 
@@ -136,16 +158,16 @@ export function TankView(props: TankViewProps): Container {
 
     function onPointerDown(e: FederatedPointerEvent): void {
         trackPointer(e);
-        props.onPressed?.(pointerX / cellSize, pointerY / cellSize);
+        bindings.onPressed?.(pointerX / cellSize, pointerY / cellSize);
     }
 
     function onPointerMove(e: FederatedPointerEvent): void {
         trackPointer(e);
-        props.onMoved?.(pointerX / cellSize, pointerY / cellSize);
+        bindings.onMoved?.(pointerX / cellSize, pointerY / cellSize);
     }
 
     function onPointerUp(): void {
-        props.onReleased?.();
+        bindings.onReleased?.();
     }
 
     /** Pointer position in the upright tank's pixels, through the tank's rotation and scale. */
@@ -164,7 +186,7 @@ export function TankView(props: TankViewProps): Container {
         const ownRefresh = g.onRefresh;
         g.onRefresh = () => {
             const result = ownRefresh?.();
-            const radius = props.brushRadius() * cellSize;
+            const radius = bindings.brushRadius() * cellSize;
             if (radius !== drawnRadius) {
                 drawnRadius = radius;
                 g.clear()

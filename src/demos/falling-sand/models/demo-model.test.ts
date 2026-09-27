@@ -8,7 +8,7 @@ import { createDemoModel, type DemoModel, type DemoModelOptions } from './demo-m
 
 const STEP_MS = 1000 / 60;
 
-const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays'];
+const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 
 function advance(model: DemoModel, totalMs: number): void {
     const frameMs = 16;
@@ -217,42 +217,52 @@ describe.each(STORAGES)('demo model, storing %s', (storage) => {
 });
 
 describe('tank storages', () => {
+    // Small, since the store is slow: about 15 µs per moving grain per step.
+    const SMALL_TANK = { cols: 72, rows: 90 };
+
     /** Pour sand then water back and forth across the tank, flipping it part way through. */
     function play(model: DemoModel, fromFrame: number, toFrame: number): void {
         for (let f = fromFrame; f < toFrame; f++) {
             if (f === 0) {
                 model.tool = 'sand';
-                model.startPour(20, 10);
+                model.startPour(10, 6);
             }
             if (f === 90) {
                 model.endPour();
                 model.tool = 'water';
-                model.startPour(100, 10);
+                model.startPour(50, 6);
             }
             if (f === 150) model.flip();
-            model.movePour(20 + ((f * 3) % 110), 10);
+            model.movePour(8 + ((f * 3) % 56), 6);
             model.update(STEP_MS);
         }
     }
 
     it('behave identically, pouring, flipping and all', () => {
-        const objects = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
-        const arrays = createDemoModel({ cols: 152, rows: 180, storage: 'arrays' });
+        const objects = createDemoModel({ ...SMALL_TANK, storage: 'objects' });
+        const arrays = createDemoModel({ ...SMALL_TANK, storage: 'arrays' });
+        const store = createDemoModel({ ...SMALL_TANK, storage: 'store' });
 
         play(objects, 0, 240);
         play(arrays, 0, 240);
+        play(store, 0, 240);
 
         expect(arrays.save()).toEqual(objects.save());
-        expect(objects.grainCount).toBeGreaterThan(4000);
+        expect(store.save()).toEqual(objects.save());
+        expect(objects.grainCount).toBeGreaterThan(1500);
     });
 
-    it('resume exactly from each other\'s snapshots', () => {
-        const straight = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
+    it.each([
+        ['objects', 'arrays'],
+        ['arrays', 'store'],
+        ['store', 'objects'],
+    ] as const)('resume exactly from each other\'s snapshots, %s to %s', (from, to) => {
+        const straight = createDemoModel({ ...SMALL_TANK, storage: from });
         play(straight, 0, 240);
 
-        const first = createDemoModel({ cols: 152, rows: 180, storage: 'objects' });
+        const first = createDemoModel({ ...SMALL_TANK, storage: from });
         play(first, 0, 120);
-        const second = createDemoModel({ cols: 152, rows: 180, storage: 'arrays' });
+        const second = createDemoModel({ ...SMALL_TANK, storage: to });
         second.load(first.save());
         play(second, 120, 240);
 

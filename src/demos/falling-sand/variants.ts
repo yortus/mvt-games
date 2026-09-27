@@ -52,7 +52,7 @@ export function formatVariants(search: string, variants: DemoVariants): string {
 // Internals
 // ---------------------------------------------------------------------------
 
-const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays'];
+const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 const GRAINS_VIEWS: readonly GrainsViewKind[] = ['sprites', 'pixels'];
 const TANK_SIZES: readonly TankSizeKind[] = ['small', 'medium', 'large'];
 

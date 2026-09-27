@@ -81,6 +81,8 @@ export function createArrayGrainGrid(options: GrainGridOptions): GrainGrid {
         step,
         rotateHalfTurn,
         clear,
+        // Nothing tracks these reads, so there is no one to tell.
+        batch: (edits) => edits(),
         save,
         load,
     };
@@ -173,19 +175,33 @@ export function createArrayGrainGrid(options: GrainGridOptions): GrainGrid {
     // --- Saving and loading -------------------------------------------------
 
     function save(): GrainGridSnapshot {
+        const count = grains.length;
         const savedKinds: (GrainKind | undefined)[] = [];
-        for (let id = 0; id < grains.length; id++) {
-            savedKinds.push(kinds[id] === NONE ? undefined : GRAIN_KINDS[kinds[id]]);
+        const savedCols = new Int32Array(count);
+        const savedRows = new Int32Array(count);
+        const savedFallSpeeds = new Float64Array(count);
+        const savedStillSteps = new Int32Array(count);
+        const savedFlowDirs = new Int8Array(count);
+        for (let id = 0; id < count; id++) {
+            const code = kinds[id];
+            savedKinds.push(code === NONE ? undefined : GRAIN_KINDS[code]);
+            // A free id's fields mean nothing; saved as zeroes, as allocated.
+            if (code === NONE) continue;
+            savedCols[id] = grainCols[id];
+            savedRows[id] = grainRows[id];
+            savedFallSpeeds[id] = fallSpeeds[id];
+            savedStillSteps[id] = stillSteps[id];
+            savedFlowDirs[id] = flowDirs[id];
         }
         return {
             cols,
             rows,
             kinds: savedKinds,
-            grainCols: grainCols.slice(0, grains.length),
-            grainRows: grainRows.slice(0, grains.length),
-            fallSpeeds: fallSpeeds.slice(0, grains.length),
-            stillSteps: stillSteps.slice(0, grains.length),
-            flowDirs: flowDirs.slice(0, grains.length),
+            grainCols: savedCols,
+            grainRows: savedRows,
+            fallSpeeds: savedFallSpeeds,
+            stillSteps: savedStillSteps,
+            flowDirs: savedFlowDirs,
             moving: moving.slice(0, movingCount),
             freeIds: freeIds.slice(0, freeCount),
             isScanReversed,

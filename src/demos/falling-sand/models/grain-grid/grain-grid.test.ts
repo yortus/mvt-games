@@ -6,7 +6,7 @@ import { createRandom } from '../random';
 // Helpers
 // ---------------------------------------------------------------------------
 
-const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays'];
+const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 
 function create(storage: GrainStorageKind, cols: number, rows: number, seed: number): GrainGrid {
     return createGrainGrid(storage, { cols, rows, random: createRandom(seed).next });
@@ -325,11 +325,14 @@ describe('grain grid storages', () => {
     it('behave identically, step for step', () => {
         const objects = create('objects', 40, 30, 5);
         const arrays = create('arrays', 40, 30, 5);
+        const store = create('store', 40, 30, 5);
 
         for (let round = 0; round < 6; round++) {
             play(objects, 50, round);
             play(arrays, 50, round);
+            play(store, 50, round);
             expect(arrays.save()).toEqual(objects.save());
+            expect(store.save()).toEqual(objects.save());
         }
         // Enough going on to mean something: a tank's worth of grains, some still moving.
         expect(objects.grainCount).toBeGreaterThan(500);
@@ -339,6 +342,8 @@ describe('grain grid storages', () => {
     it.each([
         ['objects', 'arrays'],
         ['arrays', 'objects'],
+        ['objects', 'store'],
+        ['store', 'arrays'],
     ] as const)('carry on exactly, from %s to %s, from a snapshot taken mid-run', (from, to) => {
         const straight = create(from, 40, 30, 9);
         play(straight, 150, 1);

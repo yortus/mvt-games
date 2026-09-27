@@ -10,10 +10,10 @@ import {
 } from './view-constants';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface ToolbarViewProps {
+export interface ToolbarViewBindings {
     selectedTool: () => ToolKind;
     /** Whether Flip is available: not while the tank is already flipping. */
     canFlip: () => boolean;
@@ -27,6 +27,8 @@ export interface ToolbarViewProps {
      */
     storage: GrainStorageKind;
     grainsView: GrainsViewKind;
+    /** Whether the grains are drawn by the SolidJS versions of the views. */
+    isReactive: boolean;
     tankSize: TankSizeKind;
     onToolPressed?: (tool: ToolKind) => void;
     onFlipPressed?: () => void;
@@ -43,7 +45,7 @@ export interface ToolbarViewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -52,10 +54,10 @@ export interface ToolbarViewProps {
  * frame timing. Presses are relayed; what they do is up to whoever handles
  * them.
  */
-export function ToolbarView(props: ToolbarViewProps): Container {
+export function ToolbarView(bindings: ToolbarViewBindings): Container {
     // Formatted only when the count changes, not every frame.
-    const getGrainText = mapOnChange(props.grainCount, formatCount);
-    const getMovingText = mapOnChange(props.movingCount, formatCount);
+    const getGrainText = mapOnChange(bindings.grainCount, formatCount);
+    const getMovingText = mapOnChange(bindings.movingCount, formatCount);
 
     // Flip, Reset and Clear share the width the palette leaves.
     const actionsX = TOOLS.length * (BUTTON_SIZE + BUTTON_GAP);
@@ -68,8 +70,8 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <container x={i * (BUTTON_SIZE + BUTTON_GAP)}>
                     <ToolButtonView
                         tool={tool}
-                        isSelected={() => props.selectedTool() === tool}
-                        onPressed={() => props.onToolPressed?.(tool)}
+                        isSelected={() => bindings.selectedTool() === tool}
+                        onPressed={() => bindings.onToolPressed?.(tool)}
                     />
                 </container>
             ))}
@@ -78,38 +80,38 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <ActionButtonView
                     label="FLIP"
                     width={actionWidth}
-                    isEnabled={() => props.canFlip()}
-                    onPressed={() => props.onFlipPressed?.()}
+                    isEnabled={() => bindings.canFlip()}
+                    onPressed={() => bindings.onFlipPressed?.()}
                 />
             </container>
             <container x={actionsX + actionPitch}>
-                <ActionButtonView label="RESET" width={actionWidth} onPressed={() => props.onResetPressed?.()} />
+                <ActionButtonView label="RESET" width={actionWidth} onPressed={() => bindings.onResetPressed?.()} />
             </container>
             <container x={actionsX + actionPitch * 2}>
-                <ActionButtonView label="CLEAR" width={actionWidth} onPressed={() => props.onClearPressed?.()} />
+                <ActionButtonView label="CLEAR" width={actionWidth} onPressed={() => bindings.onClearPressed?.()} />
             </container>
 
             <container y={VARIANTS_Y}>
                 <SegmentedView
                     label="MODEL"
                     options={STORAGE_OPTIONS}
-                    selected={props.storage}
-                    onSelected={(storage) => props.onStoragePressed?.(storage)}
+                    selected={bindings.storage}
+                    onSelected={(storage) => bindings.onStoragePressed?.(storage)}
                 />
-                <container x={SEGMENT_GROUP_PITCH}>
+                <container x={VIEW_SWITCH_X}>
                     <SegmentedView
-                        label="VIEW"
+                        label={bindings.isReactive ? 'VIEW (SOLID)' : 'VIEW'}
                         options={GRAINS_VIEW_OPTIONS}
-                        selected={props.grainsView}
-                        onSelected={(grainsView) => props.onGrainsViewPressed?.(grainsView)}
+                        selected={bindings.grainsView}
+                        onSelected={(grainsView) => bindings.onGrainsViewPressed?.(grainsView)}
                     />
                 </container>
-                <container x={SEGMENT_GROUP_PITCH * 2}>
+                <container x={TANK_SWITCH_X}>
                     <SegmentedView
                         label="TANK CELLS"
                         options={TANK_SIZE_OPTIONS}
-                        selected={props.tankSize}
-                        onSelected={(tankSize) => props.onTankSizePressed?.(tankSize)}
+                        selected={bindings.tankSize}
+                        onSelected={(tankSize) => bindings.onTankSizePressed?.(tankSize)}
                     />
                 </container>
             </container>
@@ -122,7 +124,7 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <text text="Tap, hold and drag to pour" y={52} style={HINT_STYLE} />
                 <text text="Switches restart the demo" y={66} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    {createPerfmonView({ getFrameStats: () => props.frameStats() })}
+                    {createPerfmonView({ getFrameStats: () => bindings.frameStats() })}
                 </container>
             </container>
         </container>
@@ -184,26 +186,26 @@ const SELECTED_RING = 0xf2cc60;
 
 // --- Tool button --------------------------------------------------------------
 
-interface ToolButtonViewProps {
+interface ToolButtonViewBindings {
     tool: ToolKind;
     isSelected: () => boolean;
     onPressed?: () => void;
 }
 
 /** A palette swatch: a sample of the tool's material, its name, and a ring when selected. */
-function ToolButtonView(props: ToolButtonViewProps): Container {
-    const { tool } = props;
+function ToolButtonView(bindings: ToolButtonViewBindings): Container {
+    const { tool } = bindings;
     return (
         <container
             cursor="pointer"
             hitArea={new Rectangle(0, 0, BUTTON_SIZE, BUTTON_SIZE)}
-            onPointerTap={() => props.onPressed?.()}
+            onPointerTap={() => bindings.onPressed?.()}
         >
-            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_FILL)} visible={() => !props.isSelected()} />
-            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_SELECTED_FILL)} visible={() => props.isSelected()} />
+            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_FILL)} visible={() => !bindings.isSelected()} />
+            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_SELECTED_FILL)} visible={() => bindings.isSelected()} />
             <graphics x={BUTTON_SIZE / 2} y={20} ref={(g) => drawToolIcon(g, tool)} />
             <text text={TOOL_LABELS[tool]} x={BUTTON_SIZE / 2} y={42} anchor={0.5} style={BUTTON_LABEL_STYLE} />
-            <graphics ref={drawSelectedRing} visible={() => props.isSelected()} />
+            <graphics ref={drawSelectedRing} visible={() => bindings.isSelected()} />
         </container>
     );
 }
@@ -232,7 +234,7 @@ function drawSelectedRing(g: Graphics): void {
 
 // --- Action button ------------------------------------------------------------
 
-interface ActionButtonViewProps {
+interface ActionButtonViewBindings {
     label: string;
     width: number;
     /** Whether the button responds. Always, if omitted. */
@@ -241,9 +243,9 @@ interface ActionButtonViewProps {
 }
 
 /** A text button that dims while disabled and dips while held down. */
-function ActionButtonView(props: ActionButtonViewProps): Container {
-    const { label, width } = props;
-    const isEnabled = (): boolean => props.isEnabled?.() ?? true;
+function ActionButtonView(bindings: ActionButtonViewBindings): Container {
+    const { label, width } = bindings;
+    const isEnabled = (): boolean => bindings.isEnabled?.() ?? true;
     // Presentation state: held down, for the press dip.
     let isHeld = false;
 
@@ -261,7 +263,7 @@ function ActionButtonView(props: ActionButtonViewProps): Container {
             onPointerUp={() => { isHeld = false; }}
             onPointerUpOutside={() => { isHeld = false; }}
             onPointerCancel={() => { isHeld = false; }}
-            onPointerTap={() => { if (isEnabled()) props.onPressed?.(); }}
+            onPointerTap={() => { if (isEnabled()) bindings.onPressed?.(); }}
         >
             <graphics ref={(g) => drawButton(g, width, BUTTON_FILL)} />
             <text text={label} x={width / 2} y={BUTTON_SIZE / 2} anchor={0.5} style={ACTION_LABEL_STYLE} />
@@ -283,6 +285,7 @@ interface SegmentOption<T extends string> {
 const STORAGE_OPTIONS: readonly SegmentOption<GrainStorageKind>[] = [
     { value: 'objects', label: 'OBJECTS' },
     { value: 'arrays', label: 'ARRAYS' },
+    { value: 'store', label: 'STORE' },
 ];
 
 const GRAINS_VIEW_OPTIONS: readonly SegmentOption<GrainsViewKind>[] = [
@@ -303,14 +306,16 @@ function formatCells(size: TankSizeKind): string {
 }
 
 /**
- * Three switches share the toolbar's width, the widest (tank size) with
- * three segments and the others two, at a common pitch.
+ * Three switches share the toolbar's width: model and tank size with three
+ * segments each, the view with two, and equal gaps between them.
  */
-const SEGMENT_WIDTH = 60;
-const SEGMENT_GROUP_PITCH = (TOOLBAR_WIDTH - SEGMENT_WIDTH * 3) / 2;
+const SEGMENT_WIDTH = 52;
+const SEGMENT_GROUP_GAP = (TOOLBAR_WIDTH - SEGMENT_WIDTH * 8) / 2;
+const VIEW_SWITCH_X = SEGMENT_WIDTH * 3 + SEGMENT_GROUP_GAP;
+const TANK_SWITCH_X = VIEW_SWITCH_X + SEGMENT_WIDTH * 2 + SEGMENT_GROUP_GAP;
 const SEGMENT_LABEL_HEIGHT = 16;
 
-interface SegmentedViewProps<T extends string> {
+interface SegmentedViewBindings<T extends string> {
     label: string;
     options: readonly SegmentOption<T>[];
     /** The selected option. Read once, when the view is built. */
@@ -319,22 +324,22 @@ interface SegmentedViewProps<T extends string> {
 }
 
 /** A label, and a row of segments, one of them selected. Pressing another relays its value. */
-function SegmentedView<T extends string>(props: SegmentedViewProps<T>): Container {
+function SegmentedView<T extends string>(bindings: SegmentedViewBindings<T>): Container {
     return (
         <container>
-            <text text={props.label} style={LABEL_STYLE} />
-            {props.options.map((option, i) => (
+            <text text={bindings.label} style={LABEL_STYLE} />
+            {bindings.options.map((option, i) => (
                 <container
                     x={i * SEGMENT_WIDTH}
                     y={SEGMENT_LABEL_HEIGHT}
-                    cursor={option.value === props.selected ? 'default' : 'pointer'}
+                    cursor={option.value === bindings.selected ? 'default' : 'pointer'}
                     hitArea={new Rectangle(0, 0, SEGMENT_WIDTH, SEGMENT_HEIGHT)}
                     onPointerTap={() => {
-                        if (option.value !== props.selected) props.onSelected?.(option.value);
+                        if (option.value !== bindings.selected) bindings.onSelected?.(option.value);
                     }}
                 >
                     <graphics
-                        ref={(g) => drawSegment(g, option.value === props.selected ? BUTTON_SELECTED_FILL : BUTTON_FILL)}
+                        ref={(g) => drawSegment(g, option.value === bindings.selected ? BUTTON_SELECTED_FILL : BUTTON_FILL)}
                     />
                     <text
                         text={option.label}
@@ -343,7 +348,7 @@ function SegmentedView<T extends string>(props: SegmentedViewProps<T>): Containe
                         anchor={0.5}
                         style={BUTTON_LABEL_STYLE}
                     />
-                    <graphics ref={drawSelectedSegmentRing} visible={option.value === props.selected} />
+                    <graphics ref={drawSelectedSegmentRing} visible={option.value === bindings.selected} />
                 </container>
             ))}
         </container>

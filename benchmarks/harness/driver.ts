@@ -100,14 +100,29 @@ async function bundleEntry(entry: string, outDir: string): Promise<string> {
         platform: 'node',
         format: 'esm',
         logLevel: 'warning',
-        // Node resolves solid-js to its server build, where effects never run
-        alias: { 'solid-js': join(REPO_DIR, 'node_modules/solid-js/dist/solid.js') },
         // Measure what a production build runs: Vite would replace these
         define: { 'import.meta.env': '{"DEV":false,"PROD":true,"MODE":"production","BASE_URL":"/"}' },
-        plugins: [stubTextureRegistry],
+        plugins: [solidBrowserBuild, stubTextureRegistry],
     });
     return outfile;
 }
+
+/**
+ * Node resolves solid-js to its server build, where effects never run. Every
+ * import of it, from our code or from pixi-solid, goes to its browser build
+ * instead, as a page gets, and so to one copy.
+ */
+const solidBrowserBuild: Plugin = {
+    name: 'solid-browser-build',
+    setup(pluginBuild) {
+        const builds: Record<string, string> = {
+            'solid-js': 'node_modules/solid-js/dist/solid.js',
+            'solid-js/store': 'node_modules/solid-js/store/dist/store.js',
+            'solid-js/web': 'node_modules/solid-js/web/dist/web.js',
+        };
+        pluginBuild.onResolve({ filter: /^solid-js(\/store|\/web)?$/ }, (args) => ({ path: join(REPO_DIR, builds[args.path]) }));
+    },
+};
 
 /**
  * Loading a spritesheet needs a browser. For the games and demos, every

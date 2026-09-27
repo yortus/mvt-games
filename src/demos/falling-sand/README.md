@@ -5,10 +5,14 @@ the selected material, draw walls or erase. Flip turns the tank upside down;
 Reset restores the opening scene.
 
 It is also a stress test for the MVT game loop, and a lab for comparing
-implementations of it. It runs with one of two implementations of its model,
-one of two views of its grains, and one of three tank sizes, up to 246,240
-cells, all fixed for the demo's life and chosen in the page's URL
-(`/demos/?storage=arrays&view=pixels&tank=large#falling-sand`). The switches
+implementations of it. It runs with one of three implementations of its
+model (a record per grain, a typed array per field, or a SolidJS store), one
+of two views of its grains (a sprite per grain, or a pixel per cell), and one
+of three tank sizes, up to 246,240 cells, all fixed for the demo's life and
+chosen in the page's URL
+(`/demos/?storage=arrays&view=pixels&tank=large#falling-sand`). A store is
+drawn by SolidJS versions of the views, which are pushed changes rather than
+polling; the others are polled, as MVT views are. The switches
 under the buttons show the running choice; pressing one reloads the page with
 another. The panel under the tank shows the grain count,
 how many grains are moving, and frame timing: frames per second, CPU and GPU
@@ -48,29 +52,49 @@ once.
 All the sprites share one texture and differ only by tint, so Pixi draws the
 whole tank in a few batches. The limit you reach is CPU time, not GPU time.
 
-**One model interface, two implementations.** The tank stores its grains
-one of two ways, chosen by `storage` when it is created:
+**One model interface, three implementations.** The tank stores its grains
+one of three ways, chosen by `storage` when it is created:
 
 - **Objects**: a record per grain, as most JavaScript code would write it
   ([`object-grain-grid.ts`](./models/grain-grid/object-grain-grid.ts)).
 - **Arrays**: one typed array per field, indexed by grain id, as an
   entity-component system would lay it out
   ([`array-grain-grid.ts`](./models/grain-grid/array-grain-grid.ts)).
+- **Store**: a SolidJS `createStore`, as a Solid developer would write it,
+  with the grains and the board of cells in the store, read through it and
+  written with its setter ([`store-grain-grid.ts`](./models/grain-grid/store-grain-grid.ts)).
 
-The two follow the same rules, line for line, and behave identically, step
+All three follow the same rules, line for line, and behave identically, step
 for step: the tests drive one of each the same way and compare their
-`save()` snapshots. Both serve the same `Grains` interface, which reads a
+`save()` snapshots. All serve the same `Grains` interface, which reads a
 grain's fields by its id (`grains.colOf(id)`) rather than through an object
 per grain, so that the arrays can serve reads without creating objects.
-Nothing that reads the model can tell the two apart, except by timing them.
+Nothing that reads the model can tell them apart, except by timing them, and
+except that the store's reads are tracked: a SolidJS effect that reads a
+grain through `Grains` subscribes to it.
 
-**Two views of the same grains.** The grains are drawn as a sprite per grain
-([`grain-sprites-view.tsx`](./views/grain-sprites-view.tsx)), or as one
-texture with a pixel per cell, rewritten and uploaded every frame
-([`grain-pixels-view.ts`](./views/grain-pixels-view.ts)), chosen when the
-view is built. Both are MVT views that read every grain every frame; the
-pixel view drops the object per grain on the view side. The choice is the
-view's, not the model's: `DemoView` takes it as a prop.
+**Two views of the same grains, polled or pushed.** The grains are drawn as
+a sprite per grain, or as one texture with a pixel per cell, chosen when the
+view is built. The objects and arrays models get MVT views, which read every
+grain every frame ([`grain-sprites-view.tsx`](./views/grain-sprites-view.tsx),
+[`grain-pixels-view.ts`](./views/grain-pixels-view.ts)). A store gets SolidJS
+views, whose effects re-run only for the grains that changed
+([`solid-grain-sprites-view.ts`](./views/solid-grain-sprites-view.ts), with
+pixi-solid, and [`solid-grain-pixels-view.ts`](./views/solid-grain-pixels-view.ts)).
+The choice of view is the view's, not the model's: `DemoView` takes it as a
+prop, and picks the Solid views for a store.
+
+The Solid views are written without Solid's JSX compiler, as the calls it
+would compile JSX to: `createComponent(Sprite, { get x() { ... } })` for
+`<Sprite x={...} />`. The runtime cost is the same, and the build needs no
+second JSX dialect.
+
+**Pushing moves view work into the model's update.** The model makes each
+frame's changes in one Solid `batch`, so the Solid views' effects run once,
+at the end of `update()`, and never see a half-stepped tank. That is when
+they run, though: inside the model's update, not in the refresh pass. With a
+store, the model is in effect pushing to its views, which is the reactive
+architecture this variant exists to compare with MVT's polling.
 
 **Why the choice needs a new page.** V8 inlines a call only while the call
 site has seen one function there. If a page switched implementations while
@@ -170,6 +194,7 @@ does not jump.
 | [`grain-grid.ts`](./models/grain-grid/grain-grid.ts) | The grid's interface, `Grains`, and snapshots. Not a model: it has no notion of time, and `DemoModel` steps it. One `step()` is one tick |
 | [`object-grain-grid.ts`](./models/grain-grid/object-grain-grid.ts) | The grid, with a record per grain |
 | [`array-grain-grid.ts`](./models/grain-grid/array-grain-grid.ts) | The grid, with a typed array per field |
+| [`store-grain-grid.ts`](./models/grain-grid/store-grain-grid.ts) | The grid, in a SolidJS store, with tracked reads |
 | [`starting-scene.ts`](./models/starting-scene.ts) | The opening scene |
 | [`random.ts`](./models/random.ts) | Seeded random numbers, with a state that can be saved |
 | [`model-constants.ts`](./models/model-constants.ts) | The tank sizes in cells, the timestep, pouring and flipping, and the rules grains move by |
@@ -178,6 +203,8 @@ does not jump.
 | [`tank-view.tsx`](./views/tank-view.tsx) | Glass, pointer input, brush ring and flip rotation, and the chosen grain view |
 | [`grain-sprites-view.tsx`](./views/grain-sprites-view.tsx) | The grains as a sprite per grain |
 | [`grain-pixels-view.ts`](./views/grain-pixels-view.ts) | The grains as a pixel per cell in one texture |
+| [`solid-grain-sprites-view.ts`](./views/solid-grain-sprites-view.ts) | The grains as a sprite per grain, with pixi-solid, updated by SolidJS effects |
+| [`solid-grain-pixels-view.ts`](./views/solid-grain-pixels-view.ts) | The grains as a pixel per cell, each grain's pixel redrawn by a SolidJS effect when it changes |
 | [`toolbar-view.tsx`](./views/toolbar-view.tsx) | Tool palette, Flip, Reset, Clear, the variant switches, counts and frame timing |
 | [`grain-colors.ts`](./views/grain-colors.ts) | Colours by kind, with a stable shade per grain, as tints and as pixels |
 | [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |

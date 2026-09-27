@@ -51,6 +51,7 @@
         "codemirror": "^6.0.2",
         "gsap": "^3.14.2",
         "lz-string": "^1.5.0",
+        "pixi-solid": "^1.0.0",
         "pixi.js": "^8.16.0",
         "sucrase": "^3.35.1"
     },

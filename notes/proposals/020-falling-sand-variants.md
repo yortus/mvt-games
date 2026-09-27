@@ -33,7 +33,7 @@ against the Vite dev server, driven through the DevTools protocol.
 | --- | --- | --- | --- |
 | 2 | Two models behind one interface, chosen at start-up | Built. Two grids, identical step for step (tested by comparing `save()` snapshots) | 2 |
 | 3 | Two views, chosen at start-up | Built. Sprite per grain, or pixel per cell. The choice is the view's, a `DemoView` prop | 3 |
-| 2.5 | Fixed for the demo's life, chosen in the URL | Built. A switch reloads the page. Runtime swapping was built first and withdrawn (6.2) | 2.5 |
+| 3.1 | Fixed for the demo's life, chosen in the URL | Built. A switch reloads the page. Runtime swapping was built first and withdrawn (6.2) | 3.1 |
 | 4 | What the variants cost | Measured. At about 115,000 grains in Chrome: 17.5 ms settled with objects and sprites, 2.7 ms with arrays and pixels. The pixel view is 20-35x cheaper to refresh than sprites at scale. The typed-array model is only 1.04-1.4x faster than objects headless (2x beside the sprite view's heap): the rules, not the layout, are the model's cost | 4, 5 |
 | 6.1 | Object literals with getters are slow in V8 | Found. Dictionary mode, no inlining through them. Fixed in `Grains` (3x on the pixel view); the rest of the repo has the same pattern | 6.1 |
 | 6.2 | Swapping implementations in a running page | Found. Call sites that have seen both implementations stop inlining, so an in-page A/B favours whichever ran first. Why the choice is now fixed per page | 6.2 |
@@ -124,7 +124,7 @@ switchable at runtime; that was within the rules (a remembered user
 setting) but read like a model holding view state, and it went with runtime
 switching.
 
-### 2.5 Choosing variants
+### 3.1 Choosing variants
 
 The storage, the grain view and the tank size are read from the page's URL
 when the demo starts (`variants.ts`):

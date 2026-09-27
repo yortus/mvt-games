@@ -1,6 +1,7 @@
 import type { IndexedSlots } from '#common';
 import { createArrayGrainGrid } from './array-grain-grid';
 import { createObjectGrainGrid } from './object-grain-grid';
+import { createStoreGrainGrid } from './store-grain-grid';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -10,14 +11,17 @@ import { createObjectGrainGrid } from './object-grain-grid';
 export type GrainKind = 'sand' | 'water' | 'wall';
 
 /**
- * How a grid stores its grains. The two behave identically, step for step,
- * and differ only in how their data is laid out:
+ * How a grid stores its grains. All three behave identically, step for step,
+ * and differ only in how they hold their data:
  *
  * - `'objects'`: a record per grain, as most JavaScript code would write it.
  * - `'arrays'`: one typed array per field, indexed by grain id, as an
  *   entity-component system would lay it out.
+ * - `'store'`: a SolidJS store, as a Solid developer would write it. Its
+ *   reads are tracked, so a Solid effect that reads a grain re-runs when
+ *   that grain changes; reactive views need this storage.
  */
-export type GrainStorageKind = 'objects' | 'arrays';
+export type GrainStorageKind = 'objects' | 'arrays' | 'store';
 
 /**
  * Every grain in a grid, addressed by id. Read a grain's fields by its id,
@@ -52,9 +56,9 @@ export interface Grains extends IndexedSlots<number> {
  * `step()` on a fixed timestep, so the grid is the tank's simulation of the
  * grains, kept separate so the rules can be tested one step at a time.
  *
- * Two implementations, one per `GrainStorageKind`. Given the same random
- * numbers and the same calls, both produce the same grids, so `save()` from
- * one can be loaded into the other.
+ * Three implementations, one per `GrainStorageKind`. Given the same random
+ * numbers and the same calls, all produce the same grids, so `save()` from
+ * one can be loaded into another.
  */
 export interface GrainGrid {
     readonly cols: number;
@@ -83,6 +87,12 @@ export interface GrainGrid {
     rotateHalfTurn: () => void;
     /** Remove every grain. */
     clear: () => void;
+    /**
+     * Make a group of edits as one change. A grid whose reads are tracked
+     * (`'store'`) tells whoever tracks them once, after `edits` returns, so
+     * none of them sees the grid half changed. The others just call `edits`.
+     */
+    batch: (edits: () => void) => void;
 
     /** A copy of everything the grid holds, from which `load()` can resume exactly. */
     save: () => GrainGridSnapshot;
@@ -96,6 +106,7 @@ export interface GrainGrid {
 /**
  * Everything a grid holds, in plain data. Arrays are indexed by grain id,
  * and cover every id below `kinds.length`, one more than the highest in use.
+ * A free id's fields are zero.
  */
 export interface GrainGridSnapshot {
     readonly cols: number;
@@ -135,5 +146,9 @@ export interface GrainGridOptions {
 
 /** A grid storing its grains the given way. */
 export function createGrainGrid(storage: GrainStorageKind, options: GrainGridOptions): GrainGrid {
-    return storage === 'objects' ? createObjectGrainGrid(options) : createArrayGrainGrid(options);
+    switch (storage) {
+        case 'objects': return createObjectGrainGrid(options);
+        case 'arrays': return createArrayGrainGrid(options);
+        case 'store': return createStoreGrainGrid(options);
+    }
 }

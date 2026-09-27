@@ -3,10 +3,10 @@ import type { Grains } from '../models';
 import { pickGrainPixel } from './grain-colors';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface GrainPixelsViewProps {
+export interface GrainPixelsViewBindings {
     /** The tank's size in cells, and so the texture's size in pixels. Read once, when the view is built. */
     cols: number;
     rows: number;
@@ -15,7 +15,7 @@ export interface GrainPixelsViewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -30,8 +30,8 @@ export interface GrainPixelsViewProps {
  * in Pixi's scene graph), leaving a loop over the model's grains that writes
  * into a flat array, and one draw call.
  */
-export function GrainPixelsView(props: GrainPixelsViewProps): Container {
-    const { cols, rows } = props;
+export function GrainPixelsView(bindings: GrainPixelsViewBindings): Container {
+    const { cols, rows } = bindings;
 
     // The texture's pixel data, and a view of it as one 32-bit RGBA pixel per cell.
     const bytes = new Uint8Array(cols * rows * 4);
@@ -54,7 +54,7 @@ export function GrainPixelsView(props: GrainPixelsViewProps): Container {
     return sprite;
 
     function refresh(): void {
-        const grains = props.grains();
+        const grains = bindings.grains();
         pixels.fill(0);
         const length = grains.length;
         for (let id = 0; id < length; id++) {

@@ -65,6 +65,9 @@ export default tseslint.config(
                         '@codemirror/**',
                         'sucrase',
                         'lz-string',
+                        'solid-js',
+                        'solid-js/**',
+                        'pixi-solid',
                         // Allow project-level import-map aliases
                         '#common',
                         '#pixi-jsx',
