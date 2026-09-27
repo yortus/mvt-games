@@ -3,10 +3,10 @@ import { GRID_ROWS, GRID_COLS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createBackgroundView(): Graphics {
+export function BackgroundView(): Graphics {
     const bg = new Graphics();
     for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {

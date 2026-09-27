@@ -1,84 +1,84 @@
 import { Container } from 'pixi.js';
 import { createSequence, watch, type DeepReadonly } from '#common';
 import type { BoardPhase, CactusCell } from '../../models';
-import { createBackgroundView } from './background-view';
-import { createBannerView } from './banner-view';
-import { createFireworkView } from './firework-view';
-import { createFlashOverlayView } from './flash-overlay-view';
-import { createMatchEffectsView } from './match-effects-view';
+import { BackgroundView } from './background-view';
+import { BannerView } from './banner-view';
+import { FireworkView } from './firework-view';
+import { FlashOverlayView } from './flash-overlay-view';
+import { MatchEffectsView } from './match-effects-view';
 import { MATCH_EFFECT_STEPS } from './match-sequence-defs';
-import { createPiecesView } from './pieces-view';
-import { createShakeContainerView } from './shake-container-view';
+import { PiecesView } from './pieces-view';
+import { ShakeContainerView } from './shake-container-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
 export interface BoardViewBindings {
-    getPhase(): BoardPhase;
-    getCells(): DeepReadonly<CactusCell[][]>;
-    getSwapCell1(): CactusCell | undefined;
-    getSwapCell2(): CactusCell | undefined;
-    getSwapProgress(): number;
-    getSettleProgress(): number;
-    getSettleOriginRows(): DeepReadonly<number[][]>;
-    getMatchedCells(): readonly CactusCell[];
-    getCascadeStep(): number;
-    onSwapRequested?(origin: CactusCell, target: CactusCell): boolean;
+    phase: () => BoardPhase;
+    cells: () => DeepReadonly<CactusCell[][]>;
+    swapCell1: () => CactusCell | undefined;
+    swapCell2: () => CactusCell | undefined;
+    swapProgress: () => number;
+    settleProgress: () => number;
+    settleOriginRows: () => DeepReadonly<number[][]>;
+    matchedCells: () => readonly CactusCell[];
+    cascadeStep: () => number;
+    onSwapRequested?: (origin: CactusCell, target: CactusCell) => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createBoardView(bindings: BoardViewBindings): Container {
+export function BoardView(bindings: BoardViewBindings): Container {
     // The match sequence is shared presentation state. It is created here and
     // distributed as structural subsets via bindings to the child layers that
     // need it. No child holds a reference to another child.
     const matchSequence = createSequence(MATCH_EFFECT_STEPS);
-    const phaseWatcher = watch({ phase: bindings.getPhase });
+    const phaseWatcher = watch({ phase: bindings.phase });
 
     // Shake container wraps background and pieces so they displace together.
-    const shakeContainer = createShakeContainerView({
-        getMatchSequence: () => matchSequence,
-        getCascadeStep: bindings.getCascadeStep,
+    const shakeContainer = ShakeContainerView({
+        matchSequence,
+        cascadeStep: bindings.cascadeStep,
     });
 
-    const background = createBackgroundView();
+    const background = BackgroundView();
 
-    const pieces = createPiecesView({
-        getPhase: bindings.getPhase,
-        getCells: bindings.getCells,
-        getSwapCell1: bindings.getSwapCell1,
-        getSwapCell2: bindings.getSwapCell2,
-        getSwapProgress: bindings.getSwapProgress,
-        getSettleProgress: bindings.getSettleProgress,
-        getSettleOriginRows: bindings.getSettleOriginRows,
-        getMatchedCells: bindings.getMatchedCells,
-        getMatchSequence: () => matchSequence,
+    const pieces = PiecesView({
+        phase: bindings.phase,
+        cells: bindings.cells,
+        swapCell1: bindings.swapCell1,
+        swapCell2: bindings.swapCell2,
+        swapProgress: bindings.swapProgress,
+        settleProgress: bindings.settleProgress,
+        settleOriginRows: bindings.settleOriginRows,
+        matchedCells: bindings.matchedCells,
+        matchSequence: () => matchSequence,
         onSwapRequested: bindings.onSwapRequested,
     });
 
-    const flashOverlay = createFlashOverlayView({
-        getMatchSequence: () => matchSequence,
-        getCascadeStep: bindings.getCascadeStep,
+    const flashOverlay = FlashOverlayView({
+        matchSequence,
+        cascadeStep: bindings.cascadeStep,
     });
 
-    const matchEffects = createMatchEffectsView({
-        getMatchedCells: bindings.getMatchedCells,
-        getCascadeStep: bindings.getCascadeStep,
-        getMatchSequence: () => matchSequence,
+    const matchEffects = MatchEffectsView({
+        matchedCells: bindings.matchedCells,
+        cascadeStep: bindings.cascadeStep,
+        matchSequence,
     });
 
-    const fireworks = createFireworkView({
-        getMatchedCells: bindings.getMatchedCells,
-        getMatchSequence: () => matchSequence,
-        getCascadeStep: bindings.getCascadeStep,
+    const fireworks = FireworkView({
+        matchedCells: bindings.matchedCells,
+        matchSequence,
+        cascadeStep: bindings.cascadeStep,
     });
 
-    const banner = createBannerView({
-        getMatchSequence: () => matchSequence,
-        getCascadeStep: bindings.getCascadeStep,
+    const banner = BannerView({
+        matchSequence,
+        cascadeStep: bindings.cascadeStep,
     });
 
     const view = new Container();

@@ -16,8 +16,8 @@ export interface AsteroidModel {
     readonly isAlive: boolean;
     /** Shape seed for deterministic outline in the view. */
     readonly shapeSeed: number;
-    kill(): void;
-    update(deltaMs: number): void;
+    kill: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

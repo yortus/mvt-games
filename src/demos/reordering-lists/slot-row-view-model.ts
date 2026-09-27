@@ -22,11 +22,11 @@ import type { IndexedSlots, OrderedSlot } from '#common';
 
 export interface SlotRowViewModel {
     /** Eased X of the card in storage slot `index`, relative to the row, in pixels. */
-    getX: (index: number) => number;
+    xAt: (index: number) => number;
     /** Eased Y of the card in storage slot `index`: 0 while live, rising once removed. */
-    getY: (index: number) => number;
-    getAlpha: (index: number) => number;
-    getScale: (index: number) => number;
+    yAt: (index: number) => number;
+    alphaAt: (index: number) => number;
+    scaleAt: (index: number) => number;
     update: (deltaMs: number) => void;
 }
 
@@ -51,10 +51,10 @@ export function createSlotRowViewModel(options: SlotRowViewModelOptions): SlotRo
     const cosmetics: SlotCosmetic[] = [];
 
     return {
-        getX: (index) => cosmetics[index].x,
-        getY: (index) => cosmetics[index].y,
-        getAlpha: (index) => cosmetics[index].alpha,
-        getScale: (index) => cosmetics[index].scale,
+        xAt: (index) => cosmetics[index].x,
+        yAt: (index) => cosmetics[index].y,
+        alphaAt: (index) => cosmetics[index].alpha,
+        scaleAt: (index) => cosmetics[index].scale,
         update,
     };
 

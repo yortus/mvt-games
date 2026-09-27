@@ -8,25 +8,25 @@ import type { RockPhase } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface RockViewBindings {
-    getCol(): number;
-    getRow(): number;
-    getPhase(): RockPhase;
-    isAlive(): boolean;
-    getTileSize(): number;
-    getClock?: () => number;
+    col: () => number;
+    row: () => number;
+    phase: () => RockPhase;
+    isAlive: () => boolean;
+    tileSize: () => number;
+    clock?: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createRockView(bindings: RockViewBindings): Container {
+export function RockView(bindings: RockViewBindings): Container {
     const watcher = watch({
-        phase: bindings.getPhase,
-        tileSize: bindings.getTileSize,
+        phase: bindings.phase,
+        tileSize: bindings.tileSize,
     });
 
-    const clock = bindings.getClock ?? (() => Ticker.shared.lastTime);
+    const clock = bindings.clock ?? (() => Ticker.shared.lastTime);
     const rockTextures = textures.get().rock;
     let sprite: Sprite;
 
@@ -44,9 +44,9 @@ export function createRockView(bindings: RockViewBindings): Container {
         view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
-        const ts = bindings.getTileSize();
-        const x = bindings.getCol() * ts + ts / 2;
-        const y = bindings.getRow() * ts + ts / 2;
+        const ts = bindings.tileSize();
+        const x = bindings.col() * ts + ts / 2;
+        const y = bindings.row() * ts + ts / 2;
         view.position.set(x, y);
         sprite.scale.set(ts / 20);
 

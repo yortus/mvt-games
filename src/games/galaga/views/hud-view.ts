@@ -7,21 +7,21 @@ import { textures } from '../data';
 // ---------------------------------------------------------------------------
 
 export interface HudViewBindings {
-    getScore(): number;
-    getLives(): number;
-    getStage(): number;
-    getScreenWidth(): number;
+    score: () => number;
+    lives: () => number;
+    stage: () => number;
+    screenWidth: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
+export function HudView(bindings: HudViewBindings): Container {
     const watcher = watch({
-        score: bindings.getScore,
-        lives: bindings.getLives,
-        stage: bindings.getStage,
+        score: bindings.score,
+        lives: bindings.lives,
+        stage: bindings.stage,
     });
 
     let scoreText: Text;
@@ -70,14 +70,14 @@ export function createHudView(bindings: HudViewBindings): Container {
     }
 
     function updateStageLayout(): void {
-        const width = bindings.getScreenWidth();
+        const width = bindings.screenWidth();
         stageText.position.set(width - 72, 6);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
     function updateLives(): void {
         livesContainer.removeChildren();
-        const lives = bindings.getLives();
+        const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {
             const icon = new Sprite({ texture: textures.get().ship.icon });
             icon.position.set(i * 14, 0);

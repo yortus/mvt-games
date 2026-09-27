@@ -7,25 +7,25 @@ import type { GamePhase, TileKind } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface MazeViewBindings {
-    getTileSize(): number;
-    getRows(): number;
-    getCols(): number;
-    getTileKind(row: number, col: number): TileKind;
-    isDotAt(row: number, col: number): boolean;
-    getGamePhase(): GamePhase;
+    tileSize: () => number;
+    rows: () => number;
+    cols: () => number;
+    tileKindAt: (row: number, col: number) => TileKind;
+    isDotAt: (row: number, col: number) => boolean;
+    gamePhase: () => GamePhase;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createMazeView(bindings: MazeViewBindings): Container {
+export function MazeView(bindings: MazeViewBindings): Container {
     let dotEntries: { r: number; c: number; gfx: Graphics }[] = [];
     const watcher = watch({
-        rows: bindings.getRows,
-        cols: bindings.getCols,
-        tileSize: bindings.getTileSize,
-        phase: bindings.getGamePhase,
+        rows: bindings.rows,
+        cols: bindings.cols,
+        tileSize: bindings.tileSize,
+        phase: bindings.gamePhase,
     });
     let wallGfx: Graphics;
 
@@ -68,12 +68,12 @@ export function createMazeView(bindings: MazeViewBindings): Container {
 
     function buildWalls(): void {
         wallGfx.clear();
-        const rows = bindings.getRows();
-        const cols = bindings.getCols();
-        const ts = bindings.getTileSize();
+        const rows = bindings.rows();
+        const cols = bindings.cols();
+        const ts = bindings.tileSize();
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                if (bindings.getTileKind(r, c) === 'wall') {
+                if (bindings.tileKindAt(r, c) === 'wall') {
                     wallGfx.rect(c * ts, r * ts, ts, ts).fill(0x1a1aff);
                 }
             }
@@ -87,9 +87,9 @@ export function createMazeView(bindings: MazeViewBindings): Container {
         }
         dotEntries = [];
 
-        const rows = bindings.getRows();
-        const cols = bindings.getCols();
-        const ts = bindings.getTileSize();
+        const rows = bindings.rows();
+        const cols = bindings.cols();
+        const ts = bindings.tileSize();
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 if (bindings.isDotAt(r, c)) {

@@ -7,12 +7,12 @@ import type { TileKind } from '../data';
 export interface MazeModel {
     readonly rows: number;
     readonly cols: number;
-    tileAt(row: number, col: number): TileKind;
-    isWall(row: number, col: number): boolean;
-    isDot(row: number, col: number): boolean;
-    eatDot(row: number, col: number): boolean;
+    tileAt: (row: number, col: number) => TileKind;
+    isWall: (row: number, col: number) => boolean;
+    isDot: (row: number, col: number) => boolean;
+    eatDot: (row: number, col: number) => boolean;
     readonly remainingDots: number;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

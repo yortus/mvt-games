@@ -16,31 +16,31 @@ import { keymap } from '@codemirror/view';
 
 export interface EditorPanel {
     /** Mount editor tabs into the given container element. */
-    mount(container: HTMLElement): void;
+    mount: (container: HTMLElement) => void;
 
     /** Get the current model source code. */
-    getModelCode(): string;
+    getModelCode: () => string;
 
     /** Get the current view source code. */
-    getViewCode(): string;
+    getViewCode: () => string;
 
     /** Set the model source code. */
-    setModelCode(code: string): void;
+    setModelCode: (code: string) => void;
 
     /** Set the view source code. */
-    setViewCode(code: string): void;
+    setViewCode: (code: string) => void;
 
     /** Register a callback invoked when either editor's content changes. */
-    onChange(handler: () => void): void;
+    onChange: (handler: () => void) => void;
 
     /** Get the active tab ('model' or 'view'). */
-    getActiveTab(): 'model' | 'view';
+    getActiveTab: () => 'model' | 'view';
 
     /** Set the active tab. */
-    setActiveTab(tab: 'model' | 'view'): void;
+    setActiveTab: (tab: 'model' | 'view') => void;
 
     /** Destroy both editor instances. */
-    destroy(): void;
+    destroy: () => void;
 }
 
 // ---------------------------------------------------------------------------

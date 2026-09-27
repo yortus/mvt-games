@@ -9,20 +9,20 @@ import { SCREEN_WIDTH, HUD_HEIGHT } from './view-constants';
 // ---------------------------------------------------------------------------
 
 export interface HudViewBindings {
-    getPlayerPoints(): number;
-    getOpponentPoints(): number;
-    getPlayerRounds(): number;
-    getOpponentRounds(): number;
-    getRound(): number;
-    getRoundTimeRemainingMs(): number;
-    getGamePhase(): GamePhase;
+    playerPoints: () => number;
+    opponentPoints: () => number;
+    playerRounds: () => number;
+    opponentRounds: () => number;
+    round: () => number;
+    roundTimeRemainingMs: () => number;
+    gamePhase: () => GamePhase;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
+export function HudView(bindings: HudViewBindings): Container {
     const view = new Container();
     view.label = 'hud';
     view.position.set(0, 0);
@@ -96,12 +96,12 @@ export function createHudView(bindings: HudViewBindings): Container {
 
     // Watcher for change detection
     const watcher = watch({
-        playerPoints: bindings.getPlayerPoints,
-        opponentPoints: bindings.getOpponentPoints,
-        playerRounds: bindings.getPlayerRounds,
-        opponentRounds: bindings.getOpponentRounds,
-        timeSeconds: () => Math.ceil(bindings.getRoundTimeRemainingMs() / 1000),
-        phase: bindings.getGamePhase,
+        playerPoints: bindings.playerPoints,
+        opponentPoints: bindings.opponentPoints,
+        playerRounds: bindings.playerRounds,
+        opponentRounds: bindings.opponentRounds,
+        timeSeconds: () => Math.ceil(bindings.roundTimeRemainingMs() / 1000),
+        phase: bindings.gamePhase,
     });
 
     // Cached values for pip colour updates

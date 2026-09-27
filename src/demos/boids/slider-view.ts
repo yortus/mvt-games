@@ -10,31 +10,31 @@ export type SliderScaleMode = 'linear' | 'log';
 /** Bindings for a draggable slider control. */
 export interface SliderViewBindings {
     /** Display label shown above the slider. */
-    getLabel(): string;
+    label: () => string;
     /** Minimum value at the left edge of the track. */
-    getMin(): number;
+    min: () => number;
     /** Maximum value at the right edge of the track. */
-    getMax(): number;
+    max: () => number;
     /** Snap increment. The value is rounded to the nearest multiple. */
-    getStep(): number;
+    step: () => number;
     /** Current value of the slider. */
-    getValue(): number;
+    value: () => number;
     /** Whether the slider maps positions linearly or logarithmically. */
-    getScaleMode(): SliderScaleMode;
+    scaleMode: () => SliderScaleMode;
     /** Optional override for the track width in pixels. */
-    getWidth?(): number;
+    width?: () => number;
     /** Optional override for the track height in pixels. */
-    getHeight?(): number;
+    height?: () => number;
     /** Called when the user drags the knob to a new value. */
-    onValueChanged?(value: number): void;
+    onValueChanged?: (value: number) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-/** Create a draggable slider view wired to the given bindings. */
-export function createSliderView(bindings: SliderViewBindings): Container {
+/** A draggable slider, linear or logarithmic, with its label, value and range. */
+export function SliderView(bindings: SliderViewBindings): Container {
     const view = new Container();
     view.label = 'slider';
 
@@ -79,13 +79,13 @@ export function createSliderView(bindings: SliderViewBindings): Container {
     // ---- Refresh -----------------------------------------------------------
 
     function refresh(): void {
-        const w = bindings.getWidth?.() ?? DEFAULT_WIDTH;
-        const min = bindings.getMin();
-        const max = bindings.getMax();
-        const value = bindings.getValue();
-        const mode = bindings.getScaleMode();
-        const step = bindings.getStep();
-        const label = bindings.getLabel();
+        const w = bindings.width?.() ?? DEFAULT_WIDTH;
+        const min = bindings.min();
+        const max = bindings.max();
+        const value = bindings.value();
+        const mode = bindings.scaleMode();
+        const step = bindings.step();
+        const label = bindings.label();
 
         if (
             w === drawnWidth && min === drawnMin && max === drawnMax && value === drawnValue
@@ -171,7 +171,7 @@ export function createSliderView(bindings: SliderViewBindings): Container {
     }
 
     function applyPointerPosition(e: { getLocalPosition: (target: Container) => { x: number } }): void {
-        const w = bindings.getWidth?.() ?? DEFAULT_WIDTH;
+        const w = bindings.width?.() ?? DEFAULT_WIDTH;
         const trackLeft = KNOB_RADIUS;
         const trackRight = w - KNOB_RADIUS;
         const trackWidth = trackRight - trackLeft;
@@ -179,10 +179,10 @@ export function createSliderView(bindings: SliderViewBindings): Container {
         const local = e.getLocalPosition(view);
         const rawT = Math.max(0, Math.min(1, (local.x - trackLeft) / trackWidth));
 
-        const min = bindings.getMin();
-        const max = bindings.getMax();
-        const mode = bindings.getScaleMode();
-        const step = bindings.getStep();
+        const min = bindings.min();
+        const max = bindings.max();
+        const mode = bindings.scaleMode();
+        const step = bindings.step();
 
         let value = tToValue(rawT, min, max, mode);
         value = snapToStep(value, step, min, max);

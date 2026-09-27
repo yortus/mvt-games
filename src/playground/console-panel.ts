@@ -8,16 +8,16 @@
 
 export interface ConsolePanel {
     /** Mount into a container element. */
-    mount(container: HTMLElement): void;
+    mount: (container: HTMLElement) => void;
 
     /** Append a log entry. */
-    log(level: 'log' | 'warn' | 'error', message: string, source?: string): void;
+    log: (level: 'log' | 'warn' | 'error', message: string, source?: string) => void;
 
     /** Clear all entries. */
-    clear(): void;
+    clear: () => void;
 
     /** Destroy and clean up. */
-    destroy(): void;
+    destroy: () => void;
 }
 
 // ---------------------------------------------------------------------------

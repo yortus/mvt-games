@@ -7,22 +7,22 @@ import { textures } from '../data';
 // ---------------------------------------------------------------------------
 
 export interface HudViewBindings {
-    getScore(): number;
-    getLives(): number;
-    getLevel(): number;
-    getTileSize(): number;
-    getCols(): number;
+    score: () => number;
+    lives: () => number;
+    level: () => number;
+    tileSize: () => number;
+    cols: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
+export function HudView(bindings: HudViewBindings): Container {
     const watcher = watch({
-        score: bindings.getScore,
-        lives: bindings.getLives,
-        level: bindings.getLevel,
+        score: bindings.score,
+        lives: bindings.lives,
+        level: bindings.level,
     });
 
     let scoreText: Text;
@@ -71,14 +71,14 @@ export function createHudView(bindings: HudViewBindings): Container {
     }
 
     function updateLevelLayout(): void {
-        const width = bindings.getCols() * bindings.getTileSize();
+        const width = bindings.cols() * bindings.tileSize();
         levelText.position.set(width - 60, 4);
         livesContainer.position.set(width / 2 - 20, 4);
     }
 
     function updateLives(): void {
         livesContainer.removeChildren();
-        const lives = bindings.getLives();
+        const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {
             const icon = new Sprite({ texture: textures.get().digger.icon });
             icon.position.set(i * 16, 0);

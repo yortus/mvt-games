@@ -157,9 +157,11 @@ unsound in three ways, each failing silently:
   `p.at(3)` called `at()`.
 
 Explicit inputs, as `Watch()` already has, fix all three. The falling-sand
-toolbar now uses a local stand-in, `mapOnChange(read, map)` in
-[toolbar-view.tsx](../../src/demos/falling-sand/toolbar-view.tsx): one
-selector, one `===` comparison, and `map` run only on a change. Promotion should
+toolbar used a local stand-in, `mapOnChange(read, map)`: one selector, one
+`===` comparison, and `map` run only on a change. Since 2026-09-27 it, and
+Scramble's HUD, use `memoiseLast(fn)` from `src/common/` instead: a
+one-argument function wrapped to run only when its argument changes, called every frame
+with the polled value. Promotion should
 replace it with `Watch()`, which today would read:
 
 ```tsx
@@ -448,8 +450,9 @@ without a new reason.
   interleaved ones (e.g. `src/common/pause-menu-view.ts`,
   `src/common/touch-input-view.ts`) to `.detect()`. Watch for `return` moving
   into a callback, where it no longer exits `refresh()`.
-- Replace `mapOnChange` in the falling-sand toolbar with the mapping terminal
-  and delete it.
+- Decide whether `memoiseLast` (in `src/common/`, used by the falling-sand
+  toolbar and Scramble's HUD) should give way to the mapping terminal, or
+  stay as the simpler tool for the single-value case.
 - Port `derive` from the `derive-util` branch: its docs
   (`docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
   (`src/demos/derive/`) onto `.derive(...)`.

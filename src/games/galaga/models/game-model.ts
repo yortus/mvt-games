@@ -35,8 +35,8 @@ export interface GameModel {
     readonly lives: number;
     readonly stage: number;
     readonly playerInput: PlayerInput;
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

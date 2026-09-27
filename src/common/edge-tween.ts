@@ -11,7 +11,7 @@ export interface EdgeTween {
     /** Current tweened output value. */
     readonly value: number;
     /** Advance the tween by deltaMs. Reads the boolean source each call. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ export interface EdgeTween {
 
 export interface EdgeTweenOptions {
     /** Accessor that returns the current boolean source value. */
-    getSource(): boolean;
+    getSource: () => boolean;
     /** Output value at the moment of trigger. */
     triggerValue: number;
     /** Resting output value (also the end of each tween). */

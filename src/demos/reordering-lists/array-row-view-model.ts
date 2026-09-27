@@ -12,7 +12,7 @@
  * array, so there is nothing left to render it from: it vanishes, and the
  * cards after it slide over its gap.
  *
- * Per frame, per card, the loop costs one `getId` call, one array index, one
+ * Per frame, per card, the loop costs one `idAt` call, one array index, one
  * comparison and some arithmetic. `update()` is a hot path, so the store is an
  * array indexed by dense id, never a hash map.
  */
@@ -23,9 +23,9 @@
 
 export interface ArrayRowViewModel {
     /** Eased X of the card at `index`, relative to the row, in pixels. */
-    getX: (index: number) => number;
-    getAlpha: (index: number) => number;
-    getScale: (index: number) => number;
+    xAt: (index: number) => number;
+    alphaAt: (index: number) => number;
+    scaleAt: (index: number) => number;
     update: (deltaMs: number) => void;
 }
 
@@ -34,9 +34,9 @@ export interface ArrayRowViewModel {
 // ---------------------------------------------------------------------------
 
 export interface ArrayRowViewModelOptions {
-    getCount: () => number;
+    count: () => number;
     /** Must return a stable dense id per card, so the state can be array-indexed. */
-    getId: (index: number) => number;
+    idAt: (index: number) => number;
     readonly pitchPx: number;
 }
 
@@ -45,7 +45,7 @@ export interface ArrayRowViewModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createArrayRowViewModel(options: ArrayRowViewModelOptions): ArrayRowViewModel {
-    const { getCount, getId, pitchPx } = options;
+    const { idAt, pitchPx } = options;
 
     // Presentation state per card, indexed by dense id.
     const cosmetics: CardCosmetic[] = [];
@@ -59,19 +59,19 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
     let frame = 0;
 
     return {
-        getX: (index) => indexX[index],
-        getAlpha: (index) => indexAlpha[index],
-        getScale: (index) => indexScale[index],
+        xAt: (index) => indexX[index],
+        alphaAt: (index) => indexAlpha[index],
+        scaleAt: (index) => indexScale[index],
         update,
     };
 
     function update(deltaMs: number): void {
         frame += 1;
-        const count = getCount();
+        const count = options.count();
         const ease = 1 - Math.exp(-deltaMs / SMOOTH_MS);
 
         for (let i = 0; i < count; i++) {
-            const id = getId(i);
+            const id = idAt(i);
             const targetX = i * pitchPx;
 
             let cosmetic = cosmetics[id];

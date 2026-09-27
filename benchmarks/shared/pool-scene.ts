@@ -72,7 +72,7 @@ interface Bullet {
 }
 
 /** A hand-written view that keeps one container per live slot, building and destroying as slots change. */
-function createRebuildingView(root: Container, slots: { readonly length: number; at(index: number): Slot<Bullet> | undefined }): () => void {
+function createRebuildingView(root: Container, slots: { readonly length: number; at: (index: number) => Slot<Bullet> | undefined }): () => void {
     const views: (Container | undefined)[] = [];
     const shown: (Slot<Bullet> | undefined)[] = [];
     return () => {

@@ -34,9 +34,9 @@ export interface GameEntry {
      * Optional async method called before `start()` to load assets
      * (e.g. sprite sheets). Games without assets may omit this.
      */
-    load?(): Promise<void>;
+    load?: () => Promise<void>;
     /** Create and start a running game session, mounting visuals on `stage`. */
-    start(stage: Container): GameSession;
+    start: (stage: Container) => GameSession;
 }
 
 /** Input configuration provided by a game session. */
@@ -47,19 +47,19 @@ export interface GameInputConfig {
     primaryLabel?: string;
     secondaryLabel?: string;
     floatingJoystick?: boolean;
-    onXDirectionChanged?(direction: 'left' | 'none' | 'right'): void;
-    onYDirectionChanged?(direction: 'up' | 'none' | 'down'): void;
-    onPrimaryButtonChanged?(pressed: boolean): void;
-    onSecondaryButtonChanged?(pressed: boolean): void;
-    onRestartButtonChanged?(pressed: boolean): void;
+    onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
+    onPrimaryButtonChanged?: (pressed: boolean) => void;
+    onSecondaryButtonChanged?: (pressed: boolean) => void;
+    onRestartButtonChanged?: (pressed: boolean) => void;
 }
 
 /** A running game instance - updated each tick and destroyable. */
 export interface GameSession {
     /** Advance game state by the given elapsed milliseconds. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
     /** Tear down the game session and remove visuals from the stage. */
-    destroy(): void;
+    destroy: () => void;
     /** Input control configuration for the game. */
     inputConfig?: GameInputConfig;
 }

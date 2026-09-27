@@ -6,21 +6,21 @@ import { watch } from '#common';
 // ---------------------------------------------------------------------------
 
 export interface HudViewBindings {
-    getScore(): number;
-    getLives(): number;
-    getWave(): number;
-    getScreenWidth(): number;
+    score: () => number;
+    lives: () => number;
+    wave: () => number;
+    screenWidth: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
+export function HudView(bindings: HudViewBindings): Container {
     const watcher = watch({
-        score: bindings.getScore,
-        lives: bindings.getLives,
-        wave: bindings.getWave,
+        score: bindings.score,
+        lives: bindings.lives,
+        wave: bindings.wave,
     });
     let scoreText: Text;
     let waveText: Text;
@@ -68,14 +68,14 @@ export function createHudView(bindings: HudViewBindings): Container {
     }
 
     function updateWaveLayout(): void {
-        const width = bindings.getScreenWidth();
+        const width = bindings.screenWidth();
         waveText.position.set(width - 72, 6);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
     function updateLives(): void {
         livesContainer.removeChildren();
-        const lives = bindings.getLives();
+        const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {
             const icon = new Graphics();
             // Tiny ship icon

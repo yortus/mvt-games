@@ -8,15 +8,16 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface BannerViewBindings {
-    getMatchSequence(): Sequence<'bannerIn' | 'bannerHold' | 'bannerOut'>;
-    getCascadeStep(): number;
+    /** The board's one match sequence, which the view reacts to; read once. */
+    matchSequence: Sequence<'bannerIn' | 'bannerHold' | 'bannerOut'>;
+    cascadeStep: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createBannerView(bindings: BannerViewBindings): Container {
+export function BannerView(bindings: BannerViewBindings): Container {
     const view = new Container();
 
     // Ribbon background + text
@@ -43,10 +44,10 @@ export function createBannerView(bindings: BannerViewBindings): Container {
     banner.position.set(BOARD_WIDTH_PX * 0.5, BOARD_HEIGHT_PX * 0.5);
     view.addChild(banner);
 
-    const updateBanner = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateBanner = createSequenceReaction(bindings.matchSequence, {
         bannerIn: {
             entering: () => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_BANNER) return;
                 bannerText.text = cascade >= 5
                     ? `SUPER COMBO x${cascade}!`
@@ -55,7 +56,7 @@ export function createBannerView(bindings: BannerViewBindings): Container {
                 banner.position.x = BOARD_WIDTH_PX + BANNER_WIDTH;
             },
             active: (progress) => {
-                if (bindings.getCascadeStep() < MIN_CASCADE_FOR_BANNER) return;
+                if (bindings.cascadeStep() < MIN_CASCADE_FOR_BANNER) return;
                 const targetX = BOARD_WIDTH_PX * 0.5;
                 const startX = BOARD_WIDTH_PX + BANNER_WIDTH;
                 banner.position.x = startX + (targetX - startX) * easeOutBack(progress);
@@ -65,7 +66,7 @@ export function createBannerView(bindings: BannerViewBindings): Container {
         },
         bannerHold: {
             active: (progress) => {
-                if (bindings.getCascadeStep() < MIN_CASCADE_FOR_BANNER) return;
+                if (bindings.cascadeStep() < MIN_CASCADE_FOR_BANNER) return;
                 banner.position.x = BOARD_WIDTH_PX * 0.5;
                 banner.alpha = 1;
                 // Subtle breathing pulse
@@ -79,7 +80,7 @@ export function createBannerView(bindings: BannerViewBindings): Container {
                 banner.scale.set(1);
             },
             active: (progress) => {
-                if (bindings.getCascadeStep() < MIN_CASCADE_FOR_BANNER) return;
+                if (bindings.cascadeStep() < MIN_CASCADE_FOR_BANNER) return;
                 const startX = BOARD_WIDTH_PX * 0.5;
                 const targetX = -BANNER_WIDTH;
                 banner.position.x = startX + (targetX - startX) * progress * progress;

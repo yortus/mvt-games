@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { watch } from '#common';
 import type { CactusCell } from '../../models';
-import { createCactusView } from '../cactus-view';
+import { CactusView } from '../cactus-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
@@ -13,13 +13,13 @@ import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-vie
 export type PiecesViewBindings = PiecesViewModelOptions;
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createPiecesView(bindings: PiecesViewBindings): Container {
+export function PiecesView(bindings: PiecesViewBindings): Container {
     const vm = createPiecesViewModel(bindings);
     const watcher = watch({
-        gridSize: () => bindings.getCells().length,
+        gridSize: () => bindings.cells().length,
     });
     let cactusContainers: Container[] = [];
     let prevDragCell: CactusCell | undefined;
@@ -69,13 +69,13 @@ export function createPiecesView(bindings: PiecesViewBindings): Container {
         for (let r = 0; r < GRID_ROWS; r++) {
             for (let c = 0; c < GRID_COLS; c++) {
                 const row = r, col = c;
-                const cactus = createCactusView({
-                    getKind: () => bindings.getCells()[row][col].kind,
-                    getX: () => vm.getCellX(bindings.getCells()[row][col]),
-                    getY: () => vm.getCellY(bindings.getCells()[row][col]),
-                    getAlpha: () => vm.getCellAlpha(bindings.getCells()[row][col]),
-                    getScale: () => vm.getCellScale(bindings.getCells()[row][col]),
-                    getRotation: () => vm.getCellRotation(bindings.getCells()[row][col]),
+                const cactus = CactusView({
+                    kind: () => bindings.cells()[row][col].kind,
+                    x: () => vm.xFor(bindings.cells()[row][col]),
+                    y: () => vm.yFor(bindings.cells()[row][col]),
+                    alpha: () => vm.alphaFor(bindings.cells()[row][col]),
+                    scale: () => vm.scaleFor(bindings.cells()[row][col]),
+                    rotation: () => vm.rotationFor(bindings.cells()[row][col]),
                 });
                 view.addChild(cactus);
                 cactusContainers.push(cactus);

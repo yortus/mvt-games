@@ -1,6 +1,6 @@
-import { type Container, Rectangle, type Sprite } from 'pixi.js';
+import { type Container, Rectangle, type Sprite, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene, updateScene } from '../pixi-mvt';
+import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../pixi-mvt';
 import { countPropReads, propReadCounter } from './prop-reads';
 import { jsx } from './jsx-runtime';
 
@@ -84,6 +84,34 @@ describe('jsx runtime', () => {
         expect(el.tint).toBe(0x0000ff);
     });
 
+    it('writes fractional width and height bindings only when they change, per element', () => {
+        // Same keys in the same order, so both share one compiled function,
+        // which keeps these last values in a typed array rather than closure
+        // variables. Height starts at 0, which the first refresh must still write.
+        let width = 10.25;
+        let height = 0;
+        const a = jsx('sprite', { texture: Texture.WHITE, width: () => width, height: () => height, label: () => 'a' }) as Sprite;
+        const b = jsx('sprite', { texture: Texture.WHITE, width: () => 3.5, height: () => 7.75, label: () => 'b' }) as Sprite;
+
+        refreshScene(a);
+        refreshScene(b);
+        expect(a.width).toBeCloseTo(10.25);
+        expect(a.height).toBe(0);
+        expect(a.label).toBe('a');
+        expect(b.width).toBeCloseTo(3.5);
+        expect(b.height).toBeCloseTo(7.75);
+
+        a.width = 99;
+        refreshScene(a);
+        expect(a.width).toBe(99);
+
+        width = 10.62;
+        height = 4.5;
+        refreshScene(a);
+        expect(a.width).toBeCloseTo(10.62);
+        expect(a.height).toBeCloseTo(4.5);
+    });
+
     it('keeps per-element state separate when elements share a binding shape', () => {
         // Same keys in the same order, so both reuse one compiled function
         let x1 = 1;
@@ -157,6 +185,80 @@ describe('jsx runtime', () => {
         updateScene(el, 16);
         updateScene(el, 17);
         expect(deltas).toEqual([16, 17]);
+    });
+
+    describe('onRefresh prop', () => {
+        it('installs the step as the refresh method of an element with no bindings', () => {
+            let calls = 0;
+            const el = jsx('container', {
+                onRefresh: () => {
+                    calls++;
+                },
+            });
+
+            refreshScene(el);
+            refreshScene(el);
+            expect(calls).toBe(2);
+        });
+
+        it('runs after the element\'s bindings, not as a binding itself', () => {
+            const order: string[] = [];
+            const el = jsx('container', {
+                onRefresh: () => { order.push('step'); },
+                x: () => {
+                    order.push('x');
+                    return 1;
+                },
+            });
+
+            refreshScene(el);
+            expect(order).toEqual(['x', 'step']);
+            expect(el.x).toBe(1);
+        });
+
+        it('receives the element', () => {
+            let received: Container | undefined;
+            const el = jsx('graphics', {
+                onRefresh: (g: Container) => {
+                    received = g;
+                },
+            });
+
+            refreshScene(el);
+            expect(received).toBe(el);
+        });
+
+        it('is skipped while a visible binding hides the element', () => {
+            let visible = false;
+            let calls = 0;
+            const el = jsx('container', {
+                visible: () => visible,
+                onRefresh: () => {
+                    calls++;
+                },
+            });
+
+            refreshScene(el);
+            expect(calls).toBe(0);
+
+            visible = true;
+            refreshScene(el);
+            expect(calls).toBe(1);
+        });
+
+        it('can skip the element\'s descendants', () => {
+            let childX = 0;
+            const child = jsx('container', { x: () => childX });
+            const parent = jsx('container', {
+                x: () => 1,
+                onRefresh: () => SKIP_DESCENDANTS,
+                children: child,
+            });
+
+            childX = 5;
+            refreshScene(parent);
+            expect(child.x).toBe(0);
+        });
     });
 
     it('wires pointer event props as listeners and makes the element interactive', () => {

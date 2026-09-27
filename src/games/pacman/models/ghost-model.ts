@@ -1,5 +1,5 @@
-import gsap from 'gsap';
 import { type Direction, DIRECTION_DELTA, oppositeDirection } from './common';
+import { createTileMove } from './tile-move';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -11,7 +11,7 @@ export interface GhostModel {
     /** Current column position (fractional while moving between tiles). */
     readonly col: number;
     readonly direction: Direction;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 export type GhostBehavior = 'chase' | 'ambush' | 'flank' | 'fickle';
@@ -51,13 +51,10 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         tileRow: startRow,
         tileCol: startCol,
         direction: 'up' as Direction,
-        moving: false,
     };
 
-    // Paused timeline for tile-to-tile movement - advanced only via update().
-    // No autoRemoveChildren - we clear manually before each move to
-    // avoid the mid-iteration removal race (see style-guide GSAP §).
-    const timeline = gsap.timeline({ paused: true });
+    // The current tile-to-tile move, advanced only via update().
+    const move = createTileMove();
 
     // ---- Helpers -----------------------------------------------------------
 
@@ -77,11 +74,14 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         },
 
         update(deltaMs: number): void {
-            // Advance the timeline
-            timeline.time(timeline.time() + 0.001 * deltaMs);
+            // Advance the move; on arrival, the ghost is on its new tile
+            if (move.advance(state, deltaMs)) {
+                state.tileRow = state.row;
+                state.tileCol = state.col;
+            }
 
             // If idle, schedule the next one-tile move
-            if (!state.moving) scheduleMove();
+            if (!move.isMoving) scheduleMove();
         },
     };
 
@@ -169,7 +169,7 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         return bestDir;
     }
 
-    /** Schedule a single one-tile move on the timeline. */
+    /** Start a single one-tile move. */
     function scheduleMove(): void {
         const dir = chooseDirection();
         const delta = DIRECTION_DELTA[dir];
@@ -179,14 +179,7 @@ export function createGhostModel(options: GhostModelOptions): GhostModel {
         if (!isWalkable(nextTileRow, nextTileCol)) return;
 
         state.direction = dir;
-        state.moving = true;
-
-        const duration = 1 / speed;
-
-        // Fresh timeline for each move - prevents accumulated-time drift.
-        timeline.clear().time(0);
-        timeline.to(state, { row: nextTileRow, col: nextTileCol, duration, ease: 'none' });
-        timeline.set(state, { tileRow: nextTileRow, tileCol: nextTileCol, moving: false }, duration);
+        move.start(state, nextTileRow, nextTileCol, 1000 / speed);
     }
 }
 

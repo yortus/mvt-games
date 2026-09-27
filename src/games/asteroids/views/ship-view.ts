@@ -6,18 +6,18 @@ import { watch } from '#common';
 // ---------------------------------------------------------------------------
 
 export interface ShipViewBindings {
-    getX(): number;
-    getY(): number;
-    getAngle(): number;
-    isAlive(): boolean;
-    isThrusting(): boolean;
+    x: () => number;
+    y: () => number;
+    angle: () => number;
+    isAlive: () => boolean;
+    isThrusting: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createShipView(bindings: ShipViewBindings): Container {
+export function ShipView(bindings: ShipViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
     let bodyGfx: Graphics;
     let flameGfx: Graphics;
@@ -37,8 +37,8 @@ export function createShipView(bindings: ShipViewBindings): Container {
     }
 
     function refresh(): void {
-        view.position.set(bindings.getX(), bindings.getY());
-        view.rotation = bindings.getAngle();
+        view.position.set(bindings.x(), bindings.y());
+        view.rotation = bindings.angle();
 
         const watched = watcher.poll();
         if (watched.alive.changed) {

@@ -32,7 +32,7 @@ The canonical definitions live in [Architecture Rules](../architecture/rules.md)
 | **V-refresh** | `refresh()` runs once per frame, after all models have updated | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-idempotent** | `refresh()` must be idempotent | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-readonly** | `refresh()` must not mutate models | [Architecture Rules](../architecture/rules.md#view-rules) |
-| **V-reactive** | Binding values must be re-read in `refresh()`, never cached | [Architecture Rules](../architecture/rules.md#view-rules) |
+| **V-reactive** | Query bindings answered with functions must be re-read in `refresh()`, never cached | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-presentation** | Views may hold cosmetic presentation state the model does not track | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-output** | Views can target any output technology | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-tree** | View trees do not need to mirror model trees | [Architecture Rules](../architecture/rules.md#view-rules) |
@@ -52,7 +52,7 @@ The canonical definitions live in [Architecture Rules](../architecture/rules.md)
 |---|---|---|
 | **B-contract** | Bindings are the contract between a view and the world | [Architecture Rules](../architecture/rules.md#binding-rules) |
 | **B-reusable** | Reusable leaf views use a bindings interface; top-level views may access models directly | [Architecture Rules](../architecture/rules.md#binding-rules) |
-| **B-optional** | `on*()` bindings should usually be optional | [Architecture Rules](../architecture/rules.md#binding-rules) |
+| **B-optional** | Relay bindings should usually be optional | [Architecture Rules](../architecture/rules.md#binding-rules) |
 | **B-wiring** | Bindings are wired at the view construction site | [Architecture Rules](../architecture/rules.md#binding-rules) |
 
 ### Hot-Path Rules

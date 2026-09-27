@@ -8,33 +8,35 @@ import type { CabinetPhase } from './cabinet-model';
 // ---------------------------------------------------------------------------
 
 export interface CabinetViewBindings {
-    getPhase(): CabinetPhase;
-    getGameCount(): number;
-    getGameName(index: number): string;
-    getGameThumbnail(index: number): Texture | undefined;
-    getSelectedIndex(): number;
-    getCanvasWidth(): number;
-    getCanvasHeight(): number;
-    onMovePressed(direction: 'left' | 'right'): void;
-    onLaunchPressed(): void;
-    onExitPressed(): void;
-}
-
-export interface CabinetView extends Container {
-    requestExit(): void;
+    /** When this changes from `'playing'` to `'menu'`, the view zooms back out to the menu. */
+    phase: () => CabinetPhase;
+    gameCount: () => number;
+    gameNameAt: (index: number) => string;
+    gameThumbnailAt: (index: number) => Texture | undefined;
+    selectedIndex: () => number;
+    canvasWidth: () => number;
+    canvasHeight: () => number;
+    onMovePressed: (direction: 'left' | 'right') => void;
+    /** Reported once the zoom into the selected game has finished. */
+    onLaunchPressed: () => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
+/**
+ * The game-selection menu: a carousel of game cards, zooming into the chosen
+ * game when it launches and back out when the game exits. Written in plain
+ * TypeScript: it lays out and animates its cards by hand.
+ */
+export function CabinetView(bindings: CabinetViewBindings): Container {
     const watcher = watch({
-        phase: bindings.getPhase,
-        selected: bindings.getSelectedIndex,
-        count: bindings.getGameCount,
-        canvasW: bindings.getCanvasWidth,
-        canvasH: bindings.getCanvasHeight,
+        phase: bindings.phase,
+        selected: bindings.selectedIndex,
+        count: bindings.gameCount,
+        canvasW: bindings.canvasWidth,
+        canvasH: bindings.canvasHeight,
     });
 
     // Presentation-only state
@@ -44,8 +46,8 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     let lastNavDelta = 0;
     let transitioning = false;
     let zoomTimeline: gsap.core.Timeline | undefined;
-    let canvasW = bindings.getCanvasWidth();
-    let canvasH = bindings.getCanvasHeight();
+    let canvasW = bindings.canvasWidth();
+    let canvasH = bindings.canvasHeight();
 
     // ---- Scene elements ---------------------------------------------------
     const view = new Container();
@@ -92,7 +94,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     function onKeyDown(e: KeyboardEvent): void {
         if (transitioning) return;
 
-        const phase = bindings.getPhase();
+        const phase = bindings.phase();
         if (phase === 'menu') {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'ArrowUp' || e.key === 'w') {
                 e.preventDefault();
@@ -106,7 +108,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
             }
             else if (e.key === 'Enter') {
                 e.preventDefault();
-                startZoomIn(bindings.getSelectedIndex());
+                startZoomIn(bindings.selectedIndex());
             }
         }
     }
@@ -124,7 +126,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     menuLayer.hitArea = { contains: () => true };
 
     menuLayer.on('pointerdown', (e) => {
-        if (transitioning || bindings.getPhase() !== 'menu') return;
+        if (transitioning || bindings.phase() !== 'menu') return;
         if (swipePointerId !== undefined) return;
         swipePointerId = e.pointerId;
         swipeStartX = e.globalX;
@@ -148,7 +150,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         if (e.pointerId !== swipePointerId) return;
         swipePointerId = undefined;
         if (!swiped) {
-            const selectedIdx = bindings.getSelectedIndex();
+            const selectedIdx = bindings.selectedIndex();
             const card = cards[selectedIdx];
             if (card) {
                 const b = card.container.getBounds();
@@ -162,10 +164,10 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
             // Snap to nearest card and sync the model's selected index
             const nearest = Math.round(scrollCurrent);
             scrollTarget = nearest;
-            const count = bindings.getGameCount();
+            const count = bindings.gameCount();
             if (count > 0) {
                 const targetIndex = ((nearest % count) + count) % count;
-                const currentIndex = bindings.getSelectedIndex();
+                const currentIndex = bindings.selectedIndex();
                 if (targetIndex !== currentIndex) {
                     let delta = targetIndex - currentIndex;
                     if (delta > count / 2) delta -= count;
@@ -185,6 +187,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
 
     // ---- Lifecycle --------------------------------------------------------
 
+    view.onUpdate = update;
     view.onRefresh = refresh;
 
     const originalDestroy = view.destroy.bind(view);
@@ -194,27 +197,24 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         originalDestroy(options);
     };
 
-    /** Trigger the zoom-out exit animation (called from the pause menu). */
-    const requestExit = (): void => {
-        if (!transitioning && bindings.getPhase() === 'playing') {
-            startZoomOut(bindings.getSelectedIndex());
-        }
-    };
-
-    return Object.assign(view, { requestExit });
+    return view;
 
     // ---- Internals --------------------------------------------------------
 
     function refresh(): void {
         const watched = watcher.poll();
 
-        if (watched.phase.changed && !transitioning) {
+        // The game has exited: zoom back out of its card to the menu.
+        if (watched.phase.changed && watched.phase.previous === 'playing' && !transitioning) {
+            startZoomOut(bindings.selectedIndex());
+        }
+        else if (watched.phase.changed && !transitioning) {
             menuLayer.visible = watched.phase.value === 'menu';
         }
 
         if (watched.canvasW.changed || watched.canvasH.changed) {
-            canvasW = bindings.getCanvasWidth();
-            canvasH = bindings.getCanvasHeight();
+            canvasW = bindings.canvasWidth();
+            canvasH = bindings.canvasHeight();
             title.position.set(canvasW / 2, TITLE_Y);
             hint.position.set(canvasW / 2, canvasH - 16);
             highlightedIndex = -1;
@@ -222,7 +222,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
 
         if (watched.count.changed) {
             buildCards();
-            scrollCurrent = bindings.getSelectedIndex();
+            scrollCurrent = bindings.selectedIndex();
             scrollTarget = scrollCurrent;
         }
 
@@ -232,20 +232,27 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         }
 
         if (transitioning) return;
+        positionCards();
+    }
 
-        // Smooth scroll interpolation
+    /** Advances the presentation state: the zoom transition, and the carousel's eased scroll. */
+    function update(deltaMs: number): void {
+        if (zoomTimeline) zoomTimeline.time(zoomTimeline.time() + deltaMs / 1000);
+        if (transitioning) return;
+
+        // Ease the scroll towards its target: LERP_SPEED of the way per 60fps
+        // frame, whatever the frame rate.
         const diff = scrollTarget - scrollCurrent;
         if (Math.abs(diff) < LERP_SNAP) {
             scrollCurrent = scrollTarget;
         }
         else {
-            scrollCurrent += diff * LERP_SPEED;
+            scrollCurrent += diff * (1 - Math.pow(1 - LERP_SPEED, deltaMs / FRAME_MS_60FPS));
         }
-
-        positionCards();
     }
 
     // ---- Zoom transitions (presentation-only GSAP timelines) --------------
+    // Paused, and advanced only by `update(deltaMs)`.
 
     function startZoomIn(cardIndex: number): void {
         transitioning = true;
@@ -253,6 +260,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
+            paused: true,
             onComplete() {
                 menuLayer.visible = false;
                 resetAllCards();
@@ -283,12 +291,14 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         if (card.thumb) {
             tl.to(card.thumb, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
         }
+
+        // Show the start state now, not on the first update: every tween's
+        // start values, including those that start later.
+        tl.time(0);
     }
 
     function startZoomOut(cardIndex: number): void {
         transitioning = true;
-
-        bindings.onExitPressed();
         menuLayer.visible = true;
 
         // Position all cards at their normal carousel positions
@@ -302,6 +312,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
+            paused: true,
             onComplete() {
                 transitioning = false;
                 highlightedIndex = -1;
@@ -331,6 +342,10 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         if (card.thumb) {
             tl.fromTo(card.thumb, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
         }
+
+        // Show the start state now, not on the first update: every tween's
+        // start values, including those that start later.
+        tl.time(0);
     }
 
     function resetAllCards(): void {
@@ -354,7 +369,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
         cards = [];
         highlightedIndex = -1;
 
-        const count = bindings.getGameCount();
+        const count = bindings.gameCount();
         for (let i = 0; i < count; i++) {
             const cardContainer = new Container();
             cardContainer.pivot.set(CARD_W / 2, CARD_H / 2);
@@ -365,7 +380,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
             cardContainer.addChild(bg);
 
             // Thumbnail
-            const tex = bindings.getGameThumbnail(i);
+            const tex = bindings.gameThumbnailAt(i);
             let thumb: Sprite | undefined;
             if (tex) {
                 thumb = new Sprite(tex);
@@ -378,7 +393,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
 
             // Game name
             const name = new Text({
-                text: bindings.getGameName(i),
+                text: bindings.gameNameAt(i),
                 style: {
                     fontFamily: 'monospace',
                     fontSize: 14,
@@ -400,7 +415,7 @@ export function createCabinetView(bindings: CabinetViewBindings): CabinetView {
     }
 
     function positionCards(): void {
-        const count = bindings.getGameCount();
+        const count = bindings.gameCount();
         if (count === 0) return;
 
         const centerX = canvasW / 2;
@@ -483,9 +498,11 @@ const ALPHA_FALLOFF = 0.25;
 const ALPHA_MIN = 0.15;
 const MAX_VISIBLE_DISTANCE = 3.5;
 
-// Smooth scroll interpolation
+// Smooth scroll interpolation: the share of the remaining distance covered per
+// 60fps frame, and the distance at which the scroll snaps to its target.
 const LERP_SPEED = 0.15;
 const LERP_SNAP = 0.01;
+const FRAME_MS_60FPS = 1000 / 60;
 
 // Zoom transition
 const ZOOM_DURATION = 0.4;

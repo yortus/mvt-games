@@ -8,16 +8,17 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface MatchEffectsViewBindings {
-    getMatchedCells(): readonly Readonly<CactusCell>[];
-    getCascadeStep(): number;
-    getMatchSequence(): Sequence<'dust' | 'popup' | 'stars'>;
+    matchedCells: () => readonly Readonly<CactusCell>[];
+    cascadeStep: () => number;
+    /** The board's one match sequence, which the view reacts to; read once. */
+    matchSequence: Sequence<'dust' | 'popup' | 'stars'>;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Container {
+export function MatchEffectsView(bindings: MatchEffectsViewBindings): Container {
     const view = new Container();
     view.sortableChildren = true;
 
@@ -62,7 +63,7 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
     });
     popupTextContainer.addChild(popupText);
 
-    const updateEffects = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateEffects = createSequenceReaction(bindings.matchSequence, {
         dust: {
             inactive: () => {
                 for (let i = 0; i < DUST_POOL_SIZE; i++) {
@@ -70,8 +71,8 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 }
             },
             active: (progress) => {
-                const matchedCells = bindings.getMatchedCells();
-                const cascade = bindings.getCascadeStep();
+                const matchedCells = bindings.matchedCells();
+                const cascade = bindings.cascadeStep();
                 // Higher cascades produce multiple staggered rings per cell
                 const ringsPerCell = Math.min(MAX_DUST_RINGS, cascade);
                 const cellCount = matchedCells.length;
@@ -109,14 +110,14 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 }
             },
             entering: () => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_STARS) return;
-                const centre = computeMatchCentre(bindings.getMatchedCells());
+                const centre = computeMatchCentre(bindings.matchedCells());
                 starCentreX = centre.x;
                 starCentreY = centre.y;
             },
             active: (progress) => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_STARS) return;
 
                 const count = Math.min(STAR_POOL_SIZE, (cascade - MIN_CASCADE_FOR_STARS + 1) * STARS_PER_CASCADE);
@@ -144,10 +145,10 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 popupText.scale.set(1);
             },
             entering: () => {
-                const centre = computeMatchCentre(bindings.getMatchedCells());
+                const centre = computeMatchCentre(bindings.matchedCells());
                 popupTextContainer.position.set(centre.x, centre.y);
-                const cascade = bindings.getCascadeStep();
-                const matchCount = bindings.getMatchedCells().length;
+                const cascade = bindings.cascadeStep();
+                const matchCount = bindings.matchedCells().length;
                 const pts = matchCount * 10;
 
                 if (cascade >= 4) {
@@ -165,7 +166,7 @@ export function createMatchEffectsView(bindings: MatchEffectsViewBindings): Cont
                 popupText.style.fontSize = POPUP_FONT_SIZE * scaleFactor;
             },
             active: (progress) => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 const rise = POPUP_RISE_PX + (cascade - 1) * POPUP_CASCADE_RISE_BONUS;
 
                 // Bounce-in scale for combos: peaks in first third then settles

@@ -48,8 +48,8 @@ export interface GameModel {
     readonly lives: number;
     readonly wave: number;
     readonly playerInput: PlayerInput;
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

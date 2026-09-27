@@ -18,8 +18,8 @@ export interface GameModel {
     readonly ghosts: readonly GhostModel[];
     readonly score: number;
     readonly playerInput: PlayerInput;
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

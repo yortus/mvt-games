@@ -30,12 +30,12 @@ describe('slot row view model', () => {
         const { vm } = setup(['A', 'B', 'C']);
 
         vm.update(0);
-        expect(vm.getX(2)).toBe(2 * PITCH);
-        expect(vm.getAlpha(2)).toBe(0);
+        expect(vm.xAt(2)).toBe(2 * PITCH);
+        expect(vm.alphaAt(2)).toBe(0);
 
         settle(vm);
-        expect(vm.getAlpha(2)).toBeCloseTo(1, 3);
-        expect(vm.getScale(2)).toBeCloseTo(1, 3);
+        expect(vm.alphaAt(2)).toBeCloseTo(1, 3);
+        expect(vm.scaleAt(2)).toBeCloseTo(1, 3);
     });
 
     it('slides reordered cards: a card keeps its slot, and its ordinal changes', () => {
@@ -47,11 +47,11 @@ describe('slot row view model', () => {
 
         // Storage slot 0 still holds A, now at ordinal 2, travelling right.
         expect(list.slots.at(0)!.ordinal).toBe(2);
-        expect(vm.getX(0)).toBeLessThan(PITCH);
+        expect(vm.xAt(0)).toBeLessThan(PITCH);
 
         settle(vm);
-        expect(vm.getX(0)).toBeCloseTo(2 * PITCH, 3);
-        expect(vm.getX(1)).toBeCloseTo(0, 3);
+        expect(vm.xAt(0)).toBeCloseTo(2 * PITCH, 3);
+        expect(vm.xAt(1)).toBeCloseTo(0, 3);
     });
 
     it('fades and raises a removed card where it stands while the rest close the gap', () => {
@@ -61,10 +61,10 @@ describe('slot row view model', () => {
         list.remove(list.slots.at(0)!);
         settle(vm, 40);
 
-        expect(vm.getX(0)).toBe(0);
-        expect(vm.getY(0)).toBeLessThan(0);
-        expect(vm.getAlpha(0)).toBeLessThan(0.1);
-        expect(vm.getX(1)).toBeCloseTo(0, 1);
+        expect(vm.xAt(0)).toBe(0);
+        expect(vm.yAt(0)).toBeLessThan(0);
+        expect(vm.alphaAt(0)).toBeLessThan(0.1);
+        expect(vm.xAt(1)).toBeCloseTo(0, 1);
     });
 
     it('treats a new card in a released slot as entering, not as the old card', () => {
@@ -77,7 +77,7 @@ describe('slot row view model', () => {
         vm.update(0);
 
         expect(slot.index).toBe(0);
-        expect(vm.getX(0)).toBe(2 * PITCH);
-        expect(vm.getAlpha(0)).toBe(0);
+        expect(vm.xAt(0)).toBe(2 * PITCH);
+        expect(vm.alphaAt(0)).toBe(0);
     });
 });

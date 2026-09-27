@@ -13,13 +13,16 @@
  *   construction should call `refreshScene` on the tree first.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
+ * - An `onRefresh` prop adds a per-frame step of the element's own, which
+ *   receives the element and runs after its bindings (and is skipped with them
+ *   while it is hidden).
  * - The `<List>` and `<Switch>` components (`list.ts`, `switch.ts`) cover
  *   dynamic structure: index-addressed slots, and slots whose shape varies.
  */
 
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Cursor, FederatedPointerEvent, IHitArea, Texture } from 'pixi.js';
-import { SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
+import { type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
 import { propReadCounter } from './prop-reads';
 
 // ---------------------------------------------------------------------------
@@ -31,12 +34,19 @@ export declare namespace JSX {
     type Element = Container;
 
     interface IntrinsicElements {
-        container: ContainerProps;
+        container: BaseProps;
         sprite: SpriteProps;
         text: TextProps;
-        graphics: GraphicsProps;
+        graphics: BaseProps<Graphics>;
     }
 }
+
+/**
+ * A fixed value, or a getter the view calls every frame. The type of every
+ * intrinsic element's changeable attributes, and of any view's query binding
+ * that accepts either kind of answer.
+ */
+export type ValueOrGetter<T> = T | (() => T);
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -71,7 +81,7 @@ export function jsx(
     const watched: DynamicBinding[] = [];
 
     for (const key in props) {
-        if (key === 'children' || key === 'ref') continue;
+        if (key === 'children' || key === 'ref' || key === 'onRefresh') continue;
         const value = props[key];
         if (isGetter(key, value)) {
             // Inert construction: record the getter but do not call it. Its
@@ -103,6 +113,10 @@ export function jsx(
         setupDynamicRefresh(el, cheap, watched);
     }
 
+    if (typeof props.onRefresh === 'function') {
+        addRefreshStep(el, props.onRefresh as RefreshStep<Container>);
+    }
+
     if (typeof props.ref === 'function') {
         (props.ref as RefCallback<Container>)(el);
     }
@@ -122,46 +136,39 @@ export const jsxDEV = jsx;
 
 // --- Props accepted by the intrinsic elements -----------------------------
 
-interface ContainerProps extends BaseProps {
-    ref?: RefCallback<Container>;
-}
-
-interface SpriteProps extends BaseProps {
-    texture?: MaybeGetter<Texture>;
-    tint?: MaybeGetter<number>;
+interface SpriteProps extends BaseProps<Sprite> {
+    texture?: ValueOrGetter<Texture>;
+    tint?: ValueOrGetter<number>;
     anchor?: number;
-    width?: MaybeGetter<number>;
-    height?: MaybeGetter<number>;
-    ref?: RefCallback<Sprite>;
+    width?: ValueOrGetter<number>;
+    height?: ValueOrGetter<number>;
 }
 
-interface TextProps extends BaseProps {
-    text?: MaybeGetter<string>;
+interface TextProps extends BaseProps<Text> {
+    text?: ValueOrGetter<string>;
     style?: Record<string, unknown>;
     anchor?: number;
-    ref?: RefCallback<Text>;
 }
 
-interface GraphicsProps extends BaseProps {
-    ref?: RefCallback<Graphics>;
-}
-
-interface BaseProps extends EventProps {
-    x?: MaybeGetter<number>;
-    y?: MaybeGetter<number>;
-    alpha?: MaybeGetter<number>;
-    visible?: MaybeGetter<boolean>;
-    rotation?: MaybeGetter<number>;
-    scale?: MaybeGetter<number>;
-    pivotX?: MaybeGetter<number>;
-    pivotY?: MaybeGetter<number>;
-    zIndex?: MaybeGetter<number>;
+/** Props every intrinsic element accepts. `T` is the element's own type, which `ref` and `onRefresh` receive. */
+interface BaseProps<T extends Container = Container> extends EventProps {
+    x?: ValueOrGetter<number>;
+    y?: ValueOrGetter<number>;
+    alpha?: ValueOrGetter<number>;
+    visible?: ValueOrGetter<boolean>;
+    rotation?: ValueOrGetter<number>;
+    scale?: ValueOrGetter<number>;
+    pivotX?: ValueOrGetter<number>;
+    pivotY?: ValueOrGetter<number>;
+    zIndex?: ValueOrGetter<number>;
     sortableChildren?: boolean;
     isRenderGroup?: boolean;
     hitArea?: IHitArea;
-    cursor?: MaybeGetter<Cursor>;
+    cursor?: ValueOrGetter<Cursor>;
     label?: string;
     onUpdate?: UpdateMethod;
+    onRefresh?: RefreshStep<T>;
+    ref?: RefCallback<T>;
     children?: PixiNode | PixiChildren;
 }
 
@@ -177,11 +184,17 @@ interface EventProps {
     onGlobalPointerMove?: (e: FederatedPointerEvent) => void;
 }
 
-/** A prop value may be a static literal or a getter polled each frame. */
-type MaybeGetter<T> = T | (() => T);
-
 /** Callback ref - invoked once after the element is fully constructed. */
 type RefCallback<T> = (el: T) => void;
+
+/**
+ * An `onRefresh` attribute: a per-frame step of the element's own, for what
+ * attributes cannot express, such as redrawing a `Graphics` when a value
+ * changes. Receives the element, like a ref. Runs after the element's
+ * function attributes, and not at all while a `visible` function hides the
+ * element. May return `SKIP_DESCENDANTS`.
+ */
+type RefreshStep<T> = (el: T) => typeof SKIP_DESCENDANTS | void;
 
 type PixiChildren = (PixiNode | PixiChildren | undefined | null)[];
 
@@ -224,6 +237,18 @@ const UNSET: unique symbol = Symbol('pixi-jsx.unset');
  * or boolean assignment plus a dirty flag) to set unconditionally each frame.
  */
 const WATCHED_PROPS = new Set(['text', 'style', 'texture', 'tint', 'width', 'height', 'label']);
+
+/**
+ * Watched props whose values are numbers that may be fractional. Their last
+ * value is kept in a `Float64Array` that starts as `NaN`, not in a closure
+ * variable that starts as `UNSET`. V8 boxes a fractional number in a new heap
+ * object when it is stored in a closure variable, and when it is compared with
+ * one that might hold a symbol: 16 bytes per element per frame for a
+ * fractional `width`, changed or not. `NaN` is unequal to everything, so the
+ * first refresh still always writes. `tint` is a colour, a whole number, which
+ * V8 stores without boxing.
+ */
+const FRACTIONAL_WATCHED_PROPS = new Set(['width', 'height']);
 
 /** Props that are functions but should NOT be treated as dynamic getters. */
 const NON_GETTER_PROPS = new Set(['ref', 'onUpdate']);
@@ -363,6 +388,18 @@ function applyEventProps(el: Container, props: Record<string, unknown>): void {
     }
 }
 
+/**
+ * Add an `onRefresh` attribute's step to an element. With function attributes
+ * as well, the step runs after them, unless a `visible` function has just hidden
+ * the element.
+ */
+function addRefreshStep(el: Container, step: RefreshStep<Container>): void {
+    const ownRefresh: RefreshMethod | undefined = el.onRefresh;
+    el.onRefresh = ownRefresh === undefined
+        ? () => step(el)
+        : () => (ownRefresh() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el));
+}
+
 /** Wire up a codegen'd per-frame refresh for dynamic bindings on an element. */
 function setupDynamicRefresh(
     el: Container,
@@ -387,16 +424,21 @@ function setupDynamicRefresh(
  * returns the skip sentinel when false so a hidden element skips its other
  * bindings and its subtree.
  *
- * Generated shape, for `x` (cheap) and `text` (watched):
+ * Generated shape, for `x` (cheap), and `text` and `width` (watched):
  *
- *     function (e, s, u, c, g0, g1) {
+ *     function (e, s, u, c, g0, g1, g2) {
  *         var v0 = u;
+ *         var n = new Float64Array(1).fill(NaN);
  *         return function () {
- *             if (c.isCounting) c.count += 2;
+ *             if (c.isCounting) c.count += 3;
  *             e.x = g0();
  *             var _0 = g1(); if (_0 !== v0) { v0 = _0; e.text = _0; }
+ *             var _1 = g2(); if (_1 !== n[0]) { n[0] = _1; e.width = _1; }
  *         };
  *     }
+ *
+ * `width` keeps its last value in `n`, not a closure variable; see
+ * {@link FRACTIONAL_WATCHED_PROPS}.
  *
  * With a `visible` binding, the count is split around the visibility check,
  * so a hidden element counts only the one read it made.
@@ -434,15 +476,25 @@ function getRefreshFactory(cheap: DynamicBinding[], watched: DynamicBinding[]): 
         gi++;
     }
 
+    let numericCount = 0;
     for (let i = 0; i < watched.length; i++) {
         params.push(`g${gi}`);
-        locals.push(`var v${i}=u;`);
+        // Where the last value written is kept.
+        let last: string;
+        if (FRACTIONAL_WATCHED_PROPS.has(watched[i].key)) {
+            last = `n[${numericCount++}]`;
+        }
+        else {
+            last = `v${i}`;
+            locals.push(`var v${i}=u;`);
+        }
         body.push(
             `var _${i}=g${gi}();`,
-            `if(_${i}!==v${i}){v${i}=_${i};${propAssign(watched[i].key, `_${i}`)}}`,
+            `if(_${i}!==${last}){${last}=_${i};${propAssign(watched[i].key, `_${i}`)}}`,
         );
         gi++;
     }
+    if (numericCount > 0) locals.push(`var n=new Float64Array(${numericCount}).fill(NaN);`);
 
     const source = `${locals.join('\n')}\nreturn function(){\n${body.join('\n')}\n};`;
 

@@ -41,8 +41,8 @@ export interface SyncedSceneOptions {
 export interface SyncedScene {
     readonly root: Container;
     /** One frame: the model changes, then the view catches up. */
-    frame(): void;
-    dispose(): void;
+    frame: () => void;
+    dispose: () => void;
 }
 
 // ---------------------------------------------------------------------------

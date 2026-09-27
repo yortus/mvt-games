@@ -11,16 +11,16 @@
 
 ```ts
 // ---------------------------------------------------------------------------
-// Bindings (for reusable leaf views)
+// Bindings
 // ---------------------------------------------------------------------------
 
-// Bindings interface - the contract between the view and the outside world
+// XxxViewBindings - the contract between the view and the outside world
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-// createXxxView() factory function implementation
+// The XxxView(bindings) function
 
 // ---------------------------------------------------------------------------
 // Internals (if needed)
@@ -29,7 +29,29 @@
 // Internal types, constants, and helpers used only inside this file
 ```
 
-Exports (bindings interface, factory function) go above all internals.
+Exports (bindings interface, view function) go above all internals. A view
+with a JSX body is a `.tsx` file whose first line is
+`/** @jsxImportSource #pixi-jsx */`.
+
+**[project convention]** The full convention is in
+[Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings),
+and lint enforces its naming.
+
+## A View Is a Function
+
+**[project convention]** Every view is a function taking one bindings object
+and returning a Pixi `Container`:
+
+```ts
+export function HudView(bindings: HudViewBindings): Container
+```
+
+- `PascalCase`, ending in `View`, so it works as a JSX tag (`<HudView ... />`)
+  and as a plain call (`HudView({ ... })`). A lowercase tag is an intrinsic
+  element, so `createHudView` could never be a tag.
+- The parameter is always `bindings`, of type `XxxViewBindings`. Never
+  `props`, even in JSX files: in JSX, a view's bindings are written as
+  attributes.
 
 ## Two Kinds of Views
 
@@ -38,11 +60,22 @@ state:
 
 | Kind                    | State access               | When to use                        |
 | ----------------------- | -------------------------- | ---------------------------------- |
-| **Reusable leaf view**  | `bindings` object          | Views of single game objects (a ship, a bullet), HUD panels, any view that could be reused across contexts |
-| **Top-level app view**  | Model reference directly   | Application-specific root views that are never reused |
+| **Reusable leaf view**  | Query and relay bindings   | Views of single game objects (a ship, a bullet), HUD panels, any view that could be reused across contexts |
+| **Top-level app view**  | The model itself           | Application-specific root views that are never reused |
 
-Leaf views define a bindings interface. Top-level views accept the model type
-directly.
+**[project convention]** A top-level view takes the model as a fixed answer in
+its bindings, so it has the same signature as every other view:
+
+```ts
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+export function GameView(bindings: GameViewBindings): Container {
+    const { model } = bindings;
+    // ...
+}
+```
 
 ## The `refresh()` Contract
 
@@ -52,68 +85,219 @@ presentation to match.
 
 Key principles:
 
-- **Reactive** - all binding values must be re-read in `refresh()`, never
-  cached at construction time. Values may change between frames.
+- **Reactive** - every value that may change between frames must be re-read
+  in `refresh()`, never cached at construction time. Only a value the view is
+  given as fixed may be read once.
 - **Idempotent** - calling `refresh()` twice with the same state produces
   the same result.
 - **No side effects** - `refresh()` reads state and writes to the presentation
   layer. It does not mutate models, emit events, or trigger transitions.
 
-## Bindings Pattern
+In a JSX body the runtime writes `refresh()` for you: every attribute given a
+function is re-read each frame.
 
-**[MVT requirement for reusable views]** Reusable leaf views accept a
-`bindings` object with:
+## Bindings
 
-- `get*()` - read-only state accessors (e.g. `getScore(): number`)
-- `on*()` - user-input event handlers (e.g. `onDirectionChanged(dir): void`)
+**[MVT requirement for reusable views]** A bindings object has two kinds of
+member:
+
+- **Query bindings** read the state the view presents.
+- **Relay bindings** report user input out of the view. They are optional.
+
+**[project convention]** Naming:
+
+| Member | Rule | Example |
+| --- | --- | --- |
+| Query binding | Named for what it returns; no `get` prefix | `score`, `screenX`, `phase` |
+| Boolean query binding | `is` / `has` / `can` | `isAlive`, `canFlip` |
+| With a position or index | Ends in `At` | `tileKindAt(row, col)` |
+| With a key | Ends in `For` | `colorFor(kind)` |
+| Relay binding | `on` + what the user did, not what it should cause | `onFirePressed`, not `onShoot` |
+
+Write every member as a function-valued property (`score: () => number`), not
+with method syntax.
+
+### Fixed and Changing Answers
+
+**[MVT requirement]** A query binding's type says what the view supports:
+
+| Type | Use for | The view |
+| --- | --- | --- |
+| `() => T` | Model state, which changes | Calls it every refresh |
+| `T` | Values the view is built around (a size that shapes its structure, a label) | Reads it once, at construction |
+| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both kinds of answer | Handles both |
+
+**Never declare a query binding as a function and then read it only once.**
+The view would silently stop following a value its bindings promise to
+follow (rule V-reactive). If the view only supports a fixed value, declare it
+as `T`. Widening `T` to `ValueOrGetter<T>` later does not break callers.
 
 ```ts
-interface ScoreViewBindings {
-    getScore: () => number;
-}
-
-function createScoreView(bindings: ScoreViewBindings): Container {
-    const view = new Container();
-    const label = new Text({ text: '0', style: scoreStyle });
-    view.addChild(label);
-
-    function refresh(): void {
-        label.text = String(bindings.getScore());
-    }
-
-    view.onRefresh = refresh;
-    return view;
+export interface TerrainViewBindings {
+    /** Changes every frame. */
+    scrollCol: () => number;
+    /** Size the view's ring buffer, so read once. */
+    visibleCols: number;
+    visibleRows: number;
+    tileSize: number;
+    isSolidAt: (col: number, row: number) => boolean;
 }
 ```
 
 ### Binding Rules
 
-- **Never cache** binding values at construction time. Always call
-  `bindings.get*()` inside `refresh()`.
-- **`on*()` bindings should usually be optional.** This keeps views usable in
-  more contexts without forcing no-op handlers.
+- **Relay bindings should usually be optional.** This keeps views usable in
+  more contexts without forcing no-op handlers. Call them with `?.()`.
 - **Bindings are wired at the construction site** (typically a parent view).
   The view does not know how it is connected to the model.
 
-## Scene Graph Construction
+## Writing the Body: JSX or Plain TypeScript
 
-**[project convention]** Views in this project use Pixi.js. Build the scene
-graph once at construction time, then update it each frame in `refresh()`:
+**[project convention]** A view's body can be written in JSX or in plain
+TypeScript. Neither is required. Both give the same outside, so callers
+cannot tell which a view uses, and each view can choose whichever suits it.
+The same rocket view both ways:
+
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+export function RocketView(bindings: RocketViewBindings): Container {
+    const { idle, launching } = textures.get().rocket;
+    return (
+        <container x={bindings.screenX} y={bindings.screenY}>
+            <sprite texture={idle} anchor={0.5} visible={() => bindings.phase() === 'idle'} />
+            <sprite texture={launching} anchor={0.5} visible={() => bindings.phase() !== 'idle'} />
+        </container>
+    );
+}
+```
 
 ```ts
-function createBulletView(bindings: BulletViewBindings): Container {
+export function RocketView(bindings: RocketViewBindings): Container {
+    const { idle, launching } = textures.get().rocket;
+    const idleSprite = new Sprite({ texture: idle, anchor: 0.5 });
+    const launchSprite = new Sprite({ texture: launching, anchor: 0.5 });
     const view = new Container();
-    const gfx = new Graphics();
-    gfx.circle(0, 0, 4).fill(0xffffff);
-    view.addChild(gfx);
-
-    function refresh(): void {
-        view.visible = bindings.isVisible();
-        view.position.set(bindings.getX(), bindings.getY());
-    }
+    view.addChild(idleSprite, launchSprite);
 
     view.onRefresh = refresh;
     return view;
+
+    function refresh(): void {
+        const isIdle = bindings.phase() === 'idle';
+        idleSprite.visible = isIdle;
+        launchSprite.visible = !isIdle;
+        view.position.set(bindings.screenX(), bindings.screenY());
+    }
+}
+```
+
+| | Tends to suit | Why |
+| --- | --- | --- |
+| **JSX** (`.tsx`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
+| **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one read or change check shared by many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.2-1.7x as much per property as a hand-written one, which matters only at that scale |
+
+Mixing is fine: a JSX view can embed a plain TypeScript child, or reach a
+Pixi object directly through a `ref`, and plain TypeScript can call any view
+function, `List` included.
+
+Either way, before writing a per-frame redraw, check whether drawing once and
+then scaling, tinting or resizing would do. A burst that grows and fades is
+one circle drawn at full size, then scaled and faded; a bar that fills is a
+white sprite that is resized and tinted. That stops the view allocating every
+frame.
+
+### A JSX Body
+
+A `.tsx` file whose first line is `/** @jsxImportSource #pixi-jsx */`. How
+attributes behave:
+
+- **A plain value is applied once.** A function is re-read every refresh.
+  Pass values that never change as plain values: they cost nothing per frame.
+- **A query binding can be passed straight to an attribute**
+  (`x={bindings.screenX}`) when it already has the attribute's type.
+- **A `visible` function is read first.** When it returns `false`, the
+  element's other attributes and its whole subtree are skipped that frame.
+- **`text`, `texture`, `tint`, `width`, `height`, `style` and `label` are
+  written only when their value changes.** The function is still called every
+  frame, so it must not build a new string each time: map a number to text
+  only when the number changes, with `memoiseLast` from `#common`, created once:
+  `const scoreText = memoiseLast((n: number) => String(n))`, then
+  `text={() => scoreText(bindings.score())}`.
+- **`ref`** receives the element once it is built, e.g. to draw a `Graphics`
+  once: `<graphics ref={(g) => drawPanel(g)} />`.
+- **`onUpdate`** sets the element's `update(deltaMs)` step, for presentation
+  state.
+- **`onRefresh`** adds a per-frame step of the element's own, for what
+  attributes cannot express. It receives the element, and runs after the
+  element's function attributes (not at all while a `visible` function hides
+  it).
+
+For collections, project the model's collection with `<List>` rather than
+building children by hand. A pool of bullets over a `SlotList`:
+
+```tsx
+<List items={model.bullets.slots}>
+    {(slot) => (
+        <BulletView
+            screenX={() => (slot().value.worldCol - model.scrollCol) * TILE_SIZE}
+            screenY={() => slot().value.worldRow * TILE_SIZE}
+        />
+    )}
+</List>
+```
+
+A slot whose item is absent is hidden and skipped, so the item view needs no
+presence binding. See the [`<List>` guide](https://github.com/yortus/mvt-games/blob/main/src/pixi-jsx/list-patterns.md)
+for other shapes.
+
+Any view can also be called as an expression inside a JSX body:
+`{HudView({ ... })}`.
+
+#### Reaching Pixi from a JSX body
+
+1. **`ref` to draw once.** `<graphics ref={(g) => drawGlass(g, width, height)} />`.
+2. **An `onRefresh` attribute**, for a per-frame step the other attributes
+   cannot express, such as redrawing a `Graphics` when a value changes:
+
+   ```tsx
+   let drawnRadius = -1;
+
+   <graphics x={bindings.x} y={bindings.y} onRefresh={refreshRing} />
+
+   function refreshRing(g: Graphics): void {
+       const radius = bindings.radius();
+       if (radius === drawnRadius) return;
+       drawnRadius = radius;
+       g.clear().circle(0, 0, radius).stroke({ color: 0xffffff, width: 1 });
+   }
+   ```
+
+   Older code does this with a `ref` that saves the element's own
+   `onRefresh` and calls it before its own step. The attribute does the same,
+   and is simpler to get right.
+
+When most of a view needs these, a plain TypeScript body is usually clearer.
+
+### A Plain TypeScript Body
+
+Build the scene graph once at construction time, then update it each frame in
+`refresh()`:
+
+```ts
+export function TerrainView(bindings: TerrainViewBindings): Container {
+    const { visibleCols, tileSize } = bindings; // fixed answers: read once
+    const view = new Container();
+    const columns = createColumns(visibleCols + 4);
+    view.addChild(...columns);
+
+    view.onRefresh = refresh;
+    return view;
+
+    function refresh(): void {
+        const scrollCol = bindings.scrollCol(); // changing answer: every frame
+        // ... recycle columns that scrolled off, redraw them, position the rest
+    }
 }
 ```
 
@@ -121,13 +305,17 @@ Key points:
 - Create display objects (`Container`, `Graphics`, `Text`, `Sprite`) once.
 - In `refresh()`, update properties (position, scale, alpha, visibility,
   text, tint) - do not recreate display objects.
+- Child views are plain calls: `view.addChild(ShipView({ ... }))`. So is
+  `List`: `List({ items: model.bullets.slots, children: (slot) => BulletView({ ... }) })`.
 - Return the root `Container`. The parent view adds it to its own container.
 
 ## Using `onRefresh` and `onUpdate`
 
 **[project convention]** `src/pixi-mvt/` adds two optional methods to every Pixi
 `Container`. A view assigns `refresh()` to `onRefresh`, and, only if it has
-presentation state, `update(deltaMs)` to `onUpdate`:
+presentation state, `update(deltaMs)` to `onUpdate`. In a JSX body the runtime
+sets `onRefresh` from the function attributes, and `onUpdate` comes from the
+`onUpdate` attribute.
 
 ```ts
 view.onUpdate = update;     // only for views with presentation state
@@ -155,15 +343,16 @@ view's `update(deltaMs)` and `refresh()` steps, and must not mention these metho
 
 ## Change Detection (Watch)
 
-**[project convention]** For bindings that change rarely but trigger expensive
-work (rebuilding a grid, recreating child views), use the `watch()` helper:
+**[project convention]** For query bindings that change rarely but trigger
+expensive work (rebuilding a grid, recreating child views), use the `watch()`
+helper:
 
 ```ts
-import { watch } from '../../common';
+import { watch } from '#common';
 
 const watcher = watch({
-    rows: bindings.getRows,
-    cols: bindings.getCols,
+    rows: bindings.rows,
+    cols: bindings.cols,
 });
 
 function refresh(): void {
@@ -172,7 +361,7 @@ function refresh(): void {
         rebuildGrid(w.rows.value, w.cols.value);
     }
     // Always update positions, etc.
-    view.position.set(bindings.getX(), bindings.getY());
+    view.position.set(bindings.x(), bindings.y());
 }
 ```
 
@@ -187,8 +376,9 @@ that the model doesn't track (the model has no reason to track it because no
 domain outcome depends on it).
 
 Views with presentation state gain an `update(deltaMs)` step, assigned to
-`view.onUpdate` in this project. `updateScene` runs it after models update and
-before any refresh. Parent views do not propagate it; the pass finds it.
+`view.onUpdate` (or the `onUpdate` attribute) in this project. `updateScene`
+runs it after models update and before any refresh. Parent views do not
+propagate it; the pass finds it.
 
 When the presentation logic grows complex enough to warrant separate testing,
 extract it into a **view model** - a technique borrowed from MVVM:
@@ -196,27 +386,29 @@ extract it into a **view model** - a technique borrowed from MVVM:
 - Created and owned by the view that uses it (an internal detail)
 - Has no view or scene-graph dependencies (no Pixi.js imports)
 - Independently testable
+- Its options and members are named like bindings (`count`, `idAt(index)`,
+  `xFor(cell)`, not `getCount`), since they are fed from and read by views
 
 When multiple views share a view model, the nearest common parent creates
 the view model and passes it to both views.
 
-For the simplest cases (a single tweened value with trivial logic), inline
-presentation state in the view is acceptable. The view gains an
-`update(deltaMs)` function, assigned to `view.onUpdate`, so the update pass
-can advance its state:
+For the simplest cases (a single timer or tweened value with trivial logic),
+inline presentation state in the view is acceptable:
 
-```ts
-let displayedScore = 0;
+```tsx
+export function BaseAlertView(bindings: BaseAlertViewBindings): Container {
+    // Presentation state: how long the alert has been flashing.
+    let flashMs = 0;
 
-function update(deltaMs: number): void {
-    const target = bindings.getScore();
-    const t = 1 - Math.pow(0.002, deltaMs / 1000);
-    displayedScore += (target - displayedScore) * t;
-    if (Math.abs(target - displayedScore) < 1) displayedScore = target;
-}
-
-function refresh(): void {
-    label.text = String(Math.round(displayedScore));
+    return (
+        <container
+            visible={bindings.isShown}
+            alpha={() => (Math.sin(flashMs * 0.008) + 1) * 0.5}
+            onUpdate={(deltaMs) => { flashMs += deltaMs; }}
+        >
+            <text text="DESTROY THE BASE!" anchor={0.5} style={ALERT_STYLE} />
+        </container>
+    );
 }
 ```
 
@@ -226,7 +418,8 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
 ## Hot-Path Rules for `refresh()`
 
-`refresh()` runs every tick (~60fps). Avoid per-tick heap allocations:
+`refresh()`, and every function attribute in a JSX body, runs every tick
+(~60fps). Avoid per-tick heap allocations:
 
 | Avoid                                   | Prefer                                         |
 | --------------------------------------- | ---------------------------------------------- |
@@ -234,8 +427,11 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 | `for...of` on arrays                    | `for (let i = 0; i < arr.length; i++)`         |
 | Template-string keys                    | Arithmetic encoding (`r * cols + c`)           |
 | Inline closures                         | Hoisted functions or pre-bound references      |
-| `String()` conversion every frame       | Change detection to update text only on change |
+| `String()` conversion every frame       | `memoiseLast`, or change detection, to update text only on change |
 | Spread (`[...arr]`)                     | Direct index access                            |
+
+Closures written in JSX attributes and `<List>` item callbacks are created
+once, when the element is built, not per frame.
 
 ## Forbidden Patterns - Quick Reference
 
@@ -244,10 +440,11 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 | Domain state in a view                     | V-stateless     | Move to the model                             |
 | Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
 | Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's `onUpdate(deltaMs)` method      |
-| Caching binding values at construction     | V-reactive      | Read `get*()` inside `refresh()`              |
-| Mutating models in `refresh()`             | V-readonly      | Use `on*()` bindings for input relay          |
+| Query binding declared as a function but read only at construction | V-reactive | Read it in `refresh()`, or declare it as `T` |
+| Mutating models in `refresh()`             | V-readonly      | Report input through relay bindings           |
 | `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's `onUpdate(deltaMs)` method      |
 | Computing own deltaMs from `Date.now()`    | V-presentation  | Receive `deltaMs` from the ticker             |
+| `createXxxView`, `get*()` bindings, `props` in new code | Style | `XxxView(bindings)`, query bindings named for what they return |
 | Using `class`                              | Style           | Factory function + plain record               |
 | Using `enum` or const-object enum          | Style           | String-literal union                          |
 | Using `null`                               | Style           | Use `undefined`                               |
@@ -255,43 +452,49 @@ frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
 ## Complete Minimal Example
 
-A reusable bullet view with position and visibility bindings:
+A reusable bullet view, shown in a `<List>` above, with a JSX body:
 
-```ts
-import { Container, Graphics } from 'pixi.js';
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+import type { Container } from 'pixi.js';
+import { textures } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
-interface BulletViewBindings {
-    getX: () => number;
-    getY: () => number;
-    isVisible: () => boolean;
+export interface BulletViewBindings {
+    screenX: () => number;
+    screenY: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-function createBulletView(bindings: BulletViewBindings): Container {
-    const view = new Container();
-    const gfx = new Graphics();
-    gfx.circle(0, 0, 4).fill(0xffffff);
-    view.addChild(gfx);
+export function BulletView(bindings: BulletViewBindings): Container {
+    return <sprite texture={textures.get().bullet} anchor={0.5} x={bindings.screenX} y={bindings.screenY} />;
+}
+```
 
-    view.onRefresh = refresh;
+Or with a plain TypeScript body, in `bullet-view.ts`:
+
+```ts
+export function BulletView(bindings: BulletViewBindings): Container {
+    const view = new Sprite({ texture: textures.get().bullet, anchor: 0.5 });
+    view.onRefresh = () => {
+        view.position.set(bindings.screenX(), bindings.screenY());
+    };
     return view;
-
-    function refresh(): void {
-        view.visible = bindings.isVisible();
-        view.position.set(bindings.getX(), bindings.getY());
-    }
 }
 ```
 
 ## Full References
 
+- [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings) - the view convention in full
+- [Architecture: Bindings](../architecture/bindings.md) - query and relay bindings, fixed and changing answers
+- [`<List>` guide](https://github.com/yortus/mvt-games/blob/main/src/pixi-jsx/list-patterns.md) - projecting collections
 - [Views (Learn)](../building-with-mvt/presenting-the-world/views.md) - introduction from scratch
 - [Bindings (Learn)](../building-with-mvt/presenting-the-world/bindings.md) - the bindings pattern
 - [Bindings in Depth](../building-with-mvt/presenting-the-world/bindings-in-depth.md) - advanced bindings topics
@@ -299,5 +502,7 @@ function createBulletView(bindings: BulletViewBindings): Container {
 - [View Composition](../building-with-mvt/presenting-the-world/view-composition.md) - view hierarchies
 - [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
-- [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `refresh()`
+
+The Building with MVT pages above still show the older `createXxxView` and
+`get*()` convention; they will be rewritten once the migration is done.

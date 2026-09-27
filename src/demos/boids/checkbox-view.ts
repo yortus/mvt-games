@@ -7,19 +7,19 @@ import { Container, Graphics, Text } from 'pixi.js';
 /** Bindings for a togglable checkbox control. */
 export interface CheckboxViewBindings {
     /** Display label shown next to the checkbox. */
-    getLabel(): string;
+    label: () => string;
     /** Whether the checkbox is currently checked. */
-    getIsChecked(): boolean;
+    isChecked: () => boolean;
     /** Called when the user clicks the checkbox. */
-    onToggled?(isChecked: boolean): void;
+    onToggled?: (isChecked: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-/** Create a togglable checkbox view wired to the given bindings. */
-export function createCheckboxView(bindings: CheckboxViewBindings): Container {
+/** A checkbox with a label beside it. */
+export function CheckboxView(bindings: CheckboxViewBindings): Container {
     const view = new Container();
     view.label = 'checkbox';
 
@@ -39,7 +39,7 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
     let prevLabel: string | undefined;
 
     hitArea.on('pointerdown', () => {
-        bindings.onToggled?.(!bindings.getIsChecked());
+        bindings.onToggled?.(!bindings.isChecked());
     });
 
     view.onRefresh = refresh;
@@ -48,8 +48,8 @@ export function createCheckboxView(bindings: CheckboxViewBindings): Container {
     // ---- Refresh -----------------------------------------------------------
 
     function refresh(): void {
-        const isChecked = bindings.getIsChecked();
-        const labelText = bindings.getLabel();
+        const isChecked = bindings.isChecked();
+        const labelText = bindings.label();
 
         if (isChecked === prevIsChecked && labelText === prevLabel) return;
         prevIsChecked = isChecked;

@@ -80,8 +80,8 @@ export interface GameModel {
     readonly baseWorldCol: number;
     readonly baseWorldRow: number;
     readonly isScrollClamped: boolean;
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +348,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     // Visits pending-release slots too, so born-removed explosions keep animating.
-    function updateEach<T extends { update(deltaMs: number): void }>(list: SlotList<T>, deltaMs: number): void {
+    function updateEach<T extends { update: (deltaMs: number) => void }>(list: SlotList<T>, deltaMs: number): void {
         for (let i = 0; i < list.slots.length; i++) {
             const slot = list.slots.at(i);
             if (slot !== undefined) slot.value.update(deltaMs);

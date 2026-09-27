@@ -8,21 +8,21 @@ import type { EnemyKind, EnemyPhase } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface EnemyViewBindings {
-    getX(): number;
-    getY(): number;
-    getKind(): EnemyKind;
-    getPhase(): EnemyPhase;
-    isAlive(): boolean;
+    x: () => number;
+    y: () => number;
+    kind: () => EnemyKind;
+    phase: () => EnemyPhase;
+    isAlive: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createEnemyView(bindings: EnemyViewBindings): Container {
+export function EnemyView(bindings: EnemyViewBindings): Container {
     const watcher = watch({
-        kind: bindings.getKind,
-        phase: bindings.getPhase,
+        kind: bindings.kind,
+        phase: bindings.phase,
     });
 
     const enemyTextures = textures.get().enemy;
@@ -34,20 +34,20 @@ export function createEnemyView(bindings: EnemyViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        sprite = new Sprite({ texture: enemyTextures[bindings.getKind()], anchor: 0.5 });
+        sprite = new Sprite({ texture: enemyTextures[bindings.kind()], anchor: 0.5 });
         view.addChild(sprite);
     }
 
     function refresh(): void {
-        const phase = bindings.getPhase();
+        const phase = bindings.phase();
         const visible = phase !== 'dead' && phase !== 'entering';
         view.visible = visible;
         if (!visible) return;
 
         const watched = watcher.poll();
-        view.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.x(), bindings.y());
         if (watched.phase.changed || watched.kind.changed) {
-            sprite.texture = enemyTextures[bindings.getKind()];
+            sprite.texture = enemyTextures[bindings.kind()];
         }
     }
 }

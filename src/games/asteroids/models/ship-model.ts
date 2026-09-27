@@ -19,11 +19,11 @@ export interface ShipModel {
     readonly isAlive: boolean;
     /** Whether thrust is currently applied (for view flame). */
     readonly isThrusting: boolean;
-    setRotationDirection(dir: RotationDirection): void;
-    setThrust(on: boolean): void;
-    kill(): void;
-    respawn(x: number, y: number): void;
-    update(deltaMs: number): void;
+    setRotationDirection: (dir: RotationDirection) => void;
+    setThrust: (on: boolean) => void;
+    kill: () => void;
+    respawn: (x: number, y: number) => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

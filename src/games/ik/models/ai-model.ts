@@ -7,7 +7,7 @@ import { ARENA_MIN_X, ARENA_MAX_X } from '../data';
 // ---------------------------------------------------------------------------
 
 export interface AiModel {
-    update(deltaMs: number, opponent: FighterModel, self: FighterModel): void;
+    update: (deltaMs: number, opponent: FighterModel, self: FighterModel) => void;
     readonly move: FighterMove;
 }
 

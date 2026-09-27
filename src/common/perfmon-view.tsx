@@ -9,7 +9,7 @@ import type { FrameStatKind, FrameStats } from './frame-stats';
 
 export interface PerfmonViewBindings {
     /** The stats to show, or undefined where there are none (e.g. rendering a thumbnail). */
-    getFrameStats(): FrameStats | undefined;
+    frameStats: () => FrameStats | undefined;
 }
 
 /** Size of the panel, for laying it out. */
@@ -17,7 +17,7 @@ export const PERFMON_WIDTH = 220;
 export const PERFMON_HEIGHT = 80;
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -32,7 +32,7 @@ export const PERFMON_HEIGHT = 80;
  * The stats publish a few times a second, so the text and sparklines are
  * rebuilt only then; other frames cost one comparison per row.
  */
-export function createPerfmonView(bindings: PerfmonViewBindings): Container {
+export function PerfmonView(bindings: PerfmonViewBindings): Container {
     return (
         <container label="perfmon">
             <graphics ref={drawPanel} />
@@ -68,20 +68,22 @@ const ROW_COLORS: Readonly<Record<FrameStatKind, number>> = {
 function statRow(bindings: PerfmonViewBindings, kind: FrameStatKind, rowIndex: number): Container {
     const style = { fill: ROW_COLORS[kind], fontSize: 12, fontFamily: 'monospace' };
 
-    // The text shown for the last published sample, rebuilt only when a new one arrives.
+    // The text and sparkline shown for the last published sample, rebuilt only
+    // when a new one arrives.
     let textSample = -1;
     let text = NO_VALUE;
+    let drawnSample = -1;
 
     return (
         <container y={PADDING + rowIndex * ROW_PITCH}>
             <text text={ROW_LABELS[kind]} x={LABEL_X} style={style} />
             <text text={getValueText} x={VALUE_X} style={style} />
-            <graphics x={GRAPH_X} y={2} ref={setUpSparkline} />
+            <graphics x={GRAPH_X} y={2} onRefresh={refreshSparkline} />
         </container>
     );
 
     function getValueText(): string {
-        const stats = bindings.getFrameStats();
+        const stats = bindings.frameStats();
         if (stats === undefined) return NO_VALUE;
         if (stats.sampleCount !== textSample) {
             textSample = stats.sampleCount;
@@ -90,15 +92,12 @@ function statRow(bindings: PerfmonViewBindings, kind: FrameStatKind, rowIndex: n
         return text;
     }
 
-    function setUpSparkline(g: Graphics): void {
-        let drawnSample = -1;
-        g.onRefresh = () => {
-            const stats = bindings.getFrameStats();
-            const sample = stats?.sampleCount ?? -1;
-            if (sample === drawnSample) return;
-            drawnSample = sample;
-            drawSparkline(g, kind, stats);
-        };
+    function refreshSparkline(g: Graphics): void {
+        const stats = bindings.frameStats();
+        const sample = stats?.sampleCount ?? -1;
+        if (sample === drawnSample) return;
+        drawnSample = sample;
+        drawSparkline(g, kind, stats);
     }
 }
 

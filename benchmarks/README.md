@@ -50,6 +50,7 @@ benchmarks/
 │   ├── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
 │   └── text-measurement.ts  Lets Pixi measure text under Node, for games and demos that read a text's size
 ├── shared/             Scenes used by more than one suite
+├── repro/              Standalone reproducers of costs not yet explained; not part of any suite
 ├── suites/
 │   ├── index.ts        Every suite, in run order
 │   ├── <suite>.ts      The suite's definition: cases and tables. Plain data

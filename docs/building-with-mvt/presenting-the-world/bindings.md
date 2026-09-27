@@ -18,6 +18,11 @@ receives at construction time:
 | `get*()` | Read current state | Model -> View | `getX(): number`                          |
 | `on*()`  | Relay user input   | View -> Model | `onTapped(x: number, y: number): void`    |
 
+The architecture calls these two kinds of member *query bindings* and *relay
+bindings*. How they are named is a project convention, not an MVT
+requirement. This page uses the project's older `get*()` naming; new code
+names query bindings for what they return (`x`, `isVisible`), as described in
+[Style Guide: Views and Bindings](../../reference/style-guide.md#views-and-bindings).
 For the language-neutral specification, see
 [Architecture: Bindings](../../architecture/bindings.md).
 

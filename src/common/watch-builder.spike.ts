@@ -74,13 +74,13 @@ export type WatchedValuesWithPrevious<S extends WatchGetters> = {
 
 /** A side effect gated on change. Poll it every frame; it fires on qualifying transitions. */
 export interface Reaction {
-    poll(): void;
+    poll: () => void;
 }
 
 /** A memoised value recomputed only when its input changes. */
 export interface Derived<T> {
     /** Recompute if the input changed since the last poll, then return the value. */
-    poll(): T;
+    poll: () => T;
     /** Whether the most recent `poll()` recomputed. */
     readonly changed: boolean;
 }
@@ -106,12 +106,12 @@ export type ChangeFilterFrom<V> = ChangeFilter<V> & { from: V | typeof PREVIOUS 
 
 /** SINGLE mode detector. */
 export interface Detector<V extends Watchable> {
-    poll(): WatchedProperty<V>;
+    poll: () => WatchedProperty<V>;
 }
 
 /** SET mode detector. */
 export interface SetDetector<S extends WatchGetters> {
-    poll(): WatchedValues<S>;
+    poll: () => WatchedValues<S>;
 }
 
 /** One item's change-detected value in LIST mode. */
@@ -126,23 +126,21 @@ export interface EachWatchedValues<T, V extends Watchable> {
     readonly changedCount: number;
     readonly anyChanged: boolean;
     /** The watched item at `index` (valid for `0 <= index < count`). */
-    at(index: number): EachWatchedItem<T, V>;
+    at: (index: number) => EachWatchedItem<T, V>;
 }
 
 /** LIST mode detector. */
 export interface EachDetector<T, V extends Watchable> {
-    poll(): EachWatchedValues<T, V>;
+    poll: () => EachWatchedValues<T, V>;
 }
 
 // -- Root --------------------------------------------------------------------
 
 export interface WatchRoot {
     /** SINGLE mode: `select` returns the primitive to watch. */
-    when<V extends Watchable>(select: () => V): SingleBuilder<V>;
-    /** SET mode: a named record of triggers; reactions fire when any changes. */
-    when<S extends WatchGetters>(selectors: S): SetBuilder<S>;
+    when: (<V extends Watchable>(select: () => V) => SingleBuilder<V>) & (<S extends WatchGetters>(selectors: S) => SetBuilder<S>);
     /** LIST mode: switch to watching a uniform (shortish) list. */
-    eachOf<T>(list: () => readonly T[]): EachSelector<T>;
+    eachOf: <T>(list: () => readonly T[]) => EachSelector<T>;
 }
 
 // -- Single mode -------------------------------------------------------------
@@ -151,17 +149,16 @@ export interface WatchRoot {
 export type SingleAction<V extends Watchable, P = V | undefined> = (value: V, previous: P) => void;
 
 export interface SingleThen<V extends Watchable, P = V | undefined> {
-    then(action: SingleAction<V, P>): Reaction;
+    then: (action: SingleAction<V, P>) => Reaction;
 }
 
 export interface SingleBuilder<V extends Watchable> {
     /** Detect changes and check them yourself; no reaction attached. */
-    detect(): Detector<V>;
+    detect: () => Detector<V>;
     /** Derive a memoised value; `compute` runs whenever the value changes. */
-    derive<T>(initial: T, compute: (derived: T, value: V, previous: V | undefined) => T): Derived<T>;
+    derive: <T>(initial: T, compute: (derived: T, value: V, previous: V | undefined) => T) => Derived<T>;
     /** Filter which changes fire (argless: any change); any `from` narrows `previous` to `V`. */
-    changes(filter: ChangeFilterFrom<V>): SingleThen<V, V>;
-    changes(filter?: ChangeFilter<V>): SingleThen<V>;
+    changes: ((filter: ChangeFilterFrom<V>) => SingleThen<V, V>) & ((filter?: ChangeFilter<V>) => SingleThen<V>);
 }
 
 // -- Set mode (record of triggers) -------------------------------------------
@@ -170,17 +167,16 @@ export interface SingleBuilder<V extends Watchable> {
 export type SetAction<W> = (watched: W) => void;
 
 export interface SetThen<W> {
-    then(action: SetAction<W>): Reaction;
+    then: (action: SetAction<W>) => Reaction;
 }
 
 export interface SetBuilder<S extends WatchGetters> {
     /** Detect changes and check the per-key watched values yourself. */
-    detect(): SetDetector<S>;
+    detect: () => SetDetector<S>;
     /** Derive a memoised value; `compute` runs whenever any key changes. */
-    derive<T>(initial: T, compute: (derived: T, watched: WatchedValues<S>) => T): Derived<T>;
+    derive: <T>(initial: T, compute: (derived: T, watched: WatchedValues<S>) => T) => Derived<T>;
     /** Fire when any key changes; `{ from: PREVIOUS }` skips the first poll and narrows every `previous`. */
-    changes(filter: { from: typeof PREVIOUS }): SetThen<WatchedValuesWithPrevious<S>>;
-    changes(): SetThen<WatchedValues<S>>;
+    changes: ((filter: { from: typeof PREVIOUS }) => SetThen<WatchedValuesWithPrevious<S>>) & (() => SetThen<WatchedValues<S>>);
 }
 
 // -- List mode ---------------------------------------------------------------
@@ -194,7 +190,7 @@ export type EachAction<T, V extends Watchable, P = V | undefined> = (
 ) => void;
 
 export interface EachThen<T, V extends Watchable, P = V | undefined> {
-    then(action: EachAction<T, V, P>): Reaction;
+    then: (action: EachAction<T, V, P>) => Reaction;
 }
 
 export interface EachSelector<T> {
@@ -205,17 +201,16 @@ export interface EachSelector<T> {
      * lists; removing or reordering mid-list compares shifted items against their
      * predecessor's history.
      */
-    when<V extends Watchable>(select: (item: T, index: number) => V): EachBuilder<T, V>;
+    when: <V extends Watchable>(select: (item: T, index: number) => V) => EachBuilder<T, V>;
 }
 
 export interface EachBuilder<T, V extends Watchable> {
     /** Early-out: the raw list watcher (per-item watched values). */
-    detect(): EachDetector<T, V>;
+    detect: () => EachDetector<T, V>;
     /** Derive a memoised value; `compute` runs whenever any item changes. */
-    derive<R>(initial: R, compute: (derived: R, watched: EachWatchedValues<T, V>) => R): Derived<R>;
+    derive: <R>(initial: R, compute: (derived: R, watched: EachWatchedValues<T, V>) => R) => Derived<R>;
     /** Filter which per-item changes fire (argless: any change); any `from` narrows `previous` to `V`. */
-    changes(filter: ChangeFilterFrom<V>): EachThen<T, V, V>;
-    changes(filter?: ChangeFilter<V>): EachThen<T, V>;
+    changes: ((filter: ChangeFilterFrom<V>) => EachThen<T, V, V>) & ((filter?: ChangeFilter<V>) => EachThen<T, V>);
 }
 
 // ---------------------------------------------------------------------------
@@ -355,7 +350,7 @@ interface SetCore<S extends WatchGetters> {
     /** Whether the most recent poll was the first. */
     firstPoll: boolean;
     /** Poll all getters; return how many changed. */
-    poll(): number;
+    poll: () => number;
 }
 
 function createSetCore<S extends WatchGetters>(getters: S): SetCore<S> {
@@ -479,7 +474,7 @@ interface EachItemState<T, V> {
 interface EachCore<T, V extends Watchable> {
     watched: EachWatchedValues<T, V>;
     /** Poll every item, visiting each; return how many changed. */
-    poll(visit: ((state: EachItemState<T, V>) => void) | undefined): number;
+    poll: (visit: ((state: EachItemState<T, V>) => void) | undefined) => number;
 }
 
 function createEachCore<T, V extends Watchable>(

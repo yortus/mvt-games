@@ -2,13 +2,13 @@ import { Container, Graphics } from 'pixi.js';
 import { GROUND_Y_PX } from './view-constants';
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 /**
  * Minimal background for playtesting context: sky + ground.
  */
-export function createArenaView(width: number, height: number): Container {
+export function ArenaView(width: number, height: number): Container {
     const view = new Container();
     view.label = 'arena';
 

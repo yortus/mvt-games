@@ -10,13 +10,13 @@ export interface MatchModel {
     readonly playerRounds: number;
     readonly opponentRounds: number;
     readonly round: number;
-    scorePoint(scorer: 'player' | 'opponent'): void;
-    isRoundOver(): boolean;
-    isMatchOver(): boolean;
-    getRoundWinner(): 'player' | 'opponent' | undefined;
-    getMatchWinner(): 'player' | 'opponent' | undefined;
-    nextRound(): void;
-    reset(): void;
+    scorePoint: (scorer: 'player' | 'opponent') => void;
+    isRoundOver: () => boolean;
+    isMatchOver: () => boolean;
+    getRoundWinner: () => 'player' | 'opponent' | undefined;
+    getMatchWinner: () => 'player' | 'opponent' | undefined;
+    nextRound: () => void;
+    reset: () => void;
 }
 
 // ---------------------------------------------------------------------------

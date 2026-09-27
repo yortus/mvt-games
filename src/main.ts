@@ -1,10 +1,10 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
-import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
+import { CabinetView, createCabinetModel, type CabinetViewBindings } from './cabinet';
 import {
-    createKeyboardInputView,
-    createPauseMenuView,
-    createTouchInputView,
     isTouchDevice,
+    KeyboardInputView,
+    PauseMenuView,
+    TouchInputView,
 } from '#common';
 import {
     createAsteroidsEntry,
@@ -17,7 +17,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { refreshScene } from './pixi-mvt';
+import { refreshScene, updateScene } from './pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -144,6 +144,7 @@ async function main(): Promise<void> {
         fitCanvasToScreen();
     }
 
+    /** The cabinet view sees the phase change, and zooms back out to the menu. */
     function doExitToMenu(): void {
         currentSession = undefined;
         currentEntry = undefined;
@@ -158,19 +159,18 @@ async function main(): Promise<void> {
     }
 
     const bindings: CabinetViewBindings = {
-        getPhase: () => cabinet.phase,
-        getGameCount: () => cabinet.games.length,
-        getGameName: (i) => cabinet.games[i].name,
-        getGameThumbnail: (i) => thumbnails[i],
-        getSelectedIndex: () => cabinet.selectedIndex,
-        getCanvasWidth: () => currentCanvasW,
-        getCanvasHeight: () => currentCanvasH,
+        phase: () => cabinet.phase,
+        gameCount: () => cabinet.games.length,
+        gameNameAt: (i) => cabinet.games[i].name,
+        gameThumbnailAt: (i) => thumbnails[i],
+        selectedIndex: () => cabinet.selectedIndex,
+        canvasWidth: () => currentCanvasW,
+        canvasHeight: () => currentCanvasH,
         onMovePressed: (direction) => cabinet.selectByDelta(direction === 'left' ? -1 : 1),
         onLaunchPressed: doLaunchGame,
-        onExitPressed: doExitToMenu,
     };
 
-    const cabinetContainer = createCabinetView(bindings);
+    const cabinetContainer = CabinetView(bindings);
     app.stage.addChild(cabinetContainer);
 
     const touchLayer = new Container();
@@ -179,21 +179,21 @@ async function main(): Promise<void> {
 
     // Wire touch config and inputs to the game
     if (isTouchDevice()) {
-        touchLayer.addChild(createTouchInputView({
-            getCanvasWidth: () => currentCanvasW,
-            getCanvasHeight: () => currentCanvasH,
-            getGameX: () => currentGameOffsetX,
-            getGameY: () => currentGameOffsetY,
-            getGameWidth: () => currentEntry?.screenWidth ?? 0,
-            getGameHeight: () => currentEntry?.screenHeight ?? 0,
-            getScale: () => currentScale,
-            getShowDpad: () => currentSession?.inputConfig != null
+        touchLayer.addChild(TouchInputView({
+            canvasWidth: () => currentCanvasW,
+            canvasHeight: () => currentCanvasH,
+            gameX: () => currentGameOffsetX,
+            gameY: () => currentGameOffsetY,
+            gameWidth: () => currentEntry?.screenWidth ?? 0,
+            gameHeight: () => currentEntry?.screenHeight ?? 0,
+            scale: () => currentScale,
+            hasDpad: () => currentSession?.inputConfig != null
                 && (currentSession.inputConfig.showDpad ?? true),
-            getShowPrimary: () => currentSession?.inputConfig?.showPrimary ?? false,
-            getShowSecondary: () => currentSession?.inputConfig?.showSecondary ?? false,
-            getPrimaryLabel: () => currentSession?.inputConfig?.primaryLabel ?? 'A',
-            getSecondaryLabel: () => currentSession?.inputConfig?.secondaryLabel ?? 'B',
-            getFloatingJoystick: () => currentSession?.inputConfig?.floatingJoystick ?? false,
+            hasPrimaryButton: () => currentSession?.inputConfig?.showPrimary ?? false,
+            hasSecondaryButton: () => currentSession?.inputConfig?.showSecondary ?? false,
+            primaryLabel: () => currentSession?.inputConfig?.primaryLabel ?? 'A',
+            secondaryLabel: () => currentSession?.inputConfig?.secondaryLabel ?? 'B',
+            isJoystickFloating: () => currentSession?.inputConfig?.floatingJoystick ?? false,
             onXDirectionChanged: (dir) => currentSession?.inputConfig?.onXDirectionChanged?.(dir),
             onYDirectionChanged: (dir) => currentSession?.inputConfig?.onYDirectionChanged?.(dir),
             onPrimaryButtonChanged: (pressed) => currentSession?.inputConfig?.onPrimaryButtonChanged?.(pressed),
@@ -202,7 +202,7 @@ async function main(): Promise<void> {
     }
 
     // Wire keyboard inputs to the game
-    app.stage.addChild(createKeyboardInputView({
+    app.stage.addChild(KeyboardInputView({
         onXDirectionChanged: (dir) => currentSession?.inputConfig?.onXDirectionChanged?.(dir),
         onYDirectionChanged: (dir) => currentSession?.inputConfig?.onYDirectionChanged?.(dir),
         onPrimaryButtonChanged: (pressed) => currentSession?.inputConfig?.onPrimaryButtonChanged?.(pressed),
@@ -214,19 +214,19 @@ async function main(): Promise<void> {
 
     const pauseMenuContainer = new Container();
     pauseMenuContainer.label = 'pause-menu-layer';
-    pauseMenuContainer.addChild(createPauseMenuView({
-        getCanvasWidth: () => currentCanvasW,
-        getCanvasHeight: () => currentCanvasH,
-        getGameX: () => currentGameOffsetX,
-        getGameY: () => currentGameOffsetY,
-        getGameWidth: () => currentEntry?.screenWidth ?? currentCanvasW,
-        getGameHeight: () => currentEntry?.screenHeight ?? currentCanvasH,
-        getScale: () => currentScale,
-        getVisible: () => paused,
+    pauseMenuContainer.addChild(PauseMenuView({
+        canvasWidth: () => currentCanvasW,
+        canvasHeight: () => currentCanvasH,
+        gameX: () => currentGameOffsetX,
+        gameY: () => currentGameOffsetY,
+        gameWidth: () => currentEntry?.screenWidth ?? currentCanvasW,
+        gameHeight: () => currentEntry?.screenHeight ?? currentCanvasH,
+        scale: () => currentScale,
+        isVisible: () => paused,
         onResumePressed: togglePause,
         onRestartPressed: restartGame,
-        onExitPressed: exitToCabinet,
-        getHowToPlayText: () => currentEntry?.instructions ?? '',
+        onExitPressed: doExitToMenu,
+        howToPlayText: () => currentEntry?.instructions ?? '',
     }));
     app.stage.addChild(pauseMenuContainer);
 
@@ -343,13 +343,6 @@ async function main(): Promise<void> {
 
         // Rebuild touch controls for the new session
         fitCanvasToScreen();
-    }
-
-    function exitToCabinet(): void {
-        paused = false;
-        touchLayer.visible = false;
-
-        cabinetContainer.requestExit();
     }
 
     // ---- Escape key for pause ----------------------------------------------
@@ -488,13 +481,14 @@ async function main(): Promise<void> {
     }
 
     // ---- Ticker ------------------------------------------------------------
-    // Sessions advance their own models and views (`onUpdate`); one refresh
-    // pass then syncs the whole stage, including while paused so the pause
-    // menu and cabinet stay current.
+    // Sessions advance their own models and views (`onUpdate`); the cabinet's
+    // view advances its own transitions; one refresh pass then syncs the whole
+    // stage, including while paused so the pause menu and cabinet stay current.
     app.ticker.add((ticker) => {
         if (!paused) {
             cabinet.update(ticker.deltaMS);
         }
+        updateScene(cabinetContainer, ticker.deltaMS);
         refreshScene(app.stage);
     });
 

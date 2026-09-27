@@ -76,7 +76,7 @@ Re-run the benchmarks on your own machine to get your own numbers; see
   per game object, `Object.values()`, array methods and recomputing unchanged values
   cost several to tens of times more, and the first three leave kilobytes of
   garbage per frame. `for...of` and returned tuples cost nothing extra.
-- **This repo's games take 6-11 µs per frame** before drawing.
+- **This repo's games take 5-11 µs per frame** before drawing.
 
 ## Keeping Containers in Step
 
@@ -272,12 +272,19 @@ happens.
   allocate nothing per frame, and the JSX runtime a constant 8 bytes per
   frame, however much changes. Over a simulated minute with everything
   changed each frame, the engine never needed to collect.
-- **Signals allocate on every change.** Solid's effects left about 380 bytes
-  of garbage per changed container per frame, and 64 bytes per frame even at
-  rest. With everything changed each frame, that is 167 collections a minute, about
-  24 ms of pauses: four times the garbage of the deliberately wasteful refresh methods.
+- **Signals allocate on every change.** Solid's effects left 330-380 bytes
+  of garbage per changed container per frame (it varies between runs), and 64
+  bytes per frame even at rest. With everything changed each frame, that is
+  167 collections a minute, about 25 ms of pauses: three to four times the
+  garbage of the deliberately wasteful refresh methods.
 - **Events allocate nothing** in this benchmark, because each record's
   listener is created once and called with the record.
+- **These scenes use whole numbers.** V8 stores whole numbers without
+  allocating, but can box a fractional number in a small heap object when it
+  stores or passes one, and whether it does can depend on code nearby. The
+  JSX runtime keeps fractional values unboxed in the props it writes only on
+  a change, such as `width`: 1000 sprites with a fractional `width` allocate
+  nothing per frame, changed or not.
 - **Reusing containers avoids most of a pool's garbage.** With `<List>` over a
   `SlotList`, the only allocation is the new model records (5.6 KB per frame at
   50 new items). Building and destroying a container per item allocates about
@@ -300,13 +307,13 @@ the minute after.
 
 <!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
 
-- **Each game takes 6-11 µs per frame**, well under 0.1% of a 60fps frame,
+- **Each game takes 5-11 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
 - **`refreshScene` takes the larger share in most games**, since that is
   where the views read the model and set their properties. The updates take
-  1-6 µs; in Galaga and Pac-Man, with more going on in their models, they
-  take as long as the refresh or longer.
+  0.4-5 µs; in Galaga, with more going on in its model, the update takes
+  longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
   settles, and its refresh takes about 190 µs, about 50 ns per container with
@@ -315,9 +322,15 @@ the minute after.
   about 2.4 ms at 20,000 grains. Boids takes about 0.55 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
-  2.7 KB. The hot path rules aim for none, and the allocation benchmark is a
+  800 bytes. The hot path rules aim for none, and the allocation benchmark is a
   way to find where it comes from. At these rates the engine collects at most
   three times a minute, for under a millisecond in total.
+- **Scramble and Pac-Man used to allocate 2-3 KB per frame.** Scramble's
+  came from views redrawing graphics every frame (each explosion, and the
+  fuel bar), now drawn once and then scaled or resized. Pac-Man's came from
+  its model: every one-tile step of Pac-Man or a ghost started a GSAP tween.
+  The steps are now plain arithmetic advanced by `update(deltaMs)`, and the
+  model allocates nothing, with its update down from about 6 µs to 0.4 µs.
 - **Boids used to allocate about 360 KB per frame**, and the engine collected
   88 times a minute. Most of it was the view redrawing all 200 boids into one
   Pixi `Graphics` every frame, which makes Pixi build new shape data each

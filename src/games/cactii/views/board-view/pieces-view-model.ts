@@ -10,24 +10,24 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 
 export interface PiecesViewModel {
     /** Pixel X position for a cell, accounting for drag, swap, and settle states. */
-    getCellX(cell: CactusCell): number;
+    xFor: (cell: CactusCell) => number;
     /** Pixel Y position for a cell, accounting for drag, swap, and settle states. */
-    getCellY(cell: CactusCell): number;
+    yFor: (cell: CactusCell) => number;
     /** Opacity for a cell: 0 for empty/matched, 1 otherwise. */
-    getCellAlpha(cell: CactusCell): number;
+    alphaFor: (cell: CactusCell) => number;
     /** Scale for a cell: shrinks during match fade, 1 otherwise. */
-    getCellScale(cell: CactusCell): number;
+    scaleFor: (cell: CactusCell) => number;
     /** Rotation in radians for a cell: spins during match fade, 0 otherwise. */
-    getCellRotation(cell: CactusCell): number;
+    rotationFor: (cell: CactusCell) => number;
     /** The cell whose sprite should render on top, or undefined if none. */
     readonly dragOriginCell: CactusCell | undefined;
     /** Begin a drag gesture at the given local pixel position. Only effective when idle. */
-    startDrag(localX: number, localY: number): void;
+    startDrag: (localX: number, localY: number) => void;
     /** Update the drag pointer to the given local pixel position. */
-    dragTo(localX: number, localY: number): void;
+    dragTo: (localX: number, localY: number) => void;
     /** End the current drag gesture, committing a swap if valid. */
-    endDrag(): void;
-    update(deltaMs: number): void;
+    endDrag: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,20 +35,20 @@ export interface PiecesViewModel {
 // ---------------------------------------------------------------------------
 
 export interface PiecesViewModelOptions {
-    getPhase(): BoardPhase;
-    getCells(): DeepReadonly<CactusCell[][]>;
-    getSwapCell1(): CactusCell | undefined;
-    getSwapCell2(): CactusCell | undefined;
-    getSwapProgress(): number;
-    getSettleProgress(): number;
-    getSettleOriginRows(): DeepReadonly<number[][]>;
-    getMatchedCells(): readonly CactusCell[];
-    getMatchSequence(): Sequence<'fade'>;
-    onSwapRequested?(origin: CactusCell, target: CactusCell): boolean;
+    phase: () => BoardPhase;
+    cells: () => DeepReadonly<CactusCell[][]>;
+    swapCell1: () => CactusCell | undefined;
+    swapCell2: () => CactusCell | undefined;
+    swapProgress: () => number;
+    settleProgress: () => number;
+    settleOriginRows: () => DeepReadonly<number[][]>;
+    matchedCells: () => readonly CactusCell[];
+    matchSequence: () => Sequence<'fade'>;
+    onSwapRequested?: (origin: CactusCell, target: CactusCell) => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesViewModel {
@@ -78,11 +78,11 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
     const dragPointer = { x: 0, y: 0 };
 
     return {
-        getCellX,
-        getCellY,
-        getCellAlpha,
-        getCellScale,
-        getCellRotation,
+        xFor,
+        yFor,
+        alphaFor,
+        scaleFor,
+        rotationFor,
         get dragOriginCell() { return getDragOriginCell(); },
         startDrag,
         dragTo,
@@ -95,13 +95,13 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (deltaMs > 0) dragTimeline.time(dragTimeline.time() + deltaMs * 0.001);
 
         // Cache settle data
-        if (options.getPhase() === 'settling') {
+        if (options.phase() === 'settling') {
             settleMaxDist = computeSettleMaxDist();
         }
 
         // Rebuild matched-cell lookup
         matchedFlags.fill(0);
-        const matched = options.getMatchedCells();
+        const matched = options.matchedCells();
         for (let i = 0; i < matched.length; i++) {
             const mc = matched[i];
             matchedFlags[mc.row * GRID_COLS + mc.col] = 1;
@@ -119,7 +119,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
     // ---- Per-cell accessors ------------------------------------------------
 
-    function getCellX(cell: CactusCell): number {
+    function xFor(cell: CactusCell): number {
         // Committed swap: hold cells at swapped visual positions
         if (isCommittedSwap) {
             if (cell === swapOriginCell) return gridX(swapTargetCell!.col);
@@ -136,12 +136,12 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (cell === returningCell) return returningVisual.x;
 
         // Model swap/reverse interpolation
-        const phase = options.getPhase();
+        const phase = options.phase();
         if (phase === 'swapping' || phase === 'reversing') {
-            const c1 = options.getSwapCell1();
-            const c2 = options.getSwapCell2();
+            const c1 = options.swapCell1();
+            const c2 = options.swapCell2();
             if (cell === c1 || cell === c2) {
-                const t = Power1.easeInOut(options.getSwapProgress());
+                const t = Power1.easeInOut(options.swapProgress());
                 const from = cell === c1 ? c1!.col : c2!.col;
                 const to = cell === c1 ? c2!.col : c1!.col;
                 if (phase === 'reversing') {
@@ -155,7 +155,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         return gridX(cell.col);
     }
 
-    function getCellY(cell: CactusCell): number {
+    function yFor(cell: CactusCell): number {
         // Committed swap: hold cells at swapped visual positions
         if (isCommittedSwap) {
             if (cell === swapOriginCell) return gridY(swapTargetCell!.row);
@@ -172,12 +172,12 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         if (cell === returningCell) return returningVisual.y;
 
         // Model swap/reverse interpolation
-        const phase = options.getPhase();
+        const phase = options.phase();
         if (phase === 'swapping' || phase === 'reversing') {
-            const c1 = options.getSwapCell1();
-            const c2 = options.getSwapCell2();
+            const c1 = options.swapCell1();
+            const c2 = options.swapCell2();
             if (cell === c1 || cell === c2) {
-                const t = Power1.easeInOut(options.getSwapProgress());
+                const t = Power1.easeInOut(options.swapProgress());
                 const from = cell === c1 ? c1!.row : c2!.row;
                 const to = cell === c1 ? c2!.row : c1!.row;
                 if (phase === 'reversing') {
@@ -189,12 +189,12 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
         // Settling interpolation
         if (phase === 'settling' && cell !== EMPTY_CELL) {
-            const originRow = options.getSettleOriginRows()[cell.row][cell.col];
+            const originRow = options.settleOriginRows()[cell.row][cell.col];
             if (originRow === originRow) { // not NaN
                 const targetRow = cell.row;
                 const dist = targetRow - originRow;
                 const cellProgress = settleMaxDist > 0
-                    ? Math.min(1, options.getSettleProgress() * settleMaxDist / dist)
+                    ? Math.min(1, options.settleProgress() * settleMaxDist / dist)
                     : 1;
                 return gridY(originRow + dist * Bounce.easeOut(cellProgress));
             }
@@ -204,25 +204,25 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         return gridY(cell.row);
     }
 
-    function getCellAlpha(cell: CactusCell): number {
+    function alphaFor(cell: CactusCell): number {
         if (cell === EMPTY_CELL) return 0;
         if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 1;
-        const matchSequence = options.getMatchSequence();
+        const matchSequence = options.matchSequence();
         return matchSequence.isActive ? 1 - matchSequence.steps.fade.progress : 0;
     }
 
-    function getCellScale(cell: CactusCell): number {
+    function scaleFor(cell: CactusCell): number {
         if (cell === EMPTY_CELL) return 0;
         if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 1;
-        const matchSequence = options.getMatchSequence();
+        const matchSequence = options.matchSequence();
         if (!matchSequence.steps.fade.isActive) return matchedFlags[cell.row * GRID_COLS + cell.col] ? 0 : 1;
         return 1 - FADE_SCALE_AMOUNT * matchSequence.steps.fade.progress;
     }
 
-    function getCellRotation(cell: CactusCell): number {
+    function rotationFor(cell: CactusCell): number {
         if (cell === EMPTY_CELL) return 0;
         if (!matchedFlags[cell.row * GRID_COLS + cell.col]) return 0;
-        const matchSequence = options.getMatchSequence();
+        const matchSequence = options.matchSequence();
         if (!matchSequence.steps.fade.isActive) return 0;
         return FADE_ROTATION * matchSequence.steps.fade.progress;
     }
@@ -230,7 +230,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
     // ---- Input handlers ----------------------------------------------------
 
     function startDrag(localX: number, localY: number): void {
-        if (options.getPhase() !== 'idle') return;
+        if (options.phase() !== 'idle') return;
         const cell = resolveGridCell(localX, localY);
         if (!cell) return;
         isDragActive = true;
@@ -261,8 +261,8 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
     // ---- Drag presentation helpers -----------------------------------------
 
     function computeSettleMaxDist(): number {
-        const settleOriginRows = options.getSettleOriginRows();
-        const cells = options.getCells();
+        const settleOriginRows = options.settleOriginRows();
+        const cells = options.cells();
         let maxDist = 0;
         for (let r = 0; r < cells.length; r++) {
             for (let c = 0; c < cells[r].length; c++) {
@@ -278,7 +278,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
     function updateDragPresentation(): void {
         // Committed swap override: hold cells at swapped positions during 'swapping'
         if (isCommittedSwap) {
-            if (options.getPhase() !== 'swapping') {
+            if (options.phase() !== 'swapping') {
                 clearCommittedSwap();
                 prevCandidateCell = undefined;
             }
@@ -291,7 +291,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
         if (newCandidateCell !== prevCandidateCell) {
             // Previous candidate starts returning to grid
-            if (prevCandidateCell && options.getPhase() === 'idle') {
+            if (prevCandidateCell && options.phase() === 'idle') {
                 returningCell = prevCandidateCell;
                 const targetX = gridX(prevCandidateCell.col);
                 const targetY = gridY(prevCandidateCell.row);
@@ -330,7 +330,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         const col = Math.floor(x / CELL_WIDTH_PX);
         const row = Math.floor(y / CELL_HEIGHT_PX);
         if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return undefined;
-        const cell = options.getCells()[row][col];
+        const cell = options.cells()[row][col];
         if (isDragActive) {
             if (cell === dragOriginCell) return undefined;
             const dr = Math.abs(row - dragOriginCell!.row);

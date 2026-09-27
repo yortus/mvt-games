@@ -8,15 +8,16 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface FlashOverlayViewBindings {
-    getMatchSequence(): Sequence<'flash'>;
-    getCascadeStep(): number;
+    /** The board's one match sequence, which the view reacts to; read once. */
+    matchSequence: Sequence<'flash'>;
+    cascadeStep: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createFlashOverlayView(bindings: FlashOverlayViewBindings): Container {
+export function FlashOverlayView(bindings: FlashOverlayViewBindings): Container {
     const view = new Container();
 
     const flash = new Graphics();
@@ -24,11 +25,11 @@ export function createFlashOverlayView(bindings: FlashOverlayViewBindings): Cont
     flash.alpha = 0;
     view.addChild(flash);
 
-    const updateFlash = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateFlash = createSequenceReaction(bindings.matchSequence, {
         flash: {
             inactive: () => { flash.alpha = 0; },
             active: (progress) => {
-                const cascadeStep = bindings.getCascadeStep();
+                const cascadeStep = bindings.cascadeStep();
                 // Peak alpha scales with cascade: 0.15 at cascade 1, up to 0.6 at cascade 4+
                 const peakAlpha = Math.min(MAX_FLASH_ALPHA, BASE_FLASH_ALPHA + (cascadeStep - 1) * FLASH_CASCADE_BONUS);
                 // Flash peaks at ~30% then fades out

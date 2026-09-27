@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
 import {
     MAZE_DATA,
     PACMAN_SPAWN,
@@ -38,7 +38,7 @@ export function createPacmanEntry(): GameEntry {
                 ghostSpawns: GHOST_SPAWNS,
             });
 
-            const gameView = createGameView(gameModel);
+            const gameView = GameView({ model: gameModel });
             stage.addChild(gameView);
 
             return {

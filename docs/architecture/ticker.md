@@ -49,7 +49,7 @@ headless testing.
   always see the same result, because all models finished before any view
   refreshed.
 - **No feedback loops.** Views don't mutate models during refresh. User input
-  is relayed through `on*()` bindings and processed on the next update cycle.
+  is reported through relay bindings and processed on the next update cycle.
   Data flows one direction within each frame.
 
 ## Time Ownership

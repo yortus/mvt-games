@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
-import { createPerfmonView, type FrameStats, PERFMON_WIDTH } from '#common';
+import { type FrameStats, memoiseLast, PERFMON_WIDTH, PerfmonView } from '#common';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -56,8 +56,8 @@ export interface ToolbarViewBindings {
  */
 export function ToolbarView(bindings: ToolbarViewBindings): Container {
     // Formatted only when the count changes, not every frame.
-    const getGrainText = mapOnChange(bindings.grainCount, formatCount);
-    const getMovingText = mapOnChange(bindings.movingCount, formatCount);
+    const grainText = memoiseLast(formatCount);
+    const movingText = memoiseLast(formatCount);
 
     // Flip, Reset and Clear share the width the palette leaves.
     const actionsX = TOOLS.length * (BUTTON_SIZE + BUTTON_GAP);
@@ -118,13 +118,13 @@ export function ToolbarView(bindings: ToolbarViewBindings): Container {
 
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
-                <text text={getGrainText} x={72} y={4} style={COUNT_STYLE} />
+                <text text={() => grainText(bindings.grainCount())} x={72} y={4} style={COUNT_STYLE} />
                 <text text="MOVING" y={32} style={LABEL_STYLE} />
-                <text text={getMovingText} x={72} y={28} style={COUNT_STYLE} />
+                <text text={() => movingText(bindings.movingCount())} x={72} y={28} style={COUNT_STYLE} />
                 <text text="Tap, hold and drag to pour" y={52} style={HINT_STYLE} />
                 <text text="Switches restart the demo" y={66} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    {createPerfmonView({ getFrameStats: () => bindings.frameStats() })}
+                    <PerfmonView frameStats={bindings.frameStats} />
                 </container>
             </container>
         </container>
@@ -145,26 +145,6 @@ const COUNT_FORMAT = new Intl.NumberFormat('en-US');
 
 function formatCount(count: number): string {
     return COUNT_FORMAT.format(count);
-}
-
-/**
- * A getter returning `map(read())`, where `map` runs only when `read()` returns
- * something new (compared with `===`), and the last result is returned
- * otherwise. Polling it costs one `read()` and one comparison.
- */
-function mapOnChange<V, T>(read: () => V, map: (value: V) => T): () => T {
-    let isFirst = true;
-    let lastValue: V;
-    let lastResult: T;
-    return () => {
-        const value = read();
-        if (isFirst || value !== lastValue) {
-            isFirst = false;
-            lastValue = value;
-            lastResult = map(value);
-        }
-        return lastResult;
-    };
 }
 
 const TOOL_LABELS: Readonly<Record<ToolKind, string>> = {

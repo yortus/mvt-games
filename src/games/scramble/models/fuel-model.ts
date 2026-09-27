@@ -8,10 +8,10 @@ export interface FuelModel {
     /** Whether fuel has been depleted to zero. */
     readonly isFuelEmpty: boolean;
     /** Add fuel, capped at 1.0. */
-    addFuel(amount: number): void;
-    reset(): void;
+    addFuel: (amount: number) => void;
+    reset: () => void;
     /** Advance fuel depletion. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

@@ -93,6 +93,8 @@ export function TankView(bindings: TankViewBindings): Container {
     let pointerX = 0;
     let pointerY = 0;
     let isPointerOver = false;
+    // The radius the brush ring was last drawn at.
+    let drawnRadius = -1;
 
     let content: Container | undefined;
     const pointer = new Point();
@@ -122,13 +124,13 @@ export function TankView(bindings: TankViewBindings): Container {
             >
                 <graphics ref={(g) => drawWater(g, width, height)} />
                 <container label="grains" scale={cellSize}>
-                    {createGrainsView()}
+                    {chooseGrainsView()}
                 </container>
                 <graphics
                     visible={() => (isPointerOver || bindings.isPouring()) && !bindings.isFlipping()}
                     x={() => pointerX}
                     y={() => pointerY}
-                    ref={setUpBrushRing}
+                    onRefresh={redrawBrushRing}
                 />
                 <graphics ref={(g) => drawGlass(g, width, height)} />
             </container>
@@ -136,7 +138,7 @@ export function TankView(bindings: TankViewBindings): Container {
     );
 
     /** The chosen grain view. */
-    function createGrainsView(): Container {
+    function chooseGrainsView(): Container {
         const { cols, rows, grains } = bindings;
         if (bindings.isReactive) {
             return bindings.grainsView === 'sprites'
@@ -181,20 +183,13 @@ export function TankView(bindings: TankViewBindings): Container {
     // --- Brush ring ---------------------------------------------------------
 
     /** Redrawn only when the tool, and so the brush radius, changes. */
-    function setUpBrushRing(g: Graphics): void {
-        let drawnRadius = -1;
-        const ownRefresh = g.onRefresh;
-        g.onRefresh = () => {
-            const result = ownRefresh?.();
-            const radius = bindings.brushRadius() * cellSize;
-            if (radius !== drawnRadius) {
-                drawnRadius = radius;
-                g.clear()
-                    .circle(0, 0, radius)
-                    .stroke({ color: 0xffffff, width: 1.5, alpha: 0.7 });
-            }
-            return result;
-        };
+    function redrawBrushRing(g: Graphics): void {
+        const radius = bindings.brushRadius() * cellSize;
+        if (radius === drawnRadius) return;
+        drawnRadius = radius;
+        g.clear()
+            .circle(0, 0, radius)
+            .stroke({ color: 0xffffff, width: 1.5, alpha: 0.7 });
     }
 }
 

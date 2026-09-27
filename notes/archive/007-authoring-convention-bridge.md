@@ -6,8 +6,15 @@
 > transform. The transform is a pure key-rename: the underlying values are
 > identical, so it is total, reversible, and costs one construction-time pass.
 
-**Status:** proposed, not implemented. A throwaway proof (section 11) has been
-run and type-checked; nothing has been added to `src/`.
+**Status:** superseded 2026-09-27 by
+[018 - One view convention](../proposals/018-one-view-convention.md), which
+removes the difference this bridge would cross: every view now has the same
+outside, so there is nothing to bridge (018 section 11). Never implemented.
+The type-level work is kept for one case 018 leaves open: an adapter for
+users of 011's published packages who name bindings differently. Its
+`MaybeGetter` to `ValueOrGetter` rename (section 8) was done separately.
+A throwaway proof (section 11) was run and type-checked; nothing was added
+to `src/`.
 
 **Related:** [`src/pixi-jsx/`](../../src/pixi-jsx/index.ts) (the JSX runtime and its
 prop model) and [001 - MVT plugin rework](../archive/001-mvt-plugin-rework-plan.md), now

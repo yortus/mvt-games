@@ -1,18 +1,27 @@
 import { Container, Graphics } from 'pixi.js';
-import { createOverlayView, isTouchDevice, watch } from '#common';
+import { OverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
-import { createShipView } from './ship-view';
-import { createAsteroidView } from './asteroid-view';
-import { createBulletView } from './bullet-view';
-import { createDebrisView } from './debris-view';
-import { createHudView } from './hud-view';
+import { ShipView } from './ship-view';
+import { AsteroidView } from './asteroid-view';
+import { BulletView } from './bullet-view';
+import { DebrisView } from './debris-view';
+import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+export function GameView(bindings: GameViewBindings): Container {
+    const game = bindings.model;
     const watcher = watch({
         bulletCount: () => game.bullets.length,
     });
@@ -37,39 +46,39 @@ export function createGameView(game: GameModel): Container {
         buildBullets();
 
         // Ship
-        const shipContainer = createShipView({
-            getX: () => game.ship.x,
-            getY: () => game.ship.y,
-            getAngle: () => game.ship.angle,
+        const shipContainer = ShipView({
+            x: () => game.ship.x,
+            y: () => game.ship.y,
+            angle: () => game.ship.angle,
             isAlive: () => game.ship.isAlive,
             isThrusting: () => game.ship.isThrusting,
         });
         view.addChild(shipContainer);
 
         // Debris (rendered above ship layer)
-        const debrisContainer = createDebrisView({
-            getParticles: () => game.debris.particles,
+        const debrisContainer = DebrisView({
+            particles: () => game.debris.particles,
             isActive: () => game.debris.isActive,
         });
         view.addChild(debrisContainer);
 
         // HUD
-        const hudContainer = createHudView({
-            getScore: () => game.score,
-            getLives: () => game.lives,
-            getWave: () => game.wave,
-            getScreenWidth: () => ARENA_WIDTH,
+        const hudContainer = HudView({
+            score: () => game.score,
+            lives: () => game.lives,
+            wave: () => game.wave,
+            screenWidth: () => ARENA_WIDTH,
         });
         hudContainer.position.set(0, ARENA_HEIGHT);
         view.addChild(hudContainer);
 
         // Overlay
         const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
-        const overlayView = createOverlayView({
-            getWidth: () => ARENA_WIDTH,
-            getHeight: () => ARENA_HEIGHT,
-            getVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
-            getText: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'WAVE CLEAR!'),
+        const overlayView = OverlayView({
+            width: ARENA_WIDTH,
+            height: ARENA_HEIGHT,
+            isVisible: () => game.phase === 'game-over' || game.phase === 'wave-clear',
+            text: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'WAVE CLEAR!'),
             onRestartPressed: (pressed) => {
                 game.playerInput.restartPressed = pressed;
             },
@@ -89,15 +98,15 @@ export function createGameView(game: GameModel): Container {
     function buildAsteroids(): void {
         while (asteroidContainers.length < game.asteroids.slots.length) {
             const idx = asteroidContainers.length;
-            const c = createAsteroidView({
+            const c = AsteroidView({
                 isPresent: () => game.asteroids.slots.at(idx) !== undefined,
-                getX: () => game.asteroids.slots.at(idx)?.value.x ?? 0,
-                getY: () => game.asteroids.slots.at(idx)?.value.y ?? 0,
-                getAngle: () => game.asteroids.slots.at(idx)?.value.angle ?? 0,
-                getSize: () => game.asteroids.slots.at(idx)?.value.size ?? 'large',
-                getRadius: () => game.asteroids.slots.at(idx)?.value.radius ?? 0,
+                x: () => game.asteroids.slots.at(idx)?.value.x ?? 0,
+                y: () => game.asteroids.slots.at(idx)?.value.y ?? 0,
+                angle: () => game.asteroids.slots.at(idx)?.value.angle ?? 0,
+                size: () => game.asteroids.slots.at(idx)?.value.size ?? 'large',
+                radius: () => game.asteroids.slots.at(idx)?.value.radius ?? 0,
                 isAlive: () => game.asteroids.slots.at(idx)?.value.isAlive ?? false,
-                getShapeSeed: () => game.asteroids.slots.at(idx)?.value.shapeSeed ?? -1,
+                shapeSeed: () => game.asteroids.slots.at(idx)?.value.shapeSeed ?? -1,
             });
             view.addChild(c);
             asteroidContainers.push(c);
@@ -113,9 +122,9 @@ export function createGameView(game: GameModel): Container {
         const count = game.bullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const c = createBulletView({
-                getX: () => game.bullets[idx].x,
-                getY: () => game.bullets[idx].y,
+            const c = BulletView({
+                x: () => game.bullets[idx].x,
+                y: () => game.bullets[idx].y,
                 isActive: () => game.bullets[idx].isActive,
             });
             view.addChild(c);

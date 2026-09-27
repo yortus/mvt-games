@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
 import { FIELD_ROWS, FIELD_COLS, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from './data';
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export function createDigdugEntry(): GameEntry {
                 diggerSpawn: DIGGER_SPAWN,
             });
 
-            const gameView = createGameView(gameModel);
+            const gameView = GameView({ model: gameModel });
             stage.addChild(gameView);
 
             let lastXDir: 'left' | 'none' | 'right' = 'none';

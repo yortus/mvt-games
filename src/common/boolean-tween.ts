@@ -13,7 +13,7 @@ export interface BooleanTween {
     /** Current tweened output value. */
     readonly value: number;
     /** Advance the tween by deltaMs. Reads the boolean source each call. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ export interface BooleanTween {
 
 export interface BooleanTweenOptions {
     /** Accessor that returns the current boolean source value. */
-    getSource(): boolean;
+    getSource: () => boolean;
     /** Output value when the source is false. */
     offValue: number;
     /** Output value when the source is true. */

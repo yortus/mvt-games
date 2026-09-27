@@ -7,12 +7,12 @@ export interface DebrisModel {
     /** Whether any particles are currently active. */
     readonly isActive: boolean;
     /** Spawn debris at the given position, spreading outward. */
-    spawn(x: number, y: number, shipAngle: number): void;
+    spawn: (x: number, y: number, shipAngle: number) => void;
     /** Spawn debris that converges inward to the given position. */
-    reverseSpawn(targetX: number, targetY: number, shipAngle: number, durationMs?: number): void;
+    reverseSpawn: (targetX: number, targetY: number, shipAngle: number, durationMs?: number) => void;
     /** Deactivate all particles. */
-    clear(): void;
-    update(deltaMs: number): void;
+    clear: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

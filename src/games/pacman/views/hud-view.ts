@@ -6,15 +6,15 @@ import { watch } from '#common';
 // ---------------------------------------------------------------------------
 
 export interface HudViewBindings {
-    getScore(): number;
+    score: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createHudView(bindings: HudViewBindings): Container {
-    const watcher = watch({ score: bindings.getScore });
+export function HudView(bindings: HudViewBindings): Container {
+    const watcher = watch({ score: bindings.score });
     let scoreText: Text;
 
     const view = new Container();

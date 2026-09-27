@@ -12,7 +12,7 @@ export interface RocketModel {
     /** Current phase of the rocket. */
     readonly phase: RocketPhase;
     /** Advance rocket state. Launches when ship is within detect range. */
-    update(deltaMs: number, shipWorldCol: number): void;
+    update: (deltaMs: number, shipWorldCol: number) => void;
 }
 
 // ---------------------------------------------------------------------------

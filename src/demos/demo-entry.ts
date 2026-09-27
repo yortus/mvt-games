@@ -28,13 +28,13 @@ export interface DemoEntry {
     /**
      * Optional async method called before `start()` to load assets.
      */
-    load?(): Promise<void>;
+    load?: () => Promise<void>;
     /**
      * Create and start a running demo session, mounting visuals on `stage`.
      * `host` is given when the demo runs in the gallery's runner, and not when
      * it is started headless (e.g. to render a thumbnail).
      */
-    start(stage: Container, host?: DemoHost): DemoSession;
+    start: (stage: Container, host?: DemoHost) => DemoSession;
 }
 
 /** The application a demo runs in, for demos that measure or extend it. */
@@ -47,12 +47,12 @@ export interface DemoHost {
 /** A running demo instance - updated each tick and destroyable. */
 export interface DemoSession {
     /** Advance demo state by the given elapsed milliseconds. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
     /**
      * Re-layout after a viewport size change.
      * Called by the runner after resizing the Pixi renderer.
      */
-    resize?(): void;
+    resize?: () => void;
     /** Tear down the demo session and remove visuals from the stage. */
-    destroy(): void;
+    destroy: () => void;
 }

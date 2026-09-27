@@ -59,27 +59,27 @@ export interface FighterModel {
     /** The defeat variant (only meaningful in 'defeated' phase). */
     readonly defeatVariant: DefeatVariant;
     /** Whether this fighter is facing the given x position. */
-    isFacing(targetX: number): boolean;
+    isFacing: (targetX: number) => boolean;
     /**
      * Attempt a voluntary move. Returns true if the model accepted it.
      * Moves are rejected while an attack, reaction, or other non-interruptible
      * phase is in progress. The same move is rejected (held) after completion.
      */
-    tryMove(move: FighterMove): boolean;
+    tryMove: (move: FighterMove) => boolean;
     /** External: take a hit with the given knockback in metres. */
-    hit(knockbackMetres: number): void;
+    hit: (knockbackMetres: number) => void;
     /** External: passively block an incoming attack. */
-    block(): void;
+    block: () => void;
     /** External: play a defeat animation. */
-    defeat(variant: DefeatVariant): void;
+    defeat: (variant: DefeatVariant) => void;
     /** External: play the round-won pose. */
-    won(): void;
+    won: () => void;
     /** External: play the round-lost pose. */
-    lost(): void;
+    lost: () => void;
     /** Reset to starting position and idle state. */
-    reset(startX: number, facing: Facing): void;
+    reset: (startX: number, facing: Facing) => void;
     /** Advance state by deltaMs. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

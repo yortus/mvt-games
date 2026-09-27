@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createCardRowModel } from './card-row-model';
-import { createCardRowView } from './card-row-view';
+import { CardRowView } from './card-row-view';
 
 const SCREEN_WIDTH = 600;
 const SCREEN_HEIGHT = 420;
@@ -36,7 +36,7 @@ export function createReorderingListsEntry(): DemoEntry {
 
         start(stage: Container): DemoSession {
             const model = createCardRowModel();
-            const view = createCardRowView(model);
+            const view = CardRowView({ model });
             stage.addChild(view);
 
             return {

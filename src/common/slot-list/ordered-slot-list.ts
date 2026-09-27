@@ -44,30 +44,30 @@ export interface OrderedSlotList<T> {
      * visited slot during the walk; inserting during the walk is not. Pass a
      * named callback to avoid a per-frame closure allocation.
      */
-    forEachLive(visit: (value: T, slot: OrderedSlot<T>) => void): void;
+    forEachLive: (visit: (value: T, slot: OrderedSlot<T>) => void) => void;
 
     /** Adds a value at the end of the order (ordinal `liveCount`). Throws when `isFull`. */
-    append(value: T): OrderedSlot<T>;
+    append: (value: T) => OrderedSlot<T>;
 
     /** Adds a value at `ordinal`, shifting the rest up. Clamped to `[0, liveCount]`. Throws when `isFull`. */
-    insertAt(ordinal: number, value: T): OrderedSlot<T>;
+    insertAt: (ordinal: number, value: T) => OrderedSlot<T>;
 
     /** Moves the item at `fromOrdinal` to `toOrdinal`, shifting the span between. */
-    move(fromOrdinal: number, toOrdinal: number): void;
+    move: (fromOrdinal: number, toOrdinal: number) => void;
 
     /** Reorders live items by comparing their values. */
-    sort(compare: (a: T, b: T) => number): void;
+    sort: (compare: (a: T, b: T) => number) => void;
 
     /**
      * Detaches from the order now (survivors renumber to close the gap) and
      * removes from the live set; the slot then lingers pending release per the
      * delay. `releaseDelayMs` overrides the list default.
      */
-    remove(slot: OrderedSlot<T>, releaseDelayMs?: number): void;
+    remove: (slot: OrderedSlot<T>, releaseDelayMs?: number) => void;
 
-    clear(): void;
+    clear: () => void;
 
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 /**

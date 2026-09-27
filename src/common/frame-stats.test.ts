@@ -17,13 +17,13 @@ function setup(readCounter?: SampledCounter, gl?: FakeGl) {
     vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
     let onTick: (() => void) | undefined;
-    const hooks: { prerender(): void; postrender(): void }[] = [];
+    const hooks: { prerender: () => void; postrender: () => void }[] = [];
     const ticker = {
         add: (fn: () => void) => { onTick = fn; },
         remove: () => { onTick = undefined; },
     } as unknown as Ticker;
     const runner = {
-        add: (item: { prerender(): void; postrender(): void }) => { if (!hooks.includes(item)) hooks.push(item); },
+        add: (item: { prerender: () => void; postrender: () => void }) => { if (!hooks.includes(item)) hooks.push(item); },
         remove: () => undefined,
     };
     const renderer = {

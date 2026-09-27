@@ -7,7 +7,7 @@ export interface BulletModel {
     readonly worldCol: number;
     /** World row position in tile units. */
     readonly worldRow: number;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

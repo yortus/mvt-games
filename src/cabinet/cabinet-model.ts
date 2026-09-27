@@ -12,11 +12,11 @@ export interface CabinetModel {
     readonly games: readonly GameEntry[];
     readonly selectedIndex: number;
     readonly activeSession: GameSession | undefined;
-    selectByDelta(delta: number): void;
-    launchSelected(stage: Container): Promise<void>;
-    restartSession(stage: Container): void;
-    exitToMenu(): void;
-    update(deltaMs: number): void;
+    selectByDelta: (delta: number) => void;
+    launchSelected: (stage: Container) => Promise<void>;
+    restartSession: (stage: Container) => void;
+    exitToMenu: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

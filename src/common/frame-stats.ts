@@ -67,9 +67,9 @@ export interface FrameStats {
      * `[0, historyLength)`. `NaN` where there is no value yet, for the GPU
      * when it cannot be timed, and for reads without a `readCounter`.
      */
-    historyAt(kind: FrameStatKind, index: number): number;
+    historyAt: (kind: FrameStatKind, index: number) => number;
     /** Stop measuring and release GPU queries. */
-    destroy(): void;
+    destroy: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -226,11 +226,11 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
 // ---------------------------------------------------------------------------
 
 interface GpuTimer {
-    begin(): void;
-    end(): void;
+    begin: () => void;
+    end: () => void;
     /** Median of the results that arrived since the last call, or undefined if none did. */
-    takeMedianMs(): number | undefined;
-    destroy(): void;
+    takeMedianMs: () => number | undefined;
+    destroy: () => void;
 }
 
 /** The parts of `EXT_disjoint_timer_query_webgl2` used here. */

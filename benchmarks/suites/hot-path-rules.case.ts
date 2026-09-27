@@ -18,13 +18,13 @@ interface Entity {
     vx: number;
     alive: boolean;
     readonly stats: { hp: number; mp: number; str: number; dex: number };
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 /** One frame's work, written the way the rule warns against and the way it recommends. */
 interface Variants {
-    avoid(): void;
-    prefer(): void;
+    avoid: () => void;
+    prefer: () => void;
 }
 
 const params = readParams();
