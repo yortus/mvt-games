@@ -8,23 +8,23 @@ import type { Direction } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface DiggerViewBindings {
-    getRow(): number;
-    getCol(): number;
-    getDirection(): Direction;
-    isAlive(): boolean;
-    isHarpoonExtended(): boolean;
-    getHarpoonDistance(): number;
-    getTileSize(): number;
+    row: () => number;
+    col: () => number;
+    direction: () => Direction;
+    isAlive: () => boolean;
+    isHarpoonExtended: () => boolean;
+    harpoonDistance: () => number;
+    tileSize: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createDiggerView(bindings: DiggerViewBindings): Container {
+export function DiggerView(bindings: DiggerViewBindings): Container {
     const watcher = watch({
-        direction: bindings.getDirection,
-        tileSize: bindings.getTileSize,
+        direction: bindings.direction,
+        tileSize: bindings.tileSize,
         alive: bindings.isAlive,
         harpoon: bindings.isHarpoonExtended,
     });
@@ -48,10 +48,10 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
     function refresh(): void {
         const watched = watcher.poll();
 
-        const ts = bindings.getTileSize();
-        const col = bindings.getCol();
-        const row = bindings.getRow();
-        const dir = bindings.getDirection();
+        const ts = bindings.tileSize();
+        const col = bindings.col();
+        const row = bindings.row();
+        const dir = bindings.direction();
         const x = col * ts + ts / 2;
         const y = row * ts + ts / 2;
         view.position.set(x, y);
@@ -99,7 +99,7 @@ export function createDiggerView(bindings: DiggerViewBindings): Container {
         // Harpoon line (stays procedural - variable length)
         harpoonGfx.clear();
         if (bindings.isHarpoonExtended()) {
-            const dist = bindings.getHarpoonDistance();
+            const dist = bindings.harpoonDistance();
             const harpoonLen = dist * ts;
             if (harpoonLen >= 1) {
                 const startX = ts * 0.35;

@@ -10,40 +10,40 @@ import type { HostMessage, SandboxMessage } from './messages';
 
 export interface SandboxHost {
     /** Mount the sandbox iframe into a container element. */
-    mount(container: HTMLElement): void;
+    mount: (container: HTMLElement) => void;
 
     /** Send model + view code to the sandbox for execution. */
-    run(modelCode: string, viewCode: string, canvasWidth: number, canvasHeight: number): void;
+    run: (modelCode: string, viewCode: string, canvasWidth: number, canvasHeight: number) => void;
 
     /** Stop the currently running session. */
-    stop(): void;
+    stop: () => void;
 
     /** Pause the ticker. */
-    pause(): void;
+    pause: () => void;
 
     /** Resume the ticker. */
-    resume(): void;
+    resume: () => void;
 
     /** Set the ticker speed multiplier. */
-    setSpeed(speed: number): void;
+    setSpeed: (speed: number) => void;
 
     /** Advance a single frame (only meaningful when paused). */
-    step(deltaMs: number): void;
+    step: (deltaMs: number) => void;
 
     /** Destroy and re-run with current code. */
-    reset(modelCode: string, viewCode: string, canvasWidth: number, canvasHeight: number): void;
+    reset: (modelCode: string, viewCode: string, canvasWidth: number, canvasHeight: number) => void;
 
     /** Move keyboard focus to the sandbox iframe. */
-    focus(): void;
+    focus: () => void;
 
     /** Register a listener for messages from the sandbox. */
-    onMessage(handler: (msg: SandboxMessage) => void): void;
+    onMessage: (handler: (msg: SandboxMessage) => void) => void;
 
     /** Remove a previously registered listener. */
-    offMessage(handler: (msg: SandboxMessage) => void): void;
+    offMessage: (handler: (msg: SandboxMessage) => void) => void;
 
     /** Destroy the sandbox iframe and clean up. */
-    destroy(): void;
+    destroy: () => void;
 }
 
 // ---------------------------------------------------------------------------

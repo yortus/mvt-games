@@ -26,10 +26,10 @@ export interface GameModel {
     readonly clockMs: number;
     readonly playerInput: CactiiPlayerInput;
     /** Attempt to swap two cells. Returns true if accepted. */
-    trySwap(cell1: CactusCell, cell2: CactusCell): boolean;
+    trySwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** Reset the game to initial state. */
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

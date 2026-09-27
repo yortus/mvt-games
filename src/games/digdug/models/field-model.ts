@@ -7,15 +7,15 @@ import type { TileKind } from '../data';
 export interface FieldModel {
     readonly rows: number;
     readonly cols: number;
-    tileAt(row: number, col: number): TileKind;
-    isDirt(row: number, col: number): boolean;
-    isTunnel(row: number, col: number): boolean;
-    isSurface(row: number, col: number): boolean;
-    isWalkable(row: number, col: number): boolean;
-    dig(row: number, col: number): void;
+    tileAt: (row: number, col: number) => TileKind;
+    isDirt: (row: number, col: number) => boolean;
+    isTunnel: (row: number, col: number) => boolean;
+    isSurface: (row: number, col: number) => boolean;
+    isWalkable: (row: number, col: number) => boolean;
+    dig: (row: number, col: number) => void;
     readonly tunnelCount: number;
-    reset(layout: readonly TileKind[]): void;
-    update(deltaMs: number): void;
+    reset: (layout: readonly TileKind[]) => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

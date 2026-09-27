@@ -208,11 +208,10 @@ architecture and engineering concerns.
 - **No `null`** - use `undefined`.
 - **No `enum`** - string-literal unions.
 - **Function-valued properties in types** - `onPressed?: () => void`, not
-  `onPressed?(): void`. Flag new or changed interfaces only; much existing
-  code still uses method syntax.
-- **View convention** - flag new or substantially changed views that use
-  `createXxxView` or `get*()` bindings. Code not yet migrated may still use
-  them; see [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings).
+  `onPressed?(): void`. Lint enforces it.
+- **View convention** - flag views that use `createXxxView`, `get*()` query
+  bindings or `props` (lint catches most of these); see
+  [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings).
   Do not flag a view for having a plain TypeScript body rather than JSX, or
   the reverse: either is fine. Suggest the other only where it would clearly
   read better, as a low-priority note.

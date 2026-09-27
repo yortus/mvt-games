@@ -27,15 +27,15 @@ export interface EnemyModel {
     /** Whether this enemy has been told to flee (last enemy alive). */
     readonly isFleeing: boolean;
     /** Advance inflation by one stage. Returns true if enemy popped. */
-    inflate(): boolean;
+    inflate: () => boolean;
     /** Called by game-model when crushed by a rock. */
-    crush(): void;
+    crush: () => void;
     /** Trigger fleeing behaviour (last enemy alive). */
-    startFleeing(): void;
+    startFleeing: () => void;
     /** Reset to initial state. */
-    reset(row: number, col: number): void;
+    reset: (row: number, col: number) => void;
     /** Advance model state. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

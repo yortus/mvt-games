@@ -13,9 +13,9 @@ import { SKIP_DESCENDANTS } from './mvt-types';
  */
 interface Driver {
     readonly kind: 'update' | 'refresh';
-    assign(container: Container, fn: () => void): void;
-    clear(container: Container): void;
-    run(node: Container): void;
+    assign: (container: Container, fn: () => void) => void;
+    clear: (container: Container) => void;
+    run: (node: Container) => void;
 }
 
 const drivers: Driver[] = [
@@ -43,7 +43,7 @@ const drivers: Driver[] = [
 
 interface Recorder {
     readonly calls: string[];
-    clear(): void;
+    clear: () => void;
 }
 
 function createRecorder(): Recorder {

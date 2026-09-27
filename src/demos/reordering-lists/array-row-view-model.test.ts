@@ -11,8 +11,8 @@ const FRAME_MS = 16;
 /** A row of ids, reordered in place by the tests, and a view model over it. */
 function setup(ids: number[]) {
     const vm = createArrayRowViewModel({
-        getCount: () => ids.length,
-        getId: (index) => ids[index],
+        count: () => ids.length,
+        idAt: (index) => ids[index],
         pitchPx: PITCH,
     });
     return { ids, vm };

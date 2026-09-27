@@ -7,17 +7,17 @@ import { TankView } from './tank-view';
 import { ToolbarView } from './toolbar-view';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface DemoViewProps {
+export interface DemoViewBindings {
     model: DemoModel;
     /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
     frameStats: () => FrameStats | undefined;
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -25,8 +25,8 @@ export interface DemoViewProps {
  * it takes the model itself and wires it to the views below: what they show,
  * and what their gestures do.
  */
-export function DemoView(props: DemoViewProps): Container {
-    const { model } = props;
+export function DemoView(bindings: DemoViewBindings): Container {
+    const { model } = bindings;
     return (
         <container label="falling-sand">
             <ToolbarView
@@ -34,7 +34,7 @@ export function DemoView(props: DemoViewProps): Container {
                 canFlip={() => model.phase === 'running'}
                 grainCount={() => model.grainCount}
                 movingCount={() => model.movingCount}
-                frameStats={props.frameStats}
+                frameStats={bindings.frameStats}
                 onToolPressed={(tool) => { model.tool = tool; }}
                 onFlipPressed={() => model.flip()}
                 onResetPressed={() => model.reset()}

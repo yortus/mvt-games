@@ -7,22 +7,22 @@ import type { AsteroidSize } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface AsteroidViewBindings {
-    isPresent(): boolean;
-    getX(): number;
-    getY(): number;
-    getAngle(): number;
-    getSize(): AsteroidSize;
-    getRadius(): number;
-    isAlive(): boolean;
-    getShapeSeed(): number;
+    isPresent: () => boolean;
+    x: () => number;
+    y: () => number;
+    angle: () => number;
+    size: () => AsteroidSize;
+    radius: () => number;
+    isAlive: () => boolean;
+    shapeSeed: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createAsteroidView(bindings: AsteroidViewBindings): Container {
-    const watcher = watch({ seed: bindings.getShapeSeed });
+export function AsteroidView(bindings: AsteroidViewBindings): Container {
+    const watcher = watch({ seed: bindings.shapeSeed, radius: bindings.radius, size: bindings.size });
     let bodyGfx: Graphics;
 
     const view = new Container();
@@ -43,22 +43,22 @@ export function createAsteroidView(bindings: AsteroidViewBindings): Container {
         }
 
         const watched = watcher.poll();
-        if (watched.seed.changed) {
+        if (watched.seed.changed || watched.radius.changed || watched.size.changed) {
             drawAsteroid(); // a different asteroid now occupies this slot - redraw its outline
         }
 
         view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
-        view.position.set(bindings.getX(), bindings.getY());
-        view.rotation = bindings.getAngle();
+        view.position.set(bindings.x(), bindings.y());
+        view.rotation = bindings.angle();
     }
 
     function drawAsteroid(): void {
         bodyGfx.clear();
-        const radius = bindings.getRadius();
-        const color = SIZE_COLOR[bindings.getSize()];
-        const seed = bindings.getShapeSeed();
+        const radius = bindings.radius();
+        const color = SIZE_COLOR[bindings.size()];
+        const seed = bindings.shapeSeed();
 
         // Generate a jagged polygon using the seed for determinism
         let s = seed;

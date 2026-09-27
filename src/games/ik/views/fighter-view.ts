@@ -8,21 +8,21 @@ import { SCREEN_WIDTH, GROUND_Y_PX } from './view-constants';
 // ---------------------------------------------------------------------------
 
 export interface FighterViewBindings {
-    getX(): number;
-    getHeight(): number;
-    getFacing(): Facing;
-    getPhase(): FighterPhase;
-    getMove(): MoveKind | undefined;
-    getProgress(): number;
-    getDefeatVariant(): DefeatVariant;
-    getTint(): number;
+    x: () => number;
+    height: () => number;
+    facing: () => Facing;
+    phase: () => FighterPhase;
+    move: () => MoveKind | undefined;
+    progress: () => number;
+    defeatVariant: () => DefeatVariant;
+    tint: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createFighterView(bindings: FighterViewBindings): Container {
+export function FighterView(bindings: FighterViewBindings): Container {
     const scale = SCREEN_WIDTH / ARENA_WIDTH;
     const tex = textures.get();
 
@@ -82,15 +82,15 @@ export function createFighterView(bindings: FighterViewBindings): Container {
 
     function refresh(): void {
         // Position
-        const x = bindings.getX() * scale;
-        const heightPx = bindings.getHeight() * scale;
+        const x = bindings.x() * scale;
+        const heightPx = bindings.height() * scale;
         view.position.set(x, GROUND_Y_PX - heightPx);
 
         // Facing: source sprites face left; flip for right
-        view.scale.x = bindings.getFacing() === 'right' ? -1 : 1;
+        view.scale.x = bindings.facing() === 'right' ? -1 : 1;
 
         // Tint
-        sprite.tint = bindings.getTint();
+        sprite.tint = bindings.tint();
 
         // Texture (derived from phase + progress every frame)
         sprite.texture = resolveTexture();
@@ -101,8 +101,8 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     // -----------------------------------------------------------------------
 
     function resolveTexture(): Texture {
-        const phase = bindings.getPhase();
-        const progress = bindings.getProgress();
+        const phase = bindings.phase();
+        const progress = bindings.progress();
 
         // prettier-ignore
         switch (phase) {
@@ -133,12 +133,12 @@ export function createFighterView(bindings: FighterViewBindings): Container {
     }
 
     function resolveDefeatTexture(progress: number): Texture {
-        const frames = defeatFrames[bindings.getDefeatVariant()];
+        const frames = defeatFrames[bindings.defeatVariant()];
         return frames[progressToIndex(progress, frames.length)];
     }
 
     function resolveMoveTexture(progress: number): Texture {
-        const move = bindings.getMove();
+        const move = bindings.move();
         if (!move) return walkFrames[0];
 
         const frames = moveTextureMap[move];

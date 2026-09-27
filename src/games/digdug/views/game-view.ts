@@ -3,17 +3,26 @@ import { OverlayView, isTouchDevice, watch } from '#common';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';
-import { createFieldView } from './field-view';
-import { createDiggerView } from './digger-view';
-import { createEnemyView } from './enemy-view';
-import { createRockView } from './rock-view';
-import { createHudView } from './hud-view';
+import { FieldView } from './field-view';
+import { DiggerView } from './digger-view';
+import { EnemyView } from './enemy-view';
+import { RockView } from './rock-view';
+import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+export function GameView(bindings: GameViewBindings): Container {
+    const game = bindings.model;
     const watcher = watch({
         enemyCount: () => game.enemies.length,
         rockCount: () => game.rocks.length,
@@ -35,27 +44,27 @@ export function createGameView(game: GameModel): Container {
     function initialiseView(): void {
         // Field
         view.addChild(
-            createFieldView({
-                getTileSize: () => TILE_SIZE,
-                getRows: () => FIELD_ROWS,
-                getCols: () => FIELD_COLS,
-                getTileKind: (r, c) => game.field.tileAt(r, c),
-                getDepthLayers: () => DEPTH_LAYERS,
-                getTunnelCount: () => game.field.tunnelCount,
-                getGamePhase: () => game.phase,
+            FieldView({
+                tileSize: () => TILE_SIZE,
+                rows: () => FIELD_ROWS,
+                cols: () => FIELD_COLS,
+                tileKindAt: (r, c) => game.field.tileAt(r, c),
+                depthLayers: () => DEPTH_LAYERS,
+                tunnelCount: () => game.field.tunnelCount,
+                gamePhase: () => game.phase,
             }),
         );
 
         // Digger
         view.addChild(
-            createDiggerView({
-                getRow: () => game.digger.row,
-                getCol: () => game.digger.col,
-                getDirection: () => game.digger.direction,
+            DiggerView({
+                row: () => game.digger.row,
+                col: () => game.digger.col,
+                direction: () => game.digger.direction,
                 isAlive: () => game.digger.isAlive,
                 isHarpoonExtended: () => game.digger.isHarpoonExtended,
-                getHarpoonDistance: () => game.digger.harpoonDistance,
-                getTileSize: () => TILE_SIZE,
+                harpoonDistance: () => game.digger.harpoonDistance,
+                tileSize: () => TILE_SIZE,
             }),
         );
 
@@ -68,12 +77,12 @@ export function createGameView(game: GameModel): Container {
         buildRocks();
 
         // HUD
-        const hudContainer = createHudView({
-            getScore: () => game.score,
-            getLives: () => game.lives,
-            getLevel: () => game.level,
-            getTileSize: () => TILE_SIZE,
-            getCols: () => FIELD_COLS,
+        const hudContainer = HudView({
+            score: () => game.score,
+            lives: () => game.lives,
+            level: () => game.level,
+            tileSize: () => TILE_SIZE,
+            cols: () => FIELD_COLS,
         });
         hudContainer.position.set(0, canvasH);
         view.addChild(hudContainer);
@@ -109,16 +118,16 @@ export function createGameView(game: GameModel): Container {
         const count = game.enemies.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const enemyContainer = createEnemyView({
-                getRow: () => game.enemies[idx].row,
-                getCol: () => game.enemies[idx].col,
-                getKind: () => game.enemies[idx].kind,
-                getPhase: () => game.enemies[idx].phase,
-                getInflationStage: () => game.enemies[idx].inflationStage,
-                getDirection: () => game.enemies[idx].direction,
+            const enemyContainer = EnemyView({
+                row: () => game.enemies[idx].row,
+                col: () => game.enemies[idx].col,
+                kind: () => game.enemies[idx].kind,
+                phase: () => game.enemies[idx].phase,
+                inflationStage: () => game.enemies[idx].inflationStage,
+                direction: () => game.enemies[idx].direction,
                 isFireActive: () => game.enemies[idx].isFireActive,
                 isFireTelegraph: () => game.enemies[idx].isFireTelegraph,
-                getTileSize: () => TILE_SIZE,
+                tileSize: () => TILE_SIZE,
             });
             enemyLayer.addChild(enemyContainer);
             enemyContainers.push(enemyContainer);
@@ -134,12 +143,12 @@ export function createGameView(game: GameModel): Container {
         const count = game.rocks.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const rockContainer = createRockView({
-                getCol: () => game.rocks[idx].smoothCol,
-                getRow: () => game.rocks[idx].smoothRow,
-                getPhase: () => game.rocks[idx].phase,
+            const rockContainer = RockView({
+                col: () => game.rocks[idx].smoothCol,
+                row: () => game.rocks[idx].smoothRow,
+                phase: () => game.rocks[idx].phase,
                 isAlive: () => game.rocks[idx].isAlive,
-                getTileSize: () => TILE_SIZE,
+                tileSize: () => TILE_SIZE,
             });
             rockLayer.addChild(rockContainer);
             rockContainers.push(rockContainer);

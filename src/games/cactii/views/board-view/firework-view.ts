@@ -8,16 +8,17 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface FireworkViewBindings {
-    getMatchedCells(): readonly Readonly<CactusCell>[];
-    getMatchSequence(): Sequence<'fireworkLaunch' | 'fireworkBurst'>;
-    getCascadeStep(): number;
+    matchedCells: () => readonly Readonly<CactusCell>[];
+    /** The board's one match sequence, which the view reacts to; read once. */
+    matchSequence: Sequence<'fireworkLaunch' | 'fireworkBurst'>;
+    cascadeStep: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createFireworkView(bindings: FireworkViewBindings): Container {
+export function FireworkView(bindings: FireworkViewBindings): Container {
     const view = new Container();
 
     // Pre-allocate firework particle graphics
@@ -43,13 +44,13 @@ export function createFireworkView(bindings: FireworkViewBindings): Container {
     let centreX = 0;
     let centreY = 0;
 
-    const updateFirework = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateFirework = createSequenceReaction(bindings.matchSequence, {
         fireworkLaunch: {
             entering: () => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_FIREWORKS) return;
 
-                const centre = computeMatchCentre(bindings.getMatchedCells());
+                const centre = computeMatchCentre(bindings.matchedCells());
                 centreX = centre.x;
                 centreY = centre.y;
 
@@ -69,7 +70,7 @@ export function createFireworkView(bindings: FireworkViewBindings): Container {
                 }
             },
             active: (progress) => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_FIREWORKS) return;
 
                 const count = particleCount(cascade);
@@ -103,7 +104,7 @@ export function createFireworkView(bindings: FireworkViewBindings): Container {
                 }
             },
             active: (progress) => {
-                const cascade = bindings.getCascadeStep();
+                const cascade = bindings.cascadeStep();
                 if (cascade < MIN_CASCADE_FOR_FIREWORKS) return;
 
                 const count = particleCount(cascade);

@@ -7,7 +7,15 @@ import { createArrayRowViewModel } from './array-row-view-model';
 import { createSlotRowViewModel } from './slot-row-view-model';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
+// ---------------------------------------------------------------------------
+
+export interface CardRowViewBindings {
+    model: CardRowModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -15,12 +23,13 @@ import { createSlotRowViewModel } from './slot-row-view-model';
  * `<List>`; they differ in what the list projects and where each card's
  * presentation state is kept. The top-level view, so it takes the model itself.
  */
-export function createCardRowView(model: CardRowModel): Container {
+export function CardRowView(bindings: CardRowViewBindings): Container {
+    const { model } = bindings;
     const { cardArray, cardSlots } = model;
 
     const arrayRow = createArrayRowViewModel({
-        getCount: () => cardArray.length,
-        getId: (index) => cardArray[index].id,
+        count: () => cardArray.length,
+        idAt: (index) => cardArray[index].id,
         pitchPx: CARD_PITCH,
     });
 
@@ -96,7 +105,7 @@ const LABEL_STYLE = { fill: 0xffffff, fontSize: 30, fontFamily: 'monospace', fon
 
 // --- Card ---------------------------------------------------------------------
 
-interface CardViewProps {
+interface CardViewBindings {
     label: () => string;
     color: () => number;
     /** Centre X, in pixels. */
@@ -109,39 +118,35 @@ interface CardViewProps {
 }
 
 /** One card. Everything card-dependent is a getter, since a list slot changes cards. */
-function CardView(props: CardViewProps): Container {
+function CardView(bindings: CardViewBindings): Container {
+    // The color the face was last drawn in.
+    let drawnColor = -1;
+
     return (
         <container
-            x={props.x}
-            y={props.y ?? 0}
-            alpha={props.alpha}
-            scale={props.scale}
+            x={bindings.x}
+            y={bindings.y ?? 0}
+            alpha={bindings.alpha}
+            scale={bindings.scale}
             pivotX={CARD_W / 2}
             pivotY={CARD_H / 2}
             cursor="pointer"
             hitArea={new Rectangle(0, 0, CARD_W, CARD_H)}
-            onPointerTap={() => props.onPressed?.()}
+            onPointerTap={() => bindings.onPressed?.()}
         >
-            <graphics ref={(g) => redrawOnColorChange(g, props.color)} />
-            <text text={props.label} x={CARD_W / 2} y={CARD_H / 2} anchor={0.5} style={LABEL_STYLE} />
+            <graphics onRefresh={redrawFaceOnColorChange} />
+            <text text={bindings.label} x={CARD_W / 2} y={CARD_H / 2} anchor={0.5} style={LABEL_STYLE} />
         </container>
     );
-}
 
-/** The card's face depends on its color, so it is redrawn when the slot's card changes color. */
-function redrawOnColorChange(g: Graphics, getColor: () => number): void {
-    let drawnColor = -1;
-    const ownRefresh = g.onRefresh;
-    g.onRefresh = () => {
-        const result = ownRefresh?.();
-        const color = getColor();
-        if (color !== drawnColor) {
-            drawnColor = color;
-            g.clear()
-                .roundRect(0, 0, CARD_W, CARD_H, 10)
-                .fill(color)
-                .stroke({ color: 0x0d1117, width: 2 });
-        }
-        return result;
-    };
+    /** The card's face depends on its color, so it is redrawn when the slot's card changes color. */
+    function redrawFaceOnColorChange(g: Graphics): void {
+        const color = bindings.color();
+        if (color === drawnColor) return;
+        drawnColor = color;
+        g.clear()
+            .roundRect(0, 0, CARD_W, CARD_H, 10)
+            .fill(color)
+            .stroke({ color: 0x0d1117, width: 2 });
+    }
 }

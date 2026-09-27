@@ -17,8 +17,8 @@ export interface RockModel {
     readonly progress: number;
     readonly isAlive: boolean;
     /** Mark as destabilized (dirt below removed). */
-    destabilize(): void;
-    update(deltaMs: number): void;
+    destabilize: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

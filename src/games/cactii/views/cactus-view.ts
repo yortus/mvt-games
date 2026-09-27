@@ -9,25 +9,25 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX, PANEL_COLOURS } from './view-constants';
 // ---------------------------------------------------------------------------
 
 export interface CactusViewBindings {
-    getKind(): CactusKind;
-    getX(): number;
-    getY(): number;
-    getAlpha(): number;
-    getScale(): number;
-    getRotation(): number;
+    kind: () => CactusKind;
+    x: () => number;
+    y: () => number;
+    alpha: () => number;
+    scale: () => number;
+    rotation: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createCactusView(bindings: CactusViewBindings): Container {
+export function CactusView(bindings: CactusViewBindings): Container {
     const view = new Container();
-    const panel = buildPanel(bindings.getKind());
-    const sprite = new Sprite({ texture: textureForKind(bindings.getKind()), anchor: 0.5 });
+    const panel = buildPanel(bindings.kind());
+    const sprite = new Sprite({ texture: textureForKind(bindings.kind()), anchor: 0.5 });
     sprite.scale.set(SPRITE_SCALE);
     const watcher = watch({
-        kind: bindings.getKind,
+        kind: bindings.kind,
     });
 
     view.addChild(panel, sprite);
@@ -35,10 +35,10 @@ export function createCactusView(bindings: CactusViewBindings): Container {
     return view;
 
     function refresh(): void {
-        view.position.set(bindings.getX(), bindings.getY());
-        view.alpha = bindings.getAlpha();
-        view.scale.set(bindings.getScale());
-        view.rotation = bindings.getRotation();
+        view.position.set(bindings.x(), bindings.y());
+        view.alpha = bindings.alpha();
+        view.scale.set(bindings.scale());
+        view.rotation = bindings.rotation();
 
         const watched = watcher.poll();
         if (watched.kind.changed) {

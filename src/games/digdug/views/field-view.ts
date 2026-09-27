@@ -8,28 +8,28 @@ import type { GamePhase } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface FieldViewBindings {
-    getTileSize(): number;
-    getRows(): number;
-    getCols(): number;
-    getTileKind(row: number, col: number): TileKind;
-    getDepthLayers(): readonly DepthLayer[];
-    getTunnelCount(): number;
-    getGamePhase(): GamePhase;
+    tileSize: () => number;
+    rows: () => number;
+    cols: () => number;
+    tileKindAt: (row: number, col: number) => TileKind;
+    depthLayers: () => readonly DepthLayer[];
+    tunnelCount: () => number;
+    gamePhase: () => GamePhase;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 const SKY_COLOR = 0x44aaff;
 
-export function createFieldView(bindings: FieldViewBindings): Container {
+export function FieldView(bindings: FieldViewBindings): Container {
     const watcher = watch({
-        rows: bindings.getRows,
-        cols: bindings.getCols,
-        tileSize: bindings.getTileSize,
-        phase: bindings.getGamePhase,
-        tunnelCount: bindings.getTunnelCount,
+        rows: bindings.rows,
+        cols: bindings.cols,
+        tileSize: bindings.tileSize,
+        phase: bindings.gamePhase,
+        tunnelCount: bindings.tunnelCount,
     });
 
     let gfx: Graphics;
@@ -59,10 +59,10 @@ export function createFieldView(bindings: FieldViewBindings): Container {
 
     function buildField(): void {
         gfx.clear();
-        const rows = bindings.getRows();
-        const cols = bindings.getCols();
-        const ts = bindings.getTileSize();
-        const layers = bindings.getDepthLayers();
+        const rows = bindings.rows();
+        const cols = bindings.cols();
+        const ts = bindings.tileSize();
+        const layers = bindings.depthLayers();
 
         // Surface row - sky
         gfx.rect(0, 0, cols * ts, ts).fill(SKY_COLOR);
@@ -79,7 +79,7 @@ export function createFieldView(bindings: FieldViewBindings): Container {
             }
 
             for (let c = 0; c < cols; c++) {
-                const kind = bindings.getTileKind(r, c);
+                const kind = bindings.tileKindAt(r, c);
                 if (kind === 'tunnel') {
                     // Tunnel - black background
                     gfx.rect(c * ts, r * ts, ts, ts).fill(0x000000);

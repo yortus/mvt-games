@@ -5,18 +5,18 @@ import { Container, Graphics } from 'pixi.js';
 // ---------------------------------------------------------------------------
 
 export interface BulletViewBindings {
-    getX(): number;
-    getY(): number;
-    isActive(): boolean;
+    x: () => number;
+    y: () => number;
+    isActive: () => boolean;
     /** Fill colour for this bullet. */
-    getColor(): number;
+    color: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createBulletView(bindings: BulletViewBindings): Container {
+export function BulletView(bindings: BulletViewBindings): Container {
     let gfx: Graphics;
 
     const view = new Container();
@@ -35,12 +35,12 @@ export function createBulletView(bindings: BulletViewBindings): Container {
         view.visible = active;
         if (!active) return;
 
-        view.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.x(), bindings.y());
     }
 
     function drawBullet(): void {
         gfx.clear();
-        const color = bindings.getColor();
+        const color = bindings.color();
         gfx.rect(-1.5, -4, 3, 8).fill(color);
         gfx.circle(0, -4, 1.5).fill(color);
         gfx.circle(0, 4, 1.5).fill(color);

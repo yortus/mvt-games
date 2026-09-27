@@ -3,16 +3,25 @@ import { OverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, GHOST_COLORS } from './view-constants';
-import { createMazeView } from './maze-view';
-import { createPacmanView } from './pacman-view';
-import { createGhostView } from './ghost-view';
-import { createHudView } from './hud-view';
+import { MazeView } from './maze-view';
+import { PacmanView } from './pacman-view';
+import { GhostView } from './ghost-view';
+import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+export function GameView(bindings: GameViewBindings): Container {
+    const game = bindings.model;
     const watcher = watch({
         ghostCount: () => game.ghosts.length,
     });
@@ -28,28 +37,28 @@ export function createGameView(game: GameModel): Container {
 
     function initialiseView(): void {
         // Maze
-        const mazeContainer = createMazeView({
-            getTileSize: () => TILE_SIZE,
-            getRows: () => MAZE_ROWS,
-            getCols: () => MAZE_COLS,
-            getTileKind: (r, c) => game.maze.tileAt(r, c),
+        const mazeContainer = MazeView({
+            tileSize: () => TILE_SIZE,
+            rows: () => MAZE_ROWS,
+            cols: () => MAZE_COLS,
+            tileKindAt: (r, c) => game.maze.tileAt(r, c),
             isDotAt: (r, c) => game.maze.isDot(r, c),
-            getGamePhase: () => game.phase,
+            gamePhase: () => game.phase,
         });
         view.addChild(mazeContainer);
 
         // Pac-Man
-        const pacmanContainer = createPacmanView({
-            getRow: () => game.pacman.row,
-            getCol: () => game.pacman.col,
-            getDirection: () => game.pacman.direction,
-            getTileSize: () => TILE_SIZE,
+        const pacmanContainer = PacmanView({
+            row: () => game.pacman.row,
+            col: () => game.pacman.col,
+            direction: () => game.pacman.direction,
+            tileSize: () => TILE_SIZE,
         });
         view.addChild(pacmanContainer);
 
         // HUD - positioned below the maze
-        const hudContainer = createHudView({
-            getScore: () => game.score,
+        const hudContainer = HudView({
+            score: () => game.score,
         });
         hudContainer.position.set(0, canvasH);
         view.addChild(hudContainer);
@@ -86,11 +95,11 @@ export function createGameView(game: GameModel): Container {
         const count = game.ghosts.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const ghostContainer = createGhostView({
-                getRow: () => game.ghosts[idx].row,
-                getCol: () => game.ghosts[idx].col,
-                getColor: () => GHOST_COLORS[idx] ?? 0xff0000,
-                getTileSize: () => TILE_SIZE,
+            const ghostContainer = GhostView({
+                row: () => game.ghosts[idx].row,
+                col: () => game.ghosts[idx].col,
+                color: () => GHOST_COLORS[idx] ?? 0xff0000,
+                tileSize: () => TILE_SIZE,
             });
             view.addChild(ghostContainer);
             ghostContainers.push(ghostContainer);

@@ -13,9 +13,9 @@ export interface PacmanModel {
     /** Current movement direction. */
     readonly direction: Direction;
     /** Request a direction change. Applied at the next tile centre if valid. */
-    setDirection(dir: Direction): void;
+    setDirection: (dir: Direction) => void;
     /** Advance model state. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

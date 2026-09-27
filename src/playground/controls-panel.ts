@@ -8,34 +8,34 @@
 
 export interface ControlsPanel {
     /** Mount into a container element. */
-    mount(container: HTMLElement): void;
+    mount: (container: HTMLElement) => void;
 
     /** Register event handlers for control actions. */
-    onAction(handler: (action: ControlAction) => void): void;
+    onAction: (handler: (action: ControlAction) => void) => void;
 
     /** Update the displayed running state. */
-    setRunning(running: boolean): void;
+    setRunning: (running: boolean) => void;
 
     /** Update the displayed paused state. */
-    setPaused(paused: boolean): void;
+    setPaused: (paused: boolean) => void;
 
     /** Get the current speed multiplier. */
-    getSpeed(): number;
+    getSpeed: () => number;
 
     /** Get the current canvas width. */
-    getCanvasWidth(): number;
+    getCanvasWidth: () => number;
 
     /** Get the current canvas height. */
-    getCanvasHeight(): number;
+    getCanvasHeight: () => number;
 
     /** Set the canvas width and update the input. */
-    setCanvasWidth(w: number): void;
+    setCanvasWidth: (w: number) => void;
 
     /** Set the canvas height and update the input. */
-    setCanvasHeight(h: number): void;
+    setCanvasHeight: (h: number) => void;
 
     /** Destroy and clean up. */
-    destroy(): void;
+    destroy: () => void;
 }
 
 export type ControlAction =

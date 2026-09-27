@@ -11,9 +11,11 @@
 
 **Status:** accepted 2026-09-27, being implemented. It supersedes 007, now
 archived. Done: the architecture docs (section 12), the `ValueOrGetter`
-rename, the `onRefresh` attribute, the convention docs, Scramble as the pilot
-migration (section 17), and `common/` (section 18). The remaining steps are
-in section 16.
+rename, the `onRefresh` attribute, the convention docs, and every module's
+migration: Scramble as the pilot (section 17), `common/` (section 18), and
+the demos, the cabinet and the other games (section 19). Remaining (section
+16): the rest of the JSX runtime's graduation, optional JSX bodies, and the
+Building with MVT rewrite.
 
 **Written:** 2026-09-26, against the `vnext` branch at `4b633e6` plus the
 uncommitted boids changes. Counts are from `grep` over `src/`.
@@ -636,6 +638,13 @@ All settled 2026-09-27. Do not reopen without new information.
    binding. The `CabinetView` interface then goes, and the view is
    `CabinetView(bindings): Container` like any other. Done when the cabinet
    is migrated.
+   *Done 2026-09-27, more simply than planned* (section 19): exiting was
+   already model state. The view's `onExitPressed` relay binding was not
+   user input at all, only an echo of `main.ts` telling the view to exit.
+   Now `main.ts` exits the cabinet model directly, and the view starts its
+   zoom out when it sees the phase change from `'playing'` to `'menu'`.
+   Nothing waits on the end of the zoom, so no relay binding was needed for
+   it.
 
 ---
 
@@ -653,16 +662,18 @@ All settled 2026-09-27. Do not reopen without new information.
 4. Migrate outsides, one module at a time: function names, query binding
    names, fixed answers, and property syntax. Type-check and run the
    benchmarks after each. ~~Scramble, as the pilot.~~ Done 2026-09-27; see
-   section 17. ~~`common/`.~~ Done 2026-09-27; see section 18. Then each
-   demo, the cabinet (with open question 5), and the other games.
+   section 17. ~~`common/`.~~ Done 2026-09-27; see section 18. ~~Each demo,
+   the cabinet (with open question 5), and the other games.~~ Done
+   2026-09-27; see section 19.
 5. Where a view's body would read better in JSX (section 10's guidance),
    convert it, starting with the game views that rebuild children on a count
    change. Optional, view by view; a plain TypeScript body is never wrong.
 6. ~~Rewrite the architecture bindings page by member role.~~ Done
    2026-09-27 (section 12). Rewrite the Building with MVT views and bindings
    pages for the new convention.
-7. Add the lint rule (open question 4), extending it to each module as it
-   is migrated. Scramble's is in place.
+7. ~~Add the lint rule (open question 4), extending it to each module as it
+   is migrated.~~ Done 2026-09-27: it covers all of `src/` except the
+   playground (section 19).
 
 ---
 
@@ -808,3 +819,82 @@ refresh method, from the overlay's text element.
 *2026-09-27:* checked by eye and by playtesting; everything looks and behaves
 as before: the game-over overlay (and tapping it to restart), the pause menu,
 the perfmon's sparklines in boids and falling sand, and the touch controls.
+
+---
+
+## 19. Migrating the rest
+
+*Done 2026-09-27.* The three demos, the cabinet, and the six other games.
+
+### 19.1 What changed
+
+- **Outsides only.** Every view kept its body, JSX or plain TypeScript, as it
+  was; section 16's step 5 (JSX bodies where they would read better) stays
+  optional. The one body change: the reordering-lists card face and the
+  falling-sand brush ring now redraw through the `onRefresh` attribute
+  instead of a `ref` that kept and called the runtime's own refresh.
+- **The games were renamed by script**, then checked by the type-checker:
+  `get*` query bindings to bare names (`getTileKind(row, col)` to
+  `tileKindAt`), `createXxxView` to `XxxView`, and each top-level view to
+  `GameView({ model })`. Its one miss was Kwazy Cactii's pieces view model,
+  whose options share key names with the view bindings; its reads were
+  renamed to match. The falling-sand views, already function components,
+  went from `props` to `bindings`.
+- **Fixed answers.** Kwazy Cactii's `matchSequence`, read once by five views,
+  is now a fixed answer (the pieces view model keeps a function, since it
+  re-reads it). The asteroid view, which re-read its radius and size only
+  when its shape seed changed, now watches all three. 017's list of
+  read-once views is now empty.
+- **The cabinet** (open question 5): `requestExit()` and the `CabinetView`
+  interface are gone, and so is the view's `onExitPressed` relay binding. See
+  question 5.
+- **Method syntax** is gone from the whole repo, `benchmarks/` and the
+  playground included, and `method-signature-style` now applies to every
+  TypeScript file. 017's item is done.
+- **The lint rule** covers all of `src/` except the playground, which builds
+  DOM and CodeMirror views and whose presets follow the sandbox's own
+  `createView(model)` contract. ESLint now also ignores `.claude/`, whose
+  agent worktrees are separate checkouts.
+- **Docs:** the notes about code not yet migrated are gone from the style
+  guide, `AGENTS.md`, `llms.txt`, the glossary and the skills. The style
+  guide keeps one note: the Building with MVT pages still show the older
+  convention until they are rewritten.
+
+Every game and demo benchmarked the same before and after, within the runs'
+noise.
+
+### 19.2 What the migration showed
+
+1. **Once the convention was settled, the rest was mechanical.** Six games,
+   37 views, took one script and one manual fix. The type-checker is
+   what made that safe: a renamed binding that a call site missed does not
+   compile.
+2. **View models have their own options, and nothing names them.** The
+   convention and its lint rule cover views' bindings. View models' options
+   are query bindings in all but name, but only Kwazy Cactii's were renamed,
+   because they shared keys with a view's; the reordering-lists view models
+   still take `getCount` and `getId(index)`, and `common/`'s helpers (e.g.
+   `createEdgeTween`'s `getSource`) keep `get`. Open question 6.
+3. **Found:** the cabinet view's zoom transitions are GSAP timelines that
+   play by themselves, on wall-clock time, in a view. Recorded in 017.
+
+### 19.3 Open question 6
+
+~~**Should view models' options, and `common/`'s helpers' options, follow the
+query binding naming too?**~~ *Settled 2026-09-27:* view models yes, helper
+options no, as suggested below. The one view model still taking `get*`
+options, reordering-lists' array row, now takes `count` and `idAt(index)`;
+the style guide says so, and the lint rule covers `XxxViewModelOptions`
+interfaces too. Do not reopen without new information. For: one naming rule everywhere, and view models
+are views' internals, so their inputs are the same kind of thing. Against:
+helper options are an ordinary function's parameters, not a view's
+contract, and `get` there reads naturally (`getSource`). Suggest: view
+models yes (they are fed straight from a view's bindings), helper options
+no.
+
+### 19.4 Checked in the browser
+
+*2026-09-27:* playtested, and everything works as before, including
+exiting a game to the cabinet from the pause menu (whose zoom out is now
+started by the phase change rather than a call), the boids sliders and
+checkbox, the reordering-lists card faces and the falling-sand brush ring.

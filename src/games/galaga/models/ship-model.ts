@@ -13,10 +13,10 @@ export interface ShipModel {
     readonly isAlive: boolean;
     /** Current movement direction. */
     readonly direction: Direction;
-    setDirection(dir: Direction): void;
-    kill(): void;
-    respawn(x: number): void;
-    update(deltaMs: number): void;
+    setDirection: (dir: Direction) => void;
+    kill: () => void;
+    respawn: (x: number) => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

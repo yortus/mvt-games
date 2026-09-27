@@ -8,18 +8,18 @@ import type { Direction } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface PacmanViewBindings {
-    getRow(): number;
-    getCol(): number;
-    getDirection(): Direction;
-    getTileSize(): number;
+    row: () => number;
+    col: () => number;
+    direction: () => Direction;
+    tileSize: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createPacmanView(bindings: PacmanViewBindings): Container {
-    const watcher = watch({ direction: bindings.getDirection });
+export function PacmanView(bindings: PacmanViewBindings): Container {
+    const watcher = watch({ direction: bindings.direction });
 
     const pacmanTextures = textures.get().pacman;
     let sprite: Sprite;
@@ -37,9 +37,9 @@ export function createPacmanView(bindings: PacmanViewBindings): Container {
     function refresh(): void {
         const watched = watcher.poll();
 
-        const ts = bindings.getTileSize();
-        const col = bindings.getCol();
-        const row = bindings.getRow();
+        const ts = bindings.tileSize();
+        const col = bindings.col();
+        const row = bindings.row();
         view.position.set(col * ts + ts / 2, row * ts + ts / 2);
         sprite.scale.set(ts / 20);
 

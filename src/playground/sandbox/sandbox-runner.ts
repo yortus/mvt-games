@@ -175,7 +175,7 @@ function createUserGlobals(): Record<string, unknown> {
 /** Minimal watch implementation matching the project's watch utility. */
 function createWatch<T extends Record<string, () => unknown>>(
     getters: T,
-): { poll(): Record<string, { changed: boolean; value: unknown; previous: unknown }> } {
+): { poll: () => Record<string, { changed: boolean; value: unknown; previous: unknown }> } {
     const keys = Object.keys(getters);
     const reads = keys.map((k) => getters[k]);
     const state = reads.map(() => ({

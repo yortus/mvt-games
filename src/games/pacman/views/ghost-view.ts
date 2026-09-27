@@ -7,20 +7,20 @@ import { textures } from '../data';
 // ---------------------------------------------------------------------------
 
 export interface GhostViewBindings {
-    getRow(): number;
-    getCol(): number;
-    getColor(): number;
-    getTileSize(): number;
+    row: () => number;
+    col: () => number;
+    color: () => number;
+    tileSize: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createGhostView(bindings: GhostViewBindings): Container {
+export function GhostView(bindings: GhostViewBindings): Container {
     const watcher = watch({
-        color: bindings.getColor,
-        tileSize: bindings.getTileSize,
+        color: bindings.color,
+        tileSize: bindings.tileSize,
     });
 
     let bodySprite: Sprite;
@@ -42,8 +42,8 @@ export function createGhostView(bindings: GhostViewBindings): Container {
     function refresh(): void {
         const watched = watcher.poll();
 
-        const ts = bindings.getTileSize();
-        view.position.set(bindings.getCol() * ts + ts / 2, bindings.getRow() * ts + ts / 2);
+        const ts = bindings.tileSize();
+        view.position.set(bindings.col() * ts + ts / 2, bindings.row() * ts + ts / 2);
 
         if (watched.color.changed) {
             bodySprite.tint = watched.color.value;

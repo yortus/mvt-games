@@ -49,8 +49,7 @@ presentation state, refresh views, render. Models settle before views read.
   usable as a JSX tag or a plain call. The body may be JSX or plain
   TypeScript, whichever suits the view; neither is required. JSX tends to
   suit trees of display objects that follow the model, plain TypeScript views
-  that mostly draw or manage their own display objects. Code not yet
-  migrated still uses createXxxView and get*() bindings; don't copy it.
+  that mostly draw or manage their own display objects.
 - Barrel imports only: never import past index.ts
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest

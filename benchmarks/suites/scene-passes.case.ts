@@ -43,7 +43,7 @@ if (sink < 0) process.stdout.write('\n');
 // ---------------------------------------------------------------------------
 
 interface Frame {
-    run(): void;
+    run: () => void;
     readonly callsPerFrame: number;
 }
 

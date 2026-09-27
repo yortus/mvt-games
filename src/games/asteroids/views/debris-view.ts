@@ -6,15 +6,15 @@ import type { DebrisParticle } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface DebrisViewBindings {
-    getParticles(): readonly DebrisParticle[];
-    isActive(): boolean;
+    particles: () => readonly DebrisParticle[];
+    isActive: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createDebrisView(bindings: DebrisViewBindings): Container {
+export function DebrisView(bindings: DebrisViewBindings): Container {
     let gfx: Graphics;
 
     const view = new Container();
@@ -33,7 +33,7 @@ export function createDebrisView(bindings: DebrisViewBindings): Container {
         if (!active) return;
 
         gfx.clear();
-        const particles = bindings.getParticles();
+        const particles = bindings.particles();
         for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
             if (!p.isActive) continue;

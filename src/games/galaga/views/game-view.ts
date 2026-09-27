@@ -2,16 +2,25 @@ import { Container, Graphics } from 'pixi.js';
 import { OverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
-import { createShipView } from './ship-view';
-import { createEnemyView } from './enemy-view';
-import { createBulletView } from './bullet-view';
-import { createHudView } from './hud-view';
+import { ShipView } from './ship-view';
+import { EnemyView } from './enemy-view';
+import { BulletView } from './bullet-view';
+import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+export function GameView(bindings: GameViewBindings): Container {
+    const game = bindings.model;
     const watcher = watch({
         enemyCount: () => game.enemies.length,
         pBulletCount: () => game.playerBullets.length,
@@ -45,19 +54,19 @@ export function createGameView(game: GameModel): Container {
         buildEnemyBullets();
 
         // Ship
-        const shipContainer = createShipView({
-            getX: () => game.ship.x,
-            getY: () => game.ship.y,
+        const shipContainer = ShipView({
+            x: () => game.ship.x,
+            y: () => game.ship.y,
             isAlive: () => game.ship.isAlive,
         });
         view.addChild(shipContainer);
 
         // HUD
-        const hudContainer = createHudView({
-            getScore: () => game.score,
-            getLives: () => game.lives,
-            getStage: () => game.stage,
-            getScreenWidth: () => ARENA_WIDTH,
+        const hudContainer = HudView({
+            score: () => game.score,
+            lives: () => game.lives,
+            stage: () => game.stage,
+            screenWidth: () => ARENA_WIDTH,
         });
         hudContainer.position.set(0, ARENA_HEIGHT);
         view.addChild(hudContainer);
@@ -97,11 +106,11 @@ export function createGameView(game: GameModel): Container {
         const count = game.enemies.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const c = createEnemyView({
-                getX: () => game.enemies[idx].x,
-                getY: () => game.enemies[idx].y,
-                getKind: () => game.enemies[idx].kind,
-                getPhase: () => game.enemies[idx].phase,
+            const c = EnemyView({
+                x: () => game.enemies[idx].x,
+                y: () => game.enemies[idx].y,
+                kind: () => game.enemies[idx].kind,
+                phase: () => game.enemies[idx].phase,
                 isAlive: () => game.enemies[idx].isAlive,
             });
             view.addChild(c);
@@ -118,11 +127,11 @@ export function createGameView(game: GameModel): Container {
         const count = game.playerBullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const c = createBulletView({
-                getX: () => game.playerBullets[idx].x,
-                getY: () => game.playerBullets[idx].y,
+            const c = BulletView({
+                x: () => game.playerBullets[idx].x,
+                y: () => game.playerBullets[idx].y,
                 isActive: () => game.playerBullets[idx].isActive,
-                getColor: () => 0xffffff,
+                color: () => 0xffffff,
             });
             view.addChild(c);
             pBulletContainers.push(c);
@@ -138,11 +147,11 @@ export function createGameView(game: GameModel): Container {
         const count = game.enemyBullets.length;
         for (let i = 0; i < count; i++) {
             const idx = i;
-            const c = createBulletView({
-                getX: () => game.enemyBullets[idx].x,
-                getY: () => game.enemyBullets[idx].y,
+            const c = BulletView({
+                x: () => game.enemyBullets[idx].x,
+                y: () => game.enemyBullets[idx].y,
                 isActive: () => game.enemyBullets[idx].isActive,
-                getColor: () => 0xff4444,
+                color: () => 0xff4444,
             });
             view.addChild(c);
             eBulletContainers.push(c);

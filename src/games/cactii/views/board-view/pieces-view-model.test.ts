@@ -55,15 +55,15 @@ function makeFadeSequence() {
 function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewModelOptions {
     const cells = fullGrid();
     return {
-        getPhase: () => 'idle',
-        getCells: () => cells,
-        getSwapCell1: () => undefined,
-        getSwapCell2: () => undefined,
-        getSwapProgress: () => 0,
-        getSettleProgress: () => 0,
-        getSettleOriginRows: emptySettleOrigins,
-        getMatchedCells: () => [],
-        getMatchSequence: makeFadeSequence,
+        phase: () => 'idle',
+        cells: () => cells,
+        swapCell1: () => undefined,
+        swapCell2: () => undefined,
+        swapProgress: () => 0,
+        settleProgress: () => 0,
+        settleOriginRows: emptySettleOrigins,
+        matchedCells: () => [],
+        matchSequence: makeFadeSequence,
         onSwapRequested: () => true,
         ...overrides,
     };
@@ -77,7 +77,7 @@ describe('PiecesViewModel', () => {
     describe('idle grid positions', () => {
         it('returns grid-centred positions for each cell', () => {
             const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
             expect(vm.getCellX(cells[0][0])).toBe(gridX(0));
@@ -88,7 +88,7 @@ describe('PiecesViewModel', () => {
 
         it('returns full alpha for alive, non-matched cells', () => {
             const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             expect(vm.getCellAlpha(cells[0][0])).toBe(1);
         });
     });
@@ -102,7 +102,7 @@ describe('PiecesViewModel', () => {
 
         it('tracks drag origin cell during an active drag', () => {
             const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
@@ -113,7 +113,7 @@ describe('PiecesViewModel', () => {
 
         it('moves the dragged cell to the pointer position', () => {
             const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
@@ -127,7 +127,7 @@ describe('PiecesViewModel', () => {
 
         it('ignores pointer down when not idle', () => {
             const vm = createPiecesViewModel(makeOptions({
-                getPhase: () => 'matching',
+                phase: () => 'matching',
             }));
             vm.update(0);
 
@@ -139,7 +139,7 @@ describe('PiecesViewModel', () => {
 
         it('clears drag origin after pointer up', () => {
             const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
             vm.startDrag(gridX(2), gridY(3));
@@ -183,8 +183,8 @@ describe('PiecesViewModel', () => {
             const cells = fullGrid();
 
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getPhase: () => phase,
+                cells: () => cells,
+                phase: () => phase,
                 onSwapRequested,
             }));
             vm.update(0);
@@ -210,8 +210,8 @@ describe('PiecesViewModel', () => {
             const cells = fullGrid();
 
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getPhase: () => phase,
+                cells: () => cells,
+                phase: () => phase,
                 onSwapRequested,
             }));
             vm.update(0);
@@ -236,11 +236,11 @@ describe('PiecesViewModel', () => {
             const c1 = cells[3][2];
             const c2 = cells[3][3];
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getPhase: () => 'swapping',
-                getSwapCell1: () => c1,
-                getSwapCell2: () => c2,
-                getSwapProgress: () => progress,
+                cells: () => cells,
+                phase: () => 'swapping',
+                swapCell1: () => c1,
+                swapCell2: () => c2,
+                swapProgress: () => progress,
             }));
             vm.update(0);
 
@@ -260,11 +260,11 @@ describe('PiecesViewModel', () => {
             const c1 = cells[3][2];
             const c2 = cells[3][3];
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getPhase: () => 'reversing',
-                getSwapCell1: () => c1,
-                getSwapCell2: () => c2,
-                getSwapProgress: () => progress,
+                cells: () => cells,
+                phase: () => 'reversing',
+                swapCell1: () => c1,
+                swapCell2: () => c2,
+                swapProgress: () => progress,
             }));
             vm.update(0);
 
@@ -281,7 +281,7 @@ describe('PiecesViewModel', () => {
         it('returns 0 for empty cells', () => {
             const cells = fullGrid();
             cells[0][0] = EMPTY_CELL;
-            const vm = createPiecesViewModel(makeOptions({ getCells: () => cells }));
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
 
             expect(vm.getCellAlpha(cells[0][0])).toBe(0);
         });
@@ -290,9 +290,9 @@ describe('PiecesViewModel', () => {
             const cells = fullGrid();
             const seq = makeFadeSequence();
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getMatchedCells: () => [cells[0][0]],
-                getMatchSequence: () => seq,
+                cells: () => cells,
+                matchedCells: () => [cells[0][0]],
+                matchSequence: () => seq,
             }));
 
             seq.start();
@@ -309,9 +309,9 @@ describe('PiecesViewModel', () => {
             const cells = fullGrid();
             const seq = makeFadeSequence();
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getMatchedCells: () => [cells[0][0]],
-                getMatchSequence: () => seq,
+                cells: () => cells,
+                matchedCells: () => [cells[0][0]],
+                matchSequence: () => seq,
             }));
 
             seq.start();
@@ -328,9 +328,9 @@ describe('PiecesViewModel', () => {
             seq.update(125);
 
             const vm = createPiecesViewModel(makeOptions({
-                getCells: () => cells,
-                getMatchedCells: () => [cells[0][0]],
-                getMatchSequence: () => seq,
+                cells: () => cells,
+                matchedCells: () => [cells[0][0]],
+                matchSequence: () => seq,
             }));
             vm.update(0);
 
@@ -349,10 +349,10 @@ describe('PiecesViewModel', () => {
 
             let progress = 0;
             const vm = createPiecesViewModel(makeOptions({
-                getPhase: () => 'settling',
-                getCells: () => cells,
-                getSettleProgress: () => progress,
-                getSettleOriginRows: () => settleOrigins,
+                phase: () => 'settling',
+                cells: () => cells,
+                settleProgress: () => progress,
+                settleOriginRows: () => settleOrigins,
             }));
 
             vm.update(0); // caches settleMaxDist

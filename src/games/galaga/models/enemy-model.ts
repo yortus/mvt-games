@@ -18,12 +18,12 @@ export interface EnemyModel {
     /** True when the enemy wants to fire during a dive (polled by game model). */
     readonly wantsToFire: boolean;
     /** Clear the fire request after the game model has handled it. */
-    consumeFire(): void;
+    consumeFire: () => void;
     /** Begin a dive toward targetX, curving in curveDir direction (-1 or 1). */
-    startDive(targetX: number, curveDir: number): void;
+    startDive: (targetX: number, curveDir: number) => void;
     /** Destroy the enemy. */
-    kill(): void;
-    update(deltaMs: number): void;
+    kill: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

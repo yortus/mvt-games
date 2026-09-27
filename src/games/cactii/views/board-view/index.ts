@@ -1,1 +1,1 @@
-export { createBoardView, type BoardViewBindings } from './board-view';
+export { BoardView, type BoardViewBindings } from './board-view';

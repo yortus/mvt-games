@@ -7,10 +7,10 @@ import { BUTTON_GAP, BUTTON_SIZE, STATS_Y, TOOLBAR_WIDTH, TOOLBAR_X, TOOLBAR_Y }
 import type { ToolKind } from './demo-model';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface ToolbarViewProps {
+export interface ToolbarViewBindings {
     selectedTool: () => ToolKind;
     /** Whether Flip is available: not while the tank is already flipping. */
     canFlip: () => boolean;
@@ -25,7 +25,7 @@ export interface ToolbarViewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -33,7 +33,7 @@ export interface ToolbarViewProps {
  * counts, and frame timing. Presses are relayed; what they do is up to
  * whoever handles them.
  */
-export function ToolbarView(props: ToolbarViewProps): Container {
+export function ToolbarView(bindings: ToolbarViewBindings): Container {
     // Formatted only when the count changes, not every frame.
     const grainText = memoiseLast(formatCount);
     const movingText = memoiseLast(formatCount);
@@ -49,8 +49,8 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <container x={i * (BUTTON_SIZE + BUTTON_GAP)}>
                     <ToolButtonView
                         tool={tool}
-                        isSelected={() => props.selectedTool() === tool}
-                        onPressed={() => props.onToolPressed?.(tool)}
+                        isSelected={() => bindings.selectedTool() === tool}
+                        onPressed={() => bindings.onToolPressed?.(tool)}
                     />
                 </container>
             ))}
@@ -59,25 +59,25 @@ export function ToolbarView(props: ToolbarViewProps): Container {
                 <ActionButtonView
                     label="FLIP"
                     width={actionWidth}
-                    isEnabled={() => props.canFlip()}
-                    onPressed={() => props.onFlipPressed?.()}
+                    isEnabled={() => bindings.canFlip()}
+                    onPressed={() => bindings.onFlipPressed?.()}
                 />
             </container>
             <container x={actionsX + actionPitch}>
-                <ActionButtonView label="RESET" width={actionWidth} onPressed={() => props.onResetPressed?.()} />
+                <ActionButtonView label="RESET" width={actionWidth} onPressed={() => bindings.onResetPressed?.()} />
             </container>
             <container x={actionsX + actionPitch * 2}>
-                <ActionButtonView label="CLEAR" width={actionWidth} onPressed={() => props.onClearPressed?.()} />
+                <ActionButtonView label="CLEAR" width={actionWidth} onPressed={() => bindings.onClearPressed?.()} />
             </container>
 
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
-                <text text={() => grainText(props.grainCount())} x={72} y={4} style={COUNT_STYLE} />
+                <text text={() => grainText(bindings.grainCount())} x={72} y={4} style={COUNT_STYLE} />
                 <text text="MOVING" y={32} style={LABEL_STYLE} />
-                <text text={() => movingText(props.movingCount())} x={72} y={28} style={COUNT_STYLE} />
+                <text text={() => movingText(bindings.movingCount())} x={72} y={28} style={COUNT_STYLE} />
                 <text text="Tap, hold and drag to pour" y={54} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    <PerfmonView frameStats={props.frameStats} />
+                    <PerfmonView frameStats={bindings.frameStats} />
                 </container>
             </container>
         </container>
@@ -119,26 +119,26 @@ const SELECTED_RING = 0xf2cc60;
 
 // --- Tool button --------------------------------------------------------------
 
-interface ToolButtonViewProps {
+interface ToolButtonViewBindings {
     tool: ToolKind;
     isSelected: () => boolean;
     onPressed?: () => void;
 }
 
 /** A palette swatch: a sample of the tool's material, its name, and a ring when selected. */
-function ToolButtonView(props: ToolButtonViewProps): Container {
-    const { tool } = props;
+function ToolButtonView(bindings: ToolButtonViewBindings): Container {
+    const { tool } = bindings;
     return (
         <container
             cursor="pointer"
             hitArea={new Rectangle(0, 0, BUTTON_SIZE, BUTTON_SIZE)}
-            onPointerTap={() => props.onPressed?.()}
+            onPointerTap={() => bindings.onPressed?.()}
         >
-            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_FILL)} visible={() => !props.isSelected()} />
-            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_SELECTED_FILL)} visible={() => props.isSelected()} />
+            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_FILL)} visible={() => !bindings.isSelected()} />
+            <graphics ref={(g) => drawButton(g, BUTTON_SIZE, BUTTON_SELECTED_FILL)} visible={() => bindings.isSelected()} />
             <graphics x={BUTTON_SIZE / 2} y={20} ref={(g) => drawToolIcon(g, tool)} />
             <text text={TOOL_LABELS[tool]} x={BUTTON_SIZE / 2} y={42} anchor={0.5} style={BUTTON_LABEL_STYLE} />
-            <graphics ref={drawSelectedRing} visible={() => props.isSelected()} />
+            <graphics ref={drawSelectedRing} visible={() => bindings.isSelected()} />
         </container>
     );
 }
@@ -167,7 +167,7 @@ function drawSelectedRing(g: Graphics): void {
 
 // --- Action button ------------------------------------------------------------
 
-interface ActionButtonViewProps {
+interface ActionButtonViewBindings {
     label: string;
     width: number;
     /** Whether the button responds. Always, if omitted. */
@@ -176,9 +176,9 @@ interface ActionButtonViewProps {
 }
 
 /** A text button that dims while disabled and dips while held down. */
-function ActionButtonView(props: ActionButtonViewProps): Container {
-    const { label, width } = props;
-    const isEnabled = (): boolean => props.isEnabled?.() ?? true;
+function ActionButtonView(bindings: ActionButtonViewBindings): Container {
+    const { label, width } = bindings;
+    const isEnabled = (): boolean => bindings.isEnabled?.() ?? true;
     // Presentation state: held down, for the press dip.
     let isHeld = false;
 
@@ -196,7 +196,7 @@ function ActionButtonView(props: ActionButtonViewProps): Container {
             onPointerUp={() => { isHeld = false; }}
             onPointerUpOutside={() => { isHeld = false; }}
             onPointerCancel={() => { isHeld = false; }}
-            onPointerTap={() => { if (isEnabled()) props.onPressed?.(); }}
+            onPointerTap={() => { if (isEnabled()) bindings.onPressed?.(); }}
         >
             <graphics ref={(g) => drawButton(g, width, BUTTON_FILL)} />
             <text text={label} x={width / 2} y={BUTTON_SIZE / 2} anchor={0.5} style={ACTION_LABEL_STYLE} />

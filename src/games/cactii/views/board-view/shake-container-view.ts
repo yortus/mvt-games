@@ -8,12 +8,13 @@ import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 // ---------------------------------------------------------------------------
 
 export interface ShakeContainerViewBindings {
-    getMatchSequence(): Sequence<'shake' | 'zoom'>;
-    getCascadeStep(): number;
+    /** The board's one match sequence, which the view reacts to; read once. */
+    matchSequence: Sequence<'shake' | 'zoom'>;
+    cascadeStep: () => number;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -22,13 +23,13 @@ export interface ShakeContainerViewBindings {
  * returned view.
  *
  * ```ts
- * const shake = createShakeContainerView(bindings);
+ * const shake = ShakeContainerView(bindings);
  * shake.content.addChild(background);
  * shake.content.addChild(pieces);
  * parent.addChild(shake);
  * ```
  */
-export function createShakeContainerView(bindings: ShakeContainerViewBindings): Container & { content: Container } {
+export function ShakeContainerView(bindings: ShakeContainerViewBindings): Container & { content: Container } {
     const view = new Container();
     const content = new Container();
     const centreX = GRID_COLS * CELL_WIDTH_PX * 0.5;
@@ -38,11 +39,11 @@ export function createShakeContainerView(bindings: ShakeContainerViewBindings): 
     content.position.set(centreX, centreY);
     view.addChild(content);
 
-    const updateShake = createSequenceReaction(bindings.getMatchSequence(), {
+    const updateShake = createSequenceReaction(bindings.matchSequence, {
         shake: {
             inactive: () => content.position.set(centreX, centreY),
             active: (progress) => {
-                const cascadeStep = bindings.getCascadeStep();
+                const cascadeStep = bindings.cascadeStep();
                 const amp = (SHAKE_AMPLITUDE + SHAKE_CASCADE_BONUS * (cascadeStep - 1)) * (1 - progress);
                 const p = progress * SHAKE_FREQUENCY;
                 content.position.set(
@@ -54,7 +55,7 @@ export function createShakeContainerView(bindings: ShakeContainerViewBindings): 
         zoom: {
             inactive: () => content.scale.set(1),
             active: (progress) => {
-                const cascadeStep = bindings.getCascadeStep();
+                const cascadeStep = bindings.cascadeStep();
                 if (cascadeStep < MIN_CASCADE_STEP_FOR_ZOOM) {
                     content.scale.set(1);
                     return;

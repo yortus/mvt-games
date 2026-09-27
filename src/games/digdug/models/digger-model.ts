@@ -19,19 +19,19 @@ export interface DiggerModel {
     /** How far the harpoon extends (0→maxRange, in tiles). */
     readonly harpoonDistance: number;
     /** Request a direction change ('none' = stop). */
-    setDirection(dir: Direction): void;
+    setDirection: (dir: Direction) => void;
     /** Lock the harpoon at its current distance (while attached to an enemy). */
-    lockHarpoon(locked: boolean): void;
+    lockHarpoon: (locked: boolean) => void;
     /** Extend harpoon in current direction. */
-    startPump(): void;
+    startPump: () => void;
     /** Retract harpoon. */
-    stopPump(): void;
+    stopPump: () => void;
     /** Kill the digger. */
-    kill(): void;
+    kill: () => void;
     /** Respawn at a position. */
-    respawn(row: number, col: number): void;
+    respawn: (row: number, col: number) => void;
     /** Advance model state. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

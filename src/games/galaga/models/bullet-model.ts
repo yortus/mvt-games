@@ -10,10 +10,10 @@ export interface BulletModel {
     /** Whether this bullet is currently in flight. */
     readonly isActive: boolean;
     /** Activate the bullet at a position with a given vertical speed (negative = up). */
-    fire(x: number, y: number, speed: number): void;
+    fire: (x: number, y: number, speed: number) => void;
     /** Deactivate the bullet immediately. */
-    deactivate(): void;
-    update(deltaMs: number): void;
+    deactivate: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

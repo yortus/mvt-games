@@ -2,35 +2,44 @@ import { Container } from 'pixi.js';
 import { OverlayView, isTouchDevice } from '#common';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT } from './view-constants';
 import type { GameModel } from '../models';
-import { createArenaView } from './arena-view';
-import { createFighterView } from './fighter-view';
-import { createHudView } from './hud-view';
+import { ArenaView } from './arena-view';
+import { FighterView } from './fighter-view';
+import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Bindings
 // ---------------------------------------------------------------------------
 
-export function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+export function GameView(bindings: GameViewBindings): Container {
+    const game = bindings.model;
     const view = new Container();
     view.label = 'ik-game';
 
     // HUD at top
     view.addChild(
-        createHudView({
-            getPlayerPoints: () => game.match.playerPoints,
-            getOpponentPoints: () => game.match.opponentPoints,
-            getPlayerRounds: () => game.match.playerRounds,
-            getOpponentRounds: () => game.match.opponentRounds,
-            getRound: () => game.match.round,
-            getRoundTimeRemainingMs: () => game.roundTimeRemainingMs,
-            getGamePhase: () => game.phase,
+        HudView({
+            playerPoints: () => game.match.playerPoints,
+            opponentPoints: () => game.match.opponentPoints,
+            playerRounds: () => game.match.playerRounds,
+            opponentRounds: () => game.match.opponentRounds,
+            round: () => game.match.round,
+            roundTimeRemainingMs: () => game.roundTimeRemainingMs,
+            gamePhase: () => game.phase,
         }),
     );
 
     // Arena background (below HUD)
     const arenaContainer = new Container();
     arenaContainer.position.set(0, HUD_HEIGHT);
-    arenaContainer.addChild(createArenaView(SCREEN_WIDTH, SCREEN_HEIGHT - HUD_HEIGHT));
+    arenaContainer.addChild(ArenaView(SCREEN_WIDTH, SCREEN_HEIGHT - HUD_HEIGHT));
     view.addChild(arenaContainer);
 
     // Fighter layer (offset by HUD height; fighter-view sets its own
@@ -41,29 +50,29 @@ export function createGameView(game: GameModel): Container {
 
     // Player fighter
     fighterLayer.addChild(
-        createFighterView({
-            getX: () => game.player.x,
-            getHeight: () => game.player.height,
-            getFacing: () => game.player.facing,
-            getPhase: () => game.player.phase,
-            getMove: () => game.player.move,
-            getProgress: () => game.player.progress,
-            getDefeatVariant: () => game.player.defeatVariant,
-            getTint: () => 0xffffff,
+        FighterView({
+            x: () => game.player.x,
+            height: () => game.player.height,
+            facing: () => game.player.facing,
+            phase: () => game.player.phase,
+            move: () => game.player.move,
+            progress: () => game.player.progress,
+            defeatVariant: () => game.player.defeatVariant,
+            tint: () => 0xffffff,
         }),
     );
 
     // Opponent fighter
     fighterLayer.addChild(
-        createFighterView({
-            getX: () => game.opponent.x,
-            getHeight: () => game.opponent.height,
-            getFacing: () => game.opponent.facing,
-            getPhase: () => game.opponent.phase,
-            getMove: () => game.opponent.move,
-            getProgress: () => game.opponent.progress,
-            getDefeatVariant: () => game.opponent.defeatVariant,
-            getTint: () => 0xff6666,
+        FighterView({
+            x: () => game.opponent.x,
+            height: () => game.opponent.height,
+            facing: () => game.opponent.facing,
+            phase: () => game.opponent.phase,
+            move: () => game.opponent.move,
+            progress: () => game.opponent.progress,
+            defeatVariant: () => game.opponent.defeatVariant,
+            tint: () => 0xff6666,
         }),
     );
 

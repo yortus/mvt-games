@@ -11,7 +11,7 @@ export interface GhostModel {
     /** Current column position (fractional while moving between tiles). */
     readonly col: number;
     readonly direction: Direction;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 export type GhostBehavior = 'chase' | 'ambush' | 'flank' | 'fickle';

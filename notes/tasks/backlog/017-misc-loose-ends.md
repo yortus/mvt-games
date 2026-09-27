@@ -37,7 +37,10 @@ Settled questions that should not be reopened without new information are in
   migration (2026-09-27), which brought it to about 270 bytes; the likely
   causes were graphics redrawn every frame (each explosion, and the fuel bar
   while fuel drains), now scaled or resized instead.
-- **Function members in types still use method syntax** in 537 places across
+- ~~**Function members in types still use method syntax**~~ Done 2026-09-27,
+  as part of 018's migrations: none are left, and `method-signature-style` is
+  enforced on every TypeScript file. The variance errors expected below did
+  not appear. Originally: method syntax in 537 places across
   120 files (about 310 in the games) as of 2026-09-26, against the style guide's
   "Function-Valued Properties in Types". Count them with
   `npx eslint --rule '{"@typescript-eslint/method-signature-style":["error","property"]}' src benchmarks scripts`.
@@ -49,43 +52,17 @@ Settled questions that should not be reopened without new information are in
   `SlotList<GameObject>`. Prefer fixing code that relies on this; failing
   that, add a narrow, documented exception for generic collection interfaces
   (as TypeScript's own `Array<T>` makes).
-  *Progress 2026-09-27:* done in Scramble and `common/` as part of 018's
-  migrations, where lint now enforces it. The `SlotList<T>` variance errors
-  did not appear. The rest goes module by module with 018.
-- **Views that read a query binding's getter only once.** Each declares a
-  query binding as a function but reads it only at construction, so it
-  silently stops following it. Rule [V-reactive](../../../docs/architecture/rules.md#view-rules)
-  forbids this. Fix each by declaring what the view supports: a fixed value,
-  or a getter the view really follows, with change detection where the work
-  is expensive. See
-  [Changing and Fixed Answers](../../../docs/architecture/bindings.md#changing-and-fixed-answers).
-  Found by two sweeps on 2026-09-27 (the second also caught reads inside
-  constructor arguments, which the first missed):
-  - ~~`common/`'s overlay view: `getWidth()` and `getHeight()`, which size
-    the backdrop and the text.~~ Fixed 2026-09-27 by 018's migration of
-    `common/`: now fixed answers.
-  - ~~Scramble: the terrain view (tile size, visible columns and rows, which
-    size its ring buffer), the base target view (tile size), the HUD (screen
-    width), and, found by the second sweep, the base alert, death flash and
-    section announcement views (screen width and height).~~ Fixed
-    2026-09-27 by 018's Scramble pilot: each is now declared as a fixed
-    answer.
-  - Kwazy Cactii: `getMatchSequence()`, read once by the banner, firework,
-    flash overlay, match effects and shake container views and by the pieces
-    view model. Harmless, since the board view creates one `Sequence` and
-    never replaces it, but that makes it a fixed answer, so declare it as one.
-  - Borderline: Asteroids'
-    [asteroid-view.ts](../../../src/games/asteroids/views/asteroid-view.ts)
-    re-reads `getRadius()` and `getSize()` only when `getShapeSeed()` changes.
-    Correct while a new asteroid in a slot always brings a new seed; watch
-    all three, or document the assumption.
-  - Checked and live: the touch input view (labels watched), the cabinet
-    view (canvas size re-read on change), and the cactus view and the Dig
-    Dug and Galaga enemy views (kind watched).
-
-  If [018](../../proposals/018-one-view-convention.md) is migrated first,
-  these are fixed as part of its step 4; otherwise fix them here, under the
-  current names. The second sweep found nothing else outside Scramble.
+- ~~**Views that read a query binding's getter only once.**~~ Done
+  2026-09-27, by 018's migrations. Each declared a query binding as a
+  function but read it only at construction, which rule
+  [V-reactive](../../../docs/architecture/rules.md#view-rules) forbids. Found
+  by two sweeps (the second also caught reads inside constructor arguments):
+  the overlay view's size; six Scramble views' sizes; Kwazy Cactii's
+  `matchSequence` in five views; and, borderline, the asteroid view's radius
+  and size, re-read only when its shape seed changed. All but the last are
+  now fixed answers; the asteroid view now watches all three. Checked and
+  live: the touch input, cabinet, cactus, and Dig Dug and Galaga enemy
+  views.
 
 - **The overlay times its release with `requestAnimationFrame`.** When the
   overlay is released, it waits two animation frames before relaying
@@ -93,6 +70,13 @@ Settled questions that should not be reopened without new information are in
   press. That is wall-clock timing in a view. Better: the model holds the
   press itself until it has acted on it, so the view relays the release as
   it happens. Found during 018's migration of `common/`, and kept as it was.
+
+- **The cabinet view's zoom transitions play by themselves.** Launching and
+  exiting a game zoom the cabinet's cards with GSAP timelines that play on
+  wall-clock time, in a view; the view relays the launch when the zoom-in
+  finishes. The docs forbid autonomous animation in views. Presentation
+  state advanced by the view's `update(deltaMs)`, as other views' tweens
+  are, would fix it. Found during 018's migration of the cabinet.
 
 ### Decide
 
@@ -181,8 +165,8 @@ Settled questions that should not be reopened without new information are in
 
 - [x] Boids allocation fixed, or its cause measured and recorded
 - [ ] Games' hot-path allocations found, and fixed or recorded
-- [ ] Method-syntax members converted and `method-signature-style` enabled
-- [ ] Views that read a getter only once fixed (V-reactive)
+- [x] Method-syntax members converted and `method-signature-style` enabled
+- [x] Views that read a getter only once fixed (V-reactive)
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
 - [ ] Browser benchmarking and CI benchmarking each decided
 - [ ] Fractional-number boxing explained, and fixed or recorded as a rule
@@ -208,3 +192,6 @@ Settled questions that should not be reopened without new information are in
 - 2026-09-27: 018's migration of `common/` fixed the overlay's read-once
   size and converted `common/`'s method syntax; added the overlay's
   `requestAnimationFrame` item (Fix).
+- 2026-09-27: 018's remaining migrations (demos, cabinet, six games)
+  finished the read-once views and the method syntax, both now done. Added
+  the cabinet's self-playing zoom transitions (Fix).

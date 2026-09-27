@@ -56,7 +56,7 @@ export interface ListSource<T> {
      * the list reads it once per frame and shares it with every slot.
      */
     readonly length: number | (() => number);
-    at(index: number): T | undefined;
+    at: (index: number) => T | undefined;
 }
 
 export interface ListProps<T> {

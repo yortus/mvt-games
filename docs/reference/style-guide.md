@@ -245,10 +245,8 @@ The rule is about types only. An object literal implementing the interface may
 still use method shorthand (`update(deltaMs) { ... }`), and accessors
 (`get count()`) are unaffected.
 
-Enforced by lint only in modules migrated to the view convention (see
-[Views and Bindings](#views-and-bindings)) so far. The
-`@typescript-eslint/method-signature-style` rule, set to `'property'`, checks
-and auto-fixes it.
+Enforced by lint: the `@typescript-eslint/method-signature-style` rule, set to
+`'property'`, checks and auto-fixes it.
 
 ## Factory Functions
 
@@ -382,6 +380,7 @@ view.addChild(ShipView({ screenX: () => ship.x * TILE_SIZE, screenY: () => ship.
 | Query binding with a position or index | Ends in `At` | `tileKindAt(row, col)`, `isSolidAt(col, row)` |
 | Query binding with a key | Ends in `For` | `colorFor(kind)` |
 | Relay binding | `on` + what the user did, not what it should cause | `onFirePressed` ✅ · `onShoot` ❌ |
+| View model option | The same as a query or relay binding: a view model is fed from its view's bindings | `count`, `idAt(index)` |
 
 In JSX, a view's bindings are written as attributes. Other JSX libraries call
 the same object *props*; this project does not, because the architecture's
@@ -478,13 +477,14 @@ And before writing a per-frame redraw, check whether drawing once and then
 scaling, tinting or resizing would do. The
 [`mvt-view` skill](../ai-agents/skill-mvt-view.md) covers both kinds of body.
 
-### Code Not Yet Migrated
+### Older Examples
 
-Views are being moved to this convention one module at a time
-([proposal 018](https://github.com/yortus/mvt-games/blob/main/notes/proposals/018-one-view-convention.md)).
-Code not yet migrated uses `createXxxView(bindings)` factories and `get*()`
-query bindings. Don't copy it; in new code, and when a view is changed
-substantially, follow this section. Lint enforces it in migrated modules.
+Every view in `src/` follows this convention, and lint enforces its naming
+(except in the playground, which builds DOM views). The Building with MVT
+pages still show the older `createXxxView(bindings)` factories and `get*()`
+query bindings until they are rewritten
+([proposal 018](https://github.com/yortus/mvt-games/blob/main/notes/proposals/018-one-view-convention.md));
+follow this section rather than those examples.
 
 ## Code Organisation
 

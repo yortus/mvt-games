@@ -3,12 +3,11 @@ import stylistic from '@stylistic/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
-// Modules migrated to the one view convention (notes/proposals/018): views are
-// `XxxView(bindings)` functions, query bindings have no `get` prefix, and types
-// use function-valued properties. Add each module here as it is migrated.
+// The one view convention (notes/proposals/018): views are `XxxView(bindings)`
+// functions, query bindings have no `get` prefix, and types use
+// function-valued properties.
 const VIEW_CONVENTION_FILES = [
-    'src/common/**/*.{ts,tsx}',
-    'src/games/scramble/**/*.{ts,tsx}',
+    'src/**/*.{ts,tsx}',
 ];
 
 export default tseslint.config(
@@ -47,6 +46,9 @@ export default tseslint.config(
                 },
             }],
             '@stylistic/quote-props': ['error', 'consistent'],
+            // Function members in types as properties, not methods: stricter
+            // parameter checks, and nothing here uses `this`. See the style guide.
+            '@typescript-eslint/method-signature-style': ['error', 'property'],
             // Allow underscore-prefixed unused parameters
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
         },
@@ -90,13 +92,15 @@ export default tseslint.config(
     },
     {
         files: VIEW_CONVENTION_FILES,
+        // The playground builds DOM and CodeMirror views, and its presets follow
+        // the sandbox's own `createView(model)` contract.
+        ignores: ['src/playground/**'],
         rules: {
-            '@typescript-eslint/method-signature-style': ['error', 'property'],
             'no-restricted-syntax': [
                 'error',
                 {
-                    selector: 'TSInterfaceDeclaration[id.name=/ViewBindings$/] TSPropertySignature[key.name=/^get[A-Z]/]',
-                    message: 'Name a query binding for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
+                    selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
+                    message: 'Name a query binding, or a view model option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
                 },
                 {
                     selector: 'FunctionDeclaration[id.name=/^create[A-Z][A-Za-z0-9]*View$/]',
@@ -110,6 +114,7 @@ export default tseslint.config(
         },
     },
     {
-        ignores: ['dist/**', 'node_modules/**', 'docs/.vitepress/**'],
+        // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
+        ignores: ['dist/**', 'node_modules/**', 'docs/.vitepress/**', '.claude/**'],
     },
 );

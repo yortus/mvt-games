@@ -1,5 +1,5 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
-import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
+import { CabinetView, createCabinetModel, type CabinetViewBindings } from './cabinet';
 import {
     isTouchDevice,
     KeyboardInputView,
@@ -144,6 +144,7 @@ async function main(): Promise<void> {
         fitCanvasToScreen();
     }
 
+    /** The cabinet view sees the phase change, and zooms back out to the menu. */
     function doExitToMenu(): void {
         currentSession = undefined;
         currentEntry = undefined;
@@ -158,19 +159,18 @@ async function main(): Promise<void> {
     }
 
     const bindings: CabinetViewBindings = {
-        getPhase: () => cabinet.phase,
-        getGameCount: () => cabinet.games.length,
-        getGameName: (i) => cabinet.games[i].name,
-        getGameThumbnail: (i) => thumbnails[i],
-        getSelectedIndex: () => cabinet.selectedIndex,
-        getCanvasWidth: () => currentCanvasW,
-        getCanvasHeight: () => currentCanvasH,
+        phase: () => cabinet.phase,
+        gameCount: () => cabinet.games.length,
+        gameNameAt: (i) => cabinet.games[i].name,
+        gameThumbnailAt: (i) => thumbnails[i],
+        selectedIndex: () => cabinet.selectedIndex,
+        canvasWidth: () => currentCanvasW,
+        canvasHeight: () => currentCanvasH,
         onMovePressed: (direction) => cabinet.selectByDelta(direction === 'left' ? -1 : 1),
         onLaunchPressed: doLaunchGame,
-        onExitPressed: doExitToMenu,
     };
 
-    const cabinetContainer = createCabinetView(bindings);
+    const cabinetContainer = CabinetView(bindings);
     app.stage.addChild(cabinetContainer);
 
     const touchLayer = new Container();
@@ -225,7 +225,7 @@ async function main(): Promise<void> {
         isVisible: () => paused,
         onResumePressed: togglePause,
         onRestartPressed: restartGame,
-        onExitPressed: exitToCabinet,
+        onExitPressed: doExitToMenu,
         howToPlayText: () => currentEntry?.instructions ?? '',
     }));
     app.stage.addChild(pauseMenuContainer);
@@ -343,13 +343,6 @@ async function main(): Promise<void> {
 
         // Rebuild touch controls for the new session
         fitCanvasToScreen();
-    }
-
-    function exitToCabinet(): void {
-        paused = false;
-        touchLayer.visible = false;
-
-        cabinetContainer.requestExit();
     }
 
     // ---- Escape key for pause ----------------------------------------------

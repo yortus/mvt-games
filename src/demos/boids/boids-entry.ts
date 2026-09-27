@@ -3,7 +3,7 @@ import { createFrameStats, PERFMON_HEIGHT } from '#common';
 import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
-import { createBoidsView } from './boids-view';
+import { BoidsView } from './boids-view';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 
 // ---------------------------------------------------------------------------
@@ -52,16 +52,16 @@ export function createBoidsEntry(): DemoEntry {
             let timeScale = 1;
             let isShowingInfluences = false;
 
-            let view = createBoidsView({
+            let view = BoidsView({
                 model,
                 simWidth: layout.simWidth,
                 simHeight: layout.simHeight,
                 isPortrait: layout.isPortrait,
-                getTimeScale: () => timeScale,
+                timeScale: () => timeScale,
                 onTimeScaleChanged: (v) => { timeScale = v; },
-                getIsShowingInfluences: () => isShowingInfluences,
+                isShowingInfluences: () => isShowingInfluences,
                 onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                getFrameStats: () => frameStats,
+                frameStats: () => frameStats,
             });
             stage.addChild(view);
 
@@ -75,16 +75,16 @@ export function createBoidsEntry(): DemoEntry {
                     view.destroy({ children: true });
 
                     const newLayout = computeLayout();
-                    view = createBoidsView({
+                    view = BoidsView({
                         model,
                         simWidth: newLayout.simWidth,
                         simHeight: newLayout.simHeight,
                         isPortrait: newLayout.isPortrait,
-                        getTimeScale: () => timeScale,
+                        timeScale: () => timeScale,
                         onTimeScaleChanged: (v) => { timeScale = v; },
-                        getIsShowingInfluences: () => isShowingInfluences,
+                        isShowingInfluences: () => isShowingInfluences,
                         onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                        getFrameStats: () => frameStats,
+                        frameStats: () => frameStats,
                     });
                     stage.addChild(view);
                 },

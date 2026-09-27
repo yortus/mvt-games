@@ -8,10 +8,10 @@ import type { Grain } from './grain-grid';
 import { CELL_SIZE, TANK_X, TANK_Y } from './view-constants';
 
 // ---------------------------------------------------------------------------
-// Props
+// Bindings
 // ---------------------------------------------------------------------------
 
-export interface TankViewProps {
+export interface TankViewBindings {
     /** The tank's size in cells. Read once, when the view is built. */
     cols: number;
     rows: number;
@@ -34,7 +34,7 @@ export interface TankViewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// View
 // ---------------------------------------------------------------------------
 
 /**
@@ -58,14 +58,16 @@ export interface TankViewProps {
  * rebuild of every grain's batch. A render group's own transform is also
  * applied on the GPU, so turning the tank does not re-transform every grain.
  */
-export function TankView(props: TankViewProps): Container {
-    const width = props.cols * CELL_SIZE;
-    const height = props.rows * CELL_SIZE;
+export function TankView(bindings: TankViewBindings): Container {
+    const width = bindings.cols * CELL_SIZE;
+    const height = bindings.rows * CELL_SIZE;
 
     // Presentation state: where the pointer is over the tank, for the brush ring.
     let pointerCol = 0;
     let pointerRow = 0;
     let isPointerOver = false;
+    // The radius the brush ring was last drawn at.
+    let drawnRadius = -1;
 
     let content: Container | undefined;
     const pointer = new Point();
@@ -94,7 +96,7 @@ export function TankView(props: TankViewProps): Container {
                 onPointerOut={() => { isPointerOver = false; }}
             >
                 <graphics ref={(g) => drawWater(g, width, height)} />
-                <List items={props.grains}>
+                <List items={bindings.grains}>
                     {(grain, id) => (
                         <sprite
                             texture={Texture.WHITE}
@@ -107,10 +109,10 @@ export function TankView(props: TankViewProps): Container {
                     )}
                 </List>
                 <graphics
-                    visible={() => (isPointerOver || props.isPouring()) && !props.isFlipping()}
+                    visible={() => (isPointerOver || bindings.isPouring()) && !bindings.isFlipping()}
                     x={() => pointerCol * CELL_SIZE}
                     y={() => pointerRow * CELL_SIZE}
-                    ref={setUpBrushRing}
+                    onRefresh={redrawBrushRing}
                 />
                 <graphics ref={(g) => drawGlass(g, width, height)} />
             </container>
@@ -119,7 +121,7 @@ export function TankView(props: TankViewProps): Container {
 
     /** Upright at 0, upside down at pi; slow to start and slow to land. */
     function getTankAngle(): number {
-        const t = props.flipProgress();
+        const t = bindings.flipProgress();
         return Math.PI * t * t * (3 - 2 * t);
     }
 
@@ -127,16 +129,16 @@ export function TankView(props: TankViewProps): Container {
 
     function onPointerDown(e: FederatedPointerEvent): void {
         trackPointer(e);
-        props.onPressed?.(pointerCol, pointerRow);
+        bindings.onPressed?.(pointerCol, pointerRow);
     }
 
     function onPointerMove(e: FederatedPointerEvent): void {
         trackPointer(e);
-        props.onMoved?.(pointerCol, pointerRow);
+        bindings.onMoved?.(pointerCol, pointerRow);
     }
 
     function onPointerUp(): void {
-        props.onReleased?.();
+        bindings.onReleased?.();
     }
 
     /** Pointer position in cells, through the tank's rotation and scale. */
@@ -150,20 +152,13 @@ export function TankView(props: TankViewProps): Container {
     // --- Brush ring ---------------------------------------------------------
 
     /** Redrawn only when the tool, and so the brush radius, changes. */
-    function setUpBrushRing(g: Graphics): void {
-        let drawnRadius = -1;
-        const ownRefresh = g.onRefresh;
-        g.onRefresh = () => {
-            const result = ownRefresh?.();
-            const radius = props.brushRadius();
-            if (radius !== drawnRadius) {
-                drawnRadius = radius;
-                g.clear()
-                    .circle(0, 0, radius * CELL_SIZE)
-                    .stroke({ color: 0xffffff, width: 1.5, alpha: 0.7 });
-            }
-            return result;
-        };
+    function redrawBrushRing(g: Graphics): void {
+        const radius = bindings.brushRadius();
+        if (radius === drawnRadius) return;
+        drawnRadius = radius;
+        g.clear()
+            .circle(0, 0, radius * CELL_SIZE)
+            .stroke({ color: 0xffffff, width: 1.5, alpha: 0.7 });
     }
 }
 

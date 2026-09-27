@@ -32,7 +32,7 @@ export interface FlockModel {
     /** Maximum scalar speed in m/s. Boids are clamped if faster. */
     readonly maxSpeed: number;
     /** Advance the simulation by the given elapsed time. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

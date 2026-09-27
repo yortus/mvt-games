@@ -35,8 +35,8 @@ export interface GameModel {
     readonly match: MatchModel;
     readonly playerInput: PlayerInput;
     readonly roundTimeRemainingMs: number;
-    reset(): void;
-    update(deltaMs: number): void;
+    reset: () => void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

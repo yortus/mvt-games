@@ -2,7 +2,7 @@ import type { Container } from 'pixi.js';
 import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
-import { createGameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
+import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
 import { GRID_ROWS, GRID_COLS, textures } from './data';
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ export function createCactiiEntry(): GameEntry {
                 colCount: GRID_COLS,
             });
 
-            const gameView = createGameView(gameModel);
+            const gameView = GameView({ model: gameModel });
             stage.addChild(gameView);
 
             return {

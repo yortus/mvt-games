@@ -7,16 +7,16 @@ import { textures } from '../data';
 // ---------------------------------------------------------------------------
 
 export interface ShipViewBindings {
-    getX(): number;
-    getY(): number;
-    isAlive(): boolean;
+    x: () => number;
+    y: () => number;
+    isAlive: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createShipView(bindings: ShipViewBindings): Container {
+export function ShipView(bindings: ShipViewBindings): Container {
     const watcher = watch({ alive: bindings.isAlive });
 
     let sprite: Sprite;
@@ -32,7 +32,7 @@ export function createShipView(bindings: ShipViewBindings): Container {
     }
 
     function refresh(): void {
-        view.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.x(), bindings.y());
 
         const watched = watcher.poll();
         if (watched.alive.changed) {

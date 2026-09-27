@@ -2,15 +2,15 @@ import { Container, Graphics, GraphicsContext } from 'pixi.js';
 import { type FrameStats, PerfmonView } from '#common';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
-import { createSliderView } from './slider-view';
-import { createCheckboxView } from './checkbox-view';
+import { SliderView } from './slider-view';
+import { CheckboxView } from './checkbox-view';
 
 // ---------------------------------------------------------------------------
-// Options
+// Bindings
 // ---------------------------------------------------------------------------
 
-/** Options for creating the boids demo view. */
-export interface BoidsViewOptions {
+/** Bindings for the boids demo view. The layout values are fixed: the entry rebuilds the view when the layout changes. */
+export interface BoidsViewBindings {
     /** The flock model to visualise. */
     readonly model: FlockModel;
     /** Width of the simulation area in pixels. */
@@ -20,24 +20,24 @@ export interface BoidsViewOptions {
     /** Whether the layout is portrait (controls below sim) or landscape (controls beside sim). */
     readonly isPortrait: boolean;
     /** Return the current time-scale multiplier. */
-    getTimeScale(): number;
+    timeScale: () => number;
     /** Called when the user changes the time-scale slider. */
-    onTimeScaleChanged?(value: number): void;
+    onTimeScaleChanged?: (value: number) => void;
     /** Return whether per-boid influence vectors are shown. */
-    getIsShowingInfluences(): boolean;
+    isShowingInfluences: () => boolean;
     /** Called when the user toggles the influence-vector checkbox. */
-    onShowInfluencesToggled?(isShowing: boolean): void;
+    onShowInfluencesToggled?: (isShowing: boolean) => void;
     /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
-    getFrameStats: () => FrameStats | undefined;
+    frameStats: () => FrameStats | undefined;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
 /** Create the main boids demo view including simulation area and control panel. */
-export function createBoidsView(options: BoidsViewOptions): Container {
-    const { model, simWidth, simHeight, isPortrait, getTimeScale, onTimeScaleChanged, getIsShowingInfluences, onShowInfluencesToggled, getFrameStats } = options;
+export function BoidsView(bindings: BoidsViewBindings): Container {
+    const { model, simWidth, simHeight, isPortrait } = bindings;
     const view = new Container();
     view.label = 'boids-demo';
 
@@ -85,90 +85,90 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     }
     view.addChild(controlsContainer);
 
-    const countSlider = createSliderView({
-        getLabel: () => 'Boid Count',
-        getMin: () => 1,
-        getMax: () => 5000,
-        getStep: () => 1,
-        getValue: () => model.boidCount,
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const countSlider = SliderView({
+        label: () => 'Boid Count',
+        min: () => 1,
+        max: () => 5000,
+        step: () => 1,
+        value: () => model.boidCount,
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => { model.boidCount = v; },
     });
 
-    const separationSlider = createSliderView({
-        getLabel: () => 'Separation',
-        getMin: () => 0,
-        getMax: () => 5,
-        getStep: () => 0.1,
-        getValue: () => model.separation,
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const separationSlider = SliderView({
+        label: () => 'Separation',
+        min: () => 0,
+        max: () => 5,
+        step: () => 0.1,
+        value: () => model.separation,
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => { model.separation = v; },
     });
 
-    const alignmentSlider = createSliderView({
-        getLabel: () => 'Alignment',
-        getMin: () => 0,
-        getMax: () => 5,
-        getStep: () => 0.1,
-        getValue: () => model.alignment,
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const alignmentSlider = SliderView({
+        label: () => 'Alignment',
+        min: () => 0,
+        max: () => 5,
+        step: () => 0.1,
+        value: () => model.alignment,
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => { model.alignment = v; },
     });
 
-    const cohesionSlider = createSliderView({
-        getLabel: () => 'Cohesion',
-        getMin: () => 0,
-        getMax: () => 5,
-        getStep: () => 0.1,
-        getValue: () => model.cohesion,
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const cohesionSlider = SliderView({
+        label: () => 'Cohesion',
+        min: () => 0,
+        max: () => 5,
+        step: () => 0.1,
+        value: () => model.cohesion,
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => { model.cohesion = v; },
     });
 
-    const wanderSlider = createSliderView({
-        getLabel: () => 'Wander',
-        getMin: () => 0,
-        getMax: () => 10,
-        getStep: () => 0.1,
-        getValue: () => model.wander,
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const wanderSlider = SliderView({
+        label: () => 'Wander',
+        min: () => 0,
+        max: () => 10,
+        step: () => 0.1,
+        value: () => model.wander,
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => { model.wander = v; },
     });
 
-    const perceptionSlider = createSliderView({
-        getLabel: () => 'Perception',
-        getMin: () => 0,
-        getMax: () => 100,
-        getStep: () => 1,
-        getValue: () => perceptionToPercent(model.perceptionRadius, model.visionAngle),
-        getScaleMode: () => 'linear',
-        getWidth: () => sliderW,
+    const perceptionSlider = SliderView({
+        label: () => 'Perception',
+        min: () => 0,
+        max: () => 100,
+        step: () => 1,
+        value: () => perceptionToPercent(model.perceptionRadius, model.visionAngle),
+        scaleMode: () => 'linear',
+        width: () => sliderW,
         onValueChanged: (v) => {
             model.perceptionRadius = percentToRadius(v);
             model.visionAngle = percentToVision(v);
         },
     });
 
-    const timeScaleSlider = createSliderView({
-        getLabel: () => 'Time Scale',
-        getMin: () => 0,
-        getMax: () => 50,
-        getStep: () => 0.01,
-        getValue: getTimeScale,
-        getScaleMode: () => 'log',
-        getWidth: () => sliderW,
-        onValueChanged: onTimeScaleChanged,
+    const timeScaleSlider = SliderView({
+        label: () => 'Time Scale',
+        min: () => 0,
+        max: () => 50,
+        step: () => 0.01,
+        value: bindings.timeScale,
+        scaleMode: () => 'log',
+        width: () => sliderW,
+        onValueChanged: bindings.onTimeScaleChanged,
     });
 
-    const influenceCheckbox = createCheckboxView({
-        getLabel: () => 'Show Influences',
-        getIsChecked: getIsShowingInfluences,
-        onToggled: onShowInfluencesToggled,
+    const influenceCheckbox = CheckboxView({
+        label: () => 'Show Influences',
+        isChecked: bindings.isShowingInfluences,
+        onToggled: bindings.onShowInfluencesToggled,
     });
 
     // Layout controls vertically
@@ -183,7 +183,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     controlsContainer.addChild(influenceCheckbox);
     yOffset += PERFMON_GAP;
 
-    const perfmon = PerfmonView({ frameStats: getFrameStats });
+    const perfmon = PerfmonView({ frameStats: bindings.frameStats });
     perfmon.position.set(0, yOffset);
     controlsContainer.addChild(perfmon);
 
@@ -208,7 +208,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
         // Debug overlay - weighted acceleration vectors with arrowheads. Redrawn
         // every frame while shown; cleared once when hidden, since even an
         // empty clear() allocates.
-        const isShowingInfluences = getIsShowingInfluences();
+        const isShowingInfluences = bindings.isShowingInfluences();
         if (isShowingInfluences || isDebugDrawn) debugGfx.clear();
         isDebugDrawn = isShowingInfluences;
         if (isShowingInfluences) {

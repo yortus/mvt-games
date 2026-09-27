@@ -33,9 +33,9 @@ Exports (bindings interface, view function) go above all internals. A view
 with a JSX body is a `.tsx` file whose first line is
 `/** @jsxImportSource #pixi-jsx */`.
 
-**[project convention]** Code not yet migrated to this convention uses
-`createXxxView(bindings)` factories and `get*()` query bindings. Don't copy it.
-See [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings).
+**[project convention]** The full convention is in
+[Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings),
+and lint enforces its naming.
 
 ## A View Is a Function
 
@@ -251,8 +251,8 @@ A slot whose item is absent is hidden and skipped, so the item view needs no
 presence binding. See the [`<List>` guide](https://github.com/yortus/mvt-games/blob/main/src/pixi-jsx/list-patterns.md)
 for other shapes.
 
-A view not yet migrated can be embedded in a JSX body as an expression:
-`{createHudView({ ... })}`.
+Any view can also be called as an expression inside a JSX body:
+`{HudView({ ... })}`.
 
 #### Reaching Pixi from a JSX body
 
@@ -386,6 +386,8 @@ extract it into a **view model** - a technique borrowed from MVVM:
 - Created and owned by the view that uses it (an internal detail)
 - Has no view or scene-graph dependencies (no Pixi.js imports)
 - Independently testable
+- Its options are named like bindings (`count`, `idAt(index)`, not
+  `getCount`), since they are fed from the view's bindings
 
 When multiple views share a view model, the nearest common parent creates
 the view model and passes it to both views.

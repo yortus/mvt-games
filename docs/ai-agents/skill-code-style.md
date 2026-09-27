@@ -117,9 +117,6 @@ for either. Never declare a function and read it only once. Full rules:
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings);
 how to write one: [skill-mvt-view.md](skill-mvt-view.md).
 
-Code not yet migrated to this convention uses `createXxxView(bindings)` and
-`get*()` query bindings. Don't copy it.
-
 ## No Classes
 
 Use factory functions returning plain records that satisfy an interface.
@@ -174,9 +171,7 @@ interface ToolbarViewBindings {
 
 Method signatures get looser parameter checks, even in strict mode, and
 suggest a `this`-bound method, which this project never has. Object literals
-implementing the interface may still use method shorthand. Enforced by lint
-only in modules migrated to the view convention; elsewhere check by hand, as
-much existing code still uses method syntax.
+implementing the interface may still use method shorthand. Enforced by lint.
 
 ## Easily Confused Names
 

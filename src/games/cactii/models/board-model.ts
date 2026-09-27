@@ -50,10 +50,10 @@ export interface BoardModel {
      */
     readonly settleOriginRows: DeepReadonly<number[][]>;
     /** Attempt to swap two cells. Returns true if accepted (cells adjacent, occupied, board idle). */
-    trySwap(cell1: CactusCell, cell2: CactusCell): boolean;
+    trySwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** True when the board has settled and no valid moves remain. */
     readonly isGameOver: boolean;
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
