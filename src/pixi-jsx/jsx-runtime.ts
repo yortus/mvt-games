@@ -13,13 +13,16 @@
  *   construction should call `refreshScene` on the tree first.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
+ * - An `onRefresh` prop adds a per-frame step of the element's own, which
+ *   receives the element and runs after its bindings (and is skipped with them
+ *   while it is hidden).
  * - The `<List>` and `<Switch>` components (`list.ts`, `switch.ts`) cover
  *   dynamic structure: index-addressed slots, and slots whose shape varies.
  */
 
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import type { Cursor, FederatedPointerEvent, IHitArea, Texture } from 'pixi.js';
-import { SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
+import { type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
 import { propReadCounter } from './prop-reads';
 
 // ---------------------------------------------------------------------------
@@ -31,12 +34,19 @@ export declare namespace JSX {
     type Element = Container;
 
     interface IntrinsicElements {
-        container: ContainerProps;
+        container: BaseProps;
         sprite: SpriteProps;
         text: TextProps;
-        graphics: GraphicsProps;
+        graphics: BaseProps<Graphics>;
     }
 }
+
+/**
+ * A fixed value, or a getter the view calls every frame. The type of every
+ * intrinsic element's changeable attributes, and of any view's query binding
+ * that accepts either kind of answer.
+ */
+export type ValueOrGetter<T> = T | (() => T);
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -71,7 +81,7 @@ export function jsx(
     const watched: DynamicBinding[] = [];
 
     for (const key in props) {
-        if (key === 'children' || key === 'ref') continue;
+        if (key === 'children' || key === 'ref' || key === 'onRefresh') continue;
         const value = props[key];
         if (isGetter(key, value)) {
             // Inert construction: record the getter but do not call it. Its
@@ -103,6 +113,10 @@ export function jsx(
         setupDynamicRefresh(el, cheap, watched);
     }
 
+    if (typeof props.onRefresh === 'function') {
+        addRefreshStep(el, props.onRefresh as RefreshStep<Container>);
+    }
+
     if (typeof props.ref === 'function') {
         (props.ref as RefCallback<Container>)(el);
     }
@@ -122,46 +136,39 @@ export const jsxDEV = jsx;
 
 // --- Props accepted by the intrinsic elements -----------------------------
 
-interface ContainerProps extends BaseProps {
-    ref?: RefCallback<Container>;
-}
-
-interface SpriteProps extends BaseProps {
-    texture?: MaybeGetter<Texture>;
-    tint?: MaybeGetter<number>;
+interface SpriteProps extends BaseProps<Sprite> {
+    texture?: ValueOrGetter<Texture>;
+    tint?: ValueOrGetter<number>;
     anchor?: number;
-    width?: MaybeGetter<number>;
-    height?: MaybeGetter<number>;
-    ref?: RefCallback<Sprite>;
+    width?: ValueOrGetter<number>;
+    height?: ValueOrGetter<number>;
 }
 
-interface TextProps extends BaseProps {
-    text?: MaybeGetter<string>;
+interface TextProps extends BaseProps<Text> {
+    text?: ValueOrGetter<string>;
     style?: Record<string, unknown>;
     anchor?: number;
-    ref?: RefCallback<Text>;
 }
 
-interface GraphicsProps extends BaseProps {
-    ref?: RefCallback<Graphics>;
-}
-
-interface BaseProps extends EventProps {
-    x?: MaybeGetter<number>;
-    y?: MaybeGetter<number>;
-    alpha?: MaybeGetter<number>;
-    visible?: MaybeGetter<boolean>;
-    rotation?: MaybeGetter<number>;
-    scale?: MaybeGetter<number>;
-    pivotX?: MaybeGetter<number>;
-    pivotY?: MaybeGetter<number>;
-    zIndex?: MaybeGetter<number>;
+/** Props every intrinsic element accepts. `T` is the element's own type, which `ref` and `onRefresh` receive. */
+interface BaseProps<T extends Container = Container> extends EventProps {
+    x?: ValueOrGetter<number>;
+    y?: ValueOrGetter<number>;
+    alpha?: ValueOrGetter<number>;
+    visible?: ValueOrGetter<boolean>;
+    rotation?: ValueOrGetter<number>;
+    scale?: ValueOrGetter<number>;
+    pivotX?: ValueOrGetter<number>;
+    pivotY?: ValueOrGetter<number>;
+    zIndex?: ValueOrGetter<number>;
     sortableChildren?: boolean;
     isRenderGroup?: boolean;
     hitArea?: IHitArea;
-    cursor?: MaybeGetter<Cursor>;
+    cursor?: ValueOrGetter<Cursor>;
     label?: string;
     onUpdate?: UpdateMethod;
+    onRefresh?: RefreshStep<T>;
+    ref?: RefCallback<T>;
     children?: PixiNode | PixiChildren;
 }
 
@@ -177,11 +184,17 @@ interface EventProps {
     onGlobalPointerMove?: (e: FederatedPointerEvent) => void;
 }
 
-/** A prop value may be a static literal or a getter polled each frame. */
-type MaybeGetter<T> = T | (() => T);
-
 /** Callback ref - invoked once after the element is fully constructed. */
 type RefCallback<T> = (el: T) => void;
+
+/**
+ * An `onRefresh` attribute: a per-frame step of the element's own, for what
+ * attributes cannot express, such as redrawing a `Graphics` when a value
+ * changes. Receives the element, like a ref. Runs after the element's
+ * function attributes, and not at all while a `visible` function hides the
+ * element. May return `SKIP_DESCENDANTS`.
+ */
+type RefreshStep<T> = (el: T) => typeof SKIP_DESCENDANTS | void;
 
 type PixiChildren = (PixiNode | PixiChildren | undefined | null)[];
 
@@ -373,6 +386,18 @@ function applyEventProps(el: Container, props: Record<string, unknown>): void {
             el.on(EVENT_PROP_MAP[key], handler as (e: FederatedPointerEvent) => void);
         }
     }
+}
+
+/**
+ * Add an `onRefresh` attribute's step to an element. With function attributes
+ * as well, the step runs after them, unless a `visible` function has just hidden
+ * the element.
+ */
+function addRefreshStep(el: Container, step: RefreshStep<Container>): void {
+    const ownRefresh: RefreshMethod | undefined = el.onRefresh;
+    el.onRefresh = ownRefresh === undefined
+        ? () => step(el)
+        : () => (ownRefresh() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el));
 }
 
 /** Wire up a codegen'd per-frame refresh for dynamic bindings on an element. */

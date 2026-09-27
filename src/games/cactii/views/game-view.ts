@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createOverlayView, isTouchDevice } from '#common';
+import { OverlayView, isTouchDevice } from '#common';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';
@@ -44,11 +44,11 @@ export function createGameView(game: GameModel): Container {
 
         // Game over overlay
         const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
-        const overlayView = createOverlayView({
-            getWidth: () => boardWidth,
-            getHeight: () => boardHeight,
-            getVisible: () => game.phase === 'game-over',
-            getText: () => `GAME OVER\n\n${restartHint}`,
+        const overlayView = OverlayView({
+            width: boardWidth,
+            height: boardHeight,
+            isVisible: () => game.phase === 'game-over',
+            text: () => `GAME OVER\n\n${restartHint}`,
             onRestartPressed: (pressed) => {
                 game.playerInput.restartPressed = pressed;
             },

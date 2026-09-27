@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createOverlayView, isTouchDevice, watch } from '#common';
+import { OverlayView, isTouchDevice, watch } from '#common';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';
@@ -81,11 +81,11 @@ export function createGameView(game: GameModel): Container {
         // Overlay
         const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
         view.addChild(
-            createOverlayView({
-                getWidth: () => canvasW,
-                getHeight: () => canvasH,
-                getVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
-                getText: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'LEVEL CLEAR!'),
+            OverlayView({
+                width: canvasW,
+                height: canvasH,
+                isVisible: () => game.phase === 'game-over' || game.phase === 'level-clear',
+                text: () => (game.phase === 'game-over' ? `GAME OVER\n\n${restartHint}` : 'LEVEL CLEAR!'),
                 onRestartPressed: (pressed) => {
                     game.playerInput.restartPressed = pressed;
                 },

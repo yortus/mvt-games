@@ -19,10 +19,11 @@ receives at construction time:
 | `on*()`  | Relay user input   | View -> Model | `onTapped(x: number, y: number): void`    |
 
 The architecture calls these two kinds of member *query bindings* and *relay
-bindings*. The
-`get*()` and `on*()` prefixes are this project's naming convention for them,
-not an MVT requirement; boolean query bindings use `is`, `has` or `can` instead of
-`get`. For the language-neutral specification, see
+bindings*. How they are named is a project convention, not an MVT
+requirement. This page uses the project's older `get*()` naming; new code
+names query bindings for what they return (`x`, `isVisible`), as described in
+[Style Guide: Views and Bindings](../../reference/style-guide.md#views-and-bindings).
+For the language-neutral specification, see
 [Architecture: Bindings](../../architecture/bindings.md).
 
 > **Try it live:** <PlaygroundLink preset="keyboard-sprite" label="Keyboard Sprite in Playground" /> -

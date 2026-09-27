@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createOverlayView, isTouchDevice, watch } from '#common';
+import { OverlayView, isTouchDevice, watch } from '#common';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, GHOST_COLORS } from './view-constants';
@@ -56,11 +56,11 @@ export function createGameView(game: GameModel): Container {
 
         // Overlay
         const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
-        const overlayView = createOverlayView({
-            getWidth: () => canvasW,
-            getHeight: () => canvasH,
-            getVisible: () => game.phase !== 'playing',
-            getText: () =>
+        const overlayView = OverlayView({
+            width: canvasW,
+            height: canvasH,
+            isVisible: () => game.phase !== 'playing',
+            text: () =>
                 game.phase === 'game-over'
                     ? `GAME OVER\n\n${restartHint}`
                     : `YOU WIN!\n\n${restartHint}`,

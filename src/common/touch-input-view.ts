@@ -6,32 +6,39 @@ import { watch } from './watch';
 // ---------------------------------------------------------------------------
 
 export interface TouchInputViewBindings {
-    getCanvasWidth(): number;
-    getCanvasHeight(): number;
-    getGameX(): number;
-    getGameY(): number;
-    getGameWidth(): number;
-    getGameHeight(): number;
-    getScale(): number;
-    getShowDpad(): boolean;
-    getShowPrimary(): boolean;
-    getShowSecondary(): boolean;
-    getPrimaryLabel(): string;
-    getSecondaryLabel(): string;
-    getFloatingJoystick(): boolean;
-    onXDirectionChanged?(direction: 'left' | 'none' | 'right'): void;
-    onYDirectionChanged?(direction: 'up' | 'none' | 'down'): void;
-    onPrimaryButtonChanged?(pressed: boolean): void;
-    onSecondaryButtonChanged?(pressed: boolean): void;
+    /** The canvas's size, in CSS pixels. */
+    canvasWidth: () => number;
+    canvasHeight: () => number;
+    /** Where the game sits on the canvas, and at what scale. */
+    gameX: () => number;
+    gameY: () => number;
+    gameWidth: () => number;
+    gameHeight: () => number;
+    scale: () => number;
+    hasDpad: () => boolean;
+    hasPrimaryButton: () => boolean;
+    hasSecondaryButton: () => boolean;
+    primaryLabel: () => string;
+    secondaryLabel: () => string;
+    /** A joystick that appears where the thumb lands, rather than a fixed d-pad. */
+    isJoystickFloating: () => boolean;
+    onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
+    onPrimaryButtonChanged?: (pressed: boolean) => void;
+    onSecondaryButtonChanged?: (pressed: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createTouchInputView(
-    bindings: TouchInputViewBindings,
-): Container {
+/**
+ * On-screen controls for touch devices: a d-pad or floating joystick, and up
+ * to two buttons, beside or below the game. Written in plain TypeScript: it
+ * rebuilds its controls when their configuration changes, and lays them out by
+ * hand each frame, at the canvas's scale.
+ */
+export function TouchInputView(bindings: TouchInputViewBindings): Container {
     const view = new Container();
     view.label = 'touch-input';
 
@@ -44,16 +51,16 @@ export function createTouchInputView(
     const secondaryBtnGroup = new Container();
     view.addChild(dpadGroup, primaryBtnGroup, secondaryBtnGroup);
 
-    let primaryText: Text | null = null;
-    let secondaryText: Text | null = null;
+    let primaryText: Text | undefined;
+    let secondaryText: Text | undefined;
 
     const watcher = watch({
-        showDpad: bindings.getShowDpad,
-        showPrimary: bindings.getShowPrimary,
-        showSecondary: bindings.getShowSecondary,
-        floatingJoystick: bindings.getFloatingJoystick,
-        primaryLabel: bindings.getPrimaryLabel,
-        secondaryLabel: bindings.getSecondaryLabel,
+        showDpad: bindings.hasDpad,
+        showPrimary: bindings.hasPrimaryButton,
+        showSecondary: bindings.hasSecondaryButton,
+        floatingJoystick: bindings.isJoystickFloating,
+        primaryLabel: bindings.primaryLabel,
+        secondaryLabel: bindings.secondaryLabel,
     });
 
     view.onRefresh = refresh;
@@ -73,10 +80,10 @@ export function createTouchInputView(
         }
         else {
             if (w.primaryLabel.changed && primaryText) {
-                primaryText.text = bindings.getPrimaryLabel();
+                primaryText.text = bindings.primaryLabel();
             }
             if (w.secondaryLabel.changed && secondaryText) {
-                secondaryText.text = bindings.getSecondaryLabel();
+                secondaryText.text = bindings.secondaryLabel();
             }
         }
 
@@ -97,11 +104,11 @@ export function createTouchInputView(
         destroyChildren(dpadGroup);
         destroyChildren(primaryBtnGroup);
         destroyChildren(secondaryBtnGroup);
-        primaryText = null;
-        secondaryText = null;
+        primaryText = undefined;
+        secondaryText = undefined;
 
-        if (bindings.getShowDpad()) {
-            if (bindings.getFloatingJoystick()) {
+        if (bindings.hasDpad()) {
+            if (bindings.isJoystickFloating()) {
                 buildFloatingJoystick(dpadGroup);
             }
             else {
@@ -109,19 +116,19 @@ export function createTouchInputView(
             }
         }
 
-        if (bindings.getShowPrimary()) {
+        if (bindings.hasPrimaryButton()) {
             primaryText = buildActionButton(
                 primaryBtnGroup,
-                bindings.getPrimaryLabel(),
+                bindings.primaryLabel(),
                 COLOR_PRIMARY,
                 (pressed) => bindings.onPrimaryButtonChanged?.(pressed),
             );
         }
 
-        if (bindings.getShowSecondary()) {
+        if (bindings.hasSecondaryButton()) {
             secondaryText = buildActionButton(
                 secondaryBtnGroup,
-                bindings.getSecondaryLabel(),
+                bindings.secondaryLabel(),
                 COLOR_SECONDARY,
                 (pressed) => bindings.onSecondaryButtonChanged?.(pressed),
             );
@@ -129,9 +136,9 @@ export function createTouchInputView(
     }
 
     function layout(): void {
-        const showDpad = bindings.getShowDpad();
-        const showPrimary = bindings.getShowPrimary();
-        const showSecondary = bindings.getShowSecondary();
+        const showDpad = bindings.hasDpad();
+        const showPrimary = bindings.hasPrimaryButton();
+        const showSecondary = bindings.hasSecondaryButton();
 
         dpadGroup.visible = showDpad;
         primaryBtnGroup.visible = showPrimary;
@@ -139,13 +146,13 @@ export function createTouchInputView(
 
         if (!showDpad && !showPrimary && !showSecondary) return;
 
-        const canvasWidth = bindings.getCanvasWidth();
-        const canvasHeight = bindings.getCanvasHeight();
-        const gameX = bindings.getGameX();
-        const gameY = bindings.getGameY();
-        const gameWidth = bindings.getGameWidth();
-        const gameHeight = bindings.getGameHeight();
-        const invScale = 1 / bindings.getScale();
+        const canvasWidth = bindings.canvasWidth();
+        const canvasHeight = bindings.canvasHeight();
+        const gameX = bindings.gameX();
+        const gameY = bindings.gameY();
+        const gameWidth = bindings.gameWidth();
+        const gameHeight = bindings.gameHeight();
+        const invScale = 1 / bindings.scale();
 
         const isPortrait = canvasHeight >= canvasWidth;
 

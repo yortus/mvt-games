@@ -10,7 +10,7 @@ export interface ExplosionModel {
     /** Progress from 0 (just started) to 1 (finished). */
     readonly progress: number;
     /** Advance the explosion timer. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

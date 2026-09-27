@@ -67,22 +67,20 @@ Acceptance Criteria checklist and a dated Progress Log. See
 
 | # | Proposal | Status |
 | --- | --- | --- |
-| 007 | [Authoring-convention bridge](./proposals/007-authoring-convention-bridge.md) | Proposed. A strongly-typed key-rename transform between imperative `bindings` views and JSX `props` views, so each is authored in its own idiom and consumed under the other |
 | 008 | [`Watch()` fluent builder](./proposals/008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection, memoised derivation, reactions and uniform lists. The prototype is `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
 | 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Proposed, with its top-level tidy-up already done. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in a pnpm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Proposed. Caching each container's method in the pixi-mvt pass loop (prototyped: 30-40% cheaper refresh in mixed scenes), a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
-| 018 | [One view convention](./proposals/018-one-view-convention.md) | Proposed. Every view becomes `FooView(bindings)`, with accessors named for what they return and settings as plain values; bodies are JSX by default and imperative where that fits better. Supersedes 007 if accepted |
+| 018 | [One view convention](./proposals/018-one-view-convention.md) | Accepted, being implemented. Every view becomes `FooView(bindings)`, with query bindings named for what they return and each one's type saying whether it takes a fixed value, a function or either; each body is JSX or plain TypeScript, whichever suits the view. Architecture docs, convention docs, the Scramble pilot and `common/` done; the demos, the cabinet and the other games remain. Supersedes 007 |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
 
-**How they relate.** All seven can be read on their own. 007 builds on the
-pixi-mvt plugin (001) and touches the `<List>` JSX runtime (004). 008 concerns
+**How they relate.** All six can be read on their own. 008 concerns
 the `watch()` helper in `src/common/`. 011 is about the repo rather than the
 architecture; its migration moves most of the paths the other notes cite. 012
 changes 001's pass loop and qualifies the `scaling` numbers from 010's
-harness. 013 builds on 012's measurements. 018 answers 007's question the
-other way, and would make 007 unnecessary; it also absorbs 017's
-method-syntax item. 019 follows 017's boids allocation fix and touches only
+harness. 013 builds on 012's measurements. 018 answers the question 007
+asked (now archived) the other way; it also absorbs 017's method-syntax
+item. 019 follows 017's boids allocation fix and touches only
 the boids demo.
 
 ## Tasks
@@ -105,6 +103,7 @@ the boids demo.
 | 003 | [Appraisal: MVT plugin spike](archive/003-mvt-plugin-appraisal.md) | 2026-09-18 |
 | 004 | [Proposal: index-addressed `<List>`, with `<Switch>`](archive/004-list-proposal.md) | 2026-09-25 |
 | 005 | [Proposal: `SlotList<T>`](archive/005-slot-list-proposal.md) | 2026-09-22 |
+| 007 | [Proposal: authoring-convention bridge](archive/007-authoring-convention-bridge.md) (superseded by 018) | 2026-09-27 |
 | 010 | [Proposal: performance docs](archive/010-performance-docs-proposal.md) | 2026-09-25 |
 | 014 | [Review: Kwazy Cactii](archive/014-review-cactii.md) | 2026-04-10 |
 | 015 | [Documentation Overhaul](archive/015-documentation-overhaul/task.md) | 2026-04-19 |

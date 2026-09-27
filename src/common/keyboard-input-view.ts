@@ -5,18 +5,23 @@ import { Container } from 'pixi.js';
 // ---------------------------------------------------------------------------
 
 export interface KeyboardInputViewBindings {
-    onXDirectionChanged?(direction: 'left' | 'none' | 'right'): void;
-    onYDirectionChanged?(direction: 'up' | 'none' | 'down'): void;
-    onPrimaryButtonChanged?(pressed: boolean): void;
-    onSecondaryButtonChanged?(pressed: boolean): void;
-    onRestartButtonChanged?(pressed: boolean): void;
+    onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
+    onPrimaryButtonChanged?: (pressed: boolean) => void;
+    onSecondaryButtonChanged?: (pressed: boolean) => void;
+    onRestartButtonChanged?: (pressed: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createKeyboardInputView(bindings: KeyboardInputViewBindings): Container {
+/**
+ * Keyboard input for the games: arrows or WASD for direction, Space and Shift
+ * for the two buttons, Enter to restart. Shows nothing; it only has relay
+ * bindings.
+ */
+export function KeyboardInputView(bindings: KeyboardInputViewBindings): Container {
     const view = new Container();
     view.label = 'keyboard-input';
 

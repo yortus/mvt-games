@@ -43,13 +43,13 @@ export interface SlotList<T> {
      * walk; inserting during the walk is not. Pass a named callback to avoid a
      * per-frame closure allocation.
      */
-    forEachLive(visit: (value: T, slot: Slot<T>) => void): void;
+    forEachLive: (visit: (value: T, slot: Slot<T>) => void) => void;
 
     /**
      * Places a value in an available slot and returns it. The list chooses the
      * slot (lowest available index). Throws when `isFull`; check it first.
      */
-    insert(value: T): Slot<T>;
+    insert: (value: T) => Slot<T>;
 
     /**
      * Takes an item out of the live set. The slot is then pending release for
@@ -60,13 +60,13 @@ export interface SlotList<T> {
      * Dev builds throw if slots pile up pending release before `update` is ever
      * called - the signature of a forgotten `update(deltaMs)` in the tick loop.
      */
-    remove(slot: Slot<T>, releaseDelayMs?: number): void;
+    remove: (slot: Slot<T>, releaseDelayMs?: number) => void;
 
     /** Releases every slot immediately, live and pending-release alike. */
-    clear(): void;
+    clear: () => void;
 
     /** Advances the release clock and releases slots whose delay has elapsed. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 /**
@@ -76,7 +76,7 @@ export interface SlotList<T> {
  */
 export interface IndexedSlots<S> {
     readonly length: number;
-    at(index: number): S | undefined;
+    at: (index: number) => S | undefined;
 }
 
 /**

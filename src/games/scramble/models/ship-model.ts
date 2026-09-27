@@ -11,15 +11,15 @@ export interface ShipModel {
     readonly worldRow: number;
     /** Whether the ship is alive. */
     readonly isAlive: boolean;
-    setXDirection(dir: XDirection): void;
-    setYDirection(dir: YDirection): void;
-    kill(): void;
-    respawn(worldCol: number, worldRow: number): void;
+    setXDirection: (dir: XDirection) => void;
+    setYDirection: (dir: YDirection) => void;
+    kill: () => void;
+    respawn: (worldCol: number, worldRow: number) => void;
     /**
      * Advance ship state. The ship moves at scroll speed plus player input,
      * clamped so its screen-relative column stays within bounds.
      */
-    update(deltaMs: number, scrollCol: number): void;
+    update: (deltaMs: number, scrollCol: number) => void;
 }
 
 // ---------------------------------------------------------------------------

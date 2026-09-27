@@ -1,6 +1,6 @@
 import { type Container, Rectangle, type Sprite, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene, updateScene } from '../pixi-mvt';
+import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../pixi-mvt';
 import { countPropReads, propReadCounter } from './prop-reads';
 import { jsx } from './jsx-runtime';
 
@@ -185,6 +185,80 @@ describe('jsx runtime', () => {
         updateScene(el, 16);
         updateScene(el, 17);
         expect(deltas).toEqual([16, 17]);
+    });
+
+    describe('onRefresh prop', () => {
+        it('installs the step as the refresh method of an element with no bindings', () => {
+            let calls = 0;
+            const el = jsx('container', {
+                onRefresh: () => {
+                    calls++;
+                },
+            });
+
+            refreshScene(el);
+            refreshScene(el);
+            expect(calls).toBe(2);
+        });
+
+        it('runs after the element\'s bindings, not as a binding itself', () => {
+            const order: string[] = [];
+            const el = jsx('container', {
+                onRefresh: () => { order.push('step'); },
+                x: () => {
+                    order.push('x');
+                    return 1;
+                },
+            });
+
+            refreshScene(el);
+            expect(order).toEqual(['x', 'step']);
+            expect(el.x).toBe(1);
+        });
+
+        it('receives the element', () => {
+            let received: Container | undefined;
+            const el = jsx('graphics', {
+                onRefresh: (g: Container) => {
+                    received = g;
+                },
+            });
+
+            refreshScene(el);
+            expect(received).toBe(el);
+        });
+
+        it('is skipped while a visible binding hides the element', () => {
+            let visible = false;
+            let calls = 0;
+            const el = jsx('container', {
+                visible: () => visible,
+                onRefresh: () => {
+                    calls++;
+                },
+            });
+
+            refreshScene(el);
+            expect(calls).toBe(0);
+
+            visible = true;
+            refreshScene(el);
+            expect(calls).toBe(1);
+        });
+
+        it('can skip the element\'s descendants', () => {
+            let childX = 0;
+            const child = jsx('container', { x: () => childX });
+            const parent = jsx('container', {
+                x: () => 1,
+                onRefresh: () => SKIP_DESCENDANTS,
+                children: child,
+            });
+
+            childX = 5;
+            refreshScene(parent);
+            expect(child.x).toBe(0);
+        });
     });
 
     it('wires pointer event props as listeners and makes the element interactive', () => {

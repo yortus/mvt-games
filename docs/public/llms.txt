@@ -18,9 +18,9 @@ MVT splits applications into three layers:
   method in the tree, parents first. Views never forward these calls by hand.
 - **Bindings** - contract between view and model. Query bindings read state
   (a function called each frame, or a fixed value read once); relay bindings
-  report user input out of the view. In this repo, query bindings are
-  get*() / is*() members and relay bindings are on*() members. Reusable views
-  use bindings; top-level views access models directly.
+  report user input out of the view. In this repo, query bindings are named
+  for what they return (score, isAlive) and relay bindings are on*() members.
+  Reusable views use bindings; top-level views access models directly.
 
 ## Frame Sequence
 
@@ -33,7 +33,8 @@ presentation state, refresh views, render. Models settle before views read.
   auto-playing tweens. Domain-level coordinates (tiles, world-units), not
   pixels. Parent delegates update() to children.
 - Views: no domain state. refresh() is idempotent, read-only. Re-read
-  bindings every frame (never cache at construction). May hold cosmetic
+  every changing value every frame (never cache it at construction); only a
+  query binding declared as a fixed value may be read once. May hold cosmetic
   presentation state (gains update(deltaMs), as view.onUpdate). Extract complex presentation
   logic to a view model.
 - Ticker: strict sequence (update, refresh, render). Cap deltaMs. No domain
@@ -44,6 +45,12 @@ presentation state, refresh views, render. Models settle before views read.
 ## Project Conventions (this repo only)
 
 - Factory functions, not classes: createXxxModel(options) -> XxxModel
+- Views are functions: XxxView(bindings: XxxViewBindings) -> Container,
+  usable as a JSX tag or a plain call. The body may be JSX or plain
+  TypeScript, whichever suits the view; neither is required. JSX tends to
+  suit trees of display objects that follow the model, plain TypeScript views
+  that mostly draw or manage their own display objects. Code not yet
+  migrated still uses createXxxView and get*() bindings; don't copy it.
 - Barrel imports only: never import past index.ts
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest

@@ -33,7 +33,7 @@ These are non-negotiable. Violations produce incorrect code.
 | M-time, M-isolation, M-domain, M-composition | Models own all domain state; advance via `update(deltaMs)` only; no view/ticker references; domain-level coordinates; parent delegates to children | Model importing a view type; model using `Date.now()`; model storing pixel coordinates |
 | V-stateless through V-tree | Views are stateless; `refresh()` is idempotent, side-effect-free; bindings re-read every frame; presentation state only when purely cosmetic | View caching a binding value at construction; `refresh()` mutating model state; domain logic in a view |
 | T-sequence through T-control | Ticker sequence is update-refresh-render; `deltaMs` is capped; no domain logic in ticker | Ticker performing collision checks |
-| B-contract through B-wiring | Bindings use `get*`/`on*`; leaf views use bindings; `on*` bindings are optional; wired at construction site | View reaching into model internals instead of using bindings |
+| B-contract through B-wiring | Query bindings read state, relay bindings report input; leaf views use bindings; relay bindings are optional; wired at construction site | View reaching into model internals instead of using bindings; a query binding declared as a function but read only at construction |
 | H-cost through H-change | No per-tick allocations; index-based loops; change detection for expensive infrequent updates | `array.map()` in `refresh()`; template-string keys in `update()` |
 
 Reference: [Architecture Rules](../architecture/rules.md)
@@ -155,8 +155,9 @@ Beyond the hard rules, review for good use of established patterns.
 - **Stateless rendering:** Views build the scene graph once at construction,
   then update properties in `refresh()`. No display object recreation
   per frame.
-- **Bindings usage:** Reusable leaf views use a bindings interface. Binding
-  values are read inside `refresh()`, never cached at construction time.
+- **Bindings usage:** Reusable leaf views use a bindings interface. Query
+  bindings declared as functions are read inside `refresh()`, never cached at
+  construction time; a value read only once is declared as a plain `T`.
 - **Change detection:** Expensive, infrequent updates use `watch()`.
   Cheap per-frame updates (position, alpha) read directly.
 - **Presentation state:** Used only when purely cosmetic and the model does
@@ -194,8 +195,9 @@ architecture and engineering concerns.
 | Files | `lower-kebab-case.ts` |
 | Types | `PascalCase`, suffix `Model` / `View` as appropriate |
 | Functions/variables | `camelCase`; factories are `createXxx` |
+| Views | `XxxView(bindings: XxxViewBindings)`, not `createXxxView`; never `props` |
 | Booleans | `is` / `has` / `can` prefix |
-| Bindings | `get*()` for accessors, `on*()` for event handlers |
+| Bindings | Query bindings named for what they return (no `get`), `At`/`For` suffixes when parameterised; relay bindings `on` + what the user did |
 | Enum-like types | String-literal unions; use `Kind` not `Type` |
 | Lifecycle properties | Use `phase` not `state` |
 | Unused params | `_` prefix |
@@ -208,6 +210,12 @@ architecture and engineering concerns.
 - **Function-valued properties in types** - `onPressed?: () => void`, not
   `onPressed?(): void`. Flag new or changed interfaces only; much existing
   code still uses method syntax.
+- **View convention** - flag new or substantially changed views that use
+  `createXxxView` or `get*()` bindings. Code not yet migrated may still use
+  them; see [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings).
+  Do not flag a view for having a plain TypeScript body rather than JSX, or
+  the reverse: either is fine. Suggest the other only where it would clearly
+  read better, as a low-priority note.
 - **Barrel imports only** - never import past a directory's `index.ts`.
 - **No `.ts` extensions** in module specifiers.
 - **4-space indentation.**

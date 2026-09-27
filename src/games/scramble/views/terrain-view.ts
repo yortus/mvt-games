@@ -5,38 +5,27 @@ import { Container, Graphics } from 'pixi.js';
 // ---------------------------------------------------------------------------
 
 export interface TerrainViewBindings {
-    getScrollCol(): number;
-    getVisibleCols(): number;
-    getVisibleRows(): number;
-    getTileSize(): number;
-    isSolid(col: number, row: number): boolean;
-    getSectionIndex(col: number): number;
+    /** How far the terrain has scrolled, in columns. */
+    scrollCol: () => number;
+    /** The view's size, which sizes its ring buffer of columns, so read once. */
+    visibleCols: number;
+    visibleRows: number;
+    tileSize: number;
+    /** Read when a column scrolls into view and is drawn. */
+    isSolidAt: (col: number, row: number) => boolean;
+    sectionIndexAt: (col: number) => number;
 }
 
 // ---------------------------------------------------------------------------
-// Section color schemes
+// View
 // ---------------------------------------------------------------------------
 
-const SECTION_FLOOR_COLORS: readonly number[] = [
-    0x5a8a3a, // Section 1 - green mountains
-    0x6a7a8a, // Section 2 - grey-blue caves
-    0x8a3a2a, // Section 3 - dark red base
-];
-
-const SECTION_CEILING_COLORS: readonly number[] = [
-    0x4a7a2a, // Section 1 - darker green
-    0x5a6a7a, // Section 2 - dark grey-blue
-    0x7a2a1a, // Section 3 - darker red
-];
-
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-export function createTerrainView(bindings: TerrainViewBindings): Container {
-    const tileSize = bindings.getTileSize();
-    const visibleCols = bindings.getVisibleCols();
-    const visibleRows = bindings.getVisibleRows();
+/**
+ * The scrolling terrain. Written imperatively: it keeps a ring buffer of
+ * column graphics, redrawing each column as it scrolls into view.
+ */
+export function TerrainView(bindings: TerrainViewBindings): Container {
+    const { tileSize, visibleCols, visibleRows } = bindings;
     const BUFFER_SIZE = visibleCols + 4;
 
     // Ring buffer of column graphics
@@ -67,7 +56,7 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
     }
 
     function refresh(): void {
-        const scrollCol = bindings.getScrollCol();
+        const scrollCol = bindings.scrollCol();
         const targetLeftCol = Math.floor(scrollCol) - 2;
 
         // Detect discontinuous scroll jump (e.g. loop reset) and rebuild buffer
@@ -101,12 +90,12 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
 
     function drawColumn(gfx: Graphics, worldCol: number): void {
         gfx.clear();
-        const section = bindings.getSectionIndex(worldCol);
+        const section = bindings.sectionIndexAt(worldCol);
         const floorColor = SECTION_FLOOR_COLORS[section] ?? SECTION_FLOOR_COLORS[0];
         const ceilColor = SECTION_CEILING_COLORS[section] ?? SECTION_CEILING_COLORS[0];
 
         for (let r = 0; r < visibleRows; r++) {
-            if (bindings.isSolid(worldCol, r)) {
+            if (bindings.isSolidAt(worldCol, r)) {
                 // Use ceiling color for top half, floor color for bottom half
                 const color = r < visibleRows / 2 ? ceilColor : floorColor;
                 gfx.rect(0, r * tileSize, tileSize, tileSize).fill(color);
@@ -114,3 +103,20 @@ export function createTerrainView(bindings: TerrainViewBindings): Container {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+// Section color schemes
+const SECTION_FLOOR_COLORS: readonly number[] = [
+    0x5a8a3a, // Section 1 - green mountains
+    0x6a7a8a, // Section 2 - grey-blue caves
+    0x8a3a2a, // Section 3 - dark red base
+];
+
+const SECTION_CEILING_COLORS: readonly number[] = [
+    0x4a7a2a, // Section 1 - darker green
+    0x5a6a7a, // Section 2 - dark grey-blue
+    0x7a2a1a, // Section 3 - darker red
+];

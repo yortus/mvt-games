@@ -30,8 +30,8 @@ src/
 | --------- | --------------------------------------------------------- | --------------------------------------------------------- |
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
-| `views/`  | View factory functions, bindings interfaces               | `createHudView`, `HudViewBindings`                        |
-| `common/` | Shared helpers, views, and models                         | `createWatch`, `Watch`, `createKeyboardPlayerInputView`   |
+| `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
+| `common/` | Shared helpers, views, and models                         | `watch`, `memoiseLast`, `OverlayView`, `createSlotList`       |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -219,9 +219,9 @@ src/games/<name>/
 │   ├── common.ts         Domain types (directions, kinds of game object, phases)
 │   └── game-model.ts     Root model - composes all child models
 └── views/
-    ├── index.ts           Barrel - re-exports createGameView and view constants
+    ├── index.ts           Barrel - re-exports GameView and view constants
     ├── view-constants.ts  View-only constants (pixel sizes, HUD layout)
-    └── game-view.ts       Top-level view - wires all child views
+    └── game-view.ts       Top-level view - wires all child views (.tsx if its body is JSX)
 ```
 
 For details on creating a new game module, see the

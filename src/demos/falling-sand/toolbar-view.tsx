@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
-import { createPerfmonView, type FrameStats, PERFMON_WIDTH } from '#common';
+import { type FrameStats, memoiseLast, PERFMON_WIDTH, PerfmonView } from '#common';
 import { lookUpShade } from './grain-colors';
 import { BUTTON_GAP, BUTTON_SIZE, STATS_Y, TOOLBAR_WIDTH, TOOLBAR_X, TOOLBAR_Y } from './view-constants';
 import type { ToolKind } from './demo-model';
@@ -35,8 +35,8 @@ export interface ToolbarViewProps {
  */
 export function ToolbarView(props: ToolbarViewProps): Container {
     // Formatted only when the count changes, not every frame.
-    const getGrainText = mapOnChange(props.grainCount, formatCount);
-    const getMovingText = mapOnChange(props.movingCount, formatCount);
+    const grainText = memoiseLast(formatCount);
+    const movingText = memoiseLast(formatCount);
 
     // Flip, Reset and Clear share the width the palette leaves.
     const actionsX = TOOLS.length * (BUTTON_SIZE + BUTTON_GAP);
@@ -72,12 +72,12 @@ export function ToolbarView(props: ToolbarViewProps): Container {
 
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
-                <text text={getGrainText} x={72} y={4} style={COUNT_STYLE} />
+                <text text={() => grainText(props.grainCount())} x={72} y={4} style={COUNT_STYLE} />
                 <text text="MOVING" y={32} style={LABEL_STYLE} />
-                <text text={getMovingText} x={72} y={28} style={COUNT_STYLE} />
+                <text text={() => movingText(props.movingCount())} x={72} y={28} style={COUNT_STYLE} />
                 <text text="Tap, hold and drag to pour" y={54} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    {createPerfmonView({ getFrameStats: () => props.frameStats() })}
+                    <PerfmonView frameStats={props.frameStats} />
                 </container>
             </container>
         </container>
@@ -98,26 +98,6 @@ const COUNT_FORMAT = new Intl.NumberFormat('en-US');
 
 function formatCount(count: number): string {
     return COUNT_FORMAT.format(count);
-}
-
-/**
- * A getter returning `map(read())`, where `map` runs only when `read()` returns
- * something new (compared with `===`), and the last result is returned
- * otherwise. Polling it costs one `read()` and one comparison.
- */
-function mapOnChange<V, T>(read: () => V, map: (value: V) => T): () => T {
-    let isFirst = true;
-    let lastValue: V;
-    let lastResult: T;
-    return () => {
-        const value = read();
-        if (isFirst || value !== lastValue) {
-            isFirst = false;
-            lastValue = value;
-            lastResult = map(value);
-        }
-        return lastResult;
-    };
 }
 
 const TOOL_LABELS: Readonly<Record<ToolKind, string>> = {

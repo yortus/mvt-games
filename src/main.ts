@@ -1,10 +1,10 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { createCabinetModel, createCabinetView, type CabinetViewBindings } from './cabinet';
 import {
-    createKeyboardInputView,
-    createPauseMenuView,
-    createTouchInputView,
     isTouchDevice,
+    KeyboardInputView,
+    PauseMenuView,
+    TouchInputView,
 } from '#common';
 import {
     createAsteroidsEntry,
@@ -179,21 +179,21 @@ async function main(): Promise<void> {
 
     // Wire touch config and inputs to the game
     if (isTouchDevice()) {
-        touchLayer.addChild(createTouchInputView({
-            getCanvasWidth: () => currentCanvasW,
-            getCanvasHeight: () => currentCanvasH,
-            getGameX: () => currentGameOffsetX,
-            getGameY: () => currentGameOffsetY,
-            getGameWidth: () => currentEntry?.screenWidth ?? 0,
-            getGameHeight: () => currentEntry?.screenHeight ?? 0,
-            getScale: () => currentScale,
-            getShowDpad: () => currentSession?.inputConfig != null
+        touchLayer.addChild(TouchInputView({
+            canvasWidth: () => currentCanvasW,
+            canvasHeight: () => currentCanvasH,
+            gameX: () => currentGameOffsetX,
+            gameY: () => currentGameOffsetY,
+            gameWidth: () => currentEntry?.screenWidth ?? 0,
+            gameHeight: () => currentEntry?.screenHeight ?? 0,
+            scale: () => currentScale,
+            hasDpad: () => currentSession?.inputConfig != null
                 && (currentSession.inputConfig.showDpad ?? true),
-            getShowPrimary: () => currentSession?.inputConfig?.showPrimary ?? false,
-            getShowSecondary: () => currentSession?.inputConfig?.showSecondary ?? false,
-            getPrimaryLabel: () => currentSession?.inputConfig?.primaryLabel ?? 'A',
-            getSecondaryLabel: () => currentSession?.inputConfig?.secondaryLabel ?? 'B',
-            getFloatingJoystick: () => currentSession?.inputConfig?.floatingJoystick ?? false,
+            hasPrimaryButton: () => currentSession?.inputConfig?.showPrimary ?? false,
+            hasSecondaryButton: () => currentSession?.inputConfig?.showSecondary ?? false,
+            primaryLabel: () => currentSession?.inputConfig?.primaryLabel ?? 'A',
+            secondaryLabel: () => currentSession?.inputConfig?.secondaryLabel ?? 'B',
+            isJoystickFloating: () => currentSession?.inputConfig?.floatingJoystick ?? false,
             onXDirectionChanged: (dir) => currentSession?.inputConfig?.onXDirectionChanged?.(dir),
             onYDirectionChanged: (dir) => currentSession?.inputConfig?.onYDirectionChanged?.(dir),
             onPrimaryButtonChanged: (pressed) => currentSession?.inputConfig?.onPrimaryButtonChanged?.(pressed),
@@ -202,7 +202,7 @@ async function main(): Promise<void> {
     }
 
     // Wire keyboard inputs to the game
-    app.stage.addChild(createKeyboardInputView({
+    app.stage.addChild(KeyboardInputView({
         onXDirectionChanged: (dir) => currentSession?.inputConfig?.onXDirectionChanged?.(dir),
         onYDirectionChanged: (dir) => currentSession?.inputConfig?.onYDirectionChanged?.(dir),
         onPrimaryButtonChanged: (pressed) => currentSession?.inputConfig?.onPrimaryButtonChanged?.(pressed),
@@ -214,19 +214,19 @@ async function main(): Promise<void> {
 
     const pauseMenuContainer = new Container();
     pauseMenuContainer.label = 'pause-menu-layer';
-    pauseMenuContainer.addChild(createPauseMenuView({
-        getCanvasWidth: () => currentCanvasW,
-        getCanvasHeight: () => currentCanvasH,
-        getGameX: () => currentGameOffsetX,
-        getGameY: () => currentGameOffsetY,
-        getGameWidth: () => currentEntry?.screenWidth ?? currentCanvasW,
-        getGameHeight: () => currentEntry?.screenHeight ?? currentCanvasH,
-        getScale: () => currentScale,
-        getVisible: () => paused,
+    pauseMenuContainer.addChild(PauseMenuView({
+        canvasWidth: () => currentCanvasW,
+        canvasHeight: () => currentCanvasH,
+        gameX: () => currentGameOffsetX,
+        gameY: () => currentGameOffsetY,
+        gameWidth: () => currentEntry?.screenWidth ?? currentCanvasW,
+        gameHeight: () => currentEntry?.screenHeight ?? currentCanvasH,
+        scale: () => currentScale,
+        isVisible: () => paused,
         onResumePressed: togglePause,
         onRestartPressed: restartGame,
         onExitPressed: exitToCabinet,
-        getHowToPlayText: () => currentEntry?.instructions ?? '',
+        howToPlayText: () => currentEntry?.instructions ?? '',
     }));
     app.stage.addChild(pauseMenuContainer);
 

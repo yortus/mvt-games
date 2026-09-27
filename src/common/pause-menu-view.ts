@@ -6,27 +6,33 @@ import { watch } from './watch';
 // ---------------------------------------------------------------------------
 
 export interface PauseMenuViewBindings {
-    getCanvasWidth(): number;
-    getCanvasHeight(): number;
-    getGameX(): number;
-    getGameY(): number;
-    getGameWidth(): number;
-    getGameHeight(): number;
-    getScale(): number;
-    getVisible(): boolean;
-    getHowToPlayText?(): string;
-    onResumePressed(): void;
-    onRestartPressed(): void;
-    onExitPressed(): void;
+    /** The canvas's size, in CSS pixels. */
+    canvasWidth: () => number;
+    canvasHeight: () => number;
+    /** Where the game sits on the canvas, and at what scale. */
+    gameX: () => number;
+    gameY: () => number;
+    gameWidth: () => number;
+    gameHeight: () => number;
+    scale: () => number;
+    isVisible: () => boolean;
+    /** Read each time the menu opens. No "How to Play" button without it. */
+    howToPlayText?: () => string;
+    onResumePressed: () => void;
+    onRestartPressed: () => void;
+    onExitPressed: () => void;
 }
 
 // ---------------------------------------------------------------------------
-// Factory
+// View
 // ---------------------------------------------------------------------------
 
-export function createPauseMenuView(
-    bindings: PauseMenuViewBindings,
-): Container {
+/**
+ * The pause menu: Resume, How to Play, Restart and Exit, over a dimmed
+ * canvas, navigable by pointer or keyboard. Written in plain TypeScript: it
+ * lays its buttons out by hand each frame, at the canvas's scale.
+ */
+export function PauseMenuView(bindings: PauseMenuViewBindings): Container {
     const view = new Container();
     view.label = 'pause-menu';
 
@@ -117,9 +123,9 @@ export function createPauseMenuView(
     highlightButtons(buttons, selectedIndex);
 
     const watcher = watch({
-        visible: bindings.getVisible,
-        canvasWidth: bindings.getCanvasWidth,
-        canvasHeight: bindings.getCanvasHeight,
+        visible: bindings.isVisible,
+        canvasWidth: bindings.canvasWidth,
+        canvasHeight: bindings.canvasHeight,
     });
 
     window.addEventListener('keydown', onKeyDown);
@@ -148,13 +154,13 @@ export function createPauseMenuView(
             highlightButtons(buttons, selectedIndex);
 
             // Update instructions text each time the menu opens
-            const text = bindings.getHowToPlayText?.() ?? '';
+            const text = bindings.howToPlayText?.() ?? '';
             howToPlayBody.text = text;
         }
 
         hasHowToPlay = howToPlayBody.text.length > 0;
 
-        const invScale = 1 / bindings.getScale();
+        const invScale = 1 / bindings.scale();
 
         // Rebuild backdrop when canvas dims change or menu first opens
         if (visible.changed || canvasWidth.changed || canvasHeight.changed) {
@@ -164,10 +170,10 @@ export function createPauseMenuView(
         }
 
         // Centre on the game area, not the full canvas
-        const gx = bindings.getGameX();
-        const gy = bindings.getGameY();
-        const gw = bindings.getGameWidth();
-        const gh = bindings.getGameHeight();
+        const gx = bindings.gameX();
+        const gy = bindings.gameY();
+        const gw = bindings.gameWidth();
+        const gh = bindings.gameHeight();
         const gameCenterX = gx + gw / 2;
         const gameCenterY = gy + gh / 2;
 
@@ -227,7 +233,7 @@ export function createPauseMenuView(
     // ---- Keyboard navigation -----------------------------------------------
 
     function onKeyDown(e: KeyboardEvent): void {
-        if (!bindings.getVisible()) return;
+        if (!bindings.isVisible()) return;
 
         if (showingHowToPlay) {
             if (e.key === 'Escape' || e.key === 'Enter' || e.key === 'Backspace') {

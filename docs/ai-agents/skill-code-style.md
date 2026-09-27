@@ -16,12 +16,15 @@ conventions.
 | Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`              |
 | Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`              |
 | Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`              |
-| View types             | Suffix with `View`           | `MazeView`, `KeyboardPlayerInputView`         |
+| View functions         | `PascalCase`, ending `View`  | `HudView`, `ShipView`                         |
+| Bindings types         | `XxxViewBindings`            | `HudViewBindings` (never `Props`)             |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
-| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
+| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createSlotList`          |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
-| Binding accessors      | `get` + description          | `getScore()`, `getShipX()`                  |
-| Binding event handlers | `on` + description           | `onDirectionChanged()`, `onResetClicked()`    |
+| Query bindings         | What they return, no `get`   | `score`, `screenX`, `isAlive`                 |
+| ... with position/index | Suffix `At`                 | `tileKindAt(row, col)`                        |
+| ... with a key         | Suffix `For`                 | `colorFor(kind)`                              |
+| Relay bindings         | `on` + what the user did     | `onFirePressed`, `onTileTapped`               |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` not `TileType`                     |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` not `state: GameState`     |
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |
@@ -102,6 +105,21 @@ function find(id: string): Item | null;
 let selected: Item | null = null;
 ```
 
+## View Functions
+
+A view is a function `XxxView(bindings: XxxViewBindings): Container`, usable
+as a JSX tag and as a plain call. A top-level view takes the model in its
+bindings: `GameView({ model })`. The body may be JSX (`.tsx`) or plain
+TypeScript (`.ts`), whichever suits the view; neither is required. Each query
+binding's type says what the view supports: `() => T` for changing state, `T`
+for a value read once at construction, `ValueOrGetter<T>` (from `#pixi-jsx`)
+for either. Never declare a function and read it only once. Full rules:
+[Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings);
+how to write one: [skill-mvt-view.md](skill-mvt-view.md).
+
+Code not yet migrated to this convention uses `createXxxView(bindings)` and
+`get*()` query bindings. Don't copy it.
+
 ## No Classes
 
 Use factory functions returning plain records that satisfy an interface.
@@ -137,18 +155,18 @@ class CounterModel {
 
 ## Function-Valued Properties in Types
 
-In interfaces and type declarations (models, bindings, props, options), write
+In interfaces and type declarations (models, bindings, options), write
 function members as properties holding a function, never with method syntax:
 
 ```ts
 // ✅ Preferred
-interface ToolbarViewProps {
+interface ToolbarViewBindings {
     selectedTool: () => ToolKind;
     onToolPressed?: (tool: ToolKind) => void;
 }
 
 // ❌ Avoid
-interface ToolbarViewProps {
+interface ToolbarViewBindings {
     selectedTool(): ToolKind;
     onToolPressed?(tool: ToolKind): void;
 }
@@ -156,8 +174,9 @@ interface ToolbarViewProps {
 
 Method signatures get looser parameter checks, even in strict mode, and
 suggest a `this`-bound method, which this project never has. Object literals
-implementing the interface may still use method shorthand. Not yet enforced by
-lint, so check by hand; much existing code still uses method syntax.
+implementing the interface may still use method shorthand. Enforced by lint
+only in modules migrated to the view convention; elsewhere check by hand, as
+much existing code still uses method syntax.
 
 ## Easily Confused Names
 
@@ -181,9 +200,9 @@ Boolean properties and accessors should read as yes/no questions:
 Model and view files use section dividers for navigability:
 
 ```
-// --- Interface ---
+// --- Interface ---           (views: Bindings)
 // --- Options (if needed) ---
-// --- Factory ---
+// --- Factory ---             (views: View)
 // --- Internals (if needed) ---
 ```
 

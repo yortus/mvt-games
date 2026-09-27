@@ -9,7 +9,7 @@
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, `refresh()` and `update(deltaMs)` are a view container's `onRefresh` and `onUpdate` methods from `src/pixi-mvt/`
 - **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. In this repo: `gameModel.update(deltaMs)`, then `updateScene(gameView, deltaMs)` (in each game session), then `refreshScene(app.stage)` (in `src/main.ts`), which run every `onUpdate` / `onRefresh` method in the tree, parents first. Views never forward these calls to their children
-- **Bindings** - plain object bridging view and model: `get*()` methods read state, `on*()` methods relay user input
+- **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](docs/architecture/index.md) -
 [Architecture Rules](docs/architecture/rules.md)
@@ -47,11 +47,12 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 
 - **Barrel imports only** - never import past a directory's `index.ts`; enforced by ESLint `import/no-internal-modules`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
+- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource #pixi-jsx */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`. Code not yet migrated ([018](notes/proposals/018-one-view-convention.md)) still uses `createXxxView` and `get*()`; don't copy it
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Much existing code still uses method syntax; don't copy it
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
-- **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept a `get*()`/`on*()` bindings object; top-level application views accept the model directly (they're application-specific, never reused)
+- **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; top-level application views take the model itself (they're application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
 - **`_` prefix** for intentionally unused parameters
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
@@ -90,7 +91,8 @@ Full rules: [Architecture Rules](docs/architecture/rules.md)
 
 ## File Organisation Within a Module
 
-Each model/view file follows this internal ordering:
+Each model/view file follows this internal ordering (view files name the
+first section `Bindings` and the third `View`):
 
 ```
 // --- Interface ---
@@ -100,7 +102,7 @@ Each model/view file follows this internal ordering:
 // Options type for the factory function (if needed)
 
 // --- Factory ---
-// createXxx() factory function implementation
+// createXxx() factory function implementation (views: the XxxView function)
 
 // --- Internals (if needed) ---
 // Internal types, constants, and helpers used only inside this file

@@ -5,7 +5,7 @@ import { createSequence } from './sequence';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function stepMs(seq: { update(deltaMs: number): void }, totalMs: number): void {
+function stepMs(seq: { update: (deltaMs: number) => void }, totalMs: number): void {
     const step = 16;
     let remaining = totalMs;
     while (remaining > 0) {

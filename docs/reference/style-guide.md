@@ -21,7 +21,8 @@ is written and organized in this project.
 | Types / interfaces    | `ScoreModel`, `TileKind`               | [Naming Conventions](#naming-conventions)      |
 | Functions / variables | `createScoreModel`, `deltaMs`          | [Naming Conventions](#naming-conventions)      |
 | Factory functions     | `createXxxModel(options)`              | [Factory Functions](#factory-functions)        |
-| Binding accessors     | `getScore()`, `onResetClicked()`       | [Naming Conventions](#naming-conventions)      |
+| View functions        | `HudView(bindings)`                    | [Views and Bindings](#views-and-bindings)      |
+| Bindings              | `score: () => number`, `onFirePressed` | [Views and Bindings](#views-and-bindings)      |
 | Enum-like types       | `type TileKind = 'wall' \| 'empty'`   | [Enumeration Types](#enumeration-types)        |
 | Clear names           | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)|
 | Barrel imports        | `import { Foo } from './module'`       | [Project Structure](project-structure.md)      |
@@ -39,12 +40,12 @@ is written and organized in this project.
 | Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`              |
 | Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`              |
 | Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`              |
-| View types             | Suffix with `View`           | `MazeView`, `KeyboardPlayerInputView`         |
+| View functions         | `PascalCase`, ending `View`  | `HudView`, `ShipView`                         |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
-| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createHudView`           |
+| Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createSlotList`          |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
-| Binding accessors      | `get` + description          | `getScore()`, `getShipX()`                  |
-| Binding event handlers | `on` + description           | `onDirectionChanged()`, `onResetClicked()`    |
+| Query bindings         | What they return             | `score`, `screenX`, `isAlive`, `tileKindAt`   |
+| Relay bindings         | `on` + what the user did     | `onFirePressed`, `onTileTapped`               |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌|
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |
@@ -203,17 +204,17 @@ than relying on a `this` binding at the call site.
 
 In interfaces and type declarations, write each function member as a
 property holding a function, not with method syntax. This applies to every
-kind of interface: models, bindings, props and options.
+kind of interface: models, bindings and options.
 
 ```ts
 // ✅ Preferred
-interface ToolbarViewProps {
+interface ToolbarViewBindings {
     selectedTool: () => ToolKind;
     onToolPressed?: (tool: ToolKind) => void;
 }
 
 // ❌ Avoid
-interface ToolbarViewProps {
+interface ToolbarViewBindings {
     selectedTool(): ToolKind;
     onToolPressed?(tool: ToolKind): void;
 }
@@ -244,15 +245,19 @@ The rule is about types only. An object literal implementing the interface may
 still use method shorthand (`update(deltaMs) { ... }`), and accessors
 (`get count()`) are unaffected.
 
-Not yet enforced by lint. The `@typescript-eslint/method-signature-style` rule,
-set to `'property'`, checks and auto-fixes it.
+Enforced by lint only in modules migrated to the view convention (see
+[Views and Bindings](#views-and-bindings)) so far. The
+`@typescript-eslint/method-signature-style` rule, set to `'property'`, checks
+and auto-fixes it.
 
 ## Factory Functions
 
 This project uses factory functions and plain records instead of classes.
 This is a project convention, not an MVT requirement.
 
-- Define each model/view as a **pure interface** describing its public API.
+- Define each model as a **pure interface** describing its public API. Views
+  are functions of a different shape; see
+  [Views and Bindings](#views-and-bindings).
 - Expose a **factory function** (`createXxx`) that accepts an options object
   and returns an instance of the interface type.
 - Implement as **plain records** satisfying the interface. Use closure scope
@@ -341,6 +346,145 @@ set boidCount(count) {
     while (boids.length > target) boids.pop();
 },
 ```
+
+## Views and Bindings
+
+Every view is a function that takes one bindings object and returns a Pixi
+`Container`. The same function works as a JSX tag and as a plain call, so a
+view can be used from any code without an adapter. How the function builds
+its container is up to the view: with JSX or with plain TypeScript (see
+[Writing the Body](#writing-the-body)).
+
+```ts
+export interface ShipViewBindings {
+    screenX: () => number;
+    screenY: () => number;
+    isAlive: () => boolean;
+}
+
+export function ShipView(bindings: ShipViewBindings): Container { /* ... */ }
+
+// Used in a JSX body...
+<ShipView screenX={() => ship.x * TILE_SIZE} screenY={() => ship.y * TILE_SIZE} isAlive={() => ship.isAlive} />
+
+// ...or from plain TypeScript
+view.addChild(ShipView({ screenX: () => ship.x * TILE_SIZE, screenY: () => ship.y * TILE_SIZE, isAlive: () => ship.isAlive }));
+```
+
+### Names
+
+| Element | Rule | Example |
+| --- | --- | --- |
+| View function | `PascalCase` noun ending in `View`. Needed for a JSX tag: a lowercase tag is an intrinsic element | `HudView`, `TerrainView` |
+| Bindings type and parameter | `XxxViewBindings`, parameter `bindings`. Never `props`, even in JSX files | `HudViewBindings` |
+| Query binding | Named for what it returns. No `get` prefix | `score`, `screenX`, `phase` |
+| Boolean query binding | `is` / `has` / `can`, as for [Boolean Properties](#boolean-properties) | `isAlive`, `canFlip` |
+| Query binding with a position or index | Ends in `At` | `tileKindAt(row, col)`, `isSolidAt(col, row)` |
+| Query binding with a key | Ends in `For` | `colorFor(kind)` |
+| Relay binding | `on` + what the user did, not what it should cause | `onFirePressed` ✅ · `onShoot` ❌ |
+
+In JSX, a view's bindings are written as attributes. Other JSX libraries call
+the same object *props*; this project does not, because the architecture's
+word is *bindings*, and because an attribute on an intrinsic element sets a
+Pixi *property*.
+
+### Fixed and Changing Answers
+
+Each query binding's type says what the view accepts, and so what it
+supports:
+
+| Type | Use for | The view |
+| --- | --- | --- |
+| `() => T` | Model state, which changes | Calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
+| `T` | Values the view is built around: a size that shapes its structure, a label | Reads it once, at construction |
+| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both kinds of answer, where the convenience at many call sites repays the extra work | Handles both |
+
+Never declare a query binding as a function and then read it only once: the
+view silently stops following a value its bindings promise to follow. That
+breaks [V-reactive](../architecture/rules.md#view-rules). If the view only
+handles a fixed value, declare it as `T`; widening it to `ValueOrGetter<T>`
+later does not break callers. See
+[Changing and Fixed Answers](../architecture/bindings.md#changing-and-fixed-answers).
+
+### Top-Level Views
+
+A top-level view takes the model as a fixed answer in its bindings, so it has
+the same signature as every other view:
+
+```ts
+export interface GameViewBindings {
+    model: GameModel;
+}
+
+export function GameView(bindings: GameViewBindings): Container { /* ... */ }
+
+const gameView = GameView({ model: gameModel });
+```
+
+### Writing the Body
+
+A view's body can be written in JSX or in plain TypeScript. Neither is
+required: both give the same outside, so callers cannot tell which a view
+uses, and each view can choose whichever suits it. The same ship view both
+ways:
+
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+export function ShipView(bindings: ShipViewBindings): Container {
+    return (
+        <sprite
+            texture={textures.get().ship}
+            anchor={0.5}
+            visible={bindings.isAlive}
+            x={bindings.screenX}
+            y={bindings.screenY}
+        />
+    );
+}
+```
+
+```ts
+export function ShipView(bindings: ShipViewBindings): Container {
+    const view = new Sprite({ texture: textures.get().ship, anchor: 0.5 });
+    view.onRefresh = () => {
+        view.visible = bindings.isAlive();
+        if (!view.visible) return;
+        view.position.set(bindings.screenX(), bindings.screenY());
+    };
+    return view;
+}
+```
+
+| | Tends to suit | Why |
+| --- | --- | --- |
+| **JSX** (`.tsx`, starting `/** @jsxImportSource #pixi-jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
+| **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one change check gating many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.2-1.7x as much per property as a hand-written one ([measurements](../building-with-mvt/performance/measurements.md)), which matters only at that scale |
+
+Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi
+object directly through a `ref` or an `onRefresh` attribute.
+
+In either body, derive text (or anything else costly) from a changing value
+only when the value changes. `memoiseLast` from `#common` wraps a one-argument
+function to do that; create it once, and call it every frame:
+
+```tsx
+const scoreText = memoiseLast((score: number) => String(score));
+
+<text text={() => scoreText(bindings.score())} />
+```
+
+And before writing a per-frame redraw, check whether drawing once and then
+scaling, tinting or resizing would do. The
+[`mvt-view` skill](../ai-agents/skill-mvt-view.md) covers both kinds of body.
+
+### Code Not Yet Migrated
+
+Views are being moved to this convention one module at a time
+([proposal 018](https://github.com/yortus/mvt-games/blob/main/notes/proposals/018-one-view-convention.md)).
+Code not yet migrated uses `createXxxView(bindings)` factories and `get*()`
+query bindings. Don't copy it; in new code, and when a view is changed
+substantially, follow this section. Lint enforces it in migrated modules.
 
 ## Code Organisation
 

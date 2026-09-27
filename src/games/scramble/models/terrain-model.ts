@@ -11,14 +11,14 @@ export interface TerrainModel {
     /** Number of tile rows. */
     readonly rows: number;
     /** Return the tile kind at the given world column and row. */
-    getTile(col: number, row: number): TileKind;
+    getTile: (col: number, row: number) => TileKind;
     /** Return true if the tile at the given position is solid. */
-    isSolid(col: number, row: number): boolean;
+    isSolid: (col: number, row: number) => boolean;
     /** Return the section index (0-based) for the given world column. */
-    getSectionIndex(col: number): number;
+    getSectionIndex: (col: number) => number;
     /** Return the row of the first empty tile above the floor at the given column. */
-    getSurfaceRow(col: number): number;
-    update(deltaMs: number): void;
+    getSurfaceRow: (col: number) => number;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

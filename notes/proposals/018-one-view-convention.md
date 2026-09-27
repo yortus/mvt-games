@@ -9,12 +9,16 @@
 > returning a Pixi container, its accessors are named for what they return,
 > and its body is JSX where JSX fits and imperative where it does not.
 
-**Status:** proposed. Nothing implemented. If accepted, it supersedes 007.
+**Status:** accepted 2026-09-27, being implemented. It supersedes 007, now
+archived. Done: the architecture docs (section 12), the `ValueOrGetter`
+rename, the `onRefresh` attribute, the convention docs, Scramble as the pilot
+migration (section 17), and `common/` (section 18). The remaining steps are
+in section 16.
 
 **Written:** 2026-09-26, against the `vnext` branch at `4b633e6` plus the
 uncommitted boids changes. Counts are from `grep` over `src/`.
 
-**Related:** [007 - Authoring-convention bridge](./007-authoring-convention-bridge.md),
+**Related:** [007 - Authoring-convention bridge](../archive/007-authoring-convention-bridge.md) (superseded),
 [`src/pixi-jsx/`](../../src/pixi-jsx/index.ts),
 [Architecture: Bindings](../../docs/architecture/bindings.md),
 [Bindings](../../docs/building-with-mvt/presenting-the-world/bindings.md) and
@@ -31,11 +35,11 @@ method-syntax item and the parked `<List>` guide item),
 | # | Question | Recommendation | Section |
 | --- | --- | --- | --- |
 | 1 | One convention, or two? | One, for everything a view's callers see. Leave how each view's body is written to the view | [4](#4-two-questions-not-one), [5](#5-is-one-convention-worth-it) |
-| 2 | Which one? | Option C: the JSX function-component shape, with JSX as the default body and an imperative body where it fits better | [6](#6-the-options) |
+| 2 | Which one? | Option C: the JSX function-component shape outside. Inside, JSX or plain TypeScript, whichever suits the view; neither is required | [6](#6-the-options), [10](#10-is-jsx-everywhere-viable) |
 | 3 | `createFooView` or `FooView`? | `FooView`. It works as a JSX tag and as a plain call; `createFooView` works only as a call | [7](#7-naming-the-view-createfooview-or-fooview) |
 | 4 | `props` or `bindings`? | `bindings`, in JSX files too. `props` is React's word, not JSX's, and it collides with "property" | [8](#8-naming-the-input-bindings-or-props) |
 | 5 | Keep the `get` prefix? | No. Name query bindings for what they return, as boolean query bindings already are. Let each query binding's type say whether it takes a fixed value, a function, or either | [9](#9-naming-accessors-with-or-without-get) |
-| 6 | Is JSX everywhere viable? | As a default, yes. As a rule, no: a few views are better imperative, and the repo already has the escape hatches | [10](#10-is-jsx-everywhere-viable) |
+| 6 | Is JSX everywhere viable? | For most views, yes, but it is not required: each view's body can be JSX or plain TypeScript, and a few views suit plain TypeScript better | [10](#10-is-jsx-everywhere-viable) |
 | 7 | 007's bridge? | Not needed. It bridges a difference this proposal removes. Archive 007 as superseded, keeping its `ValueOrGetter` rename | [11](#11-what-happens-to-007) |
 | 8 | Architecture docs? | Stay free of JSX. Describe binding members by role, not by prefix | [12](#12-the-docs-architecture-versus-this-repo) |
 
@@ -202,14 +206,15 @@ stay getters, which look live but are not (section 9.3). The
 falling-sand and reordering-lists demos, the most recent code in the repo,
 would be converted backwards.
 
-### Option C: the JSX shape outside, JSX by default inside (recommended)
+### Option C: the JSX shape outside, either body inside (recommended)
 
 Every view is `FooView(bindings: FooViewBindings): Container`. Query bindings
 are named for what they return (`row`, `isAlive`), relay bindings are `on*` as
-now, and a query binding the view reads once takes a plain value. New views
-are written in JSX by
-default; a view whose work is mostly drawing or managing its own display
-objects is written imperatively, with the same outside.
+now, and a query binding the view reads once takes a plain value. Each
+view's body is written in JSX or plain TypeScript, whichever suits it, with
+the same outside either way; neither is required (section 10).
+*Revised 2026-09-27:* the first draft made JSX the default body. It is a
+choice, not a default.
 
 ```tsx
 export interface GhostViewBindings {
@@ -482,9 +487,14 @@ more per dynamic property, and a static attribute costs nothing per frame
 It matters at tens of thousands of containers, which is where escape hatch 3
 applies anyway.
 
-**Suggested rule:** write a view's body in JSX when it is mostly a tree of
-containers whose properties follow the model. Write it imperatively when its
-work is mostly drawing, or managing its own display objects each frame.
+**Guidance, not a rule** (*revised 2026-09-27*; the first draft made JSX the
+default): JSX tends to suit a view that is mostly a tree of containers whose
+properties follow the model. Plain TypeScript tends to suit a view whose work
+is mostly drawing, or managing its own display objects each frame, or one
+that needs tight control of per-frame work. Neither is required, and a view
+can use whichever its author finds clearer. The convention docs present both
+bodies side by side
+([Style Guide: Writing the Body](../../docs/reference/style-guide.md#writing-the-body)).
 
 ---
 
@@ -536,8 +546,8 @@ views pages, and the glossary (new *Query binding* and *Relay binding*
 entries) were updated to match.
 
 **Building with MVT docs.** These show what the repo does, JSX included. The
-views and bindings pages show a view written in JSX first, and the same
-outside with an imperative body second, with the rule from section 10. One
+views and bindings pages show the same view with a JSX body and with a plain
+TypeScript body, side by side, with the guidance from section 10. One
 short passage maps terms for readers who know JSX from elsewhere: a view is
 a component, and its bindings are what React calls props, written as
 attributes. The glossary gains *attribute* and loses nothing.
@@ -555,8 +565,8 @@ Adopt **option C**:
    booleans and `At` for query bindings taking a position or index; relay
    bindings are `on*`; each query binding's type declares whether it accepts a
    fixed value, a function, or either (section 9).
-4. Bodies are JSX by default, and imperative where the view's work is
-   drawing or managing its own display objects (section 10).
+4. Bodies are JSX or plain TypeScript, whichever suits the view; neither is
+   required (section 10).
 5. 007 is archived as superseded (section 11).
 6. The architecture docs describe binding members as query and relay
    bindings and never mention JSX (done); the Building with MVT docs teach
@@ -595,44 +605,206 @@ converts one.
 
 ## 15. Open questions
 
-1. **Top-level views' input.** Today they take the model directly
-   (`createGameView(game)`), or an object holding it (`DemoView({ model,
-   frameStats })`). A top-level view is never used as a tag, so either
-   works. Suggest the object form, `GameView({ model })`, so there is one
-   signature for every view.
-2. **An `onRefresh` attribute on intrinsic elements**, run after the
-   generated refresh, to replace escape hatch 2's manual keep-and-call
-   pattern. `onUpdate` is already an attribute. Worth it if the pattern keeps
-   appearing, and it would be the natural thing to teach.
+All settled 2026-09-27. Do not reopen without new information.
+
+1. ~~**Top-level views' input.**~~ Settled: the object form,
+   `GameView({ model })`, so every view has one signature. Today top-level
+   views take the model directly (`createGameView(game)`) or an object
+   holding it (`DemoView({ model, frameStats })`); a top-level view is never
+   used as a tag, so either would work, but one form is simpler to teach.
+2. ~~**An `onRefresh` attribute on intrinsic elements.**~~ Settled: yes. It
+   runs after the generated refresh and replaces escape hatch 2's manual
+   keep-and-call pattern, which already appears three times (the tank's
+   brush ring, the card face, the perfmon sparklines). `onUpdate` is already
+   an attribute. Built as part of the runtime's graduation (section 16, step
+   3).
 3. ~~**What to call the member roles in the docs.**~~ Settled 2026-09-27:
    *query bindings* and *relay bindings*, chosen from 22 candidate pairs.
    Values read once are query bindings with fixed answers, not a third role.
    Do not reopen without new information.
-4. **A lint rule** against `get[A-Z]` members in `*ViewBindings` interfaces
-   and exported `create*View` functions, to hold the convention once
-   migrated. Probably worth a few lines of ESLint config.
-5. **`CabinetView`.** It is the only view whose return type adds a method
-   (`requestExit()`). Renaming the function to `CabinetView` would share a
-   name with the interface. Rename the interface, or change how the cabinet
-   asks its view to exit.
+4. ~~**A lint rule.**~~ Settled: yes, against `get[A-Z]` members in
+   `*ViewBindings` interfaces and exported `create*View` functions. It
+   applies to each module as that module is migrated, so it holds the
+   convention without failing on code not yet migrated.
+5. ~~**`CabinetView`.**~~ Settled: the view stops exposing a method.
+   `CabinetView` is the only view whose return type adds one,
+   `requestExit()`, which `main.ts` calls when the pause menu's Exit is
+   chosen, to start the zoom back out to the menu. That is code outside the
+   view commanding it, the one call into a view in the repo. Instead, the
+   request to exit becomes cabinet model state that the view reads through a
+   query binding, and the end of the zoom is reported through a relay
+   binding. The `CabinetView` interface then goes, and the view is
+   `CabinetView(bindings): Container` like any other. Done when the cabinet
+   is migrated.
 
 ---
 
 ## 16. Implementation steps
 
-1. Decide this proposal. If accepted, archive 007 as superseded and update
-   the index.
-2. Update the style guide, `AGENTS.md`, glossary and the `mvt-view` and
+1. ~~Decide this proposal. If accepted, archive 007 as superseded and
+   update the index.~~ Done 2026-09-27.
+2. ~~Update the style guide, `AGENTS.md`, glossary and the `mvt-view` and
    `code-style` skills with the convention, so new code follows it from the
-   start.
-3. Graduate the JSX runtime: the `ValueOrGetter` rename, playground JSX
-   support, and the `<List>` guide into `docs/`.
-4. Migrate outsides, one module at a time (`common/`, then each demo, then
-   each game): function names, query binding names, fixed answers, and property
-   syntax. Type-check and run the benchmarks after each.
-5. Convert bodies to JSX where section 10's rule says so, starting with the
-   game views that rebuild children on a count change.
+   start.~~ Done 2026-09-27.
+3. Graduate the JSX runtime: ~~the `ValueOrGetter` rename~~ (done
+   2026-09-27), ~~the `onRefresh` attribute (open question 2)~~ (done
+   2026-09-27, section 18), playground JSX support, and the `<List>` guide
+   into `docs/`.
+4. Migrate outsides, one module at a time: function names, query binding
+   names, fixed answers, and property syntax. Type-check and run the
+   benchmarks after each. ~~Scramble, as the pilot.~~ Done 2026-09-27; see
+   section 17. ~~`common/`.~~ Done 2026-09-27; see section 18. Then each
+   demo, the cabinet (with open question 5), and the other games.
+5. Where a view's body would read better in JSX (section 10's guidance),
+   convert it, starting with the game views that rebuild children on a count
+   change. Optional, view by view; a plain TypeScript body is never wrong.
 6. ~~Rewrite the architecture bindings page by member role.~~ Done
    2026-09-27 (section 12). Rewrite the Building with MVT views and bindings
    pages for the new convention.
-7. Add the lint rule, if open question 4 says yes.
+7. Add the lint rule (open question 4), extending it to each module as it
+   is migrated. Scramble's is in place.
+
+---
+
+## 17. The Scramble pilot
+
+*Done 2026-09-27.* Scramble's 14 views were moved to the convention, to test
+it on real code before the other modules.
+
+### 17.1 What changed
+
+| Before | After |
+| --- | --- |
+| 14 `createXxxView` factories in `.ts` files | 14 `XxxView` functions: 13 with JSX bodies (`.tsx`), `TerrainView` imperative (`.ts`) |
+| `createGameView(game)` | `GameView({ model })` |
+| `getScreenX`, `getPhase`, `isSolid(col, row)`, ... | `screenX`, `phase`, `isSolidAt(col, row)`, ... |
+| Six queries declared as functions but read once | Six fixed answers: `tileSize: number`, `screenWidth: number`, ... |
+| Six hand-built pools of views, each view with an `isPresent` binding | Six `<List>`s over the model's `SlotList`s; empty slots hide themselves, so the presence bindings are gone |
+| 70 method-syntax members in the module | None; `method-signature-style` enforced |
+
+The lint rule (open question 4) is in `eslint.config.js`, applied to the
+files listed in `VIEW_CONVENTION_FILES`, which so far is Scramble.
+
+Measured with `npm run bench -- games-and-demos entry=scramble`, median of 3
+runs each:
+
+| | Before | After |
+| --- | --- | --- |
+| Model and view updates | 2.23 µs | 2.23 µs |
+| `refreshScene` | 8.95 µs | 4.45 µs |
+| Total per frame | 11.2 µs | 6.68 µs |
+| Pixi containers | 135 | 84 |
+| `onUpdate` and `onRefresh` methods | 46 | 40 |
+| Bytes allocated per frame | 2,730 | 273 |
+| Collections per simulated minute | 3 | 0 |
+
+The saved results in `benchmarks/results/` still show the old figures, since
+`--save` needs a run of the whole suite.
+
+### 17.2 What the pilot showed
+
+1. **The JSX-or-plain-TypeScript guidance held, with one refinement.** The
+   pilot chose JSX wherever it fitted, to try it out; only the terrain
+   needed a plain TypeScript body. Two views that redrew graphics every frame, the
+   explosion and the HUD's fuel bar, turned out not to need it: the explosion
+   is drawn once at full size and then scaled and faded, and the fuel bar is a
+   white sprite resized and tinted. That is likely where most of the 2.4 KB
+   per frame went (not measured separately). Refinement for section 10's
+   guidance, whichever body a view has: before writing a redraw, check whether drawing once and then
+   scaling, tinting or resizing would do.
+2. **Fixed answers made hidden bugs visible.** Declaring each query binding's
+   type forced a decision for every value, which found three read-once views
+   that a `grep` sweep had missed (base alert, death flash, section
+   announcement). See 017.
+3. **`<List>` removed a binding from every pooled view.** The old pools gave
+   each view an `isPresent` query binding; a `<List>` over a `SlotList` hides
+   empty slots itself.
+4. **Leaf views got smaller.** A sprite view is now one `<sprite>` rather than
+   a container holding a sprite, which is most of the drop in containers.
+5. **Text that follows a number needs a small change-gated getter.** The HUD
+   has two (score, and section and loop), and the falling-sand toolbar has
+   its own `mapOnChange`. A shared helper would save each view writing one;
+   008's `Watch()` builder, with memoised derivation, may be the place for it.
+6. **Embedding a view not yet migrated works as an expression.** The game view
+   calls `createOverlayView({ ... })` from `common/` inside its JSX. That glue
+   goes when `common/` is migrated.
+7. **A rename codemod was not needed here**, because every body was rewritten
+   anyway. It will matter for modules where only the outside changes. ESLint's
+   auto-fix handled the 21 method-syntax members in the models.
+
+### 17.3 Checked in the browser
+
+*2026-09-27:* checked by eye and by playtesting; everything looks and plays
+as before. That covers the places a difference could have shown: explosions
+(now scaled rather than redrawn), the fuel bar (now a resized, tinted
+sprite), the lives icons (now a `<List>`), and the play area's mask. Headless
+Chrome on the machine used drew the Pixi canvas blank, the cabinet menu
+included, so the check was by hand; automating it would need a browser
+driver such as Playwright.
+
+---
+
+## 18. Migrating `common/`
+
+*Done 2026-09-27.* The second module, and the first whose views are used
+everywhere: every game uses the overlay, `main.ts` the keyboard, touch and
+pause menu views, and two demos the perfmon.
+
+### 18.1 What changed
+
+| View | Body | Notes |
+| --- | --- | --- |
+| `OverlayView` | JSX (was plain TypeScript) | `width` and `height` became fixed answers, fixing its V-reactive bug (017); `getVisible` became `isVisible` |
+| `PerfmonView` | JSX (already) | Its sparklines use the new `onRefresh` attribute instead of a `ref` |
+| `PauseMenuView` | Plain TypeScript | Lays out its buttons by hand each frame, at the canvas's scale |
+| `TouchInputView` | Plain TypeScript | Rebuilds its controls when their configuration changes, and lays them out by hand. `getShowDpad` became `hasDpad`, `getFloatingJoystick` became `isJoystickFloating`, and so on |
+| `KeyboardInputView` | Plain TypeScript | No display; relay bindings only |
+
+Alongside:
+
+- **The `onRefresh` attribute** (open question 2) is in the JSX runtime,
+  with tests. One design change from section 10: the step **receives the
+  element**, as `ref` does. Its main use, redrawing a `Graphics` when a value
+  changes, needs the element, and without it a view would still need a `ref`
+  just to capture it. A step that ignores the argument is still a plain
+  refresh method.
+- **`memoiseLast`** (pilot finding 5), in `common/` with tests: a one-argument
+  function wrapped so it runs only when its argument changes. It replaces the
+  falling-sand toolbar's `mapOnChange`, and the toolbar and Scramble's HUD
+  use it. *Revised 2026-09-27:* this first landed as `mapOnChange(read, map)`,
+  which bundled the read with the mapping; `memoiseLast(fn)` is simpler and
+  more general, and leaves the read at the call site. It was briefly named
+  `memoise`, renamed because that name usually means a cache of every
+  argument seen, where this keeps only the last.
+- **All 61 method-syntax members in `common/`** were converted by ESLint's
+  auto-fix, including `SlotList<T>` and `OrderedSlotList<T>`. The variance
+  errors 017 expected did not appear: no code assigns a `SlotList` of a
+  subtype to one of its base type.
+- **Callers outside `common/`** were updated: the seven game views, the two
+  demos, and `main.ts`. A module not yet migrated calls a migrated view
+  directly, `OverlayView({ width, ... })`, so no glue is needed in that
+  direction. Scramble's game view now uses `<OverlayView ... />` as a tag.
+- The lint rule now covers `common/` as well as Scramble.
+
+Measured with `npm run bench -- games-and-demos`, every game and demo was
+the same before and after, within the runs' noise. Each game has one more
+refresh method, from the overlay's text element.
+
+### 18.2 What the migration showed
+
+1. **The guidance on bodies held.** Three of the five views kept plain
+   TypeScript bodies, and nothing about the convention pushed against that.
+   Their outsides changed; their insides did not need to.
+2. **Boolean query bindings needed the most thought.** `getShowDpad` is not
+   `showDpad` under the `is`/`has`/`can` rule; `hasDpad` reads better. Worth
+   a moment per boolean in the remaining modules.
+3. **Found while migrating:** the overlay holds a restart press for two
+   animation frames (`requestAnimationFrame`, twice) before relaying its
+   release, which is wall-clock timing in a view. Kept as it was; recorded in
+   017.
+
+### 18.3 Checked in the browser
+
+*2026-09-27:* checked by eye and by playtesting; everything looks and behaves
+as before: the game-over overlay (and tapping it to restart), the pause menu,
+the perfmon's sparklines in boids and falling sand, and the touch controls.

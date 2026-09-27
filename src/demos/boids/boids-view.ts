@@ -1,5 +1,5 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
-import { createPerfmonView, type FrameStats } from '#common';
+import { type FrameStats, PerfmonView } from '#common';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { createSliderView } from './slider-view';
@@ -183,7 +183,7 @@ export function createBoidsView(options: BoidsViewOptions): Container {
     controlsContainer.addChild(influenceCheckbox);
     yOffset += PERFMON_GAP;
 
-    const perfmon = createPerfmonView({ getFrameStats });
+    const perfmon = PerfmonView({ frameStats: getFrameStats });
     perfmon.position.set(0, yOffset);
     controlsContainer.addChild(perfmon);
 

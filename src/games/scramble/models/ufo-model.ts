@@ -8,7 +8,7 @@ export interface UfoModel {
     /** World row position in tile units. */
     readonly worldRow: number;
     /** Advance UFO state - moves left with vertical sine oscillation. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

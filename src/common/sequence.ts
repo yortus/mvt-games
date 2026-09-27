@@ -22,9 +22,9 @@ export interface Sequence<N extends string = string> {
     /** Named step lookup. Each property has its own `isActive` and `progress`. */
     readonly steps: { readonly [K in N]: { readonly isActive: boolean; readonly progress: number } };
     /** Start (or restart) the sequence from t=0. */
-    start(): void;
+    start: () => void;
     /** Advance by deltaMs. No-op when not active. */
-    update(deltaMs: number): void;
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

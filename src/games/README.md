@@ -67,13 +67,15 @@ src/games/breakout/
 │   ├── paddle-model.ts   Paddle position, input
 │   └── game-model.ts     Root model - composes children
 └── views/
-    ├── index.ts           Barrel - re-exports createGameView and view constants
+    ├── index.ts           Barrel - re-exports GameView and view constants
     ├── view-constants.ts  View-only constants (pixel sizes, HUD layout)
     ├── game-view.ts       Top-level view - wires child views
     ├── ball-view.ts       Ball renderer
     ├── paddle-view.ts     Paddle renderer
     └── brick-view.ts      Brick renderer
 ```
+
+A view whose body is written in JSX is a `.tsx` file instead; see Step 3.
 
 Note: The `data/` directory is a practical organisational choice, not an MVT
 architectural layer.
@@ -156,57 +158,110 @@ function createGameModel(options: GameModelOptions): GameModel {
 
 ## Step 3: Create Views (`views/`)
 
-Create leaf views for each presentation entity, accepting bindings:
+Create leaf views for each presentation entity. A view is a function that
+takes a bindings object and returns a Pixi container (see
+[Style Guide: Views and Bindings](../../docs/reference/style-guide.md#views-and-bindings)):
 
 ```ts
-interface BallViewBindings {
-    getX: () => number;
-    getY: () => number;
+export interface BallViewBindings {
+    x: () => number;
+    y: () => number;
 }
+```
 
-function createBallView(bindings: BallViewBindings): Container {
-    const view = new Container();
-    const gfx = new Graphics();
-    gfx.circle(0, 0, BALL_RADIUS * SCALE).fill(0xffffff);
-    view.addChild(gfx);
+How the function builds its container is up to you. Write its body in JSX or
+in plain TypeScript: neither is required, both give the same outside, and
+callers cannot tell which a view uses. Here is the same ball view both ways.
 
-    function refresh(): void {
-        view.position.set(
-            bindings.getX() * SCALE,
-            bindings.getY() * SCALE,
-        );
-    }
+In JSX, in `ball-view.tsx`:
 
-    view.onRefresh = refresh;
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+export function BallView(bindings: BallViewBindings): Container {
+    return (
+        <graphics
+            x={() => bindings.x() * SCALE}
+            y={() => bindings.y() * SCALE}
+            ref={(g) => g.circle(0, 0, BALL_RADIUS * SCALE).fill(0xffffff)}
+        />
+    );
+}
+```
+
+In plain TypeScript, in `ball-view.ts`:
+
+```ts
+export function BallView(bindings: BallViewBindings): Container {
+    const view = new Graphics();
+    view.circle(0, 0, BALL_RADIUS * SCALE).fill(0xffffff);
+
+    view.onRefresh = () => {
+        view.position.set(bindings.x() * SCALE, bindings.y() * SCALE);
+    };
     return view;
 }
 ```
+
+Which to choose, view by view:
+
+- **JSX** tends to suit views that are mostly a tree of display objects whose
+  properties follow the model: sprites, text, a HUD, an overlay, and views
+  that compose child views or project collections with `<List>`. The
+  structure reads at a glance, and the runtime writes the refresh step for
+  you.
+- **Plain TypeScript** tends to suit views whose work is mostly drawing, or
+  managing their own display objects each frame (a pool of sprites, a ring
+  buffer of scrolling terrain), and views that need tight control of what
+  happens each frame. It is also the natural choice if you would rather not
+  use JSX at all.
+
+A game can mix the two freely. Scramble, for example, writes its terrain in
+plain TypeScript and its other views in JSX.
 
 Note: `SCALE` here is a view-level constant that converts world-units to pixels. The
 view imports it from the data layer or computes it from screen dimensions and
 arena size. Models never reference it.
 
-Create a top-level game view that receives the model directly and wires
-bindings for each leaf view:
+Create a top-level game view that takes the model in its bindings and wires
+the bindings of each leaf view. Again, either kind of body works:
 
 ```ts
-function createGameView(game: GameModel): Container {
+export interface GameViewBindings {
+    model: GameModel;
+}
+```
+
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+export function GameView(bindings: GameViewBindings): Container {
+    const { model } = bindings;
+    return (
+        <container>
+            <BallView x={() => model.ball.x} y={() => model.ball.y} />
+            <PaddleView x={() => model.paddle.x} width={PADDLE_WIDTH} />
+            {/* ... more child views ... */}
+        </container>
+    );
+}
+```
+
+```ts
+export function GameView(bindings: GameViewBindings): Container {
+    const { model } = bindings;
     const view = new Container();
-
-    view.addChild(createBallView({
-        getX: () => game.ball.x,
-        getY: () => game.ball.y,
-    }));
-
-    view.addChild(createPaddleView({
-        getX: () => game.paddle.x,
-        getWidth: () => PADDLE_WIDTH,
-    }));
-
-    // ... more child views ...
+    view.addChild(
+        BallView({ x: () => model.ball.x, y: () => model.ball.y }),
+        PaddleView({ x: () => model.paddle.x, width: PADDLE_WIDTH }),
+        // ... more child views ...
+    );
     return view;
 }
 ```
+
+`width={PADDLE_WIDTH}` is a fixed answer: `PaddleViewBindings` declares
+`width: number`, so the paddle view reads it once, at construction.
 
 ## Step 4: Create the Entry Point
 
@@ -225,7 +280,7 @@ function createBreakoutEntry(): GameEntry {
 
         start(stage: Container): GameSession {
             const gameModel = createGameModel({ /* options */ });
-            const gameView = createGameView(gameModel);
+            const gameView = GameView({ model: gameModel });
             stage.addChild(gameView);
 
             return {
@@ -293,7 +348,8 @@ const cabinet = createCabinetModel({
 - `data/` has constants in domain units (not pixels)
 - Models have `update(deltaMs)` methods and use domain-level coordinates
 - Models do not reference views or use wall-clock time
-- Leaf views accept bindings, top-level view accepts model directly
+- Views are `XxxView(bindings)` functions; leaf views take query and relay
+  bindings, the top-level view takes `{ model }`
 - Views convert domain units to presentation units (pixels)
 - Entry point implements `GameEntry` with `start()` returning `GameSession`
 - Barrel files export public API at each level

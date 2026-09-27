@@ -7,7 +7,7 @@ export type Watchable = string | number | boolean | null | undefined;
 
 export interface Watcher<T extends Record<string, () => Watchable>> {
     /** Poll all getters, update change flags, and return the watched values. */
-    poll(): WatchedValues<T>;
+    poll: () => WatchedValues<T>;
 }
 
 export type WatchedValues<T extends Record<string, () => Watchable>> = {

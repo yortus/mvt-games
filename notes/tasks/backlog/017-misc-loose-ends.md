@@ -31,11 +31,14 @@ Settled questions that should not be reopened without new information are in
   generator over a `Uint32Array`), and Pixi's `rotation` setter (3.2 KB;
   boids are now turned with `skew`). The model still takes about
   0.5 ms per frame comparing every pair of boids.
-- **The games allocate on the hot path.** Pac-Man and Scramble about 2-3 KB
-  per frame, International Karate about 1 KB. Unexplored; the allocation
-  benchmark can find where it comes from.
+- **The games allocate on the hot path.** Pac-Man about 2-3 KB per frame,
+  International Karate about 1 KB. Unexplored; the allocation benchmark can
+  find where it comes from. Scramble was at 2.7 KB until 018's pilot
+  migration (2026-09-27), which brought it to about 270 bytes; the likely
+  causes were graphics redrawn every frame (each explosion, and the fuel bar
+  while fuel drains), now scaled or resized instead.
 - **Function members in types still use method syntax** in 537 places across
-  120 files (about 310 in the games), against the style guide's
+  120 files (about 310 in the games) as of 2026-09-26, against the style guide's
   "Function-Valued Properties in Types". Count them with
   `npx eslint --rule '{"@typescript-eslint/method-signature-style":["error","property"]}' src benchmarks scripts`.
   The lint rule's auto-fix converts them all; then enable the rule set to
@@ -46,6 +49,9 @@ Settled questions that should not be reopened without new information are in
   `SlotList<GameObject>`. Prefer fixing code that relies on this; failing
   that, add a narrow, documented exception for generic collection interfaces
   (as TypeScript's own `Array<T>` makes).
+  *Progress 2026-09-27:* done in Scramble and `common/` as part of 018's
+  migrations, where lint now enforces it. The `SlotList<T>` variance errors
+  did not appear. The rest goes module by module with 018.
 - **Views that read a query binding's getter only once.** Each declares a
   query binding as a function but reads it only at construction, so it
   silently stops following it. Rule [V-reactive](../../../docs/architecture/rules.md#view-rules)
@@ -53,16 +59,17 @@ Settled questions that should not be reopened without new information are in
   or a getter the view really follows, with change detection where the work
   is expensive. See
   [Changing and Fixed Answers](../../../docs/architecture/bindings.md#changing-and-fixed-answers).
-  Found by a sweep on 2026-09-27:
-  - [overlay-view.ts](../../../src/common/overlay-view.ts): `getWidth()` and
-    `getHeight()`, which size the backdrop and the text.
-  - Scramble [terrain-view.ts](../../../src/games/scramble/views/terrain-view.ts):
-    `getTileSize()`, `getVisibleCols()` and `getVisibleRows()`, which size its
-    ring buffer.
-  - Scramble [base-target-view.ts](../../../src/games/scramble/views/base-target-view.ts):
-    `getTileSize()`, which sizes its graphics.
-  - Scramble [hud-view.ts](../../../src/games/scramble/views/hud-view.ts):
-    `getScreenWidth()`, which places the lives and the fuel gauge.
+  Found by two sweeps on 2026-09-27 (the second also caught reads inside
+  constructor arguments, which the first missed):
+  - ~~`common/`'s overlay view: `getWidth()` and `getHeight()`, which size
+    the backdrop and the text.~~ Fixed 2026-09-27 by 018's migration of
+    `common/`: now fixed answers.
+  - ~~Scramble: the terrain view (tile size, visible columns and rows, which
+    size its ring buffer), the base target view (tile size), the HUD (screen
+    width), and, found by the second sweep, the base alert, death flash and
+    section announcement views (screen width and height).~~ Fixed
+    2026-09-27 by 018's Scramble pilot: each is now declared as a fixed
+    answer.
   - Kwazy Cactii: `getMatchSequence()`, read once by the banner, firework,
     flash overlay, match effects and shake container views and by the pieces
     view model. Harmless, since the board view creates one `Sequence` and
@@ -78,7 +85,14 @@ Settled questions that should not be reopened without new information are in
 
   If [018](../../proposals/018-one-view-convention.md) is migrated first,
   these are fixed as part of its step 4; otherwise fix them here, under the
-  current names.
+  current names. The second sweep found nothing else outside Scramble.
+
+- **The overlay times its release with `requestAnimationFrame`.** When the
+  overlay is released, it waits two animation frames before relaying
+  `onRestartPressed(false)`, presumably so the model's next update sees the
+  press. That is wall-clock timing in a view. Better: the model holds the
+  press itself until it has acted on it, so the view relays the release as
+  it happens. Found during 018's migration of `common/`, and kept as it was.
 
 ### Decide
 
@@ -186,3 +200,11 @@ Settled questions that should not be reopened without new information are in
   (Fix), found by sweeping the views for V-reactive violations after the
   architecture bindings page was rewritten in terms of query and relay
   bindings.
+- 2026-09-27: 018's Scramble pilot fixed Scramble's six read-once views,
+  three of which the first sweep had missed. Scramble's method-syntax members
+  were converted in the same pass, and `method-signature-style` is enforced
+  there. Scramble also now allocates about 270 bytes per frame, down from
+  2.7 KB (see the hot-path allocation item).
+- 2026-09-27: 018's migration of `common/` fixed the overlay's read-once
+  size and converted `common/`'s method syntax; added the overlay's
+  `requestAnimationFrame` item (Fix).

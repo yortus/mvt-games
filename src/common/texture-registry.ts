@@ -6,9 +6,9 @@ import { Assets, type Spritesheet, type Texture } from 'pixi.js';
 
 export interface TextureRegistry<T extends TextureNameMap> {
     /** Load the spritesheet and populate the texture record. */
-    load(): Promise<void>;
+    load: () => Promise<void>;
     /** Return the loaded texture record. Throws if load() has not completed. */
-    get(): TextureRecord<T>;
+    get: () => TextureRecord<T>;
 }
 
 /** A (possibly nested) map of logical names to spritesheet frame IDs. */
