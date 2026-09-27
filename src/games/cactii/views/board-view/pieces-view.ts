@@ -71,11 +71,11 @@ export function PiecesView(bindings: PiecesViewBindings): Container {
                 const row = r, col = c;
                 const cactus = CactusView({
                     kind: () => bindings.cells()[row][col].kind,
-                    x: () => vm.getCellX(bindings.cells()[row][col]),
-                    y: () => vm.getCellY(bindings.cells()[row][col]),
-                    alpha: () => vm.getCellAlpha(bindings.cells()[row][col]),
-                    scale: () => vm.getCellScale(bindings.cells()[row][col]),
-                    rotation: () => vm.getCellRotation(bindings.cells()[row][col]),
+                    x: () => vm.xFor(bindings.cells()[row][col]),
+                    y: () => vm.yFor(bindings.cells()[row][col]),
+                    alpha: () => vm.alphaFor(bindings.cells()[row][col]),
+                    scale: () => vm.scaleFor(bindings.cells()[row][col]),
+                    rotation: () => vm.rotationFor(bindings.cells()[row][col]),
                 });
                 view.addChild(cactus);
                 cactusContainers.push(cactus);

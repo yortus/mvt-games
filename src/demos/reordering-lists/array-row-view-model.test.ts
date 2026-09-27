@@ -31,13 +31,13 @@ describe('array row view model', () => {
         const { vm } = setup([0, 1, 2]);
 
         vm.update(0);
-        expect(vm.getX(2)).toBe(2 * PITCH);
-        expect(vm.getAlpha(2)).toBe(0);
-        expect(vm.getScale(2)).toBeLessThan(1);
+        expect(vm.xAt(2)).toBe(2 * PITCH);
+        expect(vm.alphaAt(2)).toBe(0);
+        expect(vm.scaleAt(2)).toBeLessThan(1);
 
         settle(vm);
-        expect(vm.getAlpha(2)).toBeCloseTo(1, 3);
-        expect(vm.getScale(2)).toBeCloseTo(1, 3);
+        expect(vm.alphaAt(2)).toBeCloseTo(1, 3);
+        expect(vm.scaleAt(2)).toBeCloseTo(1, 3);
     });
 
     it('slides reordered cards: each carries its position to its new index', () => {
@@ -49,12 +49,12 @@ describe('array row view model', () => {
 
         // Index 2 now holds the card that was at index 0, so it is still near
         // the left and travelling right.
-        expect(vm.getX(2)).toBeLessThan(PITCH);
-        expect(vm.getX(0)).toBeGreaterThan(PITCH);
+        expect(vm.xAt(2)).toBeLessThan(PITCH);
+        expect(vm.xAt(0)).toBeGreaterThan(PITCH);
 
         settle(vm);
-        expect(vm.getX(0)).toBeCloseTo(0, 3);
-        expect(vm.getX(2)).toBeCloseTo(2 * PITCH, 3);
+        expect(vm.xAt(0)).toBeCloseTo(0, 3);
+        expect(vm.xAt(2)).toBeCloseTo(2 * PITCH, 3);
     });
 
     it('slides the cards after a removed one over its gap', () => {
@@ -64,9 +64,9 @@ describe('array row view model', () => {
         ids.splice(0, 1);
         vm.update(FRAME_MS);
 
-        expect(vm.getX(0)).toBeGreaterThan(PITCH / 2);
+        expect(vm.xAt(0)).toBeGreaterThan(PITCH / 2);
         settle(vm);
-        expect(vm.getX(0)).toBeCloseTo(0, 3);
+        expect(vm.xAt(0)).toBeCloseTo(0, 3);
     });
 
     it('treats a card that returns after leaving the row as entering again', () => {
@@ -78,7 +78,7 @@ describe('array row view model', () => {
         ids.push(2, 1, 0);
         vm.update(0);
 
-        expect(vm.getX(0)).toBe(0);
-        expect(vm.getAlpha(0)).toBe(0);
+        expect(vm.xAt(0)).toBe(0);
+        expect(vm.alphaAt(0)).toBe(0);
     });
 });

@@ -380,7 +380,7 @@ view.addChild(ShipView({ screenX: () => ship.x * TILE_SIZE, screenY: () => ship.
 | Query binding with a position or index | Ends in `At` | `tileKindAt(row, col)`, `isSolidAt(col, row)` |
 | Query binding with a key | Ends in `For` | `colorFor(kind)` |
 | Relay binding | `on` + what the user did, not what it should cause | `onFirePressed` ✅ · `onShoot` ❌ |
-| View model option | The same as a query or relay binding: a view model is fed from its view's bindings | `count`, `idAt(index)` |
+| View model option or member | The same as a query or relay binding: a view model is fed from its view's bindings, and its view reads it the same way | `count`, `idAt(index)`, `xFor(cell)` |
 
 In JSX, a view's bindings are written as attributes. Other JSX libraries call
 the same object *props*; this project does not, because the architecture's

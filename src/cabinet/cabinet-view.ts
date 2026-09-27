@@ -187,6 +187,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
 
     // ---- Lifecycle --------------------------------------------------------
 
+    view.onUpdate = update;
     view.onRefresh = refresh;
 
     const originalDestroy = view.destroy.bind(view);
@@ -231,20 +232,27 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         }
 
         if (transitioning) return;
+        positionCards();
+    }
 
-        // Smooth scroll interpolation
+    /** Advances the presentation state: the zoom transition, and the carousel's eased scroll. */
+    function update(deltaMs: number): void {
+        if (zoomTimeline) zoomTimeline.time(zoomTimeline.time() + deltaMs / 1000);
+        if (transitioning) return;
+
+        // Ease the scroll towards its target: LERP_SPEED of the way per 60fps
+        // frame, whatever the frame rate.
         const diff = scrollTarget - scrollCurrent;
         if (Math.abs(diff) < LERP_SNAP) {
             scrollCurrent = scrollTarget;
         }
         else {
-            scrollCurrent += diff * LERP_SPEED;
+            scrollCurrent += diff * (1 - Math.pow(1 - LERP_SPEED, deltaMs / FRAME_MS_60FPS));
         }
-
-        positionCards();
     }
 
     // ---- Zoom transitions (presentation-only GSAP timelines) --------------
+    // Paused, and advanced only by `update(deltaMs)`.
 
     function startZoomIn(cardIndex: number): void {
         transitioning = true;
@@ -252,6 +260,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
+            paused: true,
             onComplete() {
                 menuLayer.visible = false;
                 resetAllCards();
@@ -282,6 +291,10 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         if (card.thumb) {
             tl.to(card.thumb, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
         }
+
+        // Show the start state now, not on the first update: every tween's
+        // start values, including those that start later.
+        tl.time(0);
     }
 
     function startZoomOut(cardIndex: number): void {
@@ -299,6 +312,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
 
         const tl = zoomTimeline = gsap.timeline({
+            paused: true,
             onComplete() {
                 transitioning = false;
                 highlightedIndex = -1;
@@ -328,6 +342,10 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         if (card.thumb) {
             tl.fromTo(card.thumb, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
         }
+
+        // Show the start state now, not on the first update: every tween's
+        // start values, including those that start later.
+        tl.time(0);
     }
 
     function resetAllCards(): void {
@@ -480,9 +498,11 @@ const ALPHA_FALLOFF = 0.25;
 const ALPHA_MIN = 0.15;
 const MAX_VISIBLE_DISTANCE = 3.5;
 
-// Smooth scroll interpolation
+// Smooth scroll interpolation: the share of the remaining distance covered per
+// 60fps frame, and the distance at which the scroll snaps to its target.
 const LERP_SPEED = 0.15;
 const LERP_SNAP = 0.01;
+const FRAME_MS_60FPS = 1000 / 60;
 
 // Zoom transition
 const ZOOM_DURATION = 0.4;

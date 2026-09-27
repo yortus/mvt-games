@@ -386,8 +386,8 @@ extract it into a **view model** - a technique borrowed from MVVM:
 - Created and owned by the view that uses it (an internal detail)
 - Has no view or scene-graph dependencies (no Pixi.js imports)
 - Independently testable
-- Its options are named like bindings (`count`, `idAt(index)`, not
-  `getCount`), since they are fed from the view's bindings
+- Its options and members are named like bindings (`count`, `idAt(index)`,
+  `xFor(cell)`, not `getCount`), since they are fed from and read by views
 
 When multiple views share a view model, the nearest common parent creates
 the view model and passes it to both views.

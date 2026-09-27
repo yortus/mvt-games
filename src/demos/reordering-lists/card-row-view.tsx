@@ -49,9 +49,9 @@ export function CardRowView(bindings: CardRowViewBindings): Container {
                         <CardView
                             label={() => card().label}
                             color={() => card().color}
-                            x={() => arrayRow.getX(index)}
-                            alpha={() => arrayRow.getAlpha(index)}
-                            scale={() => arrayRow.getScale(index)}
+                            x={() => arrayRow.xAt(index)}
+                            alpha={() => arrayRow.alphaAt(index)}
+                            scale={() => arrayRow.scaleAt(index)}
                             onPressed={() => model.moveToFront(card())}
                         />
                     )}
@@ -66,10 +66,10 @@ export function CardRowView(bindings: CardRowViewBindings): Container {
                         <CardView
                             label={() => slot().value.label}
                             color={() => slot().value.color}
-                            x={() => slotRow.getX(index)}
-                            y={() => slotRow.getY(index)}
-                            alpha={() => slotRow.getAlpha(index)}
-                            scale={() => slotRow.getScale(index)}
+                            x={() => slotRow.xAt(index)}
+                            y={() => slotRow.yAt(index)}
+                            alpha={() => slotRow.alphaAt(index)}
+                            scale={() => slotRow.scaleAt(index)}
                             onPressed={() => model.moveToFront(slot().value)}
                         />
                     )}

@@ -99,8 +99,8 @@ export default tseslint.config(
             'no-restricted-syntax': [
                 'error',
                 {
-                    selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
-                    message: 'Name a query binding, or a view model option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
+                    selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModel|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
+                    message: 'Name a query binding, or a view model member or option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
                 },
                 {
                     selector: 'FunctionDeclaration[id.name=/^create[A-Z][A-Za-z0-9]*View$/]',

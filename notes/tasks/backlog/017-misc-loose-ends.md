@@ -31,12 +31,23 @@ Settled questions that should not be reopened without new information are in
   generator over a `Uint32Array`), and Pixi's `rotation` setter (3.2 KB;
   boids are now turned with `skew`). The model still takes about
   0.5 ms per frame comparing every pair of boids.
-- **The games allocate on the hot path.** Pac-Man about 2-3 KB per frame,
-  International Karate about 1 KB. Unexplored; the allocation benchmark can
-  find where it comes from. Scramble was at 2.7 KB until 018's pilot
-  migration (2026-09-27), which brought it to about 270 bytes; the likely
-  causes were graphics redrawn every frame (each explosion, and the fuel bar
-  while fuel drains), now scaled or resized instead.
+- **The games allocate on the hot path.** International Karate about 800
+  bytes per frame, unexplored. Fixed so far, 2026-09-27:
+  - Scramble, 2.7 KB to about 270 bytes, by 018's pilot migration; the likely
+    causes were graphics redrawn every frame (each explosion, and the fuel
+    bar while fuel drains), now scaled or resized instead.
+  - Pac-Man, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was the
+    model, not the views. Pac-Man and the four ghosts each started a GSAP
+    tween, and a `set`, for every one-tile step. Their moves are now a
+    `TileMove` (`src/games/pacman/models/tile-move.ts`, with tests): a
+    straight slide advanced by `update(deltaMs)` that allocates nothing, with
+    the same semantics (linear, starting from wherever the actor is, and no
+    time carried from one move to the next). The model now allocates nothing
+    per frame.
+
+  To split a game's allocation between its update and its refresh, the
+  `games-and-demos` case file's `frame` can be made to skip one of the two;
+  that is how Pac-Man's was found.
 - ~~**Function members in types still use method syntax**~~ Done 2026-09-27,
   as part of 018's migrations: none are left, and `method-signature-style` is
   enforced on every TypeScript file. The variance errors expected below did
@@ -64,21 +75,43 @@ Settled questions that should not be reopened without new information are in
   live: the touch input, cabinet, cactus, and Dig Dug and Galaga enemy
   views.
 
-- **The overlay times its release with `requestAnimationFrame`.** When the
-  overlay is released, it waits two animation frames before relaying
-  `onRestartPressed(false)`, presumably so the model's next update sees the
-  press. That is wall-clock timing in a view. Better: the model holds the
-  press itself until it has acted on it, so the view relays the release as
-  it happens. Found during 018's migration of `common/`, and kept as it was.
+- ~~**The overlay times its release with `requestAnimationFrame`.**~~ Done
+  2026-09-27. It waited two animation frames before relaying
+  `onRestartPressed(false)`, so that a model polling for the press would see
+  it: wall-clock timing in a view. Now the release waits for the overlay's
+  own `update(deltaMs)` step instead, which runs after the model's update in
+  the same frame, so the model always sees the press first (with tests). The
+  model-side fix suggested here was not taken: it would change seven games'
+  input for restart alone, while every other button has the same race. See
+  Decide.
 
-- **The cabinet view's zoom transitions play by themselves.** Launching and
-  exiting a game zoom the cabinet's cards with GSAP timelines that play on
-  wall-clock time, in a view; the view relays the launch when the zoom-in
-  finishes. The docs forbid autonomous animation in views. Presentation
-  state advanced by the view's `update(deltaMs)`, as other views' tweens
-  are, would fix it. Found during 018's migration of the cabinet.
+- ~~**The cabinet view's zoom transitions play by themselves.**~~ Done
+  2026-09-27. Its GSAP timelines are now paused and advanced by the view's
+  `update(deltaMs)`, which `main.ts` now runs (`updateScene` over the
+  cabinet view each tick; before, only game sessions ran it). Each timeline
+  renders at time 0 when built, so its first frame shows every tween's start
+  values. The carousel's eased scroll, which moved a fixed share of the way
+  per refresh, so ran faster at higher frame rates, and in `refresh()`, now
+  also advances in `update(deltaMs)`, scaled to match the old speed at
+  60fps.
+
+- **An interrupted `npm run bench -- all --save` empties every results
+  file.** Stopping one partway through (2026-09-27, during its first suite)
+  rewrote all nine `benchmarks/results/*.md` and `.json` files with their
+  headers but no tables, removing about 4,000 lines; they were restored from
+  git. A save should write only the suites that finished, or write nothing
+  until the run is complete. Until then, save one suite at a time
+  (`npm run bench -- <suite> --save`).
 
 ### Decide
+
+- **Button presses shorter than a frame are missed.** The games' models see
+  input by polling a pressed flag in their update, so a press and release
+  that both arrive between two updates leave no trace. Real presses almost
+  always last longer than a frame, and the overlay now guards its own
+  (see Fix). A general fix would have each game's player input latch a
+  press until the model has seen it. Worth it only if short presses turn out
+  to be a problem in practice.
 
 - **Hot path rules that cost nothing in V8.** The `hot-path-rules` suite
   found that `for...of` over an array and returning a `[col, row]` tuple cost
@@ -195,3 +228,6 @@ Settled questions that should not be reopened without new information are in
 - 2026-09-27: 018's remaining migrations (demos, cabinet, six games)
   finished the read-once views and the method syntax, both now done. Added
   the cabinet's self-playing zoom transitions (Fix).
+- 2026-09-27: Fixed Pac-Man's allocation (a model cause, not a view one), the
+  overlay's `requestAnimationFrame` release, and the cabinet's self-playing
+  transitions. Added the short-press question (Decide).

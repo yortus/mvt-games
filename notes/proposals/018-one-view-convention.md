@@ -883,9 +883,13 @@ noise.
 ~~**Should view models' options, and `common/`'s helpers' options, follow the
 query binding naming too?**~~ *Settled 2026-09-27:* view models yes, helper
 options no, as suggested below. The one view model still taking `get*`
-options, reordering-lists' array row, now takes `count` and `idAt(index)`;
-the style guide says so, and the lint rule covers `XxxViewModelOptions`
-interfaces too. Do not reopen without new information. For: one naming rule everywhere, and view models
+options, reordering-lists' array row, now takes `count` and `idAt(index)`.
+View models' outputs, which their views read just as they read query
+bindings, followed: `getX(index)` became `xAt(index)` in the reordering-lists
+view models, and `getCellX(cell)` became `xFor(cell)` in Kwazy Cactii's. The
+style guide says so, and the lint rule covers `XxxViewModel` and
+`XxxViewModelOptions` interfaces too. Do not reopen without new
+information. For: one naming rule everywhere, and view models
 are views' internals, so their inputs are the same kind of thing. Against:
 helper options are an ordinary function's parameters, not a view's
 contract, and `get` there reads naturally (`getSource`). Suggest: view

@@ -23,9 +23,9 @@
 
 export interface ArrayRowViewModel {
     /** Eased X of the card at `index`, relative to the row, in pixels. */
-    getX: (index: number) => number;
-    getAlpha: (index: number) => number;
-    getScale: (index: number) => number;
+    xAt: (index: number) => number;
+    alphaAt: (index: number) => number;
+    scaleAt: (index: number) => number;
     update: (deltaMs: number) => void;
 }
 
@@ -59,9 +59,9 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
     let frame = 0;
 
     return {
-        getX: (index) => indexX[index],
-        getAlpha: (index) => indexAlpha[index],
-        getScale: (index) => indexScale[index],
+        xAt: (index) => indexX[index],
+        alphaAt: (index) => indexAlpha[index],
+        scaleAt: (index) => indexScale[index],
         update,
     };
 

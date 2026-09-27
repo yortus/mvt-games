@@ -17,7 +17,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { refreshScene } from './pixi-mvt';
+import { refreshScene, updateScene } from './pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -481,13 +481,14 @@ async function main(): Promise<void> {
     }
 
     // ---- Ticker ------------------------------------------------------------
-    // Sessions advance their own models and views (`onUpdate`); one refresh
-    // pass then syncs the whole stage, including while paused so the pause
-    // menu and cabinet stay current.
+    // Sessions advance their own models and views (`onUpdate`); the cabinet's
+    // view advances its own transitions; one refresh pass then syncs the whole
+    // stage, including while paused so the pause menu and cabinet stay current.
     app.ticker.add((ticker) => {
         if (!paused) {
             cabinet.update(ticker.deltaMS);
         }
+        updateScene(cabinetContainer, ticker.deltaMS);
         refreshScene(app.stage);
     });
 

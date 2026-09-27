@@ -25,18 +25,46 @@ export interface OverlayViewBindings {
  * OVER". Pressable when it has an `onRestartPressed` relay binding.
  */
 export function OverlayView(bindings: OverlayViewBindings): Container {
-    const { width, height } = bindings;
+    const { width, height, onRestartPressed } = bindings;
     const style = { ...LABEL_STYLE, fontSize: Math.round(width * 0.05) };
 
+    // Presentation state: a release waiting to be relayed. A model sees a
+    // press only by polling in its update, so a tap whose press and release
+    // both arrive between two updates would be missed. The release is held
+    // back until this view's update, which runs after the model's in the same
+    // frame, so the model always sees the press first.
+    let isReleasePending = false;
+
     return (
-        <container label="overlay" visible={bindings.isVisible}>
-            <graphics
-                ref={(g) => drawBackdrop(g, width, height)}
-                {...pressHandlers(bindings.onRestartPressed)}
-            />
+        <container label="overlay" visible={bindings.isVisible} onUpdate={relayPendingRelease}>
+            <graphics ref={(g) => drawBackdrop(g, width, height)} {...pressHandlers()} />
             <text text={bindings.text} anchor={0.5} x={width / 2} y={height / 2} style={style} />
         </container>
     );
+
+    /** The backdrop's pointer handlers: none, so it is not interactive, without a relay binding to call. */
+    function pressHandlers(): PressHandlers {
+        if (onRestartPressed === undefined) return {};
+        const release = (): void => {
+            isReleasePending = true;
+        };
+        return {
+            cursor: 'pointer',
+            onPointerDown: () => {
+                isReleasePending = false;
+                onRestartPressed(true);
+            },
+            onPointerUp: release,
+            onPointerUpOutside: release,
+            onPointerCancel: release,
+        };
+    }
+
+    function relayPendingRelease(): void {
+        if (!isReleasePending) return;
+        isReleasePending = false;
+        onRestartPressed?.(false);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -55,23 +83,4 @@ interface PressHandlers {
     onPointerUp?: () => void;
     onPointerUpOutside?: () => void;
     onPointerCancel?: () => void;
-}
-
-/** The backdrop's pointer handlers: none, so it is not interactive, without a relay binding to call. */
-function pressHandlers(onRestartPressed: ((pressed: boolean) => void) | undefined): PressHandlers {
-    if (onRestartPressed === undefined) return {};
-    const delayedRelease = (): void => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                onRestartPressed(false);
-            });
-        });
-    };
-    return {
-        cursor: 'pointer',
-        onPointerDown: () => onRestartPressed(true),
-        onPointerUp: delayedRelease,
-        onPointerUpOutside: delayedRelease,
-        onPointerCancel: delayedRelease,
-    };
 }
