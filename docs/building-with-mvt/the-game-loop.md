@@ -18,7 +18,7 @@ flowchart TB
     T["Ticker (frame loop)"] -- "1. update(deltaMs)" --> M["Models\nadvance state"]
     T -- "2. refresh()" --> V["Views\nread state, update presentation"]
     V -- "3. scene graph" --> R["Renderer\ndraws frame"]
-    M -. "bindings: get*()" .-> V
+    M -. "query bindings" .-> V
 ```
 
 1. **Update models** - the ticker passes `deltaMs` to models. Models advance
@@ -101,7 +101,7 @@ will always see the same value. A grid view and an overlay view both reading
 view refreshed.
 
 **No feedback loops.** Views don't mutate models during refresh (user input
-is relayed through `on*()` bindings and processed on the next update cycle).
+is reported through relay bindings and processed on the next update cycle).
 The data flow is one-directional within each frame: models produce state,
 views consume it.
 
@@ -110,7 +110,7 @@ views consume it.
 | Component    | Owns                                   | Receives                            | Produces                               | Must not                                |
 | ------------ | -------------------------------------- | ----------------------------------- | -------------------------------------- | --------------------------------------- |
 | **Model**    | State, domain logic, transitions       | `deltaMs` via `update()`            | Readable state (properties, accessors) | Know about views, use wall-clock time   |
-| **View**     | Presentation (+ optional cosmetic state) | State via `bindings.get*()`; `deltaMs` via `update()` for views with state | Presentational output, user input via `bindings.on*()` | Hold domain state, run autonomous animations |
+| **View**     | Presentation (+ optional cosmetic state) | State via query bindings; `deltaMs` via `update()` for views with state | Presentational output, user input via `bindings.on*()` | Hold domain state, run autonomous animations |
 | **Ticker**   | Frame loop, timing                     | `requestAnimationFrame` callbacks   | `deltaMs` for models, `refresh` calls  | Contain domain logic or rendering code  |
 
 ## What the Ticker Does NOT Do
@@ -121,7 +121,7 @@ The ticker is purely a timing orchestrator:
 | ----------------------------------- | ----------- |
 | Game rules, scoring, collisions     | Models      |
 | Presentation output                 | Views       |
-| Input handling and dispatch         | Views (via `on*()` bindings) |
+| Input handling and dispatch         | Views (via relay bindings)   |
 | Deciding what `deltaMs` to pass     | **Ticker**  |
 | Calling `update()` and triggering render | **Ticker** |
 

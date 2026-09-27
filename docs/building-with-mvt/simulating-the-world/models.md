@@ -186,8 +186,8 @@ The view converts to pixels:
 
 ```ts
 // In a leaf view's refresh():
-const pixelX = (bindings.getCol() + 0.5) * tileSize;
-const pixelY = (bindings.getRow() + 0.5) * tileSize;
+const pixelX = (bindings.col() + 0.5) * tileSize;
+const pixelY = (bindings.row() + 0.5) * tileSize;
 container.position.set(pixelX, pixelY);
 ```
 
@@ -205,7 +205,7 @@ const THRUST       = 200;  // world-units per second squared
 
 // View: one-time scale factor from world-units to pixels
 const SCALE = screenWidthPx / ARENA_WIDTH;
-container.position.set(bindings.getX() * SCALE, bindings.getY() * SCALE);
+container.position.set(bindings.x() * SCALE, bindings.y() * SCALE);
 ```
 
 ## The Factory Function Pattern

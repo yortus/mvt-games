@@ -34,12 +34,12 @@ Pixi.js, as the rest of this project does):
 
 ```ts
 interface BulletViewBindings {
-    getX: () => number;
-    getY: () => number;
+    x: () => number;
+    y: () => number;
     isVisible: () => boolean;
 }
 
-function createBulletView(bindings: BulletViewBindings): Container {
+function BulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     gfx.circle(0, 0, 4).fill(0xffffff);
@@ -47,7 +47,7 @@ function createBulletView(bindings: BulletViewBindings): Container {
 
     function refresh(): void {
         view.visible = bindings.isVisible();
-        view.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.x(), bindings.y());
     }
 
     view.onRefresh = refresh;
@@ -55,14 +55,22 @@ function createBulletView(bindings: BulletViewBindings): Container {
 }
 ```
 
-The view builds its display objects once at construction, then updates them
-each frame in `refresh()`. All data comes from bindings - the view doesn't
-know or care where the values originate.
+In this project a view is a function, named like `BulletView`, that takes one
+bindings object and returns a Pixi container. It builds its display objects
+once, then updates them each frame in `refresh()`. All data comes from
+bindings - the view doesn't know or care where the values originate.
 
-The example above shows `get*()` bindings for pulling in state required by the view. Views may also
-define `on*()` bindings for pushing user inputs received by the view back out - for example,
-`onButtonTapped()` or `onSwipedUp()`. See
-[Bindings](bindings.md) for the full pattern.
+::: tip Why views are named like `BulletView`, not `createBulletView`
+A JSX tag can call your own function only if its name starts with a capital
+letter. Naming views in PascalCase means any view can be used as a tag
+(`<BulletView ... />`) as well as called directly (`BulletView({ ... })`); see
+[Writing the Body in JSX](#writing-the-body-in-jsx).
+:::
+
+The example above has only query bindings (`x`, `y`, `isVisible`), which the
+view reads for the state it presents. Views may also have relay bindings,
+which the view calls to report user input - for example, `onButtonTapped()`
+or `onSwipedUp()`. See [Bindings](bindings.md) for the full pattern.
 
 ## What MVT Requires of Views
 
@@ -74,12 +82,13 @@ MVT imposes two architectural constraints on views:
 2. **No domain state or logic** - views do not own application state, enforce
    rules, or decide what happens next. That belongs in models.
 
-Everything else - whether you use factory functions or classes, Pixi.js
+Everything else - whether you write views as functions or classes, Pixi.js
 containers or DOM elements, `onRefresh` methods or manual call sites - is a style
-choice. The examples on this page use this repo's conventions (factory
-functions, Pixi.js scene graphs, `onRefresh` methods). See the
-[Style Guide](../../reference/style-guide.md) for this repo's specific
-conventions.
+choice. The examples on this page use this repo's conventions (a view is a
+function `XxxView(bindings)` returning a Pixi container, with an `onRefresh`
+method). See the
+[Style Guide](../../reference/style-guide.md#views-and-bindings) for this
+repo's specific conventions.
 
 ## The `refresh()` Contract
 
@@ -88,8 +97,11 @@ been updated. It reads current state and updates the presentation to match.
 
 Key principles:
 
-- **Reactive** - all binding values must be re-read in `refresh()`, never
-  cached at construction time. Binding values may change between frames.
+- **Reactive** - every value that may change between frames must be re-read
+  in `refresh()`, never cached at construction time. The one exception is a
+  query binding the view declares as a fixed value: the view reads it once,
+  and does not support it changing (see
+  [Bindings in Depth](bindings-in-depth.md#fixed-and-changeable-binding-values)).
 - **Idempotent** - calling `refresh()` twice with the same model state
   produces the same visual result.
 - **No side effects** - `refresh()` reads state and writes to the
@@ -100,15 +112,18 @@ Key principles:
   [Bindings](bindings.md)).
 
 ```ts
+// Created once: formats a score only when it differs from last frame's
+const scoreText = memoiseLast((score: number) => String(score));
+
 function refresh(): void {
     // Re-read bindings every frame - never cache these values
-    const score = bindings.getScore();
-    label.text = String(score);
-
-    const opacity = bindings.getOpacity?.() ?? 1;
-    container.alpha = opacity;
+    label.text = scoreText(bindings.score());
+    container.alpha = bindings.opacity?.() ?? 1;
 }
 ```
+
+`memoiseLast` (from `src/common/`) keeps `refresh()` from building a new
+string every frame: it runs `String(score)` only when the score changes.
 
 ## Scene Graphs in Pixi.js
 
@@ -127,7 +142,7 @@ allocation. For the full explanation, see
 [Architecture: Views](../../architecture/views.md#immediate-mode-data-flow-retained-mode-output).
 
 ```ts
-function createBulletView(bindings: BulletViewBindings): Container {
+function BulletView(bindings: BulletViewBindings): Container {
     const view = new Container();
     const gfx = new Graphics();
     view.addChild(gfx);
@@ -136,12 +151,12 @@ function createBulletView(bindings: BulletViewBindings): Container {
     gfx.circle(0, 0, 2).fill(0xffffff);
 
     function refresh(): void {
-        const active = bindings.isActive();
-        view.visible = active;
-        if (!active) return;
+        const isVisible = bindings.isVisible();
+        view.visible = isVisible;
+        if (!isVisible) return;
 
         // Update position from bindings each frame
-        view.position.set(bindings.getX(), bindings.getY());
+        view.position.set(bindings.x(), bindings.y());
     }
 
     view.onRefresh = refresh;
@@ -161,6 +176,53 @@ for how the passes are driven.
 view stops its `onRefresh` running, so it can show itself again next frame. To also
 skip refreshing everything below it while hidden, return `SKIP_DESCENDANTS`
 from `refresh()` instead of plain `return`.
+
+## Writing the Body in JSX
+
+The views above build their display objects by hand and write their own
+`refresh()`. This project also has a small JSX runtime (`src/pixi-jsx/`) that
+builds the same Pixi objects from tags, and writes the refresh step for you.
+Here is the bullet view again, with a JSX body:
+
+```tsx
+/** @jsxImportSource #pixi-jsx */
+
+function BulletView(bindings: BulletViewBindings): Container {
+    return (
+        <graphics
+            ref={(g) => g.circle(0, 0, 2).fill(0xffffff)}
+            visible={bindings.isVisible}
+            x={bindings.x}
+            y={bindings.y}
+        />
+    );
+}
+```
+
+Each attribute given a function is re-read every frame, as `refresh()` would
+re-read it; a plain value is set once. A `visible` function is read first,
+and while it returns `false` the element's other attributes and everything
+below it are skipped, as the hand-written version's early `return` does.
+`ref` receives the element once it is built, here to draw it.
+
+> **Try it live:** <PlaygroundLink preset="traffic-light-jsx" label="Traffic Light (JSX) in Playground" /> -
+> a view written in JSX, next to the plain TypeScript
+> <PlaygroundLink preset="traffic-light" label="Traffic Light" /> it matches.
+
+Neither kind of body is required. Both give the same outside, a function
+taking bindings and returning a container, so callers cannot tell which a
+view uses, and a view can choose whichever suits it:
+
+- **JSX** tends to suit views that are mostly a tree of display objects whose
+  properties follow the model: sprites, text, a HUD, an overlay, and views
+  that compose child views or project collections (see [Presenting Collections](collections.md)).
+- **Plain TypeScript** tends to suit views whose work is mostly drawing, or
+  managing their own display objects each frame (a pool, a ring buffer), and
+  views that need tight control of what happens each frame.
+
+The [Style Guide](../../reference/style-guide.md#writing-the-body) has more
+on choosing, and the rest of this guide uses whichever reads better for each
+example.
 
 ## What Does NOT Belong in a View
 
@@ -203,7 +265,8 @@ Ticker loop:
 ```
 
 In this project, that step is the view's `onUpdate` method
-(`view.onUpdate = update`), run by `updateScene` before any `onRefresh`. Like
+(`view.onUpdate = update`, or the `onUpdate` attribute in JSX), run by
+`updateScene` before any `onRefresh`. Like
 `onRefresh`, it is found wherever the view sits in the tree, so no parent has
 to forward `update(deltaMs)` to it.
 
@@ -226,13 +289,15 @@ MVT distinguishes between two kinds of views based on how they access state:
 | **Top-level application view** | Model(s) directly    | Application-specific, never reused |
 | **Leaf / reusable view**       | Bindings object      | Reusable across contexts           |
 
-**Top-level views** (like a game's main view) accept the model directly and
+**Top-level views** (like a game's main view) take the model itself and
 wire bindings for their child views. They are application-specific and have no
-reuse scenario, so the full bindings interface would add verbosity without
-benefit.
+reuse scenario, so a full bindings interface would add verbosity without
+benefit. In this project a top-level view still has the same signature as
+every other view, taking the model as its one binding: `GameView({ model })`.
 
-**Leaf views** (like the view of a single ship or bullet, a HUD panel, or an overlay) accept a
-`get*()`/`on*()` bindings object. This keeps them decoupled from any particular
-model shape, making them reusable and independently testable with mock bindings.
+**Leaf views** (like the view of a single ship or bullet, a HUD panel, or an
+overlay) take query and relay bindings. This keeps them decoupled from any
+particular model shape, making them reusable and independently testable with
+mock bindings.
 
 The details of this pattern are covered in [Bindings](bindings.md).

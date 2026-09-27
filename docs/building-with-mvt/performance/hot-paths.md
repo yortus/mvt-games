@@ -110,7 +110,7 @@ changed:
 ```ts
 // Good - redraw the maze only when the level changes
 const watcher = watch({
-    level: () => bindings.getLevel(),
+    level: () => bindings.level(),
 });
 
 function refresh(): void {
@@ -122,7 +122,7 @@ function refresh(): void {
 ```ts
 // Avoid in hot paths - clears and redraws every wall, every frame
 function refresh(): void {
-    drawMaze(mazeGraphics, bindings.getLevel());
+    drawMaze(mazeGraphics, bindings.level());
 }
 ```
 
@@ -140,7 +140,7 @@ detection to skip the update:
 let prevScore = -1;
 
 function refresh(): void {
-    const score = bindings.getScore();
+    const score = bindings.score();
     if (score !== prevScore) {
         prevScore = score;
         label.text = String(score);

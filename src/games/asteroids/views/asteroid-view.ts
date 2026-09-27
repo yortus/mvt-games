@@ -7,7 +7,6 @@ import type { AsteroidSize } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface AsteroidViewBindings {
-    isPresent: () => boolean;
     x: () => number;
     y: () => number;
     angle: () => number;
@@ -37,11 +36,6 @@ export function AsteroidView(bindings: AsteroidViewBindings): Container {
     }
 
     function refresh(): void {
-        if (!bindings.isPresent()) {
-            view.visible = false;
-            return;
-        }
-
         const watched = watcher.poll();
         if (watched.seed.changed || watched.radius.changed || watched.size.changed) {
             drawAsteroid(); // a different asteroid now occupies this slot - redraw its outline

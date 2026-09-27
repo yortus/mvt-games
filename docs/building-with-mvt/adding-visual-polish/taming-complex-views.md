@@ -39,7 +39,7 @@ be its own sub-view with a single responsibility.
 **Before** - one view doing too much:
 
 ```ts
-function createPlayerHudView(bindings: PlayerHudBindings): Container {
+function PlayerHudView(bindings: PlayerHudViewBindings): Container {
     // ... scene graph setup ...
 
     let displayedScore = 0;       // smooth score counter
@@ -69,12 +69,12 @@ function createPlayerHudView(bindings: PlayerHudBindings): Container {
 **After** - each concern in its own sub-view:
 
 ```ts
-function createPlayerHudView(bindings: PlayerHudBindings): Container {
+function PlayerHudView(bindings: PlayerHudViewBindings): Container {
     const view = new Container();
     view.addChild(
-        createSmoothScoreView(/* score bindings */),
-        createDamageFlashView(/* health bindings */),
-        createStatusIconView(/* buff bindings */),
+        SmoothScoreView(/* score bindings */),
+        DamageFlashView(/* health bindings */),
+        StatusIconView(/* buff bindings */),
     );
     return view;
 }
@@ -215,7 +215,7 @@ interface MatchEffectsViewModel {
 }
 
 function createMatchEffectsViewModel(
-    getIsMatching: () => boolean,
+    isMatching: () => boolean,
 ): MatchEffectsViewModel {
     let wasMatching = false;
     let timerMs = TOTAL_DURATION_MS;
@@ -226,9 +226,9 @@ function createMatchEffectsViewModel(
         get popupProgress() { /* compute from timerMs */ },
         get dustSpawned() { /* true after threshold */ },
         update(deltaMs) {
-            const isMatching = getIsMatching();
-            if (isMatching && !wasMatching) timerMs = 0;
-            wasMatching = isMatching;
+            const isMatchingNow = isMatching();
+            if (isMatchingNow && !wasMatching) timerMs = 0;
+            wasMatching = isMatchingNow;
             if (timerMs < TOTAL_DURATION_MS) timerMs += deltaMs;
         },
     };
@@ -239,9 +239,9 @@ The view creates the view model internally and delegates to it:
 
 ```ts
 // board-view.ts
-function createBoardView(bindings: BoardViewBindings): Container {
+function BoardView(bindings: BoardViewBindings): Container {
     const matchEffects = createMatchEffectsViewModel(
-        () => bindings.getPhase() === 'matching',
+        () => bindings.phase() === 'matching',
     );
 
     const view = new Container();

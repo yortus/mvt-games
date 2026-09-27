@@ -131,7 +131,7 @@ MVT requirement; see
 ```ts
 const FADE_DURATION_MS = 300;
 
-function createDoorView(bindings: DoorBindings): Container {
+function DoorView(bindings: DoorViewBindings): Container {
     const view = new Container();
     const sprite = new Sprite(doorTexture);
     view.addChild(sprite);
@@ -170,11 +170,11 @@ A view with presentation state is an ordinary `Container`. Its parent adds it
 like any other child and does nothing else:
 
 ```ts
-function createGameView(model: GameModel): Container {
+function GameView(bindings: GameViewBindings): Container {
     const view = new Container();
     view.addChild(
-        createDoorView(/* bindings */),
-        createScoreDisplayView(/* bindings */),
+        DoorView(/* bindings */),
+        ScoreDisplayView(/* bindings */),
     );
     return view;
 }
@@ -183,7 +183,7 @@ function createGameView(model: GameModel): Container {
 The entry file runs one update pass over the whole view tree, after the model:
 
 ```ts
-const gameView = createGameView(gameModel);
+const gameView = GameView({ model: gameModel });
 return {
     update(deltaMs) {
         gameModel.update(deltaMs);

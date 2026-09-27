@@ -32,7 +32,7 @@ The canonical definitions live in [Architecture Rules](../architecture/rules.md)
 | **V-refresh** | `refresh()` runs once per frame, after all models have updated | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-idempotent** | `refresh()` must be idempotent | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-readonly** | `refresh()` must not mutate models | [Architecture Rules](../architecture/rules.md#view-rules) |
-| **V-reactive** | Query bindings answered with functions must be re-read in `refresh()`, never cached | [Architecture Rules](../architecture/rules.md#view-rules) |
+| **V-reactive** | Query bindings given as functions must be re-read in `refresh()`, never cached | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-presentation** | Views may hold cosmetic presentation state the model does not track | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-output** | Views can target any output technology | [Architecture Rules](../architecture/rules.md#view-rules) |
 | **V-tree** | View trees do not need to mirror model trees | [Architecture Rules](../architecture/rules.md#view-rules) |

@@ -30,7 +30,7 @@ The `<List>` projection (section 5.3) is done and covered by tests in
 visual demo (`src/demos/ordered-list/`) are also done.
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
-component. [the patterns guide](../../src/pixi-jsx/list-patterns.md) for how the two
+component. [the patterns guide](../../docs/building-with-mvt/presenting-the-world/collections.md) for how the two
 compose. [the plugin rework plan](./001-mvt-plugin-rework-plan.md) for the refresh
 pass whose `SKIP_DESCENDANTS` sentinel makes hidden slots free.
 

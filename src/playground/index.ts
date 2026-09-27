@@ -9,37 +9,8 @@ import { createEditorPanel } from './editor-panel';
 import { createControlsPanel } from './controls-panel';
 import { createConsolePanel } from './console-panel';
 import { createSandboxHost, type SandboxMessage } from './sandbox';
-import { presets, getPresetById, type Preset } from './presets';
+import { presets, getPresetById, newProjectTemplate, type Preset } from './presets';
 import { readState, pushState } from './url-state';
-
-// ---------------------------------------------------------------------------
-// New project template
-// ---------------------------------------------------------------------------
-
-const NEW_PROJECT_MODEL = `// Model - owns state and logic
-// Advance state in update(deltaMs).
-
-function createModel(): any {
-    return {
-        update(deltaMs: number) {
-        },
-    };
-}
-`;
-
-const NEW_PROJECT_VIEW = `// View - stateless renderer
-// Read state from model, write to scene graph.
-
-function createView(model: any): any {
-    const view = new Container();
-
-    return {
-        view,
-        refresh() {
-        },
-    };
-}
-`;
 
 const CUSTOM_STORAGE_KEY = 'mvt-playground-custom';
 
@@ -367,8 +338,8 @@ function main(): void {
             sandbox.stop();
             consolePanel.clear();
             if (!loadCustomCode()) {
-                editor.setModelCode(NEW_PROJECT_MODEL);
-                editor.setViewCode(NEW_PROJECT_VIEW);
+                editor.setModelCode(newProjectTemplate.modelCode);
+                editor.setViewCode(newProjectTemplate.viewCode);
                 controls.setCanvasWidth(400);
                 controls.setCanvasHeight(400);
             }

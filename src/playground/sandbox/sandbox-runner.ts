@@ -1,16 +1,16 @@
 // ---------------------------------------------------------------------------
 // Sandbox runner - executes inside the sandboxed iframe
 // ---------------------------------------------------------------------------
-// Receives model + view source code from the host page, transpiles via
-// Sucrase, wires up the MVT ticker loop, and renders to a Pixi canvas.
+// Receives model + view source code from the host page, transpiles it (see
+// `compile.ts`), wires up the MVT ticker loop, and renders to a Pixi canvas.
 // All errors and console output are forwarded to the host via postMessage.
 // ---------------------------------------------------------------------------
 
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
-import { transform } from 'sucrase';
 // Also installs the `onUpdate`/`onRefresh` methods on `Container`, before any
 // user view code runs
 import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../../pixi-mvt';
+import { type CodeKind, jsxGlobals, transpile as compile } from './compile';
 import type { HostMessage, SandboxMessage } from './messages';
 
 // ---------------------------------------------------------------------------
@@ -21,21 +21,11 @@ function sendToHost(msg: SandboxMessage): void {
     window.parent.postMessage(msg, '*');
 }
 
-/** Strip import statements from user code and return cleaned source. */
-function stripImports(code: string): string {
-    // Remove `import ... from '...'` and `import '...'` lines
-    return code.replace(/^\s*import\s+.*?['"].*?['"];?\s*$/gm, '// [import stripped]');
-}
-
-/** Transpile TypeScript to JavaScript using Sucrase (type-stripping only). */
+/** Transpile one editor's code, reporting a syntax error to the host. */
 function transpile(code: string, label: string): string | undefined {
+    const kind: CodeKind = label === 'Model' ? 'model' : 'view';
     try {
-        const cleaned = stripImports(code);
-        const result = transform(cleaned, {
-            transforms: ['typescript'],
-            disableESTransforms: true,
-        });
-        return result.code;
+        return compile(code, kind);
     }
     catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -45,7 +35,7 @@ function transpile(code: string, label: string): string | undefined {
             kind: 'error',
             message: `${label} transpilation error: ${msg}`,
             line: lineMatch ? Number(lineMatch[1]) : undefined,
-            source: label === 'Model' ? 'model' : 'view',
+            source: kind,
         });
         return undefined;
     }
@@ -169,6 +159,8 @@ function createUserGlobals(): Record<string, unknown> {
         setBackground: (color: number) => {
             if (app) app.renderer.background.color = color;
         },
+        // What JSX in view code compiles to, and the JSX runtime's components
+        ...jsxGlobals,
     };
 }
 

@@ -19,7 +19,7 @@ implementation: a single `items` source replaced `length` and `item` (section
 `<Switch>` shipped as `<Switch>`/`<Match>` rather than the `kind`/`cases` form
 of section 5.2 (section 5.4).
 
-**Related:** [Patterns guide](../../src/pixi-jsx/list-patterns.md) - how to apply this to common
+**Related:** [Patterns guide](../../docs/building-with-mvt/presenting-the-world/collections.md) - how to apply this to common
 list shapes. [the `SlotList` proposal](./005-slot-list-proposal.md) - the
 model-side collection designed to be projected by this component.
 
@@ -1032,9 +1032,10 @@ the honest comparison and where the work moved from.
 7. **Done.** ~~Point `src/demos/list-swap/list.ts` at the barrel and delete the
    local copy.~~ Its tests went with it; `src/pixi-jsx/list.test.ts` covers the
    same ground under the hide-not-detach policy.
-8. Fold [the patterns guide](../../src/pixi-jsx/list-patterns.md) into
-   `docs/building-with-mvt/` if and when the JSX runtime graduates from
-   experimental. `docs/` currently makes no reference to `src/pixi-jsx/`.
+8. ~~Fold the patterns guide into `docs/building-with-mvt/` if and when the
+   JSX runtime graduates from experimental.~~ Done 2026-09-27, with 018's
+   Building with MVT rewrite: it is now
+   [Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md).
 
 ---
 

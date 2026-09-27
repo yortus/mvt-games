@@ -66,11 +66,11 @@ never re-read.
 
 ```ts
 // Wrong
-const rows = bindings.getRows(); // frozen
+const rows = bindings.rows(); // frozen
 
 // Correct
 function refresh(): void {
-    const rows = bindings.getRows(); // fresh each frame
+    const rows = bindings.rows(); // fresh each frame
 }
 ```
 
@@ -92,7 +92,7 @@ the view convert to pixels:
 readonly x: number;  // world-units
 
 // View: convert to pixels
-container.position.x = bindings.getX() * SCALE;
+container.position.x = bindings.x() * SCALE;
 ```
 
 See [Models (Learn)](../simulating-the-world/models.md).

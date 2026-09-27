@@ -47,8 +47,8 @@ export function HudView(bindings: HudViewBindings): Container
 ```
 
 - `PascalCase`, ending in `View`, so it works as a JSX tag (`<HudView ... />`)
-  and as a plain call (`HudView({ ... })`). A lowercase tag is an intrinsic
-  element, so `createHudView` could never be a tag.
+  and as a plain call (`HudView({ ... })`). A JSX tag calls your own function
+  only if its name starts with a capital letter.
 - The parameter is always `bindings`, of type `XxxViewBindings`. Never
   `props`, even in JSX files: in JSX, a view's bindings are written as
   attributes.
@@ -63,7 +63,7 @@ state:
 | **Reusable leaf view**  | Query and relay bindings   | Views of single game objects (a ship, a bullet), HUD panels, any view that could be reused across contexts |
 | **Top-level app view**  | The model itself           | Application-specific root views that are never reused |
 
-**[project convention]** A top-level view takes the model as a fixed answer in
+**[project convention]** A top-level view takes the model as a fixed value in
 its bindings, so it has the same signature as every other view:
 
 ```ts
@@ -86,8 +86,9 @@ presentation to match.
 Key principles:
 
 - **Reactive** - every value that may change between frames must be re-read
-  in `refresh()`, never cached at construction time. Only a value the view is
-  given as fixed may be read once.
+  in `refresh()`, never cached at construction time. The one exception is a
+  query binding the view declares as a fixed value: the view reads it once,
+  and does not support it changing.
 - **Idempotent** - calling `refresh()` twice with the same state produces
   the same result.
 - **No side effects** - `refresh()` reads state and writes to the presentation
@@ -117,20 +118,24 @@ member:
 Write every member as a function-valued property (`score: () => number`), not
 with method syntax.
 
-### Fixed and Changing Answers
+### Fixed and Changeable Binding Values
 
-**[MVT requirement]** A query binding's type says what the view supports:
+**[MVT requirement]** A query binding's type says whether the view supports
+its value changing:
 
 | Type | Use for | The view |
 | --- | --- | --- |
-| `() => T` | Model state, which changes | Calls it every refresh |
-| `T` | Values the view is built around (a size that shapes its structure, a label) | Reads it once, at construction |
-| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both kinds of answer | Handles both |
+| `() => T` | Model state, which changes | Supports change: calls it every refresh |
+| `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
+| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
+
+Supporting change is the more flexible choice; declare `T` only as an honest
+statement of a limitation. Widening `T` to `ValueOrGetter<T>` later relaxes
+it without breaking callers.
 
 **Never declare a query binding as a function and then read it only once.**
 The view would silently stop following a value its bindings promise to
-follow (rule V-reactive). If the view only supports a fixed value, declare it
-as `T`. Widening `T` to `ValueOrGetter<T>` later does not break callers.
+follow (rule V-reactive).
 
 ```ts
 export interface TerrainViewBindings {
@@ -248,7 +253,7 @@ building children by hand. A pool of bullets over a `SlotList`:
 ```
 
 A slot whose item is absent is hidden and skipped, so the item view needs no
-presence binding. See the [`<List>` guide](https://github.com/yortus/mvt-games/blob/main/src/pixi-jsx/list-patterns.md)
+presence binding. See [Presenting Collections](../building-with-mvt/presenting-the-world/collections.md)
 for other shapes.
 
 Any view can also be called as an expression inside a JSX body:
@@ -286,7 +291,7 @@ Build the scene graph once at construction time, then update it each frame in
 
 ```ts
 export function TerrainView(bindings: TerrainViewBindings): Container {
-    const { visibleCols, tileSize } = bindings; // fixed answers: read once
+    const { visibleCols, tileSize } = bindings; // fixed values: read once
     const view = new Container();
     const columns = createColumns(visibleCols + 4);
     view.addChild(...columns);
@@ -295,7 +300,7 @@ export function TerrainView(bindings: TerrainViewBindings): Container {
     return view;
 
     function refresh(): void {
-        const scrollCol = bindings.scrollCol(); // changing answer: every frame
+        const scrollCol = bindings.scrollCol(); // followed every frame
         // ... recycle columns that scrolled off, redraw them, position the rest
     }
 }
@@ -493,8 +498,8 @@ export function BulletView(bindings: BulletViewBindings): Container {
 ## Full References
 
 - [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings) - the view convention in full
-- [Architecture: Bindings](../architecture/bindings.md) - query and relay bindings, fixed and changing answers
-- [`<List>` guide](https://github.com/yortus/mvt-games/blob/main/src/pixi-jsx/list-patterns.md) - projecting collections
+- [Architecture: Bindings](../architecture/bindings.md) - query and relay bindings, fixed and changeable binding values
+- [Presenting Collections](../building-with-mvt/presenting-the-world/collections.md) - projecting collections with `<List>`
 - [Views (Learn)](../building-with-mvt/presenting-the-world/views.md) - introduction from scratch
 - [Bindings (Learn)](../building-with-mvt/presenting-the-world/bindings.md) - the bindings pattern
 - [Bindings in Depth](../building-with-mvt/presenting-the-world/bindings-in-depth.md) - advanced bindings topics
@@ -503,6 +508,3 @@ export function BulletView(bindings: BulletViewBindings): Container {
 - [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `refresh()`
-
-The Building with MVT pages above still show the older `createXxxView` and
-`get*()` convention; they will be rewritten once the migration is done.

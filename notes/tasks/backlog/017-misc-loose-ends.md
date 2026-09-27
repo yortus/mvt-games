@@ -150,6 +150,13 @@ Settled questions that should not be reopened without new information are in
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.
+  - **Pac-Man, after its game view became JSX (2026-09-27).** It allocates
+    about 384 bytes per frame, up from 234. Its update alone allocates
+    nothing, and so does its refresh alone; together they allocate about 160
+    bytes more: five actors (Pac-Man and four ghosts) each writing a
+    fractional `row` and `col` through `TileMove`, 16 bytes each. Replacing
+    the view's `<List>` with fixed views changes nothing, so it is the JSX
+    setup nearby, as in the synced scene. See 018 section 21.2.
   - **A clue from the attempt to add it to the suite.** Giving the synced
     scene a `values` option, with whole and fractional rules in two object
     literals of the same shape, made even the whole-number runs store boxed
@@ -225,13 +232,15 @@ falling-sand demo. Each is a new variant, measured with
   Lower priority, because `<List>` and `<Switch>` already refresh what they
   build. Trigger: hand-written views start building children inside their
   methods. [001](../../archive/001-mvt-plugin-rework-plan.md) section 13, item 1.
-- **Fold the `<List>` patterns guide into `docs/`.** The guide is
-  [src/pixi-jsx/list-patterns.md](../../../src/pixi-jsx/list-patterns.md).
-  Trigger: the JSX runtime graduates. 004 section 9, step 8.
-- **`<List>` follow-ups**: a `range()` helper, a lint rule against calling
-  the item accessor while building, merging the per-slot presence check into
-  the item view's method, and a typed `matchOn<T>()`. Each names its trigger.
-  004 section 11, items 1-4.
+- ~~**Fold the `<List>` patterns guide into `docs/`.**~~ Done 2026-09-27,
+  with 018's Building with MVT rewrite: it is now
+  [Presenting Collections](../../../docs/building-with-mvt/presenting-the-world/collections.md).
+- **`<List>` follow-ups**: a `range()` helper, merging the per-slot presence
+  check into the item view's method, and a typed `matchOn<T>()`. Each names its
+  trigger. 004 section 11, items 1, 3 and 4. Item 2, a lint rule against
+  calling the item accessor while building, is no longer needed: a slot's view
+  is now built the first time the slot holds an item, with that item in place
+  (018 section 21.3).
 - **A change-gate for idle subtrees** (`refreshWhen`). Unmeasured. Trigger: an
   idle-heavy UI appears. 010 section 8, item 5.
 

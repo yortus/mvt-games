@@ -3,9 +3,8 @@ import stylistic from '@stylistic/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
-// The one view convention (notes/proposals/018): views are `XxxView(bindings)`
-// functions, query bindings have no `get` prefix, and types use
-// function-valued properties.
+// Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
+// and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
     'src/**/*.{ts,tsx}',
 ];

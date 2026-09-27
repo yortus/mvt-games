@@ -12,14 +12,15 @@
  * </List>
  * ```
  *
- * An item view must not capture item data at construction time: slot `i` will
- * later hold a different item. Everything item-dependent must be a getter,
- * which is why `children` receives an accessor rather than a value.
+ * An item view must not keep item data it read at construction time: slot `i`
+ * will later hold a different item. Everything item-dependent must be a
+ * getter, which is why `children` receives an accessor rather than a value.
  *
- * Slots are built once and kept. A slot inside `length` whose item is absent
- * (a hole) is hidden and skips its subtree. Slots past `length` are detached,
- * so a list that was once long costs nothing for its unused tail, and are
- * reattached, not rebuilt, when the list grows back.
+ * A slot's item view is built once, the first time the slot holds an item, and
+ * kept. Until then the slot is an empty placeholder. A slot inside `length`
+ * whose item is absent (a hole) is hidden and skips its subtree. Slots past
+ * `length` are detached, so a list that was once long costs nothing for its
+ * unused tail, and are reattached, not rebuilt, when the list grows back.
  *
  * See `notes/archive/004-list-proposal.md` for the design.
  */
@@ -78,12 +79,13 @@ export interface ListProps<T> {
     items: ListSource<T> | (() => ListSource<T>);
     /**
      * Builds the view for `index`. Called at most once per index, ever, on the
-     * first frame `length` covers it, occupied or not.
+     * first frame the slot holds an item.
      *
-     * Call the accessor only inside bindings and refresh methods, never while
-     * building: the slot may be empty when it is built. Bindings are safe,
-     * because they first run on the slot's first refresh, and an empty slot
-     * skips its whole subtree.
+     * The accessor returns that item while the view is being built, so the view
+     * may read it to set itself up. Later items reach the view only through its
+     * bindings and refresh methods, so anything read at construction must also
+     * be followed there. An empty slot skips its whole subtree, so no binding
+     * sees an absent item.
      */
     children: (item: () => T, index: number) => Container;
     /** Handle on the list's own container, e.g. to set `sortableChildren`. */
@@ -164,10 +166,48 @@ export function List<T>(props: ListProps<T>): Container {
         for (let i = attachedCount; i < slots.length; i++) slots[i].destroy({ children: true });
     }
 
+    /**
+     * Builds slot `index`: its item view if the slot holds an item now, or a
+     * placeholder that builds the item view once it does. Either way the item
+     * view is built with its item already in place, so it may read the item
+     * while it is being built.
+     */
     function buildSlot(index: number): Container {
-        // The accessor reads the item the slot's presence check stored. Safe
-        // even for an empty slot: construction evaluates no bindings, so
-        // nothing reads the item until the slot's own refresh below.
+        const item = currentSource.at(index);
+        const slot = item === undefined ? buildPlaceholder(index) : buildItemView(index, item);
+        slots.push(slot);
+        return slot;
+    }
+
+    /**
+     * An empty, hidden stand-in for a slot that has never held an item. It keeps
+     * slot `i` as child `i`, and runs the slot's presence check; the first time
+     * the slot holds an item, it builds the item view and puts it in its place.
+     */
+    function buildPlaceholder(index: number): Container {
+        const placeholder = new Container();
+        placeholder.visible = false;
+        placeholder.onRefresh = () => {
+            const item = index < currentLength ? currentSource.at(index) : undefined;
+            if (item === undefined) return;
+            const slot = buildItemView(index, item);
+            slots[index] = slot;
+            // Swapped mid-pass, like a slot attached mid-pass: the running pass
+            // skips the detached placeholder, and will not visit the new slot
+            // until next frame, so it is refreshed here.
+            container.removeChildAt(index);
+            container.addChildAt(slot, index);
+            placeholder.destroy();
+            refreshScene(slot);
+        };
+        return placeholder;
+    }
+
+    function buildItemView(index: number, item: T): Container {
+        // The accessor reads the item the slot's presence check stored. Stored
+        // here first too, so the item view can read its item while it is being
+        // built.
+        slotItems[index] = item;
         const slot = props.children(() => slotItems[index] as T, index);
 
         // The slot's presence check runs before its own refresh, so no item
@@ -192,8 +232,6 @@ export function List<T>(props: ListProps<T>): Container {
             if (!isPresent) return SKIP_DESCENDANTS;
             return itemViewRefresh?.();
         };
-
-        slots.push(slot);
         return slot;
     }
 }
