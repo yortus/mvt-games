@@ -46,6 +46,39 @@ Settled questions that should not be reopened without new information are in
   `SlotList<GameObject>`. Prefer fixing code that relies on this; failing
   that, add a narrow, documented exception for generic collection interfaces
   (as TypeScript's own `Array<T>` makes).
+- **Views that read a query binding's getter only once.** Each declares a
+  query binding as a function but reads it only at construction, so it
+  silently stops following it. Rule [V-reactive](../../../docs/architecture/rules.md#view-rules)
+  forbids this. Fix each by declaring what the view supports: a fixed value,
+  or a getter the view really follows, with change detection where the work
+  is expensive. See
+  [Changing and Fixed Answers](../../../docs/architecture/bindings.md#changing-and-fixed-answers).
+  Found by a sweep on 2026-09-27:
+  - [overlay-view.ts](../../../src/common/overlay-view.ts): `getWidth()` and
+    `getHeight()`, which size the backdrop and the text.
+  - Scramble [terrain-view.ts](../../../src/games/scramble/views/terrain-view.ts):
+    `getTileSize()`, `getVisibleCols()` and `getVisibleRows()`, which size its
+    ring buffer.
+  - Scramble [base-target-view.ts](../../../src/games/scramble/views/base-target-view.ts):
+    `getTileSize()`, which sizes its graphics.
+  - Scramble [hud-view.ts](../../../src/games/scramble/views/hud-view.ts):
+    `getScreenWidth()`, which places the lives and the fuel gauge.
+  - Kwazy Cactii: `getMatchSequence()`, read once by the banner, firework,
+    flash overlay, match effects and shake container views and by the pieces
+    view model. Harmless, since the board view creates one `Sequence` and
+    never replaces it, but that makes it a fixed answer, so declare it as one.
+  - Borderline: Asteroids'
+    [asteroid-view.ts](../../../src/games/asteroids/views/asteroid-view.ts)
+    re-reads `getRadius()` and `getSize()` only when `getShapeSeed()` changes.
+    Correct while a new asteroid in a slot always brings a new seed; watch
+    all three, or document the assumption.
+  - Checked and live: the touch input view (labels watched), the cabinet
+    view (canvas size re-read on change), and the cactus view and the Dig
+    Dug and Galaga enemy views (kind watched).
+
+  If [018](../../proposals/018-one-view-convention.md) is migrated first,
+  these are fixed as part of its step 4; otherwise fix them here, under the
+  current names.
 
 ### Decide
 
@@ -135,6 +168,7 @@ Settled questions that should not be reopened without new information are in
 - [x] Boids allocation fixed, or its cause measured and recorded
 - [ ] Games' hot-path allocations found, and fixed or recorded
 - [ ] Method-syntax members converted and `method-signature-style` enabled
+- [ ] Views that read a getter only once fixed (V-reactive)
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
 - [ ] Browser benchmarking and CI benchmarking each decided
 - [ ] Fractional-number boxing explained, and fixed or recorded as a rule
@@ -148,3 +182,7 @@ Settled questions that should not be reopened without new information are in
   Fix item.
 - 2026-09-27: Added the unexplained fractional-number boxing (Investigate),
   and fixed the related boxing in the JSX runtime's watched props.
+- 2026-09-27: Added the views that read a query binding's getter only once
+  (Fix), found by sweeping the views for V-reactive violations after the
+  architecture bindings page was rewritten in terms of query and relay
+  bindings.

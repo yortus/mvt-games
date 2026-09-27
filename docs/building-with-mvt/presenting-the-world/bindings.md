@@ -18,7 +18,11 @@ receives at construction time:
 | `get*()` | Read current state | Model -> View | `getX(): number`                          |
 | `on*()`  | Relay user input   | View -> Model | `onTapped(x: number, y: number): void`    |
 
-For the language-neutral specification, see
+The architecture calls these two kinds of member *query bindings* and *relay
+bindings*. The
+`get*()` and `on*()` prefixes are this project's naming convention for them,
+not an MVT requirement; boolean query bindings use `is`, `has` or `can` instead of
+`get`. For the language-neutral specification, see
 [Architecture: Bindings](../../architecture/bindings.md).
 
 > **Try it live:** <PlaygroundLink preset="keyboard-sprite" label="Keyboard Sprite in Playground" /> -

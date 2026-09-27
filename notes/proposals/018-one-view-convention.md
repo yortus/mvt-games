@@ -34,7 +34,7 @@ method-syntax item and the parked `<List>` guide item),
 | 2 | Which one? | Option C: the JSX function-component shape, with JSX as the default body and an imperative body where it fits better | [6](#6-the-options) |
 | 3 | `createFooView` or `FooView`? | `FooView`. It works as a JSX tag and as a plain call; `createFooView` works only as a call | [7](#7-naming-the-view-createfooview-or-fooview) |
 | 4 | `props` or `bindings`? | `bindings`, in JSX files too. `props` is React's word, not JSX's, and it collides with "property" | [8](#8-naming-the-input-bindings-or-props) |
-| 5 | Keep the `get` prefix? | No. Name accessors for what they return, as boolean accessors already are. Add plain values for settings read once | [9](#9-naming-accessors-with-or-without-get) |
+| 5 | Keep the `get` prefix? | No. Name query bindings for what they return, as boolean query bindings already are. Let each query binding's type say whether it takes a fixed value, a function, or either | [9](#9-naming-accessors-with-or-without-get) |
 | 6 | Is JSX everywhere viable? | As a default, yes. As a rule, no: a few views are better imperative, and the repo already has the escape hatches | [10](#10-is-jsx-everywhere-viable) |
 | 7 | 007's bridge? | Not needed. It bridges a difference this proposal removes. Archive 007 as superseded, keeping its `ValueOrGetter` rename | [11](#11-what-happens-to-007) |
 | 8 | Architecture docs? | Stay free of JSX. Describe binding members by role, not by prefix | [12](#12-the-docs-architecture-versus-this-repo) |
@@ -50,8 +50,8 @@ The repo has two ways to write a view, and they do not compose without glue:
   handlers, builds Pixi containers imperatively, and sets `view.onRefresh`.
 - **JSX views** are function components: `FooView` takes a `FooViewProps`
   object whose getters have no `get` prefix (`grainCount: () => number`),
-  whose `on*` handlers are named exactly as bindings are, and whose settings
-  can be plain values (`cols: number`). See the falling-sand demo.
+  whose `on*` handlers are named exactly as bindings are, and whose fixed
+  values can be plain values (`cols: number`). See the falling-sand demo.
 
 The main question is whether to settle on one of these, or support both,
 perhaps with 007's transforms. Behind it are five smaller ones, each taken
@@ -80,7 +80,7 @@ Two constraints frame the answer:
 | Input type | 52 `*ViewBindings` interfaces | 6 `*Props` interfaces (falling-sand, reordering-lists) |
 | Accessors | 214 `get*` members, 27 `is*` members | bare: `grainCount`, `isFlipping` |
 | Handlers | 19 `on*` members | `on*`, the same |
-| Settings read once | a getter read at construction, or a separate options type | a plain value: `cols: number`, `label: string` |
+| Values read once | a getter read at construction, or a separate options type | a plain value: `cols: number`, `label: string` |
 | Body | Pixi objects built by hand, a hand-written `refresh` | JSX tags; getter attributes compiled into a refresh method |
 | Returns | `Container` | `Container` |
 
@@ -116,7 +116,7 @@ The two styles differ along several axes, and they fall into two groups:
 | Function name | `createFooView` | `FooView` | yes |
 | Word for the input | bindings | props | yes |
 | Accessor names | `getRow` | `row` | yes |
-| Settings read once | getter | plain value | yes |
+| Values read once | getter | plain value | yes |
 | How the body is written | Pixi calls | JSX tags | **no** |
 | What it returns, how it refreshes | `Container`, `onRefresh` | `Container`, `onRefresh` | yes, and already the same |
 
@@ -197,16 +197,17 @@ JSX stays an optional detail inside a few files.
 **Against.** It gives up what JSX is best at, composing views: a view can
 never be a tag. Inside JSX bodies the naming is mixed, since intrinsic
 elements use Pixi's names (`x`, `alpha`) and bindings use `getX`, so
-forwarding a binding means renaming it: `x={bindings.getX}`. Settings stay
-getters read once, which look live but are not (section 9.3). The
+forwarding a binding means renaming it: `x={bindings.getX}`. Values read once
+stay getters, which look live but are not (section 9.3). The
 falling-sand and reordering-lists demos, the most recent code in the repo,
 would be converted backwards.
 
 ### Option C: the JSX shape outside, JSX by default inside (recommended)
 
-Every view is `FooView(bindings: FooViewBindings): Container`. Accessors are
-named for what they return (`row`, `isAlive`), handlers are `on*` as now, and
-settings read once are plain values. New views are written in JSX by
+Every view is `FooView(bindings: FooViewBindings): Container`. Query bindings
+are named for what they return (`row`, `isAlive`), relay bindings are `on*` as
+now, and a query binding the view reads once takes a plain value. New views
+are written in JSX by
 default; a view whose work is mostly drawing or managing its own display
 objects is written imperatively, with the same outside.
 
@@ -374,37 +375,66 @@ rename is internal and optional.
 to someone reading one line with no context. That is the whole cost, and it
 is small against one naming rule for every tag.
 
-### 9.3 Settings read once become plain values
+### 9.3 Query bindings with fixed answers
 
-The JSX views take settings that never change as plain values:
-`TankView`'s `cols: number`, `ActionButtonView`'s `label: string`. The
-classic views have no way to say this, so they use getters and read them
-once at construction:
+*Revised 2026-09-27.* The first draft treated values a view reads once as a
+third kind of member, "settings". They are not: they are query bindings whose
+answer does not change. The architecture docs now describe this in
+[Changing and Fixed Answers](../../docs/architecture/bindings.md#changing-and-fixed-answers):
+a query binding is answered with a function the view calls every frame, or
+with a fixed value it reads once, and the bindings type declares which it
+accepts:
+
+| Declared as | Callers | The view |
+| --- | --- | --- |
+| `() => T` | Can supply anything; a fixed value must be wrapped, `() => 42`, which hides that it is fixed | Must support change, even for something structural such as a grid size |
+| `T` | Can supply only a fixed value | The simplest: read once at construction |
+| `ValueOrGetter<T>` | Supply whichever suits, and the wiring shows what is fixed | Handles both: wraps values in getters at construction (simple), or keeps the distinction to skip per-frame work (as the JSX runtime's codegen does) |
+
+Widening `T` or `() => T` to `ValueOrGetter<T>` does not break callers, so a
+view can start narrow and widen later. TypeScript makes `ValueOrGetter<T>`
+practical; the architecture page notes that most statically typed languages
+do not, and that it is ambiguous when `T` is itself a function type.
+
+**The views that read getters once are bugs, not a style.** Rule
+[V-reactive](../../docs/architecture/rules.md#view-rules) already forbids it:
 
 - [overlay-view.ts](../../src/common/overlay-view.ts) reads `getWidth()` and
   `getHeight()` once, to lay itself out.
 - [terrain-view.ts](../../src/games/scramble/views/terrain-view.ts) reads
   `getTileSize()`, `getVisibleCols()` and `getVisibleRows()` once, to size
   its ring buffer.
-- [boids-view.ts](../../src/demos/boids/boids-view.ts) has a separate
-  `BoidsViewOptions` type mixing the model, plain settings and getters.
+- Scramble's base target view and HUD read `getTileSize()` and
+  `getScreenWidth()` once.
 
-Each of these looks live to the caller but is not, which is what
-[Bindings in Depth](../../docs/building-with-mvt/presenting-the-world/bindings-in-depth.md#live-bindings)
-warns against. With plain values the type states the contract: **a function
-member is read every frame; a plain member is read once.** The "never cache
-a binding" rule then holds by construction.
+A sweep on 2026-09-27 found these, plus some lesser cases; the full list,
+and the views checked and found live, is in
+[017](../tasks/backlog/017-misc-loose-ends.md)'s Fix list.
 
-A view's bindings should use one or the other for each member, not
-`ValueOrGetter<T>`, so the view knows which it has. Intrinsic elements keep
-accepting both, as now. This matches 007 section 10, which declines to widen
-derived members for the same reason.
+Each declares a query binding that may change and silently stops following
+it. The fix is to declare what the view supports: `T` if it only handles a
+fixed value, or a getter that it genuinely follows. Separately,
+[boids-view.ts](../../src/demos/boids/boids-view.ts) has a
+`BoidsViewOptions` type mixing the model, fixed values and getters, which
+becomes an ordinary bindings type.
+
+For this repo:
+
+- **Model state:** `() => T`. It changes, so the query binding must be a
+  function.
+- **What the view is built around** (a size that shapes its structure, a
+  button's label): `T`, unless supporting change is cheap. It can widen
+  later without breaking callers.
+- **Views reused with both kinds of answer**, such as the shared views in
+  `common/`: `ValueOrGetter<T>`, where the convenience at many call sites
+  repays the extra work in one view. Intrinsic elements already accept both.
 
 ### 9.4 Recommendation
 
-(b): drop `get`. Accessors are named for what they return, booleans keep
-`is`/`has`/`can`, accessors taking a position or index end in `At`, handlers
-keep `on`, and settings read once are plain values. Write every member as a
+(b): drop `get`. Query bindings are named for what they return, booleans keep
+`is`/`has`/`can`, query bindings taking a position or index end in `At`, relay
+bindings keep `on`, and each query binding's type declares whether it accepts
+a fixed value, a function, or either (section 9.3). Write every member as a
 function-valued property (`row: () => number`), which is 017's method-syntax
 item; doing both in the same pass touches each interface once.
 
@@ -491,21 +521,19 @@ go ahead with the runtime's graduation.
 ## 12. The docs: architecture versus this repo
 
 **Architecture docs.** They should not mention JSX, components or props, and
-under this proposal they do not need to. One change is needed: describe a
-bindings object by the roles of its members rather than by prefixes.
-
-| Member | Role | When the view uses it |
-| --- | --- | --- |
-| Accessor | Reads current state | Every frame, in `refresh()` |
-| Handler | Relays user input | When the input happens |
-| Setting | A fixed value, such as a size or a label | Once, at construction |
-
-The pseudocode examples change from `getX: () -> number` to
-`x: () -> number`, with a sentence saying that naming is a convention of each
-language and codebase, and some prefix accessors with `get`. The "setting"
-row is new to the architecture docs. It fills a gap: a reusable view's fixed
-parameters, such as a button's label, are neither state nor application
-constants, which are the two cases the docs cover now.
+under this proposal they do not need to. *Done 2026-09-27:* the bindings
+page now describes a bindings object by the roles of its members, *query
+bindings* (read state, model to view) and *relay bindings* (report user
+input out of the view, view to model), rather than by `get*`/`on*` prefixes. Its pseudocode names
+query bindings for what
+they return (`x: () -> number`) and says naming is a convention of each
+language and codebase. A new section, "Changing and Fixed Answers", covers
+query bindings answered with fixed values (section 9.3), which fills a gap: a
+reusable view's fixed parameters, such as a button's label, were neither
+state nor application constants, the two cases the docs covered. Rules
+V-reactive, V-readonly, B-contract and B-optional, the ticker, overview and
+views pages, and the glossary (new *Query binding* and *Relay binding*
+entries) were updated to match.
 
 **Building with MVT docs.** These show what the repo does, JSX included. The
 views and bindings pages show a view written in JSX first, and the same
@@ -523,15 +551,16 @@ Adopt **option C**:
 1. Every view is a function `FooView(bindings: FooViewBindings): Container`
    (sections 6, 7).
 2. The input is called bindings everywhere, JSX files included (section 8).
-3. Accessors are named for what they return, with `is`/`has`/`can` for
-   booleans and `At` for accessors taking a position or index; handlers are
-   `on*`; settings read once are plain values (section 9).
+3. Query bindings are named for what they return, with `is`/`has`/`can` for
+   booleans and `At` for query bindings taking a position or index; relay
+   bindings are `on*`; each query binding's type declares whether it accepts a
+   fixed value, a function, or either (section 9).
 4. Bodies are JSX by default, and imperative where the view's work is
    drawing or managing its own display objects (section 10).
 5. 007 is archived as superseded (section 11).
-6. The architecture docs describe binding members by role and never mention
-   JSX; the Building with MVT docs teach the repo's convention and map its
-   terms (section 12).
+6. The architecture docs describe binding members as query and relay
+   bindings and never mention JSX (done); the Building with MVT docs teach
+   the repo's convention and map its terms (section 12).
 
 The grounds, in short: callers never see a view's body, so one outside shape
 gives all the consistency that matters while leaving each body free to be
@@ -552,7 +581,7 @@ constraint, code that cannot be changed, which this repo does not have
 | --- | --- | --- |
 | Rename view functions | 59 classic view files, their barrels and call sites | Yes: TypeScript rename |
 | Rename accessors | About 214 `get*` members in 52 interfaces, and their call sites | Mostly: a codemod stripping `get` and lowercasing, as in 007 section 5.2 applied to source; the five accessors with parameters by hand |
-| Settings to plain values | Getters read once (the overlay's size, the terrain's tile size and extent, the touch input's button labels, and others), and `BoidsViewOptions` | No: each needs checking that it really is fixed |
+| Fixed answers | Getters read once (listed in 017's Fix list, unless fixed there first), and `BoidsViewOptions` | No: each needs a decision between `T`, `() => T` and `ValueOrGetter<T>` (section 9.3) |
 | Method syntax to property syntax | 017's item: 537 places, most in these interfaces | Yes: ESLint auto-fix |
 | JSX bodies | Optional, per view | No |
 | JSX runtime graduation | `ValueOrGetter` rename; playground support (Sucrase `jsx` transform, runtime available in the sandbox); `<List>` guide into `docs/` (017's parked item) | Partly |
@@ -575,9 +604,10 @@ converts one.
    generated refresh, to replace escape hatch 2's manual keep-and-call
    pattern. `onUpdate` is already an attribute. Worth it if the pattern keeps
    appearing, and it would be the natural thing to teach.
-3. **What to call the three member roles in the docs.** "Accessor" and
-   "handler" are ordinary words; "setting" is proposed for the third, but any
-   plain word the docs already use would do.
+3. ~~**What to call the member roles in the docs.**~~ Settled 2026-09-27:
+   *query bindings* and *relay bindings*, chosen from 22 candidate pairs.
+   Values read once are query bindings with fixed answers, not a third role.
+   Do not reopen without new information.
 4. **A lint rule** against `get[A-Z]` members in `*ViewBindings` interfaces
    and exported `create*View` functions, to hold the convention once
    migrated. Probably worth a few lines of ESLint config.
@@ -598,10 +628,11 @@ converts one.
 3. Graduate the JSX runtime: the `ValueOrGetter` rename, playground JSX
    support, and the `<List>` guide into `docs/`.
 4. Migrate outsides, one module at a time (`common/`, then each demo, then
-   each game): function names, accessor names, settings to plain values, and
-   property syntax. Type-check and run the benchmarks after each.
+   each game): function names, query binding names, fixed answers, and property
+   syntax. Type-check and run the benchmarks after each.
 5. Convert bodies to JSX where section 10's rule says so, starting with the
    game views that rebuild children on a count change.
-6. Rewrite the architecture bindings page by member role, and the Building
-   with MVT views and bindings pages for the new convention.
+6. ~~Rewrite the architecture bindings page by member role.~~ Done
+   2026-09-27 (section 12). Rewrite the Building with MVT views and bindings
+   pages for the new convention.
 7. Add the lint rule, if open question 4 says yes.

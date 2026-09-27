@@ -16,9 +16,11 @@ MVT splits applications into three layers:
   In this repo, views set onUpdate / onRefresh methods on their Pixi
   containers, and updateScene / refreshScene (src/pixi-mvt/) run every such
   method in the tree, parents first. Views never forward these calls by hand.
-- **Bindings** - contract between view and model. get*() reads state, on*()
-  relays user input. Reusable views use bindings; top-level views access
-  models directly.
+- **Bindings** - contract between view and model. Query bindings read state
+  (a function called each frame, or a fixed value read once); relay bindings
+  report user input out of the view. In this repo, query bindings are
+  get*() / is*() members and relay bindings are on*() members. Reusable views
+  use bindings; top-level views access models directly.
 
 ## Frame Sequence
 

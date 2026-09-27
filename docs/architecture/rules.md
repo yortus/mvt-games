@@ -28,8 +28,8 @@
 | **V-stateless** | Views hold no domain state | Read state and write presentation output. No domain logic, no autonomous behaviour. Views are projections that can be replaced without affecting simulation outcomes. |
 | **V-refresh** | `refresh()` runs once per frame, after all models have updated | Views read settled state - no view sees a half-updated world. |
 | **V-idempotent** | `refresh()` must be idempotent | Calling it twice with the same model state produces the same output. No hidden side effects accumulate across frames. |
-| **V-readonly** | `refresh()` must not mutate models | Domain actions are relayed through `on*()` bindings, not triggered in refresh. Views are read-only projections within the frame. |
-| **V-reactive** | Binding values must be re-read in `refresh()`, never cached at construction | Values may change between frames. The view must always reflect current state. |
+| **V-readonly** | `refresh()` must not mutate models | Views report user input through relay bindings; they do not act on it in refresh. Views are read-only projections within the frame. |
+| **V-reactive** | Query bindings answered with functions must be re-read in `refresh()`, never cached at construction | Their values may change between frames, and the view must always reflect current state. A query binding the view reads only once must be declared as a fixed value, so the bindings state what the view supports. See [Changing and Fixed Answers](bindings.md#changing-and-fixed-answers). |
 | **V-presentation** | Views may hold cosmetic presentation state the model doesn't track | Such views gain an `update(deltaMs)` method. Extract complex logic into a view model. Presentation state must not affect domain outcomes. |
 | **V-output** | Views can target any output technology | Canvas, DOM, audio, terminal, test harness. MVT is not coupled to a particular renderer. |
 | **V-tree** | View trees do not need to mirror model trees | Domain structure and presentation needs are different concerns. Bindings decouple the two hierarchies. |
@@ -47,9 +47,9 @@
 
 | Rule | Constraint | Detail |
 |---|---|---|
-| **B-contract** | Bindings are the contract between a view and the world | `get*()` reads state (model to view). `on*()` relays user input (view to model). The bindings type is a complete manifest of every dependency. |
+| **B-contract** | Bindings are the contract between a view and the world | Query bindings read state (model to view). Relay bindings report user input out of the view (view to model). The bindings type is a complete manifest of every dependency. |
 | **B-reusable** | Reusable leaf views use a bindings interface; top-level views may access models directly | Leaf views stay decoupled and reusable. Top-level views are application-specific. |
-| **B-optional** | `on*()` bindings should usually be optional | Keeps views usable in more contexts without forcing no-op handlers. |
+| **B-optional** | Relay bindings should usually be optional | Keeps views usable in more contexts without forcing no-op handlers. |
 | **B-wiring** | Bindings are wired at the view construction site | The view does not know how it is connected to the outside. |
 
 ## Hot-Path Rules

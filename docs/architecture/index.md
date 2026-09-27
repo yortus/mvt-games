@@ -87,7 +87,7 @@ assembles proven ideas into a framework suited to frame-based applications:
 | ----------------- | --------------------------------------------------------- |
 | MVC Model         | **Model** - owns state and domain logic                   |
 | MVC Controller    | **Ticker** - orchestrates the frame loop                  |
-| MVVM Bindings     | **Bindings** - the `get*()`/`on*()` contract between view and model |
+| MVVM Bindings     | **Bindings** - query and relay bindings, the contract between view and model |
 | Passive View      | **View** - reads state through bindings, holds no domain state |
 | Immediate mode    | **View data flow** - `refresh()` re-reads all state every frame |
 | Retained mode     | **View output** - scene graph built once, mutated per frame |
@@ -105,7 +105,7 @@ drives a steady frame loop where models advance and views refresh every frame.
 |---|---|
 | [Models](models.md) | The `update(deltaMs)` contract, domain-level state, what doesn't belong |
 | [Views](views.md) | Domain-statelessness, `refresh()`, immediate/retained hybrid, the presentation state boundary |
-| [Bindings](bindings.md) | The bridging concept, `get*()`/`on*()`, why not pass the model |
+| [Bindings](bindings.md) | The bridging concept, query and relay bindings, why not pass the model |
 | [The Ticker](ticker.md) | Frame sequence, time ownership, determinism |
 | [Rules](rules.md) | Universal MVT constraints |
 | [Heritage](heritage.md) | The established patterns MVT assembles |
