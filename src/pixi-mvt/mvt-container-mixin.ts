@@ -208,6 +208,7 @@ function wrapStructuralMethods(): void {
     };
 
     proto.destroy = function destroy(this: Container, options?: Parameters<typeof baseDestroy>[0]): void {
+        if (DEV) warnOfUnrunDestroyedListeners(this, options);
         // Clearing the methods is what stops a destroyed container being called
         // again. Detaching alone is not enough: a container driven directly by
         // `updateScene(node)` has no parent to be detached from, so nothing
@@ -217,6 +218,46 @@ function wrapStructuralMethods(): void {
         this.onRefresh = undefined;
         baseDestroy.call(this, options);
     };
+}
+
+// Vite replaces `import.meta.env.DEV` at build time. Plain Node - which is how
+// the benchmark harness runs - has no `import.meta.env` at all, so it is read
+// defensively here rather than assumed.
+const DEV = import.meta.env?.DEV === true;
+
+/**
+ * Dev-only warning for a destroy that leaves a cleanup unrun. Destroying
+ * without `{ children: true }` detaches the children rather than destroying
+ * them, so a descendant's `'destroyed'` listener, which is how a view releases
+ * a window listener or a shared resource, never runs. That is a leak unless
+ * the descendants are about to be reused.
+ */
+function warnOfUnrunDestroyedListeners(node: Container, options: Parameters<Container['destroy']>[0]): void {
+    const destroysChildren = typeof options === 'boolean' ? options : options?.children === true;
+    if (destroysChildren || node.destroyed) return;
+    const listening = findDestroyedListener(node.children);
+    if (listening === undefined) return;
+    console.warn(
+        `[mvt] container ${describe(node)} was destroyed without { children: true }, so its descendant `
+        + `${describe(listening)} was detached, not destroyed, and its 'destroyed' listener did not run. `
+        + 'Pass { children: true }, unless the descendants are about to be reused.',
+    );
+}
+
+/** A container's label for a message. Pixi's default label is `null`, despite its type. */
+function describe(node: Container): string {
+    return node.label ? `'${node.label}'` : '(unlabelled)';
+}
+
+/** The first container in these subtrees with a `'destroyed'` listener, if any. */
+function findDestroyedListener(children: Container[]): Container | undefined {
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child.listenerCount('destroyed') > 0) return child;
+        const found = findDestroyedListener(child.children);
+        if (found !== undefined) return found;
+    }
+    return undefined;
 }
 
 /** Invalidates both kinds, which is what every structural change needs. */

@@ -478,6 +478,15 @@ And before writing a per-frame redraw, check whether drawing once and then
 scaling, tinting or resizing would do. The
 [`mvt-view` skill](../ai-agents/skill-mvt-view.md) covers both kinds of body.
 
+### Releasing Resources
+
+A view that holds something not destroyed with its display objects (a
+`window` listener, a shared `GraphicsContext`, a texture it made) releases it
+on Pixi's `'destroyed'` event, `view.on('destroyed', ...)`, or with the
+`onDestroyed` attribute in a JSX body. Never replace `destroy` on an
+instance. See
+[Releasing What a View Holds](../building-with-mvt/presenting-the-world/views.md#releasing-what-a-view-holds).
+
 ### Enforcement
 
 Every view in `src/` follows this convention, and lint enforces its naming:

@@ -19,8 +19,7 @@ Four capabilities are in scope:
 
 1. **Change detection** - the current `watch(record).poll()` on this branch.
 2. **Deriving memoised values** - `derive` (on the `derive-util` branch).
-3. **Reacting to a change** - `ReactionBuilder` in the sibling `mvt-workshop`
-   (`.when(fn).changes({from,to}).then(action)`).
+3. **Reacting to a change** - `ReactionBuilder` style (`.when(fn).changes({from,to}).then(action)`).
 4. **Watching a uniform list** - *new*: "did any of these (shortish) array items
    have their `level` cross above 10 this frame?" - with a per-index callback.
 
@@ -310,11 +309,9 @@ Gotchas from tracing the first-poll rule through every path:
 - **`from` filters never match a first poll.** `from: undefined` therefore
   means only "was really `undefined`, now isn't" (e.g. a target acquired).
 - **No filter bypass on the first poll.** `ReactionBuilder({ runFirstTime:
-  true })` fired regardless of its filter; `Watch()` applies the filter to the
-  first poll like any other. The four real `ReactionBuilder` call sites in
-  `mvt-workshop` all use the default (no first fire), so nothing relies on the
-  bypass. Initial scene construction is state sync, which unfiltered
-  `changes().then` already covers.
+  true })` fires regardless of its filter; `Watch()` applies the filter to the
+  first poll like any other. Real `ReactionBuilder` call sites in
+  use the default (no first fire). Initial scene construction is state sync, which unfiltered `changes().then` already covers.
 - **Newly-appeared list slots get a first poll.** Per-slot consistency means a
   slot that appears (or reappears after the list shrank) fires like a first poll.
   Items that shift between indices are covered by the slot-history rule in §4.
@@ -456,9 +453,6 @@ without a new reason.
 - Port `derive` from the `derive-util` branch: its docs
   (`docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
   (`src/demos/derive/`) onto `.derive(...)`.
-- Port the four `ReactionBuilder` call sites in `mvt-workshop` (celebration view,
-  two in `wheel-audio-view-2.ts`, `create-toggle-transition.ts`) if that repo
-  adopts `Watch()`.
 
 ### Housekeeping
 

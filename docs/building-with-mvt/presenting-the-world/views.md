@@ -280,6 +280,54 @@ For the full guide on presentation state - what qualifies, how views own it,
 when to extract a view model - see
 [Presentation State](../adding-visual-polish/presentation-state.md).
 
+## Releasing What a View Holds
+
+Most views hold nothing that outlives them. Their display objects are
+destroyed along with them, and since views poll rather than subscribe, there
+are no subscriptions to undo. A few views hold something that is not one of
+their display objects, and so is not destroyed with them:
+
+- a listener on `window` or `document`, such as a keyboard handler
+- a resource several of its display objects share, such as a
+  `GraphicsContext` many `Graphics` draw from
+- a texture the view made itself
+- a GSAP timeline
+
+In this project a view releases these on Pixi's `'destroyed'` event, set up
+right where it acquires them:
+
+```ts
+window.addEventListener('keydown', onKeyDown);
+view.on('destroyed', () => window.removeEventListener('keydown', onKeyDown));
+```
+
+In a JSX body, the `onDestroyed` attribute does the same for the element it
+is on:
+
+```tsx
+const boidShape = new GraphicsContext().poly([8, 0, -5, 4, -5, -4]).fill(0x44ccff);
+
+return (
+    <container onDestroyed={() => boidShape.destroy()}>
+        {/* ...Graphics that all draw boidShape... */}
+    </container>
+);
+```
+
+Prefer the event to replacing the view's `destroy` method: any number of
+listeners can be added, each next to what it releases, and none has to
+remember to call the original.
+
+::: warning Destroy with `{ children: true }`
+Pixi's `destroy()` on its own detaches a container's children without
+destroying them, so nothing below it hears `'destroyed'`. Whatever ends a
+view's life, such as a game session's `destroy()`, should pass
+`{ children: true }`. To catch a missed one, development builds log a
+warning when a container is destroyed without `{ children: true }` while a
+container below it has a `'destroyed'` listener, since that listener would
+never run.
+:::
+
 ## Two Kinds of Views
 
 MVT distinguishes between two kinds of views based on how they access state:

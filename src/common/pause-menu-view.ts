@@ -130,11 +130,7 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Container {
 
     window.addEventListener('keydown', onKeyDown);
 
-    const originalDestroy = view.destroy.bind(view);
-    view.destroy = (opts) => {
-        window.removeEventListener('keydown', onKeyDown);
-        originalDestroy(opts);
-    };
+    view.on('destroyed', () => window.removeEventListener('keydown', onKeyDown));
 
     view.onRefresh = refresh;
     return view;

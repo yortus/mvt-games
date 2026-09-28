@@ -384,8 +384,14 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   `removeChildren`, `destroy`. Everything else delegates to these.
   `addChildAt` splices a child out of its previous parent **without** calling
   `removeChild`, so it needs its own handling. `destroy` delegates to
-  `removeChildren` and `removeFromParent`, and is wrapped only to clear the
+  `removeChildren` and `removeFromParent`, and is wrapped to clear the
   methods - a container driven directly has no parent to be detached from.
+  In dev builds the wrapper also warns when a destroy without
+  `{ children: true }` detaches a descendant that has a `'destroyed'`
+  listener, since that listener will never run.
+- `Container.destroy` emits `'destroyed'`, passing the container, after it
+  detaches the children and before it destroys them. Pixi 8.16 adds no
+  `'destroyed'` listeners of its own, so any the warning finds are ours.
 - Pure sibling reorders (`swapChildren`, `sortChildren`, `setChildIndex`,
   `addChild` of an already-parented child) need **no** wrapper, since sibling
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself

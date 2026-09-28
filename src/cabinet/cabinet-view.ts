@@ -190,12 +190,10 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
     view.onUpdate = update;
     view.onRefresh = refresh;
 
-    const originalDestroy = view.destroy.bind(view);
-    view.destroy = (options) => {
+    view.on('destroyed', () => {
         window.removeEventListener('keydown', onKeyDown);
         if (zoomTimeline) zoomTimeline.kill();
-        originalDestroy(options);
-    };
+    });
 
     return view;
 

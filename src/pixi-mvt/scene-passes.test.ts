@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { refreshScene, updateScene } from './scene-passes';
 import { SKIP_DESCENDANTS } from './mvt-types';
 
@@ -775,6 +775,58 @@ describe('shadowed methods', () => {
         });
 
         expect(() => refreshScene(root)).toThrow(/own property/);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Unrun 'destroyed' listeners
+// ---------------------------------------------------------------------------
+
+describe('destroying without children', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    /** root > middle > leaf, with a `'destroyed'` listener on the leaf. */
+    function buildTree(): { root: Container; leaf: Container } {
+        const root = new Container({ label: 'root' });
+        const middle = new Container({ label: 'middle' });
+        const leaf = new Container({ label: 'leaf' });
+        root.addChild(middle);
+        middle.addChild(leaf);
+        leaf.on('destroyed', () => {});
+        return { root, leaf };
+    }
+
+    it('warns in dev when a descendant\'s destroyed listener will not run', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { root } = buildTree();
+
+        root.destroy();
+
+        expect(warn).toHaveBeenCalledOnce();
+        expect(warn.mock.calls[0][0]).toMatch(/'root'.*'leaf'/);
+    });
+
+    it('does not warn when the children are destroyed too', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { root } = buildTree();
+
+        root.destroy({ children: true });
+        buildTree().root.destroy(true);
+
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not warn for a listener on the destroyed container itself, which runs', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const root = new Container();
+        root.addChild(new Container());
+        root.on('destroyed', () => {});
+
+        root.destroy();
+
+        expect(warn).not.toHaveBeenCalled();
     });
 });
 

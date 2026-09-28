@@ -1,4 +1,4 @@
-import { type Container, Rectangle, type Sprite, Texture } from 'pixi.js';
+import { type Container, type Graphics, Rectangle, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { countReads, readCounter, refreshScene, SKIP_DESCENDANTS, updateScene } from '../pixi-mvt';
 import { jsx } from './jsx-runtime';
@@ -81,6 +81,47 @@ describe('jsx runtime', () => {
         tint = 0x0000ff;
         refreshScene(el);
         expect(el.tint).toBe(0x0000ff);
+    });
+
+    it('applies tint to graphics, fixed or as a binding', () => {
+        let tint = 0xff0000;
+        const fixed = jsx('graphics', { tint: 0x00ff00 }) as Graphics;
+        const bound = jsx('graphics', { tint: () => tint }) as Graphics;
+
+        expect(fixed.tint).toBe(0x00ff00);
+
+        refreshScene(bound);
+        expect(bound.tint).toBe(0xff0000);
+
+        tint = 0x0000ff;
+        refreshScene(bound);
+        expect(bound.tint).toBe(0x0000ff);
+    });
+
+    it('applies scaleX and scaleY, fixed or as bindings, separately', () => {
+        let scaleY = 3;
+        const el = jsx('container', { scaleX: 2, scaleY: () => scaleY });
+
+        expect(el.scale.x).toBe(2);
+        expect(el.scale.y).toBe(1); // Pixi's default until the first refresh
+
+        refreshScene(el);
+        expect(el.scale.x).toBe(2);
+        expect(el.scale.y).toBe(3);
+
+        scaleY = 0.5;
+        refreshScene(el);
+        expect(el.scale.y).toBe(0.5);
+    });
+
+    it('applies anchorX and anchorY separately, on sprites and text', () => {
+        const sprite = jsx('sprite', { anchorX: 0.5, anchorY: 1 }) as Sprite;
+        const text = jsx('text', { anchor: 0.5, anchorY: 0 }) as Text;
+
+        expect(sprite.anchor.x).toBe(0.5);
+        expect(sprite.anchor.y).toBe(1);
+        expect(text.anchor.x).toBe(0.5);
+        expect(text.anchor.y).toBe(0);
     });
 
     it('writes fractional width and height bindings only when they change, per element', () => {
@@ -260,6 +301,57 @@ describe('jsx runtime', () => {
         });
     });
 
+    describe('onDestroyed attribute', () => {
+        it('runs once, with the element, when the element is destroyed', () => {
+            const received: Container[] = [];
+            const el = jsx('graphics', { onDestroyed: (g: Container) => received.push(g) });
+
+            el.destroy();
+            el.destroy();
+            expect(received).toEqual([el]);
+        });
+
+        it('is not a binding: a refresh neither calls nor installs it', () => {
+            let calls = 0;
+            const el = jsx('container', {
+                onDestroyed: () => {
+                    calls++;
+                },
+            });
+
+            expect(el.onRefresh).toBeUndefined();
+            refreshScene(el);
+            expect(calls).toBe(0);
+        });
+
+        it('runs when an ancestor is destroyed with its children', () => {
+            let calls = 0;
+            const child = jsx('container', {
+                onDestroyed: () => {
+                    calls++;
+                },
+            });
+            const parent = jsx('container', { children: jsx('container', { children: child }) });
+
+            parent.destroy({ children: true });
+            expect(calls).toBe(1);
+        });
+
+        it('does not run when an ancestor is destroyed without its children', () => {
+            let calls = 0;
+            const child = jsx('container', {
+                onDestroyed: () => {
+                    calls++;
+                },
+            });
+            const parent = jsx('container', { children: child });
+
+            parent.destroy();
+            expect(calls).toBe(0);
+            expect(child.destroyed).toBe(false);
+        });
+    });
+
     it('wires pointer event attributes as listeners and makes the element interactive', () => {
         const received: string[] = [];
         const el = jsx('container', {
@@ -267,15 +359,31 @@ describe('jsx runtime', () => {
             onGlobalPointerMove: () => received.push('global move'),
             onPointerUpOutside: () => received.push('up outside'),
             onPointerCancel: () => received.push('cancel'),
+            onWheel: () => received.push('wheel'),
         });
 
         el.emit('pointermove', {} as never);
         el.emit('globalpointermove', {} as never);
         el.emit('pointerupoutside', {} as never);
         el.emit('pointercancel', {} as never);
+        el.emit('wheel', {} as never);
 
         expect(el.eventMode).toBe('static');
-        expect(received).toEqual(['move', 'global move', 'up outside', 'cancel']);
+        expect(received).toEqual(['move', 'global move', 'up outside', 'cancel', 'wheel']);
+    });
+
+    describe('eventMode attribute', () => {
+        it('wins over the default an event handler attribute sets', () => {
+            const el = jsx('container', { eventMode: 'dynamic', onPointerTap: () => {} });
+
+            expect(el.eventMode).toBe('dynamic');
+        });
+
+        it('applies without any event handler attribute', () => {
+            const el = jsx('container', { eventMode: 'none' });
+
+            expect(el.eventMode).toBe('none');
+        });
     });
 
     it('applies hitArea statically and cursor as a binding', () => {

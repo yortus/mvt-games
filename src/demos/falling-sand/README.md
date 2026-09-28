@@ -86,10 +86,12 @@ pixi-solid, and [`solid-grain-pixels-view.ts`](./views/solid-grain-pixels-view.t
 The choice of view is the view's, not the model's: `DemoView` takes it as a
 binding, and picks the Solid views for a store.
 
-The Solid views are written without Solid's JSX compiler, as the calls it
-would compile JSX to: `createComponent(Sprite, { get x() { ... } })` for
-`<Sprite x={...} />`. The runtime cost is the same, and the build needs no
-second JSX dialect.
+The pixi-solid view is written without Solid's JSX compiler, as exactly the
+calls the compiler makes from the JSX a Solid developer would write:
+`createComponent(Sprite, { get x() { ... } })` for `<Sprite x={...} />`.
+Its doc comment shows that JSX, and the code was checked against the
+compiler's output. So it runs exactly as the JSX would, and the repo needs
+neither Solid's compiler nor the Babel toolchain it runs on.
 
 **Pushing moves view work into the model's update.** The model makes each
 frame's changes in one Solid `batch`, so the Solid views' effects run once,

@@ -16,12 +16,17 @@
  * - An `onRefresh` attribute adds a per-frame step of the element's own, which
  *   receives the element and runs after its bindings (and is skipped with them
  *   while it is hidden).
+ * - An `onDestroyed` attribute runs when the element is destroyed, to release
+ *   what the view made for it.
  * - The `<List>` and `<Switch>` components (`list.ts`, `switch.ts`) cover
  *   dynamic structure: index-addressed slots, and slots whose shape varies.
+ *
+ * Why there are no cleanup scopes or context providers, as SolidJS has:
+ * `design-notes.md`.
  */
 
 import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import type { Cursor, FederatedPointerEvent, IHitArea, Texture } from 'pixi.js';
+import type { Cursor, EventMode, FederatedEvent, FederatedPointerEvent, FederatedWheelEvent, IHitArea, Texture } from 'pixi.js';
 import { readCounter, type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
@@ -36,7 +41,7 @@ export declare namespace JSX {
         container: BaseAttributes;
         sprite: SpriteAttributes;
         text: TextAttributes;
-        graphics: BaseAttributes<Graphics>;
+        graphics: GraphicsAttributes;
     }
 }
 
@@ -80,7 +85,7 @@ export function jsx(
     const watched: DynamicBinding[] = [];
 
     for (const key in attributes) {
-        if (key === 'children' || key === 'ref' || key === 'onRefresh') continue;
+        if (key === 'children' || key === 'ref' || key === 'onRefresh' || key === 'onDestroyed') continue;
         const value = attributes[key];
         if (isGetter(key, value)) {
             // Inert construction: record the getter but do not call it. Its
@@ -116,6 +121,11 @@ export function jsx(
         addRefreshStep(el, attributes.onRefresh as RefreshStep<Container>);
     }
 
+    if (typeof attributes.onDestroyed === 'function') {
+        // Pixi passes the element to `'destroyed'` listeners
+        el.on('destroyed', attributes.onDestroyed as DestroyedCallback<Container>);
+    }
+
     if (typeof attributes.ref === 'function') {
         (attributes.ref as RefCallback<Container>)(el);
     }
@@ -139,6 +149,8 @@ interface SpriteAttributes extends BaseAttributes<Sprite> {
     texture?: ValueOrGetter<Texture>;
     tint?: ValueOrGetter<number>;
     anchor?: number;
+    anchorX?: number;
+    anchorY?: number;
     width?: ValueOrGetter<number>;
     height?: ValueOrGetter<number>;
 }
@@ -147,9 +159,18 @@ interface TextAttributes extends BaseAttributes<Text> {
     text?: ValueOrGetter<string>;
     style?: Record<string, unknown>;
     anchor?: number;
+    anchorX?: number;
+    anchorY?: number;
 }
 
-/** Attributes every intrinsic element accepts. `T` is the element's own type, which `ref` and `onRefresh` receive. */
+interface GraphicsAttributes extends BaseAttributes<Graphics> {
+    tint?: ValueOrGetter<number>;
+}
+
+/**
+ * Attributes every intrinsic element accepts. `T` is the element's own type,
+ * which `ref`, `onRefresh` and `onDestroyed` receive.
+ */
 interface BaseAttributes<T extends Container = Container> extends EventAttributes {
     x?: ValueOrGetter<number>;
     y?: ValueOrGetter<number>;
@@ -157,16 +178,24 @@ interface BaseAttributes<T extends Container = Container> extends EventAttribute
     visible?: ValueOrGetter<boolean>;
     rotation?: ValueOrGetter<number>;
     scale?: ValueOrGetter<number>;
+    scaleX?: ValueOrGetter<number>;
+    scaleY?: ValueOrGetter<number>;
     pivotX?: ValueOrGetter<number>;
     pivotY?: ValueOrGetter<number>;
     zIndex?: ValueOrGetter<number>;
     sortableChildren?: boolean;
     isRenderGroup?: boolean;
     hitArea?: IHitArea;
+    /**
+     * How the element takes part in pointer events. Without it, an element
+     * with an event handler attribute is made `'static'`.
+     */
+    eventMode?: EventMode;
     cursor?: ValueOrGetter<Cursor>;
     label?: string;
     onUpdate?: UpdateMethod;
     onRefresh?: RefreshStep<T>;
+    onDestroyed?: DestroyedCallback<T>;
     ref?: RefCallback<T>;
     children?: PixiNode | PixiChildren;
 }
@@ -181,10 +210,21 @@ interface EventAttributes {
     onPointerOut?: (e: FederatedPointerEvent) => void;
     onPointerMove?: (e: FederatedPointerEvent) => void;
     onGlobalPointerMove?: (e: FederatedPointerEvent) => void;
+    onWheel?: (e: FederatedWheelEvent) => void;
 }
 
 /** Callback ref - invoked once after the element is fully constructed. */
 type RefCallback<T> = (el: T) => void;
+
+/**
+ * An `onDestroyed` attribute: releases what the view made for this element
+ * and that nothing else frees, such as a window listener or a shared
+ * `GraphicsContext`. Runs on Pixi's `'destroyed'` event, once the element's
+ * children are detached but before they are destroyed. Runs only if the
+ * element itself is destroyed: an ancestor destroyed without
+ * `{ children: true }` detaches it instead.
+ */
+type DestroyedCallback<T> = (el: T) => void;
 
 /**
  * An `onRefresh` attribute: a per-frame step of the element's own, for what
@@ -263,6 +303,7 @@ const EVENT_ATTRIBUTE_MAP: Record<string, string> = {
     onPointerOut: 'pointerout',
     onPointerMove: 'pointermove',
     onGlobalPointerMove: 'globalpointermove',
+    onWheel: 'wheel',
 };
 
 /**
@@ -321,14 +362,26 @@ function applyAttribute(el: Container, key: string, value: unknown): void {
         case 'scale':
             el.scale.set(value as number);
             break;
+        case 'scaleX':
+            el.scale.x = value as number;
+            break;
+        case 'scaleY':
+            el.scale.y = value as number;
+            break;
         case 'anchor':
             if ('anchor' in el) (el as Sprite).anchor.set(value as number);
+            break;
+        case 'anchorX':
+            if ('anchor' in el) (el as Sprite).anchor.x = value as number;
+            break;
+        case 'anchorY':
+            if ('anchor' in el) (el as Sprite).anchor.y = value as number;
             break;
         case 'texture':
             if (el instanceof Sprite) el.texture = value as Texture;
             break;
         case 'tint':
-            if (el instanceof Sprite) el.tint = value as number;
+            if (el instanceof Sprite || el instanceof Graphics) el.tint = value as number;
             break;
         case 'width':
             el.width = value as number;
@@ -347,6 +400,9 @@ function applyAttribute(el: Container, key: string, value: unknown): void {
             break;
         case 'hitArea':
             el.hitArea = value as IHitArea;
+            break;
+        case 'eventMode':
+            el.eventMode = value as EventMode;
             break;
         case 'cursor':
             el.cursor = value as Cursor;
@@ -372,17 +428,20 @@ function addChildren(parent: Container, children: unknown): void {
     }
 }
 
-/** Wire event handler attributes onto an element, enabling interaction. */
+/**
+ * Wire event handler attributes onto an element, making it interactive. An
+ * `eventMode` attribute has already been applied with the others, and wins.
+ */
 function applyEventAttributes(el: Container, attributes: Record<string, unknown>): void {
-    let hasEvents = false;
+    let hasEventMode = attributes.eventMode !== undefined;
     for (const key in EVENT_ATTRIBUTE_MAP) {
         const handler = attributes[key];
         if (typeof handler === 'function') {
-            if (!hasEvents) {
+            if (!hasEventMode) {
                 el.eventMode = 'static';
-                hasEvents = true;
+                hasEventMode = true;
             }
-            el.on(EVENT_ATTRIBUTE_MAP[key], handler as (e: FederatedPointerEvent) => void);
+            el.on(EVENT_ATTRIBUTE_MAP[key], handler as (e: FederatedEvent) => void);
         }
     }
 }
@@ -513,6 +572,8 @@ function attributeAssignment(key: string, val: string): string {
         case 'pivotX': return `e.pivot.x=${val}`;
         case 'pivotY': return `e.pivot.y=${val}`;
         case 'scale': return `e.scale.set(${val})`;
+        case 'scaleX': return `e.scale.x=${val}`;
+        case 'scaleY': return `e.scale.y=${val}`;
         case 'anchor': return `e.anchor.set(${val})`;
         case 'style': return `Object.assign(e.style,${val})`;
         default: return `e.${key}=${val}`;

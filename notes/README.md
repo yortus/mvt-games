@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**021**.
+**022**.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
@@ -109,6 +109,7 @@ falling-sand experiments were run by 020, now archived.
 | 016 | [Falling Sand Demo](archive/016-falling-sand-demo/task.md) | 2026-09-26 |
 | 018 | [Proposal: one view convention](archive/018-one-view-convention.md) | 2026-09-27 |
 | 020 | [Proposal: falling sand as an implementation lab](archive/020-falling-sand-variants.md) | 2026-09-27 |
+| 021 | [JSX and Teardown Quick Wins](archive/021-jsx-and-teardown-quick-wins.md) | 2026-09-28 |
 
 ## Elsewhere
 

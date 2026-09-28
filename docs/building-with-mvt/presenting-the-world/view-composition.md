@@ -140,6 +140,45 @@ function refresh(): void {
 For the full change detection pattern, see
 [Change Detection](../reacting-to-changes/change-detection.md).
 
+## Shared Values in Deeply Nested Views
+
+Views deep in the scene hierarchy sometimes need the same values, such as common
+colours, text styles, or layout sizes. Passing them down as bindings bloats every
+intermediate view that does not need them itself.
+
+In most games, the simplest solution is to **import them from a shared constants module**. For example:
+
+```ts
+import { BUTTON_SIZE, LABEL_STYLE } from './view-constants';
+```
+
+This is the simplest fix, and it suits views that belong to one game. The
+values have one home, so changing a colour there updates every view that
+uses it. The cost is that an imported value is not in the view's bindings,
+so neither a caller nor a test can supply a different one. That matters only
+for values that vary, such as a palette picked at startup, and for views
+meant for reuse, such as a HUD panel shared by several games.
+
+**When a view is reused, keep what it needs in its bindings,** so its
+[bindings type lists everything it depends on](bindings.md#why-not-just-pass-the-model)
+and each caller supplies its own. Three ways cut the cost of passing values
+down:
+
+- **Hand over a built child.** A view that only places a child can take it
+  ready-made, and never see the child's bindings:
+  `<ToolbarView perfmon={<PerfmonView frameStats={frameStats} />} />`.
+- **Group what travels together.** One `theme` binding holding a palette,
+  text styles and a formatter costs each level one line rather than several.
+- **Make related views in one function.** `createHudViews(palette)` returns
+  views that close over the palette, supplied once for the whole group. Their
+  own bindings no longer show it, so keep this for views always used
+  together.
+
+Some UI frameworks also let a view look a value up from whichever ancestor
+supplies one; React and SolidJS call this *context*. MVT has no equivalent: a
+value found that way is a dependency the view's bindings do not show, and a
+missing one fails only when the view runs.
+
 ---
 
 ## Model-View Mapping

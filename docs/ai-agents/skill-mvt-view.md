@@ -281,6 +281,9 @@ Any view can also be called as an expression inside a JSX body:
    Older code does this with a `ref` that saves the element's own
    `onRefresh` and calls it before its own step. The attribute does the same,
    and is simpler to get right.
+3. **An `onDestroyed` attribute** to release what the view made for the
+   element: `<container onDestroyed={() => sharedContext.destroy()}>`. See
+   [Releasing Resources](#releasing-resources).
 
 When most of a view needs these, a plain TypeScript body is usually clearer.
 
@@ -345,6 +348,25 @@ view.onRefresh = refresh;
 
 The language-neutral spec (`docs/architecture/`) describes these only as a
 view's `update(deltaMs)` and `refresh()` steps, and must not mention these methods.
+
+## Releasing Resources
+
+**[project convention]** A view that holds something not destroyed with its
+display objects (a `window` listener, a shared `GraphicsContext`, a texture it
+made, a GSAP timeline) releases it on Pixi's `'destroyed'` event, next to
+where it acquires it:
+
+```ts
+window.addEventListener('keydown', onKeyDown);
+view.on('destroyed', () => window.removeEventListener('keydown', onKeyDown));
+```
+
+- In a JSX body, use the `onDestroyed` attribute on the element that owns it.
+- Never replace `view.destroy` on an instance.
+- `destroy()` without `{ children: true }` detaches children without
+  destroying them, so their listeners never run. Code that ends a view's life
+  (a session's `destroy()`) passes `{ children: true }`. Dev builds warn when
+  a destroy without it would skip a `'destroyed'` listener below it.
 
 ## Change Detection (Watch)
 
