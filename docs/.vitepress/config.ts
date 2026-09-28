@@ -27,6 +27,14 @@ export default withMermaid(defineConfig({
         define: {
             __SITE_ROOT__: JSON.stringify(repoBase),
         },
+        // Mermaid 11.17 added `fastdom` and its promise extension, both
+        // CommonJS/UMD, which `withMermaid`'s own pre-bundle list does not
+        // include yet. Without these the dev server serves them unconverted,
+        // and the browser rejects Mermaid's default imports of them. Builds
+        // are unaffected.
+        optimizeDeps: {
+            include: ['mermaid > fastdom', 'mermaid > fastdom/extensions/fastdom-promised.js'],
+        },
     },
 
     themeConfig: {
