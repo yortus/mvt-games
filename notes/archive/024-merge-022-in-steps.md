@@ -8,7 +8,7 @@
 
 ## Description
 
-The work behind [022](../../proposals/022-renderer-agnostic-jsx.md) (a
+The work behind [022](../proposals/022-renderer-agnostic-jsx.md) (a
 renderer-agnostic JSX base, generic scene passes, three.js and HTML renderers,
 a build-time precompiler, and the moves that shape `src/` as 011's packages)
 was done as one uncommitted change set of about 260 files. It lands as the
@@ -49,8 +49,8 @@ aside), and `vnext-jsx` can move to it.
 | 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | Done: `c9ed69e` |
 | 10a | Fix-up from review of step 10: the renderers' scene-pass glue de-duplicated (one-line type augmentations, each renderer's `scene-passes.ts` folded into its mixin, a `beforeScenePass` hook for the DOM), and single-line imports in files from steps 4, 6 and 8 | 22 | Done: `69a02fe` |
 | 11 | Browser benchmark mode and the `html-scene-passes` suite, with saved results | ~9 | Done: `5d1c71b` |
-| 12 | Boids in 3D demo's HTML panel | ~4 | In review |
-| 13 | Proposal 022 and planning notes: 011, 012, 008, 023, 017 updates; notes index; glossary; source trees in `AGENTS.md`, `README.md`, project-structure. Archive this task | ~14 | |
+| 12 | Boids in 3D demo's HTML panel | ~4 | Done: `3a6c884` |
+| 13 | Proposal 022 and planning notes: 011, 012, 008, 023, 017 updates; notes index; glossary; source trees in `AGENTS.md`, `README.md`, project-structure. Archive this task | ~14 | Done: this commit |
 
 **Carve-outs** (a step commits a version without the later feature):
 
@@ -74,9 +74,9 @@ the reference, carve-outs aside.
 
 ## Acceptance Criteria
 
-- [ ] Steps 1-13 committed on `vnext-jsx-steps`, each verified before review
-- [ ] Every change asked for in review made in the worktree and the reference, and logged
-- [ ] The branch's tree matches the reference exactly, line endings aside
+- [x] Steps 1-13 committed on `vnext-jsx-steps`, each verified before review
+- [x] Every change asked for in review made in the worktree and the reference, and logged
+- [x] The branch's tree matches the reference exactly, line endings aside
 - [ ] `vnext-jsx` moved to the branch, and the reference's uncommitted changes discarded
 
 ## Progress Log
@@ -144,6 +144,14 @@ the reference, carve-outs aside.
   what happens.
 - 2026-09-30: pixi-mvt's `mvt-container-mixin.ts` renamed `container-mixin.ts`,
   after the class it extends, like three-mvt's and html-mvt's mixins.
-- 2026-09-30: Step 10a committed (`69a02fe`). Step 11 next.
-- 2026-09-30: Step 11 set up: browser benchmark mode, the `html-scene-passes` suite and its saved results.
-- 2026-09-30: Step 11 committed (`5d1c71b`). Step 12 set up: the Boids in 3D demo's HTML settings panel.
+- 2026-09-30: Step 10a committed (`69a02fe`). Step 11 in review: browser
+  benchmark mode, the `html-scene-passes` suite and its saved results.
+- 2026-09-30: Step 11 committed (`5d1c71b`). Step 12 in review: the Boids in
+  3D demo's HTML settings panel, 1127 tests.
+- 2026-09-30: Step 12 committed (`3a6c884`). Step 13 in review: proposal
+  022, the 011 and 017 updates (008's, 012's and 023's landed with earlier
+  steps), the notes index, the glossary and the source trees. Tasks 025 and
+  026 and this task join the reference, and this task moves to the archive.
+  The branch's tree then matches the reference, line endings aside. What is
+  left, after this commit: move `vnext-jsx` to the branch and discard the
+  reference's uncommitted changes.

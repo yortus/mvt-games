@@ -19,7 +19,7 @@ the package split (section 7, "Done already"). Nothing else is implemented.
 [`docs/reference/style-guide.md`](../../docs/reference/style-guide.md),
 [`eslint.config.js`](../../eslint.config.js),
 [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml),
-[the `Watch()` builder spike](./008-watch-builder-spike.md) (its prototype moves with `src/common/`).
+[the `Watch()` builder spike](./008-watch-builder-spike.md) (its prototype moves with `watch`).
 
 ---
 
@@ -31,8 +31,9 @@ Decisions this proposal makes, and where each is argued:
 | --- | --- |
 | Publish under `@mvtjs`. Hold `@mvt.js` unused. No unscoped package for now | 3 |
 | One pnpm workspace: `packages/*` (published) plus private `site` and `docs` | 5, 6, 7 |
-| First two libraries: `@mvtjs/utils` (no dependencies) and `@mvtjs/pixi` (plugin, JSX runtime, Pixi helpers) | 5 |
-| Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin` | 5.5, 10 |
+| First two libraries: `@mvtjs/utils` (no dependencies; with 022's JSX base at `./jsx`) and `@mvtjs/pixi` (plugin, Pixi helpers, and its JSX runtime at `./jsx`) | 5 |
+| One package per renderer, each with its JSX support at `./jsx`, and one base; no separate JSX package | 5.2, 5.5 |
+| Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin`, and from 022 the opt-in build tool `@mvtjs/jsx-precompile` | 5.5, 10 |
 | Libraries consumed from source inside the repo; built only for publishing | 5.3 |
 | All libraries share one version, starting at `0.1.0` | 5.4 |
 | `@mvtjs/pixi` does not re-export the dependency-free library | 5.2 |
@@ -42,7 +43,7 @@ Decisions this proposal makes, and where each is argued:
 | pnpm 11, Changesets (no release PRs), tsdown, publint/attw, npm trusted publishing | 8 |
 | Vite+ gets a time-boxed trial with go/no-go criteria. The lint side is already shown to work | 9 |
 | The repo stays at `yortus/mvt-games` for now. The site moves to `yortus.com/mvt-games/` | 13.2, 13.3 |
-| Fix the barrel-rule crash (section 11.1) as part of the restructure | 11 |
+| ~~Fix the barrel-rule crash (section 11.1) as part of the restructure~~ Fixed early, 2026-09-30 | 11 |
 
 **What this proposal asks for** is the migration in section 12: eight phases (0 to 7),
 each leaving `lint`, `test` and `build` green.
@@ -52,9 +53,9 @@ each leaving `lint`, `test` and `build` green.
 ## 2. Motivation
 
 **The reusable code is worth publishing, and nothing marks it as reusable.**
-`src/pixi-mvt/`, `src/pixi-jsx/` and half of `src/common/` are libraries in all
+`src/pixi-mvt/`, `src/pixi-mvt/jsx/` and half of `src/common/` are libraries in all
 but packaging. Their boundaries are held up by convention: import-map aliases
-(`#common`, `#pixi-jsx`), relative imports such as `'../../pixi-mvt'` (22 files),
+(`#common`, `#pixi-mvt/jsx`), relative imports such as `'../../pixi-mvt'` (22 files),
 and a lint rule. A package boundary enforces the same thing through `exports`.
 
 **`src/common/` mixes two kinds of code.** Seven of its modules are pure logic
@@ -183,12 +184,15 @@ section 13.2.
 
 | From | Notes |
 | --- | --- |
-| `src/common/watch.ts` | |
-| `src/common/sequence.ts`, `sequence-reaction.ts` | |
-| `src/common/boolean-tween.ts`, `edge-tween.ts` | |
-| `src/common/slot-list/` | |
-| `src/common/type-utils.ts` | |
-| `src/common/watch-builder.spike.ts` and its test | Moves with `watch`, still unexported, per [008](./008-watch-builder-spike.md) |
+| `src/mvt-utils/` | The scene-pass core ([022](./022-renderer-agnostic-jsx.md)), at `.` |
+| `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views |
+| `src/mvt-utils/watch.ts` | Moved from `src/common/` (2026-09-30), as were the rows below |
+| `src/mvt-utils/sequence.ts`, `sequence-reaction.ts` | |
+| `src/mvt-utils/boolean-tween.ts`, `edge-tween.ts` | |
+| `src/mvt-utils/memoise-last.ts` | |
+| `src/mvt-utils/slot-list/` | |
+| `src/mvt-utils/type-utils.ts` | |
+| `src/mvt-utils/watch-builder.spike.ts` and its test | Moves with `watch`, still unexported, per [008](./008-watch-builder-spike.md) |
 | Reactivity benchmarks (`benchmarks/*.bench.ts`, `scripts/bench-reactivity*.ts`) | To `packages/utils/bench/`. `solid-js` becomes a dev dependency of `@mvtjs/utils` |
 
 ### 5.2 `@mvtjs/pixi`
@@ -198,12 +202,17 @@ section 13.2.
 | From | Notes |
 | --- | --- |
 | `src/pixi-mvt/` | Mixin, `updateScene`, `refreshScene`, `SKIP_DESCENDANTS` |
-| `src/pixi-jsx/` | JSX runtime, `<List>`, `<Switch>` |
-| `src/common/texture-registry.ts` | Generic Pixi helper, used by six games |
+| `src/pixi-mvt/jsx/` | JSX runtime, `<List>`, `<Switch>`, precompile manifest, at `./jsx` |
+| `src/pixi-mvt/texture-registry.ts` | Generic Pixi helper, used by six games. Moved from `src/common/` (2026-09-30) |
+| `src/pixi-mvt/frame-stats.ts` | Frame timing for a Pixi app, used by the perfmon. Moved from `src/common/` (2026-09-30) |
 | `src/pixi-mvt/scene-passes-benchmark.ts`, `scripts/bench-scene-passes.ts` | To `packages/pixi/bench/`. The benchmark stays outside the public API |
 
-Exports: `.`, `./jsx-runtime` and `./jsx-dev-runtime`. JSX files then declare
-`/** @jsxImportSource @mvtjs/pixi */` in place of today's `#pixi-jsx`.
+Exports: `.`, `./jsx`, `./jsx/jsx-runtime`, `./jsx/jsx-dev-runtime` and
+`./jsx/precompile`. JSX files then declare `/** @jsxImportSource
+@mvtjs/pixi/jsx */` in place of today's `#pixi-mvt/jsx`. The root never
+re-exports `./jsx`, so a view written in plain TypeScript imports only the
+root, and JSX stays optional. Its `sideEffects` must list the mixin, which
+installs itself on `Container` when loaded.
 
 **Staying in the site, not the library:** `keyboard-input-view`,
 `touch-input-view` and `pause-menu-view` (used only by `src/main.ts`),
@@ -233,10 +242,15 @@ build output otherwise:
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
         },
-        "./jsx-runtime": {
-            "@mvtjs/source": "./src/jsx-runtime.ts",
-            "types": "./dist/jsx-runtime.d.ts",
-            "default": "./dist/jsx-runtime.js"
+        "./jsx": {
+            "@mvtjs/source": "./src/jsx/index.ts",
+            "types": "./dist/jsx/index.d.ts",
+            "default": "./dist/jsx/index.js"
+        },
+        "./jsx/jsx-runtime": {
+            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "types": "./dist/jsx/jsx-runtime.d.ts",
+            "default": "./dist/jsx/jsx-runtime.js"
         }
     },
     "files": ["dist"],
@@ -266,10 +280,11 @@ would mostly produce compatibility questions. Revisit at 1.0.
 
 | Package | Contents |
 | --- | --- |
-| `@mvtjs/html` | DOM renderer: JSX runtime and widgets |
-| `@mvtjs/three` | three.js renderer |
+| `@mvtjs/html` | DOM renderer: scene passes, and its JSX runtime at `./jsx` (`src/html-mvt/`) |
+| `@mvtjs/three` | three.js renderer: scene passes and pointer picker, and its JSX runtime at `./jsx` (`src/three-mvt/`) |
 | `@mvtjs/pixi-widgets` | Reusable Pixi views |
 | `@mvtjs/eslint-plugin` | MVT architecture rules (section 10) |
+| `@mvtjs/jsx-precompile` | Build-time tool, opt-in: precompiles JSX refresh code for pages whose CSP forbids `new Function`; Vite plugin at `./vite` ([022](./022-renderer-agnostic-jsx.md) section 12.1) |
 
 **Known points of generalisation, not to be acted on yet.** `list.ts` and
 `switch.ts` depend on Pixi's `Container` and `refreshScene`, but their logic
@@ -277,6 +292,18 @@ would mostly produce compatibility questions. Revisit at 1.0.
 idea on any scene graph. When a second renderer arrives, these are the parts
 that may move into `@mvtjs/utils` behind a small host interface. Abstracting them before
 then would be guessing.
+
+*Since acted on:* [022](./022-renderer-agnostic-jsx.md) designed this against
+three renderers. Its phase 1 split the JSX runtime into a base (`src/mvt-utils/jsx/`,
+with `<List>` and `<Switch>`) and Pixi's JSX target, and moved the scene-pass types to
+`src/mvt-utils/`; the generic tree walk is its phase 2. Its section 12 maps
+the result onto these packages. HTML and three.js are built too. After 022,
+the directories were shaped as the packages (2026-09-30): one base,
+`src/mvt-utils/`, with the JSX base in `jsx/`, and one directory per
+renderer, `src/<renderer>-mvt/`, with its JSX support in `jsx/`. A separate
+`@mvtjs/jsx`, planned at first, was folded into `@mvtjs/utils`. Each renderer's precompile manifest (022 section 12.1) exists
+already, reached as `#<renderer>-mvt/jsx/precompile`, the path a package would
+export as `./precompile`.
 
 ---
 
@@ -342,8 +369,8 @@ Where each current top-level entry goes:
 | `site/nav.css` | `site/src/shared/nav.css` |
 | `vite.config.ts` | `site/` |
 | `src/main.ts`, `cabinet/`, `games/`, `demos/`, `playground/` | `site/src/` |
-| `src/common/` | Split per sections 5.1, 5.2 |
-| `src/pixi-mvt/`, `src/pixi-jsx/` | `packages/pixi/src/` |
+| `src/common/` | Already split per sections 5.1 and 5.2 (2026-09-30); what is left is the site's shared views |
+| `src/pixi-mvt/`, `src/pixi-mvt/jsx/` | `packages/pixi/src/` |
 | `scripts/generate-*.ts`, `vite-plugin-spritesheet.ts` | `site/scripts/` |
 | `scripts/bench-*.ts`, `benchmarks/` | `packages/*/bench/` |
 | `dist/` (build output) | `site/dist/`, still ignored |
@@ -579,6 +606,11 @@ Node 24; the published package is built to JavaScript.
 
 ### 11.1 The barrel rule crashes on its first violation
 
+*Fixed 2026-09-30, ahead of phase 1, when 022 moved JSX runtimes to
+`jsx/` subpaths and the first import reached past a barrel: the entries are
+escaped, and a deliberate violation is reported, not crashed on. The check
+below still applies to each package's allow list after the split.*
+
 **Must be fixed as part of phase 1** (section 12.2). `import/no-internal-modules`
 in `eslint.config.js` crashes ESLint the first time any file actually reaches
 past a barrel:
@@ -589,7 +621,7 @@ Rule: "import/no-internal-modules"
 ```
 
 The rule compiles each `allow` entry with minimatch 3, which treats a leading
-`#` as a comment. `'#common'` and `'#pixi-jsx'` therefore compile to `false`
+`#` as a comment. `'#common'` and `'#pixi-mvt/jsx'` therefore compile to `false`
 instead of a regular expression, and the rule calls `.test()` on it. `npm run
 lint` passes today only because nothing violates the rule.
 
@@ -597,7 +629,7 @@ Reproduced on 2026-09-25 by piping a file with
 `import { refreshScene } from '../pixi-mvt/scene-passes';` into the repo's
 ESLint with `--stdin --stdin-filename src/zz-violations/bad.ts`.
 
-**Fix:** escape the entries (`'\\#common'`, `'\\#pixi-jsx'`), or drop them
+**Fix:** escape the entries (`'\\#common'`, `'\\#pixi-mvt/jsx'`), or drop them
 when the aliases are replaced by package names. **Either way, the phase is
 not done until a deliberate violation is shown to be reported, not crashed
 on.** The same check applies to whatever allow list the rule ends up with in
@@ -626,11 +658,16 @@ working. Moves use `git mv` so history follows the files.
 
 - Add `pnpm-workspace.yaml`, `tsconfig.base.json` and catalogs.
 - Create `packages/utils` and `packages/pixi` from the files in sections 5.1
-  and 5.2, with their tests and benchmarks.
+  and 5.2, with their tests and benchmarks, and `packages/three` and
+  `packages/html` from 022's renderers. Each is one directory already
+  (`src/mvt-utils/`, `src/pixi-mvt/`, `src/three-mvt/`, `src/html-mvt/`,
+  each renderer's JSX in `jsx/`), so this moves directories. **The `-mvt`
+  suffixes go here**: they only tell renderers apart from the site's code in
+  one `src/`, and a package directory is named for its package.
 - The root package (still the app) depends on both through `workspace:^`.
-  Replace `#common` and `#pixi-jsx` imports and relative `pixi-mvt` imports
-  with `@mvtjs/utils` and `@mvtjs/pixi`, and the three `@jsxImportSource
-  #pixi-jsx` pragmas with `@mvtjs/pixi`.
+  Replace `#common` and `#pixi-mvt/jsx` imports and relative `pixi-mvt` imports
+  with `@mvtjs/utils` and `@mvtjs/pixi`, and the `@jsxImportSource
+  #pixi-mvt/jsx` pragmas with `@mvtjs/pixi/jsx`.
 - Wire the `@mvtjs/source` condition into TypeScript, Vite and Vitest.
 - Rework the barrel rule for the new layout and **fix section 11.1**,
   verified with a deliberate violation.
@@ -757,7 +794,7 @@ epics, the ledger) solve problems this repo does not have.
 **Name of the dependency-free library.** `core` suggests the package is
 required to use MVT, and MVT is a pattern that needs no library. The name had
 to read as optional, stand apart from the renderer packages (`pixi`, `html`,
-`three`) without sounding like a rival target, and survive the package growing
+`three`) without sounding like a rival renderer, and survive the package growing
 beyond today's time and change-detection helpers.
 
 | Candidate | For | Against |

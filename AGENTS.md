@@ -26,7 +26,10 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
-├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, sequences, tweens)
+├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base in jsx/
+├── pixi-mvt/            Pixi scene passes and helpers; Pixi's JSX runtime in jsx/
+├── three-mvt/           three.js scene passes and pointer picker; its JSX runtime in jsx/
+├── html-mvt/            DOM scene passes; its JSX runtime in jsx/
 └── common/              The site's shared views (overlay, input, pause menu, perfmon)
 ```
 

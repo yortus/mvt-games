@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-09-27 |
+| Updated  | 2026-09-30 |
 
 ## Description
 
@@ -103,6 +103,29 @@ Settled questions that should not be reopened without new information are in
   until the run is complete. Until then, save one suite at a time
   (`npm run bench -- <suite> --save`).
 
+- **Multi-line imports and exports, and no line length.** The preferred form
+  (2026-09-30) is single-line statements from one module, as few as stay
+  within the line length, splitting values and types into an `export` and an
+  `export type` line where that is enough:
+
+  ```ts
+  export { addReads, countReads, readCounter, SKIP_DESCENDANTS } from '../mvt-utils';
+  export type { RefreshMethod, UpdateMethod } from '../mvt-utils';
+  ```
+
+  The files 022 changed were fixed by hand. Lint can enforce the rest:
+  `@stylistic/object-curly-newline` with `{ ExportDeclaration: 'never',
+  ImportDeclaration: 'never' }` bans line breaks inside the braces (its
+  auto-fix joins them onto one line), and `@stylistic/max-len` at 120
+  columns, the line length the code already keeps to (only 82 of about
+  43,000 source lines were longer), stops the join making long lines. No
+  stock rule splits values from types; that stays a style-guide convention.
+  Measured 2026-09-30 over `src`, `scripts` and `benchmarks`: 13 multi-line
+  exports (all in game and demo barrels), 36 multi-line imports, and 43
+  lines over 120 columns (ignoring strings, template literals, regular
+  expressions and URLs). Fix those, add both rules, and add the convention
+  to the style guide.
+
 ### Decide
 
 - **Button presses shorter than a frame are missed.** The games' models see
@@ -182,7 +205,7 @@ Settled questions that should not be reopened without new information are in
   `width` and `height` values every frame (16 bytes per element), changed or
   not, because their last value lived in a closure variable that started as
   a symbol. They now use a `Float64Array` (see
-  `FRACTIONAL_WATCHED_ATTRIBUTES` in `src/pixi-jsx/jsx-runtime.ts`), guarded by the `memory` suite's
+  `FRACTIONAL_WATCHED_ATTRIBUTES` in `src/pixi-mvt/jsx/jsx-runtime.ts`), guarded by the `memory` suite's
   `allocation-watched` table.
 
 - **Object literals with getters are slow in V8.** Found by
@@ -200,6 +223,30 @@ Settled questions that should not be reopened without new information are in
   `Object.defineProperty`, which keeps the object fast). Possibly related to
   the boxing item above: the boids' record with getters also boxed numbers
   written to it.
+
+- **One `_mvt` record per node instead of six `_mvt*` fields.** Each
+  renderer's scene passes add `_mvtOnUpdate`, `_mvtOnRefresh`,
+  `_mvtHasUpdate`, `_mvtUpdate`, `_mvtHasRefresh` and `_mvtRefresh` to its
+  node prototype (`installMethods` in `src/mvt-utils/scene-passes.ts`), and a
+  node gains them as own properties lazily, in whatever order it is used.
+  Reads of them see every node class (`Container`, `Sprite`, `Graphics`,
+  `Text`, and so on) and every order of those writes, so in a mixed scene
+  their inline caches likely go megamorphic. The alternative: one own
+  property, `_mvt`, holding a record made by one factory with all six fields
+  set, so only `node._mvt` sees the node's class and every field read after
+  it is monomorphic. It also means one hidden-class transition per node
+  instead of up to six, one expando on DOM elements instead of six, and one
+  `_mvt?: SceneMemo` field in each renderer's type augmentation. Its costs:
+  an allocation (about 40 bytes) per node the scene passes touch, made on
+  first use, and a second load per memo access. The steady-state frame
+  would not change: since 012's cached methods, the per-frame loop reads the
+  memo fields only on the node a scene pass starts from. Rebuilds,
+  invalidation climbs and method assignment (JSX construction) would. To
+  measure: add a mixed-class `churn` case to the `scene-passes` suite (the
+  existing one uses plain `Container`s, which are already monomorphic),
+  then A/B `scene-passes`, `construction` and `falling-sand-scaling`, as 012
+  section 2.4 did for cached methods. Raised in review of 022's step 3
+  (2026-09-30).
 
 ### Experiments (from 020)
 
@@ -254,8 +301,10 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Browser benchmarking and CI benchmarking each decided
 - [ ] Fractional-number boxing explained, and fixed or recorded as a rule
 - [ ] Getter literals on per-item models measured, and fixed or recorded as a rule
+- [ ] One `_mvt` record per node measured against six `_mvt*` fields, and adopted or recorded
 - [ ] 020's experiments each run, or dropped
 - [ ] Parked items each still parked, or moved into their own task
+- [ ] Import and export layout, and line length, enforced by lint
 
 ## Progress Log
 
@@ -286,3 +335,7 @@ falling-sand demo. Each is a new variant, measured with
 - 2026-09-27: Archived 020 (falling sand as an implementation lab) and took
   in its follow-ups: the getter-literal finding (Investigate) and its
   experiments (Experiments).
+- 2026-09-30: Added the multi-line imports and exports, and the missing line
+  length (Fix), from a review of 022's changes.
+- 2026-09-30: Added the one-`_mvt`-record experiment (Investigate), from a
+  review of 022's scene passes.

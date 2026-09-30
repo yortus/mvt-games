@@ -73,6 +73,9 @@ src/
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
 │   └── <name>/          Self-contained game (data/, models/, views/)
-├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, sequences, tweens)
+├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base in jsx/
+├── pixi-mvt/            Pixi scene passes and helpers; Pixi's JSX runtime in jsx/
+├── three-mvt/           three.js scene passes and pointer picker; its JSX runtime in jsx/
+├── html-mvt/            DOM scene passes; its JSX runtime in jsx/
 └── common/              The site's shared views (overlay, input, pause menu, perfmon)
 ```
