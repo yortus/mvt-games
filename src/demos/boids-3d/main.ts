@@ -1,12 +1,15 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { refreshScene as refreshElements } from '../../html-mvt';
 import { createPointerPicker, refreshScene, updateScene } from '../../three-mvt';
 import { createFlockModel } from '../boids';
+import { FlockPanelView } from './flock-panel-view';
 import { FlockView } from './flock-view';
 
 // The flock-in-3D demo page: the boids demo's model, drawn with three.js
-// through the three.js JSX runtime. Each frame runs the MVT way: the model
-// updates, then the scene passes call the view's methods, then three
-// renders.
+// through the three.js JSX runtime, with an HTML panel of settings beside it
+// through the HTML one: two views of one model, on two renderers. Each frame
+// runs the MVT way: the model updates, then the scene passes call both views'
+// methods, then three renders.
 
 // ---------------------------------------------------------------------------
 // Scene
@@ -36,6 +39,9 @@ const model = createFlockModel({
 scene.add(FlockView({ model }));
 createPointerPicker({ domElement: canvas, camera: () => camera, scene });
 
+const panel = FlockPanelView({ model });
+document.body.append(panel);
+
 // ---------------------------------------------------------------------------
 // Loop
 // ---------------------------------------------------------------------------
@@ -55,6 +61,8 @@ renderer.setAnimationLoop((time: number) => {
     model.update(deltaMs);
     updateScene(scene, deltaMs);
     refreshScene(scene);
+    // The panel has no update methods, so it needs only a refresh
+    refreshElements(panel);
 
     orbitAngle += deltaMs * ORBIT_RADIANS_PER_MS;
     camera.position.set(Math.sin(orbitAngle) * ORBIT_RADIUS, ORBIT_HEIGHT, Math.cos(orbitAngle) * ORBIT_RADIUS);

@@ -36,6 +36,27 @@
             }
             .caption h1 { font-size: 16px; color: #e6edf3; margin-bottom: 4px; }
             .caption a { color: #58a6ff; }
+            .flock-panel {
+                position: fixed;
+                top: calc(var(--site-nav-height, 48px) + 16px);
+                right: 16px;
+                width: 260px;
+                padding: 12px 14px;
+                background: rgba(13, 17, 23, 0.85);
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                font-size: 13px;
+            }
+            .flock-panel h2 { font-size: 14px; color: #e6edf3; margin-bottom: 8px; }
+            .flock-panel .range {
+                display: grid;
+                grid-template-columns: 80px 1fr 36px;
+                align-items: center;
+                gap: 8px;
+                margin-top: 6px;
+            }
+            .flock-panel input { width: 100%; accent-color: #58a6ff; }
+            .flock-panel .range-value { text-align: right; font-variant-numeric: tabular-nums; }
         </style>
     </head>
     <body>
@@ -60,8 +81,9 @@
             <h1>Boids in 3D</h1>
             <p>
                 The <a href="../">boids demo</a>'s flock model, unchanged, drawn with three.js
-                through the same JSX runtime as the Pixi games. Click the ground to add boids,
-                or a boid to take some away.
+                through the same JSX runtime as the Pixi games. The settings panel is HTML,
+                through that runtime too, following the same model. Click the ground to add
+                boids, or a boid to take some away.
             </p>
         </div>
 
