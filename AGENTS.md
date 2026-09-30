@@ -26,7 +26,8 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
-└── common/              Shared helpers, views, and models (e.g. change-detection watches, keyboard input)
+├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, sequences, tweens)
+└── common/              The site's shared views (overlay, input, pause menu, perfmon)
 ```
 
 Top level: `src/` (all TypeScript), `site/` (HTML pages and site CSS; Vite's

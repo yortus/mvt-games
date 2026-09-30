@@ -1,4 +1,4 @@
-import type { StepDef } from '#common';
+import type { StepDef } from '#mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Step definitions

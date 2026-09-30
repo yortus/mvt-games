@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import type { Container, Graphics } from 'pixi.js';
-import type { FrameStatKind, FrameStats } from './frame-stats';
+import type { FrameStatKind, FrameStats } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -465,7 +465,7 @@ Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi
 object directly through a `ref` or an `onRefresh` attribute.
 
 In either body, derive text (or anything else costly) from a changing value
-only when the value changes. `memoiseLast` from `#common` wraps a one-argument
+only when the value changes. `memoiseLast` from `#mvt-utils` wraps a one-argument
 function to do that; create it once, and call it every frame:
 
 ```tsx

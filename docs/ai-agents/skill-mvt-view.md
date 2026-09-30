@@ -226,7 +226,7 @@ attributes behave:
 - **`text`, `texture`, `tint`, `width`, `height`, `style` and `label` are
   written only when their value changes.** The function is still called every
   frame, so it must not build a new string each time: map a number to text
-  only when the number changes, with `memoiseLast` from `#common`, created once:
+  only when the number changes, with `memoiseLast` from `#mvt-utils`, created once:
   `const scoreText = memoiseLast((n: number) => String(n))`, then
   `text={() => scoreText(bindings.score())}`.
 - **`ref`** receives the element once it is built, e.g. to draw a `Graphics`
@@ -375,7 +375,7 @@ expensive work (rebuilding a grid, recreating child views), use the `watch()`
 helper:
 
 ```ts
-import { watch } from '#common';
+import { watch } from '#mvt-utils';
 
 const watcher = watch({
     rows: bindings.rows,

@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createSequenceReaction, type Sequence } from '#common';
+import { createSequenceReaction, type Sequence } from '#mvt-utils';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 

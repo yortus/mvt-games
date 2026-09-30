@@ -73,5 +73,6 @@ src/
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
 │   └── <name>/          Self-contained game (data/, models/, views/)
-└── common/              Shared helpers, views, and models
+├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, sequences, tweens)
+└── common/              The site's shared views (overlay, input, pause menu, perfmon)
 ```

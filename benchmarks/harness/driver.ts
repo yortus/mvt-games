@@ -132,9 +132,9 @@ const solidBrowserBuild: Plugin = {
 const stubTextureRegistry: Plugin = {
     name: 'stub-texture-registry',
     setup(pluginBuild) {
-        pluginBuild.onLoad({ filter: /[\\/]common[\\/]texture-registry\.ts$/ }, () => ({
+        pluginBuild.onLoad({ filter: /[\\/]pixi-mvt[\\/]texture-registry\.ts$/ }, () => ({
             loader: 'ts',
-            resolveDir: join(REPO_DIR, 'src/common'),
+            resolveDir: join(REPO_DIR, 'src/pixi-mvt'),
             contents: [
                 `import { Texture } from 'pixi.js';`,
                 `export function createTextureRegistry(_url: string, nameMap: Record<string, unknown>) {`,

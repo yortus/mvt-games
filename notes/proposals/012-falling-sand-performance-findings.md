@@ -14,7 +14,7 @@
 [`benchmarks/`](../../benchmarks/README.md),
 [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
 [Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md),
-[`src/common/frame-stats.ts`](../../src/common/frame-stats.ts),
+[`src/pixi-mvt/frame-stats.ts`](../../src/pixi-mvt/frame-stats.ts),
 [010 - Performance docs proposal](../archive/010-performance-docs-proposal.md).
 
 ---

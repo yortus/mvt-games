@@ -1,4 +1,4 @@
-import { type DeepReadonly } from '#common';
+import type { DeepReadonly } from '#mvt-utils';
 import { type BoidModel, createBoidModel } from './boid-model';
 
 // ---------------------------------------------------------------------------

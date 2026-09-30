@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createSequenceReaction, type Sequence } from '#common';
+import { createSequenceReaction, type Sequence } from '#mvt-utils';
 import type { CactusCell } from '../../models';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { OverlayView, isTouchDevice } from '#common';
+import { isTouchDevice, OverlayView } from '#common';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';

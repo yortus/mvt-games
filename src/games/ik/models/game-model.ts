@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#common';
+import { watch } from '#mvt-utils';
 import {
     type DefeatVariant,
     type FighterMove,

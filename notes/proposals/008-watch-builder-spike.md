@@ -1,10 +1,10 @@
 # 008 - `Watch()` fluent builder (spike)
 
 > Status: **Spike / design investigation.** A working prototype lives in
-> [`src/common/watch-builder.spike.ts`](../../src/common/watch-builder.spike.ts)
+> [`src/mvt-utils/watch-builder.spike.ts`](../../src/mvt-utils/watch-builder.spike.ts)
 > with tests in
-> [`src/common/watch-builder.spike.test.ts`](../../src/common/watch-builder.spike.test.ts)
-> (tsc + eslint + vitest green). It is not exported from the `#common` barrel,
+> [`src/mvt-utils/watch-builder.spike.test.ts`](../../src/mvt-utils/watch-builder.spike.test.ts)
+> (tsc + eslint + vitest green). It is not exported from the `#mvt-utils` barrel,
 > and nothing else in `src/` imports it. Living under `src/` means
 > `npm run build` type-checks it and `npm test` runs its tests.
 
@@ -158,7 +158,7 @@ unsound in three ways, each failing silently:
 Explicit inputs, as `Watch()` already has, fix all three. The falling-sand
 toolbar used a local stand-in, `mapOnChange(read, map)`: one selector, one
 `===` comparison, and `map` run only on a change. Since 2026-09-27 it, and
-Scramble's HUD, use `memoiseLast(fn)` from `src/common/` instead: a
+Scramble's HUD, use `memoiseLast(fn)` from `src/mvt-utils/` instead: a
 one-argument function wrapped to run only when its argument changes, called every frame
 with the polled value. Promotion should
 replace it with `Watch()`, which today would read:
@@ -438,16 +438,16 @@ without a new reason.
 
 ### Promotion work
 
-- Turn the spike (already in `src/common/`) into a real module: drop the
-  `.spike` suffix, export it from the `#common` barrel, and keep the spike
+- Turn the spike (now in `src/mvt-utils/`) into a real module: drop the
+  `.spike` suffix, export it from the `#mvt-utils` barrel, and keep the spike
   tests. Decide what happens to the existing
-  `watch()` / `Watcher` in `src/common/watch.ts` (remove after migration, or keep
+  `watch()` / `Watcher` in `src/mvt-utils/watch.ts` (remove after migration, or keep
   as a deprecated alias).
 - Migrate the ~38 files using `watch()`: simple sites to `.changes().then(...)`,
   interleaved ones (e.g. `src/common/pause-menu-view.ts`,
   `src/common/touch-input-view.ts`) to `.detect()`. Watch for `return` moving
   into a callback, where it no longer exits `refresh()`.
-- Decide whether `memoiseLast` (in `src/common/`, used by the falling-sand
+- Decide whether `memoiseLast` (in `src/mvt-utils/`, used by the falling-sand
   toolbar and Scramble's HUD) should give way to the mapping terminal, or
   stay as the simpler tool for the single-value case.
 - Port `derive` from the `derive-util` branch: its docs

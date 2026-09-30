@@ -1,11 +1,6 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { CabinetView, createCabinetModel, type CabinetViewBindings } from './cabinet';
-import {
-    isTouchDevice,
-    KeyboardInputView,
-    PauseMenuView,
-    TouchInputView,
-} from '#common';
+import { isTouchDevice, KeyboardInputView, PauseMenuView, TouchInputView } from '#common';
 import {
     createAsteroidsEntry,
     createCactiiEntry,

@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
-import { createFrameStats, PERFMON_HEIGHT } from '#common';
-import { updateScene } from '../../pixi-mvt';
+import { PERFMON_HEIGHT } from '#common';
+import { createFrameStats, updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { BoidsView } from './boids-view';

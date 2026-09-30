@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { createOrderedSlotList, createSlotList } from '#common';
+import { createOrderedSlotList, createSlotList } from '#mvt-utils';
 import { countReads, refreshScene } from '../pixi-mvt';
 import { jsx } from './jsx-runtime';
 import { List } from './list';

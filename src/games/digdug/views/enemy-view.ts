@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { watch } from '#common';
+import { watch } from '#mvt-utils';
 import { textures } from '../data';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
 

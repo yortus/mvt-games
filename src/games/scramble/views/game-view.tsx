@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import { type Container, Graphics } from 'pixi.js';
-import { OverlayView, isTouchDevice } from '#common';
+import { isTouchDevice, OverlayView } from '#common';
 import { List } from '#pixi-jsx';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';

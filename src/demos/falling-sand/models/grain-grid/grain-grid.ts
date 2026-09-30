@@ -1,4 +1,4 @@
-import type { IndexedSlots } from '#common';
+import type { IndexedSlots } from '#mvt-utils';
 import { createArrayGrainGrid } from './array-grain-grid';
 import { createObjectGrainGrid } from './object-grain-grid';
 import { createStoreGrainGrid } from './store-grain-grid';

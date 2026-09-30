@@ -37,8 +37,8 @@ aside), and `vnext-jsx` can move to it.
 
 | # | Topic(s) | Files | Status |
 | --- | --- | --- | --- |
-| 1 | Barrel lint rule fix: escape the `#` allow-list entries, so a violation is reported instead of crashing ESLint (011 section 11.1). Also this task | 3 | In review |
-| 2 | Split `common/`: renderer-agnostic helpers to `src/mvt-utils/`, `texture-registry` and `frame-stats` to `pixi-mvt`; the `#mvt-utils` alias; every importer, the benchmark driver's stub, docs | ~100 | |
+| 1 | Barrel lint rule fix: escape the `#` allow-list entries, so a violation is reported instead of crashing ESLint (011 section 11.1). Also this task | 3 | Done: `c3fddbf` |
+| 2 | Split `common/`: renderer-agnostic helpers to `src/mvt-utils/`, `texture-registry` and `frame-stats` to `pixi-mvt`; the `#mvt-utils` alias; every importer, the benchmark driver's stub, docs | ~100 | In review |
 | 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | |
 | 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | |
 | 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | |
@@ -57,6 +57,7 @@ aside), and `vnext-jsx` can move to it.
 - The precompiler's `registerRefreshFactories` hook in the base, and each JSX target's one-line re-export: step 6.
 - The conformance test "keeps a slot its own visible binding hides hidden when its item leaves and returns": step 10.
 - The barrel rule's allow list grows with the aliases and subpaths each step adds.
+- `SlotList`'s error message, reworded from "drive update()" to "call update() every tick": step 3, with the other "drive" rewording, so step 2's moves stay exact.
 
 **Verified for every step:** `npm run lint`; `tsc` for `src` and
 `benchmarks`, and for `scripts/` and `vite.config.ts`, which the root
@@ -77,3 +78,5 @@ the reference, carve-outs aside.
 
 - 2026-09-30: Created, with the worktree `../mvt-games-steps` on
   `vnext-jsx-steps` from `a438df9`. Step 1 in review.
+- 2026-09-30: Step 1 committed (`c3fddbf`). Step 2 in review: 22 files
+  moved unchanged, 65 importers rewritten.

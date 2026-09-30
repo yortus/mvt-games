@@ -23,7 +23,8 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Rendering and user-input handling
-└── common/              Shared helpers, views, and models
+├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, sequences, tweens)
+└── common/              The site's shared views (overlay, input, pause menu, perfmon)
 ```
 
 | Directory | Contains                                                  | Typical Exports                                           |
@@ -31,7 +32,8 @@ src/
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
-| `common/` | Shared helpers, views, and models                         | `watch`, `memoiseLast`, `OverlayView`, `createSlotList`       |
+| `mvt-utils/` | Renderer-agnostic helpers and models                   | `watch`, `memoiseLast`, `createSlotList`, `createSequence`    |
+| `common/` | The site's shared views                                   | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena

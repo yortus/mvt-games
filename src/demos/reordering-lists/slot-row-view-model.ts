@@ -1,4 +1,4 @@
-import type { IndexedSlots, OrderedSlot } from '#common';
+import type { IndexedSlots, OrderedSlot } from '#mvt-utils';
 
 /**
  * Presentation state for a row held as an `OrderedSlotList`: each card eases

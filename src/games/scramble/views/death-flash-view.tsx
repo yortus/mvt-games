@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import type { Container } from 'pixi.js';
-import { createEdgeTween } from '#common';
+import { createEdgeTween } from '#mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Bindings

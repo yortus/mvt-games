@@ -122,7 +122,7 @@ function refresh(): void {
 }
 ```
 
-`memoiseLast` (from `src/common/`) keeps `refresh()` from building a new
+`memoiseLast` (from `src/mvt-utils/`) keeps `refresh()` from building a new
 string every frame: it runs `String(score)` only when the score changes.
 
 ## Scene Graphs in Pixi.js

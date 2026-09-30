@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch, createSlotList, type Slot, type SlotList } from '#common';
+import { createSlotList, type Slot, type SlotList, watch } from '#mvt-utils';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import {
     SCROLL_SPEED,

@@ -52,7 +52,7 @@ grows longer than it has been before, and are kept for as long as the list is.
 
 `items` can be anything with a `length` and an `at(index)`: an array, the
 `slots` of a `SlotList`, the `slots` or `ordered` of an `OrderedSlotList` (both
-from `src/common/`), or an object literal such as
+from `src/mvt-utils/`), or an object literal such as
 `{ length: () => model.count, at: (i) => model.enemyAt(i) }`. Pass the
 collection itself when the model changes it in place, which is how models in
 this project own their collections. Pass a function returning it

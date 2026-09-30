@@ -82,6 +82,7 @@ export default tseslint.config(
                         // leading `#` as a comment, and then crashes on the first
                         // violation instead of reporting it (proposal 011 section 11.1)
                         '\\#common',
+                        '\\#mvt-utils',
                         '\\#pixi-jsx',
                     ],
                 },

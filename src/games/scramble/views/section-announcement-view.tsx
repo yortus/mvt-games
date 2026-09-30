@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import type { Container } from 'pixi.js';
-import { createSequence, watch } from '#common';
+import { createSequence, watch } from '#mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Bindings

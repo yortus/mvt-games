@@ -1,5 +1,5 @@
 import { Container, Graphics, Text, type FederatedPointerEvent } from 'pixi.js';
-import { watch } from './watch';
+import { watch } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Bindings

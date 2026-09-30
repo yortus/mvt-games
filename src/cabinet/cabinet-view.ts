@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { isTouchDevice, watch } from '#common';
+import { isTouchDevice } from '#common';
+import { watch } from '#mvt-utils';
 import type { CabinetPhase } from './cabinet-model';
 
 // ---------------------------------------------------------------------------

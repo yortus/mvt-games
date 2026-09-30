@@ -1,17 +1,6 @@
-export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
-export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
-export { createFrameStats, type FrameStatKind, type FrameStats, type SampledCounter } from './frame-stats';
 export { isTouchDevice } from './is-touch-device';
 export { KeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
-export { memoiseLast } from './memoise-last';
 export { OverlayView, type OverlayViewBindings } from './overlay-view';
 export { PauseMenuView, type PauseMenuViewBindings } from './pause-menu-view';
 export { PerfmonView, PERFMON_HEIGHT, PERFMON_WIDTH, type PerfmonViewBindings } from './perfmon-view';
-export { createSequence, type Sequence, type StepDef } from './sequence';
-export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
-export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';
-export { createOrderedSlotList, type OrderedSlot, type OrderedSlotList } from './slot-list';
-export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { TouchInputView, type TouchInputViewBindings } from './touch-input-view';
-export { type DeepReadonly } from './type-utils';
-export { watch } from './watch';

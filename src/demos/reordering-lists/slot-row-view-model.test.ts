@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOrderedSlotList } from '#common';
+import { createOrderedSlotList } from '#mvt-utils';
 import { createSlotRowViewModel } from './slot-row-view-model';
 
 // ---------------------------------------------------------------------------

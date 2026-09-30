@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { watch } from '#common';
+import { watch } from '#mvt-utils';
 import { textures } from '../data';
 import type { Direction } from '../models';
 

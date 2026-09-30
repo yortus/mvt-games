@@ -1,5 +1,6 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
-import { type FrameStats, PerfmonView } from '#common';
+import { PerfmonView } from '#common';
+import type { FrameStats } from '../../pixi-mvt';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { SliderView } from './slider-view';

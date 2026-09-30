@@ -1,7 +1,7 @@
 /** @jsxImportSource #pixi-jsx */
 
 import type { Container } from 'pixi.js';
-import type { FrameStats } from '#common';
+import type { FrameStats } from '../../../pixi-mvt';
 import type { DemoModel, GrainStorageKind, TankSizeKind } from '../models';
 import { type GrainsViewKind, TankView } from './tank-view';
 import { ToolbarView } from './toolbar-view';

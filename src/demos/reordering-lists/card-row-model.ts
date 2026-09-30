@@ -1,4 +1,4 @@
-import { createOrderedSlotList, type OrderedSlotList } from '#common';
+import { createOrderedSlotList, type OrderedSlotList } from '#mvt-utils';
 
 /**
  * One row of cards, held two ways so the demo can compare them: as a plain

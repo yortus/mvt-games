@@ -172,7 +172,7 @@ it. A bare `new Container()` and `destroy()` is included for scale.
 <!--@include: ../../../benchmarks/results/construction.md#build-->
 
 The second is a pool of short-lived items, such as bullets, held in a
-[`SlotList`](https://github.com/yortus/mvt-games/tree/main/src/common/slot-list).
+[`SlotList`](https://github.com/yortus/mvt-games/tree/main/src/mvt-utils/slot-list).
 About 500 are alive at once. Either
 `<List>` shows the slots, building one container per slot and reusing it for
 every later item, or a hand-written view builds a container for each new item

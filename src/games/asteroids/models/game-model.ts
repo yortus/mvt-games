@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch, createSlotList, type Slot, type SlotList } from '#common';
+import { createSlotList, type Slot, type SlotList, watch } from '#mvt-utils';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,

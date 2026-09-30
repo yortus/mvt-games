@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { batch, createMemo, createRenderEffect, createRoot, createSignal } from 'solid-js';
-import { watch } from '../../src/common';
+import { watch } from '../../src/mvt-utils';
 import { refreshScene } from '../../src/pixi-mvt';
 
 // ---------------------------------------------------------------------------

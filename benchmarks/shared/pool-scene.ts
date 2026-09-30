@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSlotList, type Slot } from '../../src/common';
+import { createSlotList, type Slot } from '../../src/mvt-utils';
 import { jsx, List } from '../../src/pixi-jsx';
 import { refreshScene } from '../../src/pixi-mvt';
 

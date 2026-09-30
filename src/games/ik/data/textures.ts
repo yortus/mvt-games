@@ -1,4 +1,4 @@
-import { createTextureRegistry } from '#common';
+import { createTextureRegistry } from '../../../pixi-mvt';
 
 export const textures = createTextureRegistry(`${import.meta.env.BASE_URL}assets/ik-textures.json`, {
     walk: {

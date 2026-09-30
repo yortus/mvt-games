@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#common';
+import { watch } from '#mvt-utils';
 import type { TileKind, DepthLayer, LevelConfig } from '../data';
 import { DEPTH_LAYERS } from '../data';
 import { createFieldModel, type FieldModel } from './field-model';
