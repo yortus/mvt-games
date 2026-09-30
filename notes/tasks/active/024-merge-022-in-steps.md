@@ -42,8 +42,8 @@ aside), and `vnext-jsx` can move to it.
 | 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | Done: `755ecab` |
 | 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | Done: `44b0287` |
 | 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | Done: `aa5fac1` |
-| 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | In review |
-| 7 | `jsx-refresh` benchmark suite | ~4 | |
+| 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | Done: `680df08` |
+| 7 | `jsx-refresh` benchmark suite | ~4 | In review |
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | |
 | 9 | Flock in 3D demo (three.js only) | ~8 | |
 | 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | |
@@ -112,3 +112,4 @@ the reference, carve-outs aside.
 - 2026-09-30: Review of step 6: kept the precompiler for now, and added
   task 025 (backlog) to decide between it and a Pixi-like two-mode runtime.
   025 lives in the worktree, with this task, until the end.
+- 2026-09-30: Step 6 committed (`680df08`), with task 025. Step 7 in review.

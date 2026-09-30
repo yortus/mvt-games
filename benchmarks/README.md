@@ -31,6 +31,7 @@ include).
 | --- | --- |
 | `reactivity` | Keeping 1000 Pixi containers in step with a changing model: polling (hand-written `onRefresh` methods and the JSX runtime), events, and Solid signals, as the share of the model changing each frame varies |
 | `scaling` | The same, from 100 to 100,000 containers |
+| `jsx-refresh` | Refreshing JSX bindings, uniform and over every write kind: the runtime's generated refresh methods, its eval-free fallback (for pages whose Content Security Policy forbids `new Function`), and hand-written methods |
 | `change-detection` | Reacting to a value that changes occasionally (comparing by hand, `watch()`, events, signals), and a property computed from 8 model values |
 | `construction` | The cost of a container from construction to destruction, and a pool of short-lived items: reusing containers with `<List>` over a `SlotList`, against building and destroying them |
 | `scene-passes` | `refreshScene` against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
