@@ -48,7 +48,7 @@ function runRegistration(
  * as the plugin's code would. Returns the elements left to the runtime.
  */
 function precompileRepo(): string[] {
-    const targets = ['#pixi-mvt/jsx'].map(savedTarget);
+    const targets = ['#pixi-mvt/jsx', '#three-mvt/jsx'].map(savedTarget);
     const skipped: string[] = [];
     // Views, not tests, which write invalid elements on purpose
     const files = readdirSync('src', { recursive: true, encoding: 'utf8' })

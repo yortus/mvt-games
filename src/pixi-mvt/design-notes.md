@@ -12,7 +12,7 @@
 [022](../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
 described here is generic over any tree, in
 [src/mvt-utils/scene-passes.ts](../mvt-utils/scene-passes.ts)
-(`createScenePasses`).
+(`createScenePasses`), which the three.js scene passes use too.
 pixi-mvt keeps what is Pixi's: the type augmentation, the structural
 wrappers, the destroy warning, and `updateScene` / `refreshScene` over
 containers. The walk also now calls methods cached in the memoised list
@@ -373,9 +373,9 @@ Two style-guide rules needed a deliberate decision.
 
 **`this`** is confined to the method accessors, in
 [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`, and
-the wrapped prototype methods, in [mvt-container-mixin.ts](./mvt-container-mixin.ts).
-A prototype accessor and a wrapped prototype method cannot reach their
-instance without it. Methods themselves are invoked as plain calls with no receiver, so a
+the wrapped prototype methods, in [mvt-container-mixin.ts](./mvt-container-mixin.ts)
+(and three-mvt's equivalent). A prototype accessor and a wrapped prototype
+method cannot reach their instance without it. Methods themselves are invoked as plain calls with no receiver, so a
 view's method stays an ordinary closure. The side effect is that a method defined as
 a subclass prototype method would not see its instance, which costs nothing here
 because the repo has no classes.

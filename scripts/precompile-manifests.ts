@@ -12,6 +12,7 @@
  */
 
 import { pixiElements, pixiTarget } from '../src/pixi-mvt/jsx';
+import { threeElements, threeTarget } from '../src/three-mvt/jsx';
 import { createPrecompileManifest, type PrecompileManifest } from './jsx-precompile-manifest';
 
 // ---------------------------------------------------------------------------
@@ -37,6 +38,11 @@ export function precompileManifests(): ManifestFile[] {
             importSource: '#pixi-mvt/jsx',
             path: 'src/pixi-mvt/jsx/precompile-manifest.json',
             manifest: createPrecompileManifest({ target: pixiTarget, elements: pixiElements }),
+        },
+        {
+            importSource: '#three-mvt/jsx',
+            path: 'src/three-mvt/jsx/precompile-manifest.json',
+            manifest: createPrecompileManifest({ target: threeTarget, elements: threeElements }),
         },
     ];
 }

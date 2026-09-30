@@ -77,6 +77,8 @@ export default tseslint.config(
                         'solid-js',
                         'solid-js/**',
                         'pixi-solid',
+                        'three',
+                        'three/**',
                         // Allow project-level import-map aliases. Escaped: the
                         // rule compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
@@ -84,12 +86,14 @@ export default tseslint.config(
                         '\\#common',
                         '\\#mvt-utils',
                         '\\#pixi-mvt/jsx',
+                        '\\#three-mvt/jsx',
                         // Allow a package-shaped directory's public `jsx` subpath,
                         // which each would export as `./jsx` once it is a package
                         '**/mvt-utils/jsx',
                         // The JSX conformance suite, for each JSX target's tests
                         '**/mvt-utils/jsx/conformance',
                         '**/pixi-mvt/jsx',
+                        '**/three-mvt/jsx',
                     ],
                 },
             ],

@@ -1,5 +1,6 @@
 export type { RefreshMethod, SceneNode, UpdateMethod } from './scene-node';
 export { SKIP_DESCENDANTS } from './skip-descendants';
+export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOptions } from './destroy-registry';
 export { addReads, countReads, readCounter } from './read-counter';
 export { createScenePasses } from './scene-passes';
 export type { SceneMemoFields, ScenePasses, SceneTree, SubtreeInfo } from './scene-passes';

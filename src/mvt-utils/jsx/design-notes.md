@@ -113,9 +113,9 @@ afterwards is missed). What would reopen it: a renderer whose tree cannot be
 walked at all.
 
 Every JSX target is held to the same behaviour by one conformance suite
-([conformance/](./conformance/conformance-suite.ts)), run on Pixi with
-generated code and with the fallback. A new JSX target adds a fixture, not
-tests: each renderer's `jsx/conformance.test.ts` is one.
+([conformance/](./conformance/conformance-suite.ts)), run on Pixi and
+three.js, each with generated code and with the fallback. A new JSX target
+adds a fixture, not tests: each renderer's `jsx/conformance.test.ts` is one.
 
 ### 6. Intrinsic elements are data
 
