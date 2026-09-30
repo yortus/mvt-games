@@ -35,6 +35,7 @@ include).
 | `change-detection` | Reacting to a value that changes occasionally (comparing by hand, `watch()`, events, signals), and a property computed from 8 model values |
 | `construction` | The cost of a container from construction to destruction, and a pool of short-lived items: reusing containers with `<List>` over a `SlotList`, against building and destroying them |
 | `scene-passes` | `refreshScene` against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
+| `html-scene-passes` | In headless Chrome: the DOM's `refreshScene` against a naive walk, steady and with the tree changing every frame, and a JSX list on one renderer (HTML or three.js) alone and after one on the other has run in the same page |
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
 | `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
@@ -47,7 +48,7 @@ benchmarks/
 ├── run.ts              Command line: picks suites and filters, calls the driver
 ├── harness/
 │   ├── suite.ts        Suite, Case and TableSpec types
-│   ├── driver.ts       Bundles a suite's measured file, runs each case in its own process, prints and saves tables
+│   ├── driver.ts       Bundles a suite's measured file, runs each case in its own process (or headless Chrome page), prints and saves tables
 │   ├── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
 │   └── text-measurement.ts  Lets Pixi measure text under Node, for games and demos that read a text's size
 ├── shared/             Scenes used by more than one suite
@@ -65,7 +66,10 @@ benchmarks/
    with `readParams()`, build the scene, measure it with the helpers in
    `harness/measure.ts`, and `report()` the metrics once.
 2. Write the definition, `suites/<name>.ts`: the cases (`combinations()` helps),
-   any Node flags they need, and the tables to print.
+   any Node flags they need, and the tables to print. A suite that needs a
+   real DOM sets `environment: 'browser'`: each case then runs in a fresh
+   headless Chrome, found at `CHROME_PATH` or where Chrome or Edge installs
+   by default, and can only time frames.
 3. Add it to `suites/index.ts`.
 
 Things that have caught these benchmarks out before, all in the method page:
@@ -77,7 +81,8 @@ that allocates on every `+=`, and a reactive library that never reacted.
 
 Rendering: nothing is drawn, so Pixi's transform updates and draw calls are not
 in any number. Only V8 under Node has been measured, on one machine per saved
-result; browsers and other engines have not. For the games and demos,
+result; browsers and other engines have not, except for `html-scene-passes`,
+which runs in headless Chrome. For the games and demos,
 textures are stubbed with Pixi's 1x1 `Texture.WHITE`, because loading a
 spritesheet needs a browser, and text widths are estimated from the font size,
 because measuring text needs a canvas.

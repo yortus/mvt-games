@@ -57,6 +57,12 @@ export interface Suite {
     readonly description: string;
     /** The measured file, relative to `benchmarks/suites/`. */
     readonly entry: string;
+    /**
+     * Where each case runs: a Node process (the default), or a page in
+     * headless Chrome, for code that needs a real DOM. A browser case can
+     * only time frames: the allocation and memory helpers need Node.
+     */
+    readonly environment?: 'node' | 'browser';
     readonly nodeArgs?: readonly string[];
     /** Processes per case. Default 3. */
     readonly runs?: number;

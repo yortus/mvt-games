@@ -8,8 +8,10 @@ import type { ParamValue } from './suite';
 // Each case runs in its own process: the driver passes its params as one JSON
 // argument, and reads back one JSON line of metrics from stdout.
 
-/** The params the driver passed to this process. */
+/** The params the driver passed to this process, or to this page in a browser suite. */
 export function readParams(): Record<string, ParamValue> {
+    const fromPage = (globalThis as BrowserCase).mvtBenchParams;
+    if (fromPage !== undefined) return fromPage;
     const arg = process.argv[2];
     if (arg === undefined) throw new Error('expected the case params as a JSON argument');
     return JSON.parse(arg) as Record<string, ParamValue>;
@@ -17,7 +19,20 @@ export function readParams(): Record<string, ParamValue> {
 
 /** Report this case's metrics to the driver. Call exactly once. */
 export function report(metrics: Record<string, number>): void {
+    if ((globalThis as BrowserCase).mvtBenchParams !== undefined) {
+        // In a page, which the driver reads back with Chrome's `--dump-dom`
+        const pre = document.createElement('pre');
+        pre.id = 'mvt-bench-result';
+        pre.textContent = JSON.stringify(metrics);
+        document.body.append(pre);
+        return;
+    }
     process.stdout.write(`${JSON.stringify(metrics)}\n`);
+}
+
+/** The page of a browser suite's case, which the driver gives its params. */
+interface BrowserCase {
+    readonly mvtBenchParams?: Record<string, ParamValue>;
 }
 
 // --- Time -----------------------------------------------------------------

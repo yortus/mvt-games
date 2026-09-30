@@ -4,6 +4,7 @@ import { constructionSuite } from './construction';
 import { fallingSandScalingSuite } from './falling-sand-scaling';
 import { gamesAndDemosSuite } from './games-and-demos';
 import { hotPathRulesSuite } from './hot-path-rules';
+import { htmlScenePassesSuite } from './html-scene-passes';
 import { jsxRefreshSuite } from './jsx-refresh';
 import { memorySuite } from './memory';
 import { reactivitySuite } from './reactivity';
@@ -18,6 +19,7 @@ export const suites: readonly Suite[] = [
     changeDetectionSuite,
     constructionSuite,
     scenePassesSuite,
+    htmlScenePassesSuite,
     hotPathRulesSuite,
     memorySuite,
     gamesAndDemosSuite,

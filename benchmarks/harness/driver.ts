@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { cpus, platform, release, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { build, type Plugin } from 'esbuild';
 import type { Case, ParamValue, Suite, TableSpec } from './suite';
 
@@ -32,7 +32,8 @@ export interface CaseResult {
 
 /**
  * Runs a suite: bundles its measured file to plain JavaScript once, then runs
- * each case in fresh Node processes and prints the suite's tables.
+ * each case in fresh Node processes, or fresh headless Chrome pages for a
+ * browser suite, and prints the suite's tables.
  */
 export async function runSuite(suite: Suite, options: RunOptions): Promise<void> {
     const cases = suite.cases.filter((c) => matches(c.params, options.filters));
@@ -44,15 +45,17 @@ export async function runSuite(suite: Suite, options: RunOptions): Promise<void>
     process.stdout.write(`\n## ${suite.name}: ${suite.description}\n\n`);
     const outDir = mkdtempSync(join(tmpdir(), `bench-${suite.name}-`));
     try {
-        const bundle = await bundleEntry(suite.entry, outDir);
+        const isBrowser = suite.environment === 'browser';
+        const bundle = await bundleEntry(suite.entry, outDir, isBrowser);
+        const run = isBrowser ? browserRunner(bundle, outDir) : nodeRunner(bundle, suite);
         const results: CaseResult[] = [];
         for (let i = 0; i < cases.length; i++) {
-            const result = runCase(bundle, suite, cases[i], runs);
+            const result = runCase(run, cases[i], runs);
             if (result !== undefined) results.push(result);
         }
         const markdown = formatTables(suite, results, runs);
         process.stdout.write(`\n${markdown}\n`);
-        if (options.save) save(suite, results, runs, markdown);
+        if (options.save) save(suite, results, runs, markdown, isBrowser ? browserVersion : undefined);
     }
     finally {
         rmSync(outDir, { recursive: true, force: true });
@@ -91,21 +94,38 @@ function matches(params: Readonly<Record<string, ParamValue>>, filters: Readonly
     return true;
 }
 
-async function bundleEntry(entry: string, outDir: string): Promise<string> {
-    const outfile = join(outDir, 'case.mjs');
+async function bundleEntry(entry: string, outDir: string, isBrowser: boolean): Promise<string> {
+    const outfile = join(outDir, isBrowser ? 'case.js' : 'case.mjs');
     await build({
         entryPoints: [join(BENCHMARKS_DIR, 'suites', entry)],
         outfile,
         bundle: true,
-        platform: 'node',
-        format: 'esm',
+        platform: isBrowser ? 'browser' : 'node',
+        format: isBrowser ? 'iife' : 'esm',
         logLevel: 'warning',
         // Measure what a production build runs: Vite would replace these
         define: { 'import.meta.env': '{"DEV":false,"PROD":true,"MODE":"production","BASE_URL":"/"}' },
-        plugins: [solidBrowserBuild, stubTextureRegistry],
+        plugins: isBrowser ? [solidBrowserBuild, nodeProcessInBrowser] : [solidBrowserBuild, stubTextureRegistry],
     });
     return outfile;
 }
+
+/**
+ * The measurement helpers import `node:process`, for what only Node has. In
+ * a page it is a stand-in with none of it: a browser case reads its params
+ * and reports through the page instead (`measure.ts`), and may use only the
+ * helpers that time frames.
+ */
+const nodeProcessInBrowser: Plugin = {
+    name: 'node-process-in-browser',
+    setup(pluginBuild) {
+        pluginBuild.onResolve({ filter: /^node:process$/ }, () => ({ path: 'node:process', namespace: 'browser-process' }));
+        pluginBuild.onLoad({ filter: /.*/, namespace: 'browser-process' }, () => ({
+            loader: 'js',
+            contents: 'export default { argv: [], memoryUsage() { throw new Error("Not available in a browser case"); } };',
+        }));
+    },
+};
 
 /**
  * Node resolves solid-js to its server build, where effects never run. Every
@@ -154,24 +174,93 @@ const stubTextureRegistry: Plugin = {
     },
 };
 
-function runCase(bundle: string, suite: Suite, testCase: Case, runs: number): CaseResult | undefined {
-    const label = describeParams(testCase.params);
-    process.stdout.write(`${label} ...`);
-    const nodeArgs = [...(suite.nodeArgs ?? []), ...(testCase.nodeArgs ?? [])];
-    const metrics: Record<string, number[]> = {};
-    for (let r = 0; r < runs; r++) {
+/** Runs one case once, returning the line of JSON it reported, or why it failed. */
+type CaseRunner = (testCase: Case) => { readonly line: string } | { readonly error: string };
+
+function nodeRunner(bundle: string, suite: Suite): CaseRunner {
+    return (testCase) => {
+        const nodeArgs = [...(suite.nodeArgs ?? []), ...(testCase.nodeArgs ?? [])];
         const child = spawnSync(
             process.execPath,
             [...nodeArgs, bundle, JSON.stringify(testCase.params)],
             { encoding: 'utf8' },
         );
-        if (child.status !== 0) {
-            process.stdout.write(` failed\n${child.stderr}\n`);
+        if (child.status !== 0) return { error: child.stderr };
+        const lines = child.stdout.trim().split('\n');
+        return { line: lines[lines.length - 1] };
+    };
+}
+
+/** The browser that ran the last browser case, from its user agent. */
+let browserVersion: string | undefined;
+
+/**
+ * Runs each case in a fresh headless Chrome: the bundle inlined in a page
+ * with the case's params, which reports its metrics into the page, read back
+ * with `--dump-dom`. A fresh profile each time, as each Node case gets a
+ * fresh process. Chrome is found at `CHROME_PATH`, or where it installs by
+ * default.
+ */
+function browserRunner(bundle: string, outDir: string): CaseRunner {
+    const chrome = findChrome();
+    const code = readFileSync(bundle, 'utf8');
+    if (code.includes('</script')) throw new Error('the bundle contains </script, so it cannot be inlined in a page');
+    return (testCase) => {
+        const page = join(outDir, 'case.html');
+        writeFileSync(page, [
+            '<!doctype html><html><head><meta charset="utf-8"></head><body>',
+            `<script>globalThis.mvtBenchParams = ${JSON.stringify(testCase.params)};`,
+            'document.documentElement.dataset.userAgent = navigator.userAgent;',
+            'addEventListener("error", (e) => {',
+            '    const pre = document.createElement("pre"); pre.id = "mvt-bench-error";',
+            '    pre.textContent = String(e.error?.stack ?? e.message); document.body.append(pre);',
+            '});</script>',
+            `<script>${code}</script>`,
+            '</body></html>',
+        ].join('\n'));
+        const profile = mkdtempSync(join(outDir, 'profile-'));
+        const child = spawnSync(chrome, [
+            '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
+            `--user-data-dir=${profile}`, '--dump-dom', pathToFileURL(page).href,
+        ], { encoding: 'utf8', timeout: 10 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 });
+        rmSync(profile, { recursive: true, force: true });
+        const dom = child.stdout ?? '';
+        browserVersion = /data-user-agent="[^"]*?((?:Chrome|Edg)\/[\d.]+)/.exec(dom)?.[1] ?? browserVersion;
+        const result = /<pre id="mvt-bench-result">([^<]*)<\/pre>/.exec(dom);
+        if (result !== null) return { line: result[1] };
+        const error = /<pre id="mvt-bench-error">([^<]*)<\/pre>/.exec(dom);
+        return { error: error?.[1] ?? `no result from ${chrome} (status ${child.status}): ${child.stderr}` };
+    };
+}
+
+function findChrome(): string {
+    const candidates = [
+        process.env.CHROME_PATH,
+        'C:/Program Files/Google/Chrome/Application/chrome.exe',
+        'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+    ];
+    for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+        if (candidate !== undefined && existsSync(candidate)) return candidate;
+    }
+    throw new Error('no Chrome found to run a browser suite: set CHROME_PATH');
+}
+
+function runCase(run: CaseRunner, testCase: Case, runs: number): CaseResult | undefined {
+    const label = describeParams(testCase.params);
+    process.stdout.write(`${label} ...`);
+    const metrics: Record<string, number[]> = {};
+    for (let r = 0; r < runs; r++) {
+        const output = run(testCase);
+        if ('error' in output) {
+            process.stdout.write(` failed\n${output.error}\n`);
             process.exitCode = 1;
             return undefined;
         }
-        const lines = child.stdout.trim().split('\n');
-        const reported = JSON.parse(lines[lines.length - 1]) as Record<string, number>;
+        const reported = JSON.parse(output.line) as Record<string, number>;
         for (const key in reported) {
             (metrics[key] ??= []).push(reported[key]);
         }
@@ -344,10 +433,11 @@ function unique<T>(values: T[]): T[] {
     return result;
 }
 
-function save(suite: Suite, results: CaseResult[], runs: number, markdown: string): void {
+function save(suite: Suite, results: CaseResult[], runs: number, markdown: string, browser: string | undefined): void {
     const dir = join(BENCHMARKS_DIR, 'results');
     mkdirSync(dir, { recursive: true });
     const environment = describeEnvironment();
+    if (browser !== undefined) environment.browser = browser;
     writeFileSync(join(dir, `${suite.name}.json`), `${JSON.stringify({ suite: suite.name, environment, runs, results }, undefined, 4)}\n`);
     writeMarkdown(suite, environment, markdown);
     process.stdout.write(`\nSaved benchmarks/results/${suite.name}.json and .md\n`);
@@ -358,7 +448,9 @@ function writeMarkdown(suite: Suite, environment: Record<string, string>, markdo
         `<!-- Generated by \`npm run bench -- ${suite.name} --save\`. Do not edit by hand. -->`,
         '',
         `<!-- #region environment -->`,
-        `Measured ${environment.date} on ${environment.cpu}, ${environment.os}, Node.js ${environment.node} (V8 ${environment.v8}), pixi.js ${environment.pixi}, solid-js ${environment.solid}.`,
+        environment.browser === undefined
+            ? `Measured ${environment.date} on ${environment.cpu}, ${environment.os}, Node.js ${environment.node} (V8 ${environment.v8}), pixi.js ${environment.pixi}, solid-js ${environment.solid}.`
+            : `Measured ${environment.date} on ${environment.cpu}, ${environment.os}, in headless ${environment.browser.replace('/', ' ')}.`,
         `<!-- #endregion environment -->`,
     ].join('\n');
     writeFileSync(join(BENCHMARKS_DIR, 'results', `${suite.name}.md`), `${header}\n\n${markdown}\n`);

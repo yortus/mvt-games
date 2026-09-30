@@ -47,8 +47,8 @@ aside), and `vnext-jsx` can move to it.
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | Done: `b4ec3ba` |
 | 9 | Boids in 3D demo (three.js only) | ~8 | Done: `117a64e` |
 | 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | Done: `c9ed69e` |
-| 10a | Fix-up from review of step 10: the renderers' scene-pass glue de-duplicated (one-line type augmentations, each renderer's `scene-passes.ts` folded into its mixin, a `beforeScenePass` hook for the DOM), and single-line imports in files from steps 4, 6 and 8 | 22 | In review |
-| 11 | Browser benchmark mode and the `html-scene-passes` suite, with saved results | ~9 | |
+| 10a | Fix-up from review of step 10: the renderers' scene-pass glue de-duplicated (one-line type augmentations, each renderer's `scene-passes.ts` folded into its mixin, a `beforeScenePass` hook for the DOM), and single-line imports in files from steps 4, 6 and 8 | 22 | Done: `69a02fe` |
+| 11 | Browser benchmark mode and the `html-scene-passes` suite, with saved results | ~9 | In review |
 | 12 | Boids in 3D demo's HTML panel | ~4 | |
 | 13 | Proposal 022 and planning notes: 011, 012, 008, 023, 017 updates; notes index; glossary; source trees in `AGENTS.md`, `README.md`, project-structure. Archive this task | ~14 | |
 
@@ -144,3 +144,5 @@ the reference, carve-outs aside.
   what happens.
 - 2026-09-30: pixi-mvt's `mvt-container-mixin.ts` renamed `container-mixin.ts`,
   after the class it extends, like three-mvt's and html-mvt's mixins.
+- 2026-09-30: Step 10a committed (`69a02fe`). Step 11 next.
+- 2026-09-30: Step 11 set up: browser benchmark mode, the `html-scene-passes` suite and its saved results.
