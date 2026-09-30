@@ -46,7 +46,10 @@ praised them for mirroring Pixi's `onRender`) -
 | 5 | A class that brings its own `update` is a leaf. To give it an MVT update, wrap it in a plain group node | 4.4 |
 | 6 | JSX attributes keep their `on` prefix: `onUpdate={...}`, `onRefresh={...}` | 7.2 |
 | 7 | Decide, before 011 publishes, whether `@mvtjs/pixi` and `@mvtjs/three` claim `update` on every node. Recommended: yes, with a migration note and the mitigations of 6.2 | 6 |
-| 8 | Land the hardening (2-4) under the current names first, then rename in one mechanical pass | 8 |
+| 8 | A dev-only check that throws on any call to a node's `update` or `refresh` that the scene passes did not make | 7.4 |
+| 9 | Dev-only checks for methods that will never run: a stale memoised walk (throws), and an `update` no `updateScene` covers (warns) | 7.5 |
+| 10 | Dev-only checks on the values the scene passes already handle: `deltaMs` where `updateScene` is entered, and each method's result. Not an argument check on every call. `SKIP_DESCENDANTS` becomes `Symbol.for` | 7.6 |
+| 11 | Land the hardening (2-4, 8-10) under the current names first, then rename in one mechanical pass | 8 |
 
 ---
 
@@ -84,7 +87,7 @@ code and the libraries:
 | O5 | TypeScript: our augmentation conflicts with class declarations | Mostly a feature; one cast for three's `LOD` / `CubeCamera` | 5 |
 | O6 | Outside codebases with their own `update` methods stop compiling | Reduced to warnings for MVT-shaped classes (6.2); an adoption cost otherwise | 6 |
 | O7 | A future library or web-platform version adds the name | Yes, fails loudly at load (4.2) | 4.2 |
-| O8 | The `on` prefix says "the system calls this, not you" | Mitigated by docs; optional lint | 7.1 |
+| O8 | The `on` prefix says "the system calls this, not you" | Mitigated by docs; caught in dev at runtime (7.4) | 7.1, 7.4 |
 | O9 | In JSX a function-valued attribute reads as a getter | Resolved by keeping `on` in JSX | 7.2 |
 | O10 | `update` already means several things in this repo | Consistent meaning; minor | 7.3 |
 | O11 | Migration cost | Mechanical, about 160 code sites | 8 |
@@ -337,12 +340,8 @@ With method signatures and 4.1-4.3, the legacy shapes behave like this:
 - **`BarView` with `[[Set]]` semantics** is still the hazard. Its field goes
   through the setter, so it is a real scene method, and it runs twice per
   frame while the game still forwards by hand. A plain assignment cannot be
-  told from a deliberate one. A dev-only check could catch the symptom
-  instead: in dev, the getter returns the method wrapped so that it warns
-  when it is called outside a scene pass. The scene passes read the backing
-  field (4.1), so they call it unwrapped. That catches hand-forwarding in
-  general (7.1), but it would also warn in unit tests that call a view's
-  `update` directly, and it makes `el.update === fn` false in dev only.
+  told from a deliberate one, but the hand-forwarding can be caught when it
+  happens: 7.4's dev-only check throws on the forwarded call.
 
 Together, these bring a legacy game close to today's behaviour with
 `onUpdate`: its classes compile, run as before, and are left alone by the
@@ -374,9 +373,10 @@ objection:
 - The failure is visible (animations run at double speed), not silent. A
   hand-called `refresh()` is idempotent, so it only wastes work.
 - Docs cover it in one sentence, next to "views never forward these calls".
-  If it turns up in review, a small typed ESLint rule can flag `.update(` /
-  `.refresh(` calls whose receiver is a `Container`, `Object3D` or `Element`.
-  Don't build that until it is needed.
+  A dev-only runtime check (7.4) catches it when it happens anyway. It
+  replaces the typed ESLint rule considered here earlier: a lint rule cannot
+  follow a method once it is stored in a variable, handed to the ticker, or
+  called from another module.
 
 ### 7.2 JSX attributes (O9)
 
@@ -395,7 +395,7 @@ rename only the node properties:
   `onUpdate={fn}` sets its `update`".
 
 The alternative, `update={...}` / `refresh={...}`, would also mean changing
-`MVT_ATTRIBUTE_KEYS`, the precompiler's `MVT_KEYS`, and the rule that no
+`MVT_ATTRIBUTE_KEYS` and the rule that no
 element table may define those names. It is workable, but it gives up the
 "function means getter" reading. Only 9 JSX sites use these attributes.
 
@@ -407,10 +407,234 @@ so the overlap is consistent, and it reads naturally:
 `view.update = (deltaMs) => pieces.update(deltaMs)`. What gets worse is
 finding "every view's update step" by text search. That is minor.
 
+### 7.4 A dev-only check for hand calls
+
+**What it catches:** any call to a node's `update` or `refresh` that the
+scene passes did not make. That covers the likely porting and wiring errors:
+
+- A parent forwarding to its children (`child.update(dt)` inside its own
+  `update`). This is the most common one, and it happens *during* a scene
+  pass. So "called outside a scene pass" is the wrong test, and the idea as
+  first sketched in 6.2 would have missed it. The right test is "not called
+  by the walk, for this node".
+- A session or host calling `gameView.update(dt)` instead of `updateScene`.
+- Wiring a view to Pixi directly: `app.ticker.add(view.update)`, or
+  `view.onRender = view.refresh`.
+- A view refreshing itself from an input handler, instead of relaying the
+  input and letting the next frame refresh.
+- A `BarView`-style field under `[[Set]]` semantics that is still forwarded
+  by hand (6.2).
+
+**How it works:**
+
+1. In dev, the setter stores the method in the backing field as now, plus a
+   wrapper that knows its node. The getter returns the wrapper. The scene
+   passes read the backing field (4.1), so they call the original. So in dev,
+   any call through the public property was not made by the walk.
+2. One exception is composition on the same node:
+   `const own = el.refresh; el.refresh = () => { own?.(); step(); }`. The
+   node's new method calls its previous one. `create-jsx`'s `addRefreshStep`,
+   `<List>`'s slot wrapper and `<Switch>`'s branch wrapper all do this, and
+   user code may copy it. To allow it, the walk records in dev which node's
+   method it is running. That is one module-level variable shared by every
+   renderer's scene passes, like `methodAssignments`, saved and restored
+   around each call so nested scene passes work. A wrapper called while its
+   own node is running is allowed. Any other call throws.
+3. The setter unwraps a wrapper it is given (`b.refresh = a.refresh`), so a
+   wrapper never reaches a backing field, and the setter's identity check
+   compares originals.
+
+The error names the node and the method, and gives the fix: "Don't forward;
+the scene passes call every node's `update`. To refresh a subtree now, call
+`refreshScene(node)`." Nested refresh scene passes already run each node
+exactly once. The error's stack trace points at the offending call.
+
+**Throw rather than warn**, like the other dev assertions (re-entry,
+shadowing), because the stack trace is what makes it useful. A hand-called
+`update` is a real bug: that state advances twice per frame. A hand-called
+`refresh` only wastes work, but it is still a wiring mistake, and
+`refreshScene(child)` is the sanctioned way to refresh a subtree now. There
+is no equivalent for `update`, and none is needed (open question 9).
+
+**What it cannot catch:**
+
+- A closure called directly rather than through the node. For example, a
+  port that keeps the old `{ container, update }` record and forwards through
+  it. Nothing marks such a call.
+- Class-defined methods (`FooView`), which don't go through the accessor.
+  The walk doesn't call them either, so nothing runs twice. 6.1's warning
+  covers them.
+- Production builds.
+
+**What it costs:**
+
+- Nothing in production. `DEV` is replaced at build time, so Vite drops the
+  checks. The Node benchmarks run with `DEV` false.
+- In dev: one closure per method assignment, and one store and restore per
+  method call in the walk.
+- In dev, `el.update === fn` is false, and the function's `name` and
+  `length` differ. Nothing in `src/` compares them.
+- Vitest runs with `DEV` true, so the check runs in the test suite, which is
+  where porting errors should surface. Only one test helper calls methods by
+  hand: `create-jsx.test.ts` line 45, a hand-rolled walk, which would move to
+  `refreshScene`. The benchmarks' naive-walk baselines
+  (`scene-passes.case.ts`, `html-scene-passes.case.ts`) call methods by hand,
+  but they run without `DEV`.
+
+**Feasibility:** small. The change is confined to the accessor install and
+the two invoke loops in `scene-passes.ts`, plus tests for each case above.
+It doesn't depend on the rename, so it belongs in step 1 of section 8, and
+it is worth having under the current names too.
+
+**Verdict: worthwhile.** It is the runtime answer to O8. It catches calls a
+lint rule cannot see, and it turns 6.2's `[[Set]]` hazard from silent double
+speed into an error with a stack trace.
+
+### 7.5 A dev-only check for methods that never run
+
+The converse of 7.4: a node carries an `update` or `refresh` that no scene
+pass will call. There are four ways that can happen:
+
+| Case | Example | Detectable? |
+| --- | --- | --- |
+| a. A class-defined method hides the accessor | `FooView` (6.1) | Yes, when a walk is rebuilt (open question 6) |
+| b. The tree is walked, but the memoised walk is stale | A child added by pushing onto Pixi's or three's `children` array directly; happy-dom's observer gap (`element-mixin.ts`); a bug in the invalidation wrappers | Yes, exactly |
+| c. One kind of scene pass walks the tree, but no pass of the other kind covers the node | An animated pause menu with an `update`, under `app.stage`. `src/main.ts` runs `refreshScene(app.stage)` every frame, but `updateScene` only over `cabinetContainer` and each game view, so that `update` never runs | Yes, with one rule |
+| d. No scene pass walks the tree at all | A view rendered into a `RenderTexture` without a `refreshScene`; an orphan | Only with a renderer hook |
+
+**(b) Stale walks.** At the start of a scene pass, before any method runs, the
+memoised walk must match a fresh build of the tree: everything that changes
+the tree should have invalidated it. In dev, every Nth scene pass on a root,
+build a fresh list and compare. A mismatch is always a bug, so throw, naming
+the missing or extra node. For the DOM, the comparison comes after
+`beforeScenePass` has taken the observer's records. The cost is one full
+rebuild every N scene passes, in dev only. This check also serves as a
+standing test of the invalidation wrappers, the part of the design that 001
+and 003 found hardest to get right.
+
+**(c) Coverage.** The rule that works: a node is covered for `update` if it,
+or one of its ancestors, has *ever* been passed to `updateScene`. It must be
+"ever" rather than "recently". While this repo is paused,
+`updateScene(cabinetContainer)` keeps running but the game session's
+`updateScene(gameView)` does not, so a recency rule would flag every game
+view on pause.
+
+- `updateScene` marks the node it is given: one field, in dev.
+- Rebuilding a refresh walk already visits every node of the refreshed tree
+  (`has` never exits early). So in dev it can collect the nodes there that
+  carry an `update`, and keep that list with the memo, discarded along with
+  it. There is no global registry of nodes, so nothing leaks.
+- Every Nth refresh scene pass, check each collected node that is still
+  attached. If neither it nor any ancestor is marked, warn once per node:
+  "`'label'` has an `update` method, but no `updateScene` covers it. Pass its
+  tree to `updateScene`, or remove the method."
+- The update walk's rebuild gives the symmetric check (a `refresh` in a tree
+  that is updated but never refreshed) at the same cost. That case is rarer.
+
+Warn rather than throw: an uncovered method is almost always a mistake, but
+not certainly one. Limits: coverage is structural. A covered node whose root
+stops being updated after some phase is not caught, because "ever" cannot
+tell that apart from a pause.
+
+**By-product: overlapping update roots.** The same marks show when a node
+has two marked ancestors, or a marked ancestor besides itself. That means two
+`updateScene` calls cover it, and its state advances twice per update. For
+example, someone adds `updateScene(app.stage)` while the sessions still
+update their own game views. 7.4 cannot see this, because both calls come
+from walks. The coverage check finds it while walking up from each node, and
+warns.
+
+**(d) Unwalked trees.** Neither scene pass sees these, so only the renderer
+can. Pixi 8.21 emits a `prerender` runner with the container being rendered,
+and three calls `scene.onBeforeRender`. A dev hook there could check that the
+root being rendered was refreshed since its last render. This repo's
+thumbnail path (`refreshScene(tempStage)`, then `renderer.render`) would
+pass. But it needs code per renderer and a way to attach to the renderer
+(Pixi: an extension or an explicit dev call; three: a patched `render`).
+Defer it until a real bug calls for it.
+
+**Frequency, and tests.** At every 60th scene pass, reports arrive within
+about a second at 60 fps. Most tests run a handful of scene passes, so they
+would rarely reach the check. Under Vitest (`import.meta.env.MODE ===
+'test'`), N can be 1. The fresh build then doubles the cost of each scene
+pass in tests, which is acceptable.
+
+**Verdict: worthwhile for (b) and (c).** (b) is exact and cheap, and it
+guards the library's own trickiest code. (c) catches a class of wiring error
+that this repo's shape invites: several update roots under one refresh root.
+(a) is open question 6, and (d) is deferred. All of it lives in the
+renderer-agnostic core, so Pixi, three and the DOM get it together. None of
+it depends on the rename.
+
+### 7.6 Checking arguments and results
+
+**The idea:** in dev, check that every `update` call receives one number and
+every `refresh` call receives no arguments. That would catch calls the
+scene passes did not make, such as Pixi's ticker handing a view its `Ticker`.
+
+**As stated, it adds little:**
+
+- **The scene passes' own calls are correct by construction.** Checking them
+  would test this library, not the view. Also, to keep a single call site
+  (012), the loop calls `refresh` methods with `deltaMs` set to `0`
+  (`method(deltaMs)` in `invokeSubtreeMethods`), so "no arguments" would first
+  need that call site split.
+- **Any other call can only be intercepted through 7.4's wrapper, and 7.4
+  already throws for every such call, whatever its arguments.**
+  `app.ticker.add(view.update)` and `view.onRender = view.refresh` are both
+  caught there. The only calls left for an argument check are a node calling
+  its own previous method (`own(ticker)`), which is rare.
+- **TypeScript already rejects the definitions and the calls**, checked with
+  `tsc`: `updateScene(view, ticker)`, an update method that takes a `Ticker`,
+  a refresh method that takes a parameter, `async` methods, and methods that
+  return a boolean. A runtime check would add only JavaScript callers, `any`
+  and casts.
+- **It can't see the likeliest Pixi mistake.**
+  `updateScene(view, ticker.deltaTime)` passes Pixi's frame-scaled delta
+  (about 1) instead of `ticker.deltaMS` (about 16.7). It is a number, it type
+  checks, and presentation state runs about 17 times too slow. No check can
+  tell that apart from a test stepping 1 ms. Leave it to the pixi-mvt README,
+  which should name it.
+
+**What is worth keeping is checking the values the scene passes already
+handle:**
+
+1. **`deltaMs`, once, where `updateScene` is entered.** In dev, throw unless
+   it is a finite number of zero or more. That catches a `Ticker` or
+   `undefined` passed from JavaScript or `any`, and `NaN` from a bad
+   calculation, which type checks and quietly poisons every piece of
+   presentation state it reaches. It costs one test per scene pass, not per
+   method. Whether a negative `deltaMs` should throw or be allowed (speed
+   control run backwards) is open question 12.
+2. **Each method's result, in the loop.** The loop already compares every
+   result with `SKIP_DESCENDANTS`. In dev, on the other path, throw if the
+   result is anything but `undefined`. That catches:
+   - an `async` method from JavaScript or a cast. It returns a `Promise`, and
+     its work lands after the frame is drawn.
+   - `true` or `false` returned in the belief that it means "skip".
+   - `SKIP_DESCENDANTS` from **another copy** of the base library. It is
+     created with `Symbol('mvt.skipDescendants')`, so two instances of the
+     module disagree, and the skip is silently ignored. Types can't catch this
+     when both copies are the same version: a bundler that loads one version
+     twice, a known Vite hazard with linked packages, gives identical types
+     and two symbols. The message can name that cause.
+
+   The check costs one comparison per call in dev and nothing in production.
+   Include the scene-pass loop in 7.4's benchmark check anyway.
+3. **Always, not just in dev: make the symbol shared.**
+   `Symbol.for('mvt.skipDescendants')` makes every copy of the library agree.
+   That removes the duplicate-copy case, rather than only reporting it. The
+   cost is that any code can create the symbol, which is harmless here.
+
+**Verdict:** don't add the argument check. Add 1 and 2, which are cheap and
+sit where the scene passes already handle the values, and make change 3 when
+the packages are published (011).
+
 ## 8. Migration plan
 
 1. **Harden under the current names:** 4.1 (backing fields only), 4.2
-   (install guard), 4.3 (message). Add tests: a tree containing an
+   (install guard), 4.3 (message), 7.4 (hand-call check), 7.5 (stale-walk
+   and coverage checks), 7.6 (`deltaMs` and result checks, `Symbol.for`). Add tests: a tree containing an
    `AnimatedSprite`, a `ParticleContainer` and an `LOD` runs its scene passes
    without calling them; assigning a method on one throws in dev;
    `destroyObject` on an `LOD` and adding it back renders; installing on a
@@ -454,8 +678,16 @@ finding "every view's update step" by text search. That is minor.
    MVT-shaped `update` keep compiling?
 8. Should the shadowing assertion become a one-time warning for an own
    property already present when a node is first walked (6.2)?
-9. Is a dev-only "called outside a scene pass" warning (6.2, 7.1) worth its
-   noise in unit tests and its dev-only identity difference?
+9. 7.4's check: throw (recommended), or warn once per node? Should a hand
+   call to `refresh`, which is only wasted work, be treated the same as one
+   to `update`, which is a bug?
+10. 7.5: how often should the stale-walk and coverage checks run in dev
+    (every 60th scene pass suggested), and should Vitest run them on every
+    scene pass?
+11. 7.5 (d): is a renderer hook for trees rendered without a refresh wanted
+    now, or deferred (recommended)?
+12. 7.6: should a negative `deltaMs` throw, or is running speed control
+    backwards a supported use?
 
 ## 10. Settled here
 
