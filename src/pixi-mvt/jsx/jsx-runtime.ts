@@ -37,3 +37,9 @@ export const jsxs = jsx;
 
 /** jsxDEV is used in development mode by esbuild's jsx-dev-runtime. Same logic. */
 export const jsxDEV = jsx;
+
+/**
+ * For the build-time precompiler, if a page uses it: the code it adds to a
+ * module imports this from here. The base's, shared by every JSX target.
+ */
+export { registerRefreshFactories } from '../../mvt-utils/jsx';

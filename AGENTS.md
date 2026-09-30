@@ -31,8 +31,8 @@ src/
 ```
 
 Top level: `src/` (all TypeScript), `site/` (HTML pages and site CSS; Vite's
-root), `docs/` (VitePress), `benchmarks/`, `scripts/` (texture generation,
-Vite plugin), `notes/` (proposals and tasks).
+root), `docs/` (VitePress), `benchmarks/`, `scripts/` (texture and
+precompile-manifest generation, Vite plugins), `notes/` (proposals and tasks).
 
 Full reference: [Project Structure](docs/reference/project-structure.md)
 

@@ -30,9 +30,9 @@ export interface JsxOptions<N extends SceneNode> {
     readonly elements: ElementTable<N>;
     /**
      * Whether refresh methods may be generated with `new Function`. By
-     * default, whether the page allows it. False leaves only the slower
-     * closure fallback, which is for pages that forbid `new Function` and for
-     * testing that the paths behave the same.
+     * default, whether the page allows it. False leaves only precompiled
+     * factories and the slower closure fallback, which is for pages that
+     * forbid `new Function` and for testing that the paths behave the same.
      */
     readonly canGenerateCode?: boolean;
 }
@@ -41,7 +41,7 @@ export interface JsxRuntime<N> {
     /** The JSX factory: what `jsx`, `jsxs` and `jsxDEV` are in the JSX target's runtime module. */
     readonly jsx: JsxFactory<N>;
     readonly Fragment: typeof Fragment;
-    /** How many refresh methods this runtime has made from generated and fallback code. */
+    /** How many refresh methods this runtime has made from precompiled, generated and fallback code. */
     readonly refreshMethodCounts: RefreshMethodCounts;
 }
 
@@ -84,8 +84,9 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
     // Each element's attributes, by tag then key, resolved on first use.
     const resolvedElements = new Map<string, ResolvedElement<N>>();
     const visible = resolveAttribute(target.visible) as ResolvedChangeable;
-    // Probes `new Function` only when a factory must first be generated.
-    const refreshBuilder = createRefreshBuilder({ canGenerateCode: options.canGenerateCode });
+    // Probes `new Function` only when a factory must be generated, so a page
+    // whose shapes are all precompiled never tries it.
+    const refreshBuilder = createRefreshBuilder({ name: target.name, canGenerateCode: options.canGenerateCode });
 
     return {
         jsx,

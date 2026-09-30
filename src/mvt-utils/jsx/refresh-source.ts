@@ -1,8 +1,9 @@
 import type { WriteKind } from './attributes';
 
-// Pure and dependency-free: the source the runtime generates refresh
-// factories from with `new Function`, kept apart from the builder that uses
-// it so what it writes can be pinned by a test (`refresh-source.test.ts`).
+// Pure and dependency-free: the runtime generates refresh factories from this
+// with `new Function`, and the build-time precompiler
+// (`scripts/vite-plugin-jsx-precompile.ts`) writes the same source into the
+// modules it transforms, so the two cannot drift.
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -17,6 +18,16 @@ export interface ShapeBinding {
     readonly property: string | undefined;
 }
 
+/**
+ * The version of what this module produces: the format of
+ * {@link refreshShapeKey}'s keys and the code {@link refreshFactorySource}
+ * writes. The precompiler registers its factories with the version it was
+ * built against, and a runtime ignores factories of any other version, so a
+ * precompiler and a runtime from different releases never mix code. Bump it
+ * whenever either output changes; `refresh-source.test.ts` fails until you do.
+ */
+export const REFRESH_SOURCE_VERSION = 1;
+
 /** A refresh factory's source: its parameter names and its body, on one line. */
 export interface RefreshSource {
     readonly params: readonly string[];
@@ -28,10 +39,13 @@ export interface RefreshSource {
 // ---------------------------------------------------------------------------
 
 /**
- * The key a refresh factory is cached under: whether the
+ * The key a refresh factory is cached and registered under: whether the
  * first binding is `visible`, then each binding's write kind, and its
  * property or, for an apply function, its attribute key. Two elements with
  * the same key get the same generated code.
+ *
+ * Stable between build and run time, unlike anything identity-based, which
+ * is what lets the precompiler register factories the runtime then finds.
  */
 export function refreshShapeKey(hasVisible: boolean, bindings: readonly ShapeBinding[]): string {
     let key = hasVisible ? 'v|' : '|';
@@ -79,7 +93,9 @@ export function refreshShapeKey(hasVisible: boolean, bindings: readonly ShapeBin
  * define throws before it gets here.
  *
  * With a `visible` binding, it is first, and the read count is split around
- * its check, so a hidden element counts only the one read it made.
+ * its check, so a hidden element counts only the one read it made. The body
+ * is one line, so the precompiler can put it in a module without moving any
+ * of the module's own lines.
  */
 export function refreshFactorySource(hasVisible: boolean, bindings: readonly ShapeBinding[]): RefreshSource {
     const params = ['e', 's', 'u', 'c'];

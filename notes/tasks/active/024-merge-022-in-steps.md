@@ -41,8 +41,8 @@ aside), and `vnext-jsx` can move to it.
 | 2 | Split `common/`: renderer-agnostic helpers to `src/mvt-utils/`, `texture-registry` and `frame-stats` to `pixi-mvt`; the `#mvt-utils` alias; every importer, the benchmark driver's stub, docs | ~100 | Done: `9a1aa58` |
 | 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | Done: `755ecab` |
 | 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | Done: `44b0287` |
-| 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | In review |
-| 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | |
+| 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | Done: `aa5fac1` |
+| 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | In review |
 | 7 | `jsx-refresh` benchmark suite | ~4 | |
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | |
 | 9 | Flock in 3D demo (three.js only) | ~8 | |
@@ -53,7 +53,8 @@ aside), and `vnext-jsx` can move to it.
 
 **Carve-outs** (a step commits a version without the later feature):
 
-- Attribute patterns (`data-*`, `aria-*`) in the JSX base and precompiler: step 10.
+- Attribute patterns (`data-*`, `aria-*`) in the JSX base and precompiler (manifest code, its tests, the plugin's tests): step 10.
+- The precompiler's manifest list and repo sweep cover Pixi only until three.js and HTML exist: steps 8 and 10. `vite.config.ts` lacks the flock demo's build input until step 9.
 - The precompiler's `registerRefreshFactories` hook in the base, and each JSX target's one-line re-export: step 6.
 - The conformance test "keeps a slot its own visible binding hides hidden when its item leaves and returns", `JsxTarget.visible`'s note on it, and the base design notes' decision 10: step 10.
 - The base design notes' decision 11 and precompiler passages, `refresh-source`'s version and the `precompiled` count: step 6.
@@ -106,3 +107,8 @@ the reference, carve-outs aside.
   `createScenePasses(tree)` already takes a named-params object.
 - 2026-09-30: Step 4 committed (`44b0287`). Step 5 in review: 58 uses of
   `#pixi-jsx` in 33 files renamed; 30 of them now match the reference.
+- 2026-09-30: Step 5 committed (`aa5fac1`). Step 6 in review: 824 tests; the
+  precompiled build precompiles 42 shapes in 24 modules (Pixi's views only).
+- 2026-09-30: Review of step 6: kept the precompiler for now, and added
+  task 025 (backlog) to decide between it and a Pixi-like two-mode runtime.
+  025 lives in the worktree, with this task, until the end.

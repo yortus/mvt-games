@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { refreshFactorySource, refreshShapeKey, type ShapeBinding } from './refresh-source';
+import { REFRESH_SOURCE_VERSION, refreshFactorySource, refreshShapeKey, type ShapeBinding } from './refresh-source';
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe('refresh source', () => {
-    // Pins what the source produces for a shape using every write kind, so a
-    // change to either output is a deliberate one.
-    it('produces exactly the pinned key and source', () => {
+    // Precompiled factories carry the version they were made with, and a
+    // runtime ignores any other. This test pins what version 1 produces for a
+    // shape using every write kind, so that changing either output fails here
+    // until REFRESH_SOURCE_VERSION is bumped, and the expectations with it.
+    it('produces, for this version, exactly the pinned key and source', () => {
         const bindings: ShapeBinding[] = [
             { key: 'visible', kind: 'every-frame', property: 'visible' },
             { key: 'x', kind: 'every-frame', property: 'x' },
@@ -17,6 +19,7 @@ describe('refresh source', () => {
             { key: 'width', kind: 'on-change-number', property: 'width' },
         ];
 
+        expect(REFRESH_SOURCE_VERSION).toBe(1);
         expect(refreshShapeKey(true, bindings)).toBe('v|e.visible,e.x,e@scale,c.texture,n.width,');
         expect(refreshFactorySource(true, bindings)).toEqual({
             params: ['e', 's', 'u', 'c', 'g0', 'a0', 'g1', 'a1', 'g2', 'a2', 'g3', 'a3', 'g4', 'a4'],

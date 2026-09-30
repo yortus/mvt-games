@@ -1,6 +1,6 @@
 import { readCounter, type RefreshMethod, SKIP_DESCENDANTS } from '..';
 import type { WriteKind } from './attributes';
-import { refreshFactorySource, refreshShapeKey, type ShapeBinding } from './refresh-source';
+import { REFRESH_SOURCE_VERSION, refreshFactorySource, refreshShapeKey, type ShapeBinding } from './refresh-source';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -24,9 +24,11 @@ export type RefreshFactory = (...args: unknown[]) => RefreshMethod;
 
 /** How many refresh methods a runtime has made each way. For diagnostics and tests. */
 export interface RefreshMethodCounts {
+    /** From a factory the build-time precompiler registered. */
+    readonly precompiled: number;
     /** From a factory generated at run time with `new Function`. */
     readonly generated: number;
-    /** From the closure fallback, where `new Function` was not available. */
+    /** From the closure fallback, where neither was available. */
     readonly fallback: number;
 }
 
@@ -43,11 +45,44 @@ export interface RefreshBuilder {
 
 /** Options for {@link createRefreshBuilder}. */
 export interface RefreshBuilderOptions {
+    /** Names the runtime in dev warnings. */
+    readonly name: string;
     /**
      * Whether refresh factories may be generated with `new Function`. By
      * default, whether the page allows it ({@link canGenerateCode}).
      */
     readonly canGenerateCode?: boolean;
+}
+
+/**
+ * Adds refresh factories made at build time, by `refreshShapeKey`, for every
+ * runtime on the page: generated code depends only on a binding shape, never
+ * on the JSX target. A shape found here needs no `new Function`, so a page whose
+ * Content Security Policy forbids it still gets generated code. `version` is
+ * the `REFRESH_SOURCE_VERSION` they were made with; factories of any other
+ * version are ignored, with a warning in dev builds.
+ *
+ * The precompiler's one way into the runtime. The code it adds to a module
+ * imports this from `<importSource>/jsx-runtime`, which the app can always
+ * resolve, so each renderer's `jsx-runtime` re-exports it. Unused, it costs a
+ * map lookup the first time each binding shape is built.
+ */
+export function registerRefreshFactories(factories: Readonly<Record<string, RefreshFactory>>, version: number): void {
+    if (version !== REFRESH_SOURCE_VERSION) {
+        if (DEV && !hasReportedVersion) {
+            hasReportedVersion = true;
+            console.warn(
+                `[mvt-utils/jsx] Ignoring refresh factories precompiled for version ${version} of the refresh source; `
+                + `this runtime is version ${REFRESH_SOURCE_VERSION}. The precompiler and the runtime come from `
+                + 'different releases: install matching versions.',
+            );
+        }
+        return;
+    }
+    for (const key in factories) {
+        if (!precompiledFactories.has(key)) precompiledFactories.set(key, factories[key]);
+    }
+    registrations++;
 }
 
 /**
@@ -68,9 +103,10 @@ export function canGenerateCode(): boolean {
 
 /**
  * A builder of refresh methods. Each distinct binding shape gets a refresh
- * factory, generated with `new Function` and cached, if the page allows it
+ * factory: one registered by the precompiler if there is one, else one
+ * generated with `new Function` and cached, if the page allows it
  * (`options.canGenerateCode`, or by default, if {@link canGenerateCode}). Where
- * it does not, the element gets the closure fallback.
+ * neither is available, the element gets the closure fallback.
  *
  * Generated code is several times faster. Measured by the `jsx-refresh`
  * benchmark suite on Pixi, per frame at 1,000 and 10,000 elements, the
@@ -81,22 +117,31 @@ export function canGenerateCode(): boolean {
  * Pixi's `x` does. It is not allocation: garbage collections were the same.
  */
 export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBuilder {
+    const name = options.name;
     const isGenerationAllowed = options.canGenerateCode;
     // Factories generated on first use, by shape key (`refreshShapeKey`).
     // Bounded by the number of distinct binding shapes in source, so never
-    // evicted.
+    // evicted. Precompiled ones are shared by every runtime (module level).
     const generated = new Map<string, RefreshFactory>();
     // The fast path: what each sequence of attribute definitions resolved to,
     // keyed by their ids. Building the thousandth element with a given shape
     // costs one short key and one lookup here, not a shape key and a lookup
-    // in the map: measured, the shape key alone made building a JSX element
-    // 40% slower.
+    // in each map: measured, the shape key alone made building a JSX element
+    // 40% slower. Cleared when a registration arrives, so that a shape
+    // resolved before a later module registered it picks up its factory.
     const resolved = new Map<string, ResolvedFactory>();
-    const counts = { generated: 0, fallback: 0 };
+    let registrationsSeen = registrations;
+    // Shapes already reported as missing from the precompiled ones.
+    const reportedMisses = new Set<string>();
+    const counts = { precompiled: 0, generated: 0, fallback: 0 };
 
     return { build, counts };
 
     function build(el: unknown, bindings: readonly Binding[], hasVisible: boolean): RefreshMethod {
+        if (registrationsSeen !== registrations) {
+            registrationsSeen = registrations;
+            resolved.clear();
+        }
         let idKey = hasVisible ? 'v' : '';
         for (let i = 0; i < bindings.length; i++) idKey += bindings[i].id + ',';
         let entry = resolved.get(idKey);
@@ -110,7 +155,8 @@ export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBui
             counts.fallback++;
             return buildFallback(el, bindings, hasVisible);
         }
-        counts.generated++;
+        if (entry.isPrecompiled) counts.precompiled++;
+        else counts.generated++;
 
         // Construction only, so building this argument list is off the hot path.
         const args: unknown[] = [el, SKIP_DESCENDANTS, UNSET, readCounter];
@@ -118,17 +164,34 @@ export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBui
         return factory(...args);
     }
 
-    /** The factory for a shape: generated if allowed, else none (the fallback). */
+    /** The factory for a shape: registered, else generated if allowed, else none (the fallback). */
     function resolve(bindings: readonly Binding[], hasVisible: boolean): ResolvedFactory {
         const key = refreshShapeKey(hasVisible, bindings);
+        const precompiled = precompiledFactories.get(key);
+        if (precompiled !== undefined) return { factory: precompiled, isPrecompiled: true };
         let factory = generated.get(key);
         if (factory === undefined) {
-            if (!(isGenerationAllowed ?? canGenerateCode())) return { factory: undefined };
+            if (!(isGenerationAllowed ?? canGenerateCode())) {
+                reportMiss(key);
+                return { factory: undefined, isPrecompiled: false };
+            }
             const source = refreshFactorySource(hasVisible, bindings);
             factory = new Function(...source.params, source.body) as RefreshFactory;
             generated.set(key, factory);
         }
-        return { factory };
+        return { factory, isPrecompiled: false };
+    }
+
+    /**
+     * In dev builds, when the page uses the precompiler but a shape was not
+     * precompiled and cannot be generated, says which, once per shape: the
+     * precompiler sees only intrinsic elements written in `.tsx` files, and
+     * guesses no further than the syntax allows.
+     */
+    function reportMiss(key: string): void {
+        if (!DEV || precompiledFactories.size === 0 || reportedMisses.has(key)) return;
+        reportedMisses.add(key);
+        console.warn(`[mvt-utils/jsx] ${name}: no precompiled refresh for binding shape '${key}', so it uses the slower fallback.`);
     }
 }
 
@@ -136,9 +199,18 @@ export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBui
 // Internals
 // ---------------------------------------------------------------------------
 
+/** Factories the precompiler made, by shape key, for every runtime on the page. */
+const precompiledFactories = new Map<string, RefreshFactory>();
+
+/** How many registrations there have been, so each builder knows when to drop its fast cache. */
+let registrations = 0;
+
+let hasReportedVersion = false;
+
 /** What a sequence of attribute definitions resolved to. No factory means the fallback. */
 interface ResolvedFactory {
     readonly factory: RefreshFactory | undefined;
+    readonly isPrecompiled: boolean;
 }
 
 /**
@@ -169,9 +241,10 @@ function probeCodeGeneration(): boolean {
     catch {
         if (DEV) {
             console.warn(
-                '[mvt-utils/jsx] This page\'s Content Security Policy blocks new Function, so JSX bindings are '
-                + 'refreshed by a slower fallback (6-16x slower per bound element on Pixi, measured). Add '
-                + '\'unsafe-eval\' to script-src, or define __MVT_JSX_EVAL__ as false to skip this check and this warning.',
+                '[mvt-utils/jsx] This page\'s Content Security Policy blocks new Function, so JSX bindings that were not '
+                + 'precompiled are refreshed by a slower fallback (6-16x slower per bound element on Pixi, measured). '
+                + 'Precompile them with the Vite plugin, add \'unsafe-eval\' to script-src, or define '
+                + '__MVT_JSX_EVAL__ as false to skip this check and this warning.',
             );
         }
         return false;

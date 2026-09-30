@@ -172,18 +172,29 @@ no dispatch. Measured in 022 section 7.5 against the alternatives:
 Factories are cached by shape (`refreshShapeKey` in
 [refresh-source.ts](./refresh-source.ts)): `visible` or not, then each
 binding's write kind and its property, or its attribute key for an apply
-function. The ids of attribute definitions are a fast path in front of it:
-each runtime resolves a sequence of definition ids to a factory once, and every later element with that
+function. The key is stable between build and run time, which the
+precompiler needs; ids assigned in the order a runtime met definitions were
+not. The ids stay as a fast path: each runtime resolves a sequence of
+definition ids to a factory once, and every later element with that
 sequence costs one short key and one lookup. Building the shape key for
 every element instead made building a JSX element 40% slower (0.59 us
 against 0.42 us per container).
 
 The fallback exists for pages whose Content Security Policy forbids
-`new Function`. The runtime probes `new Function` only for a shape it must
-generate, once per page (`canGenerateCode`), and dev builds warn once if the
-probe fails. An application can define `__MVT_JSX_EVAL__` as `false` to skip
-the probe. A full JSX compiler was considered and not built (022 section
-7.6).
+`new Function`, and the build-time precompiler
+([scripts/vite-plugin-jsx-precompile.ts](../../../scripts/vite-plugin-jsx-precompile.ts))
+exists so they rarely need it. It is opt-in (`MVT_JSX_PRECOMPILE=1`), since
+only such pages need it. It registers, per module, the factories that
+module's elements need (`registerRefreshFactories`, which a JSX target's
+runtime module must export). The runtime looks those up first and probes
+`new Function` only for a shape it must generate, once per page
+(`canGenerateCode`); dev builds warn once if the probe fails, and name each
+shape that falls back on a page that uses the precompiler. Each registration
+carries the `REFRESH_SOURCE_VERSION` it was made with, and a runtime ignores
+any other, so a precompiler and a runtime from different releases never mix
+code; `refresh-source.test.ts` pins what each version produces. An application
+can define `__MVT_JSX_EVAL__` as `false` to skip the probe. A full JSX
+compiler was considered and not built (022 section 7.6).
 
 ### 8. Events are wired before other attributes
 
@@ -198,6 +209,25 @@ listener.
 Every child is a node, on every JSX target, and text is an attribute of an
 element. Only HTML and SVG have text nodes; an `appendText` operation can be
 added when a JSX target needs one (022 section 5.4).
+
+### 11. The precompiler reads data, never a target
+
+The build-time precompiler needs only what generated code depends on: for
+each element, its attributes' write kinds and properties. A JSX target's
+precompile manifest is that, as JSON, saved beside the JSX target and reached as
+`<importSource>/precompile`, so the
+precompiler finds it from a module's `@jsxImportSource` with no
+configuration, and never loads a renderer in Node, where some install
+themselves on load. In this repo the manifests are
+saved by `npm run generate-precompile-manifests`, and a test fails when one
+disagrees with its table; a published renderer package would make its own
+when built (022 section 12.1). The manifest has its own format number, as
+the refresh source has its version, so a precompiler reads only manifests it
+understands. The code that makes and reads manifests is the precompiler's
+(`scripts/jsx-precompile-manifest.ts`): the runtime knows nothing of them.
+Its one entry point for pre-made code is `registerRefreshFactories`, one
+registry for every JSX target, which each renderer's `jsx-runtime` re-exports for
+the code the precompiler adds to modules.
 
 ## Accepted limitations
 

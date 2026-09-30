@@ -31,6 +31,11 @@ it, and [pixi-elements.ts](./pixi-elements.ts) is Pixi's element table.
   applies them through the scale.
 - **`label` and `style` are `onChange`**, so they accept getters, as the
   runtime always allowed, although they used to be typed as fixed values.
+- **`jsx-runtime.ts` re-exports the base's `registerRefreshFactories`**, which
+  the code the build-time precompiler adds to each `.tsx` module imports from
+  `#pixi-mvt/jsx/jsx-runtime`. The precompiler learns this JSX target's
+  elements from its manifest, `precompile-manifest.json`, reached as
+  `#pixi-mvt/jsx/precompile`.
 
 ## Related findings
 
