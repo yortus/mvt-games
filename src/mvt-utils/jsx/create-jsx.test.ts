@@ -181,6 +181,53 @@ describe('createJsx', () => {
         expect(() => defineElements(table)).toThrow(/defines 'visible'/);
     });
 
+    describe('attribute patterns', () => {
+        /** A table whose `<tagged>` makes a `tag-*` attribute per name, counting how many it made. */
+        function taggedTable() {
+            const made: string[] = [];
+            const elements = defineElements({
+                tagged: element(() => createNode('tagged'), { x: fakeElements.box.attributes.x }, {
+                    'tag-': (name: string) => {
+                        made.push(name);
+                        return fake.onChange((e, v: string) => {
+                            write(e, name, v);
+                        });
+                    },
+                }),
+            });
+            return { jsx: createJsx({ target: fakeTarget, elements }).jsx, made };
+        }
+
+        it('make an attribute for a name with the prefix, fixed or bound, once per element kind', () => {
+            const t = taggedTable();
+            let colour = 'red';
+
+            const a = t.jsx('tagged', { 'tag-size': 'big', 'tag-colour': () => colour });
+            const b = t.jsx('tagged', { 'tag-colour': () => colour });
+            refreshScene(a);
+            refreshScene(b);
+            colour = 'blue';
+            refreshScene(a);
+
+            expect(a.log).toEqual(['tag-size=big', 'tag-colour=red', 'tag-colour=blue']);
+            expect(b.log).toEqual(['tag-colour=red']);
+            expect(t.made).toEqual(['tag-size', 'tag-colour']);
+        });
+
+        it('match only names longer than the prefix, and leave other unknown names an error', () => {
+            const t = taggedTable();
+
+            expect(() => t.jsx('tagged', { 'tag-': 'x' })).toThrow(/no attribute 'tag-'/);
+            expect(() => t.jsx('tagged', { label: 'x' })).toThrow(/no attribute 'label'/);
+        });
+
+        it('may not have a prefix that matches an attribute every element has', () => {
+            const table = { box: element(() => createNode('box'), {}, { on: () => fake.fixed((_e, _v: string) => {}) }) };
+
+            expect(() => defineElements(table)).toThrow(/pattern 'on', which matches 'onUpdate'/);
+        });
+    });
+
     describe('generated code and the fallback', () => {
         /** A scripted run over every write kind: what was written, and the reads counted, per frame. */
         function script(canGenerateCode: boolean): string[] {

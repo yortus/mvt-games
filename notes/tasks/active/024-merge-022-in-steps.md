@@ -45,8 +45,8 @@ aside), and `vnext-jsx` can move to it.
 | 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | Done: `680df08` |
 | 7 | `jsx-refresh` benchmark suite | ~4 | Done: `77a2269` |
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | Done: `b4ec3ba` |
-| 9 | Boids in 3D demo (three.js only) | ~8 | In review |
-| 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | |
+| 9 | Boids in 3D demo (three.js only) | ~8 | Done: `117a64e` |
+| 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | In review |
 | 11 | Browser benchmark mode and the `html-scene-passes` suite, with saved results | ~9 | |
 | 12 | Boids in 3D demo's HTML panel | ~4 | |
 | 13 | Proposal 022 and planning notes: 011, 012, 008, 023, 017 updates; notes index; glossary; source trees in `AGENTS.md`, `README.md`, project-structure. Archive this task | ~14 | |
@@ -124,3 +124,6 @@ the reference, carve-outs aside.
   `boids-3d` ("Boids in 3D"), in both trees; its views keep their names,
   `FlockView` and `FlockPanelView`, after the `FlockModel` they show. Added
   task 026 (backlog): a demos screen for every renderer, built with HTML JSX.
+- 2026-09-30: Step 9 committed (`117a64e`), with task 026. Step 10 in review: 1124
+  tests; every carve-out that waited for HTML is resolved, and the step's 32
+  files match the reference exactly.

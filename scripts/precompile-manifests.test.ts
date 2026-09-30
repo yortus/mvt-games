@@ -6,7 +6,8 @@ import { formatManifest, precompileManifests } from './precompile-manifests';
 // Tests
 // ---------------------------------------------------------------------------
 
-// In Node: every table can be read without a renderer running. The precompiler itself never reads them, only the saved manifests.
+// In Node: every table, HTML's included, can be read without a renderer
+// running. The precompiler itself never reads them, only the saved manifests.
 describe('precompile manifests', () => {
     const imports = (JSON.parse(readFileSync('package.json', 'utf8')) as { imports: Record<string, string> }).imports;
 

@@ -25,8 +25,8 @@ export const PRECOMPILE_MANIFEST_FORMAT = 1;
  * property it assigns. Plain data, made from the element table by
  * {@link createPrecompileManifest} and saved as JSON beside the JSX target
  * (`precompile-manifest.json`, reached as `<importSource>/precompile`), so
- * the precompiler never loads a renderer, some of which install themselves
- * on load (proposal 022 section 12.1).
+ * the precompiler never loads a renderer: some install themselves on load,
+ * and HTML's needs a DOM (proposal 022 section 12.1).
  */
 export interface PrecompileManifest {
     /** {@link PRECOMPILE_MANIFEST_FORMAT}, when the manifest was made. */
@@ -37,7 +37,8 @@ export interface PrecompileManifest {
     readonly visible: ManifestAttribute;
     /**
      * Attribute records, each shared by every element that has the same
-     * attributes, so a table of many similar elements stays small. By key.
+     * attributes, so a table of many similar elements stays small. By key,
+     * or, for patterns, by prefix.
      */
     readonly sets: readonly Readonly<Record<string, ManifestAttribute>>[];
     /** Each element, by tag. */
@@ -61,13 +62,20 @@ export interface PrecompileManifestOptions<N extends SceneNode> {
 export interface ManifestElement {
     /** Index in `sets` of the element's attributes. */
     readonly attributes: number;
+    /** Index in `sets` of the element's patterns, by prefix, if it has any. */
+    readonly patterns?: number;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** The precompile manifest of a JSX target and its element table. */
+/**
+ * The precompile manifest of a JSX target and its element table. A pattern is
+ * recorded by the attribute it makes for a sample name, so every attribute a
+ * pattern makes must be written the same way, by an apply function: its
+ * name is not known here, and a name such as `data-x` is not a property.
+ */
 export function createPrecompileManifest<N extends SceneNode>(options: PrecompileManifestOptions<N>): PrecompileManifest {
     const { target, elements } = options;
     const sets: Record<string, ManifestAttribute>[] = [];
@@ -78,7 +86,19 @@ export function createPrecompileManifest<N extends SceneNode>(options: Precompil
         const definition = elements[tag];
         const attributes: Record<string, ManifestAttribute> = {};
         for (const key in definition.attributes) attributes[key] = describe(definition.attributes[key]);
-        manifestElements[tag] = { attributes: setIndex(attributes) };
+        const patterns: Record<string, ManifestAttribute> = {};
+        let hasPatterns = false;
+        for (const prefix in definition.patterns) {
+            const made = describe(definition.patterns[prefix](`${prefix}sample`));
+            if (made.property !== undefined) {
+                throw new Error(`<${tag}>'s pattern '${prefix}' makes an attribute that assigns a property; patterns must use apply functions`);
+            }
+            patterns[prefix] = made;
+            hasPatterns = true;
+        }
+        manifestElements[tag] = hasPatterns
+            ? { attributes: setIndex(attributes), patterns: setIndex(patterns) }
+            : { attributes: setIndex(attributes) };
     }
 
     return {
@@ -103,14 +123,21 @@ export function createPrecompileManifest<N extends SceneNode>(options: Precompil
 }
 
 /**
- * Attribute `key` of element `tag`, as the runtime would find it.
- * `undefined` if the element or the attribute is not in the manifest.
+ * Attribute `key` of element `tag`, from its attributes or its patterns, as
+ * the runtime would find it. `undefined` if the element or the attribute is
+ * not in the manifest.
  */
 export function findManifestAttribute(manifest: PrecompileManifest, tag: string, key: string): ManifestAttribute | undefined {
     const element = Object.hasOwn(manifest.elements, tag) ? manifest.elements[tag] : undefined;
     if (element === undefined) return undefined;
     const attributes = manifest.sets[element.attributes];
-    return Object.hasOwn(attributes, key) ? attributes[key] : undefined;
+    if (Object.hasOwn(attributes, key)) return attributes[key];
+    if (element.patterns === undefined) return undefined;
+    const patterns = manifest.sets[element.patterns];
+    for (const prefix in patterns) {
+        if (key.length > prefix.length && key.startsWith(prefix)) return patterns[prefix];
+    }
+    return undefined;
 }
 
 // ---------------------------------------------------------------------------

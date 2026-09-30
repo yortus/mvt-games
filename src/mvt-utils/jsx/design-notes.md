@@ -113,9 +113,10 @@ afterwards is missed). What would reopen it: a renderer whose tree cannot be
 walked at all.
 
 Every JSX target is held to the same behaviour by one conformance suite
-([conformance/](./conformance/conformance-suite.ts)), run on Pixi and
-three.js, each with generated code and with the fallback. A new JSX target
-adds a fixture, not tests: each renderer's `jsx/conformance.test.ts` is one.
+([conformance/](./conformance/conformance-suite.ts)), run on Pixi,
+three.js and HTML, each with generated code and with the fallback. A new JSX
+target adds a fixture, not tests: each renderer's `jsx/conformance.test.ts`
+is one.
 
 ### 6. Intrinsic elements are data
 
@@ -148,6 +149,16 @@ Property names come only from tables, and are checked to be identifiers
 where the table is defined. A key a caller passes that the table does not
 define throws, and so does a function given to an attribute that takes only
 a fixed value. Both fail at construction, not silently.
+
+**Attributes whose names are not known in advance** (HTML's `data-*` and
+`aria-*`) are an element's patterns: the third argument to `element`, a
+function per prefix that makes the definition for a full name. The runtime
+keeps what a pattern made, per element kind; the precompiler's manifest
+records one per prefix, so every attribute a pattern makes must be written
+the same way, by an apply function. A pattern makes no events, and no
+pattern may match an attribute every element has. TypeScript never checks a hyphenated
+JSX attribute against an index signature, so in JSX a pattern attribute's
+value is unchecked; the pattern still gives it a contextual type.
 
 ### 7. Refresh methods are generated code
 
@@ -208,7 +219,19 @@ listener.
 
 Every child is a node, on every JSX target, and text is an attribute of an
 element. Only HTML and SVG have text nodes; an `appendText` operation can be
-added when a JSX target needs one (022 section 5.4).
+added when a JSX target needs one (022 section 5.4). HTML's `text` attribute
+writes a text node the element owns.
+
+### 10. A target's `visible` must survive writes behind its back
+
+`<List>` and `<Switch>` show and hide nodes with `visible.apply` directly.
+An item view with a `visible` binding of its own is such a node, so a
+`visible` written only on change would not see the list's writes: hidden by
+its binding, emptied and hidden by the list, then shown by the list when its
+item returns, it would stay shown, since its binding's value never changed.
+So every JSX target's `visible` is written every frame: a plain assignment on
+Pixi and three.js, and on HTML, where a write costs more, compared with the
+element's `hidden` attribute first. The conformance suite has the case.
 
 ### 11. The precompiler reads data, never a target
 
@@ -218,7 +241,7 @@ precompile manifest is that, as JSON, saved beside the JSX target and reached as
 `<importSource>/precompile`, so the
 precompiler finds it from a module's `@jsxImportSource` with no
 configuration, and never loads a renderer in Node, where some install
-themselves on load. In this repo the manifests are
+themselves on load and HTML's needs a DOM. In this repo the manifests are
 saved by `npm run generate-precompile-manifests`, and a test fails when one
 disagrees with its table; a published renderer package would make its own
 when built (022 section 12.1). The manifest has its own format number, as

@@ -54,10 +54,30 @@ export interface EventAttribute<Ev> {
 /** Any attribute definition that an element of type `E` accepts. */
 export type AttributeDefinition<E> = FixedAttribute<E, never> | ChangeableAttribute<E, never> | EventAttribute<never>;
 
-/** An intrinsic element: how to create it, and the attributes it accepts. */
-export interface ElementDefinition<E, A> {
+/**
+ * Makes the definition of an attribute whose name starts with a pattern's
+ * prefix (HTML's `data-`), given the attribute's full name.
+ */
+export type AttributePattern<E> = (name: string) => FixedAttribute<E, never> | ChangeableAttribute<E, never>;
+
+/** An element's attribute patterns, by prefix: none, for most elements. */
+export type NoPatterns = Readonly<Record<never, never>>;
+
+/**
+ * An intrinsic element: how to create it, the attributes it accepts, and the
+ * patterns of any whose names are not known in advance.
+ */
+export interface ElementDefinition<E, A, P = NoPatterns> {
     readonly create: () => E;
     readonly attributes: A;
+    /**
+     * Attributes whose names are not known in advance, such as HTML's
+     * `data-*`, by prefix. The first time an element of this kind is given an
+     * attribute with one of these prefixes that `attributes` lacks, the
+     * pattern makes its definition, which is then kept for that name. It is
+     * written like any other: its name never reaches generated code.
+     */
+    readonly patterns: P;
 }
 
 /**
@@ -128,14 +148,32 @@ export function event<Ev>(eventName: string): EventAttribute<Ev> {
 }
 
 /**
- * An intrinsic element definition. Each attribute must accept the element
- * `create` returns, which the type checks.
+ * An intrinsic element definition. Each attribute, and each attribute a
+ * pattern makes, must accept the element `create` returns, which the type
+ * checks.
  */
+// Overloads rather than a default for `P`: inferred from a table's context,
+// an omitted `P` would widen to its constraint, and every element would
+// accept any attribute.
 export function element<E, A extends Readonly<Record<string, AttributeDefinition<E>>>>(
     create: () => E,
     attributes: A,
-): ElementDefinition<E, A> {
-    return { create, attributes };
+): ElementDefinition<E, A, NoPatterns>;
+export function element<
+    E,
+    A extends Readonly<Record<string, AttributeDefinition<E>>>,
+    P extends Readonly<Record<string, AttributePattern<E>>>,
+>(
+    create: () => E,
+    attributes: A,
+    patterns: P,
+): ElementDefinition<E, A, P>;
+export function element<E>(
+    create: () => E,
+    attributes: Readonly<Record<string, AttributeDefinition<E>>>,
+    patterns: Readonly<Record<string, AttributePattern<E>>> = NO_PATTERNS,
+): ElementDefinition<E, object, object> {
+    return { create, attributes, patterns };
 }
 
 /**
@@ -143,11 +181,18 @@ export function element<E, A extends Readonly<Record<string, AttributeDefinition
  * attribute the base provides on every element (`visible`, `children` and
  * the rest), since the base would never read it.
  */
-export function defineElements<T extends Readonly<Record<string, ElementDefinition<unknown, object>>>>(elements: T): T {
+export function defineElements<T extends Readonly<Record<string, ElementDefinition<unknown, object, object>>>>(elements: T): T {
     for (const kind in elements) {
         for (const key in elements[kind].attributes) {
             if (MVT_ATTRIBUTE_KEYS.has(key)) {
                 throw new Error(`<${kind}> defines '${key}', which every element already has; remove it from the table`);
+            }
+        }
+        for (const prefix in elements[kind].patterns) {
+            for (const key of MVT_ATTRIBUTE_KEYS) {
+                if (key.startsWith(prefix)) {
+                    throw new Error(`<${kind}> has the pattern '${prefix}', which matches '${key}', an attribute every element already has`);
+                }
             }
         }
     }
@@ -166,6 +211,8 @@ export const MVT_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set([
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+const NO_PATTERNS: NoPatterns = Object.freeze({});
 
 type Writer = string | ((el: unknown, value: unknown) => void);
 

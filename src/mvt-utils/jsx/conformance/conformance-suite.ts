@@ -789,6 +789,25 @@ function describeList<N extends SceneNode>({ fixture, jsx, List }: SuiteContext<
             expect(writes).toBe(0);
         });
 
+        it('keeps a slot its own visible binding hides hidden when its item leaves and returns', () => {
+            const items: (Item | undefined)[] = itemsWithIds(1, 2);
+            const list = List<Item>({
+                items,
+                children: (item) => jsx(fixture.everyFrame.tag, { visible: () => item().id !== 2 }),
+            });
+            refresh(list);
+
+            // The list hides the emptied slot, then shows it again behind the
+            // binding's back; the binding must still win.
+            const hidden = items[1];
+            items[1] = undefined;
+            refresh(list);
+            items[1] = hidden;
+            refresh(list);
+
+            expect(fixture.isVisible(fixture.children(list)[1])).toBe(false);
+        });
+
         it('counts one read of `items` and one presence check per slot', () => {
             const t = setup(itemsWithIds(1, 2, 3));
             t.items[1] = undefined;

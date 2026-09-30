@@ -12,7 +12,7 @@
 [022](../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
 described here is generic over any tree, in
 [src/mvt-utils/scene-passes.ts](../mvt-utils/scene-passes.ts)
-(`createScenePasses`), which the three.js scene passes use too.
+(`createScenePasses`), which the three.js and DOM scene passes use too.
 pixi-mvt keeps what is Pixi's: the type augmentation, the structural
 wrappers, the destroy warning, and `updateScene` / `refreshScene` over
 containers. The walk also now calls methods cached in the memoised list

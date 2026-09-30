@@ -13,7 +13,11 @@
         "#three-mvt/jsx": "./src/three-mvt/jsx/index.ts",
         "#three-mvt/jsx/jsx-runtime": "./src/three-mvt/jsx/jsx-runtime.ts",
         "#three-mvt/jsx/jsx-dev-runtime": "./src/three-mvt/jsx/jsx-runtime.ts",
-        "#three-mvt/jsx/precompile": "./src/three-mvt/jsx/precompile-manifest.json"
+        "#three-mvt/jsx/precompile": "./src/three-mvt/jsx/precompile-manifest.json",
+        "#html-mvt/jsx": "./src/html-mvt/jsx/index.ts",
+        "#html-mvt/jsx/jsx-runtime": "./src/html-mvt/jsx/jsx-runtime.ts",
+        "#html-mvt/jsx/jsx-dev-runtime": "./src/html-mvt/jsx/jsx-runtime.ts",
+        "#html-mvt/jsx/precompile": "./src/html-mvt/jsx/precompile-manifest.json"
     },
     "scripts": {
         "dev": "vite --host",
@@ -42,6 +46,7 @@
         "eslint-import-resolver-typescript": "^4.4.4",
         "eslint-plugin-import": "^2.32.0",
         "glob": "^13.0.6",
+        "happy-dom": "^20.14.5",
         "mermaid": "^11.13.0",
         "pngjs": "^7.0.0",
         "tsx": "^4.21.0",

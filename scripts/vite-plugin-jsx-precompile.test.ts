@@ -48,7 +48,7 @@ function runRegistration(
  * as the plugin's code would. Returns the elements left to the runtime.
  */
 function precompileRepo(): string[] {
-    const targets = ['#pixi-mvt/jsx', '#three-mvt/jsx'].map(savedTarget);
+    const targets = ['#pixi-mvt/jsx', '#three-mvt/jsx', '#html-mvt/jsx'].map(savedTarget);
     const skipped: string[] = [];
     // Views, not tests, which write invalid elements on purpose
     const files = readdirSync('src', { recursive: true, encoding: 'utf8' })
@@ -110,6 +110,16 @@ describe('jsx precompile plugin', () => {
             expect(result.registration).toContain('e.texture=_1;');
         });
 
+        it('finds the attributes an element\'s patterns make, such as HTML\'s data-*', () => {
+            const html = savedTarget('#html-mvt/jsx');
+            const code = '/** @jsxImportSource #html-mvt/jsx */\nexport const view = <div data-state={() => s} data-kind="a" class={() => c} />;\n';
+
+            const result = precompileModule(ts, code, 'test.tsx', html);
+
+            expect(result.keys).toEqual(['|c@data-state,c.className,']);
+            expect(result.skipped).toEqual([]);
+        });
+
         it('ignores components, fixed attributes, events and the other attributes every element has', () => {
             const result = precompile(
                 '<List items={[]}>{() => <sprite anchor={0.5} onPointerTap={() => {}} ref={() => {}} onRefresh={() => {}} />}</List>',
@@ -160,9 +170,11 @@ describe('jsx precompile plugin', () => {
             const transform = await transformWithPlugin();
 
             const pixiModule = await transform('/** @jsxImportSource #pixi-mvt/jsx */\nexport const view = <container x={() => 1} />;\n');
+            const htmlModule = await transform('/** @jsxImportSource #html-mvt/jsx */\nexport const view = <div title={() => "a"} />;\n');
 
             expect(pixiModule?.code).toContain('from "#pixi-mvt/jsx/jsx-runtime"');
             expect(pixiModule?.code).toContain('"|e.x,"');
+            expect(htmlModule?.code).toContain('"|c.title,"');
         });
 
         it('leaves alone a module whose import source has no manifest', async () => {

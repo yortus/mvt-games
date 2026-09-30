@@ -239,6 +239,7 @@ export function precompileModule(
                 continue;
             }
             else {
+                // Including one a pattern makes, such as HTML's `data-*`
                 const found = findManifestAttribute(manifest, tag, key);
                 if (found === undefined) return skip(`the element table has no attribute '${key}'`);
                 attribute = found;

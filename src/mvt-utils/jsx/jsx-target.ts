@@ -34,7 +34,9 @@ export interface JsxTarget<N extends SceneNode> {
     /**
      * The `visible` attribute. The base evaluates it first, and skips a hidden
      * element's other bindings and subtree. `<List>` and `<Switch>` hide nodes
-     * with it. A new node must start visible.
+     * with it. A new node must start visible. Written every frame, since
+     * `<List>` and `<Switch>` write it behind a binding's back (design notes,
+     * decision 10); a JSX target whose write is costly compares first.
      */
     visible: ChangeableAttribute<N, boolean>;
 

@@ -29,9 +29,14 @@ const shared = {
     mode: node.fixed('label'),
     onPoke: event<string>('poke'),
 };
+const tagged = {
+    'tag-': (name: string) => node.onChange((e, v: string) => { e.label = name + v; }),
+};
+
 const elements = defineElements({
     box: element(createNode, shared),
     ring: element(createNode, shared),
+    tagged: element(createNode, shared, tagged),
 });
 
 // ---------------------------------------------------------------------------
@@ -52,7 +57,10 @@ describe('createPrecompileManifest', () => {
         expect(findManifestAttribute(manifest, 'box', 'onPoke')).toEqual({ kind: 'event' });
     });
 
-    it('finds nothing it does not have', () => {
+    it('finds pattern attributes by prefix, and nothing it does not have', () => {
+        expect(findManifestAttribute(manifest, 'tagged', 'tag-size')).toEqual({ kind: 'on-change' });
+        expect(findManifestAttribute(manifest, 'tagged', 'tag-')).toBeUndefined();
+        expect(findManifestAttribute(manifest, 'box', 'tag-size')).toBeUndefined();
         expect(findManifestAttribute(manifest, 'box', 'width')).toBeUndefined();
         expect(findManifestAttribute(manifest, 'none', 'x')).toBeUndefined();
         expect(findManifestAttribute(manifest, 'toString', 'x')).toBeUndefined();
@@ -60,10 +68,19 @@ describe('createPrecompileManifest', () => {
 
     it('shares one record between elements with the same attributes', () => {
         expect(manifest.elements.box.attributes).toBe(manifest.elements.ring.attributes);
-        expect(manifest.sets).toHaveLength(1);
+        expect(manifest.elements.tagged.attributes).toBe(manifest.elements.box.attributes);
+        expect(manifest.sets).toHaveLength(2);
     });
 
     it('is plain data, the same after a round trip through JSON', () => {
         expect(JSON.parse(JSON.stringify(manifest))).toEqual(manifest);
+    });
+
+    it('rejects a pattern whose attributes assign a property, whose name it could not know', () => {
+        const table = defineElements({
+            bad: element(createNode, {}, { 'x-': (_name: string) => node.everyFrame('x') }),
+        });
+
+        expect(() => createPrecompileManifest({ target, elements: table })).toThrow(/pattern 'x-'.*apply functions/);
     });
 });

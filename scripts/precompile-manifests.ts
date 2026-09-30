@@ -11,6 +11,7 @@
  * when it is built instead (proposal 022 section 12.1).
  */
 
+import { htmlElements, htmlTarget } from '../src/html-mvt/jsx';
 import { pixiElements, pixiTarget } from '../src/pixi-mvt/jsx';
 import { threeElements, threeTarget } from '../src/three-mvt/jsx';
 import { createPrecompileManifest, type PrecompileManifest } from './jsx-precompile-manifest';
@@ -43,6 +44,11 @@ export function precompileManifests(): ManifestFile[] {
             importSource: '#three-mvt/jsx',
             path: 'src/three-mvt/jsx/precompile-manifest.json',
             manifest: createPrecompileManifest({ target: threeTarget, elements: threeElements }),
+        },
+        {
+            importSource: '#html-mvt/jsx',
+            path: 'src/html-mvt/jsx/precompile-manifest.json',
+            manifest: createPrecompileManifest({ target: htmlTarget, elements: htmlElements }),
         },
     ];
 }

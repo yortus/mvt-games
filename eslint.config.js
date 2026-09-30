@@ -87,6 +87,7 @@ export default tseslint.config(
                         '\\#mvt-utils',
                         '\\#pixi-mvt/jsx',
                         '\\#three-mvt/jsx',
+                        '\\#html-mvt/jsx',
                         // Allow a package-shaped directory's public `jsx` subpath,
                         // which each would export as `./jsx` once it is a package
                         '**/mvt-utils/jsx',
@@ -94,6 +95,7 @@ export default tseslint.config(
                         '**/mvt-utils/jsx/conformance',
                         '**/pixi-mvt/jsx',
                         '**/three-mvt/jsx',
+                        '**/html-mvt/jsx',
                     ],
                 },
             ],

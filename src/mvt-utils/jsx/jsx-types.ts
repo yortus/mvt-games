@@ -78,12 +78,24 @@ export type AttributeValue<D> =
 export type AttributesOf<A> = { [K in keyof A]?: AttributeValue<A[K]> };
 
 /**
+ * The JSX attributes an element's patterns accept: for a pattern with the
+ * prefix `data-`, any attribute named `data-` and more.
+ *
+ * TypeScript never checks a hyphenated JSX attribute (`data-count`) against
+ * an index signature such as these, so in JSX their values are not checked;
+ * outside JSX, and for names without a hyphen, they are.
+ */
+export type PatternAttributesOf<P> = {
+    [K in keyof P & string as `${K}${string}`]?: P[K] extends (name: string) => infer D ? AttributeValue<D> : never;
+};
+
+/**
  * `JSX.IntrinsicElements` for a JSX target whose nodes are `N`, derived from its
  * element table, so the attribute types cannot disagree with what the
  * runtime does with them.
  */
 export type IntrinsicElementsOf<N, T> = {
-    [K in keyof T]: T[K] extends ElementDefinition<infer E, infer A>
-        ? AttributesOf<A> & MvtAttributes<E, N>
+    [K in keyof T]: T[K] extends ElementDefinition<infer E, infer A, infer P>
+        ? AttributesOf<A> & PatternAttributesOf<P> & MvtAttributes<E, N>
         : never;
 };

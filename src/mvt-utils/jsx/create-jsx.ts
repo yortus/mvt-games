@@ -1,10 +1,9 @@
 import { type SceneNode, type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '..';
-import { type AttributeDefinition, type ElementDefinition, MVT_ATTRIBUTE_KEYS, type WriteKind } from './attributes';
+import { MVT_ATTRIBUTE_KEYS } from './attributes';
+import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
 import type { JsxTarget } from './jsx-target';
 import type { DestroyedCallback, RefCallback, RefreshStep } from './jsx-types';
-import {
-    type Binding, createRefreshBuilder, type RefreshMethodCounts,
-} from './refresh-builder';
+import { type Binding, createRefreshBuilder, type RefreshMethodCounts } from './refresh-builder';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -20,7 +19,10 @@ export type JsxComponent<N> = (attributes: Record<string, unknown>) => N;
 export type JsxFactory<N> = (type: string | typeof Fragment | JsxComponent<N>, attributes: Record<string, unknown>) => N;
 
 /** A JSX target's element table: each intrinsic element's definition, by tag. */
-export type ElementTable<N> = Readonly<Record<string, ElementDefinition<N, Readonly<Record<string, AttributeDefinition<never>>>>>>;
+export type ElementTable<N> = Readonly<Record<
+    string,
+    ElementDefinition<N, Readonly<Record<string, AttributeDefinition<never>>>, Readonly<Record<string, AttributePattern<never>>>>
+>>;
 
 /** Options for {@link createJsx}. */
 export interface JsxOptions<N extends SceneNode> {
@@ -138,7 +140,7 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
                 else visible.apply(el, value);
                 continue;
             }
-            const attribute = definition.attributes.get(key);
+            const attribute = definition.attributes.get(key) ?? patternAttribute(definition, key);
             if (attribute === undefined) throw new Error(`<${type}> has no attribute '${key}' in ${target.name}`);
             if (attribute.kind === 'event') continue;
             if (typeof value !== 'function') {
@@ -189,9 +191,24 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
         for (const key in definition.attributes) {
             attributes.set(key, resolveAttribute(definition.attributes[key]));
         }
-        resolved = { create: definition.create, attributes };
+        resolved = { create: definition.create, attributes, patterns: definition.patterns };
         resolvedElements.set(kind, resolved);
         return resolved;
+    }
+
+    /**
+     * The attribute a pattern of the element makes for `key`, kept for the
+     * element's next use of it. Patterns make no events, which are wired
+     * before other attributes are looked up.
+     */
+    function patternAttribute(element: ResolvedElement<N>, key: string): ResolvedAttribute | undefined {
+        for (const prefix in element.patterns) {
+            if (key.length <= prefix.length || !key.startsWith(prefix)) continue;
+            const resolved = resolveAttribute(element.patterns[prefix](key));
+            element.attributes.set(key, resolved);
+            return resolved;
+        }
+        return undefined;
     }
 
     function resolveAttribute(definition: AttributeDefinition<never>): ResolvedAttribute {
@@ -227,7 +244,9 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
 
 interface ResolvedElement<N> {
     readonly create: () => N;
-    readonly attributes: ReadonlyMap<string, ResolvedAttribute>;
+    /** By key: the element's own, then those its patterns have made. */
+    readonly attributes: Map<string, ResolvedAttribute>;
+    readonly patterns: Readonly<Record<string, AttributePattern<never>>>;
 }
 
 interface ResolvedFixed {
