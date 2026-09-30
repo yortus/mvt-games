@@ -1,7 +1,6 @@
 import { Object3D } from 'three';
-import {
-    createDestroyRegistry, createScenePasses, type RefreshMethod, type SubtreeInfo, type UpdateMethod,
-} from '../mvt-utils';
+import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
+import type { SceneMemoFields, SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
@@ -12,35 +11,11 @@ import {
 type ThreeObject3D = Object3D;
 
 declare module 'three/src/core/Object3D.js' {
+    // The scene passes' methods, and the fields behind them, on every object.
     // Merges with the class, so it repeats the class's type parameter.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    interface Object3D<TEventMap extends Object3DEventMap = Object3DEventMap> {
-        /**
-         * Advances this object's cosmetic presentation state. Run by
-         * `updateScene`, every tick, whether or not the object is visible or
-         * in view. Return `SKIP_DESCENDANTS` to freeze its descendants.
-         */
-        onUpdate: UpdateMethod | undefined;
-        /**
-         * Syncs this object from model state. Run by `refreshScene`, before any
-         * of its descendants', whether or not it is visible or in view. Must be
-         * idempotent. Return `SKIP_DESCENDANTS` to skip its descendants.
-         */
-        onRefresh: RefreshMethod | undefined;
-
-        /** @internal Backing field for `onUpdate`. */
-        _mvtOnUpdate: UpdateMethod | undefined;
-        /** @internal Backing field for `onRefresh`. */
-        _mvtOnRefresh: RefreshMethod | undefined;
-        /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
-        _mvtHasUpdate: boolean | undefined;
-        /** @internal Update walk for this subtree. `undefined` = dirty. */
-        _mvtUpdate: SubtreeInfo<ThreeObject3D> | undefined;
-        /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
-        _mvtHasRefresh: boolean | undefined;
-        /** @internal Refresh walk for this subtree. `undefined` = dirty. */
-        _mvtRefresh: SubtreeInfo<ThreeObject3D> | undefined;
-    }
+    interface Object3D<TEventMap extends Object3DEventMap = Object3DEventMap>
+        extends SceneNode, SceneMemoFields<ThreeObject3D> {}
 }
 
 // ---------------------------------------------------------------------------
@@ -49,27 +24,35 @@ declare module 'three/src/core/Object3D.js' {
 
 /**
  * The scene passes over three.js objects: the generic memoised walk
- * (`../mvt-utils`), told how to read an object's children and parent.
+ * (`ScenePasses` in `../mvt-utils`), told how to read an object's children
+ * and parent. Unlike three's `onBeforeRender`, they run for objects that are
+ * hidden or out of view, so a binding that brings an object back into view
+ * still runs.
  */
-export const objectScenePasses = createScenePasses<Object3D>({
+const objectScenePasses = createScenePasses<Object3D>({
     children: (node) => node.children,
     parent: (node) => node.parent,
     describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
 });
 
+export const { updateScene, refreshScene } = objectScenePasses;
+
 /**
- * Destroying three.js objects, which have no destroy of their own: runs each
+ * Destroying three.js objects, which have no destroy of their own
+ * (`DestroyRegistry` in `../mvt-utils`): runs each
  * `onDestroyed` callback in the subtree, stops the scene passes calling it,
  * and detaches it. Geometry, materials and textures are not disposed: the
  * view does not know who else uses them, so one that made them disposes them
  * in `onDestroyed`.
  */
-export const objectDestroyRegistry = createDestroyRegistry<Object3D>({
+const objectDestroyRegistry = createDestroyRegistry<Object3D>({
     children: (node) => node.children,
     detach: (node) => {
         node.removeFromParent();
     },
 });
+
+export const { destroy: destroyObject, onDestroyed, isDestroyed } = objectDestroyRegistry;
 
 // Installed at module load, before any object can be given a method: one
 // assigned before the accessors exist becomes an own property that shadows

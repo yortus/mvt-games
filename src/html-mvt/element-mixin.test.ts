@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { destroyElement, isDestroyed, onDestroyed, refreshScene, updateScene } from './scene-passes';
+import { destroyElement, isDestroyed, onDestroyed, refreshScene, updateScene } from './element-mixin';
 
 // ---------------------------------------------------------------------------
 // Helpers

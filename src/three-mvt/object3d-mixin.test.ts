@@ -1,6 +1,6 @@
 import { Group, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
-import { destroyObject, isDestroyed, onDestroyed, refreshScene, updateScene } from './scene-passes';
+import { destroyObject, isDestroyed, onDestroyed, refreshScene, updateScene } from './object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -5,9 +5,8 @@
  */
 
 import type { Container } from 'pixi.js';
-import {
-    createSwitch, type MatchBindings as BaseMatchBindings, type SwitchBindings as BaseSwitchBindings,
-} from '../../mvt-utils/jsx';
+import { createSwitch } from '../../mvt-utils/jsx';
+import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '../../mvt-utils/jsx';
 import { pixiTarget } from './pixi-target';
 
 // ---------------------------------------------------------------------------

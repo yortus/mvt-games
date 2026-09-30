@@ -13,6 +13,14 @@ export interface SceneTree<N> {
     readonly parent: (node: N) => N | null | undefined;
     /** Names a node in error and warning messages. */
     readonly describe: (node: N) => string;
+    /**
+     * Called at the start of every scene pass, with the node it starts from,
+     * before its memoised walk is read. For a renderer that learns of changes
+     * to its tree only when it asks (the DOM, through a `MutationObserver`),
+     * this is the moment to ask. Renderers that report changes as they
+     * happen leave it out.
+     */
+    readonly beforeScenePass?: (node: N) => void;
 }
 
 /** The scene passes over one kind of tree, and what a renderer's code needs to keep them correct. */
@@ -127,6 +135,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     return { updateScene, refreshScene, invalidate, installMethods };
 
     function updateScene(node: N, deltaMs: number): void {
+        tree.beforeScenePass?.(node);
         enter(activeUpdates, node, 'updateScene');
         try {
             const memo = memoOf(node);
@@ -144,6 +153,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     }
 
     function refreshScene(node: N): void {
+        tree.beforeScenePass?.(node);
         enter(activeRefreshes, node, 'refreshScene');
         try {
             const memo = memoOf(node);

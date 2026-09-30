@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { refreshScene, updateScene } from './scene-passes';
+import { refreshScene, updateScene } from './container-mixin';
 import { SKIP_DESCENDANTS } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
@@ -165,7 +165,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls.indexOf('parent')).toBeLessThan(rec.calls.indexOf('child'));
     });
 
-    it('can be driven from any container', () => {
+    it('can start from any container', () => {
         const root = node('root', driver, rec);
         const branch = node('branch', driver, rec);
         const leaf = node('leaf', driver, rec);
@@ -184,7 +184,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect([...rec.calls].sort()).toEqual(['branch', 'leaf', 'root']);
     });
 
-    it('stays correct when overlapping containers are driven alternately', () => {
+    it('stays correct when scene passes alternate between overlapping containers', () => {
         // The regression test for the ownership bug in the previous design: a
         // second caller stole the containers from the first, which then stopped
         // calling them forever, silently.
@@ -205,7 +205,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         }
     });
 
-    it('ignores methods outside the driven subtree', () => {
+    it('ignores methods outside the subtree it starts from', () => {
         const root = node('root', driver, rec);
         const outsider = node('outsider', driver, rec);
         const holder = container('holder');
@@ -371,7 +371,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['root', 'parent']);
     });
 
-    it('leaves the other pass untouched when a method is assigned', () => {
+    it('leaves the other scene pass untouched when a method is assigned', () => {
         const root = node('root', driver, rec);
         const child = container('child');
         root.addChild(child);
@@ -391,7 +391,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['other']);
     });
 
-    it('throws when a method drives the pass it is already inside', () => {
+    it('throws when a method starts the scene pass it is already inside', () => {
         const root = container('root');
         driver.assign(root, () => {
             rec.calls.push('root');
@@ -407,7 +407,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         expect(rec.calls).toEqual(['root']);
     });
 
-    it('allows a method to drive a different container', () => {
+    it('allows a method to start a scene pass on a different container', () => {
         const root = container('root');
         const sub = node('sub', driver, rec);
         const subChild = node('subChild', driver, rec);
@@ -424,7 +424,7 @@ describe.each(drivers)('$kind pass', (driver) => {
 });
 
 // ---------------------------------------------------------------------------
-// Pass-specific behaviour
+// Behaviour specific to each scene pass
 // ---------------------------------------------------------------------------
 
 describe('updateScene', () => {
@@ -443,7 +443,7 @@ describe('updateScene', () => {
 });
 
 describe('refreshScene', () => {
-    it('is idempotent across three consecutive passes', () => {
+    it('is idempotent across three consecutive scene passes', () => {
         const root = new Container();
         const child = new Container();
         root.addChild(child);
@@ -530,7 +530,7 @@ describe('SKIP_DESCENDANTS', () => {
         expect(calls).toEqual([]);
     });
 
-    it('lets a container that skipped itself recover on a later pass', () => {
+    it('lets a container that skipped itself recover on a later scene pass', () => {
         // The gate ran and only skipped its subtree, so nothing gets stuck: it
         // decides afresh every pass, with no rebuild.
         const calls: string[] = [];
@@ -549,7 +549,7 @@ describe('SKIP_DESCENDANTS', () => {
         expect(calls).toEqual(['child']);
     });
 
-    it('skips descendants in the update pass too', () => {
+    it('skips descendants in the update scene pass too', () => {
         const calls: string[] = [];
         const root = new Container();
         const frozen = new Container();
@@ -565,7 +565,7 @@ describe('SKIP_DESCENDANTS', () => {
         expect(calls).toEqual(['root']); // the frozen subtree did not advance
     });
 
-    it('never prunes the container a pass is driven from', () => {
+    it('never prunes the container a scene pass starts from', () => {
         // The driven root returning the sentinel skips its descendants, but the
         // root itself always runs - it is the entry point.
         const calls: string[] = [];
@@ -589,7 +589,7 @@ describe('SKIP_DESCENDANTS', () => {
 // ---------------------------------------------------------------------------
 
 describe('visibility', () => {
-    it('does not affect either pass', () => {
+    it('does not affect either scene pass', () => {
         const calls: string[] = [];
         const root = new Container();
         const hidden = new Container();
@@ -623,17 +623,17 @@ describe('visibility', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Mid-pass mutation
+// Mutation during a scene pass
 // ---------------------------------------------------------------------------
 
-describe('mutation during a pass', () => {
+describe('mutation during a scene pass', () => {
     let rec: Recorder;
 
     beforeEach(() => {
         rec = createRecorder();
     });
 
-    it('runs a container added by a method from the next pass, not this one', () => {
+    it('runs a container added by a method from the next scene pass, not this one', () => {
         const root = container('root');
         let spawned = false;
         root.onRefresh = () => {
@@ -653,7 +653,7 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['root', 'child']);
     });
 
-    it('skips a container removed earlier in the same pass', () => {
+    it('skips a container removed earlier in the same scene pass', () => {
         const root = container('root');
         const first = container('first');
         const doomed = container('doomed');
@@ -688,7 +688,7 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['later']);
     });
 
-    it('skips a container whose method is cleared earlier in the same pass', () => {
+    it('skips a container whose method is cleared earlier in the same scene pass', () => {
         const root = container('root');
         const first = container('first');
         const silenced = container('silenced');
@@ -704,7 +704,7 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['first']);
     });
 
-    it('calls a container reparented mid-pass once, from its snapshot position', () => {
+    it('calls a container reparented during a scene pass once, from its snapshot position', () => {
         const root = container('root');
         const left = container('left');
         const right = container('right');
@@ -723,7 +723,7 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['left', 'movable', 'right']);
     });
 
-    it('skips a container destroyed earlier in the same pass', () => {
+    it('skips a container destroyed earlier in the same scene pass', () => {
         const root = container('root');
         const first = container('first');
         const doomed = container('doomed');
@@ -742,7 +742,7 @@ describe('mutation during a pass', () => {
         expect(rec.calls).toEqual(['first']);
     });
 
-    it('stops calling a destroyed container that is driven directly', () => {
+    it('stops calling a destroyed container that a scene pass starts from', () => {
         const root = container('root');
         root.onRefresh = () => void rec.calls.push('root');
 

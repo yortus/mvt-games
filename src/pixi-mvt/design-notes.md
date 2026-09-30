@@ -125,7 +125,7 @@ function has(node: Container, pass: Pass): boolean {
 One climb per method kind, stopping at the first container already dirty for that
 kind. It lives in [scene-passes.ts](../mvt-utils/scene-passes.ts) in
 `mvt-utils`, next to the setters that trigger it; pixi-mvt's wrappers in
-[mvt-container-mixin.ts](./mvt-container-mixin.ts) call it too:
+[container-mixin.ts](./container-mixin.ts) call it too:
 
 ```ts
 function invalidateUpdate(node: Container): void {
@@ -198,9 +198,10 @@ updateScene(stage) -> stage's list is non-empty so it never rebuilds;
 
 The call count froze and never recovered across repeated calls. No error,
 nothing to diagnose. The new design holds no such state, so this cannot occur;
-the regression test for it is *stays correct when overlapping containers are
-driven alternately* in [scene-passes.test.ts](./scene-passes.test.ts), which the
-old design fails.
+the regression test for it is *stays correct when scene passes alternate
+between overlapping containers* in
+[container-mixin.test.ts](./container-mixin.test.ts), which the old
+design fails.
 
 ### The accessor-shadowing defect
 
@@ -373,7 +374,7 @@ Two style-guide rules needed a deliberate decision.
 
 **`this`** is confined to the method accessors, in
 [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`, and
-the wrapped prototype methods, in [mvt-container-mixin.ts](./mvt-container-mixin.ts)
+the wrapped prototype methods, in [container-mixin.ts](./container-mixin.ts)
 (and three-mvt's equivalent). A prototype accessor and a wrapped prototype
 method cannot reach their instance without it. Methods themselves are invoked as plain calls with no receiver, so a
 view's method stays an ordinary closure. The side effect is that a method defined as

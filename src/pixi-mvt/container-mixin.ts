@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createScenePasses, type RefreshMethod, type SubtreeInfo, type UpdateMethod } from '../mvt-utils';
+import { createScenePasses, type SceneMemoFields, type SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
@@ -16,44 +16,8 @@ type PixiContainer = Container;
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace PixiMixins {
-        interface Container {
-            /**
-             * Advances this container's cosmetic presentation state.
-             *
-             * Fires every tick regardless of `visible`, `renderable` or
-             * culling, because presentation state that stops advancing while
-             * hidden is stale when it reappears. Return `SKIP_DESCENDANTS` to
-             * deliberately freeze this container's descendants (a time-stopped
-             * or inactive subtree); their state does not advance while skipped.
-             */
-            onUpdate: UpdateMethod | undefined;
-
-            /**
-             * Syncs this container's presentation output from model state.
-             *
-             * Called before any of this container's descendants' `onRefresh`.
-             * Must be idempotent: it restates a fact rather than making a
-             * change, so running it twice changes nothing.
-             *
-             * Nothing gates on visibility, so a view may set its own `visible`.
-             * Return `SKIP_DESCENDANTS` to skip refreshing this container's
-             * descendants (how a hidden or absent subtree opts out).
-             */
-            onRefresh: RefreshMethod | undefined;
-
-            /** @internal Backing field for `onUpdate`. */
-            _mvtOnUpdate: UpdateMethod | undefined;
-            /** @internal Backing field for `onRefresh`. */
-            _mvtOnRefresh: RefreshMethod | undefined;
-            /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
-            _mvtHasUpdate: boolean | undefined;
-            /** @internal Update walk for this subtree. `undefined` = dirty. */
-            _mvtUpdate: SubtreeInfo<PixiContainer> | undefined;
-            /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
-            _mvtHasRefresh: boolean | undefined;
-            /** @internal Refresh walk for this subtree. `undefined` = dirty. */
-            _mvtRefresh: SubtreeInfo<PixiContainer> | undefined;
-        }
+        // The scene passes' methods, and the fields behind them, on every container
+        interface Container extends SceneNode, SceneMemoFields<PixiContainer> {}
     }
 }
 
@@ -63,16 +27,21 @@ declare global {
 
 /**
  * The scene passes over Pixi containers: the generic memoised walk
- * (`../mvt-utils`), told how to read a container's children and
- * parent. `scene-passes.ts` exposes its `updateScene` and `refreshScene`.
+ * (`ScenePasses` in `../mvt-utils`), told how to read a container's children
+ * and parent. They run whatever a container's `visible`, `renderable` or
+ * culling, since presentation state that stops advancing while hidden is
+ * stale when it reappears; a view skips its descendants by returning
+ * `SKIP_DESCENDANTS`.
  */
-export const containerScenePasses = createScenePasses<Container>({
+const containerScenePasses = createScenePasses<Container>({
     children: (node) => node.children,
     // Pixi types `parent` as `Container | null`, one of the few places it hands
     // back `null`; the walk tests truthiness.
     parent: (node) => node.parent,
     describe,
 });
+
+export const { updateScene, refreshScene } = containerScenePasses;
 
 // Installed at module load rather than lazily on first use. An update or
 // refresh method assigned before the accessors exist creates an own data

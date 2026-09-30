@@ -6,8 +6,8 @@ import type { SceneNode } from './scene-node';
 
 /**
  * Destroying nodes, for a tree whose nodes have no destroy of their own (a
- * three.js `Object3D`, plain objects). Pixi has `destroy` and a `'destroyed'`
- * event, and needs none of this.
+ * three.js `Object3D`, a DOM `Element`). Pixi has `destroy` and a
+ * `'destroyed'` event, and needs none of this.
  */
 export interface DestroyRegistry<N> {
     /**
@@ -20,6 +20,7 @@ export interface DestroyRegistry<N> {
     destroy: (node: N) => void;
     /** Runs `callback` when `node` is destroyed, by `destroy` on it or on an ancestor. */
     onDestroyed: (node: N, callback: (node: N) => void) => void;
+    /** Whether `node` has been destroyed. */
     isDestroyed: (node: N) => boolean;
 }
 

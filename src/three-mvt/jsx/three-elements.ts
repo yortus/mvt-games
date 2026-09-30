@@ -1,7 +1,5 @@
-import {
-    AmbientLight, type ColorRepresentation, DirectionalLight, Group, type Light, Mesh, type Object3D, PerspectiveCamera,
-    PointLight,
-} from 'three';
+import { AmbientLight, DirectionalLight, Group, Mesh, PerspectiveCamera, PointLight } from 'three';
+import type { ColorRepresentation, Light, Object3D } from 'three';
 import { attributesOf, defineElements, element, event } from '../../mvt-utils/jsx';
 import type { PointerPickEvent } from '..';
 

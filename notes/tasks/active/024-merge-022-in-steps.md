@@ -46,7 +46,8 @@ aside), and `vnext-jsx` can move to it.
 | 7 | `jsx-refresh` benchmark suite | ~4 | Done: `77a2269` |
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | Done: `b4ec3ba` |
 | 9 | Boids in 3D demo (three.js only) | ~8 | Done: `117a64e` |
-| 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | In review |
+| 10 | HTML renderer: `src/html-mvt/`; attribute patterns in the base; the `<List>` visibility conformance test; `happy-dom` | ~22 | Done: `c9ed69e` |
+| 10a | Fix-up from review of step 10: the renderers' scene-pass glue de-duplicated (one-line type augmentations, each renderer's `scene-passes.ts` folded into its mixin, a `beforeScenePass` hook for the DOM), and single-line imports in files from steps 4, 6 and 8 | 22 | In review |
 | 11 | Browser benchmark mode and the `html-scene-passes` suite, with saved results | ~9 | |
 | 12 | Boids in 3D demo's HTML panel | ~4 | |
 | 13 | Proposal 022 and planning notes: 011, 012, 008, 023, 017 updates; notes index; glossary; source trees in `AGENTS.md`, `README.md`, project-structure. Archive this task | ~14 | |
@@ -127,3 +128,19 @@ the reference, carve-outs aside.
 - 2026-09-30: Step 9 committed (`117a64e`), with task 026. Step 10 in review: 1124
   tests; every carve-out that waited for HTML is resolved, and the step's 32
   files match the reference exactly.
+- 2026-09-30: Step 10 committed (`c9ed69e`). Review asked for single-line
+  imports (as for exports), fixed in step 10's own files before it was
+  committed, and questioned the duplication across the three renderers'
+  mixins; both are in fix-up step 10a, in review: the six glue files go from
+  677 lines to 503.
+- 2026-09-30: Review of 10a: each renderer's `scene-passes.ts` only
+  re-exported its mixin's objects, so it is folded into the mixin, which now
+  exports the functions itself; the objects are internal. The glue is now
+  three files, 463 lines, down from six and 677.
+- 2026-09-30: The renderers' `scene-passes.test.ts` renamed after the
+  modules they now test (`container-mixin.test.ts`,
+  `object3d-mixin.test.ts`, `element-mixin.test.ts`); 19 older Pixi test
+  and banner names that said "pass" or "drive" now say "scene pass" and
+  what happens.
+- 2026-09-30: pixi-mvt's `mvt-container-mixin.ts` renamed `container-mixin.ts`,
+  after the class it extends, like three-mvt's and html-mvt's mixins.

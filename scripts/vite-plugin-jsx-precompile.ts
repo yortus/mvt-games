@@ -49,9 +49,8 @@ import { readFileSync } from 'node:fs';
 import type { Plugin, ResolvedConfig } from 'vite';
 import type TypeScript from 'typescript';
 import { REFRESH_SOURCE_VERSION, refreshFactorySource, refreshShapeKey, type ShapeBinding } from '../src/mvt-utils/jsx';
-import {
-    findManifestAttribute, type ManifestAttribute, PRECOMPILE_MANIFEST_FORMAT, type PrecompileManifest,
-} from './jsx-precompile-manifest';
+import { findManifestAttribute, PRECOMPILE_MANIFEST_FORMAT } from './jsx-precompile-manifest';
+import type { ManifestAttribute, PrecompileManifest } from './jsx-precompile-manifest';
 
 // ---------------------------------------------------------------------------
 // Interface

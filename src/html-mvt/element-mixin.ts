@@ -1,41 +1,13 @@
 import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
-import type { RefreshMethod, SubtreeInfo, UpdateMethod } from '../mvt-utils';
+import type { SceneMemoFields, SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
 
 declare global {
-    interface Element {
-        /**
-         * Advances this element's cosmetic presentation state. Run by
-         * `updateScene`, every tick, whether or not the element is shown.
-         * Return `SKIP_DESCENDANTS` to freeze its descendants.
-         */
-        onUpdate: UpdateMethod | undefined;
-        /**
-         * Syncs this element from model state. Run by `refreshScene`, before
-         * any of its descendants', whether or not it is shown. Must be
-         * idempotent, and should only write: reading layout (`offsetWidth`,
-         * `getBoundingClientRect`) after a write makes the browser lay the
-         * page out there and then. Return `SKIP_DESCENDANTS` to skip its
-         * descendants.
-         */
-        onRefresh: RefreshMethod | undefined;
-
-        /** @internal Backing field for `onUpdate`. */
-        _mvtOnUpdate: UpdateMethod | undefined;
-        /** @internal Backing field for `onRefresh`. */
-        _mvtOnRefresh: RefreshMethod | undefined;
-        /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
-        _mvtHasUpdate: boolean | undefined;
-        /** @internal Update walk for this subtree. `undefined` = dirty. */
-        _mvtUpdate: SubtreeInfo<Element> | undefined;
-        /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
-        _mvtHasRefresh: boolean | undefined;
-        /** @internal Refresh walk for this subtree. `undefined` = dirty. */
-        _mvtRefresh: SubtreeInfo<Element> | undefined;
-    }
+    // The scene passes' methods, and the fields behind them, on every element
+    interface Element extends SceneNode, SceneMemoFields<Element> {}
 }
 
 // ---------------------------------------------------------------------------
@@ -44,39 +16,48 @@ declare global {
 
 /**
  * The scene passes over DOM elements: the generic memoised walk
- * (`../mvt-utils`) over each element's element children. Text nodes
- * carry no methods and are never visited.
+ * (`ScenePasses` in `../mvt-utils`) over each element's element children.
+ * Text nodes carry no methods and are never visited. They run for hidden
+ * elements too. A refresh should only write: reading layout (`offsetWidth`,
+ * `getBoundingClientRect`) after a write makes the browser lay the page out
+ * there and then.
  *
- * Call {@link watchElementTree} on a node before each scene pass on it:
- * nothing here wraps the DOM's methods, so the walk hears about changes to
- * the tree only through it.
+ * Nothing here wraps the DOM's methods: the walk hears about changes to the
+ * tree through {@link watchElementTree}, its `beforeScenePass`.
  */
-export const elementScenePasses = createScenePasses<Element>({
+const elementScenePasses = createScenePasses<Element>({
     children: elementChildren,
     // Not `parentNode`: a node moved into a fragment has left the scene, and
     // is skipped like any other detached node.
     parent: (node) => node.parentElement,
     describe: (node) => (node.id ? `<${node.localName} id="${node.id}">` : `<${node.localName}>`),
+    beforeScenePass: watchElementTree,
 });
 
+export const { updateScene, refreshScene } = elementScenePasses;
+
 /**
- * Destroying elements, which have no destroy of their own: runs each
+ * Destroying elements, which have no destroy of their own
+ * (`DestroyRegistry` in `../mvt-utils`): runs each
  * `onDestroyed` callback in the subtree, stops the scene passes calling it,
  * and removes it from the page. Listeners on the elements go with them when
  * they are collected; listeners a view added to `window` or `document` are
  * what `onDestroyed` is for.
  */
-export const elementDestroyRegistry = createDestroyRegistry<Element>({
+const elementDestroyRegistry = createDestroyRegistry<Element>({
     children: (node) => node.children,
     detach: (node) => {
         node.remove();
     },
 });
 
+export const { destroy: destroyElement, onDestroyed, isDestroyed } = elementDestroyRegistry;
+
 /**
  * Makes sure the scene passes hear about every change to the element tree
  * under `node`, and catches up on the changes made since the last call.
- * Called at the start of every scene pass, on the node it starts from.
+ * The scene passes' `beforeScenePass`: called at the start of every scene
+ * pass, on the node it starts from.
  *
  * The DOM has too many ways to change a tree to wrap them all (`append`,
  * `before`, `replaceChildren`, `innerHTML` and more), and wrapping any of
@@ -95,7 +76,7 @@ export const elementDestroyRegistry = createDestroyRegistry<Element>({
  * change made to a removed element before the next scene pass or microtask
  * can be missed.
  */
-export function watchElementTree(node: Element): void {
+function watchElementTree(node: Element): void {
     if (observer !== undefined) processRecords(observer.takeRecords());
     if (!watched.has(node)) watch(node);
 }
