@@ -203,7 +203,7 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
             if (DEV && !hasUpdated && pendingRelease.length >= PENDING_RELEASE_LEAK_THRESHOLD) {
                 throw new Error(
                     `SlotList: ${pendingRelease.length} slots are pending release but update(deltaMs) `
-                    + 'has never been called; drive update() from the tick loop so removed slots are released.',
+                    + 'has never been called; call update() every tick so removed slots are released.',
                 );
             }
         },

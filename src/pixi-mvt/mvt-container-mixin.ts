@@ -1,9 +1,13 @@
-import { Container, extensions } from 'pixi.js';
-import type { RefreshMethod, SubtreeInfo, UpdateMethod } from './mvt-types';
+import { Container } from 'pixi.js';
+import { createScenePasses, type RefreshMethod, type SubtreeInfo, type UpdateMethod } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
+
+// Pixi's `Container`, named outside the `PixiMixins` namespace, where
+// `Container` means the interface being declared.
+type PixiContainer = Container;
 
 // Pixi's own mixins declare `PixiMixins.Container` without type parameters even
 // though `Container.d.ts` references it as `PixiMixins.Container<C>`. That only
@@ -43,12 +47,12 @@ declare global {
             _mvtOnRefresh: RefreshMethod | undefined;
             /** @internal Does this subtree hold any `onUpdate`? `undefined` = dirty. */
             _mvtHasUpdate: boolean | undefined;
-            /** @internal Update walk for this subtree: preorder list plus skip table. `undefined` = dirty. */
-            _mvtUpdate: SubtreeInfo | undefined;
+            /** @internal Update walk for this subtree. `undefined` = dirty. */
+            _mvtUpdate: SubtreeInfo<PixiContainer> | undefined;
             /** @internal Does this subtree hold any `onRefresh`? `undefined` = dirty. */
             _mvtHasRefresh: boolean | undefined;
-            /** @internal Refresh walk for this subtree: preorder list plus skip table. `undefined` = dirty. */
-            _mvtRefresh: SubtreeInfo | undefined;
+            /** @internal Refresh walk for this subtree. `undefined` = dirty. */
+            _mvtRefresh: SubtreeInfo<PixiContainer> | undefined;
         }
     }
 }
@@ -56,6 +60,19 @@ declare global {
 // ---------------------------------------------------------------------------
 // Install
 // ---------------------------------------------------------------------------
+
+/**
+ * The scene passes over Pixi containers: the generic memoised walk
+ * (`../mvt-utils`), told how to read a container's children and
+ * parent. `scene-passes.ts` exposes its `updateScene` and `refreshScene`.
+ */
+export const containerScenePasses = createScenePasses<Container>({
+    children: (node) => node.children,
+    // Pixi types `parent` as `Container | null`, one of the few places it hands
+    // back `null`; the walk tests truthiness.
+    parent: (node) => node.parent,
+    describe,
+});
 
 // Installed at module load rather than lazily on first use. An update or
 // refresh method assigned before the accessors exist creates an own data
@@ -69,70 +86,21 @@ installMixin();
  * Adds `onUpdate` / `onRefresh` to `Container.prototype` and wraps the
  * structural methods so the memo fields can be invalidated.
  *
- * This file is the only one in the plugin that uses `this`, which the style
- * guide otherwise rules out. A prototype accessor and a wrapped prototype
- * method have no way to reach their instance without it. The exemption stops
- * here: the update and refresh methods are invoked as plain calls, so they stay
- * ordinary closures over their own state - the receiver they close over is
- * enough - exactly like a view's own `refresh`.
+ * The wrapped prototype methods use `this`, which the style guide otherwise
+ * rules out: a wrapped prototype method has no way to reach its instance
+ * without it. The accessors do too, in `createScenePasses`. The exemption
+ * stops there: the update and refresh methods are invoked as plain calls, so
+ * they stay ordinary closures over their own state - the receiver they close
+ * over is enough - exactly like a view's own `refresh`.
  */
 function installMixin(): void {
-    extensions.mixin(Container, createMixinSource());
+    containerScenePasses.installMethods(Container.prototype);
     wrapStructuralMethods();
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-interface MvtContainerMixin {
-    _mvtOnUpdate: UpdateMethod | undefined;
-    _mvtOnRefresh: RefreshMethod | undefined;
-    _mvtHasUpdate: boolean | undefined;
-    _mvtUpdate: SubtreeInfo | undefined;
-    _mvtHasRefresh: boolean | undefined;
-    _mvtRefresh: SubtreeInfo | undefined;
-    onUpdate: UpdateMethod | undefined;
-    onRefresh: RefreshMethod | undefined;
-}
-
-/**
- * The property descriptors handed to `extensions.mixin`, which copies them onto
- * the prototype with `Object.defineProperties`, accessors intact.
- *
- * The methods are accessors rather than plain fields because assigning one has
- * to invalidate the memoised lists above the container. Without that, giving an
- * already-attached container a method would leave it out of a list built before
- * it carried one - which is exactly the ordering hole `onRender` has.
- */
-function createMixinSource(): MvtContainerMixin & ThisType<Container> {
-    return {
-        _mvtOnUpdate: undefined,
-        _mvtOnRefresh: undefined,
-        _mvtHasUpdate: undefined,
-        _mvtUpdate: undefined,
-        _mvtHasRefresh: undefined,
-        _mvtRefresh: undefined,
-
-        get onUpdate(): UpdateMethod | undefined {
-            return this._mvtOnUpdate;
-        },
-        set onUpdate(method: UpdateMethod | undefined) {
-            if (this._mvtOnUpdate === method) return;
-            this._mvtOnUpdate = method;
-            invalidateUpdate(this);
-        },
-
-        get onRefresh(): RefreshMethod | undefined {
-            return this._mvtOnRefresh;
-        },
-        set onRefresh(method: RefreshMethod | undefined) {
-            if (this._mvtOnRefresh === method) return;
-            this._mvtOnRefresh = method;
-            invalidateRefresh(this);
-        },
-    };
-}
 
 /**
  * Wraps the membership-changing methods on `Container.prototype`.
@@ -155,6 +123,7 @@ function wrapStructuralMethods(): void {
     const baseRemoveChild = proto.removeChild;
     const baseRemoveChildren = proto.removeChildren;
     const baseDestroy = proto.destroy;
+    const invalidate = containerScenePasses.invalidate;
 
     proto.addChild = function addChild(this: Container, ...children: Container[]): Container {
         if (children.length !== 1) {
@@ -210,8 +179,8 @@ function wrapStructuralMethods(): void {
     proto.destroy = function destroy(this: Container, options?: Parameters<typeof baseDestroy>[0]): void {
         if (DEV) warnOfUnrunDestroyedListeners(this, options);
         // Clearing the methods is what stops a destroyed container being called
-        // again. Detaching alone is not enough: a container driven directly by
-        // `updateScene(node)` has no parent to be detached from, so nothing
+        // again. Detaching alone is not enough: a container passed to
+        // `updateScene` itself has no parent to be detached from, so nothing
         // else would ever take it out of its own list. Doing it before the base
         // call means the setters still climb through the ancestors.
         this.onUpdate = undefined;
@@ -258,46 +227,4 @@ function findDestroyedListener(children: Container[]): Container | undefined {
         if (found !== undefined) return found;
     }
     return undefined;
-}
-
-/** Invalidates both kinds, which is what every structural change needs. */
-function invalidate(node: Container): void {
-    invalidateUpdate(node);
-    invalidateRefresh(node);
-}
-
-/**
- * Climbs to the root clearing the update memo, stopping at the first container
- * already dirty for that kind.
- *
- * The short-circuit relies on a per-kind invariant - a container dirty for kind
- * K implies all its ancestors are dirty for K - which this climb maintains
- * inductively. After the first mutation of a frame the chain above it is
- * already dirty, so every later mutation stops on its first comparison, and a
- * tree nothing ever drives is permanently dirty and costs one comparison per
- * mutation.
- */
-function invalidateUpdate(node: Container): void {
-    // `Container.parent` is typed `Container | null` by Pixi, one of the few
-    // places it hands back `null`, so the climb tests truthiness.
-    let cursor: Container | null = node;
-    while (cursor) {
-        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdate === undefined) return;
-        // Both fields of a kind are cleared together: they are maintained in
-        // lockstep and the short-circuit above tests both.
-        cursor._mvtHasUpdate = undefined;
-        cursor._mvtUpdate = undefined;
-        cursor = cursor.parent;
-    }
-}
-
-/** The refresh half of {@link invalidateUpdate}. */
-function invalidateRefresh(node: Container): void {
-    let cursor: Container | null = node;
-    while (cursor) {
-        if (cursor._mvtHasRefresh === undefined && cursor._mvtRefresh === undefined) return;
-        cursor._mvtHasRefresh = undefined;
-        cursor._mvtRefresh = undefined;
-        cursor = cursor.parent;
-    }
 }

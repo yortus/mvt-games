@@ -8,6 +8,19 @@
 
 **Written against Pixi 8.16.0.**
 
+**Where the code is now.** Since proposal
+[022](../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
+described here is generic over any tree, in
+[src/mvt-utils/scene-passes.ts](../mvt-utils/scene-passes.ts)
+(`createScenePasses`).
+pixi-mvt keeps what is Pixi's: the type augmentation, the structural
+wrappers, the destroy warning, and `updateScene` / `refreshScene` over
+containers. The walk also now calls methods cached in the memoised list
+rather than reading each container's accessor, as
+[012](../../notes/proposals/012-falling-sand-performance-findings.md) section
+2 proposed. The design below is unchanged by the move; the code samples show
+it before either change.
+
 ## The requirement
 
 This is the whole thing. Everything else is implementation detail.
@@ -50,7 +63,7 @@ read.
 
 Shown for update; refresh is the identical code with `pass = REFRESH` against
 the other pair of fields - the two passes are one implementation.
-See [scene-passes.ts](./scene-passes.ts).
+See [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`.
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
@@ -68,9 +81,9 @@ export function updateScene(node: Container, deltaMs: number): void {
 function invokeSubtreeMethods(info: SubtreeInfo, node: Container, pass: Pass, deltaMs: number): void {
     const { list, skip } = info;
     for (let i = 0; i < list.length;) {
-        const target = list[i];
-        if (!target.parent && target !== node) { i = skip[i]; continue; } // detached mid-pass
-        const result = pass === UPDATE ? target.onUpdate?.(deltaMs) : target.onRefresh?.();
+        const listed = list[i];
+        if (!listed.parent && listed !== node) { i = skip[i]; continue; } // detached mid-pass
+        const result = pass === UPDATE ? listed.onUpdate?.(deltaMs) : listed.onRefresh?.();
         i = result === SKIP_DESCENDANTS ? skip[i] : i + 1;
     }
 }
@@ -110,8 +123,9 @@ function has(node: Container, pass: Pass): boolean {
 ### Invalidation
 
 One climb per method kind, stopping at the first container already dirty for that
-kind. It lives in [mvt-container-mixin.ts](./mvt-container-mixin.ts), next to the
-setters and wrappers that trigger it:
+kind. It lives in [scene-passes.ts](../mvt-utils/scene-passes.ts) in
+`mvt-utils`, next to the setters that trigger it; pixi-mvt's wrappers in
+[mvt-container-mixin.ts](./mvt-container-mixin.ts) call it too:
 
 ```ts
 function invalidateUpdate(node: Container): void {
@@ -357,9 +371,11 @@ magnitude.
 
 Two style-guide rules needed a deliberate decision.
 
-**`this`** is confined to [mvt-container-mixin.ts](./mvt-container-mixin.ts). A
-prototype accessor and a wrapped prototype method cannot reach their instance
-without it. Methods themselves are invoked as plain calls with no receiver, so a
+**`this`** is confined to the method accessors, in
+[scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`, and
+the wrapped prototype methods, in [mvt-container-mixin.ts](./mvt-container-mixin.ts).
+A prototype accessor and a wrapped prototype method cannot reach their
+instance without it. Methods themselves are invoked as plain calls with no receiver, so a
 view's method stays an ordinary closure. The side effect is that a method defined as
 a subclass prototype method would not see its instance, which costs nothing here
 because the repo has no classes.

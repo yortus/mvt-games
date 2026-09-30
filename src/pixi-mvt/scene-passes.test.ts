@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { refreshScene, updateScene } from './scene-passes';
-import { SKIP_DESCENDANTS } from './mvt-types';
+import { SKIP_DESCENDANTS } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Helpers

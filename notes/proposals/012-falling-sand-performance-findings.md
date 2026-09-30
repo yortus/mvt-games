@@ -8,9 +8,13 @@
 > development machine. This proposal records the evidence for each and what
 > should follow. None of it is implemented.
 
-**Status:** proposed. Measured 2026-09-25; written 2026-09-26.
+**Status:** section 2 implemented (2026-09-28), in the generic scene-pass
+core that [022](./022-renderer-agnostic-jsx.md) phase 2 made of pixi-mvt's
+walk; see 2.4. Sections 3-5 are still proposed. Measured 2026-09-25; written
+2026-09-26.
 
-**Related:** [`src/pixi-mvt/scene-passes.ts`](../../src/pixi-mvt/scene-passes.ts),
+**Related:** [`src/mvt-utils/scene-passes.ts`](../../src/mvt-utils/scene-passes.ts)
+(the walk, since 022 phase 2),
 [`benchmarks/`](../../benchmarks/README.md),
 [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
 [Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md),
@@ -124,8 +128,31 @@ example) take the slower live path, as today.
 
 ### 2.4 Next steps
 
-1. Implement the counter and the cached methods; the failing test is the
-   acceptance test.
+1. ~~Implement the counter and the cached methods; the failing test is the
+   acceptance test.~~ Done (2026-09-28), as designed in 2.3: the memoised
+   list carries each node's method, and a count of method assignments sends
+   the rest of a scene pass back to live reads once any method changes
+   during it. The acceptance test passes. Measured against the old walk, as
+   an A/B of the repo's suites (a worktree at the old code, six processes
+   per side per case, in the order new, old, old, new):
+   - **The falling-sand demo (`objects-sprites`) refreshes 4-27% faster** at
+     every size from 1,000 to 200,000 grains, about 20% on average: 23.1
+     against 30.3 ms settled at 200,000 grains, 24.1 against 33.2 ms
+     flipping. The model's own time is unchanged. The prediction held.
+   - **A uniform scene pays for it:** the `scene-passes` suite's `dense`
+     scene (2,000 identical containers, every one with a method) is 16%
+     slower, about 0.4 ns per container, since there was no megamorphic read
+     to save, and `sparse` 11% (0.06 us a frame). So is `churn` (the walk
+     rebuilt every frame), by 16%, from building the method array on each
+     rebuild. The `scaling` suite, uniform but with bindings, came out level
+     (0.98x, against 1.02x for its hand-written control).
+   - **The demo's update scene pass is 1-5 us a frame slower**, in noisy
+     measurements (spreads up to 160%), against milliseconds saved in
+     refresh. Real scenes are mixed and rarely rebuilt, so the trade was
+     taken.
+   - **Found on the way:** reading a node's method through a small shared
+     helper, rather than inline, stopped V8 inlining the accessor, and made
+     `churn` another 25% slower. The reads are inline again.
 2. Re-run the `scene-passes`, `scaling` and `falling-sand-scaling` suites and
    update the saved results.
 3. Consider whether the mixin should give every container its `_mvt*` fields
