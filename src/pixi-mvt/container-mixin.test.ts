@@ -633,7 +633,7 @@ describe('mutation during a scene pass', () => {
         rec = createRecorder();
     });
 
-    it('runs a container added by a method from the next scene pass, not this one', () => {
+    it('refreshes a container added by a method in the same scene pass', () => {
         const root = container('root');
         let spawned = false;
         root.onRefresh = () => {
@@ -646,10 +646,207 @@ describe('mutation during a scene pass', () => {
         };
 
         refreshScene(root);
-        expect(rec.calls).toEqual(['root']);
+        expect(rec.calls).toEqual(['root', 'child']);
 
         rec.clear();
         refreshScene(root);
+        expect(rec.calls).toEqual(['root', 'child']);
+    });
+
+    it('refreshes a subtree a method rebuilds, once, and not the one it replaced', () => {
+        // The shape that left Kwazy Cactii's thumbnail blank: a view destroys
+        // the children it built at construction and builds new ones in its
+        // first refresh.
+        const root = container('root');
+        const grid = container('grid');
+        root.addChild(grid);
+        let generation = 0;
+        build();
+        let isBuilt = false;
+        grid.onRefresh = () => {
+            rec.calls.push('grid');
+            if (isBuilt) return;
+            isBuilt = true;
+            for (const child of [...grid.children]) child.destroy({ children: true });
+            build();
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['grid', 'cell1.0', 'cell1.1']);
+
+        function build(): void {
+            for (let i = 0; i < 2; i++) {
+                const cell = container(`cell${generation}.${i}`);
+                cell.onRefresh = () => void rec.calls.push(cell.label);
+                grid.addChild(cell);
+            }
+            generation++;
+        }
+    });
+
+    it('refreshes a container given an onRefresh by a method in the same scene pass', () => {
+        const root = container('root');
+        const late = container('late');
+        root.addChild(late);
+        root.onRefresh = () => {
+            rec.calls.push('root');
+            late.onRefresh ??= () => void rec.calls.push('late');
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['root', 'late']);
+    });
+
+    it('refreshes the descendants of an added container, parents first', () => {
+        const root = container('root');
+        const branch = node('branch', drivers[1], rec);
+        const leaf = node('leaf', drivers[1], rec);
+        branch.addChild(leaf);
+        root.onRefresh = () => {
+            rec.calls.push('root');
+            if (branch.parent === null) root.addChild(branch);
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['root', 'branch', 'leaf']);
+    });
+
+    it('keeps catching up while added containers add containers', () => {
+        const root = container('root');
+        let depth = 0;
+        const spawn = (parent: Container): void => {
+            const child = container(`d${++depth}`);
+            let hasSpawned = false;
+            child.onRefresh = () => {
+                rec.calls.push(child.label);
+                if (hasSpawned || depth >= 4) return;
+                hasSpawned = true;
+                spawn(child);
+            };
+            parent.addChild(child);
+        };
+        root.onRefresh = () => {
+            rec.calls.push('root');
+            if (depth === 0) spawn(root);
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['root', 'd1', 'd2', 'd3', 'd4']);
+    });
+
+    it('throws when methods add containers that add containers without end', () => {
+        const root = container('root');
+        const spawn = (parent: Container): void => {
+            const child = container('endless');
+            child.onRefresh = () => spawn(child);
+            parent.addChild(child);
+        };
+        root.onRefresh = () => {
+            if (root.children.length === 0) spawn(root);
+        };
+
+        expect(() => refreshScene(root)).toThrow(/still changing the tree/);
+    });
+
+    it('does not refresh a container added beneath one that skipped its descendants', () => {
+        const root = container('root');
+        const gate = container('gate');
+        root.addChild(gate);
+        gate.onRefresh = () => {
+            rec.calls.push('gate');
+            return SKIP_DESCENDANTS;
+        };
+        root.onRefresh = () => {
+            rec.calls.push('root');
+            if (gate.children.length === 0) gate.addChild(node('hidden', drivers[1], rec));
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['root', 'gate']);
+    });
+
+    it('refreshes a container removed before its turn and put back later in the same scene pass', () => {
+        const root = container('root');
+        const first = container('first');
+        const wanderer = node('wanderer', drivers[1], rec);
+        const last = container('last');
+        root.addChild(first, wanderer, last);
+        first.onRefresh = () => {
+            rec.calls.push('first');
+            root.removeChild(wanderer);
+        };
+        last.onRefresh = () => {
+            rec.calls.push('last');
+            if (wanderer.parent === null) root.addChild(wanderer);
+        };
+
+        refreshScene(root);
+
+        expect([...rec.calls].sort()).toEqual(['first', 'last', 'wanderer']);
+    });
+
+    it('refreshes a container whose method was cleared before its turn and restored after it', () => {
+        const root = container('root');
+        const first = container('first');
+        const fickle = container('fickle');
+        const last = container('last');
+        root.addChild(first, fickle, last);
+        const fickleRefresh = (): void => void rec.calls.push('fickle');
+        fickle.onRefresh = fickleRefresh;
+        first.onRefresh = () => {
+            rec.calls.push('first');
+            fickle.onRefresh = undefined;
+        };
+        last.onRefresh = () => {
+            rec.calls.push('last');
+            fickle.onRefresh = fickleRefresh;
+        };
+
+        refreshScene(root);
+
+        expect([...rec.calls].sort()).toEqual(['fickle', 'first', 'last']);
+    });
+
+    it('does not refresh again a container a nested scene pass refreshed', () => {
+        // What `<List>` did by hand before scene passes caught up: refresh what it
+        // just attached. Still allowed, and it must not run anything twice.
+        const root = container('root');
+        root.onRefresh = () => {
+            rec.calls.push('root');
+            if (root.children.length > 0) return;
+            const branch = node('branch', drivers[1], rec);
+            branch.addChild(node('leaf', drivers[1], rec));
+            root.addChild(branch);
+            refreshScene(branch);
+        };
+
+        refreshScene(root);
+
+        expect(rec.calls).toEqual(['root', 'branch', 'leaf']);
+    });
+
+    it('leaves a container added during an update scene pass to the next update scene pass', () => {
+        // An update advances time. A container that did not exist when the
+        // frame began has no time to catch up on, so it starts next frame.
+        const root = container('root');
+        root.onUpdate = () => {
+            rec.calls.push('root');
+            if (root.children.length > 0) return;
+            const child = container('child');
+            child.onUpdate = () => void rec.calls.push('child');
+            root.addChild(child);
+        };
+
+        updateScene(root, 16);
+        expect(rec.calls).toEqual(['root']);
+
+        rec.clear();
+        updateScene(root, 16);
         expect(rec.calls).toEqual(['root', 'child']);
     });
 

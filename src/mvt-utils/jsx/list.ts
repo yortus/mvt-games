@@ -179,13 +179,10 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
 
         function attachSlot(index: number): void {
             const slot = index < slots.length ? slots[index] : buildSlot(index);
+            // Attached during a scene pass, which refreshes it before it returns,
+            // so it is correct on the frame it appears.
             target.append(container, slot);
             attachedCount++;
-
-            // Attached during a scene pass, which will not visit it until next
-            // frame, and a new slot's bindings have not run at all yet. Refresh it
-            // now so it is correct on the frame it appears.
-            target.refreshScene(slot);
         }
 
         function destroyDetachedSlots(): void {
@@ -219,11 +216,10 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
                 const slot = buildItemView(index, item);
                 slots[index] = slot;
                 // Swapped during a scene pass, as an attached slot is: the scene pass
-                // skips the detached placeholder, and will not visit the new slot
-                // until next frame, so it is refreshed here.
+                // skips the detached placeholder, and refreshes the new slot before
+                // it returns.
                 target.replace(container, placeholder, slot);
                 target.destroy(placeholder);
-                target.refreshScene(slot);
             };
             return placeholder;
         }

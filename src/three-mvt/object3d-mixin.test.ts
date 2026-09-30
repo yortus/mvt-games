@@ -114,6 +114,18 @@ describe('three-mvt scene passes', () => {
         expect(calls).toEqual(['root', 'quiet']);
     });
 
+    it('refreshes an object a method adds, in the same scene pass', () => {
+        const calls: string[] = [];
+        const root = new Group();
+        root.onRefresh = () => {
+            if (root.children.length === 0) root.add(recorded('added', calls));
+        };
+
+        refreshScene(root);
+
+        expect(calls).toEqual(['added']);
+    });
+
     describe('destroyObject', () => {
         it('runs onDestroyed callbacks parent first, once, then detaches and silences the subtree', () => {
             const calls: string[] = [];

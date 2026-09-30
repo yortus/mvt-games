@@ -285,23 +285,44 @@ skipped by an outside caller; a driven root that returns the sentinel still
 skips only its descendants.
 
 **Mutation during a pass.** A pass walks a snapshot of the list taken before the
-first method ran.
+first method ran. If a method changed the subtree during the pass,
+`refreshScene` then runs every `onRefresh` the snapshot missed before it returns.
 
-| An `onUpdate` or `onRefresh`, during the pass... | Behaviour                                    |
-| ------------------------------------------------ | -------------------------------------------- |
-| adds a child that has its own                    | Not in the snapshot; runs from the next pass |
-| removes a **later** container                    | Skipped                                      |
-| removes an **earlier** container                 | No effect this pass                          |
-| clears a later container's                       | Skipped                                      |
-| reparents a container in the same subtree        | Called once, from its snapshot position      |
-| destroys a container                             | Same as removing it                          |
-| returns `SKIP_DESCENDANTS`                       | Its descendants are skipped for this pass    |
-| re-enters the same pass on the same node         | Throws                                       |
+| An `onUpdate` or `onRefresh`, during the pass...     | Behaviour                                        |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| adds a child that has an `onRefresh`                 | Refreshed before `refreshScene` returns          |
+| adds a child that has an `onUpdate`                  | Not in the snapshot; updated from the next frame |
+| gives a container an `onRefresh`                     | Refreshed before `refreshScene` returns          |
+| removes a **later** container                        | Skipped                                          |
+| removes an **earlier** container                     | No effect this pass                              |
+| clears a later container's                           | Skipped                                          |
+| reparents a container in the same subtree            | Called once, from its snapshot position          |
+| destroys a container                                 | Same as removing it                              |
+| returns `SKIP_DESCENDANTS`                           | Its descendants are skipped for this pass, including any added under it later in the pass |
+| starts a nested pass on a different container        | Allowed; a container it refreshes is not refreshed again by the outer pass |
+| re-enters the same pass on the same node             | Throws                                           |
 
-A view that builds children inside `onRefresh` therefore has to give them their
-first frame itself, by refreshing them as it creates them. That is one line in
-the one place that knows it is needed;
-`<List>` and `<Switch>` in [`src/pixi-mvt/jsx/`](./jsx/list.ts) do it.
+So a view may build children inside its own `onRefresh`, and they are never
+drawn unrefreshed; `<List>` and `<Switch>` in [`src/pixi-mvt/jsx/`](./jsx/list.ts)
+rely on this. A frame whose subtree changes during its refresh rebuilds the
+list then rather than on the next frame, so refreshing the missed containers
+costs one extra walk that runs only what was added.
+
+The two passes deliberately cover different things, each what its method
+needs:
+
+- **`refreshScene` covers the tree as it stands when the pass ends.**
+  `onRefresh` is idempotent, so running it late is always safe, and what
+  matters is that everything drawn is current.
+- **`updateScene` covers the time step for the containers that existed when
+  the pass began.** `onUpdate` advances time, and a container created during
+  the pass did not exist for that time, so it starts advancing on the next
+  frame. Giving it this frame's `deltaMs` would put it a frame ahead of the
+  state its creator gave it.
+
+So a view's first `onRefresh` can come before its first `onUpdate`, and a view
+must start its presentation state valid at construction rather than rely on an
+update having run.
 
 **Both run every frame**, so do not allocate in them. Index-based loops, no
 `array.map()`, no template strings.

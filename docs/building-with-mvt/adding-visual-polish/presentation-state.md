@@ -121,6 +121,26 @@ Ticker loop:
 Views without presentation state are unchanged - they have no `update()`
 step, just `refresh()`.
 
+The two steps split the work cleanly: `update()` advances presentation state
+and writes nothing else, and `refresh()` writes all presentation output from
+model state and presentation state. That includes structure: adding or
+removing child views and display objects is output, so it happens in
+`refresh()` (or at construction, for structure that never changes), never in
+`update()`. Three reasons:
+
+- **A view refreshed without an update still shows everything.** Tests and
+  thumbnails often refresh a view once without updating it. Output written in
+  `update()`, including a child view created there, would be missing.
+- **Output stays idempotent.** `refresh()` can run any number of times with
+  the same result. Output written as a side effect of advancing time cannot.
+- **Frozen time freezes only state.** Skipping a subtree's `update()` (a paused
+  entity) stops its presentation state advancing; its output still follows
+  the model.
+
+A view that spawns short-lived effects, such as particles, follows the same
+split: `update()` advances a pool of effect records, and `refresh()` projects
+the pool into display objects.
+
 In this project, a view's `update(deltaMs)` step is its `onUpdate` method, and
 its `refresh()` is its `onRefresh` method. That is a project convention, not an
 MVT requirement; see
@@ -163,6 +183,24 @@ transparent, door open) and 1 (fully opaque, door closed). The `update()`
 function moves it toward the model's current state at a fixed rate. The
 `refresh()` function applies it to the sprite. If the model flips mid-fade,
 the transition reverses smoothly.
+
+### Start valid: the first refresh may come before the first update
+
+`fadeProgress` starts matching the model, not at an arbitrary value that the
+first `update()` corrects. A view's first `refresh()` can run before its first
+`update()`:
+
+- A view built during the refresh step (an item view for a newly added
+  entity, a grid rebuilt when its size changes) is refreshed on the frame it
+  appears, but its first update is on the next frame. The update step
+  advances the views that existed when the frame's time step began; a view
+  created after that has no elapsed time to catch up on.
+- Tests and thumbnails often refresh a view once without updating it at all.
+
+So initialise presentation state at construction, from the bindings if it
+depends on them, and never write a `refresh()` that is only correct once
+`update()` has run. The same holds for a view model: its state must be
+readable, and sensible, before its first `update()`.
 
 ### No forwarding through the view tree
 

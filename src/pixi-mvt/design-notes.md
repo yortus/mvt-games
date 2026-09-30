@@ -280,20 +280,79 @@ pass is driven from is never skipped by an outside caller.
 **Re-entering a pass on the same container throws.** A method that calls
 `refreshScene` on the container already being refreshed would run the same list
 twice and, in the usual case, recurse forever. Driving a *different* container
-from a method is legitimate and is how a view refreshes something it has just
-built, so the guard is a small stack of the containers with a pass in flight
-rather than a single flag. It is always on: one array push and pop per pass, not
-per container.
+from a method is legitimate (a nested refresh shares its outer pass, so nothing
+runs twice), so the guard is a small stack of the containers with a pass in
+flight rather than a single flag. It is always on: one array push and pop per
+pass, not per container.
+
+**`refreshScene` refreshes what its methods add; `updateScene` does not update
+what its methods add.** A refresh pass covers the
+subtree as it stands when the pass returns, not only as it stood when the pass
+started. Without this, a view that builds children in its own `onRefresh` shows
+them unrefreshed for a frame: invisible in a running game, but the only frame
+there is in a thumbnail or a refresh-once test. That is how Kwazy Cactii's
+carousel thumbnail went blank. Its pieces view rebuilt its grid on the first
+poll of a `watch()`, which reports every value changed, exactly as the
+change-detection guide's own example does. `<List>` and `<Switch>` used to
+refresh what they built by hand; they now rely on the pass.
+
+How it stays off the hot path:
+
+- The walk records only what it **elides**: an entry detached before its turn
+  (the entry and its descendants), an entry whose method was cleared earlier
+  in the pass (the entry), and an entry that returned `SKIP_DESCENDANTS` (its
+  descendants). Each elision goes in an `Int32Array` beside the list
+  (`SubtreeInfo.elisions`), tagged with the pass's id. An entry run and
+  stepped past records nothing, so the common path has no store at all. A
+  first version marked every entry it ran, and measured 20% slower on the
+  dense scene; recording only the elisions measured as noise.
+- After the walk, one read of the root's memo says whether any method changed
+  the subtree: every structural change and method assignment clears it, since
+  the whole subtree was clean when the walk began. html-mvt hears of changes
+  only when it asks, so `beforeScenePass` is called again first.
+- Only then (`catchUpRefresh`) does it replay the walk from its elisions,
+  marking each node that ran (`_mvtRefreshedInPass`), rebuild the list, and
+  walk it running only the nodes it missed, skipping any subtree whose root
+  returned `SKIP_DESCENDANTS` this pass. It repeats until a round changes nothing, and throws after 100
+  rounds, which only methods adding nodes that add nodes without end reach.
+- The rebuilt list is the memo the next frame would have rebuilt anyway, so a
+  frame that changes the tree mid-pass pays one replay and one short walk. The
+  pool benchmark, which attaches containers during every refresh, measured the
+  same before and after.
+- Nested `refreshScene` calls share their outermost pass's id and hand their
+  walks to it, so a container a nested pass refreshed is not refreshed again.
+
+The update pass does not do the same, on purpose. Each pass covers what its
+method needs: refresh covers the tree as it stands when the pass ends, since
+`onRefresh` is idempotent and what matters is that everything drawn is
+current; update covers the time step for the containers that existed when the
+pass began, since `onUpdate` advances time and a container created during the
+pass did not exist for that time. The same frame's refresh pass does see it.
+
+Catching up the update pass too was considered and rejected:
+
+- **It would break update's one rule.** Today a container's first update is
+  the first update pass that begins after it exists, however it was created.
+  Catching up would give this frame's `deltaMs` only to containers created
+  during an update pass, a special case.
+- **It would advance new containers twice.** A spawner seeds its child from
+  its own already-advanced state (a particle at the emitter's position);
+  advancing the child by the same `deltaMs` puts it a frame ahead.
+- **It fixes nothing visible.** The refresh catch-up already draws a new
+  container correctly on its first frame.
+- **It would not remove the hazard that motivates it.** A view whose
+  `onRefresh` reads state its `onUpdate` computes would refresh from
+  uninitialised state if created mid-update. But views are mostly created
+  during refresh, where no update catch-up can help. Catching up with a
+  `deltaMs` of 0 has the same gap and adds a contract to every `onUpdate`.
+
+The rule that removes the hazard is for views, not the passes: a view's first
+`onRefresh` must not depend on its `onUpdate` having run, so presentation
+state starts valid at construction. The presentation-state guide and the
+mvt-view skill say so.
 
 ## Accepted limitations
 
-- **No drain-the-tail.** The old implementation re-ran methods on containers
-  attached during a pass, up to four rounds. It is gone, so a container created
-  by a method starts on the next pass and a spawning view has to give its children
-  their first frame itself. The exact fix, if it is ever wanted, is a per-pass
-  epoch stamped on each dispatched container, then a rebuild-and-dispatch for
-  any entry whose epoch differs. That costs one integer write per method per frame
-  in the hot path, so it needs measuring against the numbers below.
 - **Dense-plus-churning scenes are slower than a naive walk.** When every
   container has an `onRefresh` and the tree is dirtied every frame, pruning prunes
   nothing and the list is rebuilt every frame, so caching is pure overhead:
@@ -433,8 +492,5 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   silent staleness if a future Pixi version adds a structural method that does
   not delegate to these five.
 - Should direct `container.children` mutation be detected in dev builds?
-- Is drain-the-tail worth adding back, now that the cost of it is a per-pass
-  epoch rather than a scheduler-sized machine? Nothing in this repo spawns views
-  during a refresh, so there is no evidence either way yet.
 - Is `onRefresh` worth gating behind an opt-in per container after all? The old spike demo
   made the per-entity cost visible; nothing has been measured on a real game.

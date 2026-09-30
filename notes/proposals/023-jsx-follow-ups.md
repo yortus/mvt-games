@@ -98,7 +98,7 @@ settle:
   allow (attached to each component's own root container, never a stack of
   owners).
 - Build timing. The new subtree is built during a refresh, like `<List>`'s
-  item views, so it must be refreshed on the frame it appears, and it
+  item views. `refreshScene` refreshes it on the frame it appears, and it
   inherits their no-owner rule for cleanups.
 - Whether it destroys the old subtree (`{ children: true }`) or keeps a
   small cache, for keys that alternate.

@@ -46,10 +46,19 @@ export interface ScenePasses<N> {
      * Runs every `onRefresh` in `node`'s subtree, each exactly once, calling a
      * node before any of its descendants. Sibling order is unspecified.
      *
-     * The refresh half of `updateScene`, with the same memo and ordering.
+     * The refresh half of `updateScene`, with the same memo and ordering, and
+     * one addition: it covers the subtree as it stands when it returns, not
+     * only as it stood when it started. A node attached, or given an
+     * `onRefresh`, by a method during the scene pass is refreshed before
+     * `refreshScene` returns, so a view may build children in its own
+     * `onRefresh` and they are never drawn unrefreshed. Nested `refreshScene`
+     * calls from methods share the outer scene pass, so a node refreshed by
+     * one is not refreshed again by the other.
+     *
      * Nothing gates on visibility, so a view is free to set its own
      * visibility; to skip refreshing its descendants (a hidden or absent
-     * subtree) it says so explicitly by returning `SKIP_DESCENDANTS`.
+     * subtree) it says so explicitly by returning `SKIP_DESCENDANTS`, which
+     * covers nodes attached beneath it later in the same scene pass too.
      */
     readonly refreshScene: (node: N) => void;
     /**
@@ -89,6 +98,17 @@ export interface SubtreeInfo<N> {
      */
     readonly methods: SceneMethod[];
     readonly skip: Int32Array;
+    /**
+     * Refresh walks only: what the last walk elided at each entry (the entry,
+     * its descendants, or both) and why, tagged with its scene pass's id (see
+     * `encodeElision`). An entry with no elision for that scene pass ran, and
+     * the walk stepped to the next. The walk is otherwise deterministic, so
+     * the elisions are enough to replay which entries it ran, which
+     * `catchUpRefresh` does only if the tree changed during that scene pass.
+     * Recording only elisions keeps the common path of the loop free of any
+     * store.
+     */
+    readonly elisions: Int32Array | undefined;
 }
 
 /**
@@ -109,6 +129,12 @@ export interface SceneMemoFields<N> {
     _mvtHasRefresh: boolean | undefined;
     /** Refresh walk for this subtree. `undefined` = dirty. */
     _mvtRefresh: SubtreeInfo<N> | undefined;
+    /**
+     * The id of the refresh scene pass that last ran this node, negated if it
+     * returned `SKIP_DESCENDANTS`. Written only while catching up a scene pass
+     * whose tree changed during it; see `catchUpRefresh`.
+     */
+    _mvtRefreshedInPass: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -128,9 +154,19 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     // Nodes with a scene pass in flight, so a method that re-enters the scene
     // pass it is already inside is caught rather than silently running the
     // list twice. Starting a scene pass on a different node from a method is
-    // fine, and is how a view refreshes something it has just built.
+    // fine.
     const activeUpdates: N[] = [];
     const activeRefreshes: N[] = [];
+
+    // The id of the refresh scene pass in flight, or of the last one. Nested
+    // `refreshScene` calls share their outermost scene pass's id, which is what
+    // makes "exactly once" hold across them.
+    let refreshPassId = 0;
+
+    // The walks of nested refresh scene passes run since the outermost one
+    // began (or since it last caught up), not yet replayed onto their nodes.
+    // Catching up needs them, as well as its own walk, to know what ran.
+    const nestedWalks: SubtreeInfo<N>[] = [];
 
     return { updateScene, refreshScene, invalidate, installMethods };
 
@@ -145,7 +181,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
                 info = buildSubtreeInfo(node, UPDATE);
                 memo._mvtUpdate = info;
             }
-            invokeSubtreeMethods(info, node, UPDATE, deltaMs);
+            invokeSubtreeMethods(info, node, UPDATE, deltaMs, 0);
         }
         finally {
             activeUpdates.pop();
@@ -155,6 +191,8 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     function refreshScene(node: N): void {
         tree.beforeScenePass?.(node);
         enter(activeRefreshes, node, 'refreshScene');
+        const isOutermost = activeRefreshes.length === 1;
+        if (isOutermost) refreshPassId = refreshPassId === MAX_REFRESH_PASS_ID ? 1 : refreshPassId + 1;
         try {
             const memo = memoOf(node);
             let info = memo._mvtRefresh;
@@ -163,10 +201,129 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
                 info = buildSubtreeInfo(node, REFRESH);
                 memo._mvtRefresh = info;
             }
-            invokeSubtreeMethods(info, node, REFRESH, 0);
+            invokeSubtreeMethods(info, node, REFRESH, 0, refreshPassId);
+
+            // Any change to the subtree during the walk cleared its memo. A
+            // renderer that hears of changes only when it asks is asked again.
+            tree.beforeScenePass?.(node);
+            if (memo._mvtRefresh !== info) catchUpRefresh(node, info);
+            else if (!isOutermost) nestedWalks.push(info);
         }
         finally {
             activeRefreshes.pop();
+            if (isOutermost && nestedWalks.length !== 0) nestedWalks.length = 0;
+        }
+    }
+
+    /**
+     * Refreshes whatever a refresh scene pass's methods added to the subtree
+     * while it ran: nodes attached, and nodes given an `onRefresh`, which the
+     * walk listed before they existed. Only called when the subtree changed
+     * during the walk, so a steady scene never gets here.
+     *
+     * First it replays the scene pass's own walk, and every nested walk, onto
+     * their nodes, marking each node that ran. Then each round rebuilds the
+     * list and walks it, running only the nodes not marked for this scene
+     * pass and skipping any subtree whose root returned `SKIP_DESCENDANTS` in
+     * it. Those methods can change the tree again, so it repeats until a round
+     * changes nothing.
+     *
+     * The rebuilt list is the memo the next frame would have rebuilt anyway,
+     * so the extra cost of a frame whose tree changed mid-pass is the replay
+     * and one walk that runs only the missed nodes.
+     */
+    function catchUpRefresh(node: N, firstWalk: SubtreeInfo<N>): void {
+        const passId = refreshPassId;
+        const memo = memoOf(node);
+        markRefreshedNodes(firstWalk, passId);
+        for (let round = 1; ; round++) {
+            if (round > MAX_CATCH_UP_ROUNDS) {
+                throw new Error(
+                    `[mvt] refreshScene() on ${tree.describe(node)} was still changing the tree after `
+                    + `${MAX_CATCH_UP_ROUNDS} rounds. A method is adding a node, or giving one an onRefresh, `
+                    + 'on every refresh, and the nodes it adds do the same.',
+                );
+            }
+            // Nested scene passes run by the methods so far
+            for (let w = 0; w < nestedWalks.length; w++) markRefreshedNodes(nestedWalks[w], passId);
+            nestedWalks.length = 0;
+
+            let info = memo._mvtRefresh;
+            if (info === undefined) {
+                if (DEV) assertNoShadowedMethods(node);
+                info = buildSubtreeInfo(node, REFRESH);
+                memo._mvtRefresh = info;
+            }
+            invokeMissedMethods(info, node, passId);
+
+            tree.beforeScenePass?.(node);
+            if (memo._mvtRefresh === info) return;
+        }
+    }
+
+    /**
+     * Replays a refresh walk run in scene pass `passId` from the elisions it
+     * recorded, marking each node it ran with `passId`, or `-passId` if it
+     * returned `SKIP_DESCENDANTS`. An elision recorded by an earlier scene
+     * pass carries a different id, so it reads as an entry that ran and
+     * stepped on.
+     */
+    function markRefreshedNodes(walk: SubtreeInfo<N>, passId: number): void {
+        const list = walk.list;
+        const skip = walk.skip;
+        const elisions = walk.elisions!;
+        const detachedElision = encodeElision(passId, ELIDED_DETACHED);
+        const methodClearedElision = encodeElision(passId, ELIDED_METHOD_CLEARED);
+        const descendantsElision = encodeElision(passId, ELIDED_DESCENDANTS);
+        for (let i = 0; i < list.length;) {
+            const elision = elisions[i];
+            if (elision === detachedElision) {
+                i = skip[i];
+                continue;
+            }
+            if (elision === methodClearedElision) {
+                i++;
+                continue;
+            }
+            memoOf(list[i])._mvtRefreshedInPass = elision === descendantsElision ? -passId : passId;
+            i = elision === descendantsElision ? skip[i] : i + 1;
+        }
+    }
+
+    /**
+     * One catch-up round: walks the list, skipping detached subtrees and any
+     * subtree whose root returned `SKIP_DESCENDANTS` this scene pass, and runs
+     * each node that has not run this scene pass. Methods are read live: this
+     * is the rare path, and they may have been assigned since the list was
+     * built.
+     */
+    function invokeMissedMethods(info: SubtreeInfo<N>, node: N, passId: number): void {
+        const list = info.list;
+        const skip = info.skip;
+        for (let i = 0; i < list.length;) {
+            const listed = list[i];
+            if (listed !== node && !tree.parent(listed)) {
+                i = skip[i];
+                continue;
+            }
+            const listedMemo = memoOf(listed);
+            const refreshedInPass = listedMemo._mvtRefreshedInPass;
+            if (refreshedInPass === -passId) {
+                i = skip[i];
+                continue;
+            }
+            if (refreshedInPass !== passId) {
+                const method = listed.onRefresh;
+                if (method !== undefined) {
+                    const skipsDescendants = method() === SKIP_DESCENDANTS;
+                    listedMemo._mvtRefreshedInPass = skipsDescendants ? -passId : passId;
+                    if (skipsDescendants) {
+                        i = skip[i];
+                        continue;
+                    }
+                }
+            }
+            i++;
         }
     }
 
@@ -234,6 +391,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
             _mvtUpdate: undefined,
             _mvtHasRefresh: undefined,
             _mvtRefresh: undefined,
+            _mvtRefreshedInPass: 0,
 
             get onUpdate(): UpdateMethod | undefined {
                 return this._mvtOnUpdate;
@@ -282,11 +440,17 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
      * pass (a `<List>` building slots, a view silencing a sibling) bumps
      * `methodAssignments`, and from then on this scene pass reads methods live,
      * so a method cleared earlier in the scene pass never runs later in it.
+     *
+     * A refresh walk also records what it elides at each entry, tagged with
+     * `passId`, the scene pass's id, so that `catchUpRefresh` can replay the
+     * walk if the tree changed meanwhile. An entry run and stepped past
+     * records nothing.
      */
-    function invokeSubtreeMethods(info: SubtreeInfo<N>, node: N, pass: Pass, deltaMs: number): void {
+    function invokeSubtreeMethods(info: SubtreeInfo<N>, node: N, pass: Pass, deltaMs: number, passId: number): void {
         const list = info.list;
         const methods = info.methods;
         const skip = info.skip;
+        const elisions = info.elisions;
         const assignmentsAtStart = methodAssignments;
         for (let i = 0; i < list.length;) {
             const listed = list[i];
@@ -294,13 +458,21 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
             // subtree, whose internal parent links are still intact. The node
             // the scene pass started from may have no parent, and is exempt.
             if (listed !== node && !tree.parent(listed)) {
+                if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_DETACHED);
                 i = skip[i];
                 continue;
             }
             const method = methodAssignments === assignmentsAtStart
                 ? methods[i]
                 : pass === UPDATE ? listed.onUpdate : listed.onRefresh;
-            if (method !== undefined && method(deltaMs) === SKIP_DESCENDANTS) {
+            // Only when a method was cleared earlier in this scene pass
+            if (method === undefined) {
+                if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_METHOD_CLEARED);
+                i++;
+                continue;
+            }
+            if (method(deltaMs) === SKIP_DESCENDANTS) {
+                if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_DESCENDANTS);
                 i = skip[i];
                 continue;
             }
@@ -318,7 +490,8 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
         const methods: SceneMethod[] = [];
         const ends: number[] = [];
         collectSubtreeMethods(node, pass, list, methods, ends);
-        return { list, methods, skip: Int32Array.from(ends) };
+        const elisions = pass === REFRESH ? new Int32Array(list.length) : undefined;
+        return { list, methods, skip: Int32Array.from(ends), elisions };
     }
 
     /**
@@ -409,6 +582,38 @@ type Pass = typeof UPDATE | typeof REFRESH;
 // the benchmark harness runs - has no `import.meta.env` at all, so it is read
 // defensively here rather than assumed.
 const DEV = import.meta.env?.DEV === true;
+
+/**
+ * The largest refresh scene pass id before the ids wrap back to 1: the largest
+ * whose encoded elisions still fit an `Int32Array`. An elision could only be
+ * misread 2^29 scene passes later, over three months of frames at 60 fps.
+ */
+const MAX_REFRESH_PASS_ID = 0x1fffffff;
+
+// What a refresh walk elided at an entry, and why.
+/** The entry and its descendants: the entry was detached. */
+const ELIDED_DETACHED = 1;
+/** The entry: its method was cleared earlier in the scene pass. */
+const ELIDED_METHOD_CLEARED = 2;
+/** The entry's descendants: the entry ran and returned `SKIP_DESCENDANTS`. */
+const ELIDED_DESCENDANTS = 3;
+type ElisionKind = typeof ELIDED_DETACHED | typeof ELIDED_METHOD_CLEARED | typeof ELIDED_DESCENDANTS;
+
+/**
+ * An elision's record in `SubtreeInfo.elisions`: its kind, tagged with the
+ * scene pass's id, so a record left by an earlier scene pass never matches.
+ * Zero, a fresh array's value, matches no scene pass, since ids start at 1.
+ */
+function encodeElision(passId: number, kind: ElisionKind): number {
+    return passId * 4 + kind;
+}
+
+/**
+ * How many rounds catching up a refresh scene pass may take. Each round runs
+ * only the nodes the previous one added, so a real scene needs one or two;
+ * more means methods are adding nodes that add nodes, without end.
+ */
+const MAX_CATCH_UP_ROUNDS = 100;
 
 /**
  * How many times any node's `onUpdate` or `onRefresh` has been assigned, by

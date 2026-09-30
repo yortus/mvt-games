@@ -62,8 +62,8 @@ export interface JsxRuntime<N> {
  * - Construction is inert: fixed values are applied at once, but no getter
  *   runs until the element's first refresh. Until then a bound property holds
  *   its default. The ticker refreshes the whole scene before every render, and
- *   `<List>` / `<Switch>` refresh whatever they build during a scene pass, so nothing is
- *   ever shown with defaults.
+ *   `refreshScene` also refreshes whatever `<List>` / `<Switch>` build during
+ *   it, so nothing is ever shown with defaults.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
  * - Event attributes are wired before any other attribute is applied, so a

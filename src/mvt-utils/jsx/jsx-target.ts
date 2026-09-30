@@ -54,9 +54,10 @@ export interface JsxTarget<N extends SceneNode> {
 
     /**
      * The renderer's `refreshScene`: calls every `onRefresh` in `node`'s
-     * subtree, a node's before its descendants'. `<List>` and `<Switch>` call
-     * it on nodes they build during a refresh, which that refresh's list of
-     * nodes does not include, so they show that frame.
+     * subtree, a node's before its descendants', including nodes attached
+     * during the scene pass. The runtime never calls it: `<List>` and
+     * `<Switch>` rely on the scene pass to refresh what they build. The
+     * conformance suite drives each target through it.
      */
     refreshScene: (node: N) => void;
 }

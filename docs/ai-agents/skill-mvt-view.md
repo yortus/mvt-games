@@ -341,6 +341,10 @@ view.onRefresh = refresh;
 - Either method may return `SKIP_DESCENDANTS` to skip its container's descendants for
   that pass (a hidden subtree). Setting `visible = false` alone skips nothing,
   and a view may set its own `visible` freely.
+- A container added, or given an `onRefresh`, during `refreshScene` is
+  refreshed before that pass returns, so a view may build children in its own
+  `refresh()`. A container added during `updateScene` is first updated on the
+  next frame: it did not exist for this frame's time step.
 - Do not use Pixi's `onRender` for view refresh. It is tied to render cadence
   and cannot skip subtrees.
 - In tests, drive a view with `updateScene(view, deltaMs)` and
@@ -407,6 +411,17 @@ Views with presentation state gain an `update(deltaMs)` step, assigned to
 runs it after models update and before any refresh. Parent views do not
 propagate it; the pass finds it.
 
+**`update` advances state; `refresh` writes output.** `update(deltaMs)`
+changes presentation state and nothing else. `refresh()` writes all
+presentation output, including structure: add, remove and destroy display
+objects and child views in `refresh()` (or at construction, for structure
+that never changes), never in `update()`. Do not tween display objects
+directly with a timeline advanced in `update()`: tween a plain state object,
+and apply it in `refresh()`. A view that spawns effects keeps a pool of
+effect records advanced in `update()`, projected into display objects in
+`refresh()`. Relay bindings are input, not output, so `update()` may call
+one (for example, reporting a launch once a zoom finishes).
+
 When the presentation logic grows complex enough to warrant separate testing,
 extract it into a **view model** - a technique borrowed from MVVM:
 - The view model is a plain object with `update(deltaMs)` and readable state
@@ -443,6 +458,14 @@ As soon as the presentation state grows beyond a single value, or the timing
 logic warrants unit testing, extract it into a view model. Never hardcode
 frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
+**Start presentation state valid.** A view's first `refresh()` can run before
+its first `update(deltaMs)`: a view built during a refresh is refreshed that
+frame but first updated the next, and tests and thumbnails often refresh
+without updating. Initialise presentation state (and view-model state) at
+construction, from the bindings if it depends on them
+(`let fadeProgress = bindings.isOpen() ? 0 : 1`). Never write a `refresh()`
+that is only correct once `update()` has run.
+
 ## Hot-Path Rules for `refresh()`
 
 `refresh()`, and every function attribute in a JSX body, runs every tick
@@ -467,6 +490,9 @@ once, when the element is built, not per frame.
 | Domain state in a view                     | V-stateless     | Move to the model                             |
 | Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
 | Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's `onUpdate(deltaMs)` method      |
+| `refresh()` only correct after the first `update()` | V-presentation | Initialise presentation state at construction |
+| Adding or removing display objects in `update()` | V-presentation | Change structure in `refresh()` |
+| A timeline advanced in `update()` tweening display objects | V-presentation | Tween a state object; apply it in `refresh()` |
 | Query binding declared as a function but read only at construction | V-reactive | Read it in `refresh()`, or declare it as `T` |
 | Mutating models in `refresh()`             | V-readonly      | Report input through relay bindings           |
 | `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's `onUpdate(deltaMs)` method      |

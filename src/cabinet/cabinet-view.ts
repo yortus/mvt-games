@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+import { Power2 } from 'gsap';
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { isTouchDevice } from '#common';
 import { watch } from '#mvt-utils';
@@ -30,23 +30,54 @@ export interface CabinetViewBindings {
  * The game-selection menu: a carousel of game cards, zooming into the chosen
  * game when it launches and back out when the game exits. Written in plain
  * TypeScript: it lays out and animates its cards by hand.
+ *
+ * `update` advances the presentation state (the scroll, and the zoom) and
+ * `refresh` draws it; neither does the other's job.
  */
 export function CabinetView(bindings: CabinetViewBindings): Container {
-    const watcher = watch({
+    // Polled by `update`, for the edges that start presentation transitions
+    const stateWatcher = watch({
         phase: bindings.phase,
         selected: bindings.selectedIndex,
+        count: bindings.gameCount,
+    });
+    // Polled by `refresh`, for the edges that change what is drawn
+    const layoutWatcher = watch({
         count: bindings.gameCount,
         canvasW: bindings.canvasWidth,
         canvasH: bindings.canvasHeight,
     });
 
-    // Presentation-only state
-    let scrollCurrent = 0;
-    let scrollTarget = 0;
-    let highlightedIndex = -1;
+    // ---- Presentation state -----------------------------------------------
+    // Valid from construction: the first refresh may come before the first
+    // update.
+
+    /** The carousel's scroll position, in cards, eased towards `scrollTarget`. */
+    let scrollCurrent = bindings.selectedIndex();
+    let scrollTarget = scrollCurrent;
+    /** The direction of the last keyboard move, applied when the selection changes. */
     let lastNavDelta = 0;
-    let transitioning = false;
-    let zoomTimeline: gsap.core.Timeline | undefined;
+
+    let zoomPhase: ZoomPhase = 'none';
+    /** The card being zoomed into or out of. */
+    let zoomCardIndex = 0;
+    let zoomElapsedMs = 0;
+    /**
+     * How far the zoom has gone, eased: 0 shows the carousel, 1 has the zoomed
+     * card filling the screen and everything else faded out.
+     */
+    let zoomAmount = 0;
+    /** The same for the zoomed card's border, name and thumbnail, which fade on their own schedule. */
+    let chromeZoomAmount = 0;
+
+    // The state above already matches the bindings, so `update` reacts only
+    // to changes from here on. Otherwise its first poll would see them all as
+    // changed, and a key pressed before the first update would move the
+    // scroll twice.
+    stateWatcher.poll();
+
+    // ---- What `refresh` last drew -----------------------------------------
+    let highlightedIndex = -1;
     let canvasW = bindings.canvasWidth();
     let canvasH = bindings.canvasHeight();
 
@@ -93,7 +124,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
     // ---- Keyboard input ---------------------------------------------------
 
     function onKeyDown(e: KeyboardEvent): void {
-        if (transitioning) return;
+        if (zoomPhase !== 'none') return;
 
         const phase = bindings.phase();
         if (phase === 'menu') {
@@ -127,7 +158,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
     menuLayer.hitArea = { contains: () => true };
 
     menuLayer.on('pointerdown', (e) => {
-        if (transitioning || bindings.phase() !== 'menu') return;
+        if (zoomPhase !== 'none' || bindings.phase() !== 'menu') return;
         if (swipePointerId !== undefined) return;
         swipePointerId = e.pointerId;
         swipeStartX = e.globalX;
@@ -193,7 +224,6 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
 
     view.on('destroyed', () => {
         window.removeEventListener('keydown', onKeyDown);
-        if (zoomTimeline) zoomTimeline.kill();
     });
 
     return view;
@@ -201,43 +231,58 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
     // ---- Internals --------------------------------------------------------
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        // The game has exited: zoom back out of its card to the menu.
-        if (watched.phase.changed && watched.phase.previous === 'playing' && !transitioning) {
-            startZoomOut(bindings.selectedIndex());
-        }
-        else if (watched.phase.changed && !transitioning) {
-            menuLayer.visible = watched.phase.value === 'menu';
-        }
+        const watched = layoutWatcher.poll();
 
         if (watched.canvasW.changed || watched.canvasH.changed) {
-            canvasW = bindings.canvasWidth();
-            canvasH = bindings.canvasHeight();
+            canvasW = watched.canvasW.value;
+            canvasH = watched.canvasH.value;
             title.position.set(canvasW / 2, TITLE_Y);
             hint.position.set(canvasW / 2, canvasH - 16);
             highlightedIndex = -1;
         }
 
+        // Structure that follows state changes here, never in `update`
+        if (watched.count.changed) buildCards();
+
+        // Hidden while a game plays, and from the end of the zoom into a game
+        // until it starts, which may take a few frames while it loads
+        menuLayer.visible = bindings.phase() === 'menu' && zoomPhase !== 'zoomed-in';
+
+        positionCards();
+        applyZoom();
+    }
+
+    /** Advances the presentation state: the carousel's eased scroll, and the zoom. */
+    function update(deltaMs: number): void {
+        const watched = stateWatcher.poll();
+
         if (watched.count.changed) {
-            buildCards();
             scrollCurrent = bindings.selectedIndex();
             scrollTarget = scrollCurrent;
         }
 
-        if (watched.selected.changed && !transitioning) {
+        if (watched.phase.changed) {
+            if (watched.phase.value === 'playing') {
+                // Launched, after zooming in or directly (from the URL)
+                setZoomPhase('none');
+            }
+            else if (watched.phase.previous === 'playing') {
+                // The game has exited: zoom back out of its card to the menu,
+                // showing its start this frame
+                startZoomOut(bindings.selectedIndex());
+                return;
+            }
+        }
+
+        if (zoomPhase === 'zooming-in' || zoomPhase === 'zooming-out') {
+            advanceZoom(deltaMs);
+            return;
+        }
+
+        if (watched.selected.changed) {
             scrollTarget += lastNavDelta;
             lastNavDelta = 0;
         }
-
-        if (transitioning) return;
-        positionCards();
-    }
-
-    /** Advances the presentation state: the zoom transition, and the carousel's eased scroll. */
-    function update(deltaMs: number): void {
-        if (zoomTimeline) zoomTimeline.time(zoomTimeline.time() + deltaMs / 1000);
-        if (transitioning) return;
 
         // Ease the scroll towards its target: LERP_SPEED of the way per 60fps
         // frame, whatever the frame rate.
@@ -250,112 +295,84 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
         }
     }
 
-    // ---- Zoom transitions (presentation-only GSAP timelines) --------------
-    // Paused, and advanced only by `update(deltaMs)`.
+    // ---- Zoom transitions -------------------------------------------------
+    // Presentation state only, advanced by `update(deltaMs)` and drawn by
+    // `applyZoom` in `refresh`.
 
     function startZoomIn(cardIndex: number): void {
-        transitioning = true;
-        const card = cards[cardIndex];
-        const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
-
-        const tl = zoomTimeline = gsap.timeline({
-            paused: true,
-            onComplete() {
-                menuLayer.visible = false;
-                resetAllCards();
-                bindings.onLaunchPressed();
-                transitioning = false;
-                zoomTimeline = undefined;
-            },
-        });
-
-        // Fade out title and hint
-        tl.to(title, { alpha: 0, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-        tl.to(hint, { alpha: 0, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-
-        // Fade out non-selected cards
-        for (let i = 0; i < cards.length; i++) {
-            if (i !== cardIndex) {
-                tl.to(cards[i].container, { alpha: 0, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-            }
-        }
-
-        // Zoom the selected card to fill the screen
-        tl.to(card.container.scale, { x: zoomScale, y: zoomScale, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-        tl.to(card.container.position, { y: canvasH / 2, duration: ZOOM_DURATION, ease: 'power2.in' }, 0);
-
-        // Fade out card chrome (border, name, thumbnail)
-        tl.to(card.border, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
-        tl.to(card.name, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
-        if (card.thumb) {
-            tl.to(card.thumb, { alpha: 0, duration: ZOOM_DURATION * 0.7, ease: 'power2.in' }, 0);
-        }
-
-        // Show the start state now, not on the first update: every tween's
-        // start values, including those that start later.
-        tl.time(0);
+        zoomCardIndex = cardIndex;
+        setZoomPhase('zooming-in');
     }
 
     function startZoomOut(cardIndex: number): void {
-        transitioning = true;
-        menuLayer.visible = true;
-
-        // Position all cards at their normal carousel positions
+        zoomCardIndex = cardIndex;
         scrollCurrent = cardIndex;
         scrollTarget = cardIndex;
-        highlightedIndex = -1;
-        positionCards();
-
-        const card = cards[cardIndex];
-        const carouselY = canvasH * 0.45;
-        const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
-
-        const tl = zoomTimeline = gsap.timeline({
-            paused: true,
-            onComplete() {
-                transitioning = false;
-                highlightedIndex = -1;
-                zoomTimeline = undefined;
-                positionCards();
-            },
-        });
-
-        // Title and hint
-        tl.fromTo(title, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-        tl.fromTo(hint, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-
-        // Non-selected cards fade in from 0 to their distance-based alpha
-        for (let i = 0; i < cards.length; i++) {
-            if (i !== cardIndex) {
-                tl.fromTo(cards[i].container, { alpha: 0 }, { alpha: cards[i].container.alpha, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-            }
-        }
-
-        // Selected card shrinks from zoomed to normal
-        tl.fromTo(card.container.scale, { x: zoomScale, y: zoomScale }, { x: 1, y: 1, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-        tl.fromTo(card.container.position, { y: canvasH / 2 }, { y: carouselY, duration: ZOOM_DURATION, ease: 'power2.out' }, 0);
-
-        // Card chrome fades in
-        tl.fromTo(card.border, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
-        tl.fromTo(card.name, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
-        if (card.thumb) {
-            tl.fromTo(card.thumb, { alpha: 0 }, { alpha: 1, duration: ZOOM_DURATION * 0.7, ease: 'power2.out' }, ZOOM_DURATION * 0.3);
-        }
-
-        // Show the start state now, not on the first update: every tween's
-        // start values, including those that start later.
-        tl.time(0);
+        setZoomPhase('zooming-out');
     }
 
-    function resetAllCards(): void {
-        title.alpha = 1;
-        hint.alpha = 1;
+    function setZoomPhase(phase: ZoomPhase): void {
+        zoomPhase = phase;
+        zoomElapsedMs = 0;
+        // Zooming out starts from fully zoomed in; every other phase starts
+        // (or stays) where it shows the carousel or holds the zoomed card.
+        zoomAmount = phase === 'zooming-out' || phase === 'zoomed-in' ? 1 : 0;
+        chromeZoomAmount = zoomAmount;
+    }
+
+    function advanceZoom(deltaMs: number): void {
+        zoomElapsedMs += deltaMs;
+        const t = Math.min(1, zoomElapsedMs / ZOOM_DURATION_MS);
+        if (zoomPhase === 'zooming-in') {
+            // The chrome fades over the first part of the zoom
+            zoomAmount = Power2.easeIn(t);
+            chromeZoomAmount = Power2.easeIn(Math.min(1, t / CHROME_FADE_SHARE));
+            if (t === 1) {
+                setZoomPhase('zoomed-in');
+                // A relay binding, not presentation output: launching was
+                // deferred until the zoom finished.
+                bindings.onLaunchPressed();
+            }
+        }
+        else {
+            // The chrome fades back in over the last part of the zoom
+            zoomAmount = 1 - Power2.easeOut(t);
+            chromeZoomAmount = 1 - Power2.easeOut(Math.max(0, (t - (1 - CHROME_FADE_SHARE)) / CHROME_FADE_SHARE));
+            if (t === 1) setZoomPhase('none');
+        }
+    }
+
+    /**
+     * Draws the zoom over the carousel layout `positionCards` has just
+     * written: the zoomed card grows to fill the screen and centres
+     * vertically, its chrome fades, and everything else fades out.
+     */
+    function applyZoom(): void {
+        const fade = 1 - zoomAmount;
+        title.alpha = fade;
+        hint.alpha = fade;
+
+        const zoomScale = Math.max(canvasW / CARD_W, canvasH / CARD_H) * 1.15;
+        const carouselY = canvasH * 0.45;
         for (let i = 0; i < cards.length; i++) {
-            cards[i].container.alpha = 1;
-            cards[i].container.scale.set(1);
-            cards[i].border.alpha = 1;
-            cards[i].name.alpha = 1;
-            if (cards[i].thumb) cards[i].thumb!.alpha = 1;
+            const card = cards[i];
+            const isZoomed = i === zoomCardIndex;
+            const chromeAlpha = isZoomed ? 1 - chromeZoomAmount : 1;
+            card.border.alpha = chromeAlpha;
+            card.name.alpha = chromeAlpha;
+            if (card.thumb) card.thumb.alpha = chromeAlpha;
+
+            if (zoomAmount === 0) continue;
+            if (isZoomed) {
+                const scale = card.container.scale.x;
+                card.container.scale.set(scale + (zoomScale - scale) * zoomAmount);
+                card.container.y = carouselY + (canvasH / 2 - carouselY) * zoomAmount;
+            }
+            else if (card.container.visible) {
+                // Scales the alpha `positionCards` has just written; cards it
+                // hid keep theirs, so it is written once per refresh either way.
+                card.container.alpha *= fade;
+            }
         }
     }
 
@@ -504,7 +521,15 @@ const LERP_SNAP = 0.01;
 const FRAME_MS_60FPS = 1000 / 60;
 
 // Zoom transition
-const ZOOM_DURATION = 0.4;
+const ZOOM_DURATION_MS = 400;
+/** The share of the zoom over which the zoomed card's chrome fades. */
+const CHROME_FADE_SHARE = 0.7;
+
+/**
+ * Where the zoom into and out of a game's card is. `'zoomed-in'` holds the
+ * card filling the screen, the menu hidden, until the launched game starts.
+ */
+type ZoomPhase = 'none' | 'zooming-in' | 'zoomed-in' | 'zooming-out';
 
 // Touch / pointer
 /** Minimum pointer distance (logical px) to distinguish swipe from tap. */

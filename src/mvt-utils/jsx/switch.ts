@@ -213,9 +213,8 @@ export function createSwitch<N extends SceneNode>(options: SwitchOptions<N>): Sw
             if (build === undefined) return;
             const branch = build();
             build = undefined;
+            // Added during a scene pass, which refreshes it before it returns
             target.append(container, branch);
-            // Added during a scene pass, which will not visit it this frame
-            target.refreshScene(branch);
         };
 
         return container;

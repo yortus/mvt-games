@@ -179,6 +179,20 @@ describe('html-mvt scene passes', () => {
         expect(calls).toEqual([]);
     });
 
+    it('refreshes an element a method appends, in the same scene pass', () => {
+        // Heard of through the observer, which the scene pass asks again once
+        // its walk is done.
+        const calls: string[] = [];
+        const root = quiet('root');
+        root.onRefresh = () => {
+            if (root.childElementCount === 0) root.append(recorded('added', calls));
+        };
+
+        refreshScene(root);
+
+        expect(calls).toEqual(['added']);
+    });
+
     describe('destroyElement', () => {
         it('runs onDestroyed callbacks parent first, once, then removes and silences the subtree', () => {
             const calls: string[] = [];
