@@ -256,8 +256,10 @@ This is a project convention, not an MVT requirement.
 - Define each model as a **pure interface** describing its public API. Views
   are functions of a different shape; see
   [Views and Bindings](#views-and-bindings).
-- Expose a **factory function** (`createXxx`) that accepts an options object
-  and returns an instance of the interface type.
+- Expose a **factory function** (`createXxx`) that accepts one options object
+  and returns an instance of the interface type. Required inputs go in the
+  options object too: `createJsx({ target, elements })`, never
+  `createJsx(target, elements)`.
 - Implement as **plain records** satisfying the interface. Use closure scope
   for private state.
 
@@ -298,6 +300,11 @@ Key points:
 - The **interface** is the public contract - exported and referenced by other
   code.
 - The **options object** makes factories extensible without breaking call sites.
+  An ordered parameter list is fragile: arguments of the same type can be
+  swapped without a type error, call sites do not say which value is which,
+  and a new parameter can only go on the end, or break every caller. Named
+  properties can be added, made optional or given defaults without touching
+  a call site.
 - **Private state** (`elapsed`) lives in the closure, invisible to consumers.
 - **`readonly` properties** signal "read from outside, mutate only from within."
 

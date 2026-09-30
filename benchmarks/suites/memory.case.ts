@@ -1,5 +1,5 @@
 import { Container, type Sprite, Texture } from 'pixi.js';
-import { jsx } from '../../src/pixi-jsx';
+import { jsx } from '../../src/pixi-mvt/jsx';
 import { refreshScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report, retainedPerItem } from '../harness/measure';
 import { createChangeDetectionFrame } from '../shared/change-detection-scene';

@@ -7,8 +7,9 @@
  * how much polling it does per frame. Nothing is counted unless the code
  * doing the reads adds them.
  *
- * - The `pixi-jsx` runtime has this built in. It counts each call of a
- *   function attribute, each read of a `<List>`'s `items` (once per frame,
+ * - The JSX runtime (`mvt-utils/jsx`, and each renderer's built on it, such
+ *   as `pixi-mvt/jsx`) has this built in. It counts each call of a function
+ *   attribute, each read of a `<List>`'s `items` (once per frame,
  *   plus once per slot for its presence check), and each `<Match>` `when` a
  *   `<Switch>` tests. A hidden container counts only its `visible` read, since
  *   its other attributes and its subtree are skipped.
@@ -24,7 +25,7 @@
  * else: within measurement noise on a scene of 10,000 sprites. While on, it
  * costs a few nanoseconds per site, so sample it rather than leave it on.
  *
- * Only `addReads` and the `pixi-jsx` runtime add to `count`. The runtime
+ * Only `addReads` and the JSX runtime add to `count`. The runtime
  * writes it directly, without a call, from the refresh functions it
  * generates, which are handed this object, so it must stay one object for
  * the life of the program.

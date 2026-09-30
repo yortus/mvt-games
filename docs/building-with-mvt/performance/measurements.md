@@ -36,7 +36,7 @@ The ways of keeping the containers in step with the model:
 | Approach | How the view learns about a change |
 | --- | --- |
 | MVT (hand-written) | Each container's `onRefresh` method reads the model and assigns its properties, run by `refreshScene` every frame. This is polling, as the rest of these docs describe it |
-| MVT (JSX) | The same polling, but built with this repo's JSX runtime (`src/pixi-jsx/`), where each dynamic property is given as a function that reads the model |
+| MVT (JSX) | The same polling, but built with this repo's JSX runtime (`src/pixi-mvt/jsx/`), where each dynamic property is given as a function that reads the model |
 | Events | The model calls a listener for each record it changes, and the listener assigns the properties |
 | Solid signals | The model's values are [Solid](https://www.solidjs.com/) signals, with one effect per container that assigns its properties when they change |
 | Model only, no view | Just the model's changes, to show how much of a frame they are |

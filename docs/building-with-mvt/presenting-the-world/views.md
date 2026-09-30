@@ -180,7 +180,7 @@ from `refresh()` instead of plain `return`.
 ## Writing the Body in JSX
 
 The views above build their display objects by hand and write their own
-`refresh()`. This project also has a small JSX runtime (`src/pixi-jsx/`) that
+`refresh()`. This project also has a small JSX runtime (`src/pixi-mvt/jsx/`) that
 builds the same Pixi objects from tags, and writes the refresh step for you.
 Here is the bullet view again, with a JSX body:
 

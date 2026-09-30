@@ -22,7 +22,7 @@ that shipped. The session listed 13 steps; 021 took 1, 5-7, 9 and 10, 022
 covers 13, and this note records 2-4, 8, 11 and 12) -
 [022](022-renderer-agnostic-jsx.md) (a renderer-agnostic JSX base; its
 section 2 appraises the workshop's `common-jsx` as spike 022a) -
-[src/pixi-jsx/design-notes.md](../../src/pixi-jsx/design-notes.md) (settled
+[src/mvt-utils/jsx/design-notes.md](../../src/mvt-utils/jsx/design-notes.md) (settled
 decisions on context and cleanup scopes, and when to revisit them) -
 [004](../archive/004-list-proposal.md) (`<List>` and `<Switch>`).
 

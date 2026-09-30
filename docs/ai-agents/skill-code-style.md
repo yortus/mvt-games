@@ -150,6 +150,11 @@ class CounterModel {
 }
 ```
 
+A factory takes **one options object**, required inputs included:
+`createJsx({ target, elements })`, never `createJsx(target, elements)`.
+Ordered parameters are fragile, and cannot grow without breaking callers.
+See [Style Guide: Factory Functions](../reference/style-guide.md#factory-functions).
+
 ## Function-Valued Properties in Types
 
 In interfaces and type declarations (models, bindings, options), write

@@ -39,8 +39,8 @@ aside), and `vnext-jsx` can move to it.
 | --- | --- | --- | --- |
 | 1 | Barrel lint rule fix: escape the `#` allow-list entries, so a violation is reported instead of crashing ESLint (011 section 11.1). Also this task | 3 | Done: `c3fddbf` |
 | 2 | Split `common/`: renderer-agnostic helpers to `src/mvt-utils/`, `texture-registry` and `frame-stats` to `pixi-mvt`; the `#mvt-utils` alias; every importer, the benchmark driver's stub, docs | ~100 | Done: `9a1aa58` |
-| 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | In review |
-| 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | |
+| 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | Done: `755ecab` |
+| 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | In review |
 | 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | |
 | 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | |
 | 7 | `jsx-refresh` benchmark suite | ~4 | |
@@ -55,9 +55,10 @@ aside), and `vnext-jsx` can move to it.
 
 - Attribute patterns (`data-*`, `aria-*`) in the JSX base and precompiler: step 10.
 - The precompiler's `registerRefreshFactories` hook in the base, and each JSX target's one-line re-export: step 6.
-- The conformance test "keeps a slot its own visible binding hides hidden when its item leaves and returns": step 10.
+- The conformance test "keeps a slot its own visible binding hides hidden when its item leaves and returns", `JsxTarget.visible`'s note on it, and the base design notes' decision 10: step 10.
+- The base design notes' decision 11 and precompiler passages, `refresh-source`'s version and the `precompiled` count: step 6.
+- The base design notes' mentions of three.js and HTML: steps 8 and 10.
 - The barrel rule's allow list grows with the aliases and subpaths each step adds.
-- `read-counter.ts` moves with its old comment, and pixi-mvt's README is unchanged: step 4, where the JSX runtime moves.
 - pixi-mvt's design notes leave out three-mvt and the DOM: steps 8 and 10.
 - `SlotList`'s error message, reworded from "drive update()" to "call update() every tick": step 3, with the other "drive" rewording, so step 2's moves stay exact.
 
@@ -88,3 +89,18 @@ the reference, carve-outs aside.
   the worktree and the reference, so it is no longer a carve-out. The idea of
   one `_mvt` record per node instead of six `_mvt*` fields went to 017 as an
   experiment, for after the merge.
+- 2026-09-30: Step 3 committed (`755ecab`). Step 4 in review: 801 tests (the
+  conformance suite on Pixi, and the base's own). Found while building it,
+  and fixed in the reference: pixi-mvt's JSX design notes still said the
+  site's Vite config gives the precompiler its element table (since phase 5
+  it reads the manifest); and the barrel rule's comment said "each target's
+  tests" (now "each JSX target's").
+- 2026-09-30: Review of step 4: factories take one named-params object.
+  `createJsx({ target, elements, canGenerateCode })` (`JsxOptions<N>` gains
+  `target` and `elements`), `createRefreshBuilder(RefreshBuilderOptions)`
+  and, in the reference, `createPrecompileManifest({ target, elements })`;
+  tests that passed `JsxOptions` for `canGenerateCode` pass a boolean. The
+  rule is in the style guide's Factory Functions section and the code-style
+  skill, in both trees. Then `createList({ target })` and
+  `createSwitch({ target })` too (`ListOptions<N>`, `SwitchOptions<N>`);
+  `createScenePasses(tree)` already takes a named-params object.

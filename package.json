@@ -6,9 +6,9 @@
     "imports": {
         "#common": "./src/common/index.ts",
         "#mvt-utils": "./src/mvt-utils/index.ts",
-        "#pixi-jsx": "./src/pixi-jsx/index.ts",
-        "#pixi-jsx/jsx-runtime": "./src/pixi-jsx/jsx-runtime.ts",
-        "#pixi-jsx/jsx-dev-runtime": "./src/pixi-jsx/jsx-runtime.ts"
+        "#pixi-jsx": "./src/pixi-mvt/jsx/index.ts",
+        "#pixi-jsx/jsx-runtime": "./src/pixi-mvt/jsx/jsx-runtime.ts",
+        "#pixi-jsx/jsx-dev-runtime": "./src/pixi-mvt/jsx/jsx-runtime.ts"
     },
     "scripts": {
         "dev": "vite --host",

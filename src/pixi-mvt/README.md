@@ -5,8 +5,8 @@
 > [the design notes](./design-notes.md) for how it works and why it is built this
 > way.
 
-**Status: spike.** Used by every game and demo, the cabinet, the
-shared views in `src/common/`, the `pixi-jsx` runtime and the playground.
+**Status: adopted.** Used by every game and demo, the cabinet, the
+shared views in `src/common/`, the `pixi-mvt/jsx` runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---
@@ -187,8 +187,8 @@ not control.
 
 ## It composes in JSX
 
-This is the one thing with no workaround. The experimental
-[`src/pixi-jsx/`](../pixi-jsx/) runtime types `JSX.Element` as `Container`, and
+This is the one thing with no workaround. The
+[`src/pixi-mvt/jsx/`](./jsx/) runtime types `JSX.Element` as `Container`, and
 `ListBindings.children` as `(item, index) => Container`. Every composition
 point is therefore blind to a view that carries its own `update()` method: the
 `& { update }` half of the type is erased the moment the value enters a JSX
@@ -301,7 +301,7 @@ first method ran.
 A view that builds children inside `onRefresh` therefore has to give them their
 first frame itself, by refreshing them as it creates them. That is one line in
 the one place that knows it is needed;
-`<List>` and `<Switch>` in [`src/pixi-jsx/`](../pixi-jsx/list.ts) do it.
+`<List>` and `<Switch>` in [`src/pixi-mvt/jsx/`](./jsx/list.ts) do it.
 
 **Both run every frame**, so do not allocate in them. Index-based loops, no
 `array.map()`, no template strings.
@@ -333,7 +333,7 @@ view.onRefresh = () => {
 const reads = countReads(() => refreshScene(app.stage));
 ```
 
-The [`pixi-jsx`](../pixi-jsx/) runtime has this built in: it counts every
+The [`pixi-mvt/jsx`](./jsx/) runtime has this built in: it counts every
 function attribute it calls, so a JSX scene is counted without any code of
 its own.
 
