@@ -94,6 +94,7 @@ export default defineConfig({
                 'playground': resolve(SITE_ROOT, 'playground/index.html'),
                 'playground-sandbox': resolve(SITE_ROOT, 'playground/sandbox.html'),
                 'demos': resolve(SITE_ROOT, 'demos/index.html'),
+                'demos-boids-3d': resolve(SITE_ROOT, 'demos/boids-3d/index.html'),
             },
         },
     },

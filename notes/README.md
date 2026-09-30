@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**026**.
+**027**.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
@@ -96,6 +96,7 @@ falling-sand experiments were run by 020, now archived.
 | --- | --- | --- | --- |
 | 017 | [Miscellaneous Loose Ends](tasks/backlog/017-misc-loose-ends.md) | medium | 2026-09-26 |
 | 025 | [Keep the JSX Precompiler, or Ship Two Builds?](tasks/backlog/025-precompiler-or-two-builds.md) | medium | 2026-09-30 |
+| 026 | [Demos Screen for Every Renderer](tasks/backlog/026-demos-screen-for-every-renderer.md) | medium | 2026-09-30 |
 
 ## Archive
 
