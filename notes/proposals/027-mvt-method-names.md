@@ -5,7 +5,7 @@
 > `refresh`. This note goes back over each objection to doing that, checked
 > against the installed Pixi, three.js and DOM typings and runtimes. It
 > concludes that the rename is feasible on all three renderers, with three
-> small hardening changes to the scene-pass core. The only real cost it cannot
+> small hardening changes to the scene-pass core. The one cost it cannot fully
 > remove is friction for outside codebases that already give their own
 > subclasses an `update` method. That matters for the published packages
 > (011), and not at all for this repo.
@@ -45,7 +45,7 @@ praised them for mirroring Pixi's `onRender`) -
 | 4 | Keep the dev-only shadowing assertion, and make its message name the class and say "wrap it" | 4.3 |
 | 5 | A class that brings its own `update` is a leaf. To give it an MVT update, wrap it in a plain group node | 4.4 |
 | 6 | JSX attributes keep their `on` prefix: `onUpdate={...}`, `onRefresh={...}` | 7.2 |
-| 7 | Decide, before 011 publishes, whether `@mvtjs/pixi` and `@mvtjs/three` claim `update` on every node. Recommended: yes, with a migration note | 6 |
+| 7 | Decide, before 011 publishes, whether `@mvtjs/pixi` and `@mvtjs/three` claim `update` on every node. Recommended: yes, with a migration note and the mitigations of 6.2 | 6 |
 | 8 | Land the hardening (2-4) under the current names first, then rename in one mechanical pass | 8 |
 
 ---
@@ -82,7 +82,7 @@ code and the libraries:
 | O3 | Our own writes (`destroy`) would overwrite a library's `update` | Yes, fully (4.1) | 4 |
 | O4 | Some library constructors assign `this.update = fn` | Residual, documented | 4.4 |
 | O5 | TypeScript: our augmentation conflicts with class declarations | Mostly a feature; one cast for three's `LOD` / `CubeCamera` | 5 |
-| O6 | Outside codebases with their own `update` methods stop compiling | Not removable; an adoption cost | 6 |
+| O6 | Outside codebases with their own `update` methods stop compiling | Reduced to warnings for MVT-shaped classes (6.2); an adoption cost otherwise | 6 |
 | O7 | A future library or web-platform version adds the name | Yes, fails loudly at load (4.2) | 4.2 |
 | O8 | The `on` prefix says "the system calls this, not you" | Mitigated by docs; optional lint | 7.1 |
 | O9 | In JSX a function-valued attribute reads as a getter | Resolved by keeping `on` in JSX | 7.2 |
@@ -220,7 +220,7 @@ used here.
 
 ## 6. Outside codebases: the published packages (O6)
 
-This is the one cost the design cannot remove, so it is set out on its own.
+This is the cost the design cannot fully remove, so it is set out on its own. Section 6.2 reduces it.
 
 **In this repo it costs nothing:** there are no classes (style rule 4), and no
 clashing library class is used.
@@ -243,11 +243,121 @@ Options:
 - **(b) Keep `onUpdate` in the published packages only.** Then this repo's
   docs and the packages' docs would disagree, which undoes the point.
 - **(c) Let each renderer choose its method names** (an option to
-  `installMethods`). This costs little once 4.1 is in, because the core would
-  never read the names. It is useful later for a renderer whose base node
-  class already has `update`, where 4.2 would refuse the install. (Phaser's
+  `installMethods`). It is useful later for a renderer whose base node class
+  already has `update`, where 4.2 would refuse the install. (Phaser's
   `GameObject.update` is an example; from memory, not checked.) Keep it as a
-  fallback for such a renderer, not as a way to split the vocabulary.
+  fallback for such a renderer, not as a way to split the vocabulary. It is
+  not a fix for existing class-based views (6.2).
+
+### 6.1 What happens to existing class-based views
+
+Two common shapes, checked with `tsc` and with the accessor's runtime
+semantics, assuming 4.1-4.3 are in place:
+
+| | `class FooView extends Container { update(deltaMs) {...} }` | `class BarView extends Container { readonly update = (deltaMs) => {...} }` |
+| --- | --- | --- |
+| Type check | **Error** TS2425 (property in base, method in subclass) | Compiles (`readonly` is allowed) |
+| Where `update` lives | `FooView.prototype`, in front of the accessor | Define semantics (`useDefineForClassFields`, the default from target ES2022): an own property on the instance. `[[Set]]` semantics: through the setter, into the backing field |
+| Scene passes | Never call it: the backing field is empty | Define: never call it, and in dev the shadowing assertion **throws** on the first scene pass over a tree containing it. `[[Set]]`: **call it every frame** |
+| The game's own hand-forwarded `fooView.update(dt)` | Unchanged | Unchanged |
+| Net effect | Works as before if the build does not type-check (Vite strips types). Silently left out if the author expects `updateScene` to run it | Define: dev crash, production silently left out. `[[Set]]`: updated **twice per frame** while the hand-forwarding remains |
+
+The `[[Set]]` case is the dangerous one: no error, and presentation state
+advancing at double speed. The define case fails loudly, but all at once:
+one such class anywhere under `app.stage` stops `refreshScene` in dev.
+
+With the current names, neither class interacts with the scene passes at
+all, and a game can adopt `onUpdate` one view at a time.
+
+For an adopter the fix is the same for both: remove the hand-forwarding, and
+either assign `this.update = ...` in the constructor (which goes through the
+setter under either semantics) or rename the method.
+
+A possible addition to 4.3: in dev, also warn once per class when a walked
+node's `update` resolves to something other than the accessor (the `FooView`
+case). It would turn "silently left out" into a message, at the cost of also
+warning for `AnimatedSprite`, `ParticleContainer`, `LOD` and the helpers
+(open question 6).
+
+### 6.2 Helping existing classes
+
+**Option (c) does not help, unless the game chooses the names.** As written,
+(c) lets the renderer package choose its names; a game using
+`@mvtjs/pixi` would still get `update`. Moving the choice to the game
+(say, `onUpdate` for a game full of `FooView`s) would leave its classes
+untouched, but it has three costs:
+
+- **Timing.** The names must be known before any method is assigned. Today
+  the install runs when the module loads, and 001 removed every other ordering
+  rule. So each set of names would need its own entry point
+  (`@mvtjs/pixi`, `@mvtjs/pixi/on-names`), or an explicit install call made
+  before any view is built.
+- **Types.** The augmentation is static. Each entry point would ship its own,
+  or the game would write one from an exported generic type.
+- **Interop, the decisive one.** Any view written against the MVT names, such
+  as a shared widget, the site's common views, or an example from the docs,
+  assigns `view.update = ...`. In a game installed with other names, that is
+  a plain property on a `Container`. It never runs, and nothing reports it.
+  Avoiding that would need a function API for shared code
+  (`setUpdate(node, fn)`), which 022 section 9.2 rejected.
+
+That is option (b) plus a runtime failure mode. It would also mean all
+library code, not just the walk, must stop using the public names: the JSX
+base (`create-jsx.ts`), `<List>` and `<Switch>` read and write `onRefresh`
+directly today. That is harmless under 4.1 with fixed names, since `refresh`
+clashes with nothing, but it matters once names vary.
+
+**Declaring the members as methods in the augmentation does help.** Checked
+with `tsc`: with `update?(deltaMs: number): ...` and `refresh?(): ...`
+instead of property signatures:
+
+| Case | Property signatures (5) | Method signatures |
+| --- | --- | --- |
+| `FooView`: `update(deltaMs)` method | Error TS2425 | Compiles |
+| `BarView`: `readonly update = (deltaMs) => ...` | Compiles | Compiles |
+| A class with `update(ticker)`, `AnimatedSprite`, `LOD` | Error | Error, unchanged |
+| `c.update = (dt) => ...` (`dt` inferred as `number`), `c.update = undefined` | Compiles | Compiles |
+
+So an existing class whose `update` has the MVT shape keeps compiling, and
+the classes MVT rules out are still rejected. The cost is small: the
+augmentation needs a lint exception for `method-signature-style`, and method
+syntax checks parameters bivariantly. For example, a method declared with a
+narrower parameter than `number` would be accepted. The lint rule is there to
+prevent exactly that.
+
+With method signatures and 4.1-4.3, the legacy shapes behave like this:
+
+- **`FooView`** compiles and runs as before. The scene passes ignore it.
+  Open question 6's warning would say so, once per class.
+- **`BarView` with define semantics** compiles and runs as before, but in dev
+  the shadowing assertion throws. For an own property that is already present
+  when the node is first walked, a one-time warning would be enough. Such a
+  property was set in the constructor, before the node could be attached, so
+  no invalidation was lost. It is only ignored, the same as `FooView`.
+- **`BarView` with `[[Set]]` semantics** is still the hazard. Its field goes
+  through the setter, so it is a real scene method, and it runs twice per
+  frame while the game still forwards by hand. A plain assignment cannot be
+  told from a deliberate one. A dev-only check could catch the symptom
+  instead: in dev, the getter returns the method wrapped so that it warns
+  when it is called outside a scene pass. The scene passes read the backing
+  field (4.1), so they call it unwrapped. That catches hand-forwarding in
+  general (7.1), but it would also warn in unit tests that call a view's
+  `update` directly, and it makes `el.update === fn` false in dev only.
+
+Together, these bring a legacy game close to today's behaviour with
+`onUpdate`: its classes compile, run as before, and are left alone by the
+scene passes, with a message pointing at each one. Migrating a class then
+means removing its hand-forwarding and assigning its method through the
+accessor. For `FooView`, that means renaming the method, since an
+assignment to `this.update` on an instance whose class defines `update`
+never reaches the setter. For `BarView`, it means moving the field's
+initialiser into the constructor as `this.update = ...`.
+
+Not recommended: letting the scene passes call class-defined methods for
+classes that opt in (`adoptSceneMethods(FooView)`). It would work, but the
+loop would have to call methods with a receiver (`method.call(node, dt)`),
+since `FooView.update` uses `this`. It would also add a second way to define
+methods, built around classes, which the repo otherwise rules out.
 
 ## 7. The other objections
 
@@ -330,11 +440,22 @@ finding "every view's update step" by text search. That is minor.
 3. Backing-field names. `_mvtUpdate` is already the update walk, so
    `_mvtOnUpdate` becomes something like `_mvtUpdateMethod` /
    `_mvtRefreshMethod`.
-4. Is `PassiveSpine` a `Spine` subclass (so it keeps `Spine.update(dt)` on
-   its prototype, and must be wrapped to carry an MVT update), or a wrapper?
-   Also confirm `spine-pixi-v8`'s `update` signature.
+4. ~~Is `PassiveSpine` a `Spine` subclass?~~ Settled (2026-09-30): it
+   extends `Container` and has a `Spine`, so it has no class-defined `update`
+   and can carry `update` / `refresh` like any container. The inner `Spine`
+   is a leaf the scene passes never call (4.1).
 5. Is the typed lint rule of 7.1 wanted up front, or only if hand-forwarding
    reappears?
+6. Should dev mode warn once per class whose `update` shadows the accessor
+   (6.1)? It helps adopters with `FooView`-style classes and is noise for
+   library leaves such as `LOD`.
+7. Should the augmentation use method signatures (6.2), at the cost of a lint
+   exception and bivariant parameter checks, so that existing classes with an
+   MVT-shaped `update` keep compiling?
+8. Should the shadowing assertion become a one-time warning for an own
+   property already present when a node is first walked (6.2)?
+9. Is a dev-only "called outside a scene pass" warning (6.2, 7.1) worth its
+   noise in unit tests and its dev-only identity difference?
 
 ## 10. Settled here
 
@@ -351,5 +472,7 @@ Do not reopen without new information:
   would catch one at load.
 - **The name itself has no runtime cost.** 4.1 removes an accessor call from
   list rebuilds.
+- **`PassiveSpine` is unaffected.** It extends `Container` and has a
+  `Spine`; it is not a `Spine`.
 - **Not verified here:** Spine and Lit (neither is installed), and Phaser's
   `GameObject.update` (from memory).
