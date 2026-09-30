@@ -40,8 +40,8 @@ aside), and `vnext-jsx` can move to it.
 | 1 | Barrel lint rule fix: escape the `#` allow-list entries, so a violation is reported instead of crashing ESLint (011 section 11.1). Also this task | 3 | Done: `c3fddbf` |
 | 2 | Split `common/`: renderer-agnostic helpers to `src/mvt-utils/`, `texture-registry` and `frame-stats` to `pixi-mvt`; the `#mvt-utils` alias; every importer, the benchmark driver's stub, docs | ~100 | Done: `9a1aa58` |
 | 3 | Generic scene passes: `SceneNode`, `SKIP_DESCENDANTS`, `read-counter` and `createScenePasses` (with 012's cached methods) in the base; pixi-mvt rebuilt on them | ~15 | Done: `755ecab` |
-| 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | In review |
-| 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | |
+| 4 | JSX base (`src/mvt-utils/jsx/`) and conformance suite; Pixi's JSX target moved to `src/pixi-mvt/jsx/`. The `#pixi-jsx` alias points at the new place, so importers do not change | ~30 | Done: `44b0287` |
+| 5 | Rename the alias `#pixi-jsx` to `#pixi-mvt/jsx` in pragmas, imports and docs; the barrel rule's `jsx` subpaths | ~40 | In review |
 | 6 | Build-time precompiler: plugin, manifests, generator and drift tests, Pixi's manifest, the base's `registerRefreshFactories` hook, the opt-in in `vite.config.ts` | ~14 | |
 | 7 | `jsx-refresh` benchmark suite | ~4 | |
 | 8 | three.js renderer: `src/three-mvt/` (scene passes, destroy registry, pointer picker, JSX target, manifest); `three` dependencies | ~22 | |
@@ -104,3 +104,5 @@ the reference, carve-outs aside.
   skill, in both trees. Then `createList({ target })` and
   `createSwitch({ target })` too (`ListOptions<N>`, `SwitchOptions<N>`);
   `createScenePasses(tree)` already takes a named-params object.
+- 2026-09-30: Step 4 committed (`44b0287`). Step 5 in review: 58 uses of
+  `#pixi-jsx` in 33 files renamed; 30 of them now match the reference.

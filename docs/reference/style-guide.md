@@ -402,7 +402,7 @@ Each query binding's type says whether the view supports its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `#pixi-mvt/jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice. Declare `T` only as an honest
 statement that the view does not support the value changing, and relax it
@@ -436,7 +436,7 @@ uses, and each view can choose whichever suits it. The same ship view both
 ways:
 
 ```tsx
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 export function ShipView(bindings: ShipViewBindings): Container {
     return (
@@ -465,7 +465,7 @@ export function ShipView(bindings: ShipViewBindings): Container {
 
 | | Tends to suit | Why |
 | --- | --- | --- |
-| **JSX** (`.tsx`, starting `/** @jsxImportSource #pixi-jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
+| **JSX** (`.tsx`, starting `/** @jsxImportSource #pixi-mvt/jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
 | **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one change check gating many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.2-1.7x as much per property as a hand-written one ([measurements](../building-with-mvt/performance/measurements.md)), which matters only at that scale |
 
 Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi

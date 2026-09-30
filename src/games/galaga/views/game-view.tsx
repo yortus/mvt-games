@@ -1,8 +1,8 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import type { Container, Graphics } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#common';
-import { List } from '#pixi-jsx';
+import { List } from '#pixi-mvt/jsx';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { ShipView } from './ship-view';

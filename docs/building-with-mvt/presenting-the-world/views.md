@@ -185,7 +185,7 @@ builds the same Pixi objects from tags, and writes the refresh step for you.
 Here is the bullet view again, with a JSX body:
 
 ```tsx
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 function BulletView(bindings: BulletViewBindings): Container {
     return (

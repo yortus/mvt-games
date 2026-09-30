@@ -112,7 +112,7 @@ as a JSX tag and as a plain call. A top-level view takes the model in its
 bindings: `GameView({ model })`. The body may be JSX (`.tsx`) or plain
 TypeScript (`.ts`), whichever suits the view; neither is required. Each query
 binding's type says what the view supports: `() => T` for changing state, `T`
-for a value read once at construction, `ValueOrGetter<T>` (from `#pixi-jsx`)
+for a value read once at construction, `ValueOrGetter<T>` (from `#pixi-mvt/jsx`)
 for either. Never declare a function and read it only once. Full rules:
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings);
 how to write one: [skill-mvt-view.md](skill-mvt-view.md).

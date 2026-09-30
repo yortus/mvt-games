@@ -83,7 +83,7 @@ export default tseslint.config(
                         // violation instead of reporting it (proposal 011 section 11.1)
                         '\\#common',
                         '\\#mvt-utils',
-                        '\\#pixi-jsx',
+                        '\\#pixi-mvt/jsx',
                         // Allow a package-shaped directory's public `jsx` subpath,
                         // which each would export as `./jsx` once it is a package
                         '**/mvt-utils/jsx',

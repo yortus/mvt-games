@@ -1,4 +1,4 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import type { Container } from 'pixi.js';
 

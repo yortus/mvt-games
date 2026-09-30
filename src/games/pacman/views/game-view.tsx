@@ -1,8 +1,8 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import type { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#common';
-import { List } from '#pixi-jsx';
+import { List } from '#pixi-mvt/jsx';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, GHOST_COLORS } from './view-constants';

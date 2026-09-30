@@ -1,8 +1,8 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import { type Container, Texture } from 'pixi.js';
 import { memoiseLast } from '#mvt-utils';
-import { List } from '#pixi-jsx';
+import { List } from '#pixi-mvt/jsx';
 import { textures } from '../data';
 
 // ---------------------------------------------------------------------------

@@ -31,7 +31,7 @@
 
 Exports (bindings interface, view function) go above all internals. A view
 with a JSX body is a `.tsx` file whose first line is
-`/** @jsxImportSource #pixi-jsx */`.
+`/** @jsxImportSource #pixi-mvt/jsx */`.
 
 **[project convention]** The full convention is in
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings),
@@ -127,7 +127,7 @@ its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `#pixi-jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `#pixi-mvt/jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice; declare `T` only as an honest
 statement of a limitation. Widening `T` to `ValueOrGetter<T>` later relaxes
@@ -164,7 +164,7 @@ cannot tell which a view uses, and each view can choose whichever suits it.
 The same rocket view both ways:
 
 ```tsx
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 export function RocketView(bindings: RocketViewBindings): Container {
     const { idle, launching } = textures.get().rocket;
@@ -214,7 +214,7 @@ frame.
 
 ### A JSX Body
 
-A `.tsx` file whose first line is `/** @jsxImportSource #pixi-jsx */`. How
+A `.tsx` file whose first line is `/** @jsxImportSource #pixi-mvt/jsx */`. How
 attributes behave:
 
 - **A plain value is applied once.** A function is re-read every refresh.
@@ -482,7 +482,7 @@ once, when the element is built, not per frame.
 A reusable bullet view, shown in a `<List>` above, with a JSX body:
 
 ```tsx
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import type { Container } from 'pixi.js';
 import { textures } from '../data';

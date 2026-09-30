@@ -1,4 +1,4 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { PERFMON_WIDTH, PerfmonView } from '#common';

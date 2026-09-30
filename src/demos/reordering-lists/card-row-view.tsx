@@ -1,7 +1,7 @@
-/** @jsxImportSource #pixi-jsx */
+/** @jsxImportSource #pixi-mvt/jsx */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
-import { List } from '#pixi-jsx';
+import { List } from '#pixi-mvt/jsx';
 import type { CardRowModel } from './card-row-model';
 import { createArrayRowViewModel } from './array-row-view-model';
 import { createSlotRowViewModel } from './slot-row-view-model';

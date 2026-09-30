@@ -148,7 +148,7 @@ passing something the view accepts.
 - **A value the view does not support changing** is `T`, as a stated
   limitation, until supporting change is worth the work.
 - **Views reused with both fixed and changing values**, like the shared views
-  in `src/common/`, can take `ValueOrGetter<T>` from `#pixi-jsx`, which accepts
+  in `src/common/`, can take `ValueOrGetter<T>` from `#pixi-mvt/jsx`, which accepts
   a fixed value or a function. The JSX runtime's own attributes work this way:
   `x={12}` is set once, `x={() => model.x}` every frame.
 
