@@ -1,0 +1,183 @@
+{
+    "suite": "jsx-refresh",
+    "environment": {
+        "date": "2026-09-30",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "22.11.0",
+        "v8": "12.4.254.21-node.21",
+        "pixi": "8.21.0",
+        "solid": "1.9.15"
+    },
+    "runs": 3,
+    "results": [
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 1000,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    13.453371868978824,
+                    13.692594339622643,
+                    14.19251467710372
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 1000,
+                "approach": "generated"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    16.528175519630487,
+                    16.623120728929386,
+                    17.30677200902934
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 1000,
+                "approach": "fallback"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    25.406766917293243,
+                    26.09015784586817,
+                    26.222253000923324
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 10000,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    205.9322580645165,
+                    209.15882352941188,
+                    216.24210526315767
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 10000,
+                "approach": "generated"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    251.65730337078693,
+                    280.9522222222224,
+                    291.93186813186907
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "uniform",
+                "count": 10000,
+                "approach": "fallback"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    377.23380281690106,
+                    389.1507246376813,
+                    424.0785714285705
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 1000,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    29.34232008592911,
+                    30.290021008403347,
+                    30.470230607966403
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 1000,
+                "approach": "generated"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    32.45445897740777,
+                    32.688901734104086,
+                    35.12979737783077
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 1000,
+                "approach": "fallback"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    53.9187969924812,
+                    54.81334622823997,
+                    56.95138888888904
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 10000,
+                "approach": "hand-written"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    394.10882352941326,
+                    406.94393939393916,
+                    414.5046875000009
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 10000,
+                "approach": "generated"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    565.782978723405,
+                    576.6022727272725,
+                    589.7574468085138
+                ]
+            }
+        },
+        {
+            "params": {
+                "scene": "mixed",
+                "count": 10000,
+                "approach": "fallback"
+            },
+            "metrics": {
+                "usPerFrame": [
+                    1523.6999999999985,
+                    1555.5947368421034,
+                    1571.9833333333402
+                ]
+            }
+        }
+    ]
+}

@@ -1,5 +1,4 @@
 import { readCounter, type RefreshMethod, SKIP_DESCENDANTS } from '..';
-import type { WriteKind } from './attributes';
 import { REFRESH_SOURCE_VERSION, refreshFactorySource, refreshShapeKey, type ShapeBinding } from './refresh-source';
 
 // ---------------------------------------------------------------------------
@@ -108,13 +107,11 @@ export function canGenerateCode(): boolean {
  * (`options.canGenerateCode`, or by default, if {@link canGenerateCode}). Where
  * neither is available, the element gets the closure fallback.
  *
- * Generated code is several times faster. Measured by the `jsx-refresh`
- * benchmark suite on Pixi, per frame at 1,000 and 10,000 elements, the
- * fallback is 6x to 16x slower (proposal 022 section 7.5.1). Its call sites
- * see every attribute's functions, so V8 inlines none of them, and an
- * attribute defined by a property is written with a dynamic keyed store
- * (`el[name] = value`), which V8 handles slowly when it hits a setter, as
- * Pixi's `x` does. It is not allocation: garbage collections were the same.
+ * Generated code is faster. Measured by the `jsx-refresh` benchmark suite on
+ * Pixi, per frame at 1,000 and 10,000 elements, the fallback is 1.4x to 2.6x
+ * slower (task 025): V8 inlines each generated method's getters and writes,
+ * but none of the fallback's, whose call sites are shared by every element
+ * with the same number of bindings.
  */
 export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBuilder {
     const name = options.name;
@@ -242,7 +239,7 @@ function probeCodeGeneration(): boolean {
         if (DEV) {
             console.warn(
                 '[mvt-utils/jsx] This page\'s Content Security Policy blocks new Function, so JSX bindings that were not '
-                + 'precompiled are refreshed by a slower fallback (6-16x slower per bound element on Pixi, measured). '
+                + 'precompiled are refreshed by a slower fallback (1.4-2.6x slower per bound element on Pixi, measured). '
                 + 'Precompile them with the Vite plugin, add \'unsafe-eval\' to script-src, or define '
                 + '__MVT_JSX_EVAL__ as false to skip this check and this warning.',
             );
@@ -252,55 +249,175 @@ function probeCodeGeneration(): boolean {
 }
 
 /**
- * The fallback: one refresh body, shared by every element, looping over
- * arrays. The same writes and the same read counts as the generated methods,
- * several times slower (see {@link createRefreshBuilder}).
+ * The fallback, for pages that forbid `new Function`: closures only, the same
+ * writes and the same read counts as the generated methods. Measured by the
+ * `jsx-refresh` suite on Pixi, 1.4x to 2.6x slower than generated code
+ * (task 025). Two things keep it close:
+ *
+ * - **Each binding's writer.** An attribute defined by a property is written
+ *   through the property's setter, found once on the element's prototype
+ *   chain ({@link setterOf}) and called directly. Assigning `el[name] = value`
+ *   instead, one keyed store for every property of every element, made the
+ *   first fallback 6-16x slower than generated code: V8 handles it slowly
+ *   when it reaches an accessor, as Pixi's `x` is.
+ * - **A call site per position.** The refresh methods for up to six bindings
+ *   are written out ({@link writeFrom}), so each binding's getter and writer
+ *   are called from their own call sites, rather than all from one in a loop.
  */
 function buildFallback(el: unknown, bindings: readonly Binding[], hasVisible: boolean): RefreshMethod {
     const count = bindings.length;
-    const getters: (() => unknown)[] = [];
-    const applies: ((el: unknown, value: unknown) => void)[] = [];
-    const kinds: WriteKind[] = [];
-    const lastValues: unknown[] = [];
-    const lastNumbers = new Float64Array(count).fill(NaN);
+    let numberCount = 0;
     for (let i = 0; i < count; i++) {
-        getters.push(bindings[i].getter);
-        applies.push(bindings[i].apply);
-        kinds.push(bindings[i].kind);
-        lastValues.push(UNSET);
+        if (bindings[i].kind === 'on-change-number') numberCount++;
     }
+    const lastNumbers = new Float64Array(numberCount).fill(NaN);
+    const getters: (() => unknown)[] = [];
+    const writers: Writer[] = [];
+    let numberIndex = 0;
+    for (let i = 0; i < count; i++) {
+        const binding = bindings[i];
+        getters.push(binding.getter);
+        writers.push(writerOf(el, binding, lastNumbers, binding.kind === 'on-change-number' ? numberIndex++ : -1));
+    }
+    if (!hasVisible) return writeFrom(el, getters, writers, 0, count);
 
+    // `visible` first: when false, nothing else is read, and one read is counted
+    const isVisible = getters[0];
+    const writeVisible = writers[0];
+    const writeRest = writeFrom(el, getters, writers, 1, 0);
+    const restReads = count - 1;
     return () => {
-        let first = 0;
-        if (hasVisible) {
-            if (readCounter.isCounting) readCounter.count++;
-            if (!write(0)) return SKIP_DESCENDANTS;
-            if (readCounter.isCounting) readCounter.count += count - 1;
-            first = 1;
-        }
-        else if (readCounter.isCounting) {
-            readCounter.count += count;
-        }
-        for (let i = first; i < count; i++) write(i);
+        if (readCounter.isCounting) readCounter.count++;
+        const value = isVisible();
+        writeVisible.call(el, value);
+        if (!value) return SKIP_DESCENDANTS;
+        if (readCounter.isCounting) readCounter.count += restReads;
+        writeRest();
     };
+}
 
-    /** Reads binding `i` and writes it as its kind says. Returns the value read. */
-    function write(i: number): unknown {
-        const value = getters[i]();
-        const kind = kinds[i];
-        if (kind === 'every-frame') {
-            applies[i](el, value);
-        }
-        else if (kind === 'on-change') {
-            if (value !== lastValues[i]) {
-                lastValues[i] = value;
-                applies[i](el, value);
+/**
+ * Writes one binding's value to the element it was made for. Called as
+ * `writer.call(el, value)`, so that a property's setter can be the writer
+ * itself; any other writer ignores the receiver, and closes over the element.
+ */
+type Writer = (value: unknown) => void;
+
+/**
+ * The writer for one binding on `el`, as its kind says: every frame, or on
+ * change, keeping the last value in a closure, or for a number, in
+ * `lastNumbers[numberIndex]`, unboxed, as generated code keeps it.
+ */
+function writerOf(el: unknown, binding: Binding, lastNumbers: Float64Array, numberIndex: number): Writer {
+    const apply = binding.apply;
+    const setter = binding.property === undefined ? undefined : setterOf(el, binding.property);
+    const write: Writer = setter ?? ((value) => apply(el, value));
+    if (binding.kind === 'every-frame') return write;
+    if (binding.kind === 'on-change') {
+        let last: unknown = UNSET;
+        return (value) => {
+            if (value !== last) {
+                last = value;
+                write.call(el, value);
             }
+        };
+    }
+    return (value) => {
+        if (value !== lastNumbers[numberIndex]) {
+            lastNumbers[numberIndex] = value as number;
+            write.call(el, value);
         }
-        else if (value !== lastNumbers[i]) {
-            lastNumbers[i] = value as number;
-            applies[i](el, value);
+    };
+}
+
+/**
+ * The setter that assigning `el[property]` would call, found once per
+ * prototype and property: the first definition of `property` on the
+ * prototype chain, if it is an accessor with a setter. `undefined` for a
+ * data property, one defined on the element itself, or a getter alone; those
+ * are assigned through the attribute's `apply`, as before.
+ */
+function setterOf(el: unknown, property: string): Writer | undefined {
+    const prototype: unknown = Object.getPrototypeOf(el);
+    if (typeof prototype !== 'object' || prototype === null || Object.hasOwn(el as object, property)) return undefined;
+    let setters = settersByPrototype.get(prototype);
+    if (setters === undefined) {
+        setters = new Map();
+        settersByPrototype.set(prototype, setters);
+    }
+    if (!setters.has(property)) setters.set(property, findSetter(prototype, property));
+    return setters.get(property);
+}
+
+/** Setters found by {@link setterOf}, by prototype, then property; `undefined` where there is none. */
+const settersByPrototype = new WeakMap<object, Map<string, Writer | undefined>>();
+
+function findSetter(prototype: object, property: string): Writer | undefined {
+    for (let o: object | null = prototype; o !== null; o = Object.getPrototypeOf(o) as object | null) {
+        const descriptor = Object.getOwnPropertyDescriptor(o, property);
+        if (descriptor !== undefined) return descriptor.set as Writer | undefined;
+    }
+    return undefined;
+}
+
+/**
+ * A method that reads and writes bindings `first` onward, counting `reads`
+ * reads. Written out for up to six bindings, so each has its own call sites;
+ * a loop beyond that.
+ */
+function writeFrom(el: unknown, getters: readonly (() => unknown)[], writers: readonly Writer[], first: number, reads: number): () => undefined {
+    const g0 = getters[first], g1 = getters[first + 1], g2 = getters[first + 2];
+    const g3 = getters[first + 3], g4 = getters[first + 4], g5 = getters[first + 5];
+    const w0 = writers[first], w1 = writers[first + 1], w2 = writers[first + 2];
+    const w3 = writers[first + 3], w4 = writers[first + 4], w5 = writers[first + 5];
+    const c = readCounter;
+    switch (getters.length - first) {
+        case 0: return () => undefined;
+        case 1: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+        };
+        case 2: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+            w1.call(el, g1());
+        };
+        case 3: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+            w1.call(el, g1());
+            w2.call(el, g2());
+        };
+        case 4: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+            w1.call(el, g1());
+            w2.call(el, g2());
+            w3.call(el, g3());
+        };
+        case 5: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+            w1.call(el, g1());
+            w2.call(el, g2());
+            w3.call(el, g3());
+            w4.call(el, g4());
+        };
+        case 6: return () => {
+            if (c.isCounting) c.count += reads;
+            w0.call(el, g0());
+            w1.call(el, g1());
+            w2.call(el, g2());
+            w3.call(el, g3());
+            w4.call(el, g4());
+            w5.call(el, g5());
+        };
+        default: {
+            const count = getters.length;
+            return () => {
+                if (c.isCounting) c.count += reads;
+                for (let i = first; i < count; i++) writers[i].call(el, getters[i]());
+            };
         }
-        return value;
     }
 }

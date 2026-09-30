@@ -92,14 +92,15 @@ falling-sand experiments were run by 020, now archived. 023 collects what
 
 ### Active
 
-(none)
+| # | Task | Priority | Created |
+| --- | --- | --- | --- |
+| 025 | [Keep the JSX Precompiler, or Ship Two Builds?](tasks/active/025-precompiler-or-two-builds.md) | medium | 2026-09-30 |
 
 ### Backlog
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
 | 017 | [Miscellaneous Loose Ends](tasks/backlog/017-misc-loose-ends.md) | medium | 2026-09-26 |
-| 025 | [Keep the JSX Precompiler, or Ship Two Builds?](tasks/backlog/025-precompiler-or-two-builds.md) | medium | 2026-09-30 |
 | 026 | [Demos Screen for Every Renderer](tasks/backlog/026-demos-screen-for-every-renderer.md) | medium | 2026-09-30 |
 
 ## Archive

@@ -129,7 +129,7 @@ frame down into model and refresh.
 
 | Model, view | Settled, per frame | Flipping, per frame |
 | --- | --- | --- |
-| objects, sprites (polled) | 2.8 ms | 4.5 ms |
+| objects, sprites (polled) | 1.8 ms | 3.3 ms |
 | arrays, pixels (polled) | 90 µs | 1.0 ms |
 | store, Solid pixels (pushed) | 4 µs | 185 ms |
 | store, Solid sprites (pushed) | 4 µs | 213 ms |
@@ -141,8 +141,8 @@ about 300 ns to 1 µs each, against a couple of nanoseconds for a plain
 array, and the rules make about 40 of them per moving grain. Solid's
 effects add a few microseconds per changed grain on top. Leaving the store
 aside, a pushed change costs about 3 µs against a few nanoseconds (pixels)
-or about 140 ns (sprites) to poll a grain, so pushing wins only while fewer
-than about 0.15% or 5% of grains change per frame. See
+or about 90 ns (sprites) to poll a grain, so pushing wins only while fewer
+than about 0.15% or 3% of grains change per frame. See
 [020](../../../notes/archive/020-falling-sand-variants.md), section 7.
 
 **`Grains.length` is a field, not a getter.** V8 keeps an object literal

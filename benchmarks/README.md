@@ -38,8 +38,8 @@ include).
 | `html-scene-passes` | In headless Chrome: the DOM's `refreshScene` against a naive walk, steady and with the tree changing every frame, and a JSX list on one renderer (HTML or three.js) alone and after one on the other has run in the same page |
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
-| `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
-| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count |
+| `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection, and `refreshScene` with JSX bindings refreshed by generated code and by the eval-free fallback |
+| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count. Also the demo as it ships up to 20,000 grains, with JSX bindings refreshed by the eval-free fallback |
 
 ## Layout
 
@@ -50,6 +50,7 @@ benchmarks/
 │   ├── suite.ts        Suite, Case and TableSpec types
 │   ├── driver.ts       Bundles a suite's measured file, runs each case in its own process (or headless Chrome page), prints and saves tables
 │   ├── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
+│   ├── refresh-path.ts Used inside a case's process: selects the JSX runtime's generated code or its eval-free fallback
 │   └── text-measurement.ts  Lets Pixi measure text under Node, for games and demos that read a text's size
 ├── shared/             Scenes used by more than one suite
 ├── repro/              Standalone reproducers of costs not yet explained; not part of any suite

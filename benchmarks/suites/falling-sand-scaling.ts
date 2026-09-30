@@ -20,6 +20,8 @@ const VARIANTS = [
     'store-sprites-polled', 'store-pixels-polled',
 ];
 const GRAINS = [1000, 10000, 20000, 50000, 200000];
+/** Grain counts for the fallback cases: the demo's small tank, which it ships with. */
+const FALLBACK_GRAINS = [1000, 10000, 20000];
 /** A store steps at about 15 µs per moving grain, a second a frame at 200,000 grains. */
 const MAX_STORE_GRAINS = 20000;
 
@@ -35,18 +37,27 @@ export const fallingSandScalingSuite: Suite = {
     name: 'falling-sand-scaling',
     description: 'the falling-sand demo headless, from 1,000 to 200,000 grains, settled and flipping, per model and view variant',
     entry: 'falling-sand-scaling.case.ts',
-    cases: combinations({
-        scenario: ['settled', 'flipping'],
-        variant: VARIANTS,
-        grains: GRAINS,
-    })
-        .filter((params) => !String(params.variant).startsWith('store') || Number(params.grains) <= MAX_STORE_GRAINS)
-        .map((params) => ({ params })),
+    cases: [
+        ...combinations({
+            scenario: ['settled', 'flipping'],
+            variant: VARIANTS,
+            grains: GRAINS,
+            refresh: ['generated'],
+        }).filter((params) => !String(params.variant).startsWith('store') || Number(params.grains) <= MAX_STORE_GRAINS),
+        // The demo as it ships, with JSX bindings refreshed by the fallback
+        // that pages forbidding `new Function` get
+        ...combinations({
+            scenario: ['settled', 'flipping'],
+            variant: ['objects-sprites'],
+            grains: FALLBACK_GRAINS,
+            refresh: ['fallback'],
+        }),
+    ].map((params) => ({ params })),
     tables: [
         {
             id: 'settled-total',
             title: 'Every grain settled: total time per frame, by variant',
-            where: { scenario: 'settled' },
+            where: { scenario: 'settled', refresh: 'generated' },
             rows: ['grains'],
             metric: 'totalUs',
             unit: 'µs',
@@ -55,7 +66,7 @@ export const fallingSandScalingSuite: Suite = {
         {
             id: 'flipping-total',
             title: 'Flipping every 3 seconds: total time per frame, by variant',
-            where: { scenario: 'flipping' },
+            where: { scenario: 'flipping', refresh: 'generated' },
             rows: ['grains'],
             metric: 'totalUs',
             unit: 'µs',
@@ -64,20 +75,31 @@ export const fallingSandScalingSuite: Suite = {
         {
             id: 'settled',
             title: 'Every grain settled: time per frame',
-            where: { scenario: 'settled' },
+            where: { scenario: 'settled', refresh: 'generated' },
             rows: ['variant', 'grains'],
             metrics: METRICS,
         },
         {
             id: 'flipping',
             title: 'Flipping every 3 seconds: time per frame',
-            where: { scenario: 'flipping' },
+            where: { scenario: 'flipping', refresh: 'generated' },
             rows: ['variant', 'grains'],
             metrics: METRICS,
         },
+        {
+            id: 'refresh-paths',
+            title: 'Objects, sprites: `refreshScene` time per frame, with JSX bindings refreshed by generated code and by the fallback for pages that forbid it',
+            where: { variant: 'objects-sprites' },
+            rows: ['scenario', 'grains'],
+            metric: 'refreshUs',
+            unit: 'µs',
+            column: 'refresh',
+        },
     ],
-    titles: { grains: 'Grains', variant: 'Model, view' },
+    titles: { grains: 'Grains', variant: 'Model, view', scenario: 'Scenario' },
     labels: {
+        refresh: { generated: 'Generated code', fallback: 'Fallback' },
+        scenario: { settled: 'Settled', flipping: 'Flipping' },
         grains: { 1000: '1,000', 10000: '10,000', 20000: '20,000', 50000: '50,000', 200000: '200,000' },
         variant: {
             'objects-sprites': 'objects, sprites',

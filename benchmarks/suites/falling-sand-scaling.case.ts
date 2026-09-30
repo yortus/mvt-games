@@ -3,7 +3,9 @@ import {
     createDemoModel, type DemoModel, DemoView, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
 } from '../../src/demos/falling-sand';
 import { countReads, refreshScene, updateScene } from '../../src/pixi-mvt';
+import { refreshMethodCounts } from '../../src/pixi-mvt/jsx';
 import { readParams, report } from '../harness/measure';
+import { checkRefreshPath, selectRefreshPath } from '../harness/refresh-path';
 
 // Measured file for the `falling-sand-scaling` suite: the falling-sand demo,
 // headless, with its tank filled to a given number of grains, run with one
@@ -22,6 +24,8 @@ import { readParams, report } from '../harness/measure';
 // scenario `settled`: every grain asleep; nothing in the tank moves.
 // scenario `flipping`: the tank flips every 3 seconds, so most grains are
 //   falling most of the time (and still for the half second of each flip).
+// refresh `generated` or `fallback`: how the JSX runtime refreshes bound
+//   elements, the grain sprites among them (see `selectRefreshPath`).
 //
 // Up to 20,000 grains fill the demo's small tank (27,360 cells); more fill
 // its large one (246,240 cells), where grains have further to fall.
@@ -36,6 +40,7 @@ const FRAME_MS = 1000 / 60;
 const CYCLE_FRAMES = 180;
 
 const params = readParams();
+selectRefreshPath(params.refresh);
 const grains = Number(params.grains);
 const scenario = String(params.scenario);
 if (scenario !== 'settled' && scenario !== 'flipping') throw new Error(`unknown scenario: ${scenario}`);
@@ -91,6 +96,7 @@ const readsPerFrame = countReads(() => {
     for (let f = 0; f < CYCLE_FRAMES; f++) frame();
 }) / CYCLE_FRAMES;
 
+checkRefreshPath(params.refresh, refreshMethodCounts);
 const toUs = (ms: number): number => (ms * 1000) / MEASURED_FRAMES;
 report({
     grains: model.grainCount,

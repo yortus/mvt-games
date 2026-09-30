@@ -76,7 +76,7 @@ Re-run the benchmarks on your own machine to get your own numbers; see
   per game object, `Object.values()`, array methods and recomputing unchanged values
   cost several to tens of times more, and the first three leave kilobytes of
   garbage per frame. `for...of` and returned tuples cost nothing extra.
-- **This repo's games take 5-11 µs per frame** before drawing.
+- **This repo's games take 5-10 µs per frame** before drawing.
 
 ## Keeping Containers in Step
 
@@ -307,7 +307,7 @@ the minute after.
 
 <!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
 
-- **Each game takes 5-11 µs per frame**, well under 0.1% of a 60fps frame,
+- **Each game takes 5-10 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
 - **`refreshScene` takes the larger share in most games**, since that is
@@ -316,10 +316,10 @@ the minute after.
   longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
-  settles, and its refresh takes about 170 µs, about 45 ns per container with
+  settles, and its refresh takes about 125 µs, about 33 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 2.8 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
+  about 1.8 ms at 20,000 grains. Boids takes about 0.4 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
   800 bytes. The hot path rules aim for none, and the allocation benchmark is a

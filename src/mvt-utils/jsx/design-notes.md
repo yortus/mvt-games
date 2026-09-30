@@ -167,16 +167,21 @@ generated with `new Function` and cached; each element's method assigns its
 properties inline and calls its apply functions directly, with no loop and
 no dispatch. Measured in 022 section 7.5 against the alternatives:
 
-- **The eval-free fallback is 6x to 16x slower on refresh**, on Pixi, by
-  the `jsx-refresh` suite (022 section 7.5.1). It is not allocation. Its call
-  sites see every attribute's functions, so V8 inlines none of them, and a
-  property is written with a dynamic keyed store (`el[name] = value`), which
-  V8 handles slowly when it reaches a setter. Doing that store inline rather
-  than through a call was tried, and changed nothing. With an apply function
-  written per attribute, a scratch benchmark measured 2.3x to 4.9x, but
-  those are what make generated code slow on mixed scenes (section 6).
-- **Per-attribute step closures** recover part of that, and only with a
-  factory written by hand per attribute. Not used.
+- **The eval-free fallback is 1.4x to 2.6x slower on refresh**, on Pixi,
+  by the `jsx-refresh` suite (task 025). It writes a property through the
+  property's setter, found once per prototype on the element's prototype
+  chain and called directly, and it has a refresh method written out for
+  each number of bindings up to six, so each binding has its own call
+  sites. Its first version wrote a property with a keyed store
+  (`el[name] = value`), shared by every property of every element, which V8
+  handles slowly when it reaches a setter, as Pixi's `x` is: 6x to 16x
+  slower than generated code (022 section 7.5.1). What remains is inlining:
+  V8 inlines each generated method's getters and writes, and none of the
+  fallback's, whose call sites every element with the same number of
+  bindings shares.
+- **A step closure per binding**, specialised by write kind, gained 5% on
+  its own, and 1.5x less than the written-out methods once writes went
+  through setters (task 025). Not used.
 - **Apply calls** cost 1-3% on a scene of one element shape, and much more
   on a scene of many (section 6). Hence property names wherever they fit.
 
