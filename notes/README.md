@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**022**.
+**025**.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
@@ -86,7 +86,9 @@ falling-sand experiments were run by 020, now archived.
 
 ### Active
 
-(none)
+| # | Task | Priority | Created |
+| --- | --- | --- | --- |
+| 024 | [Merge 022's Changes in Reviewed Steps](tasks/active/024-merge-022-in-steps.md) | high | 2026-09-30 |
 
 ### Backlog
 

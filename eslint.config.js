@@ -77,9 +77,12 @@ export default tseslint.config(
                         'solid-js',
                         'solid-js/**',
                         'pixi-solid',
-                        // Allow project-level import-map aliases
-                        '#common',
-                        '#pixi-jsx',
+                        // Allow project-level import-map aliases. Escaped: the
+                        // rule compiles each entry with minimatch, which reads a
+                        // leading `#` as a comment, and then crashes on the first
+                        // violation instead of reporting it (proposal 011 section 11.1)
+                        '\\#common',
+                        '\\#pixi-jsx',
                     ],
                 },
             ],
