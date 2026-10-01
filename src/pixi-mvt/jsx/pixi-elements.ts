@@ -1,18 +1,19 @@
-import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
-import { attributesOf, defineElements, element, event } from '../../mvt-utils/jsx';
+import { attributesOf, defineElements, element, event } from '#mvt-utils/jsx';
 
 // ---------------------------------------------------------------------------
 // Elements
 // ---------------------------------------------------------------------------
 
-// Plain assignments name their property, which generated refresh methods
-// assign inline; see `attributesOf`. The rest are apply functions.
+// Plain assignments name their property, which refresh methods assign
+// directly; see `attributesOf`. The rest are apply functions.
 
 const container = attributesOf<Container>();
-const anchored = attributesOf<Sprite | Text>();
-const sprite = attributesOf<Sprite>();
-const text = attributesOf<Text>();
+const anchored = attributesOf<Sprite | Text | BitmapText | HTMLText | TilingSprite | NineSliceSprite>();
+const textured = attributesOf<Sprite | TilingSprite | NineSliceSprite>();
+const texts = attributesOf<Text | BitmapText | HTMLText>();
+const tiling = attributesOf<TilingSprite>();
 const graphics = attributesOf<Graphics>();
 
 /** Attributes every Pixi element accepts. */
@@ -56,6 +57,21 @@ const anchorAttributes = {
     anchorY: anchored.fixed((e, v: number) => { e.anchor.y = v; }),
 };
 
+/** Attributes of sprites of every kind. */
+const texturedAttributes = {
+    texture: textured.onChange('texture'),
+    tint: textured.onChange('tint'),
+    width: textured.onChangeNumber('width'),
+    height: textured.onChangeNumber('height'),
+};
+
+/** Attributes of text of every kind. */
+const textAttributes = {
+    text: texts.onChange('text'),
+    tint: texts.onChange('tint'),
+    style: texts.onChange((e, v: Record<string, unknown>) => { Object.assign(e.style, v); }),
+};
+
 /**
  * Pixi's intrinsic elements. Each attribute says how it is written: `fixed`
  * takes only a value; `everyFrame` writes a getter's result every frame, for
@@ -69,16 +85,34 @@ export const pixiElements = defineElements({
     sprite: element(() => new Sprite(), {
         ...containerAttributes,
         ...anchorAttributes,
-        texture: sprite.onChange('texture'),
-        tint: sprite.onChange('tint'),
-        width: sprite.onChangeNumber('width'),
-        height: sprite.onChangeNumber('height'),
+        ...texturedAttributes,
+    }),
+    tilingSprite: element(() => new TilingSprite(), {
+        ...containerAttributes,
+        ...anchorAttributes,
+        ...texturedAttributes,
+        tilePositionX: tiling.everyFrame((e, v: number) => { e.tilePosition.x = v; }),
+        tilePositionY: tiling.everyFrame((e, v: number) => { e.tilePosition.y = v; }),
+    }),
+    nineSliceSprite: element(() => new NineSliceSprite({ texture: Texture.EMPTY }), {
+        ...containerAttributes,
+        ...anchorAttributes,
+        ...texturedAttributes,
     }),
     text: element(() => new Text(), {
         ...containerAttributes,
         ...anchorAttributes,
-        text: text.onChange('text'),
-        style: text.onChange((e, v: Record<string, unknown>) => { Object.assign(e.style, v); }),
+        ...textAttributes,
+    }),
+    bitmapText: element(() => new BitmapText(), {
+        ...containerAttributes,
+        ...anchorAttributes,
+        ...textAttributes,
+    }),
+    htmlText: element(() => new HTMLText(), {
+        ...containerAttributes,
+        ...anchorAttributes,
+        ...textAttributes,
     }),
     graphics: element(() => new Graphics(), {
         ...containerAttributes,

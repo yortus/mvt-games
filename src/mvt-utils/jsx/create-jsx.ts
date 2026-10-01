@@ -1,9 +1,10 @@
-import { type SceneNode, type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '..';
+import type { RefreshMethod, SceneNode, UpdateMethod } from '../scene-node';
+import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { MVT_ATTRIBUTE_KEYS } from './attributes';
 import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
 import type { JsxTarget } from './jsx-target';
 import type { DestroyedCallback, RefCallback, RefreshStep } from './jsx-types';
-import { type Binding, createRefreshBuilder, type RefreshMethodCounts } from './refresh-builder';
+import { type Binding, createRefreshBuilder } from './refresh-builder';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -31,20 +32,19 @@ export interface JsxOptions<N extends SceneNode> {
     /** The JSX target's intrinsic elements. */
     readonly elements: ElementTable<N>;
     /**
-     * Whether refresh methods may be generated with `new Function`. By
-     * default, whether the page allows it. False leaves only precompiled
-     * factories and the slower closure fallback, which is for pages that
-     * forbid `new Function` and for testing that the paths behave the same.
+     * How many elements a shape of bindings needs on one class of element
+     * before it takes a copy of the refresh code of its own (see
+     * `refresh-builder.ts`). Default 16: before that, and for shapes with
+     * fewer, the shared copy is fast enough, and copies are kept for the
+     * shapes with many. Tests set 1, so that every shape takes one.
      */
-    readonly canGenerateCode?: boolean;
+    readonly ownCopyAt?: number;
 }
 
 export interface JsxRuntime<N> {
     /** The JSX factory: what `jsx`, `jsxs` and `jsxDEV` are in the JSX target's runtime module. */
     readonly jsx: JsxFactory<N>;
     readonly Fragment: typeof Fragment;
-    /** How many refresh methods this runtime has made from precompiled, generated and fallback code. */
-    readonly refreshMethodCounts: RefreshMethodCounts;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,15 +86,9 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
     // Each element's attributes, by tag then key, resolved on first use.
     const resolvedElements = new Map<string, ResolvedElement<N>>();
     const visible = resolveAttribute(target.visible) as ResolvedChangeable;
-    // Probes `new Function` only when a factory must be generated, so a page
-    // whose shapes are all precompiled never tries it.
-    const refreshBuilder = createRefreshBuilder({ name: target.name, canGenerateCode: options.canGenerateCode });
+    const refreshBuilder = createRefreshBuilder({ ownCopyAt: options.ownCopyAt ?? 16 });
 
-    return {
-        jsx,
-        Fragment,
-        refreshMethodCounts: refreshBuilder.counts,
-    };
+    return { jsx, Fragment };
 
     function jsx(type: string | typeof Fragment | JsxComponent<N>, attributes: Record<string, unknown>): N {
         // Component functions. The runtime calls `ref` on whatever the component
@@ -136,7 +130,7 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
             const value = attributes[key];
             if (MVT_ATTRIBUTE_KEYS.has(key)) {
                 if (key !== 'visible') continue;
-                if (typeof value === 'function') visibleBinding = bind('visible', visible, value as () => unknown);
+                if (typeof value === 'function') visibleBinding = bind(visible, value as () => unknown);
                 else visible.apply(el, value);
                 continue;
             }
@@ -150,10 +144,10 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
                 throw new Error(`<${type}> attribute '${key}' takes a fixed value in ${target.name}, not a function`);
             }
             else if (attribute.kind === 'every-frame') {
-                (everyFrame ??= []).push(bind(key, attribute, value as () => unknown));
+                (everyFrame ??= []).push(bind(attribute, value as () => unknown));
             }
             else {
-                (onChange ??= []).push(bind(key, attribute, value as () => unknown));
+                (onChange ??= []).push(bind(attribute, value as () => unknown));
             }
         }
 
@@ -269,8 +263,8 @@ interface ResolvedEvent {
 
 type ResolvedAttribute = ResolvedFixed | ResolvedChangeable | ResolvedEvent;
 
-function bind(key: string, attribute: ResolvedChangeable, getter: () => unknown): Binding {
-    return { id: attribute.id, key, kind: attribute.kind, property: attribute.property, apply: attribute.apply, getter };
+function bind(attribute: ResolvedChangeable, getter: () => unknown): Binding {
+    return { id: attribute.id, kind: attribute.kind, property: attribute.property, apply: attribute.apply, getter };
 }
 
 function callRef(ref: unknown, node: unknown): void {

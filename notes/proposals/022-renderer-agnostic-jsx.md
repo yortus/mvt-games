@@ -26,6 +26,13 @@ moving them into packages, which waits for 011's workspace. The
 code-generation options were first measured with a throwaway script
 (section 7.5).
 
+**Superseded in part, 2026-10-01** ([025](../archive/025-precompiler-or-two-builds.md)):
+refresh methods no longer use generated code. Closures, made fast enough to
+come within 1.1x to 1.3x of it, replaced generated code, the closure
+fallback and the precompiler (section 7.7). Sections 7.2 to 7.6 and 12.1
+describe what was removed; the last commit with it is tagged
+`jsx-precompiler-last`.
+
 **Written:** 2026-09-28, against the `vnext` working tree (the runtime as
 changed by [021](../archive/021-jsx-and-teardown-quick-wins.md)), Pixi 8.16
 (setter behaviour checked in an 8.15 install), three.js `Object3D.js` on its
@@ -54,9 +61,10 @@ in the scene-pass loop).
 | 3 | A JSX target is a plain record of seven scene-graph operations plus its `refreshScene`. Nothing else about a renderer reaches the base | 5 |
 | 4 | Intrinsic elements are a table of element definitions. Each attribute is defined once, with how it is written (`fixed`, `everyFrame`, `onChange`, `onChangeNumber`, `event`) and the property it assigns or an apply function | 6 |
 | 5 | The JSX types (`JSX.IntrinsicElements`) are derived from the same table, so behaviour and types cannot disagree | 6.5 |
-| 6 | The generated refresh methods stay, generalised: a property is assigned inline, as today, and any other write calls the attribute's apply function, passed in as a parameter. Only property names from element tables, checked to be identifiers, reach generated source | 7.2, 7.5 |
-| 6a | Pages whose CSP forbids `new Function` get a closure fallback, measured at 6-16x slower refresh on Pixi as built, and a one-time warning in dev builds | 7.4, 7.5.1 |
-| 6b | A build-time precompiler gives such pages the fast path too: built, and precompiles every bound element in this repo's JSX. A full JSX compiler is not pursued | 7.6 |
+| 6 | ~~The generated refresh methods stay, generalised: a property is assigned inline, as today, and any other write calls the attribute's apply function, passed in as a parameter. Only property names from element tables, checked to be identifiers, reach generated source~~ Superseded by 6c | 7.2, 7.5 |
+| 6a | ~~Pages whose CSP forbids `new Function` get a closure fallback, measured at 6-16x slower refresh on Pixi as built, and a one-time warning in dev builds~~ Superseded by 6c | 7.4, 7.5.1 |
+| 6b | ~~A build-time precompiler gives such pages the fast path too: built, and precompiles every bound element in this repo's JSX. A full JSX compiler is not pursued~~ Built, then removed by 6c | 7.6 |
+| 6c | No generated code, and no precompiler: refresh methods are closures, with the refresh code written out as copies, one per shape and class of element with many elements, which V8 inlines as it did generated code. 1.1x to 1.3x slower than generated code on shapes of one class, faster across classes, level in the games and demos. Works under any Content Security Policy | 7.7 |
 | 7 | `<List>` and `<Switch>` are written once, over the JSX target's operations, with unchanged semantics | 8 |
 | 8 | The scene-pass core becomes generic over a tree. Pixi and three.js invalidate by wrapping their structural methods; the DOM by a `MutationObserver` whose records are taken synchronously at the start of each scene pass | 9 |
 | 9 | Build a plain-object JSX target for tests first, and a conformance suite every JSX target must pass | 11.1, 16 |
@@ -730,6 +738,8 @@ is the same at build time and run time, section 7.6.)
 
 ### 7.4 Safety, and pages that forbid `new Function`
 
+> Superseded by section 7.7: there is no generated code, and no fallback.
+
 Today's generated code interpolates attribute names (`e.${key}=...`), and the
 header argues this is safe because "attribute keys come from JSX intrinsic
 element type definitions". That holds for keys written in source, but a
@@ -903,6 +913,9 @@ first judged: under a CSP, a scene of 1,000 bound elements costs about
 
 ### 7.6 Always taking the fast path?
 
+> Superseded by section 7.7: option B was built (section 12.1), then removed
+> when the closures came close enough to generated code.
+
 The fast path is lost only where a page's CSP forbids `new Function`, and it
 costs noticeably only in scenes with thousands of bound elements. Four ways
 to close the gap were considered.
@@ -1009,6 +1022,82 @@ the fastest design found is `steps` (7.5), which needs a hand-written factory
 per attribute to reach even 1.8-2.4x.
 
 ---
+
+### 7.7 Decided: one runtime, no generated code
+
+Decided 2026-10-01 in task [025](../archive/025-precompiler-or-two-builds.md),
+which has the evidence in full. Do not reopen without new information.
+
+**What was decided.** Refresh methods are closures, everywhere: no
+`new Function`, no probe, no dev warning, no `__MVT_JSX_EVAL__`, and no
+precompiler (its Vite plugin, manifests, registration hook and version
+checks). The last commit with them is tagged `jsx-precompiler-last`.
+
+**Why.** Four options were weighed: keep the precompiler; two modes, as Pixi
+has (generated code by default, an import for eval-free pages); both; or one
+eval-free runtime. Pixi itself needs `'unsafe-eval'` unless the app imports
+`pixi.js/unsafe-eval`, and throws without it; three.js, Solid and Preact
+need none; about 5% of sites forbid eval through `script-src`, and Chrome
+extension pages always do. The deciding evidence was speed: the closures
+were made fast enough that a second path is not worth keeping.
+
+**How the closures are fast** ([refresh-builder.ts](../../src/mvt-utils/jsx/refresh-builder.ts)).
+The first fallback was 6x to 16x slower than generated code (7.5.1). Three
+causes were found, each measured:
+
+1. **Writes V8 could not inline.** One keyed store, `el[name] = value`,
+   shared by every property of every element, which V8 handles in its
+   runtime when it reaches an accessor such as Pixi's `x`. Calling each
+   property's setter, found once per prototype, made the fallback 4x to 6x
+   faster, but V8 still cannot inline a setter called through `.call`.
+2. **One set of call sites for every shape.** Refresh code shared by every
+   element with the same number of bindings sees many getters and writes,
+   and inlines none. Generated code had call sites per shape.
+3. **Memory per element**, which dominates from about 5,000 elements:
+   closures sharing one V8 context kept every slot alive, and each element
+   had a typed array.
+
+The fix for all three is copies. The refresh code for each number of
+bindings, 1 to 6, is written out 17 times, in a module generated by
+`scripts/generate-refresh-copies.ts` on install and before dev, build, test and
+bench, and not checked in. A shape (its sequence of attribute definitions)
+takes a copy of its own at its sixteenth element on one class of element,
+while copies last; the rest share copy 0. A copy of one shape and class
+assigns properties by name, a keyed store that sees one name and one class,
+which V8 makes as fast as `el.x = value`; the shared copy calls setters.
+Only a copy of its own may store by name: seeing seven classes, a keyed
+store was 7x slower than generated code's.
+
+**Two things tried and dropped.** Writes defined as functions in the
+element tables (`(e, v) => { e.x = v; }`) matched generated code in every
+isolated benchmark scene and were 30-50% slower in the falling-sand demo,
+where one function writes `x` for every element of every class. Keying
+copies by shape alone left a shape on many classes megamorphic; keyed by
+class too, it beats generated code, which had one method per shape across
+classes.
+
+**Measured**, `refreshScene` or the whole frame as each suite reports it,
+generated code against the closures, both with the element tables as they
+are now (µs per frame, median of three processes; task 025, 2026-09-30):
+
+| Scene | 1,000 | 10,000 | 50,000 |
+| --- | --- | --- | --- |
+| `jsx-refresh` uniform | 16.3 / 20.5 | 272 / 327 | 3,650 / 3,250 |
+| `jsx-refresh` mixed | 31.8 / 36.8 | 646 / 747 | 6,410 / 7,040 |
+| `jsx-refresh` eight kinds, one shape | 203 / 121 | 2,590 / 1,700 | 17,100 / 12,600 |
+| Falling sand, settled | 27.9 / 36.1 | 486 / 463 | 4,840 / 5,520 |
+| Falling sand, flipping | 37.8 / 45.6 | 632 / 810 | 5,740 / 6,720 |
+
+The falling-sand demo as it ships, 128 against 124; the games, level, at
+3-10 µs each. Building an element costs 5-10% more, and keeps about 3% more
+memory. The residual, about 1.1x, is probably the per-write checks
+generated code did not need (the kind of each slot, and the keyed store's
+check of the name). The copies are 1.7 KB gzipped.
+
+**Stack traces** name the copy: a binding that throws shows its getter,
+then `refresh3Copy1` (three bindings, copy 1) at a line of
+`refresh-copies.ts`, where `g0()` is the first binding. Generated code
+showed only `eval ... <anonymous>`.
 
 ## 8. `<List>` and `<Switch>` on any JSX target
 
@@ -1349,6 +1438,9 @@ scanners flag in a package whether or not it runs. A bundle that never
 imports `./jsx` leaves it out.
 
 ### 12.1 The precompiler
+
+> Removed (section 7.7). The last commit with it is tagged
+> `jsx-precompiler-last`.
 
 The precompiler is build-time code: it runs in Node, while a bundler builds
 the app or its dev server transforms a module, and nothing of it ships. What

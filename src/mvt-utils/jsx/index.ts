@@ -9,9 +9,5 @@ export type { AttributesOf, AttributeValue, DestroyedCallback } from './jsx-type
 export type { IntrinsicElementsOf, JsxChildList, JsxChildren, MvtAttributes } from './jsx-types';
 export type { PatternAttributesOf, RefCallback, RefreshStep, ValueOrGetter } from './jsx-types';
 export { createList, type ListBindings, type ListComponent, type ListOptions, type ListSource } from './list';
-export { canGenerateCode, registerRefreshFactories } from './refresh-builder';
-export type { RefreshFactory, RefreshMethodCounts } from './refresh-builder';
-export { REFRESH_SOURCE_VERSION, refreshFactorySource, refreshShapeKey } from './refresh-source';
-export type { RefreshSource, ShapeBinding } from './refresh-source';
 export { createSwitch } from './switch';
 export type { MatchBaseBindings, MatchBindings, SwitchBindings, SwitchComponents, SwitchOptions } from './switch';

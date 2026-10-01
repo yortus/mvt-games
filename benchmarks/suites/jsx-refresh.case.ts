@@ -1,20 +1,23 @@
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
-import { createJsx, type JsxFactory } from '../../src/mvt-utils/jsx';
-import { pixiElements, pixiTarget } from '../../src/pixi-mvt/jsx';
+import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
+import type { JsxFactory } from '#mvt-utils/jsx';
+import { jsx as pixiJsx } from '#pixi-mvt/jsx';
 import { refreshScene } from '../../src/pixi-mvt';
 import { readParams, report, timeFrames } from '../harness/measure';
 
 // Measured file for the `jsx-refresh` suite: microseconds per frame to change
-// the model and refresh the view, with the JSX runtime's generated refresh
-// methods, with its eval-free fallback (what a page whose Content Security
-// Policy forbids `new Function` gets), and with hand-written `onRefresh`
-// methods.
+// the model and refresh the view, with the JSX runtime's refresh methods and
+// with hand-written `onRefresh` methods.
 //
 // scene `uniform`: containers binding `x`, `y` and `alpha`, all changing
 //   every frame.
 // scene `mixed`: six element shapes in turn, over every write kind: every
 //   frame (`x`, `alpha`, `scale`...), on change (`tint` and `texture`, every
 //   60 frames) and on change as a number (`width`, fractional, every frame).
+// scene `kinds`: all eight kinds of Pixi element in turn, each binding `x`,
+//   `y`, `alpha` and `rotation`, every frame. One shape on eight classes of
+//   element: a write shared by all eight is more than V8 keeps fast
+//   (megamorphic). Hand-written code has a view per kind; the JSX runtime
+//   gives each class a copy of the refresh code of its own.
 
 const params = readParams();
 const scene = String(params.scene);
@@ -23,12 +26,11 @@ const count = Number(params.count);
 
 const TEXTURE_A = Texture.WHITE;
 const TEXTURE_B = Texture.EMPTY;
+const KINDS = ['container', 'sprite', 'graphics', 'text', 'bitmapText', 'htmlText', 'tilingSprite', 'nineSliceSprite'] as const;
 
 const items = createItems(count);
 const root = new Container();
-const jsx = approach === 'hand-written'
-    ? undefined
-    : createJsx({ target: pixiTarget, elements: pixiElements, canGenerateCode: approach === 'generated' }).jsx;
+const jsx = approach === 'hand-written' ? undefined : pixiJsx;
 for (let i = 0; i < count; i++) root.addChild(createView(i, items[i], jsx));
 
 let tick = 0;
@@ -87,8 +89,102 @@ function changeItems(frame: number): void {
 // ---------------------------------------------------------------------------
 
 function createView(index: number, item: ItemModel, jsxOrUndefined: JsxFactory<Container> | undefined): Container {
+    if (scene === 'kinds') {
+        const kind = index % KINDS.length;
+        return jsxOrUndefined === undefined ? createHandWrittenKind(kind, item) : createJsxKind(kind, item, jsxOrUndefined);
+    }
     const shape = scene === 'uniform' ? 0 : index % 6;
     return jsxOrUndefined === undefined ? createHandWrittenView(shape, item) : createJsxView(shape, item, jsxOrUndefined);
+}
+
+function createJsxKind(kind: number, item: ItemModel, jsx: JsxFactory<Container>): Container {
+    return jsx(KINDS[kind], { x: () => item.x, y: () => item.y, alpha: () => item.alpha, rotation: () => item.rotation });
+}
+
+/** What a person would write by hand for each kind: a view per kind, so each has its own writes. */
+function createHandWrittenKind(kind: number, item: ItemModel): Container {
+    switch (kind) {
+        case 0: {
+            const view = new Container();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 1: {
+            const view = new Sprite();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 2: {
+            const view = new Graphics();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 3: {
+            const view = new Text();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 4: {
+            const view = new BitmapText();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 5: {
+            const view = new HTMLText();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        case 6: {
+            const view = new TilingSprite();
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+        default: {
+            const view = new NineSliceSprite({ texture: Texture.EMPTY });
+            view.onRefresh = () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
+            };
+            return view;
+        }
+    }
 }
 
 function createJsxView(shape: number, item: ItemModel, jsx: JsxFactory<Container>): Container {

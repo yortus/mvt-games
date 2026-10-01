@@ -4,14 +4,14 @@
  */
 
 import type { Container } from 'pixi.js';
-import { createList, type ListBindings as BaseListBindings } from '../../mvt-utils/jsx';
+import { createList, type ListBindings as BaseListBindings } from '#mvt-utils/jsx';
 import { pixiTarget } from './pixi-target';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-export type { ListSource } from '../../mvt-utils/jsx';
+export type { ListSource } from '#mvt-utils/jsx';
 
 /** The bindings of a Pixi `<List>`. */
 export type ListBindings<T> = BaseListBindings<T, Container>;

@@ -12,7 +12,7 @@
  */
 
 import type { Container } from 'pixi.js';
-import { createJsx, type IntrinsicElementsOf } from '../../mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
 import { pixiElements } from './pixi-elements';
 import { pixiTarget } from './pixi-target';
 
@@ -30,16 +30,10 @@ export declare namespace JSX {
 // Factory
 // ---------------------------------------------------------------------------
 
-export const { jsx, Fragment, refreshMethodCounts } = createJsx({ target: pixiTarget, elements: pixiElements });
+export const { jsx, Fragment } = createJsx({ target: pixiTarget, elements: pixiElements });
 
 /** jsxs is called for elements with static (known at compile time) children arrays. Same logic. */
 export const jsxs = jsx;
 
 /** jsxDEV is used in development mode by esbuild's jsx-dev-runtime. Same logic. */
 export const jsxDEV = jsx;
-
-/**
- * For the build-time precompiler, if a page uses it: the code it adds to a
- * module imports this from here. The base's, shared by every JSX target.
- */
-export { registerRefreshFactories } from '../../mvt-utils/jsx';

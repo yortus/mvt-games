@@ -163,9 +163,11 @@ instance, and several HTML and three.js details. Send both lists together.
   nothing.
 - **Portal ignores its call site's visibility** (see item 1).
 - **A compile per element.** The workshop's `buildRefreshFn` calls
-  `new Function` for every element with bindings. This repo caches the
+  `new Function` for every element with bindings. This repo cached the
   compiled factory by binding signature, so the thousandth list item with a
-  given shape costs a map lookup rather than a compile.
+  given shape cost a map lookup rather than a compile; it now generates no
+  code at all, and closures come within 1.1x to 1.3x of generated code
+  (022 section 7.7).
 - **Removing many rows is quadratic.** Pixi removes a container from its
   `onRender` list with `indexOf` and `splice`, so a `<For>` that destroys n
   rows costs O(n) each. The keyed `<For>` also calls `getChildIndex` on every

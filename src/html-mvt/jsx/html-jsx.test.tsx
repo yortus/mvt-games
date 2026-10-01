@@ -1,7 +1,7 @@
 /** @jsxImportSource #html-mvt/jsx */
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { refreshScene } from '..';
+import { refreshScene } from '../element-mixin';
 import { MVT_GROUP_CSS } from './html-target';
 import { List } from './list';
 
@@ -191,14 +191,13 @@ describe('html-mvt/jsx where new Function is blocked', () => {
     });
 
     /**
-     * A fresh runtime, whose first element with a binding probes `new
-     * Function` with the global `Function` replaced by one that throws, as a
-     * Content Security Policy without 'unsafe-eval' makes it.
+     * A fresh runtime, with the global `Function` replaced by one that throws,
+     * as a Content Security Policy without 'unsafe-eval' makes it.
      */
     async function withBlockedFunction() {
         vi.resetModules();
         const runtime = await import('./jsx-runtime');
-        const mvt = await import('..');
+        const mvt = await import('../element-mixin');
         let constructions = 0;
         vi.stubGlobal('Function', function Blocked() {
             constructions++;
@@ -208,36 +207,19 @@ describe('html-mvt/jsx where new Function is blocked', () => {
         return { runtime, refreshScene: mvt.refreshScene, warn, constructions: () => constructions };
     }
 
-    it('falls back to closures that write the same values, and warns once in dev builds', async () => {
+    it('builds and refreshes elements without ever calling it, and warns nothing', async () => {
         const t = await withBlockedFunction();
         let text = 'a';
 
-        const first = t.runtime.jsx('div', { title: () => text });
-        const second = t.runtime.jsx('span', { title: () => text });
-        vi.unstubAllGlobals();
-        t.refreshScene(first);
+        // Enough elements that the shape takes a copy of the refresh code of its own
+        const elements: HTMLElement[] = [];
+        for (let i = 0; i < 20; i++) elements.push(t.runtime.jsx('div', { title: () => text }) as HTMLElement);
+        for (const el of elements) t.refreshScene(el);
         text = 'b';
-        t.refreshScene(first);
-        t.refreshScene(second);
+        for (const el of elements) t.refreshScene(el);
 
-        expect((first as HTMLElement).title).toBe('b');
-        expect((second as HTMLElement).title).toBe('b');
-        expect(t.runtime.refreshMethodCounts).toMatchObject({ generated: 0, fallback: 2 });
-        expect(t.constructions()).toBe(1);
-        expect(t.warn).toHaveBeenCalledTimes(1);
-        expect(t.warn.mock.calls[0][0]).toMatch(/Content Security Policy blocks new Function/);
-    });
-
-    it('neither probes nor warns when __MVT_JSX_EVAL__ is defined as false', async () => {
-        vi.stubGlobal('__MVT_JSX_EVAL__', false);
-        const t = await withBlockedFunction();
-
-        const el = t.runtime.jsx('div', { title: () => 'a' });
-        vi.unstubAllGlobals();
-        t.refreshScene(el);
-
-        expect((el as HTMLElement).title).toBe('a');
-        expect(t.runtime.refreshMethodCounts.fallback).toBe(1);
+        expect(elements[0].title).toBe('b');
+        expect(elements[19].title).toBe('b');
         expect(t.constructions()).toBe(0);
         expect(t.warn).not.toHaveBeenCalled();
     });

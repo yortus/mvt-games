@@ -33,7 +33,7 @@ Decisions this proposal makes, and where each is argued:
 | One pnpm workspace: `packages/*` (published) plus private `site` and `docs` | 5, 6, 7 |
 | First two libraries: `@mvtjs/utils` (no dependencies; with 022's JSX base at `./jsx`) and `@mvtjs/pixi` (plugin, Pixi helpers, and its JSX runtime at `./jsx`) | 5 |
 | One package per renderer, each with its JSX support at `./jsx`, and one base; no separate JSX package | 5.2, 5.5 |
-| Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin`, and from 022 the opt-in build tool `@mvtjs/jsx-precompile` | 5.5, 10 |
+| Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin` | 5.5, 10 |
 | Libraries consumed from source inside the repo; built only for publishing | 5.3 |
 | All libraries share one version, starting at `0.1.0` | 5.4 |
 | `@mvtjs/pixi` does not re-export the dependency-free library | 5.2 |
@@ -185,7 +185,7 @@ section 13.2.
 | From | Notes |
 | --- | --- |
 | `src/mvt-utils/` | The scene-pass core ([022](./022-renderer-agnostic-jsx.md)), at `.` |
-| `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views |
+| `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views. Its `refresh-copies.ts` is generated, not checked in (`scripts/generate-refresh-copies.ts`, task 025): the package's build must generate it first, and ship it |
 | `src/mvt-utils/watch.ts` | Moved from `src/common/` (2026-09-30), as were the rows below |
 | `src/mvt-utils/sequence.ts`, `sequence-reaction.ts` | |
 | `src/mvt-utils/boolean-tween.ts`, `edge-tween.ts` | |
@@ -202,13 +202,12 @@ section 13.2.
 | From | Notes |
 | --- | --- |
 | `src/pixi-mvt/` | Mixin, `updateScene`, `refreshScene`, `SKIP_DESCENDANTS` |
-| `src/pixi-mvt/jsx/` | JSX runtime, `<List>`, `<Switch>`, precompile manifest, at `./jsx` |
+| `src/pixi-mvt/jsx/` | JSX runtime, `<List>`, `<Switch>`, at `./jsx` |
 | `src/pixi-mvt/texture-registry.ts` | Generic Pixi helper, used by six games. Moved from `src/common/` (2026-09-30) |
 | `src/pixi-mvt/frame-stats.ts` | Frame timing for a Pixi app, used by the perfmon. Moved from `src/common/` (2026-09-30) |
 | `src/pixi-mvt/scene-passes-benchmark.ts`, `scripts/bench-scene-passes.ts` | To `packages/pixi/bench/`. The benchmark stays outside the public API |
 
-Exports: `.`, `./jsx`, `./jsx/jsx-runtime`, `./jsx/jsx-dev-runtime` and
-`./jsx/precompile`. JSX files then declare `/** @jsxImportSource
+Exports: `.`, `./jsx`, `./jsx/jsx-runtime` and `./jsx/jsx-dev-runtime`. JSX files then declare `/** @jsxImportSource
 @mvtjs/pixi/jsx */` in place of today's `#pixi-mvt/jsx`. The root never
 re-exports `./jsx`, so a view written in plain TypeScript imports only the
 root, and JSX stays optional. Its `sideEffects` must list the mixin, which
@@ -284,7 +283,6 @@ would mostly produce compatibility questions. Revisit at 1.0.
 | `@mvtjs/three` | three.js renderer: scene passes and pointer picker, and its JSX runtime at `./jsx` (`src/three-mvt/`) |
 | `@mvtjs/pixi-widgets` | Reusable Pixi views |
 | `@mvtjs/eslint-plugin` | MVT architecture rules (section 10) |
-| `@mvtjs/jsx-precompile` | Build-time tool, opt-in: precompiles JSX refresh code for pages whose CSP forbids `new Function`; Vite plugin at `./vite` ([022](./022-renderer-agnostic-jsx.md) section 12.1) |
 
 **Known points of generalisation, not to be acted on yet.** `list.ts` and
 `switch.ts` depend on Pixi's `Container` and `refreshScene`, but their logic
@@ -301,9 +299,10 @@ the result onto these packages. HTML and three.js are built too. After 022,
 the directories were shaped as the packages (2026-09-30): one base,
 `src/mvt-utils/`, with the JSX base in `jsx/`, and one directory per
 renderer, `src/<renderer>-mvt/`, with its JSX support in `jsx/`. A separate
-`@mvtjs/jsx`, planned at first, was folded into `@mvtjs/utils`. Each renderer's precompile manifest (022 section 12.1) exists
-already, reached as `#<renderer>-mvt/jsx/precompile`, the path a package would
-export as `./precompile`.
+`@mvtjs/jsx`, planned at first, was folded into `@mvtjs/utils`. A build-time
+JSX precompiler, `@mvtjs/jsx-precompile`, was planned from 022 and built,
+then removed with the runtime's generated code (task 025, 022 section 7.7):
+the runtime needs no build tool.
 
 ---
 

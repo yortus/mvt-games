@@ -129,7 +129,7 @@ frame down into model and refresh.
 
 | Model, view | Settled, per frame | Flipping, per frame |
 | --- | --- | --- |
-| objects, sprites (polled) | 1.8 ms | 3.3 ms |
+| objects, sprites (polled) | 1.9 ms | 3.3 ms |
 | arrays, pixels (polled) | 90 µs | 1.0 ms |
 | store, Solid pixels (pushed) | 4 µs | 185 ms |
 | store, Solid sprites (pushed) | 4 µs | 213 ms |

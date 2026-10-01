@@ -11,7 +11,7 @@
  */
 
 import type { Object3D } from 'three';
-import { createJsx, type IntrinsicElementsOf } from '../../mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
 import { threeElements } from './three-elements';
 import { threeTarget } from './three-target';
 
@@ -29,16 +29,10 @@ export declare namespace JSX {
 // Factory
 // ---------------------------------------------------------------------------
 
-export const { jsx, Fragment, refreshMethodCounts } = createJsx({ target: threeTarget, elements: threeElements });
+export const { jsx, Fragment } = createJsx({ target: threeTarget, elements: threeElements });
 
 /** jsxs is called for elements with static (known at compile time) children arrays. Same logic. */
 export const jsxs = jsx;
 
 /** jsxDEV is used in development mode by esbuild's jsx-dev-runtime. Same logic. */
 export const jsxDEV = jsx;
-
-/**
- * For the build-time precompiler, if a page uses it: the code it adds to a
- * module imports this from here. The base's, shared by every JSX target.
- */
-export { registerRefreshFactories } from '../../mvt-utils/jsx';

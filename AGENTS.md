@@ -34,8 +34,8 @@ src/
 ```
 
 Top level: `src/` (all TypeScript), `site/` (HTML pages and site CSS; Vite's
-root), `docs/` (VitePress), `benchmarks/`, `scripts/` (texture and
-precompile-manifest generation, Vite plugins), `notes/` (proposals and tasks).
+root), `docs/` (VitePress), `benchmarks/`, `scripts/` (generating
+textures and the JSX runtime's refresh copies, Vite plugins), `notes/` (proposals and tasks).
 
 Full reference: [Project Structure](docs/reference/project-structure.md)
 
@@ -49,7 +49,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 
 ## Key Conventions
 
-- **Barrel imports only** - never import past a directory's `index.ts`; enforced by ESLint `import/no-internal-modules`
+- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
 - **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource #pixi-mvt/jsx */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
@@ -86,7 +86,7 @@ done. Proposals and tasks share one number sequence.
 0. **No em-dashes** - use hyphens instead.
 1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/building-with-mvt/simulating-the-world/time-management.md)
 2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, `view.onUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/building-with-mvt/adding-visual-polish/presentation-state.md)
-3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). [Project Structure](docs/reference/project-structure.md)
+3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/performance/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)

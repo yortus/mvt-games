@@ -6,33 +6,38 @@
     "imports": {
         "#common": "./src/common/index.ts",
         "#mvt-utils": "./src/mvt-utils/index.ts",
+        "#mvt-utils/jsx": "./src/mvt-utils/jsx/index.ts",
+        "#mvt-utils/jsx/conformance": "./src/mvt-utils/jsx/conformance/index.ts",
         "#pixi-mvt/jsx": "./src/pixi-mvt/jsx/index.ts",
         "#pixi-mvt/jsx/jsx-runtime": "./src/pixi-mvt/jsx/jsx-runtime.ts",
         "#pixi-mvt/jsx/jsx-dev-runtime": "./src/pixi-mvt/jsx/jsx-runtime.ts",
-        "#pixi-mvt/jsx/precompile": "./src/pixi-mvt/jsx/precompile-manifest.json",
         "#three-mvt/jsx": "./src/three-mvt/jsx/index.ts",
         "#three-mvt/jsx/jsx-runtime": "./src/three-mvt/jsx/jsx-runtime.ts",
         "#three-mvt/jsx/jsx-dev-runtime": "./src/three-mvt/jsx/jsx-runtime.ts",
-        "#three-mvt/jsx/precompile": "./src/three-mvt/jsx/precompile-manifest.json",
         "#html-mvt/jsx": "./src/html-mvt/jsx/index.ts",
         "#html-mvt/jsx/jsx-runtime": "./src/html-mvt/jsx/jsx-runtime.ts",
-        "#html-mvt/jsx/jsx-dev-runtime": "./src/html-mvt/jsx/jsx-runtime.ts",
-        "#html-mvt/jsx/precompile": "./src/html-mvt/jsx/precompile-manifest.json"
+        "#html-mvt/jsx/jsx-dev-runtime": "./src/html-mvt/jsx/jsx-runtime.ts"
     },
     "scripts": {
+        "prepare": "npm run generate-refresh-copies",
+        "predev": "npm run generate-refresh-copies",
         "dev": "vite --host",
+        "prebuild": "npm run generate-refresh-copies",
         "build": "tsc && tsc -p benchmarks && vite build && vitepress build docs",
+        "prebuild:site": "npm run generate-refresh-copies",
         "build:site": "tsc && vite build",
         "build:docs": "vitepress build docs",
         "docs:dev": "vitepress dev docs --port 5200",
         "preview": "vite preview",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
+        "prebench": "npm run generate-refresh-copies",
         "bench": "tsx benchmarks/run.ts",
+        "pretest": "npm run generate-refresh-copies",
         "test": "vitest run",
         "test:watch": "vitest",
         "generate-textures": "tsx scripts/generate-textures.ts",
-        "generate-precompile-manifests": "tsx scripts/generate-precompile-manifests.ts"
+        "generate-refresh-copies": "tsx scripts/generate-refresh-copies.ts"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",

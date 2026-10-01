@@ -9,47 +9,30 @@ Measured 2026-09-30 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Model and view updates (µs) | `refreshScene` (µs) | Total (µs) | Pixi containers | `onUpdate` and `onRefresh` methods |
 | --- | --- | --- | --- | --- | --- | --- |
-| Game | Asteroids | 1.53 ±19% | 5.23 ±19% | 6.75 ±19% | 44 | 21 |
-|  | Kwazy Cactii | 0.91 | 8.78 | 9.69 | 306 | 76 |
-|  | Dig Dug | 1.93 | 3.96 ±6% | 5.89 | 37 | 14 |
-|  | Galaga | 5.14 ±13% | 3.6 | 8.5 ±8% | 78 | 38 |
-|  | International Karate | 3.11 ±17% | 3.23 | 6.31 ±9% | 27 | 6 |
-|  | Pac-Man | 0.45 ±11% | 4.39 ±7% | 4.83 ±7% | 234 | 11 |
-|  | Scramble | 2.46 | 4.63 | 7.09 | 84 | 42 |
-| Demo | Boids | 418 ±9% | 15 | 433 ±8% | 293 | 17 |
-|  | Falling sand | 2.17 | 124 | 126 | 3,870 | 3,780 |
-|  | Reordering lists | 0.9 ±9% | 2.3 ±7% | 3.24 | 46 | 37 |
+| Game | Asteroids | 1.36 ±19% | 5.27 ±14% | 6.63 ±15% | 46 | 22 |
+|  | Kwazy Cactii | 0.84 | 8.53 | 9.39 | 306 | 76 |
+|  | Dig Dug | 1.81 ±7% | 3.69 | 5.49 | 37 | 14 |
+|  | Galaga | 5.17 ±12% | 3.8 | 8.83 ±7% | 79 | 38 |
+|  | International Karate | 3.2 | 3.56 ±8% | 6.65 | 27 | 6 |
+|  | Pac-Man | 0.49 ±19% | 4.54 | 5.07 | 234 | 11 |
+|  | Scramble | 2.22 ±7% | 3.87 | 6.09 | 84 | 42 |
+| Demo | Boids | 462 | 14.7 | 476 | 293 | 17 |
+|  | Falling sand | 2.32 ±18% | 120 | 122 | 3,870 | 3,780 |
+|  | Reordering lists | 1.01 ±6% | 2.67 | 3.67 | 46 | 37 |
 <!-- #endregion time -->
-
-<!-- #region refresh-paths -->
-**`refreshScene` time per frame, with JSX bindings refreshed by generated code and by the fallback for pages that forbid it** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
-
-| Kind | Name | Generated code | Fallback |
-| --- | --- | --- | --- |
-| Game | Asteroids | 5.23 ±19% | 5.63 ±10% |
-|  | Kwazy Cactii | 8.78 | 9.3 |
-|  | Dig Dug | 3.96 ±6% | 3.96 |
-|  | Galaga | 3.6 | 3.93 |
-|  | International Karate | 3.23 | 3.11 ±8% |
-|  | Pac-Man | 4.39 ±7% | 4.9 ±7% |
-|  | Scramble | 4.63 | 3.96 ±7% |
-| Demo | Boids | 15 | 15.2 |
-|  | Falling sand | 124 | 170 |
-|  | Reordering lists | 2.3 ±7% | 2.78 |
-<!-- #endregion refresh-paths -->
 
 <!-- #region allocation -->
 **Bytes allocated per frame** (median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Kind | Name | Bytes per frame |
 | --- | --- | --- |
-| Game | Asteroids | 65 |
-|  | Kwazy Cactii | 32 |
-|  | Dig Dug | 176 ±16% |
-|  | Galaga | 226 ±42% |
-|  | International Karate | 832 |
-|  | Pac-Man | 385 |
-|  | Scramble | 272 |
+| Game | Asteroids | 64 |
+|  | Kwazy Cactii | 16 ±49% |
+|  | Dig Dug | 193 ±26% |
+|  | Galaga | 217 ±37% |
+|  | International Karate | 848 |
+|  | Pac-Man | 384 |
+|  | Scramble | 352 ±26% |
 | Demo | Boids | 34 |
 |  | Falling sand | 16 |
 |  | Reordering lists | 183 |
@@ -63,11 +46,11 @@ Measured 2026-09-30 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | Game | Asteroids | 0 | 0 | 0 |
 |  | Kwazy Cactii | 0 | 0 | 0 |
 |  | Dig Dug | 0 | 0 | 0 |
-|  | Galaga | 1 ±50% | 0 | 0.2 ±61% |
-|  | International Karate | 2 ±25% | 0 | 0.3 ±84% |
+|  | Galaga | 0 | 0 | 0 |
+|  | International Karate | 1 ±50% | 0 | 0.2 ±57% |
 |  | Pac-Man | 0 | 0 | 0 |
 |  | Scramble | 0 | 0 | 0 |
-| Demo | Boids | 1 ±50% | 0 | 0.2 ±73% |
+| Demo | Boids | 0 | 0 | 0 |
 |  | Falling sand | 0 | 0 | 0 |
 |  | Reordering lists | 0 | 0 | 0 |
 <!-- #endregion gc -->

@@ -1,7 +1,8 @@
 import { Container, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { createJsx } from '../../mvt-utils/jsx';
-import { countReads, refreshScene } from '..';
+import { countReads } from '#mvt-utils';
+import { createJsx } from '#mvt-utils/jsx';
+import { refreshScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 import { List } from './list';
 import { pixiElements } from './pixi-elements';
@@ -12,13 +13,14 @@ import { pixiTarget } from './pixi-target';
 // ---------------------------------------------------------------------------
 
 describe('pixiTarget', () => {
-    describe('generated code and the fallback', () => {
+    describe('refresh methods', () => {
         /**
          * A scripted run over Pixi elements using every write kind: each frame,
-         * the properties the bindings write, and the reads counted.
+         * the properties the bindings write, and the reads counted. With
+         * `ownCopyAt` 1, each shape has a copy of the refresh code of its own.
          */
-        function script(canGenerateCode: boolean): string[] {
-            const runtime = createJsx({ target: pixiTarget, elements: pixiElements, canGenerateCode }).jsx;
+        function script(ownCopyAt?: number): string[] {
+            const runtime = createJsx({ target: pixiTarget, elements: pixiElements, ownCopyAt }).jsx;
             const state = { isShown: true, x: 0, scale: 1, tint: 0xff0000, width: 10.5, label: 'a', text: 'one' };
             const sprite = runtime('sprite', {
                 texture: Texture.WHITE,
@@ -51,12 +53,12 @@ describe('pixiTarget', () => {
             return frames;
         }
 
-        it('leave Pixi elements in the same state, with the same read counts', () => {
-            const generated = script(true);
+        it('leave Pixi elements in the same state, with the same read counts, in the shared copy and in own copies', () => {
+            const shared = script();
 
-            expect(script(false)).toEqual(generated);
-            expect(generated[3]).toMatch(/^false .* one reads 1$/);
-            expect(generated[4]).toBe('true 3 2 65280 12.25 b two reads 7');
+            expect(script(1)).toEqual(shared);
+            expect(shared[3]).toMatch(/^false .* one reads 1$/);
+            expect(shared[4]).toBe('true 3 2 65280 12.25 b two reads 7');
         });
     });
 

@@ -4,8 +4,8 @@
  * elements.
  */
 
-import { createSwitch } from '../../mvt-utils/jsx';
-import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '../../mvt-utils/jsx';
+import { createSwitch } from '#mvt-utils/jsx';
+import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '#mvt-utils/jsx';
 import { htmlTarget } from './html-target';
 
 // ---------------------------------------------------------------------------

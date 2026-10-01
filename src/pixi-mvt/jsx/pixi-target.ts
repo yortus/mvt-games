@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
-import { attributesOf, type JsxTarget } from '../../mvt-utils/jsx';
-import { refreshScene } from '..';
+import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { refreshScene } from '../container-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target

@@ -4,14 +4,14 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-30 |
-| Updated  | 2026-09-30 |
+| Updated  | 2026-10-01 |
 
 ## Description
 
 The JSX runtime generates each element's refresh method with `new Function`,
 which a Content Security Policy without `'unsafe-eval'` forbids. Such a page
 gets a closure fallback, measured 6-16x slower per bound element on Pixi
-([022](../../proposals/022-renderer-agnostic-jsx.md) section 7.5.1), and the
+([022](../proposals/022-renderer-agnostic-jsx.md) section 7.5.1), and the
 opt-in build-time precompiler (022 section 7.6, `scripts/vite-plugin-jsx-precompile.ts`)
 exists to give those pages the fast path anyway.
 
@@ -179,16 +179,24 @@ it never probes, so there is no violation.
 
 ### 4 and 5. Two modes, and avoiding the violation
 
-Pending the decision (below). What the evidence says so far: a mode chosen by
-an import, as Pixi's is, is the only way found for a page to avoid the
-violation, other than `__MVT_JSX_EVAL__` at build time. Setting
-`globalThis.__MVT_JSX_EVAL__ = false` before the first bound element is
-built already works, since the probe reads it as a global (the benchmarks
-use this; see `benchmarks/harness/refresh-path.ts`), but it is not
-documented. There is no API to ask whether eval is allowed: the
-`securitypolicyviolation` event fires only after a violation, and only a
-`<meta http-equiv>` policy is readable from the DOM, not a header. Option 4
-makes the question moot.
+Moot: option 4 was chosen (below), so there is one mode, and nothing to
+probe. For the record: a mode chosen by an import, as Pixi's is, was the only
+way found for a page to avoid the violation, other than `__MVT_JSX_EVAL__` at
+build time (or set as a global before the first bound element was built,
+which the question 6 benchmarks used). There is no API to ask whether eval
+is allowed: the `securitypolicyviolation` event fires only after a
+violation, and only a `<meta http-equiv>` policy is readable from the DOM,
+not a header.
+
+### Decision: option 4, one eval-free runtime
+
+Decided 2026-10-01, recorded in [022](../proposals/022-renderer-agnostic-jsx.md)
+section 7.7 and in the base's [design notes](../../src/mvt-utils/jsx/design-notes.md)
+section 7. The closures came within 1.1x to 1.3x of generated code on
+shapes of one class, faster across classes, and level in the games and
+demos (progress log, 2026-09-30), so neither a precompiler nor a second
+mode is worth keeping. The last commit with them is tagged
+`jsx-precompiler-last` (at `88017dd`).
 
 ### 6. What the slow path really costs
 
@@ -239,15 +247,16 @@ JSX targets; DOM properties are accessors too, so the setter path applies.
 
 ## Acceptance Criteria
 
-- [ ] Questions 1-5 answered, with sources
+- [x] Questions 1-5 answered, with sources (4 and 5 made moot by the decision)
 - [x] Question 6 measured: the fast and slow paths benchmarked across realistic game scenes, and the results saved with the suites
 - [x] Question 7 measured: several eval-free refresh variants benchmarked against today's fallback and the generated code, the best kept if it wins
-- [ ] A decision recorded in 022: keep the precompiler, or move to two modes
-- [ ] If two modes: the precompiler's last commit tagged, the third option
-      recorded in the design notes and at the mode switch, and the precompiler
-      removed
-- [ ] If two modes: pages that forbid eval can select the eval-free mode
-      without a CSP violation
+- [x] A decision recorded in 022: one eval-free runtime (option 4), section 7.7
+- [x] The precompiler's last commit tagged (`jsx-precompiler-last`), the
+      options recorded in the design notes, and the precompiler and generated
+      code removed
+- [x] Pages that forbid eval need nothing: the runtime never calls
+      `new Function` (tested with it blocked, `html-jsx.test.tsx`)
+- [x] Results saved with the suites that use the JSX runtime
 
 ## Progress Log
 
@@ -293,3 +302,130 @@ JSX targets; DOM properties are accessors too, so the setter path applies.
   1.4-2.6x faster where it matters (scenes of thousands of bound elements)
   and costs little to keep once the precompiler is gone. Next: commit this
   work, tag it `jsx-precompiler-last`, then remove the precompiler.
+- 2026-09-30: Removal paused (committed as 88017dd): can the eval-free path
+  match generated code, making option 4 viable after all? Scratch sweep,
+  1,000 to 50,000 elements, three scenes (uniform; mixed; grain-like sprites
+  binding `x`, `y` every frame and `tint` on change through model methods),
+  ns per element per frame. The committed fallback's gap (1.2-2.3x) has
+  three causes, each measured:
+
+  1. **Memory per element**, which dominates from about 5,000 elements. All
+     of `writeFrom`'s per-arity closures share one V8 context, so every
+     refresh method keeps twelve getter and writer slots and both arrays;
+     and every element allocates a `Float64Array`, kept alive by its
+     on-change writers' context. Heap kept per element at 20,000: grain
+     2,641 bytes against generated code's 1,833; uniform 1,521 against
+     1,057. A factory function per arity and per write kind, and a typed
+     array only for number bindings, bring grain to 1,953 and uniform to
+     generated's level; uniform's time then matches generated from 10,000.
+  2. **Writes are not inlined.** `--trace-turbo-inlining` shows V8 inlining
+     the getters into the scene pass in both, and the setters (`set x`,
+     `set y`, Pixi's `_onUpdate`) only in generated code: called through
+     `.call`, their target is unknown. Hand-written writers such as
+     `(e, v) => { e.x = v; }`, called directly, brought uniform to 1.0-1.1x
+     at every scale. Wrapping the setter in a closure does not help.
+  3. **Shapes share call sites.** Every shape with the same number of
+     bindings runs the same per-arity closure, so in a mixed scene its call
+     sites see several getters and writers and inline none (mixed stayed at
+     1.3x with direct writers; grains beside 40 other 3-binding elements
+     went to 1.5x). Generated code has call sites per shape. Eval-free
+     equivalent: the per-arity factories written out K times in source, each
+     new shape taking its own copy. With 8 copies and direct writers: mixed
+     1.04x at 1,000 and 0.81x at 10,000 (faster: smaller closures), polluted
+     grains 0.96x. With copies but setters through `.call`: no gain.
+
+  So eval-free code can match generated code, given writes written as code
+  in the element tables (apply functions, not property names), a pool of
+  copies of the refresh code, and lean closures. Not yet built into the
+  runtime or measured on the demos.
+- 2026-09-30: Built into the runtime (uncommitted), measured on the demos,
+  and revised. Pixi's table gained `bitmapText`, `htmlText`, `tilingSprite`
+  and `nineSliceSprite`, so that shared writes can go megamorphic, and
+  `jsx-refresh` a `kinds` scene (all eight, one shape) and 50,000 elements.
+
+  **Writes as functions in the table failed in the real demo.** Isolated
+  scenes matched generated code, but in falling sand, `refreshScene` took
+  181 µs against generated code's 121 with property names, and generated
+  code with the same table 172: one function writes `x` for every element
+  that binds it, of every class, and V8 gives up on its store. Falling sand
+  scaling, both paths, 30-50% slower. Reverted to property names.
+
+  **Keyed stores, one shape and class per copy.** A copy assigns
+  `el[name] = value` for a property attribute: a store that sees one name
+  and, keyed by shape and class, one class, which V8 makes as fast as
+  `el.x = value` (scratch: parity with generated code at 1,000 grains beside
+  seven other kinds). A keyed store seeing seven classes was 7x slower than
+  generated code's (440 ns against 65 per element): V8 handles a
+  megamorphic keyed store to an accessor in its runtime. So a shape takes a
+  copy of its own only at its sixteenth element on one class, from a pool
+  (16 per number of bindings, `scripts/refresh-copies.ts`, 1.7 KB gzipped),
+  and all else uses a shared copy that calls setters. One slot per binding
+  (a name or a writer), on-change values kept in the copy, a typed array
+  only for number bindings.
+
+  Measured, generated code against the fallback, same table (µs per frame):
+
+  | Scene | 1,000 | 10,000 | 50,000 |
+  | --- | --- | --- | --- |
+  | `jsx-refresh` uniform | 16.3 / 20.5 | 272 / 327 | 3,650 / 3,250 |
+  | `jsx-refresh` mixed | 31.8 / 36.8 | 646 / 747 | 6,410 / 7,040 |
+  | `jsx-refresh` kinds (hand-written 95, 1,120, 11,800) | 203 / 121 | 2,590 / 1,700 | 17,100 / 12,600 |
+
+  | Falling sand, `refreshScene` | 1,000 | 10,000 | 20,000 | 50,000 | 200,000 |
+  | --- | --- | --- | --- | --- | --- |
+  | Settled | 27.9 / 36.1 | 486 / 463 | 1,750 / 1,930 | 4,840 / 5,520 | 20,200 / 24,300 |
+  | Flipping | 37.8 / 45.6 | 632 / 810 | 2,160 / 2,310 | 5,740 / 6,720 | 21,800 / 24,600 |
+
+  The demo as it ships: 128 / 124. The games: level. So 1.1-1.3x where each
+  shape is on one class, 0.6-0.75x where a shape spans many (generated code
+  keys by shape alone, and could key by class too). The residual is
+  probably the per-write checks generated code does not make (`typeof` on
+  each slot, the keyed store's name check). Building an element: 5-10%
+  slower, 40-56 bytes (3%) more kept. Results not saved with `--save` yet.
+- 2026-10-01: Build-time generation of the copies evaluated: feasible, since
+  the copies depend on nothing in an app, but it needs a plugin for Vite, the
+  benchmarks' esbuild and publishing, tests of two implementations, and gives
+  a silent slow path to anything that runs the source untransformed. Chosen
+  instead: generate `refresh-copies.ts` on install (`prepare`) and before
+  dev, build, test and bench, gitignored. Stack traces checked: a throwing
+  binding shows its getter, then the copy (`refresh1Copy3`, named in the
+  generator) at a line of `refresh-copies.ts`; generated code showed only
+  `eval ... <anonymous>`.
+- 2026-10-01: **Option 4 done.** Tagged `88017dd` as `jsx-precompiler-last`.
+  Removed the precompiler (Vite plugin, manifests and their generator, tests),
+  `refresh-source.ts`, `new Function`, the probe, the dev warning,
+  `__MVT_JSX_EVAL__`, `registerRefreshFactories`, `REFRESH_SOURCE_VERSION`,
+  `refreshMethodCounts`, the `canGenerateCode` option and the identifier check
+  on property names (it guarded generated source). The refresh builder is the
+  closures alone; `createJsx` gained `ownCopyAt` (default 16), which the
+  conformance suite sets to 1 to run every scenario on shapes' own copies as
+  well as the shared one. Benchmarks' `refresh` params and `refresh-path.ts`
+  removed; `jsx-refresh` compares hand-written code with JSX. Updated 022
+  (section 7.7, superseded notes), 011, 023, 027 (one clause), the notes
+  index, both design notes, `attributes.ts` and AGENTS.md. Re-saved every
+  suite that uses the JSX runtime.
+- 2026-10-01: Per-element overhead, from `reactivity`'s scene (1,000
+  containers, values mostly unchanged, so Pixi's setters do almost nothing).
+  Scratch, µs per frame, one bound `x` / three (`x`, `y`, `alpha`): hand-written
+  4.9 / 5.5, generated code 5.8 / 9.3, a copy storing by name and nothing else
+  6.4 / 9.9, a copy as built 7.5 / 11.9, the runtime 9.5 / 13.5. Two causes:
+  (1) about 1 ns per binding for the checks a copy makes and generated code
+  did not (each binding's kind, and whether its slot is a name or a writer);
+  a second family of copies for shapes whose bindings are all every-frame
+  property stores would recover most of it, not built: it shows only where
+  nothing is written, and doubles the generated file. (2) About 1.5 µs is the
+  scene pass's call to `onRefresh` seeing two functions, the shared copy (a
+  shape's first 15 elements) and the shape's own, so V8 stops inlining the
+  refresh into it: with `ownCopyAt` 1 the runtime matches the copy as built.
+  In an app that call site sees every view's refresh method anyway, so
+  neither path is inlined there, which is why the games measure level. The
+  saved `reactivity` result also moved with pixi.js 8.16 to 8.21 and solid-js
+  1.9.11 to 1.9.15 (Solid's numbers doubled), so it is not a clean
+  before-and-after.
+- 2026-10-01: Saved `jsx-refresh`, `games-and-demos`, `falling-sand-scaling`,
+  `reactivity`, `scaling`, `construction`, `memory` and `html-scene-passes`.
+  Updated the figures `measurements.md` quotes, including those that moved
+  with the pixi.js and solid-js upgrades (Solid's per-change cost and garbage
+  roughly doubled). Not explained here: the `memory` suite's "compare by
+  hand" scene now allocates 1,440 bytes per frame, against none before; it
+  uses no JSX, so likely the pixi.js upgrade. Archived.

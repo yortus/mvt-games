@@ -74,7 +74,8 @@ Barrel files solve four problems that arise as a codebase scales:
    below (no declarations in barrels, no self-imports) eliminate the most
    common source of accidental cycles.
 
-This is enforced by the `import/no-internal-modules` ESLint rule.
+This is enforced by ESLint: `import/no-internal-modules` for reaching past
+a barrel, and `no-restricted-imports` for the self-imports below.
 
 ### Import Rules
 
@@ -192,13 +193,18 @@ an ancestor barrel is the same violation:
 // Inside models/helpers/clamp.ts
 
 // ❌ Wrong - ancestor barrel, still a self-import
+import { type Direction } from '..';
 import { type Direction } from '../index';
+
+// ✅ Correct - the ancestor's file, directly
+import { type Direction } from '../common';
 ```
 
-If a module genuinely needs to consume another module's public API, it belongs
-beside that module rather than inside it, importing the sibling barrel
-(`'../other-module'`). Needing an ancestor barrel is a signal that the
-directory nesting is wrong.
+A file in a subdirectory is inside its ancestors' modules, so it imports what
+it needs from them as a sibling would: the file directly. The JSX support
+under each renderer does this (`src/html-mvt/jsx/` imports
+`'../element-mixin'`). Another module's public API is reached through its
+barrel, never past it.
 
 Importing from your own barrel creates a circular dependency: the barrel
 re-exports you, and you import from the barrel. Even when the cycle is

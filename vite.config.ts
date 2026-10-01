@@ -2,31 +2,11 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import { defineConfig, normalizePath, type Plugin } from 'vite';
-import { jsxPrecompilePlugin } from './scripts/vite-plugin-jsx-precompile';
 import { spritesheetPlugin } from './scripts/vite-plugin-spritesheet';
 
 const VITEPRESS_DEV_PORT = 5200;
 const PROJECT_ROOT = __dirname;
 const SITE_ROOT = resolve(PROJECT_ROOT, 'site');
-
-/**
- * Whether to precompile JSX refresh factories at build time: opt in by
- * setting `MVT_JSX_PRECOMPILE=1` (or `true`). Only pages served with a
- * Content Security Policy that forbids `new Function` need it; everywhere
- * else the runtime generates the same code itself. It applies to `vite`,
- * `vite build` and the test runner alike.
- */
-const IS_JSX_PRECOMPILED = ['1', 'true'].includes(process.env.MVT_JSX_PRECOMPILE ?? '');
-
-/**
- * Refresh factories for JSX bindings, compiled at build time, so a page that
- * forbids `new Function` still gets generated code. None unless opted in. The
- * plugin finds each target's manifest itself, from a module's
- * `@jsxImportSource`, so nothing here names a target.
- */
-function jsxPrecompilePlugins(): Plugin[] {
-    return IS_JSX_PRECOMPILED ? [jsxPrecompilePlugin()] : [];
-}
 
 /** Redirect `/playground` and `/games` to their trailing-slash equivalents so Vite serves the index.html. */
 function trailingSlashPlugin(): Plugin {
@@ -53,7 +33,6 @@ export default defineConfig({
     base: process.env.BASE_URL ?? '/',
     publicDir: false,
     plugins: [
-        ...jsxPrecompilePlugins(),
         spritesheetPlugin({ projectRoot: PROJECT_ROOT }),
         trailingSlashPlugin(),
     ],

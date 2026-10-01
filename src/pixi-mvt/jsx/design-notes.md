@@ -2,9 +2,9 @@
 
 > Pixi facts Pixi's JSX target relies on, and decisions specific to it. The
 > JSX runtime itself (children built first, no context providers, no cleanup
-> scopes, generated refresh methods, element tables) is the renderer-agnostic
-> base, whose settled decisions are in
-> [its design notes](../../mvt-utils/jsx/design-notes.md).
+> scopes, how refresh methods are made, element tables) is the renderer-agnostic
+> base, explained in [its README](../../mvt-utils/jsx/README.md), with its
+> settled decisions in [its design notes](../../mvt-utils/jsx/design-notes.md).
 
 **Written:** 2026-09-28, against Pixi 8.16.0. The findings were first
 recorded with the runtime's settled decisions
@@ -31,11 +31,11 @@ it, and [pixi-elements.ts](./pixi-elements.ts) is Pixi's element table.
   applies them through the scale.
 - **`label` and `style` are `onChange`**, so they accept getters, as the
   runtime always allowed, although they used to be typed as fixed values.
-- **`jsx-runtime.ts` re-exports the base's `registerRefreshFactories`**, which
-  the code the build-time precompiler adds to each `.tsx` module imports from
-  `#pixi-mvt/jsx/jsx-runtime`. The precompiler learns this JSX target's
-  elements from its manifest, `precompile-manifest.json`, reached as
-  `#pixi-mvt/jsx/precompile`.
+- **Eight kinds of element**: `container`, `sprite`, `tilingSprite`,
+  `nineSliceSprite`, `graphics`, `text`, `bitmapText` and `htmlText`, sharing
+  the container's attributes, and the sprites' and texts' own. Not
+  `animatedSprite`, which plays itself from Pixi's ticker: a sprite with a
+  `texture` binding does that under the model's control.
 
 ## Related findings
 

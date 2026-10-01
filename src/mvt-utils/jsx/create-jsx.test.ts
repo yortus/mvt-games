@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { countReads, type SceneNode, type RefreshMethod, SKIP_DESCENDANTS, type UpdateMethod } from '..';
+import { countReads } from '../read-counter';
+import type { RefreshMethod, SceneNode, UpdateMethod } from '../scene-node';
+import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { attributesOf, defineElements, element, event } from './attributes';
 import { createJsx, Fragment } from './create-jsx';
 import type { JsxTarget } from './jsx-target';
-import { canGenerateCode } from './refresh-builder';
 
 // ---------------------------------------------------------------------------
 // A plain-object JSX target
@@ -81,18 +82,20 @@ const fakeTarget: JsxTarget<FakeNode> = {
 const fakeElements = defineElements({
     box: element(() => createNode('box'), {
         x: fake.everyFrame((e, v: number) => { write(e, 'x', v); }),
+        y: fake.everyFrame((e, v: number) => { write(e, 'y', v); }),
+        z: fake.everyFrame((e, v: number) => { write(e, 'z', v); }),
         someAttributeName: fake.everyFrame((e, v: number) => { write(e, 'someAttributeName', v); }),
         label: fake.onChange((e, v: string) => { write(e, 'label', v); }),
         width: fake.onChangeNumber((e, v) => { write(e, 'width', v); }),
         mode: fake.fixed((e, v: string) => { write(e, 'mode', v); }),
-        // Defined by a property: assigned inline by generated code
+        // Defined by a property: assigned by name in a shape's own copy of the refresh code
         isShown: fake.everyFrame('isShown'),
         onPoke: event<string>('poke'),
     }),
 });
 
-function runtime(canGenerateCode?: boolean) {
-    return createJsx({ target: fakeTarget, elements: fakeElements, canGenerateCode }).jsx;
+function runtime(ownCopyAt?: number) {
+    return createJsx({ target: fakeTarget, elements: fakeElements, ownCopyAt }).jsx;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +146,7 @@ describe('createJsx', () => {
         const jsx = runtime();
 
         expect(() => jsx('box', { bogus: 1 })).toThrow(/<box> has no attribute 'bogus' in fake-jsx/);
-        // A spread can carry any key; none reaches generated code
+        // A spread can carry any key
         expect(() => jsx('box', { 'x;throw 1//': () => 1 })).toThrow(/has no attribute/);
     });
 
@@ -228,10 +231,15 @@ describe('createJsx', () => {
         });
     });
 
-    describe('generated code and the fallback', () => {
-        /** A scripted run over every write kind: what was written, and the reads counted, per frame. */
-        function script(canGenerateCode: boolean): string[] {
-            const jsx = runtime(canGenerateCode);
+    describe('refresh methods', () => {
+        /**
+         * A scripted run over every write kind: what was written, and the reads
+         * counted, per frame. With `ownCopyAt` 1, the shape has a copy of the
+         * refresh code of its own from its first element; by default, its first
+         * elements share one.
+         */
+        function script(ownCopyAt?: number): string[] {
+            const jsx = runtime(ownCopyAt);
             const state = { isShown: true, x: 0, label: 'a', width: 1.5 };
             const el = jsx('box', {
                 label: () => state.label,
@@ -258,11 +266,8 @@ describe('createJsx', () => {
             return frames;
         }
 
-        it('write the same values, in the same order, with the same read counts', () => {
-            const generated = script(true);
-
-            expect(script(false)).toEqual(generated);
-            expect(generated).toEqual([
+        it('write every-frame bindings every frame and the rest on change, counting reads', () => {
+            expect(script()).toEqual([
                 'visible=true x=0 label=a width=1.5 step | reads 4',
                 'x=1 step | reads 4',
                 'x=1 label=b width=1.75 step | reads 4',
@@ -272,33 +277,86 @@ describe('createJsx', () => {
             ]);
         });
 
-        it('call an attribute\'s apply function, putting no attribute name in generated source', () => {
-            const el = runtime(true)('box', { someAttributeName: () => 1 });
-
-            const source = String(el.onRefresh);
-            expect(source).toContain('a0(e,g0())');
-            expect(source).not.toContain('someAttributeName');
+        it('write the same in a shape\'s own copy of the refresh code as in the shared one', () => {
+            expect(script(1)).toEqual(script());
         });
 
-        it('assign an attribute defined by a property inline, in both paths', () => {
-            for (const canGenerateCode of [true, false]) {
+        it('take a copy of their own at a shape\'s sixteenth element', () => {
+            const jsx = runtime();
+            const elements: FakeNode[] = [];
+            for (let i = 0; i < 16; i++) elements.push(jsx('box', { x: () => i }));
+
+            expect(elements[14].onRefresh).not.toBe(elements[15].onRefresh);
+            expect(String(elements[14].onRefresh)).toBe(String(elements[15].onRefresh));
+            expect(elements[0].onRefresh?.name).toBe('refresh1Copy0');
+            expect(elements[14].onRefresh?.name).toBe('refresh1Copy0');
+            expect(elements[15].onRefresh?.name).toMatch(/^refresh1Copy([1-9]|1\d)$/);
+        });
+
+        it('write the same past the six bindings the copies are written for', () => {
+            const jsx = runtime(1);
+            const state = { isShown: true, n: 1, label: 'a' };
+            const el = jsx('box', {
+                visible: () => state.isShown,
+                x: () => state.n,
+                y: () => state.n + 1,
+                z: () => state.n + 2,
+                someAttributeName: () => state.n + 3,
+                label: () => state.label,
+                width: () => state.n / 4,
+                isShown: () => state.isShown,
+            });
+            const frames: string[] = [];
+            const changes: (() => void)[] = [
+                () => {},
+                () => Object.assign(state, { n: 2 }),
+                () => Object.assign(state, { label: 'b' }),
+                () => Object.assign(state, { isShown: false }),
+                () => Object.assign(state, { isShown: true }),
+            ];
+            for (const change of changes) {
+                change();
+                el.log.length = 0;
+                const reads = countReads(() => refreshScene(el));
+                frames.push(`${el.log.join(' ')} ${String(el.isShown)} | reads ${reads}`);
+            }
+
+            expect(frames).toEqual([
+                'visible=true x=1 y=2 z=3 someAttributeName=4 label=a width=0.25 true | reads 8',
+                'x=2 y=3 z=4 someAttributeName=5 width=0.5 true | reads 8',
+                'x=2 y=3 z=4 someAttributeName=5 label=b true | reads 8',
+                'visible=false false | reads 1',
+                'visible=true x=2 y=3 z=4 someAttributeName=5 true | reads 8',
+            ]);
+        });
+
+        it('assign an attribute defined by a property, in the shared copy and in a shape\'s own', () => {
+            for (const ownCopyAt of [16, 1]) {
                 let isShown = false;
-                const el = runtime(canGenerateCode)('box', { isShown: () => isShown });
+                const el = runtime(ownCopyAt)('box', { isShown: () => isShown });
                 refreshScene(el);
                 expect(el.isShown).toBe(false);
                 isShown = true;
                 refreshScene(el);
                 expect(el.isShown).toBe(true);
-                if (canGenerateCode) expect(String(el.onRefresh)).toContain('e.isShown=g0()');
             }
         });
 
-        it('reject a property name that is not an identifier, where the table is defined', () => {
-            expect(() => fake.everyFrame('x;alert(1)' as keyof FakeNode & string)).toThrow(/not a property name/);
-        });
+        it('name the copy in a stack trace, above the binding that threw', () => {
+            const el = runtime(1)('box', {
+                x: () => {
+                    throw new Error('from a binding');
+                },
+            });
 
-        it('are chosen by probing the page, which Node allows', () => {
-            expect(canGenerateCode()).toBe(true);
+            let stack = '';
+            try {
+                refreshScene(el);
+            }
+            catch (error) {
+                stack = (error as Error).stack ?? '';
+            }
+            expect(stack).toMatch(/at x \(.*\n\s+at (Object\.)?refresh1Copy\d+ .*refresh-copies\.ts/);
         });
     });
 });

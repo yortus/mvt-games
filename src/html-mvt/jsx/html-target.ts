@@ -1,5 +1,5 @@
-import { attributesOf, type JsxTarget } from '../../mvt-utils/jsx';
-import { destroyElement, onDestroyed, refreshScene } from '..';
+import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { destroyElement, onDestroyed, refreshScene } from '../element-mixin';
 import { hasOwnedText } from './owned-text';
 
 // ---------------------------------------------------------------------------

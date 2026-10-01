@@ -1,6 +1,6 @@
-import { jsx as htmlJsx, List as HtmlList } from '../../src/html-mvt/jsx';
+import { jsx as htmlJsx, List as HtmlList } from '#html-mvt/jsx';
 import { refreshScene as refreshElements, SKIP_DESCENDANTS } from '../../src/html-mvt';
-import { jsx as threeJsx, List as ThreeList } from '../../src/three-mvt/jsx';
+import { jsx as threeJsx, List as ThreeList } from '#three-mvt/jsx';
 import { refreshScene as refreshObjects } from '../../src/three-mvt';
 import { readParams, report, timeFrames } from '../harness/measure';
 

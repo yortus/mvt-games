@@ -13,7 +13,7 @@
 // only to investigate; a tidier version may no longer reproduce it.
 
 import { Container } from 'pixi.js';
-import { jsx } from '../../src/pixi-mvt/jsx';
+import { jsx } from '#pixi-mvt/jsx';
 import { allocationPerFrame } from '../harness/measure';
 
 type ViewKind = 'jsx' | 'hand-written';

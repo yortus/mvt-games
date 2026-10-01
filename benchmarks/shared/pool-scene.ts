@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { createSlotList, type Slot } from '../../src/mvt-utils';
-import { jsx, List } from '../../src/pixi-mvt/jsx';
+import { jsx, List } from '#pixi-mvt/jsx';
 import { refreshScene } from '../../src/pixi-mvt';
 
 // ---------------------------------------------------------------------------

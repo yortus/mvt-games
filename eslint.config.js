@@ -83,22 +83,28 @@ export default tseslint.config(
                         // rule compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
                         // violation instead of reporting it (proposal 011 section 11.1)
+                        // Each is a module's public entry, as a package would
+                        // export it. The JSX base and each renderer's JSX support
+                        // are reached only this way from outside their directories.
                         '\\#common',
                         '\\#mvt-utils',
+                        '\\#mvt-utils/jsx',
+                        '\\#mvt-utils/jsx/conformance',
                         '\\#pixi-mvt/jsx',
                         '\\#three-mvt/jsx',
                         '\\#html-mvt/jsx',
-                        // Allow a package-shaped directory's public `jsx` subpath,
-                        // which each would export as `./jsx` once it is a package
-                        '**/mvt-utils/jsx',
-                        // The JSX conformance suite, for each JSX target's tests
-                        '**/mvt-utils/jsx/conformance',
-                        '**/pixi-mvt/jsx',
-                        '**/three-mvt/jsx',
-                        '**/html-mvt/jsx',
                     ],
                 },
             ],
+            // No module imports its own barrel or an ancestor's (`.`, `..`,
+            // `../..`, `./index` and the like): inside a directory, import the
+            // file directly (docs/reference/project-structure.md).
+            'no-restricted-imports': ['error', {
+                patterns: [{
+                    regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
+                    message: 'Import the file directly, not your own or an ancestor\'s barrel (docs/reference/project-structure.md).',
+                }],
+            }],
         },
         settings: {
             'import/resolver': {

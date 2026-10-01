@@ -55,8 +55,10 @@ its public API.
 - **No `.ts` extensions** in module specifiers - write `'./foo'`,
   not `'./foo.ts'`.
 - **No declarations** in barrel files - only re-exports.
-- **No self-imports** through barrels, at any depth - not `'./index'` from
-  beside the barrel, and not `'../index'` from a subdirectory.
+- **No self-imports** through barrels, at any depth - not `'.'` or
+  `'./index'` from beside the barrel, and not `'..'` or `'../index'` from a
+  subdirectory. A subdirectory that needs an ancestor's module imports its
+  file directly (`'../element-mixin'`).
 
 ```ts
 // ✅ Correct - import through barrel
@@ -69,10 +71,14 @@ import { ScoreModel } from './models/score-model';
 import { createTimerModel } from './timer-model';
 
 // ❌ Wrong - self-import through an ancestor barrel, from a subdirectory
-import { createTimerModel } from '../index';
+import { createTimerModel } from '..';
+
+// ✅ Correct - from a subdirectory, the ancestor's file directly
+import { createTimerModel } from '../timer-model';
 ```
 
-Enforced by the `import/no-internal-modules` ESLint rule.
+Enforced by ESLint: `import/no-internal-modules` for reaching past a barrel,
+and `no-restricted-imports` for importing your own or an ancestor's.
 
 ## String-Literal Unions
 

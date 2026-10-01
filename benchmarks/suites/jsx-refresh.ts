@@ -1,14 +1,14 @@
 import { combinations, type Suite } from '../harness/suite';
 
-/** The JSX runtime's generated refresh methods, against its eval-free fallback and hand-written methods. */
+/** The JSX runtime's refresh methods, against hand-written ones. */
 export const jsxRefreshSuite: Suite = {
     name: 'jsx-refresh',
-    description: 'refreshing JSX bindings: generated code, the fallback for pages that forbid it, and hand-written methods',
+    description: 'refreshing JSX bindings, against hand-written methods, on one kind of element and on many',
     entry: 'jsx-refresh.case.ts',
     cases: combinations({
-        scene: ['uniform', 'mixed'],
-        count: [1000, 10000],
-        approach: ['hand-written', 'generated', 'fallback'],
+        scene: ['uniform', 'mixed', 'kinds'],
+        count: [1000, 10000, 50000],
+        approach: ['hand-written', 'jsx'],
     }).map((params) => ({ params })),
     tables: [
         {
@@ -29,12 +29,20 @@ export const jsxRefreshSuite: Suite = {
             rows: ['count'],
             column: 'approach',
         },
+        {
+            id: 'kinds',
+            title: 'All eight kinds of Pixi element, binding x, y, alpha and rotation: time per frame',
+            metric: 'usPerFrame',
+            unit: 'µs',
+            where: { scene: 'kinds' },
+            rows: ['count'],
+            column: 'approach',
+        },
     ],
     labels: {
         approach: {
             'hand-written': 'MVT (hand-written)',
-            'generated': 'MVT (JSX, generated code)',
-            'fallback': 'MVT (JSX, fallback)',
+            'jsx': 'MVT (JSX)',
         },
     },
 };

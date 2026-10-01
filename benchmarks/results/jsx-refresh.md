@@ -7,17 +7,29 @@ Measured 2026-09-30 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #region uniform -->
 **Containers binding x, y and alpha, all changing every frame: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
 
-| Containers | MVT (hand-written) | MVT (JSX, generated code) | MVT (JSX, fallback) |
-| --- | --- | --- | --- |
-| 1000 | 13.7 | 16.6 | 26.1 |
-| 10000 | 209 | 281 ±7% | 389 ±6% |
+| Containers | MVT (hand-written) | MVT (JSX) |
+| --- | --- | --- |
+| 1000 | 14.2 | 20.3 |
+| 10000 | 209 | 316 ±6% |
+| 50000 | 2,430 | 3,390 ±8% |
 <!-- #endregion uniform -->
 
 <!-- #region mixed -->
 **Six element shapes over every write kind: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
 
-| Containers | MVT (hand-written) | MVT (JSX, generated code) | MVT (JSX, fallback) |
-| --- | --- | --- | --- |
-| 1000 | 30.3 | 32.7 | 54.8 |
-| 10000 | 407 | 577 | 1,560 |
+| Containers | MVT (hand-written) | MVT (JSX) |
+| --- | --- | --- |
+| 1000 | 29.5 | 35.7 |
+| 10000 | 394 ±13% | 738 ±10% |
+| 50000 | 5,140 | 7,380 ±11% |
 <!-- #endregion mixed -->
+
+<!-- #region kinds -->
+**All eight kinds of Pixi element, binding x, y, alpha and rotation: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+
+| Containers | MVT (hand-written) | MVT (JSX) |
+| --- | --- | --- |
+| 1000 | 92 | 117 |
+| 10000 | 1,120 | 1,650 |
+| 50000 | 11,800 ±8% | 12,800 |
+<!-- #endregion kinds -->

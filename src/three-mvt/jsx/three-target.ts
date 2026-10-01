@@ -1,6 +1,6 @@
 import { Group, type Object3D } from 'three';
-import { attributesOf, type JsxTarget } from '../../mvt-utils/jsx';
-import { destroyObject, onDestroyed, refreshScene } from '..';
+import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { destroyObject, onDestroyed, refreshScene } from '../object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target

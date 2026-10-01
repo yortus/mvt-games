@@ -215,7 +215,7 @@ architecture and engineering concerns.
   Do not flag a view for having a plain TypeScript body rather than JSX, or
   the reverse: either is fine. Suggest the other only where it would clearly
   read better, as a low-priority note.
-- **Barrel imports only** - never import past a directory's `index.ts`.
+- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's.
 - **No `.ts` extensions** in module specifiers.
 - **4-space indentation.**
 

@@ -74,8 +74,8 @@ export interface ElementDefinition<E, A, P = NoPatterns> {
      * Attributes whose names are not known in advance, such as HTML's
      * `data-*`, by prefix. The first time an element of this kind is given an
      * attribute with one of these prefixes that `attributes` lacks, the
-     * pattern makes its definition, which is then kept for that name. It is
-     * written like any other: its name never reaches generated code.
+     * pattern makes its definition, which is then kept for that name, and
+     * written like any other attribute.
      */
     readonly patterns: P;
 }
@@ -130,13 +130,13 @@ export type NumberPropertyOf<E> = { [K in keyof E & string]: E[K] extends number
  * };
  * ```
  *
- * **Name a property wherever the write is a plain assignment.** Generated
- * refresh methods assign a named property inline, so each generated method
- * has its own V8 feedback for the write, and stays fast however many kinds of
- * element share the attribute. An `apply` function is one function for every
- * element that has the attribute, so its write sees all their shapes; in a
- * mixed scene V8 gives up on it, and refresh slows by 10-40%
- * (022 section 7.5).
+ * **Name a property wherever the write is a plain assignment.** Refresh
+ * methods assign a named property themselves, in a copy of the refresh code
+ * per shape and class of element (`refresh-builder.ts`), so each write has
+ * its own V8 feedback, and stays fast however many kinds of element share the
+ * attribute. An `apply` function is one function for every element that has
+ * the attribute, so its write sees all their classes; in a mixed scene V8
+ * gives up on it, and refresh slows by 10-50%.
  */
 export function attributesOf<E>(): AttributeHelpers<E> {
     return ATTRIBUTE_HELPERS as AttributeHelpers<E>;
@@ -224,18 +224,11 @@ const ATTRIBUTE_HELPERS = {
     onChangeNumber: (writer: Writer) => define('on-change-number', writer),
 };
 
-/**
- * A property name is a JavaScript identifier: generated code assigns it as
- * `e.<name>=`. Checked here, where the table is written, so nothing else can
- * reach generated source.
- */
-const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
-
 function define(kind: 'fixed' | WriteKind, writer: Writer): FixedAttribute<unknown, unknown> | ChangeableAttribute<unknown, unknown> {
     if (typeof writer !== 'string') return { kind, apply: writer } as FixedAttribute<unknown, unknown> | ChangeableAttribute<unknown, unknown>;
-    if (!IDENTIFIER.test(writer)) throw new Error(`'${writer}' is not a property name an attribute can assign`);
-    // Used for fixed values, at construction, and by the closure fallback.
-    // Generated methods assign the property inline instead.
+    // Used for fixed values, at construction, and by refresh methods for a
+    // property with no setter. Otherwise they assign it by name, or call its
+    // setter.
     const apply = (el: unknown, value: unknown): void => {
         (el as Record<string, unknown>)[writer] = value;
     };

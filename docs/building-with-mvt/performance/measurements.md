@@ -87,22 +87,27 @@ per frame goes from nothing to everything.
 
 <!--@include: ../../../benchmarks/results/reactivity.md#one-dynamic-->
 
-- **Polling costs about 5-9 µs per frame for 1000 containers at rest**, about
-  0.05% of a frame. It rises to 10-15 µs when everything changes, mostly
+- **Polling costs about 4-12 µs per frame for 1000 containers at rest**, under
+  0.1% of a frame. It rises to 7-19 µs when everything changes, mostly
   because Pixi's setters then have real work to do.
-- **Signals cost almost nothing at rest, and about 130 ns per changed
-  container (55 ns with 1 dynamic property).** They are cheaper than polling
-  until about 4-6% of containers change per frame with 3 dynamic properties,
-  or 9-11% with 1. Past that they cost more, and when everything changes they
-  cost 7-13x as much.
+- **Signals cost almost nothing at rest, and about 260 ns per changed
+  container (95 ns with 1 dynamic property).** They are cheaper than polling
+  until about 2-5% of containers change per frame with 3 dynamic properties,
+  or 4-9% with 1. Past that they cost more, and when everything changes they
+  cost 8-24x as much.
 - **Events are the cheapest here however many containers change**, because the model
   only notifies about what changed and nothing is scanned. That is a timing,
   not a recommendation: [Events and Signals](../reacting-to-changes/events-and-signals.md)
   covers what events cost in design, and at 1000 containers the difference
   from polling is a few microseconds per frame.
-- **The JSX runtime costs 1.2-1.7x as much as hand-written refresh methods**: about 1 ns
-  more per dynamic property. A static property costs nothing per frame, so in
-  JSX, pass values that never change as plain values rather than getters.
+- **The JSX runtime costs 1.7-2.3x as much as hand-written refresh methods**: about
+  4-7 ns more per container, most of it per container rather than per
+  property. Its refresh methods are closures, with no generated code, so they
+  work under any Content Security Policy; in scenes of thousands of
+  elements, where the cost matters, they come within 1.1-1.3x of code
+  generated per element shape, which an earlier runtime used.
+  A static property costs nothing per frame, so in JSX, pass values that
+  never change as plain values rather than getters.
 - **The model's own changes are small**: at most 1.4 µs per frame, even with
   every record changed each frame.
 
@@ -118,16 +123,16 @@ containers, so a flat column means the cost grows in proportion.
 
 - **The cost per container is flat up to about 1,000 containers, then climbs.**
   Polling a scene at rest costs about 5 ns per container at 1,000, 12 ns at
-  10,000, and 37 ns at 100,000: past a few thousand containers, the scene no
+  10,000, and 36 ns at 100,000: past a few thousand containers, the scene no
   longer fits in the CPU's caches. Do not multiply a small scene's numbers up
   to a large one.
-- **At 100,000 containers, polling a scene at rest takes about 3.7 ms per frame**
-  with hand-written refresh methods, and 4.8 ms with the JSX runtime: roughly a quarter
-  of a 60fps frame, before anything is drawn. Scenes that large are where
+- **At 100,000 containers, polling a scene at rest takes about 3.6 ms per frame**
+  with hand-written refresh methods, and 5.1 ms with the JSX runtime: a quarter
+  to a third of a 60fps frame, before anything is drawn. Scenes that large are where
   [skipping inactive subtrees](#the-scene-passes) pays.
 - **Signals slow down at scale too.** With everything changed each frame, each container
-  costs 130 ns at 1,000 containers and 350 ns at 100,000, which is 35 ms per
-  frame: more than two frames' worth.
+  costs 260 ns at 1,000 containers and 480 ns at 100,000, which is 48 ms per
+  frame: almost three frames' worth.
 
 <!--@include: ../../../benchmarks/results/scaling.md#frame-time-->
 
@@ -181,12 +186,12 @@ and destroys it when the item goes.
 <!--@include: ../../../benchmarks/results/construction.md#pool-->
 
 - **A container costs about 0.1-0.5 µs over its life**, most of it Pixi's own
-  `Container`. The JSX runtime and signals cost about 3x a bare container.
+  `Container`. The JSX runtime and signals cost about 3.5x a bare container.
   Building a few containers per frame is cheap; building hundreds is not.
 - **Reusing containers makes a pool's cost independent of how fast items come
-  and go.** With `<List>`, the frame costs about 14 µs whether 5 or 50 items
+  and go.** With `<List>`, the frame costs about 15-16 µs whether 5 or 50 items
   appear per frame. Building and destroying costs 20 µs at 5 per frame and
-  91 µs at 50, and it allocates far more (see [Memory](#memory-and-garbage-collection)).
+  93 µs at 50, and it allocates far more (see [Memory](#memory-and-garbage-collection)).
 
 ## The Scene Passes
 
@@ -272,11 +277,11 @@ happens.
   allocate nothing per frame, and the JSX runtime a constant 8 bytes per
   frame, however much changes. Over a simulated minute with everything
   changed each frame, the engine never needed to collect.
-- **Signals allocate on every change.** Solid's effects left 330-380 bytes
-  of garbage per changed container per frame (it varies between runs), and 64
-  bytes per frame even at rest. With everything changed each frame, that is
-  167 collections a minute, about 25 ms of pauses: three to four times the
-  garbage of the deliberately wasteful refresh methods.
+- **Signals allocate on every change.** Solid's effects left about 520
+  bytes of garbage per changed container per frame (330-380 with solid-js
+  1.9.11), and 64 bytes per frame even at rest. With everything changed each
+  frame, that is 255 collections a minute, about 43 ms of pauses: five times
+  the garbage of the deliberately wasteful refresh methods.
 - **Events allocate nothing** in this benchmark, because each record's
   listener is created once and called with the record.
 - **These scenes use whole numbers.** V8 stores whole numbers without
@@ -291,7 +296,7 @@ happens.
   60 KB per frame, and collects about three times as often.
 - **A Pixi container is already about 710 bytes.** Following a model record
   with a hand-written refresh method or an event listener adds about 170 bytes,
-  including the record itself; the JSX runtime adds about 420, and signals
+  including the record itself; the JSX runtime adds about 470, and signals
   and an effect about 1,800.
 
 ## The Games and Demos
@@ -316,10 +321,10 @@ the minute after.
   longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
-  settles, and its refresh takes about 125 µs, about 33 ns per container with
+  settles, and its refresh takes about 120 µs, about 31 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 1.8 ms at 20,000 grains. Boids takes about 0.4 ms, almost all of it
+  about 1.9 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
   800 bytes. The hot path rules aim for none, and the allocation benchmark is a

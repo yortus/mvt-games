@@ -15,9 +15,7 @@ import {
     createReorderingListsEntry,
 } from '../../src/demos';
 import { refreshScene } from '../../src/pixi-mvt';
-import { refreshMethodCounts } from '../../src/pixi-mvt/jsx';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
-import { checkRefreshPath, selectRefreshPath } from '../harness/refresh-path';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
 // Measured file for the `games-and-demos` suite: the games and demos in this
@@ -33,9 +31,6 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 //   after a 10-second warm-up, split into the two passes.
 // measure `allocation`: bytes allocated per frame.
 // measure `gc`: garbage collections over one simulated minute.
-// refresh `generated` or `fallback`: how the JSX runtime refreshes bound
-//   elements (see `selectRefreshPath`). `fallback` is what a page whose
-//   Content Security Policy forbids `new Function` gets.
 
 const FRAME_MS = 1000 / 60;
 const WARMUP_FRAMES = 600;
@@ -51,7 +46,6 @@ stubTextMeasurement();
 
 const params = readParams();
 const measure = String(params.measure);
-selectRefreshPath(params.refresh);
 const entry = createEntry(String(params.entry));
 
 await entry.load?.();
@@ -79,7 +73,6 @@ if (measure === 'time') {
         refreshMs += performance.now() - updated;
         updateMs += updated - start;
     }
-    checkRefreshPath(params.refresh, refreshMethodCounts);
     const counts = countScene(stage);
     report({
         updateUs: (updateMs * 1000) / MEASURED_FRAMES,

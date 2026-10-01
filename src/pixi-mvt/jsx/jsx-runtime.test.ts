@@ -1,6 +1,7 @@
 import { type Container, type Graphics, Rectangle, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, readCounter, refreshScene, SKIP_DESCENDANTS, updateScene } from '..';
+import { countReads, readCounter, SKIP_DESCENDANTS } from '#mvt-utils';
+import { refreshScene, updateScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 
 // ---------------------------------------------------------------------------

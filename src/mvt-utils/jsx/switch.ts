@@ -38,7 +38,9 @@
  * See section 5 of `notes/archive/004-list-proposal.md` for the design.
  */
 
-import { type SceneNode, readCounter, SKIP_DESCENDANTS } from '..';
+import { readCounter } from '../read-counter';
+import type { SceneNode } from '../scene-node';
+import { SKIP_DESCENDANTS } from '../skip-descendants';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@
  * content in JSX (`<p>score</p>`); text goes in the `text` attribute.
  */
 
-import { createJsx, type IntrinsicElementsOf } from '../../mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
 import { htmlElements } from './html-elements';
 import { htmlTarget } from './html-target';
 
@@ -38,16 +38,10 @@ export declare namespace JSX {
 // Factory
 // ---------------------------------------------------------------------------
 
-export const { jsx, Fragment, refreshMethodCounts } = createJsx({ target: htmlTarget, elements: htmlElements });
+export const { jsx, Fragment } = createJsx({ target: htmlTarget, elements: htmlElements });
 
 /** jsxs is called for elements with static (known at compile time) children arrays. Same logic. */
 export const jsxs = jsx;
 
 /** jsxDEV is used in development mode by esbuild's jsx-dev-runtime. Same logic. */
 export const jsxDEV = jsx;
-
-/**
- * For the build-time precompiler, if a page uses it: the code it adds to a
- * module imports this from here. The base's, shared by every JSX target.
- */
-export { registerRefreshFactories } from '../../mvt-utils/jsx';

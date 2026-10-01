@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { countReads, createOrderedSlotList, createSlotList, readCounter, SKIP_DESCENDANTS } from '../..';
-import type { SceneNode } from '../..';
-import { createJsx, createList, createSwitch, Fragment } from '..';
-import type { ElementTable, JsxFactory, JsxTarget, ListComponent, SwitchComponents } from '..';
+import { countReads, readCounter } from '../../read-counter';
+import type { SceneNode } from '../../scene-node';
+import { SKIP_DESCENDANTS } from '../../skip-descendants';
+import { createOrderedSlotList, createSlotList } from '../../slot-list';
+import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
+import type { JsxTarget } from '../jsx-target';
+import { createList, type ListComponent } from '../list';
+import { createSwitch, type SwitchComponents } from '../switch';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -52,13 +56,15 @@ export interface ConformanceFixture<N extends SceneNode> {
 
 /**
  * Defines the conformance suite for one JSX target: the runtime's behaviour
- * (proposal 022 section 3), `<List>` and `<Switch>`, each run with generated
- * refresh code and with the closure fallback. Call it inside a test file.
+ * (proposal 022 section 3), `<List>` and `<Switch>`, each run twice: with
+ * the shared copy of the refresh code, as a shape's first elements get, and
+ * with every shape's own copy, which assigns properties by name. Call it
+ * inside a test file.
  */
 export function describeJsxConformance<N extends SceneNode>(fixture: ConformanceFixture<N>): void {
-    for (const canGenerateCode of [true, false]) {
-        describe(`${fixture.target.name}, ${canGenerateCode ? 'generated code' : 'fallback'}`, () => {
-            const runtime = createJsx({ target: fixture.target, elements: fixture.elements, canGenerateCode });
+    for (const ownCopyAt of [16, 1]) {
+        describe(`${fixture.target.name}, ${ownCopyAt === 1 ? 'own copies' : 'shared copy'}`, () => {
+            const runtime = createJsx({ target: fixture.target, elements: fixture.elements, ownCopyAt });
             const List = createList({ target: fixture.target });
             const { Switch, Match } = createSwitch({ target: fixture.target });
             const context: SuiteContext<N> = { fixture, jsx: runtime.jsx, List, Switch, Match };

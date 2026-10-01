@@ -112,7 +112,7 @@ let observer: MutationObserver | undefined;
 // Installed at module load, before any element can be given a method: one
 // assigned before the accessors exist becomes an own property that shadows
 // them, and loses every invalidation. Skipped where there is no DOM, such as
-// in Node when the build-time precompiler reads the HTML element table.
+// in Node, where scripts and benchmarks may load the HTML element table.
 if (typeof Element !== 'undefined') elementScenePasses.installMethods(Element.prototype);
 
 function watch(node: Node): void {

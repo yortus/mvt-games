@@ -1,4 +1,4 @@
-import type { SceneNode } from '..';
+import type { SceneNode } from '../scene-node';
 import type { ChangeableAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------

@@ -5,8 +5,8 @@
  */
 
 import type { Object3D } from 'three';
-import { createSwitch } from '../../mvt-utils/jsx';
-import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '../../mvt-utils/jsx';
+import { createSwitch } from '#mvt-utils/jsx';
+import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '#mvt-utils/jsx';
 import { threeTarget } from './three-target';
 
 // ---------------------------------------------------------------------------

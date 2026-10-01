@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { batch, createRenderEffect, createRoot, createSignal } from 'solid-js';
-import { jsx } from '../../src/pixi-mvt/jsx';
+import { jsx } from '#pixi-mvt/jsx';
 import { refreshScene } from '../../src/pixi-mvt';
 
 // ---------------------------------------------------------------------------

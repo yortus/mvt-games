@@ -12,16 +12,15 @@ export const gamesAndDemosSuite: Suite = {
     description: 'this repo\'s games and demos, run headless through their entries with nothing rendered',
     entry: 'games-and-demos.case.ts',
     cases: [
-        ...entryCases('time', 'generated', []),
-        ...entryCases('time', 'fallback', []),
-        ...entryCases('allocation', 'generated', ['--expose-gc', '--max-semi-space-size=128']),
-        ...entryCases('gc', 'generated', ['--expose-gc']),
+        ...entryCases('time', []),
+        ...entryCases('allocation', ['--expose-gc', '--max-semi-space-size=128']),
+        ...entryCases('gc', ['--expose-gc']),
     ],
     tables: [
         {
             id: 'time',
             title: 'Time per frame, averaged over one simulated minute',
-            where: { measure: 'time', refresh: 'generated' },
+            where: { measure: 'time' },
             rows: ['kind', 'entry'],
             metrics: [
                 { key: 'updateUs', title: 'Model and view updates (µs)' },
@@ -30,15 +29,6 @@ export const gamesAndDemosSuite: Suite = {
                 { key: 'containers', title: 'Pixi containers', maxDecimals: 0 },
                 { key: 'methods', title: '`onUpdate` and `onRefresh` methods', maxDecimals: 0 },
             ],
-        },
-        {
-            id: 'refresh-paths',
-            title: '`refreshScene` time per frame, with JSX bindings refreshed by generated code and by the fallback for pages that forbid it',
-            where: { measure: 'time' },
-            rows: ['kind', 'entry'],
-            metric: 'refreshUs',
-            unit: 'µs',
-            column: 'refresh',
         },
         {
             id: 'allocation',
@@ -61,7 +51,6 @@ export const gamesAndDemosSuite: Suite = {
     ],
     titles: { kind: 'Kind', entry: 'Name' },
     labels: {
-        refresh: { generated: 'Generated code', fallback: 'Fallback' },
         kind: { game: 'Game', demo: 'Demo' },
         entry: {
             'asteroids': 'Asteroids',
@@ -82,10 +71,10 @@ export const gamesAndDemosSuite: Suite = {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** One case per game, then one per demo, for one measure and refresh path. */
-function entryCases(measure: string, refresh: string, nodeArgs: readonly string[]): Case[] {
+/** One case per game, then one per demo, for one measure. */
+function entryCases(measure: string, nodeArgs: readonly string[]): Case[] {
     return [
-        ...combinations({ measure: [measure], refresh: [refresh], kind: ['game'], entry: GAMES }),
-        ...combinations({ measure: [measure], refresh: [refresh], kind: ['demo'], entry: DEMOS }),
+        ...combinations({ measure: [measure], kind: ['game'], entry: GAMES }),
+        ...combinations({ measure: [measure], kind: ['demo'], entry: DEMOS }),
     ].map((params): Case => (nodeArgs.length > 0 ? { params, nodeArgs } : { params }));
 }
