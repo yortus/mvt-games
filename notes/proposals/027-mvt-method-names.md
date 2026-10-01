@@ -10,7 +10,9 @@
 > subclasses an `update` method. That matters for the published packages
 > (011), and not at all for this repo.
 
-**Status:** proposed. Investigation only; no code changed.
+**Status:** proposed. Investigation only; no code changed. Section 11 (added
+2026-10-01) proposes an alternative, `setUpdate` / `setRefresh` with no
+methods on the nodes, which would make most of the rename unnecessary.
 
 **Written:** 2026-09-30, against Pixi 8.21.0, three 0.186.1 (`@types/three`
 0.186), TypeScript 5.9, happy-dom 20, and this repo at `aa1f37f` plus the
@@ -45,7 +47,7 @@ praised them for mirroring Pixi's `onRender`) -
 | 4 | Keep the dev-only shadowing assertion, and make its message name the class and say "wrap it" | 4.3 |
 | 5 | A class that brings its own `update` is a leaf. To give it an MVT update, wrap it in a plain group node | 4.4 |
 | 6 | JSX attributes keep their `on` prefix: `onUpdate={...}`, `onRefresh={...}` | 7.2 |
-| 7 | Decide, before 011 publishes, whether `@mvtjs/pixi` and `@mvtjs/three` claim `update` on every node. Recommended: yes, with a migration note and the mitigations of 6.2 | 6 |
+| 7 | Before 011 publishes: the packages claim no names. Each application chooses them in a small config, or imports a ready-made `update` / `refresh` entry; shareable code never touches the public names | 6.3 |
 | 8 | A dev-only check that throws on any call to a node's `update` or `refresh` that the scene passes did not make | 7.4 |
 | 9 | Dev-only checks for methods that will never run: a stale memoised walk (throws), and an `update` no `updateScene` covers (warns) | 7.5 |
 | 10 | Dev-only checks on the values the scene passes already handle: `deltaMs` where `updateScene` is entered, and each method's result. Not an argument check on every call. `SKIP_DESCENDANTS` becomes `Symbol.for` | 7.6 |
@@ -358,6 +360,164 @@ loop would have to call methods with a receiver (`method.call(node, dt)`),
 since `FooView.update` uses `this`. It would also add a second way to define
 methods, built around classes, which the repo otherwise rules out.
 
+### 6.3 Let each project choose the names
+
+**The idea.** The library never commits to names for the two scene methods.
+A consuming project chooses them in one small config file of its own, which
+declares the global types and installs the accessors, and which it imports
+for its side effects. A ready-made entry point installs `update` / `refresh`
+for projects that want the MVT names with no config.
+
+This revisits 6.2's rejection of game-chosen names. There, the decisive
+cost was interop: a view written against one set of names silently does
+nothing in a project that uses another. Below, that cost is contained by a
+rule for shareable code, and it buys something 6.2's alternatives could not:
+the library no longer claims any name on Pixi's, three's or the DOM's
+prototypes unless the project asks it to.
+
+#### Feasible: yes
+
+- **Runtime.** With 4.1, the scene passes already read and write only the
+  backing fields. 6.3 extends that to *all* library code. That is about 48
+  sites in 11 files, many of which 4.1 touches anyway:
+  - the JSX base (`create-jsx.ts`, `list.ts`, `switch.ts`, `jsx-target.ts`)
+  - `DestroyRegistry` and the three mixins
+  - the `SceneNode` type
+
+  They go through internal functions instead, `setUpdate(node, fn)`,
+  `setRefresh(node, fn)` and the matching getters, which write the backing
+  field and invalidate. The core install (memo fields, structural wrappers)
+  stays at module load. Only the two public accessors move to the project's
+  config.
+- **Types,** checked with `tsc`. An interface can extend a mapped type of the
+  chosen names. The install call can be typed so that it only compiles when
+  its names match the declared types: a mismatch is a compile error. The
+  unchosen name is a compile error too ("Property 'update' does not exist...
+  Did you mean 'onUpdate'?"), `deltaMs` is still inferred, and a legacy
+  `FooView` with its own `update` compiles untouched.
+- **JSX needs no config.** The JSX attributes keep fixed names (7.2), and the
+  runtime uses the internal setters. A project that writes every view in JSX
+  could skip the config entirely and claim nothing on any prototype.
+
+#### The minimal config
+
+The ready-made entry, as the first import of the app's entry module:
+
+```ts
+import '@mvtjs/pixi/scene-methods'; // installs `update` / `refresh`, with types
+```
+
+A project choosing other names, for example one full of `FooView`s:
+
+```ts
+// src/mvt-config.ts
+import { installSceneMethods, type SceneMethods } from '@mvtjs/pixi';
+
+declare global {
+    namespace PixiMixins {
+        interface Container extends SceneMethods<'onUpdate', 'onRefresh'> {}
+    }
+}
+
+installSceneMethods({ update: 'onUpdate', refresh: 'onRefresh' });
+```
+
+It is imported first in `main.ts`, and listed in Vitest's `setupFiles` and
+in the benchmark harness. On the library side, `SceneMethods` is a mapped
+type, and `installSceneMethods` takes only names whose declared types match.
+three's version repeats `Object3D`'s type parameter in its
+`declare module 'three/src/core/Object3D.js'` block, and the DOM's extends
+`Element`. Those details are why the ready-made entries matter: few projects
+should ever write this file.
+
+#### What it solves
+
+- **Adoption (6, 6.1).** A codebase with its own `update` methods picks
+  other names: no TS2425, no shadowing, no dev crash, and it can migrate one
+  class at a time. Open question 2, whether the packages should claim
+  `update`, goes away because the packages no longer decide it.
+- **Restraint with other people's prototypes.** Nothing public is added to
+  `Container`, `Object3D` or `Element` unless the project asks for it.
+  That addresses 022 section 9.2's unease about changing `Element.prototype`,
+  and O7's future-collision risk becomes the project's informed choice.
+- **Renderers whose base class already has `update`** (option (c)'s
+  original purpose) need no special case.
+- **This repo's own migration (section 8 step 3).** The config could
+  install both names as aliases of the same backing fields, so files can move
+  from `onUpdate` to `update` one at a time with the build green. Then the old
+  alias is dropped.
+- **Discipline.** It forces 4.1 to be complete, rather than covering only the
+  walk.
+
+#### Risks and downsides
+
+- **Interop between projects (the 6.2 objection).** A shareable view
+  compiled against `update` assigns a plain property in a project that chose
+  `onUpdate`. It never runs, and nothing reports it.
+  - The rule that contains this: **shareable code never touches the public
+    names.** A published view package, a widget kit, or anything meant to
+    work in more than one project writes its views in JSX, or calls the
+    exported `setUpdate` / `setRefresh`. It also never imports the
+    ready-made entry, because only the application installs names. No such
+    packages exist yet, so the rule can be in place before the first one.
+  - A dev check can back the rule up: 7.5's rebuild already visits every
+    node, so it can warn once per class about an own, function-valued
+    property with a conventional name (`update`, `refresh`, `onUpdate`,
+    `onRefresh`) that is not this project's name. This also flags a legacy
+    `BarView`, which is arguably useful.
+  - Within one project, the names are uniform and type-checked, so there is
+    no interop risk there. That includes this repo's `src/common/` views.
+- **Two vocabularies in the wild.** Docs, examples, skills and `llms.txt`
+  teach `update` / `refresh`. A project that chose differently translates,
+  and its agents and contributors may write the MVT names. In TypeScript
+  that fails to compile with a "did you mean" hint. Plain JavaScript gets
+  only the dev warning above. Channel choices toward two sets: the docs say
+  "`update` / `refresh`, unless your codebase already uses those names, then
+  `onUpdate` / `onRefresh`".
+- **One more setup step, and an ordering rule.** Hello-world gains an import
+  line, and the config must run before any view assigns a method. The
+  pixi-mvt rework removed exactly that kind of rule (the mixin's comment:
+  "Importing this module is the only ordering requirement"). The consequences
+  are bounded:
+  - Forgetting the config is a compile error at the first `view.update =`.
+  - Importing it too late leaves own properties, which 4.3's assertion throws
+    on.
+  - Tests and benchmarks need it in their setup, and forgetting it there
+    fails loudly the same way.
+- **Custom names lose 6.2's method signatures.** A mapped type can only
+  produce property signatures. That matters less for custom names, which are
+  chosen not to clash. The ready-made `update` / `refresh` entry can declare
+  method signatures by hand.
+- **The config can declare one thing and install another.** The typed
+  install call closes this off in TypeScript.
+- **Internal discipline must be enforced, or it erodes.** Run the
+  conformance suite and the scene-pass tests under a deliberately odd config
+  (`__testUpdate` / `__testRefresh`). Any library code that still uses a
+  public name then fails.
+- **The core's types change shape.** `SceneNode` stops declaring the methods;
+  generic code such as `createScenePasses<N>` and `JsxTarget` is typed
+  against the memo fields and the internal setters instead. This is
+  contained, but it touches every renderer.
+
+#### Recommendation: yes, as the shape of the published packages
+
+Adopt 6.3, with four conditions:
+
+1. 4.1 is extended to all library code (the internal setters and getters),
+   and the odd-names test run enforces it. Worth doing now, whatever else is
+   decided, because it keeps this door open cheaply.
+2. Ready-made entries for `update` / `refresh` on each renderer. These are
+   what the docs teach and what this repo uses. A second set for
+   `onUpdate` / `onRefresh` is optional; it would make the adoption path a
+   one-line import too.
+3. The shareable-code rule (above) is written into the docs and the skills,
+   with the dev warning behind it.
+4. Only applications install names. Packages never do.
+
+It turns the question "should the library claim `update`?" from a bet into
+each project's choice, with the MVT names as the default. Its main cost is
+an ordering rule that fails loudly when it is broken.
+
 ## 7. The other objections
 
 ### 7.1 The `on` prefix says "don't call me" (O8)
@@ -660,7 +820,7 @@ the packages are published (011).
 1. JSX attribute names: keep `onUpdate` / `onRefresh` (recommended, 7.2), or
    rename them too?
 2. Published contract (6): accept that `@mvtjs/pixi` / `@mvtjs/three` claim
-   `update` on every node?
+   `update` on every node? Superseded by 6.3 if it is adopted.
 3. Backing-field names. `_mvtUpdate` is already the update walk, so
    `_mvtOnUpdate` becomes something like `_mvtUpdateMethod` /
    `_mvtRefreshMethod`.
@@ -688,6 +848,18 @@ the packages are published (011).
     now, or deferred (recommended)?
 12. 7.6: should a negative `deltaMs` throw, or is running speed control
     backwards a supported use?
+13. 6.3: adopt project-chosen names? If so, ship a ready-made
+    `onUpdate` / `onRefresh` entry as well as the `update` / `refresh` one?
+14. 6.3: should a JSX-only project be able to skip the config entirely, or
+    should every project install names, so plain TypeScript views can be
+    added later without a setup step?
+15. 11: adopt `setUpdate` / `setRefresh` with no methods on the nodes, in
+    place of the rename? If so, store the record under a symbol-keyed
+    property or in a `WeakMap` (spike and measure), and export getters, a
+    composing helper, or neither?
+16. 11.7: share one core between copies of the same protocol (mitigation 3),
+    or only detect and warn? Should the duplicate-copy warning stay on in
+    production?
 
 ## 10. Settled here
 
@@ -708,3 +880,283 @@ Do not reopen without new information:
   `Spine`; it is not a `Spine`.
 - **Not verified here:** Spine and Lit (neither is installed), and Phaser's
   `GameObject.update` (from memory).
+
+## 11. Alternative: no methods on the nodes at all
+
+> Added 2026-10-01. If adopted, this replaces the rename rather than adding to
+> it: most of sections 3-7.1 and 6.3 become unnecessary (11.3).
+
+### 11.1 What the prototypes are used for today
+
+The mixins change renderer prototypes in three ways:
+
+1. **The public accessors** `onUpdate` / `onRefresh`. They are how a view
+   attaches a step, and their setters invalidate the memoised walks.
+2. **The memo fields** (`_mvt*`), per-node storage for the walks. They have
+   defaults on the prototype and are written as own properties on each node a
+   walk visits.
+3. **Structural wrappers** on Pixi's and three's tree methods (`addChild`,
+   `add` and the rest), and Pixi's `destroy`. These are how the walks hear
+   about tree changes. The DOM uses a `MutationObserver` instead.
+
+Only 1 claims a name and needs global types, and it is the source of every
+clash in this proposal. Nothing but the scene passes is meant to call the
+methods (7.4), so the accessor's only remaining job is attaching a step, and
+a function does that equally well.
+
+### 11.2 The design
+
+- **Two functions from the base, the same on every renderer:**
+  `setUpdate(node, fn | undefined)` and `setRefresh(node, fn | undefined)`.
+  The JSX attributes keep their names (7.2) and call these.
+- **One record per node** holds what the accessors and memo fields hold now:
+  the two methods, the has-flags, the walks, the catch-up stamp, and the
+  node's tree (its renderer's `SceneTree`). It is reached through a
+  symbol-keyed property (`node[SCENE]`) or a `WeakMap` (11.4).
+- **`setUpdate` / `setRefresh` invalidate by climbing with the tree stored in
+  the record.** A node with no record has never been visited by a walk. Either
+  no walk covers it, or it was attached after its ancestors' walks were built,
+  and attaching it cleared those walks. Either way there is nothing to
+  invalidate. So the functions need no dispatch by renderer, which answers
+  the objection in 022 section 9.2 that a function form would make plain
+  TypeScript views look different on each renderer: they would not.
+- **The structural wrappers stay on Pixi and three, as now.** They claim no
+  names and need no types. Both libraries emit parent-side events (Pixi
+  `childAdded` / `childRemoved`, three `childadded` / `childremoved`; both
+  checked), so listeners could replace the wrappers. But that means a
+  listener on every container in a walked tree, so measure before switching.
+  On the DOM, which has no wrappers, nothing at all is added to the prototype.
+
+### 11.3 What becomes unnecessary
+
+- **The naming question itself.** There is no property, so there is nothing
+  to name. The MVT names appear in `setUpdate` / `setRefresh`, and in the docs
+  as "a view's `update(deltaMs)` step, attached with `setUpdate`".
+- **Every class clash** (3, 4, 5, 6, 6.1, 6.2). `FooView`, `BarView`,
+  `AnimatedSprite`, `LOD` and Lit's `update` are never seen, never shadowed,
+  and never type errors.
+- **Everything that existed to support the public accessors:** the global
+  type augmentation for the methods, 6.3's config and its ordering rule, 4.2's
+  install guard, 4.3's shadowing assertion, and 7.5 (a).
+- **Most of 7.4.** There is no `view.update(dt)` to call by hand, so a port
+  that keeps forwarding fails to compile. 7.4 is needed only if a getter is
+  exported (11.5).
+- **O7, O8 and O10.**
+
+Still relevant: 7.2 (JSX attribute names), 7.5 (b) and (c), and 7.6.
+
+### 11.4 Performance
+
+The steady-state loop never reads per-node storage. It walks the cached list
+with its cached methods (012 section 2) and reads the renderer's own `parent`.
+The storage is read only:
+
+- once per scene pass, on the root;
+- in rebuilds, for each node visited;
+- in invalidation climbs;
+- in catch-up rounds.
+
+For those, the two ways to store the record compare like this:
+
+- **A symbol-keyed record.** One read on varied node shapes, then every
+  further read on a single record shape. Today each `_mvt*` read is on a
+  varied Pixi shape (`Container`, `Sprite`, `Text`, `Graphics`...), which is
+  the pattern 012 measured as costly. So rebuilds and climbs may get faster,
+  not just stay level. The costs: one small object per visited node,
+  allocated on its first visit, and one own property added to each renderer
+  object. Today's fields add up to seven.
+- **A `WeakMap`.** It never touches renderer objects, but every access is a
+  hash lookup. Scenes that rebuild a lot (`<List>` churn, falling sand) would
+  pay most.
+
+None of this is measured yet. Spike the symbol-keyed record first, against
+the existing suites: `scene-passes` (churn, scaling), `falling-sand-scaling`,
+`games-and-demos` and `html-scene-passes`.
+
+### 11.5 Costs and risks
+
+- **Call sites change.** Plain TypeScript views go from
+  `view.onRefresh = () => {...}` to `setRefresh(view, () => {...})`. That is
+  about 160 sites, mechanical, the same size as the rename.
+- **Reading a step back.** Composition (`const own = el.onRefresh; ...`)
+  needs a `getRefresh(el)`, or a helper such as `addRefreshStep(el, fn)`. An
+  exported getter reopens hand calls (`getUpdate(view)!(dt)`), though only
+  deliberate ones, and 7.4's check could wrap whatever it returns. The smaller
+  surface is to export the setters and a composing helper, and no getters.
+- **Debugging.** Today `container.onRefresh` is visible in devtools. A
+  symbol-keyed property still shows there; a `WeakMap` hides everything, so it
+  would want a dev helper (`describeSceneNode(node)`).
+- **The docs still need a footnote.** MVT's docs describe `update` and
+  `refresh` as methods on the view; here they are steps attached to it. The
+  footnote becomes "attach a view's update with `setUpdate`", which is
+  natural, rather than a renaming.
+- **It reverses a decision.** 022 section 9.2 chose accessors over functions;
+  11.2 gives the reason that objection no longer holds.
+
+### 11.6 Recommendation
+
+Prefer this over the rename, and over 6.3. Suggested order:
+
+1. Spike the symbol-keyed record and `setUpdate` / `setRefresh`, with the
+   current accessors kept as thin wrappers that call them, so the build stays
+   green. Benchmark it.
+2. If it is level or better, migrate the call sites, then remove the
+   accessors and the global type augmentation.
+3. The checks that still apply (7.5 (b) and (c), 7.6) can land first, or
+   alongside.
+
+### 11.7 More than one copy in a program
+
+**How it happens.** Once the packages are published (011), one program can
+load two copies of the base, or of a renderer package:
+
+- **The same version, loaded twice by tooling.** For example, Vite's
+  dependency pre-bundling reaches the package by two paths, a linked
+  workspace package has its own `node_modules`, or both an ESM and a CJS
+  build are loaded.
+- **Two versions.** For example, the app depends on `@mvtjs/pixi@2`, and a
+  widget kit pins `@mvtjs/pixi@1`, so npm nests a second copy.
+
+**What breaks.** Everything the scene passes keep at module level is per
+copy:
+
+| State | If each copy has its own |
+| --- | --- |
+| The record key: `Symbol('...')` or a `WeakMap` (11.2) | A view set up by one copy carries a record the other copy cannot see. The app's `refreshScene` never runs the widget kit's views, and **nothing reports it** |
+| `SKIP_DESCENDANTS` | A skip from the other copy is ignored (7.6) |
+| `methodAssignments` | A step assigned through one copy during the other's scene pass is missed; the pass keeps calling a cached method, even a cleared one |
+| The refresh pass id, re-entry guard and nested walks | A nested `refreshScene` from the other copy is not deduplicated, so nodes refresh twice |
+| The DOM's observer and watched set | Each copy watches only its own roots |
+| The Pixi / three structural wrappers | Both copies wrap the prototypes. Each invalidates only its own storage, so the cost is doubled and the destroy warning fires twice |
+
+**Today's design is not immune either.** Its memo fields are plain string
+names (`_mvtOnRefresh`), so two copies of the *same* version share them by
+accident and mostly work. They still split everything in the table except
+the fields. Two *different* versions read each other's fields with whatever
+meaning each gives them. Section 11's symbol key turns that accidental
+sharing into a clean split, which is more predictable, and silent unless
+something checks.
+
+**Mitigations, all cheap:**
+
+1. **Detect it, always, at load.** Each copy adds itself, with its version,
+   to a global registry (`globalThis[Symbol.for('mvtjs.instances')]`). A
+   second entry logs one warning that names both versions and how to
+   deduplicate (`npm dedupe`, `overrides`, Vite's `resolve.dedupe`). three
+   ("Multiple instances of Three.js being imported") and Lit do the same. It
+   costs one check per copy, so it can stay on in production, where the
+   silent failure would otherwise show up first.
+2. **Package so that one copy is the norm.** The base is a
+   `peerDependency` of each renderer package. The renderer package (and the
+   base) is a `peerDependency` of any widget or view package, never a
+   `dependency`. That is how Pixi plugins depend on `pixi.js`. Document
+   `resolve.dedupe` for Vite.
+3. **Let copies of the same protocol share one core.** The first copy to
+   load publishes its core on `globalThis` under a key that carries a
+   protocol version: `Symbol.for('mvtjs.core.v1')`. The core here means the
+   record key, the counters, the pass state, `SKIP_DESCENDANTS` and the
+   setters. A later copy with the same protocol uses that core instead of
+   its own. The protocol version changes whenever the record's layout or the
+   shared state's meaning changes, so incompatible copies never share. This
+   makes the common case, the same version loaded twice by tooling, simply
+   work. The cost: whichever copy loads first supplies the code, so a fix in
+   a later-loaded patch release does not apply. Mitigation 1's warning says
+   so.
+4. **In dev, flag nodes from an incompatible copy.** Rebuilds already visit
+   every node (7.5), so they can check for another protocol's record key and
+   warn once: "this node was set up by a different, incompatible copy of
+   @mvtjs; its update and refresh will not run".
+5. **Wrap the prototypes once.** Mark `Container.prototype` and
+   `Object3D.prototype` with a protocol-versioned symbol when wrapping them,
+   so a second copy of the same protocol skips its wrappers. A copy of
+   another protocol still wraps, which is correct, since its storage is
+   separate.
+
+Two more things to check:
+
+- **Vitest.** Make sure that a core left on `globalThis` cannot outlive the
+  module instances of an earlier test file, by checking how the pool and
+  `isolate` settings scope `globalThis`.
+- **This repo.** It is not affected today: `#mvt-utils` and relative imports
+  resolve to the same module. This matters from 011 onward.
+
+**Recommendation:** all five, when the packages are published. 1, 2, 4 and 5
+make every remaining case loud. 3 removes the most common case outright.
+
+### 11.8 Spike results (2026-10-01)
+
+**What was built.** It is on local branch `spike/027-set-refresh`, in worktree
+`.claude/worktrees/spike-027`, from `54734dd`. It is not committed: 13 files,
++251 / -156.
+
+- Each node's methods and memo live in one record, under the symbol-keyed
+  property `Symbol('mvt.sceneRecord')`.
+- `setUpdate`, `setRefresh`, `getUpdate` and `getRefresh` are exported from
+  `mvt-utils`. Records are linked to their scene passes on first visit, as in
+  11.2.
+- The JSX base, `<List>`, `<Switch>`, `DestroyRegistry` and Pixi's `destroy`
+  wrapper use the new functions.
+- `onUpdate` / `onRefresh` remain only as transitional accessors over them,
+  so views and benchmarks are unchanged.
+- The structural wrappers are untouched.
+
+**Feasible: yes.**
+
+- Type checks (app and benchmarks) and lint pass.
+- The test suite matches the baseline exactly: 1007 pass, and the same 3
+  fail for reasons in the worktree's environment (CRLF in the saved
+  precompile manifests, `solid-js` not resolving under Vitest).
+- With the transitional accessors switched off, all 445 JSX tests pass:
+  the base, and the conformance suites of all three renderers. So no library
+  code needs a method name any more.
+- The JSX base's own tests now run on plain-object nodes with no method
+  properties at all.
+
+**Performance: not settled; measure again on a quiet machine.** Baseline
+numbers come from a second, detached worktree at the same commit, run
+alternately with the spike. The machine had Vite and VitePress dev servers
+and Chrome running, and runs were only good to about ±10%.
+
+- **`scene-passes`.** The steady-state scenarios are level.
+  - Churn (2,000 plain containers, 100 replaced per frame): the spike's
+    medians were 3-14% slower over four interleaved rounds, with the same
+    order and with the order reversed.
+  - A control scenario whose loop never touches the record (`skip` /
+    `hidden`) was also 5-7% slower in the harness. A standalone copy of it
+    showed no consistent difference: the spike was faster in 4 of 6 pairs.
+  - So part of the gap is how V8 compiles the changed module, not the record.
+    The churn scene uses only plain `Container`s, which is today's best case;
+    no mixed-shape scene was measured, so 11.4's hoped-for gain on mixed
+    scenes is untested.
+- **`memory`, kept alive per container: +88 bytes** (hand-written views 880
+  to 969, JSX 1,134 to 1,222). This is the record object itself, and it is
+  structural.
+- **`memory`, allocation in the `watched` scene: 0.3 to 16,006 bytes per
+  frame** (1,000 JSX sprites with a fractional `width`). That is one boxed
+  number per sprite per frame. It is **not caused by the record**:
+  - A variant of the same scene allocates 16,006 bytes per frame on the
+    baseline too.
+  - Calling the same refresh methods in a plain loop allocates nothing on
+    either.
+
+  The allocation depends on how V8 optimizes the generated refresh methods
+  when the scene pass calls them, and unrelated code changes tip it either
+  way. That is the per-call-site feedback problem that the uncommitted
+  refresh-copies work in the main checkout (apparently part of task 025)
+  addresses, so measure again on top of it.
+- The other suites (`construction`, `scaling`, `jsx-refresh`,
+  `games-and-demos`, `html-scene-passes`) were not run.
+
+**Next steps.**
+
+1. Rebase the spike onto the refresh-copies work once it is committed.
+2. Spike the variant that has no record object: the same fields as
+   symbol-keyed properties on the node itself. It keeps every benefit in
+   11.3, since no names are claimed, and it should match today's memory
+   exactly (no +88 bytes) and today's access patterns. It gives up 11.4's
+   single-record-shape argument, which the churn numbers did not support
+   anyway.
+3. Measure both variants on a quiet machine: `scene-passes`, `construction`,
+   `scaling`, `memory` and `games-and-demos`, plus a mixed-shape scene (012's
+   proposed variant of `scaling`).
+4. Only then migrate the call sites and remove the transitional accessors.
