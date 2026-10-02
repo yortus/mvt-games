@@ -201,6 +201,20 @@ describe('frame stats', () => {
         expect(sceneCounter.isCounting).toBe(false);
     });
 
+    it('has counts from the first window, by sampling the first frame', () => {
+        const counter = { isCounting: false, count: 0 };
+        const { stats, frame } = setup({ readCounter: counter });
+
+        for (let i = 0; i < 12; i++) {
+            frame(10, 4, () => {
+                if (counter.isCounting) counter.count += 250;
+            });
+        }
+
+        expect(stats.sampleCount).toBe(1);
+        expect(stats.readsPerFrame).toBe(250);
+    });
+
     it('reports no scene counts without a scene counter', () => {
         const { stats, frame } = setup();
         for (let i = 0; i < 20; i++) frame(10, 4);

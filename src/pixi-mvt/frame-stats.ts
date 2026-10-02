@@ -158,6 +158,8 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
 
     // Start of the frame in progress, or -1 between a render and the next tick.
     let frameStartMs = -1;
+    // The first frame is sampled too, so the first window has counts.
+    let isFirstTick = true;
 
     // Whether the counters are switched on for their sample frame, and their
     // counts when they were. The latest samples wait in `sampled*` for the
@@ -211,10 +213,10 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
         frameStartMs = nowMs;
         windowFrames++;
         if (isSampling) finishSample();
-        if (nowMs - windowStartMs >= windowMs) {
-            publish(nowMs);
-            startSample();
-        }
+        const isWindowClosed = nowMs - windowStartMs >= windowMs;
+        if (isWindowClosed) publish(nowMs);
+        if (isWindowClosed || isFirstTick) startSample();
+        isFirstTick = false;
     }
 
     /** Count the frame that starts now: switched off again at the next tick. */

@@ -1,4 +1,4 @@
-import { PERFMON_HEIGHT } from '#common';
+import { PERFMON_HEIGHT, PERFMON_INFO_HEIGHT } from '#common';
 
 /**
  * Sizes and positions for the demo's views, in canvas pixels. The tank is
@@ -28,6 +28,16 @@ export const SEGMENT_HEIGHT = 26;
 
 export const STATS_Y = VARIANTS_Y + VARIANTS_HEIGHT + 10;
 export const STATS_HEIGHT = PERFMON_HEIGHT;
+
+// The perfmon's info card rises from the panel's bottom, at the toolbar's
+// bottom, and the tank is drawn in front of the toolbar: a taller card would
+// be hidden behind it.
+if (PERFMON_INFO_HEIGHT > STATS_Y + STATS_HEIGHT) {
+    throw new Error(
+        `The perfmon's info card (${PERFMON_INFO_HEIGHT}px) is taller than the toolbar `
+        + `(${STATS_Y + STATS_HEIGHT}px), so the tank would cover its top.`,
+    );
+}
 
 export const SCREEN_WIDTH = TANK_WIDTH + MARGIN * 2;
 export const SCREEN_HEIGHT = TOOLBAR_Y + STATS_Y + STATS_HEIGHT + MARGIN;

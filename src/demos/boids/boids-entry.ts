@@ -177,7 +177,8 @@ function computeLayout(): Layout {
         simWidth: simW,
         simHeight: simH,
         screenWidth: simW + PANEL_TOTAL,
-        screenHeight: simH,
+        // A short arena would otherwise cut the controls off.
+        screenHeight: Math.max(simH, CONTROLS_HEIGHT),
         isPortrait,
     };
 }

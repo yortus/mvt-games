@@ -15,13 +15,14 @@ drawn by SolidJS versions of the views, which are pushed changes rather than
 polling; the others are polled, as MVT views are. The switches
 under the buttons show the running choice; pressing one reloads the page with
 another. The panel under the tank shows the grain count,
-how many grains are moving, and frame timing: frames per second, CPU and GPU
-milliseconds per frame, and `RPF`, the reads of the model the view makes per
-frame (the pixel view counts its own reads the way the JSX runtime counts the
-sprite view's, so the two compare). Below those, `MPF` is the update and
-refresh methods the scene passes call per frame, and `WPF` and `NPF` are the
-memoised walks they rebuild per frame and the nodes they visit doing it: the
-scene's churn, zero while the tank's grains stay put.
+how many grains are moving, and frame timing: frames per second, then, per
+frame, CPU and GPU milliseconds and `Reads`, the reads of the model the view
+makes (the pixel view counts its own reads the way the JSX runtime counts the
+sprite view's, so the two compare). Below those, `Methods` is the update and
+refresh methods the scene passes call, and `Rebuilds` and `Visits` are the
+memoised walks they rebuild and the nodes they visit doing it: the scene's
+churn, zero while the tank's grains stay put. The panel's (i) button explains
+each figure.
 `npm run bench -- falling-sand-scaling` measures every combination headless,
 from 1,000 to 200,000 grains; the demo as it ships is in the
 `games-and-demos` suite.
@@ -236,5 +237,6 @@ does not jump.
 | [`grain-colors.ts`](./views/grain-colors.ts) | Colours by kind, with a stable shade per grain, as tints and as pixels |
 | [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |
 
-The frame timing comes from `createFrameStats` and `createPerfmonView` in
+The frame timing comes from `createFrameStats` in
+[`src/pixi-mvt/`](../../pixi-mvt/index.ts) and `PerfmonView` in
 [`src/common/`](../../common/index.ts), which any demo or game can use.
