@@ -1,4 +1,4 @@
-import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
+import { createDestroyRegistry, createScenePasses } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -6,7 +6,7 @@ import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
 
 /**
  * The scene passes over DOM elements: the generic memoised walk
- * (`ScenePasses` in `../mvt-utils`) over each element's element children.
+ * (`ScenePasses` in `@mvtjs/utils`) over each element's element children.
  * Text nodes carry no methods and are never visited. They run for hidden
  * elements too. A refresh should only write: reading layout (`offsetWidth`,
  * `getBoundingClientRect`) after a write makes the browser lay the page out
@@ -29,7 +29,7 @@ export const { tickScene, setTickMethods } = elementScenePasses;
 
 /**
  * Destroying elements, which have no destroy of their own
- * (`DestroyRegistry` in `../mvt-utils`): runs each
+ * (`DestroyRegistry` in `@mvtjs/utils`): runs each
  * `onDestroyed` callback in the subtree, stops the scene passes calling it,
  * and removes it from the page. Listeners on the elements go with them when
  * they are collected; listeners a view added to `window` or `document` are

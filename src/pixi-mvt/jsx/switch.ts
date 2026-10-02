@@ -1,12 +1,12 @@
 /**
  * `<Switch>` and `<Match>` for Pixi: the base's components
- * (`../mvt-utils/jsx/switch.ts`, where their behaviour is documented) over Pixi
+ * (`switch.ts` in `@mvtjs/utils/jsx`, where their behaviour is documented) over Pixi
  * containers.
  */
 
 import type { Container } from 'pixi.js';
-import { createSwitch } from '#mvt-utils/jsx';
-import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '#mvt-utils/jsx';
+import { createSwitch } from '@mvtjs/utils/jsx';
+import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '@mvtjs/utils/jsx';
 import { pixiTarget } from './pixi-target';
 
 // ---------------------------------------------------------------------------

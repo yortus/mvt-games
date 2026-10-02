@@ -226,7 +226,7 @@ shows them in use.
 
 A new renderer needs its scene passes first: `tickScene` and `setTickMethods`
 typed to its nodes, made with `createScenePasses`
-(`src/mvt-utils/scene-passes.ts`), as
+(`scene-passes.ts` in this package), as
 `src/pixi-mvt/container-mixin.ts` does for Pixi. Then, in a `jsx/` directory
 beside them:
 

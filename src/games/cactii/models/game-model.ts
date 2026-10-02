@@ -1,6 +1,6 @@
 import type { CactusCell, GamePhase } from './common';
 import { createBoardModel, type BoardModel } from './board-model';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Input

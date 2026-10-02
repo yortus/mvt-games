@@ -1,5 +1,5 @@
 /**
- * The JSX runtime for Pixi.js: the renderer-agnostic base (`../mvt-utils/jsx`)
+ * The JSX runtime for Pixi.js: the renderer-agnostic base (`@mvtjs/utils/jsx`)
  * over Pixi's scene graph (`pixi-target.ts`) and Pixi's intrinsic elements
  * (`pixi-elements.ts`).
  *
@@ -12,7 +12,7 @@
  */
 
 import type { Container } from 'pixi.js';
-import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 import { pixiElements } from './pixi-elements';
 import { pixiTarget } from './pixi-target';
 

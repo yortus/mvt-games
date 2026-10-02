@@ -1,6 +1,6 @@
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
-import { attributesOf, defineElements, element, event } from '#mvt-utils/jsx';
+import { attributesOf, defineElements, element, event } from '@mvtjs/utils/jsx';
 
 // ---------------------------------------------------------------------------
 // Elements

@@ -1,5 +1,5 @@
 import gsap, { Bounce, Power1 } from 'gsap';
-import type { DeepReadonly, Sequence } from '#mvt-utils';
+import type { DeepReadonly, Sequence } from '@mvtjs/utils';
 import { EMPTY_CELL, type BoardPhase, type CactusCell } from '../../models';
 import { GRID_ROWS, GRID_COLS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';

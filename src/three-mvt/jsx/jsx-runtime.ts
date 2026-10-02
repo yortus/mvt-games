@@ -1,5 +1,5 @@
 /**
- * The JSX runtime for three.js: the renderer-agnostic base (`../mvt-utils/jsx`) over
+ * The JSX runtime for three.js: the renderer-agnostic base (`@mvtjs/utils/jsx`) over
  * three's scene graph (`three-target.ts`) and its intrinsic elements
  * (`three-elements.ts`).
  *
@@ -10,7 +10,7 @@
  */
 
 import type { Object3D } from 'three';
-import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 import { threeElements } from './three-elements';
 import { threeTarget } from './three-target';
 

@@ -1,5 +1,5 @@
 /**
- * The JSX runtime for the DOM: the renderer-agnostic base (`../mvt-utils/jsx`) over
+ * The JSX runtime for the DOM: the renderer-agnostic base (`@mvtjs/utils/jsx`) over
  * the DOM's element tree (`html-target.ts`) and its intrinsic elements
  * (`html-elements.ts`).
  *
@@ -12,7 +12,7 @@
  * content in JSX (`<p>score</p>`); text goes in the `text` attribute.
  */
 
-import { createJsx, type IntrinsicElementsOf } from '#mvt-utils/jsx';
+import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 import { htmlElements } from './html-elements';
 import { htmlTarget } from './html-target';
 

@@ -14,7 +14,7 @@ import {
     createFallingSandEntry,
     createReorderingListsEntry,
 } from '../../src/demos';
-import { hasRefresh, hasUpdate } from '../../src/mvt-utils';
+import { hasRefresh, hasUpdate } from '@mvtjs/utils';
 import { tickScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';

@@ -1,7 +1,7 @@
 import type { BoardPhase, CactusCell, CactusKind } from './common';
 import { ALL_CACTUS_KINDS, EMPTY_CELL, createCell } from './common';
 import { GRID_ROWS, GRID_COLS, CACTUS_KIND_COUNT } from '../data';
-import type { DeepReadonly } from '#mvt-utils';
+import type { DeepReadonly } from '@mvtjs/utils';
 import {
     SWAP_DURATION_MS,
     MATCH_PHASE_DURATION_MS,

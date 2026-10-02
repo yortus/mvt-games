@@ -11,7 +11,7 @@
 **Where the code is now.** Since proposal
 [022](../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
 described here is generic over any tree, in
-[src/mvt-utils/scene-passes.ts](../mvt-utils/scene-passes.ts)
+[scene-passes.ts](../../packages/utils/src/scene-passes.ts) in `@mvtjs/utils`
 (`createScenePasses`), which the three.js and DOM scene passes use too.
 pixi-mvt keeps what is Pixi's: the structural wrappers, the destroy warning,
 and `tickScene` / `setTickMethods` typed to containers. The walk also now
@@ -69,7 +69,7 @@ read.
 
 Shown for update; refresh is the identical code with `pass = REFRESH` against
 the other pair of fields - the two scene passes are one implementation.
-See [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`.
+See [scene-passes.ts](../../packages/utils/src/scene-passes.ts) in `@mvtjs/utils`.
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
@@ -129,8 +129,8 @@ function has(node: Container, pass: Pass): boolean {
 ### Invalidation
 
 One climb per method kind, stopping at the first container already dirty for that
-kind. It lives in [scene-passes.ts](../mvt-utils/scene-passes.ts) in
-`mvt-utils`, next to the setters that trigger it; pixi-mvt's wrappers in
+kind. It lives in [scene-passes.ts](../../packages/utils/src/scene-passes.ts) in
+`@mvtjs/utils`, next to the setters that trigger it; pixi-mvt's wrappers in
 [container-mixin.ts](./container-mixin.ts) call it too:
 
 ```ts
@@ -378,7 +378,7 @@ climbs of that renderer's scene passes, so `setTickMethods` works on any
 renderer's nodes with no dispatch; a plain-object node is given them when a
 walk first visits it. Views take both functions from their renderer
 (`pixi-mvt`, `three-mvt`, `html-mvt`), which exports them typed to its own
-node, so passing anything else is a type error; `mvt-utils` keeps an untyped
+node, so passing anything else is a type error; `@mvtjs/utils` keeps an untyped
 `setTickMethods` for the library's own code. The fields stay named `_mvt*`
 properties of the node. One record object per node, a `WeakMap`, and
 symbol-keyed fields were each measured, and each was slower or larger

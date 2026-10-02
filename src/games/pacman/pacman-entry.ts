@@ -1,5 +1,5 @@
 import type { Container } from 'pixi.js';
-import { assert } from '#mvt-utils';
+import { assert } from '@mvtjs/utils';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';

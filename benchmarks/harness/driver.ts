@@ -103,6 +103,8 @@ async function bundleEntry(entry: string, outDir: string, isBrowser: boolean): P
         platform: isBrowser ? 'browser' : 'node',
         format: isBrowser ? 'iife' : 'esm',
         logLevel: 'warning',
+        // The @mvtjs packages resolve to their source, as in the site
+        conditions: ['@mvtjs/source'],
         // Measure what a production build runs: Vite would replace these
         define: { 'import.meta.env': '{"DEV":false,"PROD":true,"MODE":"production","BASE_URL":"/"}' },
         plugins: isBrowser ? [solidBrowserBuild, nodeProcessInBrowser] : [solidBrowserBuild, stubTextureRegistry],

@@ -1,18 +1,19 @@
 /**
- * Generates the JSX runtime's refresh copies, `src/mvt-utils/jsx/refresh-copies.ts`:
+ * Generates the JSX runtime's refresh copies, `src/jsx/refresh-copies.ts`:
  * the refresh code for each number of bindings, written out many times, so
  * that a shape of bindings can have code, and V8 feedback, of its own (see
- * `createRefreshBuilder` in `src/mvt-utils/jsx/refresh-builder.ts`). The
- * output is not checked in. `npm install` runs this, and so do `npm run dev`,
- * `build`, `test` and `bench`, so it is current wherever they are used.
+ * `createRefreshBuilder` in `src/jsx/refresh-builder.ts`). The output is not
+ * checked in. `npm install` runs this, and so do `npm run dev`, `build`,
+ * `test` and `bench`, so it is current wherever they are used.
  *
  * Usage:  npm run generate-refresh-copies
  */
 
 import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /** Where the generated module is saved. Not checked in: see `.gitignore`. */
-const REFRESH_COPIES_PATH = 'src/mvt-utils/jsx/refresh-copies.ts';
+const REFRESH_COPIES_PATH = fileURLToPath(new URL('../src/jsx/refresh-copies.ts', import.meta.url));
 
 /**
  * Copies of each refresh function: the first shared, the rest each for one

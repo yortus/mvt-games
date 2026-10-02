@@ -2,7 +2,7 @@
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { PERFMON_WIDTH, PerfmonView } from '#common';
-import { memoiseLast } from '#mvt-utils';
+import { memoiseLast } from '@mvtjs/utils';
 import type { FrameStats } from '../../../pixi-mvt';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';

@@ -1,7 +1,7 @@
 import { Container, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads } from '#mvt-utils';
-import { createJsx } from '#mvt-utils/jsx';
+import { countReads } from '@mvtjs/utils';
+import { createJsx } from '@mvtjs/utils/jsx';
 import { tickScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 import { List } from './list';

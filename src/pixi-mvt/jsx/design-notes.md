@@ -3,8 +3,8 @@
 > Pixi facts Pixi's JSX target relies on, and decisions specific to it. The
 > JSX runtime itself (children built first, no context providers, no cleanup
 > scopes, how refresh methods are made, element tables) is the renderer-agnostic
-> base, explained in [its README](../../mvt-utils/jsx/README.md), with its
-> settled decisions in [its design notes](../../mvt-utils/jsx/design-notes.md).
+> base, explained in [its README](../../../packages/utils/src/jsx/README.md), with its
+> settled decisions in [its design notes](../../../packages/utils/src/jsx/design-notes.md).
 
 **Written:** 2026-09-28, against Pixi 8.16.0. The findings were first
 recorded with the runtime's settled decisions

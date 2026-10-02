@@ -7,6 +7,19 @@ import tseslint from 'typescript-eslint';
 // and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
     'src/**/*.{ts,tsx}',
+    'packages/*/src/**/*.{ts,tsx}',
+];
+
+// Files that may import a package's devDependencies: tests, spikes, scripts,
+// benchmarks and config. Library source may import only its dependencies and
+// peer dependencies.
+const DEV_FILES = [
+    '**/*.test.{ts,tsx}',
+    '**/*.spike.{ts,tsx}',
+    '**/scripts/**',
+    'benchmarks/**',
+    'docs/**',
+    '*.config.{ts,js}',
 ];
 
 export default tseslint.config(
@@ -53,7 +66,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['src/**/*.{ts,tsx}'],
+        files: ['src/**/*.{ts,tsx}', 'packages/*/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -65,7 +78,9 @@ export default tseslint.config(
                     allow: [
                         // Allow intra-directory relative imports (./foo)
                         './*',
-                        // Allow external packages
+                        // Allow external packages. The @mvtjs packages' own
+                        // `exports` say what can be reached in them
+                        '@mvtjs/**',
                         'pixi.js',
                         'pixi.js/**',
                         'gsap',
@@ -87,9 +102,6 @@ export default tseslint.config(
                         // export it. The JSX base and each renderer's JSX support
                         // are reached only this way from outside their directories.
                         '\\#common',
-                        '\\#mvt-utils',
-                        '\\#mvt-utils/jsx',
-                        '\\#mvt-utils/jsx/conformance',
                         '\\#pixi-mvt/jsx',
                         '\\#three-mvt/jsx',
                         '\\#html-mvt/jsx',
@@ -109,7 +121,8 @@ export default tseslint.config(
         settings: {
             'import/resolver': {
                 typescript: {
-                    project: './tsconfig.json',
+                    project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+                    noWarnOnMultipleProjects: true,
                 },
             },
         },
@@ -135,6 +148,21 @@ export default tseslint.config(
                     message: 'Name the input of a view `XxxViewBindings`, not props. See the style guide, "Views and Bindings".',
                 },
             ],
+        },
+    },
+    {
+        // Every import names a dependency of the nearest package.json: npm's
+        // flat node_modules would let it resolve anyway, and then break for
+        // whoever installs the package.
+        files: ['**/*.{ts,tsx,js,mjs,cjs}'],
+        plugins: {
+            import: importPlugin,
+        },
+        rules: {
+            'import/no-extraneous-dependencies': ['error', {
+                devDependencies: DEV_FILES,
+                includeTypes: true,
+            }],
         },
     },
     {

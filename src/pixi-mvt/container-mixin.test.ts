@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setTickMethods, tickScene } from './container-mixin';
-import { hasRefresh, SKIP_DESCENDANTS } from '../mvt-utils';
+import { hasRefresh, SKIP_DESCENDANTS } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Helpers

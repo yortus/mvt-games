@@ -1,5 +1,5 @@
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
-import type { JsxFactory } from '#mvt-utils/jsx';
+import type { JsxFactory } from '@mvtjs/utils/jsx';
 import { jsx as pixiJsx } from '#pixi-mvt/jsx';
 import { setTickMethods, tickScene } from '../../src/pixi-mvt';
 import { readParams, report, timeFrames } from '../harness/measure';

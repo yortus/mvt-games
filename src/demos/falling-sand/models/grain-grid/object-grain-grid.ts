@@ -1,4 +1,4 @@
-import { assert } from '#mvt-utils';
+import { assert } from '@mvtjs/utils';
 import type { GrainGrid, GrainGridOptions, GrainGridSnapshot, GrainKind, Grains } from './grain-grid';
 import {
     FLOW_SIGHT_CELLS, GRAVITY, MAX_FALL_SPEED, MAX_FLOW_CELLS, SINK_CHANCE, STEPS_TO_SLEEP,

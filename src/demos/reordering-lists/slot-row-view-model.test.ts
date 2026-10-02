@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOrderedSlotList } from '#mvt-utils';
+import { createOrderedSlotList } from '@mvtjs/utils';
 import { createSlotRowViewModel } from './slot-row-view-model';
 
 // ---------------------------------------------------------------------------

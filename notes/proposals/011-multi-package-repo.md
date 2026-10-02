@@ -9,7 +9,8 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phase 0 is done (section 12.1). The npm scopes and GitHub org in section 3 are
+Phase 0 is done (section 12.1); phase 1 is under way, with `@mvtjs/utils`
+extracted (section 12.2). The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -190,7 +191,7 @@ section 13.2.
 | From | Notes |
 | --- | --- |
 | `src/mvt-utils/` | The scene-pass core ([022](./022-renderer-agnostic-jsx.md)), at `.` |
-| `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views. Its `refresh-copies.ts` is generated, not checked in (`scripts/generate-refresh-copies.ts`, task 025): the package's build must generate it first, and ship it |
+| `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views. Its `refresh-copies.ts` is generated, not checked in (by the package's own `scripts/generate-refresh-copies.ts`, task 025): the package's build must generate it first, and ship it |
 | `src/mvt-utils/watch.ts` | Moved from `src/common/` (2026-09-30), as were the rows below |
 | `src/mvt-utils/sequence.ts`, `sequence-reaction.ts` | |
 | `src/mvt-utils/boolean-tween.ts`, `edge-tween.ts` | |
@@ -198,7 +199,8 @@ section 13.2.
 | `src/mvt-utils/slot-list/` | |
 | `src/mvt-utils/type-utils.ts` | |
 | `src/mvt-utils/watch-builder.spike.ts` and its test | Moves with `watch`, still unexported, per [008](./008-watch-builder-spike.md) |
-| Reactivity benchmarks (`benchmarks/*.bench.ts`, `scripts/bench-reactivity*.ts`) | To `packages/utils/bench/`. `solid-js` becomes a dev dependency of `@mvtjs/utils` |
+| `src/mvt-utils/jsx/conformance/` | The conformance suite for JSX targets, at `./jsx/conformance`, with `vitest` an optional peer. 022 section 12 left this open beside a private package; exporting it was the smaller change, and phase 6 can still choose otherwise |
+| ~~Reactivity benchmarks~~ | Stay in `benchmarks/` (section 7) |
 
 ### 5.2 `@mvtjs/pixi`
 
@@ -210,7 +212,7 @@ section 13.2.
 | `src/pixi-mvt/jsx/` | JSX runtime, `<List>`, `<Switch>`, at `./jsx` |
 | `src/pixi-mvt/texture-registry.ts` | Generic Pixi helper, used by six games. Moved from `src/common/` (2026-09-30) |
 | `src/pixi-mvt/frame-stats.ts` | Frame timing for a Pixi app, used by the perfmon. Moved from `src/common/` (2026-09-30) |
-| `src/pixi-mvt/scene-passes-benchmark.ts`, `scripts/bench-scene-passes.ts` | To `packages/pixi/bench/`. The benchmark stays outside the public API |
+| ~~Scene-pass benchmarks~~ | Stay in `benchmarks/` (section 7) |
 
 Exports: `.`, `./jsx`, `./jsx/jsx-runtime` and `./jsx/jsx-dev-runtime`. JSX files then declare `/** @jsxImportSource
 @mvtjs/pixi/jsx */` in place of today's `#pixi-mvt/jsx`. The root never
@@ -359,8 +361,9 @@ excluded from the docs build until it is published.
 docs/                 VitePress, private package
 notes/                proposals/, tasks/, archive/
 packages/
-    utils/            @mvtjs/utils   src/, bench/
-    pixi/             @mvtjs/pixi    src/, bench/
+    utils/            @mvtjs/utils   src/, scripts/
+    pixi/             @mvtjs/pixi    src/
+benchmarks/           the benchmark harness and suites, for libraries and games alike
 site/                 private package
     src/              cabinet/, games/, demos/, playground/, shared/, main.ts
     public/
@@ -381,8 +384,9 @@ Where each current top-level entry goes:
 | `src/main.ts`, `cabinet/`, `games/`, `demos/`, `playground/` | `site/src/` |
 | `src/common/` | Already split per sections 5.1 and 5.2 (2026-09-30); what is left is the site's shared views |
 | `src/pixi-mvt/`, `src/pixi-mvt/jsx/` | `packages/pixi/src/` |
-| `scripts/generate-*.ts`, `vite-plugin-spritesheet.ts` | `site/scripts/` |
-| `scripts/bench-*.ts`, `benchmarks/` | `packages/*/bench/` |
+| `scripts/generate-refresh-copies.ts` | `packages/utils/scripts/` (done in phase 1) |
+| `scripts/generate-*-textures.ts`, `generate-textures.ts`, `vite-plugin-spritesheet.ts` | `site/scripts/` |
+| `benchmarks/` | Stays. It became one harness after this proposal was written, and its suites measure the games and demos as well as the libraries, so it cannot split by package. It imports the libraries by package name, and its bundler sets the source condition |
 | `dist/` (build output) | `site/dist/`, still ignored |
 | `package-lock.json` | Stays, covering every workspace |
 | `tsconfig.json` | `tsconfig.base.json` plus one `tsconfig.json` per package |
@@ -689,7 +693,7 @@ the renames when the moved files are staged, so history follows them.
 
 - Add `workspaces` to the root `package.json`, and `tsconfig.base.json`.
 - Create `packages/utils` and `packages/pixi` from the files in sections 5.1
-  and 5.2, with their tests and benchmarks, and `packages/three` and
+  and 5.2, with their tests, and `packages/three` and
   `packages/html` from 022's renderers. Each is one directory already
   (`src/mvt-utils/`, `src/pixi-mvt/`, `src/three-mvt/`, `src/html-mvt/`,
   each renderer's JSX in `jsx/`), so this moves directories. **The `-mvt`
@@ -697,9 +701,10 @@ the renames when the moved files are staged, so history follows them.
   one `src/`, and a package directory is named for its package.
 - The root package (still the app) depends on both through `^0.1.0` ranges,
   which npm links to the workspaces.
-  Replace `#common` and `#pixi-mvt/jsx` imports and relative `pixi-mvt` imports
-  with `@mvtjs/utils` and `@mvtjs/pixi`, and the `@jsxImportSource
-  #pixi-mvt/jsx` pragmas with `@mvtjs/pixi/jsx`.
+  Replace the `#mvt-utils` and `#<renderer>-mvt/jsx` imports, and relative
+  imports into the library directories, with the package names, and the
+  `@jsxImportSource #<renderer>-mvt/jsx` pragmas with `@mvtjs/<renderer>/jsx`.
+  `#common` is the site's own and stays.
 - Wire the `@mvtjs/source` condition into TypeScript, Vite and Vitest.
 - Turn on `import/no-extraneous-dependencies` for each package (section 8.1),
   verified with a deliberate violation.
@@ -708,6 +713,23 @@ the renames when the moved files are staged, so history follows them.
   worktree would run the main checkout's library code.
 - Rework the barrel rule for the new layout and **fix section 11.1**,
   verified with a deliberate violation.
+
+**Progress.** Done one library at a time, each checked with lint, the tests,
+the full build, the dev server, and a Node and a browser benchmark case.
+
+- `@mvtjs/utils` (2026-10-02). The generator for `refresh-copies.ts` moved
+  into the package and runs on Node's type stripping, so it needs no `tsx`;
+  the root's `prepare` and `pre*` hooks call it through `-w @mvtjs/utils`.
+  `tsconfig.base.json` holds the shared options. A new `typecheck` script,
+  which `build` and `build:site` both run, checks the root's, the package's and
+  the benchmarks' tsconfigs; the package's own covers its tests, which nothing
+  in the site imports. The barrel rule now covers `packages/*/src/`, and
+  allows `@mvtjs/**`, whose `exports` set the boundary. Both rules reported a
+  deliberate violation inside the package. The new dependency rule found four
+  `@codemirror/*` packages the playground imported without declaring, which
+  are now declared. The tarball leaves out tests and the spike
+  (`npm pack --dry-run`), and publint finds nothing wrong except the missing
+  `dist/`, which phase 6 builds.
 
 ### 12.3 Phase 2: move the app into `site/`
 

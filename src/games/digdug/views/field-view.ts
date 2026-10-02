@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import type { TileKind, DepthLayer } from '../data';
 import type { GamePhase } from '../models';
 import { setTickMethods } from '../../../pixi-mvt';

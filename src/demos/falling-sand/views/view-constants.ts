@@ -1,5 +1,5 @@
 import { PERFMON_HEIGHT, PERFMON_INFO_HEIGHT } from '#common';
-import { assert } from '#mvt-utils';
+import { assert } from '@mvtjs/utils';
 
 /**
  * Sizes and positions for the demo's views, in canvas pixels. The tank is

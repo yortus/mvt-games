@@ -1,5 +1,5 @@
 import { type Container, Texture } from 'pixi.js';
-import { describeJsxConformance } from '#mvt-utils/jsx/conformance';
+import { describeJsxConformance } from '@mvtjs/utils/jsx/conformance';
 import { pixiElements } from './pixi-elements';
 import { pixiTarget } from './pixi-target';
 

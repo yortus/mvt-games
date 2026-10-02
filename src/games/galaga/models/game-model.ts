@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import type { WaveConfig } from '../data';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import {

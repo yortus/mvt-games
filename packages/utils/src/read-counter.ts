@@ -7,7 +7,7 @@
  * how much polling it does per frame. Nothing is counted unless the code
  * doing the reads adds them.
  *
- * - The JSX runtime (`mvt-utils/jsx`, and each renderer's built on it, such
+ * - The JSX runtime (`@mvtjs/utils/jsx`, and each renderer's built on it, such
  *   as `pixi-mvt/jsx`) has this built in. It counts each call of a function
  *   attribute, each read of a `<List>`'s `items` (once per frame,
  *   plus once per slot for its presence check), and each `<Match>` `when` a

@@ -1,5 +1,5 @@
 import { Container, Sprite, Ticker } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { RockPhase } from '../models';
 import { setTickMethods } from '../../../pixi-mvt';

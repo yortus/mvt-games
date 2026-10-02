@@ -1,6 +1,6 @@
 import { type Container, type Graphics, Rectangle, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, hasRefresh, readCounter, SKIP_DESCENDANTS } from '#mvt-utils';
+import { countReads, hasRefresh, readCounter, SKIP_DESCENDANTS } from '@mvtjs/utils';
 import { tickScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 

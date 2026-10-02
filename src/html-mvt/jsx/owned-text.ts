@@ -1,4 +1,4 @@
-import { assert } from '../../mvt-utils';
+import { assert } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSlotList, type Slot } from '../../src/mvt-utils';
+import { createSlotList, type Slot } from '@mvtjs/utils';
 import { jsx, List } from '#pixi-mvt/jsx';
 import { setTickMethods, tickScene } from '../../src/pixi-mvt';
 

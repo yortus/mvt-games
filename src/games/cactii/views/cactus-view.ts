@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import type { CactusKind } from '../models';
 import { textures } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX, PANEL_COLOURS } from './view-constants';

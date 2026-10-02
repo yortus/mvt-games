@@ -1,12 +1,12 @@
 /**
  * `<Switch>` and `<Match>` for three.js: the base's components
- * (`../mvt-utils/jsx/switch.ts`, where their behaviour is documented) over
+ * (`switch.ts` in `@mvtjs/utils/jsx`, where their behaviour is documented) over
  * `Object3D`s.
  */
 
 import type { Object3D } from 'three';
-import { createSwitch } from '#mvt-utils/jsx';
-import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '#mvt-utils/jsx';
+import { createSwitch } from '@mvtjs/utils/jsx';
+import type { MatchBindings as BaseMatchBindings, SwitchBindings as BaseSwitchBindings } from '@mvtjs/utils/jsx';
 import { threeTarget } from './three-target';
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createScenePasses } from '../mvt-utils';
+import { createScenePasses } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -7,7 +7,7 @@ import { createScenePasses } from '../mvt-utils';
 
 /**
  * The scene passes over Pixi containers: the generic memoised walk
- * (`ScenePasses` in `../mvt-utils`), told how to read a container's children
+ * (`ScenePasses` in `@mvtjs/utils`), told how to read a container's children
  * and parent. They run whatever a container's `visible`, `renderable` or
  * culling, since presentation state that stops advancing while hidden is
  * stale when it reappears; a view skips its descendants by returning

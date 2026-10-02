@@ -1,4 +1,4 @@
-import { attributesOf, defineElements, element, type ElementDefinition, event } from '#mvt-utils/jsx';
+import { attributesOf, defineElements, element, type ElementDefinition, event } from '@mvtjs/utils/jsx';
 import { writeText } from './owned-text';
 
 // ---------------------------------------------------------------------------

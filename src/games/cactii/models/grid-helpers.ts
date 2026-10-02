@@ -1,6 +1,6 @@
 import type { CactusCell, CactusKind } from './common';
 import { EMPTY_CELL, createCell } from './common';
-import type { DeepReadonly } from '#mvt-utils';
+import type { DeepReadonly } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Interface

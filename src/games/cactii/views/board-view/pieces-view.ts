@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
 import { CactusView } from '../cactus-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';

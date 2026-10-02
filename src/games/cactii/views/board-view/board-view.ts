@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSequence, type DeepReadonly, watch } from '#mvt-utils';
+import { createSequence, type DeepReadonly, watch } from '@mvtjs/utils';
 import type { BoardPhase, CactusCell } from '../../models';
 import { BackgroundView } from './background-view';
 import { BannerView } from './banner-view';

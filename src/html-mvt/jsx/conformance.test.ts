@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describeJsxConformance } from '#mvt-utils/jsx/conformance';
+import { describeJsxConformance } from '@mvtjs/utils/jsx/conformance';
 import { isDestroyed } from '../element-mixin';
 import { htmlElements } from './html-elements';
 import { htmlTarget } from './html-target';

@@ -1,6 +1,6 @@
 import { batch } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
-import { assert } from '#mvt-utils';
+import { assert } from '@mvtjs/utils';
 import {
     FLOW_SIGHT_CELLS, GRAVITY, MAX_FALL_SPEED, MAX_FLOW_CELLS, SINK_CHANCE, STEPS_TO_SLEEP,
 } from '../model-constants';

@@ -1,12 +1,15 @@
 /// <reference types="vitest/config" />
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
-import { defineConfig, normalizePath, type Plugin } from 'vite';
+import { defaultClientConditions, defaultServerConditions, defineConfig, normalizePath, type Plugin } from 'vite';
 import { spritesheetPlugin } from './scripts/vite-plugin-spritesheet';
 
 const VITEPRESS_DEV_PORT = 5200;
 const PROJECT_ROOT = __dirname;
 const SITE_ROOT = resolve(PROJECT_ROOT, 'site');
+
+/** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
+const SOURCE_CONDITION = '@mvtjs/source';
 
 /** Redirect `/playground` and `/games` to their trailing-slash equivalents so Vite serves the index.html. */
 function trailingSlashPlugin(): Plugin {
@@ -37,7 +40,12 @@ export default defineConfig({
         trailingSlashPlugin(),
     ],
     resolve: {
+        conditions: [SOURCE_CONDITION, ...defaultClientConditions],
         alias: [{ find: /^\/src\//, replacement: `${normalizePath(resolve(PROJECT_ROOT, 'src'))}/` }],
+    },
+    // Tests in Node resolve as the server does
+    ssr: {
+        resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
     // Dev-only: proxy /docs requests to VitePress's dev server.
     // In production, both Vite and VitePress output static files to dist/.

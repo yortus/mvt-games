@@ -1,0 +1,36 @@
+{
+    "name": "@mvtjs/utils",
+    "version": "0.1.0",
+    "description": "Optional, renderer-agnostic helpers for MVT (Model-View-Ticker): scene passes, change detection, tweens, and the base for JSX targets",
+    "type": "module",
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./jsx": {
+            "@mvtjs/source": "./src/jsx/index.ts",
+            "types": "./dist/jsx/index.d.ts",
+            "default": "./dist/jsx/index.js"
+        },
+        "./jsx/conformance": {
+            "@mvtjs/source": "./src/jsx/conformance/index.ts",
+            "types": "./dist/jsx/conformance/index.d.ts",
+            "default": "./dist/jsx/conformance/index.js"
+        }
+    },
+    "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.spike.ts"],
+    "scripts": {
+        "generate-refresh-copies": "node scripts/generate-refresh-copies.ts"
+    },
+    "peerDependencies": {
+        "vitest": "^4.1.0"
+    },
+    "peerDependenciesMeta": {
+        "vitest": { "optional": true }
+    },
+    "devDependencies": {
+        "vitest": "^4.1.0"
+    }
+}

@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import type { GamePhase } from '../data';
 import { POINTS_TO_WIN_ROUND } from '../data';
 import { SCREEN_WIDTH, HUD_HEIGHT } from './view-constants';

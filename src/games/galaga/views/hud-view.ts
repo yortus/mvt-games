@@ -1,5 +1,5 @@
 import { Container, Sprite, Text } from 'pixi.js';
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import { setTickMethods } from '../../../pixi-mvt';
 

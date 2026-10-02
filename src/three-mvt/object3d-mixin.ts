@@ -1,5 +1,5 @@
 import { Object3D } from 'three';
-import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
+import { createDestroyRegistry, createScenePasses } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -7,7 +7,7 @@ import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
 
 /**
  * The scene passes over three.js objects: the generic memoised walk
- * (`ScenePasses` in `../mvt-utils`), told how to read an object's children
+ * (`ScenePasses` in `@mvtjs/utils`), told how to read an object's children
  * and parent. Unlike three's `onBeforeRender`, they run for objects that are
  * hidden or out of view, so a binding that brings an object back into view
  * still runs.
@@ -23,7 +23,7 @@ export const { tickScene, setTickMethods } = objectScenePasses;
 
 /**
  * Destroying three.js objects, which have no destroy of their own
- * (`DestroyRegistry` in `../mvt-utils`): runs each
+ * (`DestroyRegistry` in `@mvtjs/utils`): runs each
  * `onDestroyed` callback in the subtree, stops the scene passes calling it,
  * and detaches it. Geometry, materials and textures are not disposed: the
  * view does not know who else uses them, so one that made them disposes them

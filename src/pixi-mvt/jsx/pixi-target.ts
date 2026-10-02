@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
 import { tickScene } from '../container-mixin';
 
 // ---------------------------------------------------------------------------

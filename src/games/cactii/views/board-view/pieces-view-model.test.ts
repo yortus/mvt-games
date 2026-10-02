@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSequence } from '#mvt-utils';
+import { createSequence } from '@mvtjs/utils';
 import { EMPTY_CELL, type CactusCell } from '../../models';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
 

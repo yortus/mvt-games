@@ -5,7 +5,7 @@
 // preset selector, URL state, and keyboard shortcuts.
 // ---------------------------------------------------------------------------
 
-import { assert } from '#mvt-utils';
+import { assert } from '@mvtjs/utils';
 import { createEditorPanel } from './editor-panel';
 import { createControlsPanel } from './controls-panel';
 import { createConsolePanel } from './console-panel';

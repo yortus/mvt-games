@@ -1,5 +1,5 @@
 import { Group, type Object3D } from 'three';
-import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
 import { destroyObject, onDestroyed, tickScene } from '../object3d-mixin';
 
 // ---------------------------------------------------------------------------
