@@ -199,14 +199,19 @@ let browserVersion: string | undefined;
 /**
  * Runs each case in a fresh headless Chrome: the bundle inlined in a page
  * with the case's params, which reports its metrics into the page, read back
- * with `--dump-dom`. A fresh profile each time, as each Node case gets a
- * fresh process. Chrome is found at `CHROME_PATH`, or where it installs by
+ * with `--dump-dom`. Chrome is found at `CHROME_PATH`, or where it installs by
  * default.
+ *
+ * The cases share one profile, removed with `outDir`. Chrome 153 and later
+ * test a new profile's Windows password by logging in with a blank one, and
+ * Windows counts each try as a failed logon: a fresh profile per case locked
+ * the account out after ten cases.
  */
 function browserRunner(bundle: string, outDir: string): CaseRunner {
     const chrome = findChrome();
     const code = readFileSync(bundle, 'utf8');
     if (code.includes('</script')) throw new Error('the bundle contains </script, so it cannot be inlined in a page');
+    const profile = join(outDir, 'profile');
     return (testCase) => {
         const page = join(outDir, 'case.html');
         writeFileSync(page, [
@@ -220,12 +225,10 @@ function browserRunner(bundle: string, outDir: string): CaseRunner {
             `<script>${code}</script>`,
             '</body></html>',
         ].join('\n'));
-        const profile = mkdtempSync(join(outDir, 'profile-'));
         const child = spawnSync(chrome, [
             '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
             `--user-data-dir=${profile}`, '--dump-dom', pathToFileURL(page).href,
         ], { encoding: 'utf8', timeout: 10 * 60 * 1000, maxBuffer: 64 * 1024 * 1024 });
-        rmSync(profile, { recursive: true, force: true });
         const dom = child.stdout ?? '';
         browserVersion = /data-user-agent="[^"]*?((?:Chrome|Edg)\/[\d.]+)/.exec(dom)?.[1] ?? browserVersion;
         const result = /<pre id="mvt-bench-result">([^<]*)<\/pre>/.exec(dom);
