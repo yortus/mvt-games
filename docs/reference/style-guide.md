@@ -32,6 +32,7 @@ is written and organized in this project.
 | No `null`             | `undefined` over `null`                | [No `null`](#no-null)                          |
 | No `this`             | Closures over `this` bindings          | [No `this`](#no-this)                          |
 | Function members      | `update: (deltaMs: number) => void`    | [Function-Valued Properties in Types](#function-valued-properties-in-types) |
+| Conditions            | `assert(loaded, 'call load() first')`  | [Assertions](#assertions)                      |
 
 ## Naming Conventions
 
@@ -247,6 +248,33 @@ still use method shorthand (`update(deltaMs) { ... }`), and accessors
 
 Enforced by lint: the `@typescript-eslint/method-signature-style` rule, set to
 `'property'`, checks and auto-fixes it.
+
+## Assertions
+
+State a precondition, postcondition or invariant with `assert` from
+`#mvt-utils`, rather than a hand-written `if` and `throw`. It reads as the
+condition that must hold, and TypeScript narrows on it.
+
+```ts
+// ✅ Preferred
+assert(loaded, 'pacman: preload() must be called before start()');
+assert(texture, () => `Texture '${name}' not found`);
+
+// ❌ Avoid
+if (!loaded) throw new Error('pacman: preload() must be called before start()');
+```
+
+- **Build messages lazily.** A message made from values is passed as a
+  function, so it is built only on failure.
+- **Not on hot paths.** In code that runs every frame
+  ([Hot Paths](../building-with-mvt/performance/hot-paths.md)), keep a plain
+  `if` and `throw`: it costs only the condition, with no call and no message
+  function to allocate.
+- **It always checks.** A check too costly for a production build goes under
+  the caller's own dev-only guard: `if (DEV) assert(...)`.
+
+A `throw` that is not a check, such as "not found" after a search, stays a
+`throw`.
 
 ## Factory Functions
 

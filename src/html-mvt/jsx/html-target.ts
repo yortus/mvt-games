@@ -1,4 +1,5 @@
 import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
+import { assert } from '../../mvt-utils';
 import { destroyElement, onDestroyed, tickScene } from '../element-mixin';
 import { hasOwnedText } from './owned-text';
 
@@ -35,8 +36,8 @@ export const htmlTarget: JsxTarget<Element> = {
         return document.createElement('mvt-group');
     },
     append: (parent, child) => {
-        if (DEV && hasOwnedText(parent)) {
-            throw new Error(`[html-mvt/jsx] <${parent.localName}> has text, so it cannot also have element children; put the text in a child element`);
+        if (DEV) {
+            assert(!hasOwnedText(parent), () => `[html-mvt/jsx] <${parent.localName}> has text, so it cannot also have element children; put the text in a child element`);
         }
         parent.appendChild(child);
     },

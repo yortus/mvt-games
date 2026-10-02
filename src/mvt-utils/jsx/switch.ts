@@ -38,6 +38,7 @@
  * See section 5 of `notes/archive/004-list-proposal.md` for the design.
  */
 
+import { assert } from '../assert';
 import { readCounter } from '../read-counter';
 import { setTickMethods } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
@@ -131,13 +132,12 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
         const children = bindings.children === undefined ? [] : Array.isArray(bindings.children) ? bindings.children : [bindings.children];
         for (let i = 0; i < children.length; i++) {
             const match = matches.get(children[i]);
-            if (match === undefined) {
-                throw new Error('<Switch> children must be <Match> elements');
-            }
-            if (match.when === undefined && i !== children.length - 1) {
-                // Also covers a second `<Match else>`, since only one can be last
-                throw new Error('<Match else> must be the last <Match> in its <Switch>; any after it could never be shown');
-            }
+            assert(match !== undefined, '<Switch> children must be <Match> elements');
+            // Also covers a second `<Match else>`, since only one can be last
+            assert(
+                match.when !== undefined || i === children.length - 1,
+                '<Match else> must be the last <Match> in its <Switch>; any after it could never be shown',
+            );
             match.isAdopted = true;
             branches.push(children[i]);
             conditions.push(match.when);

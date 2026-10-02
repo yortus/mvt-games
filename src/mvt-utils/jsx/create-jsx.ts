@@ -1,3 +1,4 @@
+import { assert } from '../assert';
 import type { UpdateMethod } from '../scene-methods';
 import { hasRefresh, setTickMethods } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
@@ -181,7 +182,7 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
         let resolved = resolvedElements.get(kind);
         if (resolved !== undefined) return resolved;
         const definition = Object.hasOwn(elements, kind) ? elements[kind] : undefined;
-        if (definition === undefined) throw new Error(`Unknown ${target.name} element: <${kind}>`);
+        assert(definition !== undefined, () => `Unknown ${target.name} element: <${kind}>`);
         const attributes = new Map<string, ResolvedAttribute>();
         for (const key in definition.attributes) {
             attributes.set(key, resolveAttribute(definition.attributes[key]));

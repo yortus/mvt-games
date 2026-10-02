@@ -35,7 +35,7 @@ src/
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
-| `mvt-utils/` | Renderer-agnostic helpers and models                   | `watch`, `memoiseLast`, `createSlotList`, `createSequence`    |
+| `mvt-utils/` | Renderer-agnostic helpers and models                   | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
 | `common/` | The site's shared views                                   | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
 
 ::: info Data directories are not MVT layers

@@ -1,3 +1,4 @@
+import { assert } from '#mvt-utils';
 import type { GrainGrid, GrainGridOptions, GrainGridSnapshot, GrainKind, Grains } from './grain-grid';
 import {
     FLOW_SIGHT_CELLS, GRAVITY, MAX_FALL_SPEED, MAX_FLOW_CELLS, SINK_CHANCE, STEPS_TO_SLEEP,
@@ -197,9 +198,10 @@ export function createObjectGrainGrid(options: GrainGridOptions): GrainGrid {
     }
 
     function load(snapshot: GrainGridSnapshot): void {
-        if (snapshot.cols !== cols || snapshot.rows !== rows) {
-            throw new Error(`Cannot load a ${snapshot.cols} x ${snapshot.rows} grid into a ${cols} x ${rows} one`);
-        }
+        assert(
+            snapshot.cols === cols && snapshot.rows === rows,
+            () => `Cannot load a ${snapshot.cols} x ${snapshot.rows} grid into a ${cols} x ${rows} one`,
+        );
         clear();
         grains.length = snapshot.kinds.length;
         for (let id = 0; id < grains.length; id++) {

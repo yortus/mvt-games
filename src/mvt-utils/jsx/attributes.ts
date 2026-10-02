@@ -1,3 +1,5 @@
+import { assert } from '../assert';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -184,15 +186,17 @@ export function element<E>(
 export function defineElements<T extends Readonly<Record<string, ElementDefinition<unknown, object, object>>>>(elements: T): T {
     for (const kind in elements) {
         for (const key in elements[kind].attributes) {
-            if (MVT_ATTRIBUTE_KEYS.has(key)) {
-                throw new Error(`<${kind}> defines '${key}', which every element already has; remove it from the table`);
-            }
+            assert(
+                !MVT_ATTRIBUTE_KEYS.has(key),
+                () => `<${kind}> defines '${key}', which every element already has; remove it from the table`,
+            );
         }
         for (const prefix in elements[kind].patterns) {
             for (const key of MVT_ATTRIBUTE_KEYS) {
-                if (key.startsWith(prefix)) {
-                    throw new Error(`<${kind}> has the pattern '${prefix}', which matches '${key}', an attribute every element already has`);
-                }
+                assert(
+                    !key.startsWith(prefix),
+                    () => `<${kind}> has the pattern '${prefix}', which matches '${key}', an attribute every element already has`,
+                );
             }
         }
     }

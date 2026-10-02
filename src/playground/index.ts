@@ -5,6 +5,7 @@
 // preset selector, URL state, and keyboard shortcuts.
 // ---------------------------------------------------------------------------
 
+import { assert } from '#mvt-utils';
 import { createEditorPanel } from './editor-panel';
 import { createControlsPanel } from './controls-panel';
 import { createConsolePanel } from './console-panel';
@@ -159,7 +160,7 @@ function buildLayout(root: HTMLElement): {
 
 function main(): void {
     const root = document.getElementById('playground-root');
-    if (!root) throw new Error('Missing #playground-root element');
+    assert(root, 'Missing #playground-root element');
 
     const layout = buildLayout(root);
 

@@ -1,3 +1,5 @@
+import { assert } from '../../mvt-utils';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -19,8 +21,8 @@ export function writeText(el: Element, value: string | number): void {
         node.data = text;
         return;
     }
-    if (DEV && el.firstElementChild) {
-        throw new Error(`[html-mvt/jsx] <${el.localName}> has element children, so it cannot also have text; put the text in a child element`);
+    if (DEV) {
+        assert(!el.firstElementChild, () => `[html-mvt/jsx] <${el.localName}> has element children, so it cannot also have text; put the text in a child element`);
     }
     const created = el.ownerDocument.createTextNode(text);
     ownedText.set(el, created);

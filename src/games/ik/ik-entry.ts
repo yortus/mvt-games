@@ -1,4 +1,5 @@
 import type { Container } from 'pixi.js';
+import { assert } from '#mvt-utils';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
@@ -24,7 +25,7 @@ export function createIkEntry(): GameEntry {
         },
 
         start(stage: Container): GameSession {
-            if (!loaded) throw new Error('ik: load() must be called before start()');
+            assert(loaded, 'ik: load() must be called before start()');
 
             const gameModel = createGameModel();
             const gameView = GameView({ model: gameModel });

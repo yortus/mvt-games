@@ -1,4 +1,5 @@
 import { Assets, type Spritesheet, type Texture } from 'pixi.js';
+import { assert } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -28,6 +29,8 @@ export function createTextureRegistry<T extends TextureNameMap>(
     nameMap: T,
 ): TextureRegistry<T> {
     let record: TextureRecord<T> | undefined;
+    // Built once: `get()` is called often, and checks on every call.
+    const notLoadedMessage = `Textures not loaded - call load() before get() (spritesheet: '${spritesheetUrl}')`;
 
     return {
         async load(): Promise<void> {
@@ -37,8 +40,8 @@ export function createTextureRegistry<T extends TextureNameMap>(
         },
 
         get(): TextureRecord<T> {
-            if (record) return record;
-            throw new Error(`Textures not loaded - call load() before get() (spritesheet: '${spritesheetUrl}')`);
+            assert(record !== undefined, notLoadedMessage);
+            return record;
         },
     };
 }
@@ -53,7 +56,7 @@ function buildRecord(map: TextureNameMap, spritesheetUrl: string): Record<string
         const value = map[key];
         if (typeof value === 'string') {
             const texture = Assets.get<Texture>(value);
-            if (!texture) throw new Error(`Texture '${value}' not found after loading '${spritesheetUrl}'`);
+            assert(texture, () => `Texture '${value}' not found after loading '${spritesheetUrl}'`);
             result[key] = texture;
         }
         else {

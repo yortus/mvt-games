@@ -184,6 +184,15 @@ Method signatures get looser parameter checks, even in strict mode, and
 suggest a `this`-bound method, which this project never has. Object literals
 implementing the interface may still use method shorthand. Enforced by lint.
 
+## Assertions
+
+State preconditions, postconditions and invariants with `assert` from
+`#mvt-utils` (`assert(loaded, 'call load() first')`), not `if (...) throw`.
+Pass a message built from values as a function, so it is built only on
+failure. Not on hot paths: in code that runs every frame, keep a plain
+`if` and `throw`. Costly checks go under the caller's `if (DEV)`. See
+[Style Guide: Assertions](../reference/style-guide.md#assertions).
+
 ## Easily Confused Names
 
 | Avoid       | Prefer                                                | Rationale                                  |

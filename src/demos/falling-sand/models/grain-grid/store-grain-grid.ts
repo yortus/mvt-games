@@ -1,5 +1,6 @@
 import { batch } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
+import { assert } from '#mvt-utils';
 import {
     FLOW_SIGHT_CELLS, GRAVITY, MAX_FALL_SPEED, MAX_FLOW_CELLS, SINK_CHANCE, STEPS_TO_SLEEP,
 } from '../model-constants';
@@ -185,9 +186,10 @@ export function createStoreGrainGrid(options: GrainGridOptions): GrainGrid {
     }
 
     function load(snapshot: GrainGridSnapshot): void {
-        if (snapshot.cols !== cols || snapshot.rows !== rows) {
-            throw new Error(`Cannot load a ${snapshot.cols} x ${snapshot.rows} grid into a ${cols} x ${rows} one`);
-        }
+        assert(
+            snapshot.cols === cols && snapshot.rows === rows,
+            () => `Cannot load a ${snapshot.cols} x ${snapshot.rows} grid into a ${cols} x ${rows} one`,
+        );
         const loadedGrains: (StoredGrain | undefined)[] = [];
         const cells = createEmptyCells(capacity);
         let grainCount = 0;

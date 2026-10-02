@@ -1,3 +1,5 @@
+import { assert } from '../assert';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -165,9 +167,7 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
         },
 
         insert(value) {
-            if (computeIsFull()) {
-                throw new Error('SlotList.insert: list is full; check isFull first');
-            }
+            assert(!computeIsFull(), 'SlotList.insert: list is full; check isFull first');
 
             let index = lowestFreeHint;
             while (index < slotCount && records[index] !== undefined) {
@@ -200,10 +200,11 @@ export function createSlotList<T>(options: SlotListOptions<T> = {}): SlotList<T>
             record.releaseAtMs = nowMs + delay;
             heapPush(pendingRelease, record);
 
-            if (DEV && !hasUpdated && pendingRelease.length >= PENDING_RELEASE_LEAK_THRESHOLD) {
-                throw new Error(
-                    `SlotList: ${pendingRelease.length} slots are pending release but update(deltaMs) `
-                    + 'has never been called; call update() every tick so removed slots are released.',
+            if (DEV && !hasUpdated) {
+                assert(
+                    pendingRelease.length < PENDING_RELEASE_LEAK_THRESHOLD,
+                    () => `SlotList: ${pendingRelease.length} slots are pending release but update(deltaMs) `
+                        + 'has never been called; call update() every tick so removed slots are released.',
                 );
             }
         },
