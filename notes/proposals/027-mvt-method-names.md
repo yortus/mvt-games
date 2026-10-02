@@ -10,9 +10,13 @@
 > subclasses an `update` method. That matters for the published packages
 > (011), and not at all for this repo.
 
-**Status:** proposed. Investigation only; no code changed. Section 11 (added
-2026-10-01) proposes an alternative, `setUpdate` / `setRefresh` with no
-methods on the nodes, which would make most of the rename unnecessary.
+**Status:** decided, and being carried out by task
+[028](../tasks/active/028-tick-api-migration.md), which records the final API
+(`tickScene` / `onTick`) and the decisions behind it. This document still
+reads as the investigation it was: section 11 (no methods on nodes) replaced
+the rename argued in sections 3-6.3, and a later session settled on the tick
+API built on it. Task 028's last phase rewrites this proposal around that
+outcome and archives it.
 
 **Written:** 2026-09-30, against Pixi 8.21.0, three 0.186.1 (`@types/three`
 0.186), TypeScript 5.9, happy-dom 20, and this repo at `aa1f37f` plus the

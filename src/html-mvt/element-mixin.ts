@@ -37,7 +37,7 @@ const elementScenePasses = createScenePasses<Element>({
     beforeScenePass: watchElementTree,
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh } = elementScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = elementScenePasses;
 
 /**
  * Destroying elements, which have no destroy of their own

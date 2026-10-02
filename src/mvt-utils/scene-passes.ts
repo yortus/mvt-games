@@ -84,6 +84,55 @@ export interface ScenePasses<N> {
     readonly setUpdate: (node: N, method: UpdateMethodOrWrapper | undefined) => void;
     /** `setRefresh`, typed to this kind of node, as `setUpdate` is. */
     readonly setRefresh: (node: N, method: RefreshMethodOrWrapper | undefined) => void;
+    /**
+     * EXPERIMENT (proposal 027): ticks a subtree, which is one turn of the
+     * ticker's loop for a scene: the update scene pass with `deltaMs`, then the
+     * refresh scene pass.
+     *
+     * ```ts
+     * tickScene({ root: app.stage, deltaMs });            // a whole tick
+     * tickScene({ root, deltaMs, only: 'update' });       // the update scene pass alone
+     * tickScene({ root, only: 'refresh' });               // the refresh scene pass alone
+     * ```
+     *
+     * `only` is for a caller that has to step the two apart, such as many
+     * updates and then one refresh. A refresh alone takes no `deltaMs`, and
+     * leaving `deltaMs` out otherwise is a type error, not a refresh.
+     */
+    readonly tickScene: (options: TickSceneOptions<N>) => void;
+    /** EXPERIMENT (proposal 027): `onTick`, typed to this kind of node, as `setUpdate` is. */
+    readonly onTick: (node: N, methods: TickMethods) => void;
+}
+
+/** What `tickScene` runs: a whole tick, or one of its two scene passes. */
+type TickSceneOptions<N> = TickWithUpdate<N> | TickWithoutUpdate<N>;
+
+/** A tick that runs the update scene pass: both scene passes, or `only` the update. */
+interface TickWithUpdate<N> {
+    /** The subtree to tick. */
+    readonly root: N;
+    /** How far to advance presentation state, in the update scene pass. */
+    readonly deltaMs: number;
+    /** `'update'` runs the update scene pass alone; left out, both run. */
+    readonly only?: 'update';
+}
+
+/** The refresh scene pass alone, which advances nothing, so takes no `deltaMs`. */
+interface TickWithoutUpdate<N> {
+    /** The subtree to refresh. */
+    readonly root: N;
+    readonly only: 'refresh';
+    readonly deltaMs?: undefined;
+}
+
+/**
+ * What a node does on each tick, as `onTick` takes it: its update method, its
+ * refresh method, or both. A member left out is left as it is; one given as
+ * `undefined` is cleared.
+ */
+interface TickMethods {
+    readonly update?: UpdateMethodOrWrapper | undefined;
+    readonly refresh?: RefreshMethodOrWrapper | undefined;
 }
 
 /**
@@ -218,7 +267,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
         invalidateRefresh: (node) => invalidateRefresh(node as N),
     };
 
-    return { updateScene, refreshScene, invalidate, installMethods, setUpdate, setRefresh };
+    return { updateScene, refreshScene, invalidate, installMethods, setUpdate, setRefresh, tickScene, onTick };
 
     function updateScene(node: N, deltaMs: number): void {
         tree.beforeScenePass?.(node);
@@ -263,6 +312,11 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
             activeRefreshes.pop();
             if (isOutermost && nestedWalks.length !== 0) nestedWalks.length = 0;
         }
+    }
+
+    function tickScene(options: TickSceneOptions<N>): void {
+        if (options.only !== 'refresh') updateScene(options.root, options.deltaMs);
+        if (options.only !== 'update') refreshScene(options.root);
     }
 
     /**
@@ -678,6 +732,27 @@ export function setRefresh(node: object, method: RefreshMethodOrWrapper | undefi
     fields._mvtOnRefresh = stored;
     methodAssignments++;
     fields._mvtInvalidators?.invalidateRefresh(node);
+}
+
+/**
+ * EXPERIMENT (proposal 027): sets what `node` does on each tick, its update
+ * method, its refresh method, or both, in one call:
+ *
+ * ```ts
+ * onTick(view, {
+ *     update: (deltaMs) => { flash.update(deltaMs); },
+ *     refresh: () => { view.alpha = flash.alpha; },
+ * });
+ * ```
+ *
+ * A member left out is left as it is, so the two can be set apart; one given
+ * as `undefined` is cleared. Each is set as `setUpdate` / `setRefresh` set
+ * it, so a member that declares a parameter for the method it replaces wraps
+ * it.
+ */
+export function onTick(node: object, methods: TickMethods): void {
+    if ('update' in methods) setUpdate(node, methods.update);
+    if ('refresh' in methods) setRefresh(node, methods.refresh);
 }
 
 /** Whether `node` has an update method. Never hands out the method itself. */

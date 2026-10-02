@@ -15,7 +15,7 @@ import {
     createReorderingListsEntry,
 } from '../../src/demos';
 import { hasRefresh, hasUpdate } from '../../src/mvt-utils';
-import { refreshScene } from '../../src/pixi-mvt';
+import { refreshScene, updateScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
@@ -55,9 +55,14 @@ const session = entry.start(stage);
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
+// EXPERIMENT (proposal 027): a session whose view the host ticks leaves the
+// view's update to the host, as `src/main.ts` does with `tickScene`.
+const isViewTickedByHost = 'isViewTickedByHost' in session && session.isViewTickedByHost === true;
+
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
+    if (isViewTickedByHost) updateScene(stage, FRAME_MS);
     refreshScene(stage);
 };
 
@@ -69,6 +74,7 @@ if (measure === 'time') {
         input(frameIndex++);
         const start = performance.now();
         session.update(FRAME_MS);
+        if (isViewTickedByHost) updateScene(stage, FRAME_MS);
         const updated = performance.now();
         refreshScene(stage);
         refreshMs += performance.now() - updated;

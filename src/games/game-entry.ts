@@ -62,4 +62,10 @@ export interface GameSession {
     destroy: () => void;
     /** Input control configuration for the game. */
     inputConfig?: GameInputConfig;
+    /**
+     * EXPERIMENT (proposal 027): whether the host ticks this game's view with
+     * the rest of the stage (`tickScene`), so `update` advances only the
+     * game's models. Absent: `update` also updates the game's view, as before.
+     */
+    readonly isViewTickedByHost?: boolean;
 }

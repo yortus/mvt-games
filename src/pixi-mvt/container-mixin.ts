@@ -40,7 +40,7 @@ const containerScenePasses = createScenePasses<Container>({
     describe,
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh } = containerScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = containerScenePasses;
 
 // Installed at module load rather than lazily on first use. An update or
 // refresh method assigned before the accessors exist creates an own data

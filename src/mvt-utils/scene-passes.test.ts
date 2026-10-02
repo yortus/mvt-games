@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScenePasses, hasRefresh, hasUpdate, setRefresh, setUpdate } from './scene-passes';
+import { createScenePasses, hasRefresh, hasUpdate, onTick, setRefresh, setUpdate } from './scene-passes';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 
 // ---------------------------------------------------------------------------
@@ -297,5 +297,112 @@ describe('hasUpdate / hasRefresh', () => {
 
         expect(hasUpdate(node)).toBe(false);
         expect(hasRefresh(node)).toBe(false);
+    });
+});
+
+describe('tickScene (experiment)', () => {
+    it('runs the whole update scene pass, then the whole refresh scene pass, parents first', () => {
+        const root = plainNode('root');
+        const child = plainNode('child');
+        append(root, child);
+        const calls: string[] = [];
+        onTick(root, {
+            update: (deltaMs) => void calls.push(`update root ${deltaMs}`),
+            refresh: () => void calls.push('refresh root'),
+        });
+        onTick(child, {
+            update: (deltaMs) => void calls.push(`update child ${deltaMs}`),
+            refresh: () => void calls.push('refresh child'),
+        });
+
+        passes.tickScene({ root, deltaMs: 16 });
+
+        expect(calls).toEqual(['update root 16', 'update child 16', 'refresh root', 'refresh child']);
+    });
+
+    it('runs only the scene pass `only` names', () => {
+        const root = plainNode('root');
+        const calls: string[] = [];
+        onTick(root, {
+            update: () => void calls.push('update'),
+            refresh: () => void calls.push('refresh'),
+        });
+
+        passes.tickScene({ root, deltaMs: 16, only: 'update' });
+        passes.tickScene({ root, only: 'refresh' });
+
+        expect(calls).toEqual(['update', 'refresh']);
+    });
+
+    it('leaves out of the update scene pass a subtree whose root returns SKIP_DESCENDANTS, and still refreshes it', () => {
+        const root = plainNode('root');
+        const game = plainNode('game');
+        append(root, game);
+        const calls: string[] = [];
+        let isPaused = true;
+        onTick(root, { update: () => (isPaused ? SKIP_DESCENDANTS : undefined) });
+        onTick(game, {
+            update: () => void calls.push('update game'),
+            refresh: () => void calls.push('refresh game'),
+        });
+
+        passes.tickScene({ root, deltaMs: 16 });
+        isPaused = false;
+        passes.tickScene({ root, deltaMs: 16 });
+
+        expect(calls).toEqual(['refresh game', 'update game', 'refresh game']);
+    });
+});
+
+describe('onTick (experiment)', () => {
+    it('sets both methods at once', () => {
+        const node = plainNode('node');
+        onTick(node, { update: () => {}, refresh: () => {} });
+
+        expect(hasUpdate(node)).toBe(true);
+        expect(hasRefresh(node)).toBe(true);
+    });
+
+    it('leaves a member it is not given as it is', () => {
+        const root = plainNode('root');
+        const calls: string[] = [];
+        onTick(root, { update: () => void calls.push('update') });
+        onTick(root, { refresh: () => void calls.push('refresh') });
+
+        passes.tickScene({ root, deltaMs: 16 });
+
+        expect(calls).toEqual(['update', 'refresh']);
+    });
+
+    it('clears a member given as undefined', () => {
+        const node = plainNode('node');
+        onTick(node, { update: () => {}, refresh: () => {} });
+        onTick(node, { refresh: undefined });
+
+        expect(hasUpdate(node)).toBe(true);
+        expect(hasRefresh(node)).toBe(false);
+    });
+
+    it('wraps per member, as setUpdate and setRefresh do', () => {
+        const root = plainNode('root');
+        const calls: string[] = [];
+        onTick(root, {
+            update: (deltaMs) => void calls.push(`own update ${deltaMs}`),
+            refresh: () => void calls.push('own refresh'),
+        });
+        onTick(root, {
+            update: (deltaMs, own) => {
+                calls.push('wrapped update');
+                own?.(deltaMs);
+            },
+            refresh: (own) => {
+                calls.push('wrapped refresh');
+                own?.();
+            },
+        });
+
+        passes.tickScene({ root, deltaMs: 16 });
+
+        expect(calls).toEqual(['wrapped update', 'own update 16', 'wrapped refresh', 'own refresh']);
     });
 });

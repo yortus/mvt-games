@@ -1,5 +1,4 @@
 import type { Container } from 'pixi.js';
-import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 import { createGameModel } from './models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
@@ -47,10 +46,11 @@ export function createCactiiEntry(): GameEntry {
             stage.addChild(gameView);
 
             return {
+                // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
-                    updateScene(gameView, deltaMs);
                 },
+                isViewTickedByHost: true,
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });

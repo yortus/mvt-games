@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import { createSequenceReaction, type Sequence } from '#mvt-utils';
 import type { CactusCell } from '../../models';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
+import { onTick } from '../../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -125,7 +126,7 @@ export function FireworkView(bindings: FireworkViewBindings): Container {
         },
     });
 
-    view.onRefresh = updateFirework;
+    onTick(view, { refresh: updateFirework });
     return view;
 }
 

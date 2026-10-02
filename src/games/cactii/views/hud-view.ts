@@ -1,5 +1,6 @@
 import { Container, Text } from 'pixi.js';
 import { watch } from '#mvt-utils';
+import { onTick } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -20,7 +21,7 @@ export function HudView(bindings: HudViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    onTick(view, { refresh });
     return view;
 
     function initialiseView(): void {

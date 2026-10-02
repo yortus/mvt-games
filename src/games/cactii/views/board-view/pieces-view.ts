@@ -5,6 +5,7 @@ import { CactusView } from '../cactus-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
+import { onTick } from '../../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -26,8 +27,7 @@ export function PiecesView(bindings: PiecesViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onUpdate = vm.update;
-    view.onRefresh = refresh;
+    onTick(view, { update: vm.update, refresh });
     return view;
 
     function initialiseView(): void {

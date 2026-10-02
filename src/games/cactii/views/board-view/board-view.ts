@@ -9,6 +9,7 @@ import { MatchEffectsView } from './match-effects-view';
 import { MATCH_EFFECT_STEPS } from './match-sequence-defs';
 import { PiecesView } from './pieces-view';
 import { ShakeContainerView } from './shake-container-view';
+import { onTick } from '../../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -93,7 +94,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
 
     // Runs before the child views' own update and refresh, so every layer sees
     // this frame's match sequence.
-    view.onUpdate = update;
+    onTick(view, { update });
     return view;
 
     function update(deltaMs: number): void {

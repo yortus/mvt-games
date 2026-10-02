@@ -12,7 +12,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { refreshScene, updateScene } from './pixi-mvt';
+import { onTick, SKIP_DESCENDANTS, tickScene } from './pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -112,6 +112,14 @@ async function main(): Promise<void> {
     const gameContainer = new Container();
     gameContainer.label = 'game-container';
     app.stage.addChild(gameContainer);
+    // The ticker ticks the whole stage once a frame (below), so pausing a game
+    // is this container's call: while paused, the game's view is left out of
+    // the update scene pass, and still refreshed. EXPERIMENT (proposal 027):
+    // it is also left out while the running game updates its own view, as
+    // every game but one still does.
+    onTick(gameContainer, {
+        update: () => (paused || currentSession?.isViewTickedByHost !== true ? SKIP_DESCENDANTS : undefined),
+    });
 
     // ---- URL fragment helpers --------------------------------------------
     function setUrlFragment(gameId: string | null): void {
@@ -476,15 +484,15 @@ async function main(): Promise<void> {
     }
 
     // ---- Ticker ------------------------------------------------------------
-    // Sessions advance their own models and views (`onUpdate`); the cabinet's
-    // view advances its own transitions; one refresh pass then syncs the whole
-    // stage, including while paused so the pause menu and cabinet stay current.
+    // Each frame ticks the models, then the whole stage: an update scene pass
+    // and then a refresh scene pass, including while paused, so the pause
+    // menu and the cabinet stay current (the game container sits out the
+    // update scene pass while paused).
     app.ticker.add((ticker) => {
         if (!paused) {
             cabinet.update(ticker.deltaMS);
         }
-        updateScene(cabinetContainer, ticker.deltaMS);
-        refreshScene(app.stage);
+        tickScene({ root: app.stage, deltaMs: ticker.deltaMS });
     });
 
     // ---- Auto-launch from URL fragment ------------------------------------
@@ -534,9 +542,10 @@ async function generateThumbnails(games: GameEntry[], app: Application): Promise
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;
                 session.update(step);
+                if (session.isViewTickedByHost === true) tickScene({ root: tempStage, deltaMs: step, only: 'update' });
                 remaining -= step;
             }
-            refreshScene(tempStage);
+            tickScene({ root: tempStage, only: 'refresh' });
 
             const renderTexture = RenderTexture.create({
                 width: entry.screenWidth,

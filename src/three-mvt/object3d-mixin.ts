@@ -32,7 +32,7 @@ const objectScenePasses = createScenePasses<Object3D>({
     describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh } = objectScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = objectScenePasses;
 
 /**
  * Destroying three.js objects, which have no destroy of their own
