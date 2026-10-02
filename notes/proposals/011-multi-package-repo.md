@@ -13,7 +13,8 @@ registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already"). Nothing else is implemented.
 
 **Written:** 2026-09-25. Updated 2026-10-02 for the Vite+ 1.0 release
-(sections 4.1 and 9).
+(sections 4.1 and 9), and to stay on npm rather than move to pnpm (sections
+5.3, 8 and 13.2).
 
 **Related:** [`AGENTS.md`](../../AGENTS.md) (project structure, commands),
 [`docs/reference/project-structure.md`](../../docs/reference/project-structure.md),
@@ -31,7 +32,7 @@ Decisions this proposal makes, and where each is argued:
 | Decision | Section |
 | --- | --- |
 | Publish under `@mvtjs`. Hold `@mvt.js` unused. No unscoped package for now | 3 |
-| One pnpm workspace: `packages/*` (published) plus private `site` and `docs` | 5, 6, 7 |
+| One npm workspace: `packages/*` (published) plus private `site` and `docs` | 5, 6, 7 |
 | First two libraries: `@mvtjs/utils` (no dependencies; with 022's JSX base at `./jsx`) and `@mvtjs/pixi` (plugin, Pixi helpers, and its JSX runtime at `./jsx`) | 5 |
 | One package per renderer, each with its JSX support at `./jsx`, and one base; no separate JSX package | 5.2, 5.5 |
 | Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin` | 5.5, 10 |
@@ -41,7 +42,7 @@ Decisions this proposal makes, and where each is argued:
 | Games, demos, playground and cabinet stay together as one private `site` package, with the site-specific input views | 5.2, 6 |
 | Planning material moves under `notes/` | 6.3 |
 | Formatting stays this repo's own (`@stylistic` plus custom rules), enforced and auto-fixed. No Prettier-style formatter | 8.4 |
-| pnpm 11, Changesets (no release PRs), tsdown, publint/attw, npm trusted publishing | 8 |
+| npm workspaces (not pnpm), Changesets (no release PRs), tsdown, publint/attw, npm trusted publishing | 8, 13.2 |
 | Vite+ gets a time-boxed trial with go/no-go criteria. The lint side is already shown to work | 9 |
 | The repo stays at `yortus/mvt-games` for now. The site moves to `yortus.com/mvt-games/` | 13.2, 13.3 |
 | ~~Fix the barrel-rule crash (section 11.1) as part of the restructure~~ Fixed early, 2026-09-30 | 11 |
@@ -112,8 +113,8 @@ check it before relying on it.
 
 ### 4.1 What changed in the last few years
 
-- **The package manager owns the workspace.** Linking, one root lockfile and
-  `workspace:` ranges are standard. Lerna 9 removed `bootstrap` and `add`.
+- **The package manager owns the workspace.** Linking and one root lockfile
+  are standard in all of them, and `workspace:` ranges in all but npm. Lerna 9 removed `bootstrap` and `add`.
 - **pnpm is the default choice, and does more than install:**
   - `workspace:^` ranges, rewritten to real versions on publish.
   - Catalogs: a shared version declared once in `pnpm-workspace.yaml` and
@@ -165,8 +166,8 @@ check it before relying on it.
 
 | Layer | Mature | Newer or lighter | Heavier |
 | --- | --- | --- | --- |
-| Package manager | pnpm 11 (12 stable) | npm workspaces (no `workspace:` ranges or catalogs); Bun (has catalogs); Yarn 6 (preview); nub/aube (launched June 2026) | |
-| Task running | `pnpm -r` / `--filter`, no cache | `pnpm pipeline` (weeks old); Vite+ `vp run` | Turborepo 2.11; Nx 23; moon v2 |
+| Package manager | pnpm 11 (12 stable); npm workspaces (no `workspace:` ranges or catalogs) | Bun (has catalogs); Yarn 6 (preview); nub/aube (launched June 2026) | |
+| Task running | `pnpm -r` / `--filter` or `npm run --workspaces` / `-w`, no cache | `pnpm pipeline` (weeks old); Vite+ `vp run` | Turborepo 2.11; Nx 23; moon v2 |
 | Versioning and release | Changesets 3 | pnpm native (same files) | release-please; semantic-release; Nx release |
 | Library build | tsdown, or plain `tsc` for pure-ESM TypeScript | Vite+ `vp pack` (tsdown underneath) | |
 | Package checks | publint, attw, knip | sherif / manypkg / syncpack (keep manifests consistent) | |
@@ -255,9 +256,9 @@ build output otherwise:
             "default": "./dist/jsx/jsx-runtime.js"
         }
     },
-    "files": ["dist"],
-    "dependencies": { "@mvtjs/utils": "workspace:^" },
-    "peerDependencies": { "pixi.js": "catalog:" }
+    "files": ["dist", "src"],
+    "dependencies": { "@mvtjs/utils": "^0.1.0" },
+    "peerDependencies": { "pixi.js": "^8.16.0" }
 }
 ```
 
@@ -267,8 +268,14 @@ build output otherwise:
   from source: no build step, no watch mode, live types.
 - The condition is namespaced so it cannot collide with another package's
   conditions.
-- The published `exports` drop the source condition, through pnpm's
-  `publishConfig.exports` override.
+- The published `exports` keep the source condition, and `src/` ships beside
+  `dist/` so the paths it names exist (publint reports exported files missing
+  from the tarball). Nothing outside the repo sets the condition, so consumers
+  get `dist/`. Shipping `src/` also gives source maps real files to point at.
+  npm has no way to drop the condition at publish time: pnpm's
+  `publishConfig.exports` override, which the first draft used, is not an npm
+  feature (section 13.2). If tsdown is set to generate `exports`, it must keep
+  the condition; otherwise `exports` stays hand-written.
 - The lint barrel rule becomes redundant between packages: `exports` enforces
   it. It is still needed inside each package.
 
@@ -360,7 +367,7 @@ site/                 private package
     index.html, games/, demos/, playground/  (HTML entry points)
     vite.config.ts
 .editorconfig  .gitignore  AGENTS.md  README.md
-package.json  pnpm-workspace.yaml  pnpm-lock.yaml  tsconfig.base.json
+package.json  package-lock.json  tsconfig.base.json
 eslint.config.js      (root vite.config.ts instead, under Vite+)
 ```
 
@@ -376,7 +383,7 @@ Where each current top-level entry goes:
 | `scripts/generate-*.ts`, `vite-plugin-spritesheet.ts` | `site/scripts/` |
 | `scripts/bench-*.ts`, `benchmarks/` | `packages/*/bench/` |
 | `dist/` (build output) | `site/dist/`, still ignored |
-| `package-lock.json` | Replaced by `pnpm-lock.yaml` |
+| `package-lock.json` | Stays, covering every workspace |
 | `tsconfig.json` | `tsconfig.base.json` plus one `tsconfig.json` per package |
 
 **Done already (2026-09-26).** Without the package split:
@@ -402,31 +409,31 @@ Independent of the Vite+ decision:
 
 | Concern | Choice | Why |
 | --- | --- | --- |
-| Node | 24 LTS, pinned in `.node-version` and CI | Vite+ needs 22.18+ or 24.11+, trusted publishing needs 22.14+, and TypeScript-written lint rules need Node's type stripping (section 9.2). Local is 22.11 today |
-| Package manager | pnpm 11 (11.1.3 or later), pinned | `workspace:` ranges, catalogs, and trusted publishing without the npm CLI. Why not 12 yet: section 13.2 |
-| Shared versions | pnpm catalogs (`pixi.js`, `typescript`, `vitest`, ...) | One place to bump |
-| Task running | Plain `pnpm -r` / `--filter` scripts | Source-first consumption removes most build ordering. Add caching only when something is slow |
+| Node | 26, pinned in `.node-version` and CI | Vite+ needs 22.18+ or 24.11+, trusted publishing needs 22.14+, and TypeScript-written lint rules need Node's type stripping (section 9.2). 26 enters LTS in late October 2026, so it is the next LTS line rather than one about to be superseded. Local is 26.10 already |
+| Package manager | npm 11 workspaces | Already in use, and enough for this plan. Why not pnpm: section 13.2 |
+| Ranges between libraries | Plain semver ranges (`^0.1.0`), updated by Changesets at each release | npm links a sibling whose version satisfies the range. If a range stops matching, npm installs the published copy instead of linking, without an error; `npm ls @mvtjs/utils` shows which |
+| Shared versions | Dev tools (`typescript`, `vitest`, ESLint) once, in the root `devDependencies`. Runtime versions repeated across manifests (`pixi.js`, `three`) kept in step by hand | Too few repeats to need pnpm's catalogs. Add `sherif` if they drift |
+| Undeclared dependencies | `import/no-extraneous-dependencies`, checked per package | npm's flat `node_modules` lets a package import what it never declared, which works here and breaks for consumers. The lint rule catches it, the job pnpm's strict layout would do |
+| Task running | Plain `npm run --workspaces` / `-w <name>` scripts | npm runs workspaces in the order listed, not by dependency. Source-first consumption and `isolatedDeclarations` remove the need for build ordering. Add caching only when something is slow |
 | Library build | tsdown, with `isolatedDeclarations` | Current standard. Produces `exports` and `.d.ts` |
 | Package checks | publint and attw on every build | Catches broken `exports` before publishing |
 | Tests | One root Vitest config using `projects` | One command, per-package environments |
-| Versioning | Changesets, all libraries in one `fixed` group, used without release PRs (section 8.5) | Mature. One command bumps every version and writes the changelogs. Why not pnpm's native commands: section 13.2 |
+| Versioning | Changesets, all libraries in one `fixed` group, used without release PRs (section 8.5) | Mature, and works with npm. One command bumps every version and writes the changelogs |
 | Publishing | GitHub Actions with npm trusted publishing and provenance | No stored tokens. Consider staged publishing once there are users |
 
 ### 8.2 Not chosen
 
-- **npm workspaces:** no `workspace:` ranges and no catalogs.
+- **pnpm:** nothing in this plan needs it (section 13.2). That also rules
+  out `pnpm pipeline` and pnpm's native release commands.
 - **Turborepo, Nx, moon:** caching and orchestration this repo does not need
   at two libraries and a site. Turborepo is the fallback if builds become slow.
-- **`pnpm pipeline`:** attractive, but weeks old. Revisit after a few
-  releases, or if caching is needed before then.
-- **pnpm 12 and pnpm's native release commands:** see section 13.2.
 - **The Changesets GitHub Action and bot:** they exist to manage release PRs,
   which this repo does not use (section 8.5).
 
 ### 8.3 CI
 
-`deploy.yml` changes from `npm ci` on Node 22 to pnpm on Node 24. It
-otherwise does the same job: lint, test, build the site, build the docs, deploy
+`deploy.yml` stays on `npm ci`, moving from Node 22 to 26. It otherwise
+does the same job: lint, test, build the site, build the docs, deploy
 Pages. A second workflow, `release.yml`, publishes (section 8.5). The
 trusted-publisher entry on npm names the GitHub owner, repo and workflow file
 (`yortus/mvt-games`, `release.yml`), so moving the repo later means
@@ -452,7 +459,7 @@ either way; this is about contributions to this repo.
 The repo has one maintainer, who commits straight to `main`. Releasing keeps
 that: no pull requests, no bot, and nothing to do per commit.
 
-**Day to day, nothing changes.** Optionally, run `pnpm changeset` when a
+**Day to day, nothing changes.** Optionally, run `npx changeset` when a
 change deserves a changelog line while it is fresh. It asks for the bump size
 and one line of summary, and writes a small `.changeset/*.md` file to commit
 with the change. Skipping this is fine; the summary can be written at release
@@ -460,22 +467,23 @@ time instead.
 
 **To release:**
 
-1. `pnpm changeset`, if no change files are waiting: pick the bump, write the
+1. `npx changeset`, if no change files are waiting: pick the bump, write the
    summary.
-2. `pnpm changeset version`: bumps every library to the same new version,
+2. `npx changeset version`: bumps every library to the same new version,
    updates the dependency ranges between them, writes each package's
-   `CHANGELOG.md`, and deletes the used change files.
+   `CHANGELOG.md`, and deletes the used change files. Then
+   `npm install --package-lock-only`, since `package-lock.json` records each
+   workspace's version and Changesets does not update it.
 3. Commit and push to `main`.
 
 **CI does the rest.** `release.yml` runs on every push to `main`: install,
-lint, test, build, then `pnpm changeset publish`. That publishes only versions
+lint, test, build, then `npx changeset publish`. That publishes only versions
 not yet on npm, so on an ordinary push it does nothing. When a version is new,
-it publishes each library through `pnpm publish` (which rewrites `workspace:`
-and `catalog:` ranges to real versions), authenticated by trusted publishing
-with provenance, then pushes the `@mvtjs/<name>@<version>` git tags it
+it publishes each library through `npm publish`, authenticated by trusted
+publishing with provenance, then pushes the `@mvtjs/<name>@<version>` git tags it
 created (`git push --follow-tags`, so the job needs `contents: write`).
 
-A `pnpm release` script can wrap steps 2 and 3. The whole release is then
+An `npm run release` script can wrap steps 2 and 3. The whole release is then
 about a minute of attention.
 
 **One-time setup:** `.changeset/config.json` (the `fixed` group, public
@@ -500,8 +508,9 @@ several at once).
 
 Vite+ wraps the tools the repo already uses or would adopt: Vite, Vitest,
 tsdown (`vp pack`), and a cached task runner (`vp run`), plus Oxlint and Oxfmt.
-pnpm keeps running underneath, so the workspace layout in section 7 is the
-same with or without it.
+It drives whichever package manager the repo uses (npm, pnpm, Yarn or Bun;
+npm is detected from `package-lock.json`), so the workspace layout in section
+7 is the same with or without it.
 
 **For:**
 
@@ -560,8 +569,9 @@ affect only setup, not results (section 9.3).
   until the tree is clean.
 - JS plugins cannot use type information. Only Oxlint's built-in rules are
   type-aware.
-- Under pnpm's strict layout, a package holding lint rules must declare its
-  own dependencies.
+- A package holding lint rules must declare its own dependencies. The trial
+  ran under pnpm, whose strict layout enforces this; npm's hoisting would hide
+  a missing one.
 
 ### 9.3 Trial phase
 
@@ -577,11 +587,12 @@ on a branch (phase 5 in section 12), and adopted only if all of these hold:
    configured.
 5. `vp test` runs every suite, including the `solid-js` alias the
    benchmarks need, after the Vitest 5 upgrade.
-6. `vp run` caching works across the packages, and `vp pack` output passes
-   publint and attw.
+6. `vp install` and `vp run` work on the npm workspace (Vite+ defaults to
+   pnpm, so npm is the less-travelled path), `vp run` caching works across
+   the packages, and `vp pack` output passes publint and attw.
 7. The VitePress docs still build and deploy.
 
-If any fails, the repo stays on ESLint, pnpm scripts and tsdown. Nothing else
+If any fails, the repo stays on ESLint, npm scripts and tsdown. Nothing else
 in the plan changes.
 
 The trial uses 1.0 or a later 1.x. Two breaking changes since the RC the lint
@@ -615,7 +626,7 @@ Custom rules live in one workspace package with two presets:
 Rules are written in the plain ESLint v9 plugin format, not with Vite+'s
 `definePlugin` helpers, so the published plugin works under ESLint and
 Oxlint alike, and leaving Vite+ stays cheap. TypeScript source is fine on
-Node 24; the published package is built to JavaScript.
+Node 24 and later; the published package is built to JavaScript.
 
 ---
 
@@ -654,8 +665,8 @@ each package, and under Oxlint if Vite+ is adopted.
 
 ### 11.2 Node version
 
-Local Node is 22.11 and CI uses 22. The toolchain needs 24 (section 8.1).
-Upgrade in phase 0.
+CI uses Node 22. The toolchain needs 24 or later, and the plan pins 26
+(section 8.1). Local is on 26.10 already (2026-10-02); CI upgrades in phase 0.
 
 ---
 
@@ -666,14 +677,13 @@ working. Moves use `git mv` so history follows the files.
 
 ### 12.1 Phase 0: prerequisites
 
-- Node 24 LTS locally and in CI; add `.node-version`.
-- Switch npm to pnpm with the repo still a single package (`pnpm import`
-  converts `package-lock.json`). Pin the pnpm version.
-- Update `deploy.yml` for pnpm.
+- Node 26 locally and in CI; add `.node-version`.
+- Update `deploy.yml` and `test-deploy.yml` for Node 26. The repo stays on npm (section 13.2), so
+  nothing else changes.
 
 ### 12.2 Phase 1: extract the libraries
 
-- Add `pnpm-workspace.yaml`, `tsconfig.base.json` and catalogs.
+- Add `workspaces` to the root `package.json`, and `tsconfig.base.json`.
 - Create `packages/utils` and `packages/pixi` from the files in sections 5.1
   and 5.2, with their tests and benchmarks, and `packages/three` and
   `packages/html` from 022's renderers. Each is one directory already
@@ -681,11 +691,17 @@ working. Moves use `git mv` so history follows the files.
   each renderer's JSX in `jsx/`), so this moves directories. **The `-mvt`
   suffixes go here**: they only tell renderers apart from the site's code in
   one `src/`, and a package directory is named for its package.
-- The root package (still the app) depends on both through `workspace:^`.
+- The root package (still the app) depends on both through `^0.1.0` ranges,
+  which npm links to the workspaces.
   Replace `#common` and `#pixi-mvt/jsx` imports and relative `pixi-mvt` imports
   with `@mvtjs/utils` and `@mvtjs/pixi`, and the `@jsxImportSource
   #pixi-mvt/jsx` pragmas with `@mvtjs/pixi/jsx`.
 - Wire the `@mvtjs/source` condition into TypeScript, Vite and Vitest.
+- Turn on `import/no-extraneous-dependencies` for each package (section 8.1),
+  verified with a deliberate violation.
+- Worktrees need their own `npm ci` from here on. A `node_modules` junctioned
+  from the main checkout holds links to the main checkout's packages, so a
+  worktree would run the main checkout's library code.
 - Rework the barrel rule for the new layout and **fix section 11.1**,
   verified with a deliberate violation.
 
@@ -756,12 +772,13 @@ None.
 | Name of the planning folder | `notes/` |
 | Should `@mvtjs/pixi` re-export `@mvtjs/utils`? | No (section 5.2) |
 | Where the input views go | They stay in `site/src/shared/`; they are not general enough to publish (section 5.2) |
-| pnpm 11 or 12? | pnpm 11. Move to 12 when npm's `latest` tag does, or earlier if a 12-only feature is wanted |
-| Changesets or pnpm's native release commands? | Changesets, without release PRs (section 8.5) |
+| npm or pnpm? | npm workspaces. Nothing in this plan needs pnpm (decided 2026-10-02; the first draft chose pnpm 11) |
+| Release tooling | Changesets, without release PRs (section 8.5) |
 | Name of the dependency-free library | `utils` (section 5.1) |
 
-The trade-offs behind the repo's home and the last three decisions are kept
-below, so they can be revisited with the same information.
+The trade-offs behind the repo's home, the package manager, the release
+tooling and the library's name are kept below, so they can be revisited with
+the same information.
 
 **If the repo moves later.** Candidate homes are `github.com/mvtjs/mvt`
 (libraries named after the pattern, like `vitejs/vite` or `pixijs/pixijs`),
@@ -785,17 +802,34 @@ A move involves:
 - **Everything else that names the URL:** `README.md`, the docs' config and
   links, `llms.txt`, and the `BASE_URL` the deploy workflow sets.
 
-**pnpm 11 or 12.** Low stakes: both use the same commands, settings and
-lockfile format, so switching later is a version bump and one install.
+**npm or pnpm.** The first draft chose pnpm 11, as the most common choice
+for new monorepos. On review, nothing in this plan needs it, and npm is the
+tool the owner already knows, so the repo stays on npm. What pnpm would add
+here, and the answer under npm:
 
-| | pnpm 11 | pnpm 12 |
+| pnpm feature | What it gives | Under npm |
 | --- | --- | --- |
-| Maturity | npm's `latest` tag; years of use | Stable since 2026-08-26; a complete Rust rewrite, one month old |
-| Speed | Baseline | Up to 90% faster installs reported on large monorepos. At this repo's size (about 30 direct dependencies), seconds at most |
-| Features | New features still land on both lines for now (11.26 and 12.2-12.3 shipped the same catalog work) | Some land here first (`pnpm pipeline` in 12.4). Eventually 11 becomes maintenance-only |
-| Risk | Low | Edge-case bugs in a new implementation. Windows (this repo's development platform) got shared build artifacts only in 12.1. Tools that drive pnpm (Vite+, CI setup actions) have had less time to test against it |
+| `workspace:^` ranges | An error if a sibling's version stops matching the range | Plain ranges, kept in step by Changesets. A mismatch installs the published copy without an error (section 8.1) |
+| Catalogs | One place for each shared version | Dev tools once in the root `devDependencies`; the two or three repeated runtime versions by hand, or `sherif` |
+| `publishConfig.exports` | Drops the source condition at publish time | The condition ships, with `src/` (section 5.3) |
+| Strict `node_modules` | Undeclared imports fail in development | `import/no-extraneous-dependencies` (section 8.1) |
+| `pnpm -r` in dependency order | Builds that depend on each other run in order | Not needed: source-first consumption and `isolatedDeclarations` |
+| Shared content store | Fast, disk-cheap installs in each new worktree | `npm ci` per worktree; this repo installs in seconds |
+| Trusted publishing | | npm's own feature; no difference |
+| `pnpm pipeline`, native versioning | | Weeks old, and turned down for that reason even with pnpm |
 
-**Changesets or pnpm native.** Both read and write the same
+**Revisit if** catalogs start to pay (more packages sharing more peer
+versions), an undeclared dependency gets past lint, or a range mismatch
+causes a bug. Switching later is mechanical: `pnpm import` converts
+`package-lock.json`, sibling ranges become `workspace:^`, the source condition
+can move to `publishConfig.exports` (and `src/` stop shipping), and the
+workflows change their install and run commands. At the time of the first
+draft the choice within pnpm was 11 (npm's `latest` tag) over 12 (a Rust
+rewrite, stable since 2026-08-26, with the same commands, settings and
+lockfile).
+
+**Changesets or pnpm native.** Only a choice if the repo moves to pnpm;
+compared when the first draft chose pnpm. Both read and write the same
 `.changeset/*.md` files, so switching later costs only the config.
 
 | | Changesets 3 | pnpm native (11.11+) |
@@ -929,14 +963,14 @@ Run on 2026-09-25 in a scratch directory outside the repo, on a copy of `src/`.
 
 ## Sources
 
-- [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+- [npm workspaces](https://docs.npmjs.com/cli/v11/using-npm/workspaces), [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
 - [npm staged publishing (GitHub Changelog)](https://github.blog/changelog/2026-05-22-staged-publishing-and-new-install-time-controls-for-npm/)
 - [npm token timeline](https://github.com/orgs/community/discussions/178140)
 - [npm package moniker rules](https://blog.npmjs.org/post/168978377570/new-package-moniker-rules.html)
 - ["Too similar" rule undocumented](https://github.com/orgs/community/discussions/205030)
 - [pnpm blog](https://pnpm.io/blog), [pnpm 11.11-11.14](https://pnpm.io/blog/releases/11.11-11.14), [pnpm 12.0](https://pnpm.io/blog/releases/12.0), [pnpm 12.4](https://pnpm.io/blog/releases/12.4), [pnpm catalogs](https://pnpm.io/catalogs)
 - [Vite 8.0](https://vite.dev/blog/announcing-vite8)
-- [Vite+ repo](https://github.com/voidzero-dev/vite-plus), [Vite+ monorepo guide](https://viteplus.dev/guide/monorepo), [Vite+ run guide](https://viteplus.dev/guide/run), [Vite+ lint guide](https://viteplus.dev/guide/lint), [Vite+ beta (InfoQ)](https://www.infoq.com/news/2026/08/vite-plus-beta/), [Announcing Vite+ 1.0](https://voidzero.dev/posts/announcing-vite-plus-1-0), [Vite+ releases](https://github.com/voidzero-dev/vite-plus/releases)
+- [Vite+ repo](https://github.com/voidzero-dev/vite-plus), [Vite+ install guide](https://viteplus.dev/guide/install) (package manager detection), [Vite+ monorepo guide](https://viteplus.dev/guide/monorepo), [Vite+ run guide](https://viteplus.dev/guide/run), [Vite+ lint guide](https://viteplus.dev/guide/lint), [Vite+ beta (InfoQ)](https://www.infoq.com/news/2026/08/vite-plus-beta/), [Announcing Vite+ 1.0](https://voidzero.dev/posts/announcing-vite-plus-1-0), [Vite+ releases](https://github.com/voidzero-dev/vite-plus/releases)
 - [VoidZero is joining Cloudflare](https://voidzero.dev/posts/voidzero-cloudflare)
 - [Oxlint JS plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins), [Oxlint JS plugins alpha](https://oxc.rs/blog/2026-03-11-oxlint-js-plugins-alpha.html)
 - [TypeScript 7 GA (InfoQ)](https://www.infoq.com/news/2026/08/typescript-7-released/)
