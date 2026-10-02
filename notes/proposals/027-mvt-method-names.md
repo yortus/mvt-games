@@ -1169,3 +1169,178 @@ worktrees exist.
 3. Decide 11.5's open points: whether to export the getters, and whether to
    add a helper for composing steps.
 4. Run `games-and-demos` from two worktrees as a final check.
+
+## 12. Adoption, interop and the dependency direction (2026-10-02)
+
+> Discussion notes from the session that designed the tick API, kept for task
+> 028's docs phase and for whoever publishes the packages (011). They assume
+> 028 is complete: the `onUpdate` / `onRefresh` accessors are gone, and a
+> renderer's public surface is `tickScene`, `onTick` (to be renamed
+> `setTickMethods`, 12.4), `hasUpdate` / `hasRefresh` and `SKIP_DESCENDANTS`.
+
+### 12.1 Upgrading existing Pixi code incrementally
+
+The case: a Pixi app whose views have hand-forwarded `update(dt)` chains and
+refresh through Pixi's `onRender`. The tick API can be adopted one node at a
+time.
+
+**Why it can:**
+
+- **Importing the mixin is invisible to existing code.** It adds only private
+  `_mvt*` field defaults and wraps `Container.prototype`'s tree methods. It
+  adds no public names and no global types. So classes with their own
+  `update` methods compile and run as before (section 6.1's `TS2425` problem
+  is gone), and so do `onRender` and `AnimatedSprite`.
+- **Unconverted subtrees cost almost nothing.** A scene pass prunes subtrees
+  with no methods after its first walk. The tree-method wrappers measured at
+  about 1-2% on code that changes the tree heavily.
+- **Each node, and each of its two steps, converts separately.** `onTick`
+  leaves members it isn't given as they are.
+
+**The path:**
+
+1. Add one `tickScene` call to the ticker: for the whole stage, or for each
+   converted root, as long as the roots don't overlap. Pixi's ticker runs it
+   before the render.
+2. Move refresh logic one node at a time: `view.onRender = refresh` becomes
+   `onTick(view, { refresh })`. Don't keep both on one node, or it refreshes
+   twice a frame.
+3. Untangle update chains at the edges:
+   - when a child converts, its parent stops forwarding `child.update(dt)`, or
+     the child updates twice a frame;
+   - a parent that converts first can forward to its unconverted children from
+     its own update step, as a temporary bridge;
+   - converting from the leaves up is simplest.
+
+   The library can't see double calls made through old code, so this needs
+   care. 7.5's coverage check would catch the opposite mistake: a converted
+   update no `tickScene` root reaches.
+
+**Behaviour differences to check:**
+
+- **Sibling order is not guaranteed.** Scene passes only promise parents
+  before descendants, so a hand-written chain that relies on one child
+  updating before another breaks once both convert. This is the most likely
+  surprise.
+- **Refresh moves earlier,** from during the render to just before it.
+- **`cacheAsTexture` subtrees are refreshed by `tickScene`,** where
+  `onRender` does not fire. Code that relied on that freeze changes a cached
+  subtree's content without `updateCacheTexture`, and the display goes stale.
+- **A render-on-demand app** must call `tickScene` before each render;
+  `onRender` fired per render on its own.
+- **Time units:** old chains often take Pixi's `Ticker` or `deltaTime` (in
+  frames); converted updates get `deltaMs`.
+- **Own-timing objects** (`AnimatedSprite`, an auto-updating Spine) keep
+  running on Pixi's ticker. That works during migration but isn't MVT-pure.
+
+### 12.2 One game using an old-style library and a tick-based one
+
+A transitional case, until libraries align. It integrates without much
+trouble:
+
+- **The tick-based library's components** set their steps with `onTick`, and
+  the game's host calls `tickScene` once a frame. They work anywhere in the
+  tree, under old-style parents too, since the scene passes walk any
+  `Container`.
+- **The old library's components** keep refreshing through `onRender`, during
+  the render, after `tickScene`. Their update chains still need calling every
+  frame. A few lines adapt them into the tick:
+
+  ```ts
+  /** Ticks an old-style component's update chain with the rest of the scene. */
+  function adoptLegacy<C extends Container & { update: (deltaMs: number) => void }>(component: C): C {
+      onTick(component, { update: (deltaMs) => component.update(deltaMs) });
+      return component;
+  }
+  ```
+
+  This only works because the tick API puts no public names on nodes: the
+  component's own `update` method and the mixin's fields cannot collide.
+- **The frame order holds for both:** models, then every view update (adopted
+  old components included, parents first), then the tick-based refreshes,
+  then the render with the old `onRender` refreshes.
+- **Pausing covers both.** Adopted components sit under the host's pause gate,
+  while their `onRender` keeps them drawn.
+- **Nesting works both ways.** A tick-based component holding an old one
+  adopts it, or forwards to it from its own update step. An old component
+  holding a tick-based one needs nothing.
+
+**The catches:**
+
+- Adopt an old component at the top of its own chain, and don't also call it
+  from an old parent's chain, or it updates twice.
+- Convert time units inside the adapter.
+- Adopt a chain that depends on its children's update order as one unit,
+  since scene passes don't guarantee sibling order.
+- **A library built on an earlier version of this mixin is a different
+  case:** two copies of the mixin in one program. That is section 11.7's
+  problem, and needs its protocol-versioned sharing.
+
+### 12.3 Does the tick API invert dependencies?
+
+pixi-solid's `onTick(callback)` has been criticised for violating the
+dependency inversion principle. It subscribes a component to the Pixi
+application's ticker, found through Solid's context. So:
+
+- the component depends on a concrete clock its signature doesn't show;
+- it can't run without a live app and ticker, which makes tests, headless
+  runs, fast-forwarding and replays hard;
+- the ticker, not the caller, decides when the callback runs, and with what
+  time.
+
+**Those criticisms don't apply to this `onTick`, which does the opposite
+under the same name.** It subscribes to nothing. It attaches a node's two
+steps to that node, and they run only when some caller ticks an ancestor with
+an explicit `deltaMs`:
+
+- **The dependency is inverted.** A view depends only on "I will be ticked
+  with a `deltaMs`". Whoever owns time decides when and how: Pixi's ticker, a
+  fixed timestep, a paused gate, a thumbnail's fast-forward, or a test.
+- **Nothing is hidden.** The node is passed in explicitly. A form with no node
+  argument, using an implicit "current view", was considered and avoided for
+  that reason.
+- **It's easy to test.** `tickScene({ root: view, deltaMs: 16 })` steps a view
+  with no app, ticker or renderer. The `games-and-demos` benchmark already
+  runs every game headless under Node, and the scene passes work even on plain
+  objects.
+
+**What does still apply, in weaker forms:**
+
+- **The contract is implicit.** A view that sets its steps assumes some
+  ancestor is ticked; if none is, its steps never run, silently. This is
+  equally true of explicit `update` methods: a parent that forgets to forward
+  `child.update(dt)` gets a frozen child and no error. The difference is where
+  the obligation shows. An explicit method puts it in the child's type but
+  adds a place to forget it at every composition site. The tick API hides it
+  from types but satisfies it once per root. Neither enforces it. A dev
+  coverage check (7.5 c) recovers most of the visibility.
+- **Importing has global effects.** The mixin patches `Container.prototype`,
+  and the scene passes keep a little module-level state (the assignment
+  counter, pass ids). Tests can't substitute it, though it needs no setup and
+  behaves deterministically.
+- **The name `onTick` invites the misreading** "subscribe to the ticker", the
+  very pattern criticised above. That is the reason for 12.4.
+
+### 12.4 The name: `setTickMethods`
+
+`onTick` reads as a clock subscription (pixi-solid, Pixi's `ticker.add`), and
+its "on" suggests adding a listener, where a call replaces the members it is
+given. It also stretches this repo's convention that `on…` names a relay
+binding or an event handler.
+
+| Candidate | For | Against |
+| --- | --- | --- |
+| `onTick` | short; reads as natural English | reads as a clock subscription; "on" suggests listeners that add up |
+| `setTick` | an assignment; pairs with `tickScene` | "setting a tick" is odd English |
+| **`setTickMethods`** | **says exactly what happens; "methods" is MVT's word, and matches the internal `TickMethods` type; no event connotation** | **longest; the members are strictly function-valued properties, though the docs already say "refresh method" throughout** |
+| `whenTicked` | reads best; its passive voice gets the dependency direction right | still event-flavoured: a second call silently replaces the first unless it declares `prev`, the one way this API surprises people |
+| `defineTick` | declarative | suggests a single definition, but members can be set separately |
+| `tickWith` | reads as a sentence | could read as ticking now |
+| `setTickSteps`, `setSteps` | precise, or neutral | wordy, or loses the link to `tickScene` |
+| `tickable` | could return the node, for a one-line view | reads like a predicate |
+| `defineView`, `asView` | MVT's "a view has update and refresh" | "view" already means the `XxxView` function here |
+
+**Chosen: `setTickMethods`.** The rename is task
+[029](../tasks/backlog/029-rename-ontick-to-settickmethods.md), after 028.
+Still open: whether it should return the node, so a view's last line can be
+`return setTickMethods(view, { refresh })`.

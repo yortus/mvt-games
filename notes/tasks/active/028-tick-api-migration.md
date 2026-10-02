@@ -283,6 +283,10 @@ staged by the user for review. Phase 0 commits it.
   `ship`) on loading the cabinet. Check whether they predate this work.
 - **When the packages are published (proposal 011):** 027 section 11.7's
   duplicate-copy mitigations, and `Symbol.for` for `SKIP_DESCENDANTS`.
+- **Rename `onTick` to `setTickMethods`:** follow-up task
+  [029](../backlog/029-rename-ontick-to-settickmethods.md), after this one.
+  Adoption, mixed-library and dependency-direction notes for the docs phase
+  are in [027 section 12](../../proposals/027-mvt-method-names.md).
 
 ## Working notes
 
