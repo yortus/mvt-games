@@ -9,9 +9,9 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phases 0 to 2 are done (sections 12.1 to 12.3): the four libraries are
-workspace packages under `packages/`, and the site, the benchmarks and the
-new checks are private workspace packages beside them. The npm scopes and GitHub org in section 3 are
+Phases 0 to 3 are done (sections 12.1 to 12.4): the four libraries are
+workspace packages under `packages/`, and the site, the docs, the benchmarks
+and the new checks are private workspace packages beside them. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -854,10 +854,22 @@ The browser cases were not run.
 
 ### 12.4 Phase 3: docs package and top-level cleanup
 
-- `docs/` gets its own `package.json` (VitePress, the Mermaid plugin).
-  Keep the combined Pages output (site at the root, docs under `/docs`).
+- ~~`docs/` gets its own `package.json` (VitePress, the Mermaid plugin).
+  Keep the combined Pages output (site at the root, docs under `/docs`).~~
 - ~~Create `notes/`; move `CLAUDE.md` into `.claude/` and `llms.txt` to where
   it is served.~~ Done (section 7).
+
+All done, 2026-10-02.
+
+**Progress.** `docs/package.json` declares VitePress, the Mermaid plugin,
+`mermaid` and `vue`, which the docs' theme imports directly and nobody
+declared before (lint skips `docs/.vitepress/`). Its scripts run VitePress
+from `docs/`, and the root's `build`, `build:docs` and `docs:dev` call them
+with `-w docs`, so the commands are unchanged. VitePress keeps its own Vite 5,
+resolved exactly as before. The output still lands in `dist/docs/`, with the
+benchmark tables the docs include from `benchmarks/results/`, and a build with
+CI's `BASE_URL` gives `/mvt-games/docs/` paths. The rest of the top level
+already matched section 7, so there was nothing else to clean up.
 
 ### 12.5 Phase 4: references
 
