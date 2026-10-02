@@ -1,4 +1,4 @@
-# pixi-mvt
+# @mvtjs/pixi
 
 > Per-frame logic that belongs to a container instead of to a ticker. For Pixi
 > developers; no architecture knowledge assumed. See
@@ -6,7 +6,7 @@
 > way.
 
 **Status: adopted.** Used by every game and demo, the cabinet, the
-shared views in `src/common/`, the `pixi-mvt/jsx` runtime and the playground.
+shared views in `site/src/shared/`, the `@mvtjs/pixi/jsx` runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---
@@ -119,7 +119,7 @@ Nothing is subscribed on your behalf. The frame is yours:
 
 ```ts
 import { Application } from 'pixi.js';
-import { tickScene } from './pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 
 const app = new Application();
 await app.init({ width: 960, height: 600 });
@@ -200,7 +200,7 @@ Five ways they diverge, in rough order of how likely they are to bite:
    server-side simulation, fast-forward and netcode rollback, thumbnail
    generation. You can call one container's `onRender` by hand; you cannot do
    that for a composed scene of twenty nested views without writing the walk
-   yourself, which is what pixi-mvt is.
+   yourself, which is what @mvtjs/pixi is.
 5. **An ordering hole.** `onRender`'s registration list is append-only, so
    assigning it to an already-attached container whose descendants are already
    registered places the ancestor *after* them.
@@ -208,7 +208,7 @@ Five ways they diverge, in rough order of how likely they are to bite:
 To be fair to it: `onRender`'s ordering is better than it is often described.
 Whole subtrees are registered in preorder and nested render groups run
 parent-first, so late attachment, reparenting and sibling reordering are all
-fine. Point 5 is the one genuine hole, and pixi-mvt closes it because
+fine. Point 5 is the one genuine hole, and @mvtjs/pixi closes it because
 setting a method with `setTickMethods` invalidates the cached list.
 
 The positive case is simpler: the update and refresh methods are a matched
@@ -220,7 +220,7 @@ one of which you do not control.
 ## It composes in JSX
 
 This is the one thing with no workaround. The
-[`src/pixi-mvt/jsx/`](./jsx/) runtime types `JSX.Element` as `Container`, and
+[`packages/pixi/src/jsx/`](./jsx/) runtime types `JSX.Element` as `Container`, and
 `ListBindings.children` as `(item, index) => Container`. Every composition
 point is therefore blind to a view that carries its own `update()` method: the
 `& { update }` half of the type is erased the moment the value enters a JSX
@@ -259,7 +259,7 @@ The update method takes the time you give it:
 
 ```ts
 import { Container } from 'pixi.js';
-import { tickScene } from './pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 
 it('spins two radians per second', () => {
     const root = new Container();
@@ -300,7 +300,7 @@ position and scale, and hiding a container never removes it from its own walk.
 `SKIP_DESCENDANTS` sentinel from its update or refresh method:
 
 ```ts
-import { setTickMethods, SKIP_DESCENDANTS } from './pixi-mvt';
+import { setTickMethods, SKIP_DESCENDANTS } from '@mvtjs/pixi';
 
 setTickMethods(slot, {
     refresh: () => {
@@ -353,7 +353,7 @@ before it returns.
 | ticks the same container again                        | Throws                                           |
 
 So a view may build children inside its own refresh method, and they are never
-drawn unrefreshed; `<List>` and `<Switch>` in [`src/pixi-mvt/jsx/`](./jsx/list.ts)
+drawn unrefreshed; `<List>` and `<Switch>` in [`packages/pixi/src/jsx/`](./jsx/list.ts)
 rely on this. A frame whose subtree changes during its refresh rebuilds the
 list then rather than on the next frame, so refreshing the missed containers
 costs one extra walk that runs only what was added.
@@ -380,7 +380,7 @@ update having run.
 **A refresh method must be safe to run twice.** Assign, never accumulate:
 `view.x = ...`, not `view.x += ...`. Accumulate in the update method instead.
 
-**Mutating `container.children` directly is not supported.** pixi-mvt learns
+**Mutating `container.children` directly is not supported.** @mvtjs/pixi learns
 about tree changes from `addChild`, `addChildAt`, `removeChild`,
 `removeChildren` and `destroy`. Splicing the array behind their backs leaves a
 stale list.
@@ -394,7 +394,7 @@ own reads with `addReads`, which costs a flag check while nothing is
 measuring.
 
 ```ts
-import { addReads, countReads, setTickMethods, tickScene } from './pixi-mvt';
+import { addReads, countReads, setTickMethods, tickScene } from '@mvtjs/pixi';
 
 setTickMethods(view, {
     refresh: () => {
@@ -406,7 +406,7 @@ setTickMethods(view, {
 const reads = countReads(() => tickScene({ root: app.stage, only: 'refresh' }));
 ```
 
-The [`pixi-mvt/jsx`](./jsx/) runtime has this built in: it counts every
+The [`@mvtjs/pixi/jsx`](./jsx/) runtime has this built in: it counts every
 function attribute it calls, so a JSX scene is counted without any code of
 its own.
 
@@ -422,7 +422,7 @@ const { methodCalls, walkRebuilds, rebuildVisits } = countScene(() => tickScene(
 ```
 
 `createFrameStats` takes either counter and samples it for one frame in each
-window, and the perfmon panel in `src/common/` shows the results.
+window, and the perfmon panel in `site/src/shared/` shows the results.
 
 ## What it costs
 
@@ -431,7 +431,7 @@ bundled to plain JavaScript, microseconds per frame on a 2025 machine
 (2026-10-02). A frame is one refresh scene pass plus the scenario's changes to
 the tree.
 
-| Scenario                                                          | naive walk  | pixi-mvt    |
+| Scenario                                                          | naive walk  | @mvtjs/pixi    |
 | ----------------------------------------------------------------- | ----------- | ----------- |
 | 20k containers, 200 with a refresh method, static                 | 206 us      | **0.65 us** |
 | 2k containers, all with a refresh method, static                  | 9.3 us      | **5.6 us**  |
@@ -466,7 +466,7 @@ The full results, and the other benchmarks, are in the docs'
 
 | Command                              | What it does           |
 | ------------------------------------ | ---------------------- |
-| `npx vitest run src/pixi-mvt`         | The tests, the JSX runtime's included |
+| `npx vitest run packages/pixi/src`         | The tests, the JSX runtime's included |
 | `npm run bench -- scene-passes`      | The table above        |
 
 ## Next

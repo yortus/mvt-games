@@ -122,7 +122,7 @@ function refresh(): void {
 }
 ```
 
-`memoiseLast` (from `src/mvt-utils/`) keeps `refresh()` from building a new
+`memoiseLast` (from `@mvtjs/utils`) keeps `refresh()` from building a new
 string every frame: it runs `String(score)` only when the score changes.
 
 ## Scene Graphs in Pixi.js
@@ -164,7 +164,7 @@ function BulletView(bindings: BulletViewBindings): Container {
 }
 ```
 
-`setTickMethods`, from `src/pixi-mvt/`, sets the view's per-frame steps on
+`setTickMethods`, from `@mvtjs/pixi`, sets the view's per-frame steps on
 its container. Setting the refresh method once at construction means the
 view's `refresh()` runs every frame, as long as the view is in the scene: the
 host's `tickScene` call finds it wherever it sits in the tree, with no parent
@@ -179,12 +179,12 @@ from `refresh()` instead of plain `return`.
 ## Writing the Body in JSX
 
 The views above build their display objects by hand and write their own
-`refresh()`. This project also has a small JSX runtime (`src/pixi-mvt/jsx/`) that
+`refresh()`. This project also has a small JSX runtime (`packages/pixi/src/jsx/`) that
 builds the same Pixi objects from tags, and writes the refresh step for you.
 Here is the bullet view again, with a JSX body:
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 function BulletView(bindings: BulletViewBindings): Container {
     return (

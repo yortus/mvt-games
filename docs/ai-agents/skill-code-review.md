@@ -141,7 +141,7 @@ Beyond the hard rules, review for good use of established patterns.
   timelines and child models first, then check state and trigger new sequences
   (a parent decides only after its children have advanced). Sequencing details
   belong in `schedule*()` helpers, not in `update()` itself. This is ordering
-  *within* a model's update - distinct from the pixi-mvt scene pass, which walks
+  *within* a model's update - distinct from the @mvtjs/pixi scene pass, which walks
   parents before descendants as an order-independent structural traversal.
 - **Delegation:** Parent models delegate `update()` to children. Cross-model
   concerns (collisions, scoring) live in the parent's orchestration phase.

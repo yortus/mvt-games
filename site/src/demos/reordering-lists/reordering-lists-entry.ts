@@ -28,7 +28,7 @@ export function createReorderingListsEntry(): DemoEntry {
             'Exit effects via releaseDelayMs while the removed card\'s slot lingers',
             'All motion is view-side presentation state; the model is instantaneous',
         ],
-        sourceUrl: 'https://github.com/yortus/mvt-games/tree/main/src/demos/reordering-lists',
+        sourceUrl: 'https://github.com/yortus/mvt-games/tree/main/site/src/demos/reordering-lists',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 2200,

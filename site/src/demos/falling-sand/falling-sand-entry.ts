@@ -29,7 +29,7 @@ export function createFallingSandEntry(): DemoEntry {
             'Two implementations of one model interface: a record per grain, or a typed array per field',
             'Two views of the same grains: a sprite per grain, or a pixel per cell',
         ],
-        sourceUrl: 'https://github.com/yortus/mvt-games/tree/main/src/demos/falling-sand',
+        sourceUrl: 'https://github.com/yortus/mvt-games/tree/main/site/src/demos/falling-sand',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 1500,

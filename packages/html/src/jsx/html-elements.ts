@@ -13,7 +13,8 @@ import { writeText } from './owned-text';
 // which generated refresh methods assign inline; see `attributesOf`.
 //
 // There are no changing styles: `style` is fixed, and a style that follows
-// the model goes through `class` (proposal 022, open question 5).
+// the model goes through `class`. Nothing has needed more yet; CSS custom
+// properties or one attribute per style property would be the candidates.
 
 const html = attributesOf<HTMLElement>();
 const field = attributesOf<FormField>();

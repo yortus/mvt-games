@@ -44,7 +44,7 @@ Recorded so they are not re-derived:
 - Pixi's `Container.destroy` emits `'destroyed'`, passing the container,
   after detaching the children and before destroying them. Without
   `{ children: true }` the children are never destroyed, so their listeners
-  never run; the pixi-mvt mixin warns about that in development builds (see
+  never run; the @mvtjs/pixi mixin warns about that in development builds (see
   [its design notes](../design-notes.md)).
 - Pixi 8.16 emits `globalpointermove`, `globalmousemove` and
   `globaltouchmove`, and no other global pointer events. There is no
@@ -52,7 +52,7 @@ Recorded so they are not re-derived:
 - Pixi's `onRender` runs for every registered container whether or not it is
   visible (`RenderGroup.runOnRender`). A runtime that drives bindings from
   `onRender` keeps polling hidden branches;
-  this runtime uses pixi-mvt's refresh scene pass and `SKIP_DESCENDANTS` instead.
+  this runtime uses @mvtjs/pixi's refresh scene pass and `SKIP_DESCENDANTS` instead.
 - Pixi's `width` setter writes `scale.x` (`measureMixin._setWidth`), and
   `height` writes `scale.y`. Binding `scale` and `width` on one element
   makes them fight: the every-frame `scale` wins from the second frame.

@@ -4,21 +4,21 @@
 > the cabinet. Covers directory structure, GameEntry/GameSession interfaces,
 > models, views, and the registration process.
 
-See the [MVT documentation](../../docs/index.md) for architecture background.
+See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 ## Overview
 
-Each game in this project is a self-contained module under `src/games/<name>/`.
+Each game in this project is a self-contained module under `site/src/games/<name>/`.
 The cabinet manages game selection and delegates to the active game session
 each frame. To add a new game, you need:
 
 1. A directory structure with data, models, and views.
 2. A `GameEntry` factory that describes your game to the cabinet.
-3. A registration in `src/games/index.ts`.
+3. A registration in `site/src/games/index.ts`.
 
 ## The `GameEntry` and `GameSession` Interfaces
 
-Every game implements two interfaces defined in `src/games/game-entry.ts`:
+Every game implements two interfaces defined in `site/src/games/game-entry.ts`:
 
 **`GameEntry`** - a descriptor for a game that can be registered in the
 cabinet:
@@ -50,10 +50,10 @@ The cabinet calls `entry.start(stage)` to launch the game, then calls
 
 ## Directory Structure
 
-Create a new directory under `src/games/`:
+Create a new directory under `site/src/games/`:
 
 ```
-src/games/breakout/
+site/src/games/breakout/
 ├── index.ts              Barrel - re-exports createBreakoutEntry
 ├── breakout-entry.ts     GameEntry factory
 ├── data/
@@ -160,7 +160,7 @@ function createGameModel(options: GameModelOptions): GameModel {
 
 Create leaf views for each presentation entity. A view is a function that
 takes a bindings object and returns a Pixi container (see
-[Style Guide: Views and Bindings](../../docs/reference/style-guide.md#views-and-bindings)):
+[Style Guide: Views and Bindings](../../../docs/reference/style-guide.md#views-and-bindings)):
 
 ```ts
 export interface BallViewBindings {
@@ -176,7 +176,7 @@ callers cannot tell which a view uses. Here is the same ball view both ways.
 In JSX, in `ball-view.tsx`:
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 export function BallView(bindings: BallViewBindings): Container {
     return (
@@ -233,7 +233,7 @@ export interface GameViewBindings {
 ```
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 export function GameView(bindings: GameViewBindings): Container {
     const { model } = bindings;
@@ -322,19 +322,19 @@ async load(): Promise<void> {
 Export the entry factory from your module's barrel file:
 
 ```ts
-// src/games/breakout/index.ts
+// site/src/games/breakout/index.ts
 export { createBreakoutEntry } from './breakout-entry';
 ```
 
 Add the export to the games registry:
 
 ```ts
-// src/games/index.ts
+// site/src/games/index.ts
 export { createBreakoutEntry } from './breakout';
 ```
 
 Then add the entry to the cabinet's game list in the bootstrap code (typically
-`src/main.ts` or wherever the cabinet is constructed):
+`site/src/main.ts` or wherever the cabinet is constructed):
 
 ```ts
 const cabinet = createCabinetModel({
@@ -356,5 +356,5 @@ const cabinet = createCabinetModel({
 - Views convert domain units to presentation units (pixels)
 - Entry point implements `GameEntry` with `start()` returning `GameSession`
 - Barrel files export public API at each level
-- Game is registered in `src/games/index.ts`
+- Game is registered in `site/src/games/index.ts`
 - Model tests exist and pass

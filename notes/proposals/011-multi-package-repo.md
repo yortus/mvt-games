@@ -9,9 +9,10 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phases 0 to 3 are done (sections 12.1 to 12.4): the four libraries are
-workspace packages under `packages/`, and the site, the docs, the benchmarks
-and the new checks are private workspace packages beside them. The npm scopes and GitHub org in section 3 are
+Phases 0 to 4 are done (sections 12.1 to 12.5): the four libraries are
+workspace packages under `packages/`, the site, the docs, the benchmarks and
+the new checks are private workspace packages beside them, and the docs and
+agent files describe the new layout. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -873,22 +874,60 @@ already matched section 7, so there was nothing else to clean up.
 
 ### 12.5 Phase 4: references
 
-Update every path that moved. A grep for
+~~Update every path that moved. A grep for
 `src/(common|pixi-mvt|pixi-jsx|games|demos|playground|cabinet)` finds them in
 `AGENTS.md`, `README.md`, `docs/public/llms.txt`, seven `docs/` files
 (including the AI-agent skills), two task files and four scripts. Also update
 `AGENTS.md`'s project structure and commands table, and
 `docs/reference/project-structure.md`. Archived notes are historical and keep
-their old paths; `notes/README.md` gets one line saying so.
+their old paths; `notes/README.md` gets one line saying so.~~
 
 Also in this phase:
 
-- The prose of the packages' own notes (`README.md`, `design-notes.md`),
-  which still says `pixi-mvt`, `mvt-utils` and the like.
-- Comments in code that cite proposals (such as "proposal 012 section 2" in
+- ~~The prose of the packages' own notes (`README.md`, `design-notes.md`),
+  which still says `pixi-mvt`, `mvt-utils` and the like.~~
+- ~~Comments in code that cite proposals (such as "proposal 012 section 2" in
   `scene-passes.ts`, and 022 in `owned-text.ts`, `html-elements.ts` and the
   conformance suite): each says the reason itself instead. Code and config
-  never cite `notes/`.
+  never cite `notes/`.~~
+
+All done, 2026-10-02.
+
+**Progress.** What changed, and what was left alone on purpose:
+
+- **Rewritten by hand:** the layout sections of `AGENTS.md`, `README.md` and
+  `docs/reference/project-structure.md`, now a workspace tree plus
+  `site/src/`. `AGENTS.md` also gained three conventions agents now meet in
+  lint (imports between packages by name, declared dependencies, the tick
+  API from the renderer package) and `npm test` and `npm run docs:dev` in
+  its commands table. Those conventions are written out once, in a new
+  "Between Packages" section of the project-structure page, with short
+  versions in the code-style skill and a row in the style guide's quick
+  reference.
+- **Rewritten by script, then read line by line:** repo-root paths, GitHub
+  URLs, the alias pragmas (`#pixi-mvt/jsx` to `@mvtjs/pixi/jsx`, `#common` to
+  `#shared`) and the library names in prose, across the docs, `llms.txt`, the
+  READMEs and notes in `site/src/` and `packages/`, the demos' source links,
+  and the two backlog tasks. Where a doc says where a function comes from,
+  it names the package (`from @mvtjs/pixi`), not a path. 52 relative links
+  were re-pointed, counting phase 1's, and every repo path and GitHub URL the
+  updated files name was checked to exist.
+- **Code comments:** twelve citations of proposals and tasks (in
+  `scene-passes.ts`, the JSX base and the HTML renderer, two benchmark notes
+  and a repro script) each now give the reason itself; `<List>` and
+  `<Switch>` point at the design notes beside them.
+- **Left alone:** archived notes; the history recorded in open proposals,
+  where rewriting "moved from `src/common/`" would make it false (their
+  links were re-pointed, and `notes/README.md` now explains the old paths);
+  this proposal, which describes the migration in the old paths; paths
+  inside `site/` that are relative to the site package (its pages load
+  `/src/main.ts`, its scripts write to `src/games/`); the planning notes of
+  two games; and the two `scene-passes` benchmark labels.
+- **Broken from before:** two links in 022 to precompiler files that task 025
+  deleted. They are now plain names, marked "since removed".
+
+Checked with the docs build (VitePress fails on dead links), lint, `tsc -b`
+and the tests.
 
 ### 12.6 Phase 5: Vite+ trial
 

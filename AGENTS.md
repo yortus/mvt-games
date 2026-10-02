@@ -7,8 +7,8 @@
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
-- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setTickMethods(view, { update, refresh })`, from `src/pixi-mvt/` (and `three-mvt`, `html-mvt`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`src/main.ts`) calls `tickScene({ root: app.stage, deltaMs })`, whose update scene pass runs every update method in the tree, then its refresh scene pass every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out the update scene pass
+- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setTickMethods(view, { update, refresh })`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`site/src/main.ts`) calls `tickScene({ root: app.stage, deltaMs })`, whose update scene pass runs every update method in the tree, then its refresh scene pass every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out the update scene pass
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](docs/architecture/index.md) -
@@ -16,8 +16,24 @@ Full reference: [Architecture Overview](docs/architecture/index.md) -
 
 ## Project Structure
 
+An npm workspace: four libraries published under `@mvtjs`, and private
+packages for everything else.
+
 ```
-src/
+packages/
+├── utils/               @mvtjs/utils: renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base at ./jsx
+├── pixi/                @mvtjs/pixi: Pixi scene passes and helpers; Pixi's JSX runtime at ./jsx
+├── three/               @mvtjs/three: three.js scene passes and pointer picker; its JSX runtime at ./jsx
+└── html/                @mvtjs/html: DOM scene passes; its JSX runtime at ./jsx
+site/                    The games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
+docs/                    VitePress
+benchmarks/              Performance benchmarks, for the libraries and the games
+checks/                  Tests that the packages still fit together as decided
+notes/                   Proposals and tasks
+```
+
+```
+site/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet (game-selection) model & view
 ├── games/               Game registry + per-game modules
@@ -26,16 +42,13 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Pixi.js rendering
-├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base in jsx/
-├── pixi-mvt/            Pixi scene passes and helpers; Pixi's JSX runtime in jsx/
-├── three-mvt/           three.js scene passes and pointer picker; its JSX runtime in jsx/
-├── html-mvt/            DOM scene passes; its JSX runtime in jsx/
-└── common/              The site's shared views (overlay, input, pause menu, perfmon)
+├── demos/               Demo registry + per-demo modules
+├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
+└── shared/              The site's shared views (overlay, input, pause menu, perfmon), imported as `#shared`
 ```
 
-Top level: `src/` (all TypeScript), `site/` (HTML pages and site CSS; Vite's
-root), `docs/` (VitePress), `benchmarks/`, `scripts/` (generating
-textures and the JSX runtime's refresh copies, Vite plugins), `notes/` (proposals and tasks).
+Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
+`exports` condition), so nothing needs building to run the site or the tests.
 
 Full reference: [Project Structure](docs/reference/project-structure.md)
 
@@ -45,13 +58,15 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `src/games/index.ts`. See [Adding a Game](src/games/README.md).
+- To add a new game: create `site/src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `site/src/games/index.ts`. See [Adding a Game](site/src/games/README.md).
 
 ## Key Conventions
 
-- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`
+- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`. Between packages, import the package name (`@mvtjs/pixi`, `@mvtjs/pixi/jsx`): its `exports` are its barrel
+- **Declared dependencies** - every import names a dependency of the nearest `package.json` (lint: `import/no-extraneous-dependencies`); add it there rather than relying on npm's hoisting
+- **Tick API from the renderer package** - in the site and benchmarks, import `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the read and scene counters and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint)
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
-- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource #pixi-mvt/jsx */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
+- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi/jsx */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
@@ -70,6 +85,8 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 | `npm run build`        | Type-check + production build |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
+| `npm test`             | Every workspace's tests (Vitest) |
+| `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run bench`        | Performance benchmarks ([benchmarks/](benchmarks/README.md)) |
 
 ## Notes: Proposals and Tasks

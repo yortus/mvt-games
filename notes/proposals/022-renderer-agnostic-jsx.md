@@ -39,12 +39,12 @@ changed by [021](../archive/021-jsx-and-teardown-quick-wins.md)), Pixi 8.16
 `dev` branch, and spike 022a (section 2). The code-generation measurements in
 section 7.5 were taken on Node 22.11 with Pixi 8.15.
 
-**Related:** [jsx-runtime.ts](../../src/pixi-mvt/jsx/jsx-runtime.ts),
-[list.ts](../../src/pixi-mvt/jsx/list.ts), [switch.ts](../../src/pixi-mvt/jsx/switch.ts),
-[Pixi JSX design notes](../../src/pixi-mvt/jsx/design-notes.md),
-[JSX base design notes](../../src/mvt-utils/jsx/design-notes.md) (from
+**Related:** [jsx-runtime.ts](../../packages/pixi/src/jsx/jsx-runtime.ts),
+[list.ts](../../packages/pixi/src/jsx/list.ts), [switch.ts](../../packages/pixi/src/jsx/switch.ts),
+[Pixi JSX design notes](../../packages/pixi/src/jsx/design-notes.md),
+[JSX base design notes](../../packages/utils/src/jsx/design-notes.md) (from
 phase 1),
-[pixi-mvt design notes](../../src/pixi-mvt/design-notes.md),
+[pixi-mvt design notes](../../packages/pixi/src/design-notes.md),
 [004](../archive/004-list-proposal.md) (`<List>` and `<Switch>`),
 [011](./011-multi-package-repo.md) section 5.5 (later renderer packages),
 [012](./012-falling-sand-performance-findings.md) section 2 (caching methods
@@ -143,7 +143,7 @@ bindings nor its subtree run while hidden", and the Pixi control-flow header
 says hidden `<Show>` branches "cost nothing". Neither is true. Pixi 8's
 `RenderGroup.runOnRender` loops over every registered container and calls it,
 visible or not (checked in 8.15; recorded for 8.16 in the
-[pixi-jsx design notes](../../src/pixi-mvt/jsx/design-notes.md)). So on Pixi,
+[pixi-jsx design notes](../../packages/pixi/src/jsx/design-notes.md)). So on Pixi,
 every hidden branch keeps polling, and a binding such as `model.boss!.hp`
 runs in a branch whose condition says the boss is absent. `onRender` is also
 suppressed inside a `cacheAsTexture` group, and it runs during rendering
@@ -165,7 +165,7 @@ after that is invisible to it:
 The update store says so in its own docs: `onUpdate(node, fn)` must be
 called "during construction, before the node is composed into a parent".
 That is an ordering rule the user must remember, of the kind the pixi-mvt
-rework removed (its [design notes](../../src/pixi-mvt/design-notes.md),
+rework removed (its [design notes](../../packages/pixi/src/design-notes.md),
 "The accessor-shadowing defect").
 
 **The two mechanisms differ within one renderer.** On Pixi, refresh is driven
@@ -925,7 +925,7 @@ describe. Costs one small fallback, and running the conformance suite twice.
 Pages that allow eval, which includes every page in this repo, lose nothing.
 
 **B. A build-time precompiler that fills the factory cache (built).** A
-Vite plugin, [scripts/vite-plugin-jsx-precompile.ts](../../scripts/vite-plugin-jsx-precompile.ts),
+Vite plugin, `scripts/vite-plugin-jsx-precompile.ts` (since removed),
 that writes at build time the factories the runtime would generate at run
 time. Designed here as parked; built on 2026-09-28, after phase 1 found the
 fallback costs more than first measured (7.5.1). It is opt-in: the site's
@@ -944,7 +944,7 @@ a strict CSP needs it. As built:
   both variants, for up to four such attributes per element.
 - **It uses the base's own source.** `refreshShapeKey` and
   `refreshFactorySource` moved to a pure module,
-  [refresh-source.ts](../../src/mvt-utils/jsx/refresh-source.ts), that the runtime
+  `refresh-source.ts` (since removed), that the runtime
   and the plugin both call, so the two cannot drift. The plugin imports the
   JSX target's element table in Node, through the Vite config, to learn each
   attribute's write kind and property.
@@ -1041,7 +1041,7 @@ need none; about 5% of sites forbid eval through `script-src`, and Chrome
 extension pages always do. The deciding evidence was speed: the closures
 were made fast enough that a second path is not worth keeping.
 
-**How the closures are fast** ([refresh-builder.ts](../../src/mvt-utils/jsx/refresh-builder.ts)).
+**How the closures are fast** ([refresh-builder.ts](../../packages/utils/src/jsx/refresh-builder.ts)).
 The first fallback was 6x to 16x slower than generated code (7.5.1). Three
 causes were found, each measured:
 
@@ -1674,8 +1674,8 @@ Each phase ends with `npm run lint`, `npm run build` and `npm test` passing.
    yet: `--save` refuses filtered runs, and a full save takes about an hour.
 7. ~~Update the pixi-jsx design notes and runtime header; add design notes for
    the base.~~ Done: the settled decisions moved to
-   [src/mvt-utils/jsx/design-notes.md](../../src/mvt-utils/jsx/design-notes.md), and
-   [src/pixi-mvt/jsx/design-notes.md](../../src/pixi-mvt/jsx/design-notes.md) keeps
+   [src/mvt-utils/jsx/design-notes.md](../../packages/utils/src/jsx/design-notes.md), and
+   [src/pixi-mvt/jsx/design-notes.md](../../packages/pixi/src/jsx/design-notes.md) keeps
    the Pixi facts.
 
 **Phase 2: the generic scene passes and the JSX target for tests.**

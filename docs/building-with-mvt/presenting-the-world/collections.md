@@ -52,7 +52,7 @@ grows longer than it has been before, and are kept for as long as the list is.
 
 `items` can be anything with a `length` and an `at(index)`: an array, the
 `slots` of a `SlotList`, the `slots` or `ordered` of an `OrderedSlotList` (both
-from `src/mvt-utils/`), or an object literal such as
+from `@mvtjs/utils`), or an object literal such as
 `{ length: () => model.count, at: (i) => model.enemyAt(i) }`. Pass the
 collection itself when the model changes it in place, which is how models in
 this project own their collections. Pass a function returning it
@@ -298,7 +298,7 @@ Three things make this work:
 - **Nothing detects the swap.** The slide falls out of the targets changing.
 
 Kwazy Cactii's pieces view model
-(`src/games/cactii/views/board-view/pieces-view-model.ts`) is the production
+(`site/src/games/cactii/views/board-view/pieces-view-model.ts`) is the production
 example.
 
 ### Keyed by storage index: `OrderedSlotList`
@@ -341,7 +341,7 @@ Compared with the array form:
   view is still there to animate out. From a plain array, a removed item is
   simply gone.
 
-The [reordering-lists demo](https://github.com/yortus/mvt-games/blob/main/src/demos/reordering-lists/README.md)
+The [reordering-lists demo](https://github.com/yortus/mvt-games/blob/main/site/src/demos/reordering-lists/README.md)
 runs both forms side by side, driven by the same script.
 
 ### Drag and drop

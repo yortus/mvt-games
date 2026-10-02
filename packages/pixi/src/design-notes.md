@@ -13,7 +13,7 @@
 described here is generic over any tree, in
 [scene-passes.ts](../../utils/src/scene-passes.ts) in `@mvtjs/utils`
 (`createScenePasses`), which the three.js and DOM scene passes use too.
-pixi-mvt keeps what is Pixi's: the structural wrappers, the destroy warning,
+@mvtjs/pixi keeps what is Pixi's: the structural wrappers, the destroy warning,
 and `tickScene` / `setTickMethods` typed to containers. The walk also now
 calls methods cached in the memoised list rather than reading each
 container's method, as
@@ -130,7 +130,7 @@ function has(node: Container, pass: Pass): boolean {
 
 One climb per method kind, stopping at the first container already dirty for that
 kind. It lives in [scene-passes.ts](../../utils/src/scene-passes.ts) in
-`@mvtjs/utils`, next to the setters that trigger it; pixi-mvt's wrappers in
+`@mvtjs/utils`, next to the setters that trigger it; @mvtjs/pixi's wrappers in
 [container-mixin.ts](./container-mixin.ts) call it too:
 
 ```ts
@@ -169,7 +169,7 @@ measured ~0% in the README's cost table.
   so its lists stay valid; only the old and new parents' chains go dirty.
 - **No retention.** Every reference points into the container's own subtree, so
   the state dies with the container and there is nothing to tear down. There is
-  no `destroy()` in pixi-mvt because there is nothing to destroy.
+  no `destroy()` in @mvtjs/pixi because there is nothing to destroy.
 
 ### Two traps, both load-bearing
 
@@ -225,11 +225,11 @@ parent.onRefresh = () => order.push('parent'); // bypasses the accessor
 s.refresh();                                   // never called
 ```
 
-The mixin then moved to module load, so importing pixi-mvt at all is the
+The mixin then moved to module load, so importing @mvtjs/pixi at all is the
 only ordering requirement, and ES modules evaluate imports before the importing
 module's own code. A dev-mode assertion during each rebuild caught an own method
 property however it arrived, since `Object.defineProperty` and a dynamic
-import of pixi-mvt could both still produce one. Since task 028 there are no
+import of @mvtjs/pixi could both still produce one. Since task 028 there are no
 accessors to shadow: methods are set only through `setTickMethods`, which
 writes the private fields itself, so the defect and its assertion are both
 gone.
@@ -320,7 +320,7 @@ How it stays off the hot path:
   dense scene; recording only the elisions measured as noise.
 - After the walk, one read of the root's memo says whether any method changed
   the subtree: every structural change and method assignment clears it, since
-  the whole subtree was clean when the walk began. html-mvt hears of changes
+  the whole subtree was clean when the walk began. @mvtjs/html hears of changes
   only when it asks, so `beforeScenePass` is called again first.
 - Only then (`catchUpRefresh`) does it replay the walk from its elisions,
   marking each node that ran (`_mvtLastRefreshPass`), rebuild the list, and
@@ -377,7 +377,7 @@ carries the fields' defaults, including `_mvtInvalidators`, the invalidation
 climbs of that renderer's scene passes, so `setTickMethods` works on any
 renderer's nodes with no dispatch; a plain-object node is given them when a
 walk first visits it. Views take both functions from their renderer
-(`pixi-mvt`, `three-mvt`, `html-mvt`), which exports them typed to its own
+(`@mvtjs/pixi`, `@mvtjs/three`, `@mvtjs/html`), which exports them typed to its own
 node, so passing anything else is a type error; `@mvtjs/utils` keeps an untyped
 `setTickMethods` for the library's own code. The fields stay named `_mvt*`
 properties of the node. One record object per node, a `WeakMap`, and
@@ -434,17 +434,18 @@ one implementation against one scenario. The scenes are now the `scene-passes`
 suite in [benchmarks/](../../../benchmarks/README.md)
 (`benchmarks/suites/scene-passes.case.ts`), run with
 `npm run bench -- scene-passes`; they were first written as
-`src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`. Results
+`src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`, before
+the libraries became packages. Results
 are microseconds per frame - not hz - reported as the median of a set of
 batches, each batch sized from a warmup. One arm per process is also
-what lets the `patched` and `unpatched` arms differ by whether pixi-mvt was
+what lets the `patched` and `unpatched` arms differ by whether @mvtjs/pixi was
 ever imported.
 
 ### Results
 
 Measured with the original driver, which timed under `tsx`, on a Windows
 laptop with Node 22. A frame is one refresh scene pass plus the scenario's
-churn. Current numbers, from the consolidated suite, are in the pixi-mvt
+churn. Current numbers, from the consolidated suite, are in the @mvtjs/pixi
 README and the docs' Performance Measurements page.
 
 | Scenario                                        | naive walk  | memo        | note                        |
@@ -454,7 +455,7 @@ README and the docs' Performance Measurements page.
 | churn: 2k, all with a refresh method, 100 swaps per frame | **36.5 us** | 65.3 us     | the case the memo loses     |
 | attach: 100 subtrees of 25 nodes with no refresh method, re-attached | 45.5 us     | **9.8 us**  | O(depth), not O(subtree)    |
 
-| Baseline                                        | incumbent   | pixi-mvt    |
+| Baseline                                        | incumbent   | @mvtjs/pixi    |
 | ----------------------------------------------- | ----------- | ----------- |
 | dispatch: 2000 methods, Pixi `onRender` vs the refresh scene pass | 2.7 us      | 4.7 us      |
 | mutation: 100 attach/detach on an unmanaged tree | 13.4 us     | 13.7 us     |
@@ -482,13 +483,13 @@ magnitude.
 Two style-guide rules needed a deliberate decision.
 
 **`this`** is confined to the wrapped prototype methods, in
-[container-mixin.ts](./container-mixin.ts) (and three-mvt's equivalent). A
+[container-mixin.ts](./container-mixin.ts) (and @mvtjs/three's equivalent). A
 wrapped prototype method cannot reach its instance without it. Methods themselves are invoked as plain calls with no receiver, so a
 view's method stays an ordinary closure. The side effect is that a method defined as
 a subclass prototype method would not see its instance, which costs nothing here
 because the repo has no classes.
 
-**`null`** appears nowhere in pixi-mvt's own surface: methods and memo fields are
+**`null`** appears nowhere in @mvtjs/pixi's own surface: methods and memo fields are
 all `undefined`. `Container.parent` is typed `Container | null` by Pixi, so the
 three places that read it use a truthiness check rather than comparing.
 
@@ -497,7 +498,7 @@ three places that read it use a truthiness check rather than comparing.
 Recorded so they are not re-derived. All checked against `node_modules`.
 
 - `extensions.mixin(Container, src)` is `Object.defineProperties(Target.prototype,
-  getOwnPropertyDescriptors(src))`, which preserves accessors. pixi-mvt used it
+  getOwnPropertyDescriptors(src))`, which preserves accessors. @mvtjs/pixi used it
   for the `onUpdate` / `onRefresh` accessors; it now adds only private field
   defaults, with `Object.defineProperties` itself, and declares nothing on
   `PixiMixins.Container`.
@@ -520,7 +521,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself
   during rendering whenever `sortableChildren` is set.
 - `runOnRender` is called unconditionally and is **never gated on visibility**.
-  The workaround at [pause-menu-view.ts:33](../../../src/common/pause-menu-view.ts#L33)
+  The workaround at [pause-menu-view.ts:33](../../../site/src/shared/pause-menu-view.ts#L33)
   ("outer stays visible so onRender fires") was never needed.
 - `cacheAsTexture` suppresses `onRender` for nested groups: `_updateRenderGroups`
   returns early when a cached group's texture is current.

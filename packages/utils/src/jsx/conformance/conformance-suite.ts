@@ -54,8 +54,9 @@ export interface ConformanceFixture<N extends object> {
 // ---------------------------------------------------------------------------
 
 /**
- * Defines the conformance suite for one JSX target: the runtime's behaviour
- * (proposal 022 section 3), `<List>` and `<Switch>`, each run twice: with
+ * Defines the conformance suite for one JSX target: the behaviour every
+ * target shares (children built before their parent, inert construction,
+ * `visible` first), `<List>` and `<Switch>`, each run twice: with
  * the shared copy of the refresh code, as a shape's first elements get, and
  * with every shape's own copy, which assigns properties by name. Call it
  * inside a test file.

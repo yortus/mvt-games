@@ -1,6 +1,5 @@
-// Reproduces an unexplained allocation, recorded in
-// `notes/tasks/backlog/017-misc-loose-ends.md` ("Fractional numbers boxed
-// depending on unrelated code"). Not part of any suite.
+// Reproduces an unexplained allocation: fractional numbers boxed, or not,
+// depending on unrelated code. Not part of any suite.
 //
 // 1000 model records hold fractional `x`, `y` and `alpha`, changed every
 // frame. With JSX views over them, the model's own writes allocate about 32

@@ -31,7 +31,7 @@
 
 Exports (bindings interface, view function) go above all internals. A view
 with a JSX body is a `.tsx` file whose first line is
-`/** @jsxImportSource #pixi-mvt/jsx */`.
+`/** @jsxImportSource @mvtjs/pixi/jsx */`.
 
 **[project convention]** The full convention is in
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings),
@@ -127,7 +127,7 @@ its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `#pixi-mvt/jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `@mvtjs/pixi/jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice; declare `T` only as an honest
 statement of a limitation. Widening `T` to `ValueOrGetter<T>` later relaxes
@@ -164,7 +164,7 @@ cannot tell which a view uses, and each view can choose whichever suits it.
 The same rocket view both ways:
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 export function RocketView(bindings: RocketViewBindings): Container {
     const { idle, launching } = textures.get().rocket;
@@ -214,7 +214,7 @@ frame.
 
 ### A JSX Body
 
-A `.tsx` file whose first line is `/** @jsxImportSource #pixi-mvt/jsx */`. How
+A `.tsx` file whose first line is `/** @jsxImportSource @mvtjs/pixi/jsx */`. How
 attributes behave:
 
 - **A plain value is applied once.** A function is re-read every refresh.
@@ -226,7 +226,7 @@ attributes behave:
 - **`text`, `texture`, `tint`, `width`, `height`, `style` and `label` are
   written only when their value changes.** The function is still called every
   frame, so it must not build a new string each time: map a number to text
-  only when the number changes, with `memoiseLast` from `#mvt-utils`, created once:
+  only when the number changes, with `memoiseLast` from `@mvtjs/utils`, created once:
   `const scoreText = memoiseLast((n: number) => String(n))`, then
   `text={() => scoreText(bindings.score())}`.
 - **`ref`** receives the element once it is built, e.g. to draw a `Graphics`
@@ -320,8 +320,8 @@ Key points:
 ## Using `setTickMethods` and `tickScene`
 
 **[project convention]** A view sets its per-frame steps on its container with
-`setTickMethods` from `src/pixi-mvt/` (the same function exists in `three-mvt`
-and `html-mvt`, typed to their nodes): `refresh()` always, and
+`setTickMethods` from `@mvtjs/pixi` (the same function exists in `@mvtjs/three`
+and `@mvtjs/html`, typed to their nodes): `refresh()` always, and
 `update(deltaMs)` only if it has presentation state. In a JSX body the runtime
 sets the refresh method from the function attributes, and the update method
 comes from the `onUpdate` attribute.
@@ -334,7 +334,7 @@ setTickMethods(view, { update, refresh });   // update only for views with prese
 - The host ticks the scene each frame, after the models: `model.update(deltaMs)`,
   then `tickScene({ root: app.stage, deltaMs })`, whose update scene pass runs
   every update method in the tree, then its refresh scene pass every refresh
-  method. Game sessions advance only their models; `src/main.ts` ticks the
+  method. Game sessions advance only their models; `site/src/main.ts` ticks the
   stage once per frame, and pauses by leaving the game container out of the
   update scene pass. Games know nothing about pause.
 - **Never forward `update()` or `refresh()` to child views.** The scene passes
@@ -388,7 +388,7 @@ expensive work (rebuilding a grid, recreating child views), use the `watch()`
 helper:
 
 ```ts
-import { watch } from '#mvt-utils';
+import { watch } from '@mvtjs/utils';
 
 const watcher = watch({
     rows: bindings.rows,
@@ -517,7 +517,7 @@ once, when the element is built, not per frame.
 A reusable bullet view, shown in a `<List>` above, with a JSX body:
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 import type { Container } from 'pixi.js';
 import { textures } from '../data';

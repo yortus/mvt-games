@@ -34,8 +34,8 @@ three things, and the base does the rest:
 | An **element table**: each intrinsic element, how to create it, and how to write each of its attributes ([attributes.ts](./attributes.ts)) | The refresh methods that read bindings ([refresh-builder.ts](./refresh-builder.ts)) |
 | Its scene passes: `tickScene` and `setTickMethods` over its nodes | `<List>` and `<Switch>` ([list.ts](./list.ts), [switch.ts](./switch.ts)) |
 
-Three renderers use it: Pixi (`src/pixi-mvt/jsx/`), three.js
-(`src/three-mvt/jsx/`) and the DOM (`src/html-mvt/jsx/`). Pixi's is the
+Three renderers use it: Pixi (`packages/pixi/src/jsx/`), three.js
+(`packages/three/src/jsx/`) and the DOM (`packages/html/src/jsx/`). Pixi's is the
 simplest, so read it alongside this guide.
 
 ## Two moments: building and refreshing
@@ -165,7 +165,7 @@ writer there is, so the engine cannot inline them.
 **So the refresh code is written out many times.** `refresh-copies.ts` holds
 17 identical copies of a refresh function for each number of bindings, from 1
 to 6. Each copy is separate code, with its own records.
-`scripts/generate-refresh-copies.ts` generates the file on install and before
+This package's `scripts/generate-refresh-copies.ts` generates the file on install and before
 dev, build, test and bench; it isn't checked in.
 
 **Each busy shape takes a copy of its own.** A node's **shape** is its
@@ -227,7 +227,7 @@ shows them in use.
 A new renderer needs its scene passes first: `tickScene` and `setTickMethods`
 typed to its nodes, made with `createScenePasses`
 (`scene-passes.ts` in this package), as
-`src/pixi-mvt/container-mixin.ts` does for Pixi. Then, in a `jsx/` directory
+`packages/pixi/src/container-mixin.ts` does for Pixi. Then, in a `jsx/` directory
 beside them:
 
 1. **The JSX target** (`<name>-target.ts`). [jsx-target.ts](./jsx-target.ts)

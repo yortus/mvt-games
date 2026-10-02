@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // SPIKE: `Watch()` fluent builder
 // ---------------------------------------------------------------------------
-// Exploratory prototype (not wired into `#common`). A single top-level builder
+// Exploratory prototype (not exported from `@mvtjs/utils`). A single top-level builder
 // whose chain reads like an English description of the operation:
 //
 //   Watch().when(() => phase).changes({ from: 'play', to: 'dead' }).then(flash)

@@ -39,7 +39,7 @@ Settled questions that should not be reopened without new information are in
   - Pac-Man, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was the
     model, not the views. Pac-Man and the four ghosts each started a GSAP
     tween, and a `set`, for every one-tile step. Their moves are now a
-    `TileMove` (`src/games/pacman/models/tile-move.ts`, with tests): a
+    `TileMove` (`site/src/games/pacman/models/tile-move.ts`, with tests): a
     straight slide advanced by `update(deltaMs)` that allocates nothing, with
     the same semantics (linear, starting from wherever the actor is, and no
     time carried from one move to the next). The model now allocates nothing
@@ -58,7 +58,7 @@ Settled questions that should not be reopened without new information are in
   The lint rule's auto-fix converts them all; then enable the rule set to
   `'property'`. Type-check afterwards, since the stricter parameter checks may
   surface real errors. They are most likely around `SlotList<T>` and
-  `OrderedSlotList<T>` in `src/common/slot-list/`, which take `T` as a
+  `OrderedSlotList<T>` in `packages/utils/src/slot-list/`, which take `T` as a
   parameter: converted, a `SlotList<Asteroid>` is no longer accepted as a
   `SlotList<GameObject>`. Prefer fixing code that relies on this; failing
   that, add a narrow, documented exception for generic collection interfaces
@@ -109,8 +109,8 @@ Settled questions that should not be reopened without new information are in
   `export type` line where that is enough:
 
   ```ts
-  export { addReads, countReads, readCounter, SKIP_DESCENDANTS } from '../mvt-utils';
-  export type { RefreshMethod, UpdateMethod } from '../mvt-utils';
+  export { addReads, countReads, readCounter, SKIP_DESCENDANTS } from '@mvtjs/utils';
+  export type { RefreshMethod, UpdateMethod } from '@mvtjs/utils';
   ```
 
   The files 022 changed were fixed by hand. Lint can enforce the rest:
@@ -226,7 +226,7 @@ Settled questions that should not be reopened without new information are in
   `width` and `height` values every frame (16 bytes per element), changed or
   not, because their last value lived in a closure variable that started as
   a symbol. They now use a `Float64Array` (see
-  `FRACTIONAL_WATCHED_ATTRIBUTES` in `src/pixi-mvt/jsx/jsx-runtime.ts`), guarded by the `memory` suite's
+  `FRACTIONAL_WATCHED_ATTRIBUTES` in `packages/pixi/src/jsx/jsx-runtime.ts`), guarded by the `memory` suite's
   `allocation-watched` table.
 
 - **Object literals with getters are slow in V8.** Found by
@@ -271,7 +271,7 @@ Settled questions that should not be reopened without new information are in
   renderer's scene passes add `_mvtUpdateMethod`, `_mvtRefreshMethod`,
   `_mvtSubtreeHasUpdate`, `_mvtUpdateWalk`, `_mvtSubtreeHasRefresh` and
   `_mvtRefreshWalk` to its node prototype (`installFieldDefaults` in
-  `src/mvt-utils/scene-passes.ts`), and a
+  `packages/utils/src/scene-passes.ts`), and a
   node gains them as own properties lazily, in whatever order it is used.
   Reads of them see every node class (`Container`, `Sprite`, `Graphics`,
   `Text`, and so on) and every order of those writes, so in a mixed scene

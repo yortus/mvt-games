@@ -26,6 +26,7 @@ is written and organized in this project.
 | Enum-like types       | `type TileKind = 'wall' \| 'empty'`   | [Enumeration Types](#enumeration-types)        |
 | Clear names           | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)|
 | Barrel imports        | `import { Foo } from './module'`       | [Project Structure](project-structure.md)      |
+| Package imports       | `import { tickScene } from '@mvtjs/pixi'` | [Between Packages](project-structure.md#between-packages) |
 | Module specifiers     | `'./foo'` not `'./foo.ts'`             | [Project Structure](project-structure.md)      |
 | Indentation           | 4 spaces                               | [Formatting](#formatting)                      |
 | Unused parameters     | `_deltaMs`                             | [Naming Conventions](#naming-conventions)      |
@@ -252,7 +253,7 @@ Enforced by lint: the `@typescript-eslint/method-signature-style` rule, set to
 ## Assertions
 
 State a precondition, postcondition or invariant with `assert` from
-`#mvt-utils`, rather than a hand-written `if` and `throw`. It reads as the
+`@mvtjs/utils`, rather than a hand-written `if` and `throw`. It reads as the
 condition that must hold, and TypeScript narrows on it.
 
 ```ts
@@ -430,7 +431,7 @@ Each query binding's type says whether the view supports its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `#pixi-mvt/jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `@mvtjs/pixi/jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice. Declare `T` only as an honest
 statement that the view does not support the value changing, and relax it
@@ -464,7 +465,7 @@ uses, and each view can choose whichever suits it. The same ship view both
 ways:
 
 ```tsx
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 export function ShipView(bindings: ShipViewBindings): Container {
     return (
@@ -495,14 +496,14 @@ export function ShipView(bindings: ShipViewBindings): Container {
 
 | | Tends to suit | Why |
 | --- | --- | --- |
-| **JSX** (`.tsx`, starting `/** @jsxImportSource #pixi-mvt/jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
+| **JSX** (`.tsx`, starting `/** @jsxImportSource @mvtjs/pixi/jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
 | **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one change check gating many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.1-1.6x as much per property as a hand-written one ([measurements](../building-with-mvt/performance/measurements.md)), which matters only at that scale |
 
 Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi
 object directly through a `ref` or an `onRefresh` attribute.
 
 In either body, derive text (or anything else costly) from a changing value
-only when the value changes. `memoiseLast` from `#mvt-utils` wraps a one-argument
+only when the value changes. `memoiseLast` from `@mvtjs/utils` wraps a one-argument
 function to do that; create it once, and call it every frame:
 
 ```tsx
@@ -526,7 +527,7 @@ instance. See
 
 ### Enforcement
 
-Every view in `src/` follows this convention, and lint enforces its naming:
+Every view in the site and the packages follows this convention, and lint enforces its naming:
 no `createXxxView` functions, no `get*` members in `XxxViewBindings`,
 `XxxViewModel` or `XxxViewModelOptions` interfaces, and no `XxxViewProps`.
 The playground is exempt, since it builds DOM views.

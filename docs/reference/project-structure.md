@@ -10,11 +10,27 @@
 
 ## Directory Layout
 
-Every directory under `src/` is a **module** with a specific responsibility.
-Each module has a barrel file (`index.ts`) that defines its public API.
+The repository is an npm workspace: four libraries, published under the
+`@mvtjs` npm scope, and private packages for the site, the docs, the
+benchmarks and the checks.
 
 ```
-src/
+packages/
+├── utils/               @mvtjs/utils: renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base at ./jsx
+├── pixi/                @mvtjs/pixi: Pixi scene passes and helpers; Pixi's JSX runtime at ./jsx
+├── three/               @mvtjs/three: three.js scene passes and pointer picker; its JSX runtime at ./jsx
+└── html/                @mvtjs/html: DOM scene passes; its JSX runtime at ./jsx
+site/                    The games, demos and playground: one Vite site of several pages
+docs/                    This documentation (VitePress)
+benchmarks/              Performance benchmarks, for the libraries and the games alike
+checks/                  Tests that the packages still fit together as decided
+notes/                   Proposals and tasks
+```
+
+Each package's source is in its own `src/`. The site's is laid out by area:
+
+```
+site/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
@@ -23,20 +39,22 @@ src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Rendering and user-input handling
-├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base in jsx/
-├── pixi-mvt/            Pixi scene passes and helpers; Pixi's JSX runtime in jsx/
-├── three-mvt/           three.js scene passes and pointer picker; its JSX runtime in jsx/
-├── html-mvt/            DOM scene passes; its JSX runtime in jsx/
-└── common/              The site's shared views (overlay, input, pause menu, perfmon)
+├── demos/               Demo registry + per-demo modules
+├── playground/          The in-browser editor and the sandbox it runs code in
+└── shared/              The site's shared views (overlay, input, pause menu, perfmon), imported as `#shared`
 ```
+
+Every directory under a package's `src/` is a **module** with a specific
+responsibility. Each module has a barrel file (`index.ts`) that defines its
+public API.
 
 | Directory | Contains                                                  | Typical Exports                                           |
 | --------- | --------------------------------------------------------- | --------------------------------------------------------- |
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
-| `mvt-utils/` | Renderer-agnostic helpers and models                   | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
-| `common/` | The site's shared views                                   | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
+| `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
+| `site/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -46,8 +64,11 @@ not an MVT architectural layer. MVT has three layers: model, view, and ticker.
 
 ## Barrel Files
 
-Every directory under `src/` provides a barrel file (`index.ts`) that defines
-its public API. This is the backbone of the project's module system.
+Every directory under a package's `src/` provides a barrel file (`index.ts`)
+that defines its public API. This is the backbone of the project's module
+system. Between packages, a package's `exports` field plays the same part:
+other packages import `@mvtjs/pixi` or `@mvtjs/pixi/jsx`, never a file inside
+it.
 
 ### Why Barrel Files Matter
 
@@ -202,7 +223,7 @@ import { type Direction } from '../common';
 
 A file in a subdirectory is inside its ancestors' modules, so it imports what
 it needs from them as a sibling would: the file directly. The JSX support
-under each renderer does this (`src/html-mvt/jsx/` imports
+under each renderer does this (`packages/html/src/jsx/` imports
 `'../element-mixin'`). Another module's public API is reached through its
 barrel, never past it.
 
@@ -212,13 +233,41 @@ technically resolvable, it makes the dependency graph harder to reason about
 and can cause runtime issues where an imported value is `undefined` because
 the exporting module has not finished initializing.
 
+## Between Packages
+
+The rules above apply inside each package. Between packages:
+
+- **Import a package by name**: `@mvtjs/pixi` or `@mvtjs/pixi/jsx`, never a
+  path into it. Its `exports` field lists what can be reached, as a barrel
+  does for a directory. Inside the repo these names resolve to the package's
+  `src/`, through an `@mvtjs/source` export condition that TypeScript, Vite,
+  Vitest and the benchmarks all set, so nothing needs building first.
+- **Declare what you import.** Every import names a dependency of the nearest
+  `package.json`. npm hoists packages to the root `node_modules`, so an
+  undeclared import still works here, then fails for whoever installs the
+  package. ESLint's `import/no-extraneous-dependencies` reports it. Tests,
+  scripts and config files may import `devDependencies`; other code may not.
+- **Import the tick API from your renderer package.** Each renderer package
+  re-exports the names it shares with `@mvtjs/utils`: `SKIP_DESCENDANTS`,
+  `hasUpdate`, `hasRefresh`, the read and scene counters, and the method
+  types. The site and the benchmarks import them from the renderer they use,
+  so each name has one place to come from (`no-restricted-imports`).
+  `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
+  sequences, slot lists.
+- **The playground stands alone.** `site/src/playground/` and the rest of the
+  site share no code in either direction (`import/no-restricted-paths`), so
+  the playground could become a package of its own.
+
+Within the site, its shared views are imported as `#shared`, an alias that
+`site/package.json` defines.
+
 ## Game Module Structure
 
-Each game is a self-contained module under `src/games/<name>/`. A typical
-layout:
+Each game is a self-contained module under `site/src/games/<name>/`. A
+typical layout:
 
 ```
-src/games/<name>/
+site/src/games/<name>/
 ├── index.ts              Barrel - re-exports createXxxEntry
 ├── <name>-entry.ts       GameEntry factory
 ├── data/
@@ -235,5 +284,5 @@ src/games/<name>/
     └── game-view.ts       Top-level view - wires all child views (.tsx if its body is JSX)
 ```
 
-For details on creating a new game module, see the
-`src/games/README.md` in the repository.
+For details on creating a new game module, see
+`site/src/games/README.md` in the repository.

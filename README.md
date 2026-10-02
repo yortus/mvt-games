@@ -17,7 +17,7 @@ frame-consistent rendering.
 | Pac-Man   | Navigate mazes, eat dots             |
 | Scramble  | Side-scrolling shooter               |
 
-Each game is a self-contained module under `src/games/<name>/` with its own
+Each game is a self-contained module under `site/src/games/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to
 the active game session.
 
@@ -58,24 +58,31 @@ Learn the architecture, conventions, and patterns:
 
 ## Project Structure
 
+An npm workspace: the libraries, published under the `@mvtjs` npm scope,
+and private packages for everything else.
+
 ```
-src/          All TypeScript: games, demos, playground, and the shared libraries
-site/         HTML pages and site CSS (Vite's root)
+packages/     The libraries: @mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html
+site/         The games, demos and playground (Vite)
 docs/         Documentation (VitePress)
 benchmarks/   Performance benchmarks (npm run bench)
-scripts/      Texture generation and the spritesheet Vite plugin
+checks/       Tests that the packages still fit together as decided
 notes/        Proposals, tasks, and the archive of finished work
 ```
 
 ```
-src/
+packages/
+├── utils/               Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base at ./jsx
+├── pixi/                Pixi scene passes and helpers; Pixi's JSX runtime at ./jsx
+├── three/               three.js scene passes and pointer picker; its JSX runtime at ./jsx
+└── html/                DOM scene passes; its JSX runtime at ./jsx
+
+site/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
 │   └── <name>/          Self-contained game (data/, models/, views/)
-├── mvt-utils/           Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base in jsx/
-├── pixi-mvt/            Pixi scene passes and helpers; Pixi's JSX runtime in jsx/
-├── three-mvt/           three.js scene passes and pointer picker; its JSX runtime in jsx/
-├── html-mvt/            DOM scene passes; its JSX runtime in jsx/
-└── common/              The site's shared views (overlay, input, pause menu, perfmon)
+├── demos/               Demo registry + per-demo modules
+├── playground/          In-browser editor and sandbox
+└── shared/              The site's shared views (overlay, input, pause menu, perfmon)
 ```

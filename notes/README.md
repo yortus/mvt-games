@@ -35,6 +35,14 @@ one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
 **031**.
 
+**Paths in older notes.** The repo became a workspace of packages on
+2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
+the paths of their day: `src/mvt-utils/` is now `packages/utils/src/`,
+`src/<renderer>-mvt/` is `packages/<renderer>/src/`, `src/common/` is
+`site/src/shared/`, and the rest of `src/` is `site/src/`. The aliases became
+package names (`#pixi-mvt/jsx` is `@mvtjs/pixi/jsx`), and `#common` became
+`#shared`.
+
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
 is `task.md`.
@@ -68,7 +76,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | # | Proposal | Status |
 | --- | --- | --- |
 | 008 | [`Watch()` fluent builder](./proposals/008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection, memoised derivation, reactions and uniform lists. The prototype is `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
-| 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Being implemented on `vnext-011`: phases 0 to 3 done (the libraries are workspace packages, beside private `site`, `docs`, `benchmarks` and `checks` packages), and its top-level tidy-up done earlier. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in an npm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
+| 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Being implemented on `vnext-011`: phases 0 to 4 done (the libraries are workspace packages, beside private `site`, `docs`, `benchmarks` and `checks` packages, and the docs describe the new layout), and its top-level tidy-up done earlier. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in an npm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Section 2 implemented: each container's method cached in the scene-pass loop (measured 12-27% cheaper refresh on the falling-sand demo, at a small cost on uniform scenes). Still proposed: a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
@@ -78,7 +86,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 **How they relate.** All seven can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
 012's method caching in its generic scene-pass core. 008 concerns
-the `watch()` helper in `src/common/`, and now also whether `memoiseLast`
+the `watch()` helper (now in `@mvtjs/utils`), and now also whether `memoiseLast`
 (from 018, archived) should give way to its mapping terminal. 011 is about the
 repo rather than the architecture; its migration moves most of the paths the
 other notes cite. 012 changes 001's pass loop and qualifies the `scaling`
@@ -129,7 +137,7 @@ None.
 ## Elsewhere
 
 - **002** and **006** turned out to describe shipped code. 002 lives next
-  to it, [src/pixi-mvt/design-notes.md](../src/pixi-mvt/design-notes.md); 006,
+  to it, [packages/pixi/src/design-notes.md](../packages/pixi/src/design-notes.md); 006,
   the `<List>` patterns guide, is now the docs page
   [Presenting Collections](../docs/building-with-mvt/presenting-the-world/collections.md).
 - **009** was never used.
