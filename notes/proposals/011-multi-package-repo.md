@@ -8,9 +8,10 @@
 > 2026), the results of a hands-on lint trial that decides whether Vite+ can
 > enforce this repo's own formatting, and a phased migration plan.
 
-**Status:** proposed. The npm scopes and GitHub org in section 3 are
+**Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
+Phase 0 is done (section 12.1). The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
-the package split (section 7, "Done already"). Nothing else is implemented.
+the package split (section 7, "Done already").
 
 **Written:** 2026-09-25. Updated 2026-10-02 for the Vite+ 1.0 release
 (sections 4.1 and 9), and to stay on npm rather than move to pnpm (sections
@@ -673,13 +674,16 @@ CI uses Node 22. The toolchain needs 24 or later, and the plan pins 26
 ## 12. Migration plan
 
 Each phase is one PR that leaves `lint`, `test`, `build` and the Pages deploy
-working. Moves use `git mv` so history follows the files.
+working. Moves use plain `mv`, leaving staging to review; git detects
+the renames when the moved files are staged, so history follows them.
 
 ### 12.1 Phase 0: prerequisites
 
-- Node 26 locally and in CI; add `.node-version`.
-- Update `deploy.yml` and `test-deploy.yml` for Node 26. The repo stays on npm (section 13.2), so
-  nothing else changes.
+- ~~Node 26 locally and in CI; add `.node-version`.~~ Done (2026-10-02).
+- ~~Update `deploy.yml` and `test-deploy.yml` for Node 26.~~ Done: both read
+  `.node-version` through `node-version-file`, so it is the one place the
+  version is set. The repo stays on npm (section 13.2), so nothing else
+  changes.
 
 ### 12.2 Phase 1: extract the libraries
 
