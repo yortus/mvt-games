@@ -12,7 +12,8 @@
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already"). Nothing else is implemented.
 
-**Written:** 2026-09-25.
+**Written:** 2026-09-25. Updated 2026-10-02 for the Vite+ 1.0 release
+(sections 4.1 and 9).
 
 **Related:** [`AGENTS.md`](../../AGENTS.md) (project structure, commands),
 [`docs/reference/project-structure.md`](../../docs/reference/project-structure.md),
@@ -130,9 +131,11 @@ check it before relying on it.
   the compiler API, including typescript-eslint, stay on the JavaScript
   compiler for now.
 - **Vite+** (VoidZero, MIT) is one `vp` CLI over Vite, Vitest, Rolldown,
-  tsdown, Oxlint and Oxfmt, with a cached task runner. It reached
-  `1.0.0-rc.0` on 2026-09-22. Cloudflare acquired VoidZero in June 2026 and
-  committed to keeping the tools MIT and vendor-neutral. Section 9 evaluates it.
+  tsdown, Oxlint and Oxfmt, with a cached task runner. **1.0 was released on
+  2026-09-28**, after two release candidates (2026-09-22 and 2026-09-26); it
+  is `1.0.0-rc.1` unchanged, and is npm's `latest` tag. Cloudflare acquired
+  VoidZero in June 2026 and committed to keeping the tools MIT and
+  vendor-neutral. Section 9 evaluates it.
 - **Publishing security was overhauled:**
   - Classic npm tokens are gone. New write tokens default to a 7-day lifetime
     (90 at most), and npm plans to stop direct publishing with tokens from
@@ -518,10 +521,12 @@ same with or without it.
 - Adopting it moves Vite 7 to 8 and Vitest 4 to 5 in the same step.
 - VitePress keeps its own Vite 5, so the docs sit outside the unified Vite
   version.
-- It is young: about 1,300 public repos used it in August 2026, so there are
-  fewer answers when something breaks.
+- It is young. 1.0 is stable but days old, and about 2,600 public repos
+  depended on it at release (1,300 in August 2026), so there are fewer answers
+  when something breaks.
 - Oxlint's JS plugin support, which this repo's formatting depends on (9.2),
-  is alpha.
+  is still alpha. Vite+ 1.0 being stable does not change that: the Oxlint docs
+  still said "alpha" on 2026-10-02.
 
 ### 9.2 Lint trial (2026-09-25)
 
@@ -543,6 +548,10 @@ Oxfmt. It can. Details and method are in appendix A; in short:
 The Vite+ docs cover this case directly: `check.fmt: false` is described as
 being "for a team that lints but does not format". Fix-on-save in VS Code goes
 through the Oxc extension's `source.fixAll.oxc` code action.
+
+**The results hold for 1.0.** The trial used `1.0.0-rc.0`. 1.0 bundles the
+same Oxlint (1.85.0) and Vitest (5.0.1), and its lint changes since then
+affect only setup, not results (section 9.3).
 
 **Caveats found:**
 
@@ -574,6 +583,15 @@ on a branch (phase 5 in section 12), and adopted only if all of these hold:
 
 If any fails, the repo stays on ESLint, pnpm scripts and tsdown. Nothing else
 in the plan changes.
+
+The trial uses 1.0 or a later 1.x. Two breaking changes since the RC the lint
+trial used (both in `1.0.0-rc.1`) affect how it is set up:
+
+- Task-cache settings (`env`, `untrackedEnv`, `input`, `output`) now sit under
+  a `cache` field; `vp migrate` converts older config (criterion 6).
+- Editors now start the linter's language server with `vp lint --lsp` rather
+  than Oxlint directly. Fix-on-save (criterion 4) is checked against that
+  setup.
 
 ---
 
@@ -912,7 +930,7 @@ Run on 2026-09-25 in a scratch directory outside the repo, on a copy of `src/`.
 - ["Too similar" rule undocumented](https://github.com/orgs/community/discussions/205030)
 - [pnpm blog](https://pnpm.io/blog), [pnpm 11.11-11.14](https://pnpm.io/blog/releases/11.11-11.14), [pnpm 12.0](https://pnpm.io/blog/releases/12.0), [pnpm 12.4](https://pnpm.io/blog/releases/12.4), [pnpm catalogs](https://pnpm.io/catalogs)
 - [Vite 8.0](https://vite.dev/blog/announcing-vite8)
-- [Vite+ repo](https://github.com/voidzero-dev/vite-plus), [Vite+ monorepo guide](https://viteplus.dev/guide/monorepo), [Vite+ run guide](https://viteplus.dev/guide/run), [Vite+ lint guide](https://viteplus.dev/guide/lint), [Vite+ beta (InfoQ)](https://www.infoq.com/news/2026/08/vite-plus-beta/)
+- [Vite+ repo](https://github.com/voidzero-dev/vite-plus), [Vite+ monorepo guide](https://viteplus.dev/guide/monorepo), [Vite+ run guide](https://viteplus.dev/guide/run), [Vite+ lint guide](https://viteplus.dev/guide/lint), [Vite+ beta (InfoQ)](https://www.infoq.com/news/2026/08/vite-plus-beta/), [Announcing Vite+ 1.0](https://voidzero.dev/posts/announcing-vite-plus-1-0), [Vite+ releases](https://github.com/voidzero-dev/vite-plus/releases)
 - [VoidZero is joining Cloudflare](https://voidzero.dev/posts/voidzero-cloudflare)
 - [Oxlint JS plugins](https://oxc.rs/docs/guide/usage/linter/js-plugins), [Oxlint JS plugins alpha](https://oxc.rs/blog/2026-03-11-oxlint-js-plugins-alpha.html)
 - [TypeScript 7 GA (InfoQ)](https://www.infoq.com/news/2026/08/typescript-7-released/)
