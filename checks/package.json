@@ -1,0 +1,13 @@
+{
+    "name": "checks",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "devDependencies": {
+        "@mvtjs/html": "^0.1.0",
+        "@mvtjs/pixi": "^0.1.0",
+        "@mvtjs/three": "^0.1.0",
+        "@mvtjs/utils": "^0.1.0",
+        "vitest": "^4.1.0"
+    }
+}

@@ -8,12 +8,12 @@ import {
     createPacmanEntry,
     createScrambleEntry,
     type GameInputConfig,
-} from '../../src/games';
+} from '../../site/src/games';
 import {
     createBoidsEntry,
     createFallingSandEntry,
     createReorderingListsEntry,
-} from '../../src/demos';
+} from '../../site/src/demos';
 import { hasRefresh, hasUpdate, tickScene } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
@@ -24,7 +24,7 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // before anyone touches them. Textures and text measurement are stubbed (see
 // the driver and `stubTextMeasurement`), and nothing is rendered, so this is
 // each one's own frame work: the session's update, which advances its models,
-// then a tick of the stage, as `src/main.ts` and `src/demos/main.ts` run them.
+// then a tick of the stage, as `site/src/main.ts` and `site/src/demos/main.ts` run them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
 //   after a 10-second warm-up, split into the models, the update scene pass
