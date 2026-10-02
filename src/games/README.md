@@ -196,9 +196,9 @@ export function BallView(bindings: BallViewBindings): Container {
     const view = new Graphics();
     view.circle(0, 0, BALL_RADIUS * SCALE).fill(0xffffff);
 
-    view.onRefresh = () => {
-        view.position.set(bindings.x() * SCALE, bindings.y() * SCALE);
-    };
+    setTickMethods(view, {
+        refresh: () => { view.position.set(bindings.x() * SCALE, bindings.y() * SCALE); },
+    });
     return view;
 }
 ```
@@ -269,7 +269,6 @@ not support it changing.
 The entry point factory creates the `GameEntry` descriptor:
 
 ```ts
-import { updateScene } from '../../pixi-mvt';
 import type { GameEntry, GameSession } from '../game-entry';
 
 function createBreakoutEntry(): GameEntry {
@@ -285,9 +284,9 @@ function createBreakoutEntry(): GameEntry {
             stage.addChild(gameView);
 
             return {
+                // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
-                    updateScene(gameView, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(gameView);
@@ -300,11 +299,14 @@ function createBreakoutEntry(): GameEntry {
 ```
 
 The `start()` method creates the model and view, mounts the view, and returns
-a session. The session's `update()` advances the model, then runs `updateScene`
-so any view with presentation state (an `onUpdate` method) advances too. The
-cabinet runs `refreshScene` over the whole stage once per frame, so the session
-never refreshes its own views. The `destroy()` method removes the view and
-cleans up.
+a session. The session's `update()` advances the model and nothing else. The
+host ticks the whole stage once per frame, after the models, with
+`tickScene({ root: app.stage, deltaMs })`: every view's update method (for
+views with presentation state), then every refresh method. So the session never
+updates or refreshes its own views. Pausing is the host's call too: while
+paused, it stops calling `update()` and leaves the game's view out of the
+update scene pass, so a game needs no pause logic of its own. The `destroy()`
+method removes the view and cleans up.
 
 If your game needs to load assets (sprite sheets, textures), implement the
 optional `load()` method:

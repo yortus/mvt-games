@@ -726,6 +726,12 @@ setup is written once, for whichever stack wins.
   names the same repo, with `directory` set to the package's folder, and its
   `homepage` is `https://yortus.com/mvt-games/docs/` (section 13.3; ideally
   switched over before this phase).
+- Before the first publish, from the tick API's design
+  ([027](../archive/027-mvt-method-names.md), task
+  [028](../archive/028-tick-api-migration.md)): 027 section 11.7's mitigations
+  for two copies of the scene passes in one program, and `SKIP_DESCENDANTS`
+  made with `Symbol.for('mvt.skipDescendants')`, so every copy agrees (027
+  section 7.6, item 3).
 - Publish `@mvtjs/utils` and `@mvtjs/pixi` at `0.1.0`.
 
 ### 12.8 Phase 7: lint rules package

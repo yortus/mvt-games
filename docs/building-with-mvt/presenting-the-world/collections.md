@@ -178,7 +178,7 @@ destroyed.
 ### Empty slots cost one check, not one per binding
 
 `<List>` owns slot visibility. It hides any slot whose `at(i)` is
-`undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh pass
+`undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh scene pass
 skips its subtree and **the bindings above do not run for an empty slot.** That
 is also why `slot()` needs no null check: it is only called while the slot is
 occupied.

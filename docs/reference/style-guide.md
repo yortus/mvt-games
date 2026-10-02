@@ -454,11 +454,13 @@ export function ShipView(bindings: ShipViewBindings): Container {
 ```ts
 export function ShipView(bindings: ShipViewBindings): Container {
     const view = new Sprite({ texture: textures.get().ship, anchor: 0.5 });
-    view.onRefresh = () => {
-        view.visible = bindings.isAlive();
-        if (!view.visible) return;
-        view.position.set(bindings.screenX(), bindings.screenY());
-    };
+    setTickMethods(view, {
+        refresh: () => {
+            view.visible = bindings.isAlive();
+            if (!view.visible) return;
+            view.position.set(bindings.screenX(), bindings.screenY());
+        },
+    });
     return view;
 }
 ```

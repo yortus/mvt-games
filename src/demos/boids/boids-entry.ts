@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { PERFMON_HEIGHT } from '#common';
-import { createFrameStats } from '../../pixi-mvt';
+import { createFrameStats, sceneCounter } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { BoidsView } from './boids-view';
@@ -33,7 +33,7 @@ export function createBoidsEntry(): DemoEntry {
 
         start(stage: Container, host?: DemoHost): DemoSession {
             const layout = computeLayout();
-            const frameStats = host === undefined ? undefined : createFrameStats(host);
+            const frameStats = host === undefined ? undefined : createFrameStats({ ...host, sceneCounter });
 
             const model = createFlockModel({
                 arenaWidth: ARENA_WIDTH,

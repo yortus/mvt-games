@@ -32,7 +32,7 @@ three things, and the base does the rest:
 | --- | --- |
 | A **JSX target**: the handful of operations the base performs on its nodes ([jsx-target.ts](./jsx-target.ts)) | The `jsx` factory that JSX compiles to ([create-jsx.ts](./create-jsx.ts)) |
 | An **element table**: each intrinsic element, how to create it, and how to write each of its attributes ([attributes.ts](./attributes.ts)) | The refresh methods that read bindings ([refresh-builder.ts](./refresh-builder.ts)) |
-| Its scene passes: `updateScene` and `refreshScene` over its nodes | `<List>` and `<Switch>` ([list.ts](./list.ts), [switch.ts](./switch.ts)) |
+| Its scene passes: `tickScene` and `setTickMethods` over its nodes | `<List>` and `<Switch>` ([list.ts](./list.ts), [switch.ts](./switch.ts)) |
 
 Three renderers use it: Pixi (`src/pixi-mvt/jsx/`), three.js
 (`src/three-mvt/jsx/`) and the DOM (`src/html-mvt/jsx/`). Pixi's is the
@@ -49,17 +49,17 @@ flowchart LR
         J --> V["plain values: applied now"]
         J --> B["functions: recorded as bindings, not called"]
         B --> RB["refresh builder"]
-        RB --> M["node.onRefresh"]
+        RB --> M["the node's refresh method"]
     end
     subgraph frame["Every frame"]
-        RS["the renderer's refreshScene"] --> M2["each node's onRefresh, parents first"]
+        RS["the renderer's refresh scene pass"] --> M2["each node's refresh method, parents first"]
         M2 --> RW["read each binding, write it to the node"]
     end
     M -. "runs as" .-> M2
 ```
 
 [create-jsx.ts](./create-jsx.ts) builds the nodes,
-[refresh-builder.ts](./refresh-builder.ts) makes each node's `onRefresh`, and
+[refresh-builder.ts](./refresh-builder.ts) makes each node's refresh method, and
 the renderer's [scene passes](../../../docs/reference/glossary.md) call it
 every frame.
 
@@ -80,19 +80,20 @@ arguments to their parent's call. For an intrinsic element, `jsx`:
    comes only once the whole tree exists. So if a parent hides this node, a
    binding that isn't valid yet never runs.
 4. **Appends the children**, with the JSX target's `append`.
-5. **Installs one refresh method** for all the node's bindings, as its
-   `onRefresh`. It reads `visible` first, then the every-frame bindings, then
-   the on-change ones.
+5. **Installs one refresh method** for all the node's bindings, with
+   `setTickMethods`. It reads `visible` first, then the every-frame bindings,
+   then the on-change ones.
 6. **Handles the attributes every element has:** `onRefresh` (a step of the
-   node's own, after its bindings), `onUpdate`, `onDestroyed` and `ref`.
+   node's own, after its bindings), `onUpdate` (the node's update method),
+   `onDestroyed` and `ref`.
 
 A function component (`<ShipView ship={ship} />`) is simply called with its
 attributes, and returns a node.
 
 ## Refreshing a node
 
-Every frame, the renderer's `refreshScene` calls each node's `onRefresh`,
-parents before children. The refresh method reads each binding and writes the
+Every frame, the renderer's refresh scene pass calls each node's refresh
+method, parents before children. The refresh method reads each binding and writes the
 value according to its attribute's **write kind**:
 
 | Write kind | Writes | For |
@@ -223,9 +224,9 @@ shows them in use.
 
 ## Adding a JSX target
 
-A new renderer needs its scene passes first: `onUpdate` and `onRefresh` on its
-nodes, and `updateScene` and `refreshScene` over them, made with
-`createScenePasses` (`src/mvt-utils/scene-passes.ts`), as
+A new renderer needs its scene passes first: `tickScene` and `setTickMethods`
+typed to its nodes, made with `createScenePasses`
+(`src/mvt-utils/scene-passes.ts`), as
 `src/pixi-mvt/container-mixin.ts` does for Pixi. Then, in a `jsx/` directory
 beside them:
 

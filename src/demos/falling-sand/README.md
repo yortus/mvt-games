@@ -18,15 +18,18 @@ another. The panel under the tank shows the grain count,
 how many grains are moving, and frame timing: frames per second, CPU and GPU
 milliseconds per frame, and `RPF`, the reads of the model the view makes per
 frame (the pixel view counts its own reads the way the JSX runtime counts the
-sprite view's, so the two compare).
+sprite view's, so the two compare). Below those, `MPF` is the update and
+refresh methods the scene passes call per frame, and `WPF` and `NPF` are the
+memoised walks they rebuild per frame and the nodes they visit doing it: the
+scene's churn, zero while the tank's grains stay put.
 `npm run bench -- falling-sand-scaling` measures every combination headless,
 from 1,000 to 200,000 grains; the demo as it ships is in the
 `games-and-demos` suite.
 
 ## What it shows
 
-**The simulation pays for moving grains; the refresh pass pays for all of
-them.** A grain that cannot move for a couple of steps falls asleep, and the
+**The simulation pays for moving grains; the refresh scene pass pays for all
+of them.** A grain that cannot move for a couple of steps falls asleep, and the
 simulation stops visiting it until a neighbouring cell empties. A settled
 pile of thousands of grains costs the model almost nothing. The view is
 different. With the sprite view, each grain's sprite has three bindings:
@@ -46,7 +49,7 @@ different. With the sprite view, each grain's sprite has three bindings:
 </List>
 ```
 
-The refresh pass runs them for every grain, every frame, asleep or not. Pour
+The refresh scene pass runs them for every grain, every frame, asleep or not. Pour
 until the tank is deep, then compare the grain count with the moving count
 and watch the CPU time follow the first. Flip the tank to wake every grain at
 once.
@@ -96,7 +99,7 @@ neither Solid's compiler nor the Babel toolchain it runs on.
 **Pushing moves view work into the model's update.** The model makes each
 frame's changes in one Solid `batch`, so the Solid views' effects run once,
 at the end of `update()`, and never see a half-stepped tank. That is when
-they run, though: inside the model's update, not in the refresh pass. With a
+they run, though: inside the model's update, not in the refresh scene pass. With a
 store, the model is in effect pushing to its views, which is the reactive
 architecture this variant exists to compare with MVT's polling.
 
@@ -163,7 +166,7 @@ grains, before each fix:
   dropped to about 0.5 ms.
 - **`tint` parsed its colour on every write.** Pixi's setter does, even for
   an unchanged value, so the JSX runtime now writes `tint` only when it
-  changes, as it does `text` and `texture`. The refresh pass dropped from
+  changes, as it does `text` and `texture`. The refresh scene pass dropped from
   about 2.2 ms to 0.9 ms.
 - **`toLocaleString` built a number formatter on every call**, tens of
   microseconds each time. The counts now share one `Intl.NumberFormat`.

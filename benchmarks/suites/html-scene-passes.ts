@@ -58,6 +58,9 @@ export const htmlScenePassesSuite: Suite = {
             warmed: 'After the other target\'s',
         },
     },
+    notes: [
+        'Since 2026-10-02 (task 028), the naive walk reads each element\'s method from its own property, rather than through an accessor the scene passes no longer install. That made it 2-6% faster than in earlier saved results; the memoised walk is unchanged.',
+    ],
     titles: {
         methods: 'Methods',
         count: 'Elements',

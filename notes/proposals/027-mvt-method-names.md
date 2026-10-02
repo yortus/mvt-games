@@ -1,32 +1,34 @@
-# Proposal: `update` and `refresh` as the scene methods' names
+# Proposal: Aligning the scene methods with MVT's `update` and `refresh`
 
-> Rename the per-frame methods the scene passes call, `onUpdate` and
-> `onRefresh`, to the names MVT's documentation already uses: `update` and
-> `refresh`. This note goes back over each objection to doing that, checked
-> against the installed Pixi, three.js and DOM typings and runtimes. It
-> concludes that the rename is feasible on all three renderers, with three
-> small hardening changes to the scene-pass core. The one cost it cannot fully
-> remove is friction for outside codebases that already give their own
-> subclasses an `update` method. That matters for the published packages
-> (011), and not at all for this repo.
+> How should this repo's per-frame scene methods line up with MVT's
+> `update(deltaMs)` and `refresh()`? This began as a proposal to rename the
+> `onUpdate` / `onRefresh` accessors on every node to `update` / `refresh`
+> (sections 1-10), found that feasible but costly for outside code, and then
+> found a better answer: no methods on nodes at all (section 11). What was
+> built is the **tick API**. A view sets its steps with
+> `setTickMethods(view, { update, refresh })`, a host ticks its scene with
+> `tickScene({ root, deltaMs })`, and "tick" is MVT's umbrella term for both.
+> Section 0 states the outcome; the rest is the record of how it was reached.
 
-**Status:** decided, and being carried out by task
-[028](../tasks/active/028-tick-api-migration.md), which records the final API
-(`tickScene` / `onTick`) and the decisions behind it. This document still
-reads as the investigation it was: section 11 (no methods on nodes) replaced
-the rename argued in sections 3-6.3, and a later session settled on the tick
-API built on it. Task 028's last phase rewrites this proposal around that
-outcome and archives it.
+**Status:** implemented by task
+[028](028-tick-api-migration.md), and archived. Sections 3-6.3
+(the rename) are superseded and kept as the record of why it was dropped.
+Section 7's dev checks are partly done: 7.6's `deltaMs` check is in, without
+its sign rule; 7.4 is moot; the rest are filed in task
+[017](../tasks/backlog/017-misc-loose-ends.md).
 
 **Written:** 2026-09-30, against Pixi 8.21.0, three 0.186.1 (`@types/three`
 0.186), TypeScript 5.9, happy-dom 20, and this repo at `aa1f37f` plus the
 working tree. Type behaviour was checked with `tsc` in a scratch project
 outside the repo, with the renamed augmentation applied to the real Pixi and
 three typings. Clashes were found by walking every exported `Container` and
-`Object3D` subclass's prototype chain at runtime.
+`Object3D` subclass's prototype chain at runtime. Section 11 added
+2026-10-01, section 12 and the outcome 2026-10-02, when this document was
+rewritten around the outcome.
 
 **Related:** [scene-passes.ts](../../src/mvt-utils/scene-passes.ts) and
-[scene-node.ts](../../src/mvt-utils/scene-node.ts) (the core) -
+[scene-methods.ts](../../src/mvt-utils/scene-methods.ts) (the core; the
+latter was `scene-node.ts`) -
 [container-mixin.ts](../../src/pixi-mvt/container-mixin.ts),
 [object3d-mixin.ts](../../src/three-mvt/object3d-mixin.ts),
 [element-mixin.ts](../../src/html-mvt/element-mixin.ts) (the three installs) -
@@ -41,7 +43,62 @@ praised them for mirroring Pixi's `onRender`) -
 
 ---
 
-## Summary
+## 0. Outcome
+
+**The tick vocabulary.** "Tick" is the umbrella term for one turn of the
+ticker's loop, and is MVT's own T. The architecture docs introduce it
+(`docs/architecture/ticker.md`, "Ticks"):
+
+| What gets ticked | What a tick does |
+| --- | --- |
+| a model | its `update(deltaMs)` |
+| a view | its `update(deltaMs)`, if it has one, then its `refresh()` |
+| a renderer's scene | the update scene pass over a subtree, then the refresh scene pass |
+| the app (the ticker) | ticks the models, then the scene; then the renderer draws |
+
+**The API.** Each renderer (`pixi-mvt`, `three-mvt`, `html-mvt`) exports these,
+typed to its own node type:
+
+```ts
+setTickMethods(view, {
+    update: (deltaMs) => { flash.update(deltaMs); },
+    refresh: () => { view.alpha = flash.alpha; },
+});                                               // a member left out is left as it is; `undefined` clears
+
+setTickMethods(slot, { refresh: (own) => (isPresent() ? own?.() : SKIP_DESCENDANTS) }); // wraps
+
+tickScene({ root: app.stage, deltaMs });          // update scene pass, then refresh scene pass
+tickScene({ root, deltaMs, only: 'update' });
+tickScene({ root, only: 'refresh' });             // takes no deltaMs
+
+hasUpdate(node); hasRefresh(node);                // booleans; nothing hands out a method
+```
+
+Plus `SKIP_DESCENDANTS`, the destroy helpers, and the two counters
+(`readCounter`, and `sceneCounter` for the perfmon). There is no second way:
+the setters and scene passes underneath are private to `scene-passes.ts`.
+
+**What was decided, and where it was argued:**
+
+| Decision | Section |
+| --- | --- |
+| No methods on nodes. The `onUpdate` / `onRefresh` accessors, their global type augmentation and the shadowing guard are gone, so no name can clash with a class's own `update` | 11.2, 11.3 |
+| Per-node data stays in the private named `_mvt*` fields, with defaults on each renderer's prototype, including `_mvtInvalidators` (variant C). A record per node, symbol keys and a `WeakMap` were each slower or larger | 11.8 |
+| A method's declared parameters decide whether it wraps the one it replaces: one or more for a refresh method, two or more for an update method. No getters, so nothing can call a view's step by hand, which makes 7.4 moot | 11.5, task 028 |
+| `tickScene` runs a whole tick by default, with `only` to opt out of one scene pass. Its options are a discriminated union, so a missing `deltaMs` is a type error | task 028 |
+| In dev builds, `tickScene` throws unless `deltaMs` is a finite number. Negative values are allowed (speed control run backwards) | 7.6, item 1 |
+| The JSX attributes keep their names: `onUpdate={}`, `onRefresh={}`, `onDestroyed={}` | 7.2 |
+| Sessions advance only their models; the host ticks the stage once per frame and pauses by gating its game container out of the update scene pass | task 028 |
+| The name `setTickMethods` (first `onTick`) | 12.4 |
+
+**What is left**, filed in task 017 or for the published packages (011): 7.5
+(b) and (c), 7.6 item 2, 11.7's duplicate-copy mitigations, and
+`Symbol.for` for `SKIP_DESCENDANTS` (7.6 item 3).
+
+## Summary of the original rename proposal
+
+> Superseded by section 0. These were the recommendations for the rename
+> (sections 3-8), before section 11.
 
 | # | Recommendation | Section |
 | --- | --- | --- |
@@ -100,6 +157,11 @@ code and the libraries:
 
 ## 3. What actually clashes
 
+> **Superseded** (sections 3-6.3): the rename was dropped for section 11's
+> design, which puts no public names on nodes, so nothing here can clash.
+> Kept as the record of why. The clash survey (3) still describes the
+> libraries, and is why the tick API had to avoid public names.
+
 Every exported node class of each library was scanned at runtime for
 `update` and `refresh` anywhere on its prototype chain:
 
@@ -124,6 +186,8 @@ DOM. All the risk sits on `update`.
 `benchmarks/`, `scripts/` and `site/`). None appears in any JSX element table.
 
 ## 4. Runtime: making clashes harmless
+
+> Superseded; see section 3's note.
 
 Today the accessors are installed on the base prototype (`Container`,
 `Object3D`, `Element`). A subclass whose own prototype defines `update` sits
@@ -207,6 +271,8 @@ engineer around it.
 
 ## 5. Types
 
+> Superseded; see section 3's note. There is no global type augmentation.
+
 Checked with `tsc` 5.9 (`skipLibCheck` on, as in this repo), with
 `update: UpdateMethod | undefined` merged into `PixiMixins.Container` and
 three's `Object3D`:
@@ -228,6 +294,9 @@ are legitimate presentation objects, it costs a cast
 used here.
 
 ## 6. Outside codebases: the published packages (O6)
+
+> Superseded; see section 3's note. Section 12.1 covers adopting the tick API
+> in existing Pixi code instead.
 
 This is the cost the design cannot fully remove, so it is set out on its own. Section 6.2 reduces it.
 
@@ -573,6 +642,10 @@ finding "every view's update step" by text search. That is minor.
 
 ### 7.4 A dev-only check for hand calls
 
+> Moot: nothing hands out a node's method, so there is no call to make by hand
+> (section 0). A port that keeps forwarding `child.update(dt)` fails to
+> compile.
+
 **What it catches:** any call to a node's `update` or `refresh` that the
 scene passes did not make. That covers the likely porting and wiring errors:
 
@@ -656,6 +729,8 @@ speed into an error with a stack trace.
 
 ### 7.5 A dev-only check for methods that never run
 
+> Not done. (a) went with the accessors; (b) and (c) are filed in task 017.
+
 The converse of 7.4: a node carries an `update` or `refresh` that no scene
 pass will call. There are four ways that can happen:
 
@@ -732,6 +807,9 @@ it depends on the rename.
 
 ### 7.6 Checking arguments and results
 
+> Item 1 is done, without its sign rule: negative `deltaMs` is allowed. Item 2
+> is filed in task 017, and item 3 waits for the published packages (011).
+
 **The idea:** in dev, check that every `update` call receives one number and
 every `refresh` call receives no arguments. That would catch calls the
 scene passes did not make, such as Pixi's ticker handing a view its `Ticker`.
@@ -796,6 +874,8 @@ the packages are published (011).
 
 ## 8. Migration plan
 
+> Superseded by task 028, which migrated to the tick API instead.
+
 1. **Harden under the current names:** 4.1 (backing fields only), 4.2
    (install guard), 4.3 (message), 7.4 (hand-call check), 7.5 (stale-walk
    and coverage checks), 7.6 (`deltaMs` and result checks, `Symbol.for`). Add tests: a tree containing an
@@ -820,6 +900,12 @@ the packages are published (011).
 5. `npm run build`, `npm run lint`, `npm test`, and the benchmarks again.
 
 ## 9. Open questions
+
+> Answered as follows. 1: kept (7.2). 2, 6, 7, 8, 13, 14: moot, with no
+> public names. 3: `_mvtUpdateMethod` / `_mvtRefreshMethod`, with the other
+> fields renamed to match in task 028. 5: not needed so far. 9: moot (7.4).
+> 10, 11: open, with 7.5 in task 017. 12: negative `deltaMs` is allowed. 15:
+> yes, with named fields (11.8) and no getters. 16: open, for 011.
 
 1. JSX attribute names: keep `onUpdate` / `onRefresh` (recommended, 7.2), or
    rename them too?
@@ -999,6 +1085,10 @@ the existing suites: `scene-passes` (churn, scaling), `falling-sand-scaling`,
 
 ### 11.6 Recommendation
 
+> Adopted, with the named fields of 11.8 rather than a record, and with
+> `setTickMethods` / `tickScene` (section 0) rather than separate
+> `setUpdate` / `setRefresh` exports.
+
 Prefer this over the rename, and over 6.3. Suggested order:
 
 1. Spike the symbol-keyed record and `setUpdate` / `setRefresh`, with the
@@ -1159,7 +1249,7 @@ in the main checkout also picks up test files inside
 `.claude/worktrees/`; run it with `--exclude ".claude/**"` while spike
 worktrees exist.
 
-**Next steps.**
+**Next steps** (all done by task 028).
 
 1. Migrate the call sites from `view.onRefresh = ...` to
    `setRefresh(view, ...)`: about 160 in `src/`, plus the benchmarks and the

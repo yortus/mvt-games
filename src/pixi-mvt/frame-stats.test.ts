@@ -1,6 +1,6 @@
 import { type Renderer, RendererType, type Ticker } from 'pixi.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFrameStats, type SampledCounter } from './frame-stats';
+import { createFrameStats, type SampledCounter, type SampledSceneCounter } from './frame-stats';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -12,15 +12,16 @@ import { createFrameStats, type SampledCounter } from './frame-stats';
  * not WebGL, so there is no GPU timing. The clock is `performance.now`,
  * stepped by hand.
  */
-function setup(readCounter?: SampledCounter, gl?: FakeGl) {
+function setup(options: SetupOptions = {}) {
+    const { readCounter, sceneCounter, gl } = options;
     let nowMs = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
-    let setTickMethods: (() => void) | undefined;
+    let tickListener: (() => void) | undefined;
     const hooks: { prerender: () => void; postrender: () => void }[] = [];
     const ticker = {
-        add: (fn: () => void) => { setTickMethods = fn; },
-        remove: () => { setTickMethods = undefined; },
+        add: (fn: () => void) => { tickListener = fn; },
+        remove: () => { tickListener = undefined; },
     } as unknown as Ticker;
     const runner = {
         add: (item: { prerender: () => void; postrender: () => void }) => { if (!hooks.includes(item)) hooks.push(item); },
@@ -32,11 +33,11 @@ function setup(readCounter?: SampledCounter, gl?: FakeGl) {
         runners: { prerender: runner, postrender: runner },
     } as unknown as Renderer;
 
-    const stats = createFrameStats({ renderer, ticker, windowMs: 100, readCounter });
+    const stats = createFrameStats({ renderer, ticker, windowMs: 100, readCounter, sceneCounter });
 
     /** One frame: tick, `work` (the frame's update and refresh), render; `frameMs` of it busy, the rest idle. */
     function frame(frameMs: number, busyMs: number, work?: () => void): void {
-        setTickMethods!();
+        tickListener!();
         work?.();
         nowMs += busyMs;
         for (const h of hooks) h.prerender();
@@ -45,6 +46,12 @@ function setup(readCounter?: SampledCounter, gl?: FakeGl) {
     }
 
     return { stats, frame };
+}
+
+interface SetupOptions {
+    readonly readCounter?: SampledCounter;
+    readonly sceneCounter?: SampledSceneCounter;
+    readonly gl?: FakeGl;
 }
 
 /**
@@ -119,7 +126,7 @@ describe('frame stats', () => {
     it('reports the median GPU time of each window, so a few inflated frames do not dominate', () => {
         // Ten frames of 0.5 ms with two inflated to 8 ms: the mean would be 1.7 ms
         const gl = createFakeGl([0.5, 0.5, 8, 0.5, 0.5, 0.5, 8, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
-        const { stats, frame } = setup(undefined, gl);
+        const { stats, frame } = setup({ gl });
 
         for (let i = 0; i < 12; i++) frame(10, 4);
 
@@ -128,7 +135,7 @@ describe('frame stats', () => {
 
     it('drops every result in flight after a disjoint event', () => {
         const gl = createFakeGl([9, 9, 9, 9, 9, ...new Array<number>(20).fill(1)]);
-        const { stats, frame } = setup(undefined, gl);
+        const { stats, frame } = setup({ gl });
 
         // Five frames timed at 9 ms, still in flight when a disjoint event
         // happens; then frames at 1 ms, collected normally
@@ -146,7 +153,7 @@ describe('frame stats', () => {
 
     it('counts reads for one frame per window, and leaves the counter off otherwise', () => {
         const counter = { isCounting: false, count: 0 };
-        const { stats, frame } = setup(counter);
+        const { stats, frame } = setup({ readCounter: counter });
         const read = (): void => {
             if (counter.isCounting) counter.count += 250;
         };
@@ -166,5 +173,39 @@ describe('frame stats', () => {
 
         stats.destroy();
         expect(counter.isCounting).toBe(false);
+    });
+
+    it('samples the scene counter in the same frame as the read counter', () => {
+        const readCounter = { isCounting: false, count: 0 };
+        const sceneCounter = { isCounting: false, methodCalls: 0, walkRebuilds: 0, rebuildVisits: 0 };
+        const { stats, frame } = setup({ readCounter, sceneCounter });
+
+        let mismatchedFrames = 0;
+        for (let i = 0; i < 40; i++) {
+            frame(10, 4, () => {
+                if (readCounter.isCounting !== sceneCounter.isCounting) mismatchedFrames++;
+                if (!sceneCounter.isCounting) return;
+                sceneCounter.methodCalls += 120;
+                sceneCounter.walkRebuilds += 2;
+                sceneCounter.rebuildVisits += 300;
+            });
+        }
+
+        expect(mismatchedFrames).toBe(0);
+        expect(stats.methodsPerFrame).toBe(120);
+        expect(stats.rebuildsPerFrame).toBe(2);
+        expect(stats.visitsPerFrame).toBe(300);
+        expect(stats.historyAt('methods', stats.historyLength - 1)).toBe(120);
+
+        stats.destroy();
+        expect(sceneCounter.isCounting).toBe(false);
+    });
+
+    it('reports no scene counts without a scene counter', () => {
+        const { stats, frame } = setup();
+        for (let i = 0; i < 20; i++) frame(10, 4);
+
+        expect(stats.methodsPerFrame).toBeUndefined();
+        expect(stats.historyAt('rebuilds', stats.historyLength - 1)).toBeNaN();
     });
 });

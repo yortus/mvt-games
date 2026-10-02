@@ -1,6 +1,6 @@
 # Design notes
 
-> How the two passes work, what was tried and rejected, and what has been
+> How the two scene passes work, what was tried and rejected, and what has been
 > measured. The product document is [README.md](./README.md); this page assumes
 > you have read it. [the appraisal](../../notes/archive/003-mvt-plugin-appraisal.md) is an independent review of
 > whether this repo should adopt any of it, and
@@ -13,23 +13,29 @@
 described here is generic over any tree, in
 [src/mvt-utils/scene-passes.ts](../mvt-utils/scene-passes.ts)
 (`createScenePasses`), which the three.js and DOM scene passes use too.
-pixi-mvt keeps what is Pixi's: the type augmentation, the structural
-wrappers, the destroy warning, and `updateScene` / `refreshScene` over
-containers. The walk also now calls methods cached in the memoised list
-rather than reading each container's accessor, as
+pixi-mvt keeps what is Pixi's: the structural wrappers, the destroy warning,
+and `tickScene` / `setTickMethods` typed to containers. The walk also now
+calls methods cached in the memoised list rather than reading each
+container's method, as
 [012](../../notes/proposals/012-falling-sand-performance-findings.md) section
-2 proposed. The design below is unchanged by the move; the code samples show
-it before either change.
+2 proposed. Since task 028, views set their methods with `setTickMethods` and
+hosts run both scene passes with `tickScene`; the `onUpdate` / `onRefresh`
+accessors on `Container` are gone (see "Methods are set with
+`setTickMethods`" below). The design below is unchanged by these moves. The
+code samples show the walk before the method cache, with the names it has
+inside `scene-passes.ts`, where `updateScene` and `refreshScene` are the
+private functions `tickScene` runs.
 
 ## The requirement
 
 This is the whole thing. Everything else is implementation detail.
 
 - There is a graph whose nodes are Pixi `Container`s.
-- *Some* nodes have an `onUpdate` or `onRefresh` method.
-- `updateScene(N, dt)` / `refreshScene(N)` may be called on **any** node at
-  **any** time, and must run every corresponding method in N's subtree, each
-  exactly once, with every node called before its descendants.
+- *Some* nodes have an update or refresh method, set with `setTickMethods`.
+- `tickScene({ root: N, deltaMs })` may be called on **any** node at **any**
+  time, and each of its two scene passes must run every corresponding method
+  in N's subtree, each exactly once, with every node called before its
+  descendants.
 
 There is no privileged root, no host, no ownership and no session. The answer
 for N is a pure function of N's subtree, so any cache has to be node-local and
@@ -48,7 +54,7 @@ Two fields per method kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
-_mvtSubtreeHasUpdate?: boolean;   // does my subtree contain any onUpdate? undefined = dirty
+_mvtSubtreeHasUpdate?: boolean;   // does my subtree contain any update method? undefined = dirty
 _mvtUpdateWalk?: SubtreeWalk;   // preorder update list plus a skip table for SKIP_DESCENDANTS
 _mvtSubtreeHasRefresh?: boolean;
 _mvtRefreshWalk?: SubtreeWalk;  // preorder refresh list plus the same skip table
@@ -62,7 +68,7 @@ read.
 ### Algorithms
 
 Shown for update; refresh is the identical code with `pass = REFRESH` against
-the other pair of fields - the two passes are one implementation.
+the other pair of fields - the two scene passes are one implementation.
 See [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`.
 
 ```ts
@@ -82,17 +88,17 @@ function invokeSubtreeMethods(info: SubtreeWalk, node: Container, pass: Pass, de
     const { list, skip } = info;
     for (let i = 0; i < list.length;) {
         const listed = list[i];
-        if (!listed.parent && listed !== node) { i = skip[i]; continue; } // detached mid-pass
-        const result = pass === UPDATE ? listed.onUpdate?.(deltaMs) : listed.onRefresh?.();
+        if (!listed.parent && listed !== node) { i = skip[i]; continue; } // detached during the scene pass
+        const result = pass === UPDATE ? listed._mvtUpdateMethod?.(deltaMs) : listed._mvtRefreshMethod?.();
         i = result === SKIP_DESCENDANTS ? skip[i] : i + 1;
     }
 }
 
-// Preorder list of the containers that have this pass's method, plus a skip table: ends[i] is the list
+// Preorder list of the containers that have this scene pass's method, plus a skip table: ends[i] is the list
 // index just past container i's subtree. Preorder makes a subtree contiguous,
 // so one number per entry is enough to jump over it.
 function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], ends: number[]): void {
-    const method = pass === UPDATE ? node.onUpdate : node.onRefresh;
+    const method = pass === UPDATE ? node._mvtUpdateMethod : node._mvtRefreshMethod;
     let selfIndex = -1;
     if (method !== undefined) {
         selfIndex = out.length;
@@ -101,7 +107,7 @@ function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], en
     }
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
-        if (has(ch[i], pass)) collectSubtreeMethods(ch[i], pass, out, ends); // skip subtrees with no method for this pass
+        if (has(ch[i], pass)) collectSubtreeMethods(ch[i], pass, out, ends); // skip subtrees with no method for this scene pass
     }
     if (selfIndex !== -1) ends[selfIndex] = out.length;
 }
@@ -109,7 +115,7 @@ function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], en
 function has(node: Container, pass: Pass): boolean {
     const cached = pass === UPDATE ? node._mvtSubtreeHasUpdate : node._mvtSubtreeHasRefresh;
     if (cached !== undefined) return cached;
-    let found = (pass === UPDATE ? node.onUpdate : node.onRefresh) !== undefined;
+    let found = (pass === UPDATE ? node._mvtUpdateMethod : node._mvtRefreshMethod) !== undefined;
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
         if (has(ch[i], pass)) found = true; // no early exit, deliberately
@@ -144,8 +150,8 @@ Triggered by:
 - **Structural mutation** (`addChild`, `addChildAt`, `removeChild`,
   `removeChildren`, `destroy`): invalidate **both** kinds, from the affected
   parent.
-- **Method assignment** (the `onUpdate` / `onRefresh` setters): invalidate **that
-  kind only**, from the container itself.
+- **Method assignment** (`setTickMethods`): invalidate **that kind only**, from
+  the container itself.
 
 The short-circuit relies on a per-kind invariant - *a container dirty for kind K
 implies all its ancestors are dirty for K* - which the climb maintains
@@ -163,7 +169,7 @@ measured ~0% in the README's cost table.
   so its lists stay valid; only the old and new parents' chains go dirty.
 - **No retention.** Every reference points into the container's own subtree, so
   the state dies with the container and there is nothing to tear down. There is
-  no `destroy()` on the plugin because there is nothing to destroy.
+  no `destroy()` in pixi-mvt because there is nothing to destroy.
 
 ### Two traps, both load-bearing
 
@@ -185,7 +191,8 @@ replaced it, and wrong.
 ### The ownership bug
 
 One privileged host owning a subtree is not just unnecessary, it breaks as soon
-as a second caller appears. Verified against the old implementation:
+as a second caller appears. Verified against the old implementation, with the
+names of the time:
 
 ```
 stage > menu > button(onUpdate)
@@ -218,51 +225,55 @@ parent.onRefresh = () => order.push('parent'); // bypasses the accessor
 s.refresh();                                   // never called
 ```
 
-The mixin now installs at module load, so importing the plugin at all is the
+The mixin then moved to module load, so importing pixi-mvt at all is the
 only ordering requirement, and ES modules evaluate imports before the importing
-module's own code. A dev-mode assertion during each rebuild catches an own method
-property however it arrived, since `Object.defineProperty` and a dynamically
-imported plugin can both still produce one.
+module's own code. A dev-mode assertion during each rebuild caught an own method
+property however it arrived, since `Object.defineProperty` and a dynamic
+import of pixi-mvt could both still produce one. Since task 028 there are no
+accessors to shadow: methods are set only through `setTickMethods`, which
+writes the private fields itself, so the defect and its assertion are both
+gone.
 
 ### No Application plugin
 
 `installMvtScenePlugin`, `mvtScenePlugin`, the `PixiMixins.Application`
-augmentation and `app.scene` are all gone. The plugin was not shorter for the
-user:
+augmentation and `app.scene` are all gone. The Application plugin was not
+shorter for the user:
 
 ```ts
-// with plugin                        // without
+// with the Application plugin        // without
 installMvtScenePlugin();              const app = new Application();
 const app = new Application();        await app.init({ ... });
 await app.init({ ... });              app.ticker.add((t) => {
-app.ticker.add((t) => {                   updateScene(app.stage, t.deltaMS);
-    app.scene.update(t.deltaMS);          refreshScene(app.stage);
-    app.scene.refresh();              });
+app.ticker.add((t) => {                   tickScene({ root: app.stage, deltaMs: t.deltaMS });
+    app.scene.update(t.deltaMS);      });
+    app.scene.refresh();
 });
 ```
 
-Identical line count, and cutting it removes a land-grab on the very generic
+No longer to write without it, and cutting it removes a land-grab on the very generic
 `app.scene`, one of only two files needing `this`, and an "install before init"
 footgun that was gotcha #1 in the old quick start.
 
 ## Settled decisions
 
-**`onUpdate(deltaMs: number)`, never `onUpdate(ticker)`.** A `Ticker` carries
+**An update method takes `deltaMs: number`, never a `Ticker`.** A `Ticker` carries
 `lastTime`, `elapsedMS` and `FPS`, which is the wall clock that MVT rule 1
 exists to keep out. It also makes synthetic stepping awkward (tests, thumbnails,
 replays), invites views to pick a different time base from their models via
 `ticker.speed`, and would give the core a hard dependency on Pixi's `Ticker`.
 
-**Neither pass gates on visibility.** Both passes run every container in the
-subtree, visible or not. `onUpdate` must never gate: presentation state that
-stops advancing while hidden is stale when it reappears, and gating would make
-state evolution a function of whether something was drawn. `onRefresh` could in
-principle skip hidden subtrees - it is idempotent, so the next visible frame
+**Neither scene pass gates on visibility.** Both scene passes run every
+container in the subtree, visible or not. The update scene pass must never
+gate: presentation state that stops advancing while hidden is stale when it
+reappears, and gating would make state evolution a function of whether
+something was drawn. The refresh scene pass could in principle skip hidden
+subtrees - it is idempotent, so the next visible frame
 recovers - but the earlier design that did this had to fold `localDisplayStatus`
 as it walked, and forbade a view from clearing its own `visible` (a pruned
 container drops out of its own walk and deadlocks), which in turn needed a
 dev-mode `visible` setter guard to catch. Dropping the gate removed all of that:
-the two passes are now the same walk, a view sets its own `visible` like any
+the two scene passes are now the same walk, a view sets its own `visible` like any
 other presentation output, and restating a hidden fact costs one method call
 that assigns a value nobody draws.
 
@@ -272,37 +283,38 @@ already run when it returns the sentinel, so only its descendants are skipped -
 in one step, through the skip table - and it can stop skipping on a later frame
 with no deadlock. It is the mechanism a `<List>` slot uses to leave an empty
 slot's subtree alone, and the mechanism a hidden branch uses to save the cost of
-restating facts nobody will draw. In the update pass it freezes a subtree's
-state advance, so there it is an opt-in for deliberately frozen subtrees (which
-are then one frame stale on resume) rather than a routine tool. The container a
-pass is driven from is never skipped by an outside caller.
+restating facts nobody will draw. In the update scene pass it freezes a
+subtree's state advance, so there it is an opt-in for deliberately frozen
+subtrees (which are then one frame stale on resume) rather than a routine tool;
+the host's pause gate is one. The root a tick starts from is never skipped by
+an outside caller.
 
-**Re-entering a pass on the same container throws.** A method that calls
-`refreshScene` on the container already being refreshed would run the same list
-twice and, in the usual case, recurse forever. Driving a *different* container
-from a method is legitimate (a nested refresh shares its outer pass, so nothing
-runs twice), so the guard is a small stack of the containers with a pass in
-flight rather than a single flag. It is always on: one array push and pop per
-pass, not per container.
+**Re-entering a scene pass on the same container throws.** A method that ticks
+the container already being refreshed would run the same list twice and, in
+the usual case, recurse forever. Ticking a *different* container from a method
+is legitimate (a nested refresh scene pass shares its outer one, so nothing
+runs twice), so the guard is a small stack of the containers with a scene pass
+in flight rather than a single flag. It is always on: one array push and pop
+per scene pass, not per container.
 
-**`refreshScene` refreshes what its methods add; `updateScene` does not update
-what its methods add.** A refresh pass covers the
-subtree as it stands when the pass returns, not only as it stood when the pass
-started. Without this, a view that builds children in its own `onRefresh` shows
+**The refresh scene pass refreshes what its methods add; the update scene pass
+does not update what its methods add.** A refresh scene pass covers the
+subtree as it stands when it returns, not only as it stood when it started.
+Without this, a view that builds children in its own refresh method shows
 them unrefreshed for a frame: invisible in a running game, but the only frame
 there is in a thumbnail or a refresh-once test. That is how Kwazy Cactii's
 carousel thumbnail went blank. Its pieces view rebuilt its grid on the first
 poll of a `watch()`, which reports every value changed, exactly as the
 change-detection guide's own example does. `<List>` and `<Switch>` used to
-refresh what they built by hand; they now rely on the pass.
+refresh what they built by hand; they now rely on the refresh scene pass.
 
 How it stays off the hot path:
 
 - The walk records only what it **elides**: an entry detached before its turn
   (the entry and its descendants), an entry whose method was cleared earlier
-  in the pass (the entry), and an entry that returned `SKIP_DESCENDANTS` (its
-  descendants). Each elision goes in an `Int32Array` beside the list
-  (`SubtreeWalk.elisions`), tagged with the pass's id. An entry run and
+  in the scene pass (the entry), and an entry that returned `SKIP_DESCENDANTS`
+  (its descendants). Each elision goes in an `Int32Array` beside the list
+  (`SubtreeWalk.elisions`), tagged with the scene pass's id. An entry run and
   stepped past records nothing, so the common path has no store at all. A
   first version marked every entry it ran, and measured 20% slower on the
   dense scene; recording only the elisions measured as noise.
@@ -313,65 +325,69 @@ How it stays off the hot path:
 - Only then (`catchUpRefresh`) does it replay the walk from its elisions,
   marking each node that ran (`_mvtLastRefreshPass`), rebuild the list, and
   walk it running only the nodes it missed, skipping any subtree whose root
-  returned `SKIP_DESCENDANTS` this pass. It repeats until a round changes nothing, and throws after 100
+  returned `SKIP_DESCENDANTS` this scene pass. It repeats until a round changes nothing, and throws after 100
   rounds, which only methods adding nodes that add nodes without end reach.
 - The rebuilt list is the memo the next frame would have rebuilt anyway, so a
-  frame that changes the tree mid-pass pays one replay and one short walk. The
+  frame that changes the tree during a scene pass pays one replay and one short walk. The
   pool benchmark, which attaches containers during every refresh, measured the
   same before and after.
-- Nested `refreshScene` calls share their outermost pass's id and hand their
-  walks to it, so a container a nested pass refreshed is not refreshed again.
+- Nested refresh scene passes share their outermost one's id and hand their
+  walks to it, so a container a nested scene pass refreshed is not refreshed
+  again.
 
-The update pass does not do the same, on purpose. Each pass covers what its
-method needs: refresh covers the tree as it stands when the pass ends, since
-`onRefresh` is idempotent and what matters is that everything drawn is
-current; update covers the time step for the containers that existed when the
-pass began, since `onUpdate` advances time and a container created during the
-pass did not exist for that time. The same frame's refresh pass does see it.
+The update scene pass does not do the same, on purpose. Each scene pass covers
+what its method needs: refresh covers the tree as it stands when the scene pass
+ends, since a refresh method is idempotent and what matters is that everything
+drawn is current; update covers the time step for the containers that existed
+when the scene pass began, since an update method advances time and a
+container created during the scene pass did not exist for that time. The same
+frame's refresh scene pass does see it.
 
-Catching up the update pass too was considered and rejected:
+Catching up the update scene pass too was considered and rejected:
 
 - **It would break update's one rule.** Today a container's first update is
-  the first update pass that begins after it exists, however it was created.
-  Catching up would give this frame's `deltaMs` only to containers created
-  during an update pass, a special case.
+  the first update scene pass that begins after it exists, however it was
+  created. Catching up would give this frame's `deltaMs` only to containers
+  created during an update scene pass, a special case.
 - **It would advance new containers twice.** A spawner seeds its child from
   its own already-advanced state (a particle at the emitter's position);
   advancing the child by the same `deltaMs` puts it a frame ahead.
 - **It fixes nothing visible.** The refresh catch-up already draws a new
   container correctly on its first frame.
 - **It would not remove the hazard that motivates it.** A view whose
-  `onRefresh` reads state its `onUpdate` computes would refresh from
+  refresh method reads state its update method computes would refresh from
   uninitialised state if created mid-update. But views are mostly created
   during refresh, where no update catch-up can help. Catching up with a
-  `deltaMs` of 0 has the same gap and adds a contract to every `onUpdate`.
+  `deltaMs` of 0 has the same gap and adds a contract to every update method.
 
-The rule that removes the hazard is for views, not the passes: a view's first
-`onRefresh` must not depend on its `onUpdate` having run, so presentation
+The rule that removes the hazard is for views, not the scene passes: a view's
+first refresh must not depend on its update method having run, so presentation
 state starts valid at construction. The presentation-state guide and the
 mvt-view skill say so.
 
-**Methods are set with `setUpdate` / `setRefresh`, and the fields stay named.**
-Library code sets a node's methods through these two functions, not through
-the `onUpdate` / `onRefresh` accessors, which remain only as transitional
-wrappers for views
-([proposal 027](../../notes/proposals/027-mvt-method-names.md) section 11).
-Each renderer's prototype carries the fields' defaults, including
-`_mvtInvalidators`, the invalidation climbs of that renderer's scene passes,
-so the functions work on any renderer's nodes with no dispatch; a plain-object
-node is given them when a walk first visits it. Views take them from their
-renderer (`pixi-mvt`, `three-mvt`, `html-mvt`), which exports them typed to
-its own node, as it exports `updateScene` and `refreshScene`, so passing
-anything else is a type error; `mvt-utils` keeps the untyped pair for the
-library's own code. The fields stay named `_mvt*`
+**Methods are set with `setTickMethods`, scenes are ticked with `tickScene`,
+and the fields stay named.** Views and library code alike set a node's
+methods with `setTickMethods(node, { update, refresh })`, and hosts run both
+scene passes with `tickScene`. There is no second way: the `onUpdate` /
+`onRefresh` accessors are gone, and the setters and scene passes underneath
+are private to `scene-passes.ts`
+([proposal 027](../../notes/archive/027-mvt-method-names.md), task 028).
+Nothing is added to a node's public surface. Each renderer's prototype
+carries the fields' defaults, including `_mvtInvalidators`, the invalidation
+climbs of that renderer's scene passes, so `setTickMethods` works on any
+renderer's nodes with no dispatch; a plain-object node is given them when a
+walk first visits it. Views take both functions from their renderer
+(`pixi-mvt`, `three-mvt`, `html-mvt`), which exports them typed to its own
+node, so passing anything else is a type error; `mvt-utils` keeps an untyped
+`setTickMethods` for the library's own code. The fields stay named `_mvt*`
 properties of the node. One record object per node, a `WeakMap`, and
 symbol-keyed fields were each measured, and each was slower or larger
 (027 section 11.8).
 
 **A method that declares a parameter wraps the one it replaces; there are no
-getters.** `setRefresh(node, (own) => ...)` is given the node's current
-refresh method, or `undefined`, and may call it; `setUpdate` does the same
-with a second parameter, after `deltaMs`. The wrapper is bound to the method
+getters.** `setTickMethods(node, { refresh: (own) => ... })` is given the
+node's current refresh method, or `undefined`, and may call it; an update
+method does the same with a second parameter, after `deltaMs`. The wrapper is bound to the method
 it replaces once, when it is set, so the scene passes call every method the
 same way, and a method that does not wrap costs nothing extra. The parameter
 is found by the method's declared `length`, so a default-valued or rest
@@ -385,9 +401,9 @@ default-valued parameter sees its default.
 ## Accepted limitations
 
 - **Dense-plus-churning scenes are slower than a naive walk.** When every
-  container has an `onRefresh` and the tree is dirtied every frame, pruning prunes
+  container has a refresh method and the tree is dirtied every frame, pruning prunes
   nothing and the list is rebuilt every frame, so caching is pure overhead:
-  65 us against 37 us on 2000 containers, all with an `onRefresh`, and 100 swaps per frame. Two
+  65 us against 37 us on 2000 containers, all with a refresh method, and 100 swaps per frame. Two
   fixes were tried during design and neither worked - dispatching during the
   rebuild was marginally *worse*, and reusing the array rather than allocating
   is noise, because building a 2000-entry list costs about the same either way.
@@ -420,35 +436,37 @@ suite in [benchmarks/](../../benchmarks/README.md)
 `src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`. Results
 are microseconds per frame - not hz - reported as the median of a set of
 batches, each batch sized from a warmup. One arm per process is also
-what lets the `patched` and `unpatched` arms differ by whether the plugin was
+what lets the `patched` and `unpatched` arms differ by whether pixi-mvt was
 ever imported.
 
 ### Results
 
 Measured with the original driver, which timed under `tsx`, on a Windows
-laptop with Node 22. A frame is one pass plus the scenario's churn. Current
-numbers, from the consolidated suite, are in the plugin README and the docs'
-Performance Measurements page.
+laptop with Node 22. A frame is one refresh scene pass plus the scenario's
+churn. Current numbers, from the consolidated suite, are in the pixi-mvt
+README and the docs' Performance Measurements page.
 
 | Scenario                                        | naive walk  | memo        | note                        |
 | ----------------------------------------------- | ----------- | ----------- | --------------------------- |
-| sparse: 20k containers, 200 with an `onRefresh`, static | 224 us      | **0.50 us** | the realistic shape         |
-| dense: 2k containers, all with an `onRefresh`, static   | 10.4 us     | **4.5 us**  | nothing to prune            |
-| churn: 2k, all with an `onRefresh`, 100 swaps per frame | **36.5 us** | 65.3 us     | the case the memo loses     |
-| attach: 100 subtrees of 25 nodes with no `onRefresh`, re-attached | 45.5 us     | **9.8 us**  | O(depth), not O(subtree)    |
+| sparse: 20k containers, 200 with a refresh method, static | 224 us      | **0.50 us** | the realistic shape         |
+| dense: 2k containers, all with a refresh method, static   | 10.4 us     | **4.5 us**  | nothing to prune            |
+| churn: 2k, all with a refresh method, 100 swaps per frame | **36.5 us** | 65.3 us     | the case the memo loses     |
+| attach: 100 subtrees of 25 nodes with no refresh method, re-attached | 45.5 us     | **9.8 us**  | O(depth), not O(subtree)    |
 
-| Baseline                                        | incumbent   | this plugin |
+| Baseline                                        | incumbent   | pixi-mvt    |
 | ----------------------------------------------- | ----------- | ----------- |
-| dispatch: 2000 methods, Pixi `onRender` vs pass    | 2.7 us      | 4.7 us      |
+| dispatch: 2000 methods, Pixi `onRender` vs the refresh scene pass | 2.7 us      | 4.7 us      |
 | mutation: 100 attach/detach on an unmanaged tree | 13.4 us     | 13.7 us     |
 
 Notes on the two baselines, because both are adoption arguments rather than
 performance ones:
 
 - Pixi's `onRender` dispatch is a bare loop over an array calling a field. The
-  pass loop adds a detachment check and reads the method through an accessor,
-  which is under a nanosecond per container. Reading the backing fields directly
-  instead was tried and measured as noise, so the public property read stayed.
+  scene pass loop added a detachment check and read the method through an
+  accessor, which is under a nanosecond per container. Reading the backing
+  fields directly instead was tried and measured as noise, so the public
+  property read stayed at the time. The loop now calls methods cached in the
+  memoised list (012 section 2), and there are no accessors.
 - The structural wrappers cost an unmanaged tree nothing measurable. Every
   mutation on a tree nothing drives hits the invalidation short-circuit on its
   first comparison.
@@ -462,16 +480,14 @@ magnitude.
 
 Two style-guide rules needed a deliberate decision.
 
-**`this`** is confined to the method accessors, in
-[scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`, and
-the wrapped prototype methods, in [container-mixin.ts](./container-mixin.ts)
-(and three-mvt's equivalent). A prototype accessor and a wrapped prototype
-method cannot reach their instance without it. Methods themselves are invoked as plain calls with no receiver, so a
+**`this`** is confined to the wrapped prototype methods, in
+[container-mixin.ts](./container-mixin.ts) (and three-mvt's equivalent). A
+wrapped prototype method cannot reach its instance without it. Methods themselves are invoked as plain calls with no receiver, so a
 view's method stays an ordinary closure. The side effect is that a method defined as
 a subclass prototype method would not see its instance, which costs nothing here
 because the repo has no classes.
 
-**`null`** appears nowhere in the plugin's own surface: methods and memo fields are
+**`null`** appears nowhere in pixi-mvt's own surface: methods and memo fields are
 all `undefined`. `Container.parent` is typed `Container | null` by Pixi, so the
 three places that read it use a truthiness check rather than comparing.
 
@@ -480,11 +496,10 @@ three places that read it use a truthiness check rather than comparing.
 Recorded so they are not re-derived. All checked against `node_modules`.
 
 - `extensions.mixin(Container, src)` is `Object.defineProperties(Target.prototype,
-  getOwnPropertyDescriptors(src))`, which preserves accessors.
-- `PixiMixins.Container` is declared **non-generic** by every shipped mixin even
-  though `Container.d.ts` references `PixiMixins.Container<C>`. This survives
-  only because of `skipLibCheck: true`. The plugin copies the shipped pattern
-  rather than "fixing" it.
+  getOwnPropertyDescriptors(src))`, which preserves accessors. pixi-mvt used it
+  for the `onUpdate` / `onRefresh` accessors; it now adds only private field
+  defaults, with `Object.defineProperties` itself, and declares nothing on
+  `PixiMixins.Container`.
 - `Container.prototype._onUpdate` already exists as Pixi's private transform
   callback, so the backing fields are `_mvtUpdateMethod` / `_mvtRefreshMethod`.
 - Structural methods needing wrappers: `addChild`, `addChildAt`, `removeChild`,
@@ -523,5 +538,5 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   silent staleness if a future Pixi version adds a structural method that does
   not delegate to these five.
 - Should direct `container.children` mutation be detected in dev builds?
-- Is `onRefresh` worth gating behind an opt-in per container after all? The old spike demo
+- Is a refresh method worth gating behind an opt-in per container after all? The old spike demo
   made the per-entity cost visible; nothing has been measured on a real game.

@@ -102,9 +102,9 @@ If scopes are added one day, two constraints follow from section 1:
 ### 5. One refresh model, and the target does not choose it
 
 Every JSX target drives bindings the same way: each element's bindings are its
-`onRefresh` method, run by its renderer's scene passes, parent before child, with
+refresh method, run by its renderer's scene passes, parent before child, with
 `SKIP_DESCENDANTS` to skip a subtree. A JSX target supplies only its scene-graph
-operations and its `refreshScene` ([jsx-target.ts](./jsx-target.ts)).
+operations and its `tickScene` ([jsx-target.ts](./jsx-target.ts)).
 
 Ruled out, from 022 section 2: a renderer's own per-object hook (Pixi's
 `onRender` runs for hidden containers too), and refresh closures that capture

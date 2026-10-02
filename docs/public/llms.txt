@@ -13,9 +13,13 @@ MVT splits applications into three layers:
   state). refresh() runs each frame, must be idempotent and side-effect free.
 - **Ticker** - drives the frame loop: model.update(deltaMs) then
   view.update(deltaMs) (views with state) then view.refresh() then render.
-  In this repo, views set onUpdate / onRefresh methods on their Pixi
-  containers, and updateScene / refreshScene (src/pixi-mvt/) run every such
-  method in the tree, parents first. Views never forward these calls by hand.
+  One turn is a tick: the ticker ticks the models, then the views. In this
+  repo, views set update and refresh methods on their Pixi containers with
+  setTickMethods(view, { update, refresh }), and the host calls
+  tickScene({ root: app.stage, deltaMs }) (src/pixi-mvt/) once per frame,
+  after the models: its update scene pass runs every update method in the
+  tree, then its refresh scene pass every refresh method, parents first.
+  Views never forward these calls by hand.
 - **Bindings** - contract between view and model. Query bindings read state
   (a function called each frame, or a fixed value read once); relay bindings
   report user input out of the view. In this repo, query bindings are named
@@ -35,7 +39,7 @@ presentation state, refresh views, render. Models settle before views read.
 - Views: no domain state. refresh() is idempotent, read-only. Re-read
   every changing value every frame (never cache it at construction); only a
   query binding declared as a fixed value may be read once. May hold cosmetic
-  presentation state (gains update(deltaMs), as view.onUpdate). Extract complex presentation
+  presentation state (gains update(deltaMs), set with setTickMethods). Extract complex presentation
   logic to a view model.
 - Ticker: strict sequence (update, refresh, render). Cap deltaMs. No domain
   logic or rendering code.

@@ -1,5 +1,6 @@
-export { createFrameStats, type FrameStatKind, type FrameStats, type SampledCounter } from './frame-stats';
+export { createFrameStats, type FrameStatKind, type FrameStats } from './frame-stats';
+export type { SampledCounter, SampledSceneCounter } from './frame-stats';
 export { setTickMethods, tickScene } from './container-mixin';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
-export { addReads, countReads, hasRefresh, hasUpdate, readCounter, SKIP_DESCENDANTS } from '../mvt-utils';
-export type { RefreshMethod, UpdateMethod } from '../mvt-utils';
+export { addReads, countReads, countScene, hasRefresh, hasUpdate, readCounter, sceneCounter, SKIP_DESCENDANTS } from '../mvt-utils';
+export type { RefreshMethod, SceneCounts, UpdateMethod } from '../mvt-utils';

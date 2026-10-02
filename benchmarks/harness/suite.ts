@@ -72,6 +72,13 @@ export interface Suite {
     readonly labels?: Readonly<Record<string, Readonly<Record<string, string>>>>;
     /** Row headings for params, where the driver's defaults do not fit. */
     readonly titles?: Readonly<Record<string, string>>;
+    /**
+     * Notes listed under the saved results' environment line, one Markdown
+     * line each: why numbers shifted from the previous save for reasons other
+     * than the code measured, such as a changed baseline or new columns.
+     * Dated, and dropped once they no longer explain the saved numbers.
+     */
+    readonly notes?: readonly string[];
 }
 
 /** Every combination of the given param values, in the order given. */

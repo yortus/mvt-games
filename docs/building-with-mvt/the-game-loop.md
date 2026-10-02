@@ -30,6 +30,11 @@ flowchart TB
 Models always settle before views read them. Views never see a half-updated
 world.
 
+One turn of this loop is a [tick](../reference/glossary.md#tick). The word
+covers each part too: ticking a model is calling its `update(deltaMs)`, and
+ticking a view is calling its `update(deltaMs)`, if it has one, then its
+`refresh()`. Each frame, the ticker ticks the models, then the views.
+
 ## The Frame Sequence in Detail
 
 Every frame follows exactly the same sequence:
@@ -75,8 +80,8 @@ function frame(timestamp: number): void {
     // Cap to prevent spiral-of-death after backgrounding
     const clampedDelta = Math.min(deltaMs, 100);
 
-    gameSession.update(clampedDelta);   // models, then views' onUpdate
-    refreshScene(app.stage);            // views' onRefresh
+    gameSession.update(clampedDelta);                       // models
+    tickScene({ root: app.stage, deltaMs: clampedDelta });  // views: update, then refresh
     app.render();
 
     requestAnimationFrame(frame);
@@ -129,37 +134,53 @@ The ticker can support **pausing** (stop calling `update()` but continue
 rendering) and **speed control** (multiply `deltaMs` before passing it).
 Models don't know or care - they only ever see the `deltaMs` they receive.
 
-## In This Project: `onUpdate`, `onRefresh` and the Scene Passes
+## In This Project: The Ticker Ticks Models, Then the Scene
 
 MVT requires the order above, not a particular mechanism. This project
-implements the view side with two optional methods on every Pixi `Container`,
-from [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt).
-This is a **project convention**, not part of MVT itself.
-
-| Method | MVT step | Runs | Driven by |
-| --- | --- | --- | --- |
-| `view.onUpdate = (deltaMs) => { ... }` | a view's `update(deltaMs)`: advance cosmetic presentation state | only on views that have presentation state | `updateScene(root, deltaMs)` |
-| `view.onRefresh = () => { ... }` | a view's `refresh()`: read state, write presentation output | on every view that shows state | `refreshScene(root)` |
+implements the view side with [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt):
+a view sets its two steps on its Pixi `Container` with `setTickMethods`, and
+the host ticks the whole scene with `tickScene`. This is a **project
+convention**, not part of MVT itself.
 
 ```ts
-// Each frame, in this order
-gameModel.update(deltaMs);        // 1. models advance
-updateScene(gameView, deltaMs);   // 2. every onUpdate in the tree
-refreshScene(app.stage);          // 3. every onRefresh in the tree
-// 4. Pixi renders
+setTickMethods(view, {
+    update: (deltaMs) => { flash.update(deltaMs); },   // advance cosmetic presentation state
+    refresh: () => { view.alpha = flash.alpha; },      // read state, write presentation output
+});
 ```
 
-- **Nothing forwards calls down the tree.** Each pass walks the whole subtree
-  it is given and calls every `onUpdate` or `onRefresh` it finds, parents before
-  children. A view anywhere in the tree takes part just by setting one; its parents do not
-  need to know it exists or pass anything on.
-- **Where the calls live here.** Each game session's `update()` runs its model
-  and then `updateScene` over its own view. The host (`src/main.ts`) runs one
-  `refreshScene` over the whole stage per tick, paused or not, so menus stay
-  correct while the game is paused.
-- **Skipping a subtree.** Either method may return `SKIP_DESCENDANTS` to skip its
-  container's descendants for that pass, for example a hidden panel whose
-  contents need not refresh. Visibility alone skips nothing.
+| Member | MVT step | Set on |
+| --- | --- | --- |
+| `update: (deltaMs) => { ... }` | a view's `update(deltaMs)`: advance cosmetic presentation state | only views that have presentation state |
+| `refresh: () => { ... }` | a view's `refresh()`: read state, write presentation output | every view that shows state |
+
+Each frame, the host does this:
+
+```ts
+cabinet.update(deltaMs);                       // 1. the models advance
+tickScene({ root: app.stage, deltaMs });       // 2. the update scene pass, then the refresh scene pass
+// 3. Pixi renders
+```
+
+- **A tick of the scene is two scene passes.** The update scene pass walks the
+  subtree it is given and calls every update method it finds, parents before
+  children; then the refresh scene pass does the same for every refresh
+  method. A view anywhere in the tree takes part just by setting its methods;
+  its parents do not need to know it exists or pass anything on.
+- **Sessions advance only their models.** A game session's `update()` runs its
+  model and nothing else. The host (`src/main.ts`) ticks the whole stage once
+  per frame, after the models.
+- **Pausing is the host's call.** While paused, the host stops advancing the
+  models, and its game container sits out the update scene pass. It is still
+  refreshed, so the pause menu shows over the frozen game. No game knows about
+  pause.
+- **Skipping a subtree.** Either method may return `SKIP_DESCENDANTS` to skip
+  its container's descendants for that scene pass, for example a hidden panel
+  whose contents need not refresh. Visibility alone skips nothing.
+- **Stepping the two apart.** `tickScene({ root, deltaMs, only: 'update' })`
+  and `tickScene({ root, only: 'refresh' })` run one scene pass each, for a
+  caller that needs many updates and then one refresh, such as rendering a
+  thumbnail.
 - **Why not Pixi's `onRender`?** It fires during rendering, so it is tied to
   render cadence and cannot skip a subtree. The
   [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)

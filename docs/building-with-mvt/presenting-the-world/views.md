@@ -50,7 +50,7 @@ function BulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.x(), bindings.y());
     }
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 }
 ```
@@ -83,10 +83,10 @@ MVT imposes two architectural constraints on views:
    rules, or decide what happens next. That belongs in models.
 
 Everything else - whether you write views as functions or classes, Pixi.js
-containers or DOM elements, `onRefresh` methods or manual call sites - is a style
-choice. The examples on this page use this repo's conventions (a view is a
-function `XxxView(bindings)` returning a Pixi container, with an `onRefresh`
-method). See the
+containers or DOM elements, refresh methods found by a scene walk or manual
+call sites - is a style choice. The examples on this page use this repo's
+conventions (a view is a function `XxxView(bindings)` returning a Pixi
+container, with a refresh method set by `setTickMethods`). See the
 [Style Guide](../../reference/style-guide.md#views-and-bindings) for this
 repo's specific conventions.
 
@@ -159,21 +159,20 @@ function BulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.x(), bindings.y());
     }
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 }
 ```
 
-`onRefresh` is this project's per-frame refresh method, added to every Pixi
-`Container` by `src/pixi-mvt/`. Setting it once at construction means the
+`setTickMethods`, from `src/pixi-mvt/`, sets the view's per-frame steps on
+its container. Setting the refresh method once at construction means the
 view's `refresh()` runs every frame, as long as the view is in the scene: the
-host's `refreshScene` call finds it wherever it sits in the tree, with no
-parent passing calls on. See
-[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes)
-for how the passes are driven.
+host's `tickScene` call finds it wherever it sits in the tree, with no parent
+passing calls on. See [The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene) for how the scene passes are
+driven.
 
 `refresh()` may set the view's own `visible`, as above; nothing about hiding a
-view stops its `onRefresh` running, so it can show itself again next frame. To also
+view stops its refresh method running, so it can show itself again next frame. To also
 skip refreshing everything below it while hidden, return `SKIP_DESCENDANTS`
 from `refresh()` instead of plain `return`.
 
@@ -264,11 +263,11 @@ Ticker loop:
   view.refresh()            -- reads model + own state, writes to scene graph
 ```
 
-In this project, that step is the view's `onUpdate` method
-(`view.onUpdate = update`, or the `onUpdate` attribute in JSX), run by
-`updateScene` before any `onRefresh`. Like
-`onRefresh`, it is found wherever the view sits in the tree, so no parent has
-to forward `update(deltaMs)` to it.
+In this project, that step is the view's update method
+(`setTickMethods(view, { update, refresh })`, or the `onUpdate` attribute in
+JSX), run by the update scene pass before any refresh method. Like the refresh
+method, it is found wherever the view sits in the tree, so no parent has to
+forward `update(deltaMs)` to it.
 
 When the presentation logic grows complex enough to warrant separate testing,
 it can be extracted into a **view model** - a technique borrowed from the

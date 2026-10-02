@@ -218,7 +218,7 @@ polling against Solid's signals and effects (µs per frame):
 | 10% | 6-9 | 13 | Polling, by 1.4-2.3x |
 | 100% | 10-15 | 130 | Polling, by 9-13x |
 
-The polling range covers hand-written `onRefresh` methods and this project's JSX
+The polling range covers hand-written refresh methods and this project's JSX
 runtime. The crossover is at about 4-6% of containers changed per frame, or
 about 10% when each container has only 1 dynamic property. Events, which notify
 only about what changed, were cheaper than both however many containers changed; their

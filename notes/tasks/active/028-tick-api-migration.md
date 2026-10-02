@@ -224,20 +224,20 @@ staged by the user for review. Phase 0 commits it.
 
 ### Phase 5: scene counter for the perfmon
 
-- [ ] A counter in the style of `readCounter` (`src/mvt-utils/read-counter.ts`):
+- [x] A counter in the style of `readCounter` (`src/mvt-utils/read-counter.ts`):
   - switched on by `createFrameStats` for one frame in each window, like
     `'reads'`;
   - counts, per frame, the methods the scene passes called and the walks they
     rebuilt (churn); nodes visited by rebuilds too, if cheap.
-- [ ] Switched off, it costs a flag check per scene pass or per call, no
+- [x] Switched off, it costs a flag check per scene pass or per call, no
   more. Confirm with `scene-passes` and `jsx-refresh`, interleaved against the
   commit before it.
-- [ ] New rows in `src/common/perfmon-view.tsx`, next to "reads". Add the stat
+- [x] New rows in `src/common/perfmon-view.tsx`, next to "reads". Add the stat
   kinds to `FrameStatKind`.
 
 ### Phase 6: docs
 
-- [ ] Update the docs:
+- [x] Update the docs:
   - AGENTS.md;
   - the architecture section, which introduces "tick" as MVT's umbrella term;
   - `docs/building-with-mvt/the-game-loop.md`, whose project section becomes
@@ -250,9 +250,9 @@ staged by the user for review. Phase 0 commits it.
   - `src/games/README.md`, the guide to adding a game.
 
   24 files mentioned the old names at creation.
-- [ ] No coined jargon; use the existing terms (the user's standing
+- [x] No coined jargon; use the existing terms (the user's standing
   preference).
-- [ ] "The plugin" meaning pixi-mvt is gone from the pixi-mvt README and
+- [x] "The plugin" meaning pixi-mvt is gone from the pixi-mvt README and
   design notes: it says "pixi-mvt", or "the mixin" where it means the
   patching of `Container.prototype`. The term dates from when pixi-mvt was a
   single Pixi add-on (archived notes 001 and 003), and it registers nothing
@@ -274,13 +274,13 @@ staged by the user for review. Phase 0 commits it.
 
 ### Phase 8: notes
 
-- [ ] Proposal 027 is rewritten around what was decided: the tick vocabulary,
+- [x] Proposal 027 is rewritten around what was decided: the tick vocabulary,
   `tickScene` / `setTickMethods`, and variant C storage. Mark the rename sections
   (3-6.3) superseded, and keep them as the record of why. Then archive it, with
   its index row.
 - [ ] This task is archived, and its loose ends below are filed.
 
-## Out of scope (file in 017 or their own tasks when this closes)
+## Out of scope (filed on 2026-10-02: see the last progress entry)
 
 - **Dev checks** from 027: the stale-walk and coverage checks (section 7.5 b
   and c), and the method-result check (7.6, item 2).
@@ -291,10 +291,10 @@ staged by the user for review. Phase 0 commits it.
   `ship`) on loading the cabinet. Check whether they predate this work.
 - **When the packages are published (proposal 011):** 027 section 11.7's
   duplicate-copy mitigations, and `Symbol.for` for `SKIP_DESCENDANTS`.
-- **Rename `setTickMethods` to `setTickMethods`:** follow-up task
-  [029](../backlog/029-rename-ontick-to-settickmethods.md), after this one.
-  Adoption, mixed-library and dependency-direction notes for the docs phase
-  are in [027 section 12](../../proposals/027-mvt-method-names.md).
+- **Rename `onTick` to `setTickMethods`:** done by task
+  [029](029-rename-ontick-to-settickmethods.md) before phases 1-4 were
+  committed. Adoption, mixed-library and dependency-direction notes are in
+  [027 section 12](027-mvt-method-names.md).
 
 ## Working notes
 

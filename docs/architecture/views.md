@@ -143,7 +143,8 @@ See [Bindings](bindings.md) for the bridging pattern.
 
 ## Composition
 
-Views compose into trees. The ticker calls `refresh()` (and `update()` if
-presentation state exists) on the top-level view, which delegates to its
-children. The view tree does not need to mirror the model tree; domain
+Views compose into trees. The ticker ticks the top-level view: it calls its
+`update()`, if presentation state exists, then its `refresh()`. The view
+delegates to its children, or the implementation walks the tree and ticks
+every view itself (see [The Ticker](ticker.md#composition)). The view tree does not need to mirror the model tree; domain
 structure and presentation needs are different concerns.

@@ -98,7 +98,7 @@ function GoodView(bindings: MyViewBindings): Container {
         // ...
     }
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 }
 ```

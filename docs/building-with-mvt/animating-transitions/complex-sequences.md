@@ -147,9 +147,9 @@ function BoardView(bindings: BoardViewBindings): Container {
         ParticleView({ matchSequence }),
     );
 
-    // The parent's onUpdate runs before its children's, so every child
+    // The parent's update method runs before its children's, so every child
     // reads this frame's sequence state
-    view.onUpdate = update;
+    setTickMethods(view, { update });
     return view;
 
     function update(deltaMs: number) {
@@ -215,7 +215,7 @@ const updateEffects = createSequenceReaction(matchSequence, {
 });
 
 // Run as the view's refresh:
-view.onRefresh = updateEffects;
+setTickMethods(view, { refresh: updateEffects });
 ```
 
 The reaction tracks each step's phase (before, active, after) and fires

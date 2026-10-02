@@ -28,8 +28,8 @@ different tradeoff profiles.
 
 The idea: create a view with mock bindings, trigger a refresh, then
 assert properties of the resulting display objects. In this project,
-`refreshScene(view)` runs the view's `onRefresh` method, and those of any views
-inside it, with no renderer needed.
+`tickScene({ root: view, only: 'refresh' })` runs the view's refresh method,
+and those of any views inside it, with no renderer needed.
 
 ```ts
 it('hides the bullet when not visible', () => {
@@ -39,7 +39,7 @@ it('hides the bullet when not visible', () => {
         isVisible: () => false,
     });
 
-    refreshScene(view);
+    tickScene({ root: view, only: 'refresh' });
 
     expect(view.visible).toBe(false);
 });
@@ -54,11 +54,11 @@ it('positions the sprite at the bound coordinates', () => {
         isVisible: () => true,
     });
 
-    refreshScene(view);
+    tickScene({ root: view, only: 'refresh' });
     expect(view.position.x).toBeCloseTo(50);
 
     x = 120;
-    refreshScene(view);
+    tickScene({ root: view, only: 'refresh' });
     expect(view.position.x).toBeCloseTo(120);
 });
 ```
@@ -182,9 +182,9 @@ test('door view - halfway through fade-in', async ({ page }) => {
 
 The harness advances the view's `update(deltaMs)` by the specified
 amount, calls `refresh()`, renders, and waits for capture. In this project
-that means `updateScene(view, deltaMs)` in small steps, then
-`refreshScene(view)`: both work on any container, with no renderer or ticker
-needed.
+that means `tickScene({ root: view, deltaMs, only: 'update' })` in small
+steps, then `tickScene({ root: view, only: 'refresh' })`: both work on any
+container, with no renderer or ticker needed.
 
 ## Choosing an Approach
 

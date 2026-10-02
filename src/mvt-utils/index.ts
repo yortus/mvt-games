@@ -2,6 +2,7 @@ export type { RefreshMethod, UpdateMethod } from './scene-methods';
 export { SKIP_DESCENDANTS } from './skip-descendants';
 export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOptions } from './destroy-registry';
 export { addReads, countReads, readCounter } from './read-counter';
+export { countScene, sceneCounter, type SceneCounts } from './scene-counter';
 export { createScenePasses, hasRefresh, hasUpdate } from './scene-passes';
 export type { ScenePasses, SceneTree, TickSceneOptions } from './scene-passes';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';

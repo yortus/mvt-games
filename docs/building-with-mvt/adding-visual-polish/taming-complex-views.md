@@ -60,8 +60,7 @@ function PlayerHudView(bindings: PlayerHudViewBindings): Container {
         // hard to tell which state drives which visual
     }
 
-    view.onUpdate = update;
-    view.onRefresh = refresh;
+    setTickMethods(view, { update, refresh });
     return view;
 }
 ```
@@ -81,11 +80,11 @@ function PlayerHudView(bindings: PlayerHudViewBindings): Container {
 ```
 
 Each sub-view has a single focus: one piece of presentation state, one edge
-to detect, one visual to update, each in its own `onUpdate` and `onRefresh`
-methods. The parent composes them without knowing their internals, and without
+to detect, one visual to update, each in its own update and refresh methods.
+The parent composes them without knowing their internals, and without
 forwarding anything to them: this project's scene passes find each sub-view's
 methods wherever it sits in the tree (see
-[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes)).
+[The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene)).
 
 **When this works:** the transitions are independent - they don't interact
 with each other and don't share state. Most transitions in practice are
@@ -247,8 +246,10 @@ function BoardView(bindings: BoardViewBindings): Container {
     const view = new Container();
     // ... scene graph setup ...
 
-    view.onUpdate = matchEffects.update;   // the view model advances with the view
-    view.onRefresh = refresh;
+    setTickMethods(view, {
+        update: matchEffects.update,   // the view model advances with the view
+        refresh,
+    });
     return view;
 
     function refresh() {
@@ -261,7 +262,7 @@ function BoardView(bindings: BoardViewBindings): Container {
 }
 ```
 
-The update pass runs a container's `onUpdate` before any of its descendants',
+The update scene pass runs a container's update method before any of its descendants',
 so child views that read the view model see this frame's state.
 
 The view model is testable by calling `update()` with known deltas and

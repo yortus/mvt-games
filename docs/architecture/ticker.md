@@ -41,6 +41,22 @@ models and views can run at different update frequencies (e.g. physics at
 120 Hz, rendering at 60 Hz), and rendering can be skipped entirely for
 headless testing.
 
+## Ticks
+
+One turn of the ticker's loop is a **tick**, and "tick" is also the word for
+each part of it, so the ticker is named for what it does:
+
+| What gets ticked | What a tick does |
+| --- | --- |
+| a model | its `update(deltaMs)` |
+| a view | its `update(deltaMs)`, if it has one, then its `refresh()` |
+| the presentation (a scene) | every view's update, then every view's refresh |
+| the application | ticks the models, then the presentation; then the renderer draws |
+
+So the frame sequence above, steps 4 to 7, reads: the ticker ticks the
+models, then the views, then the renderer draws. A view's tick never runs
+before the models' ticks in the same frame.
+
 ## Why This Order Matters
 
 - **Models settle first.** When views read state, every model has finished
@@ -90,6 +106,8 @@ shared across all models and views.
 ## Composition
 
 In practice, models and views each form hierarchies. The ticker only calls
-`update()` on the top-level model and `refresh()` on the top-level view. Each of these
-delegates to its children. The top-level frame sequence is the same regardless of tree
-depth.
+`update()` on the top-level model, and ticks the top-level view. Models
+delegate to their children. Views may delegate the same way, or an
+implementation may walk the view tree and call every view's steps itself,
+parents before children, which spares parent views from forwarding anything.
+The top-level frame sequence is the same regardless of tree depth.

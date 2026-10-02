@@ -45,11 +45,11 @@ each with three dynamic properties, nothing changed):
 | | In one Vitest process | One approach per process, bundled |
 | --- | --- | --- |
 | JSX runtime (an earlier version) | 26.5-29.2 µs | 9.75-10.11 µs |
-| Hand-written `onRefresh` methods | 10.9-11.6 µs | 5.55-5.70 µs |
+| Hand-written refresh methods | 10.9-11.6 µs | 5.55-5.70 µs |
 | Ratio | 2.3-2.7x | about 1.8x |
 
 The in-process numbers also showed a per-container overhead for the scene pass
-that does not exist, and made a faster version of the pass loop look slower.
+that does not exist, and made a faster version of the scene pass loop look slower.
 An idea was rejected on that evidence.
 
 **Rule:** run each approach in a fresh process. A small driver script that

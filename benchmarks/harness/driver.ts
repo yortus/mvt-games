@@ -452,8 +452,13 @@ function writeMarkdown(suite: Suite, environment: Record<string, string>, markdo
             ? `Measured ${environment.date} on ${environment.cpu}, ${environment.os}, Node.js ${environment.node} (V8 ${environment.v8}), pixi.js ${environment.pixi}, solid-js ${environment.solid}.`
             : `Measured ${environment.date} on ${environment.cpu}, ${environment.os}, in headless ${environment.browser.replace('/', ' ')}.`,
         `<!-- #endregion environment -->`,
-    ].join('\n');
-    writeFileSync(join(BENCHMARKS_DIR, 'results', `${suite.name}.md`), `${header}\n\n${markdown}\n`);
+    ];
+    if (suite.notes !== undefined && suite.notes.length > 0) {
+        header.push('', `<!-- #region notes -->`);
+        for (let i = 0; i < suite.notes.length; i++) header.push(`- ${suite.notes[i]}`);
+        header.push(`<!-- #endregion notes -->`);
+    }
+    writeFileSync(join(BENCHMARKS_DIR, 'results', `${suite.name}.md`), `${header.join('\n')}\n\n${markdown}\n`);
 }
 
 function describeEnvironment(): Record<string, string> {

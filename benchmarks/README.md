@@ -29,17 +29,17 @@ include).
 
 | Suite | Measures |
 | --- | --- |
-| `reactivity` | Keeping 1000 Pixi containers in step with a changing model: polling (hand-written `onRefresh` methods and the JSX runtime), events, and Solid signals, as the share of the model changing each frame varies |
+| `reactivity` | Keeping 1000 Pixi containers in step with a changing model: polling (hand-written refresh methods and the JSX runtime), events, and Solid signals, as the share of the model changing each frame varies |
 | `scaling` | The same, from 100 to 100,000 containers |
 | `jsx-refresh` | Refreshing JSX bindings against hand-written methods, from 1,000 to 50,000 elements: uniform, over every write kind, and one shape on all eight kinds of Pixi element |
 | `change-detection` | Reacting to a value that changes occasionally (comparing by hand, `watch()`, events, signals), and a property computed from 8 model values |
 | `construction` | The cost of a container from construction to destruction, and a pool of short-lived items: reusing containers with `<List>` over a `SlotList`, against building and destroying them |
-| `scene-passes` | `refreshScene` against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
-| `html-scene-passes` | In headless Chrome: the DOM's `refreshScene` against a naive walk, steady and with the tree changing every frame, and a JSX list on one renderer (HTML or three.js) alone and after one on the other has run in the same page |
+| `scene-passes` | The refresh scene pass against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
+| `html-scene-passes` | In headless Chrome: the DOM's refresh scene pass against a naive walk, steady and with the tree changing every frame, and a JSX list on one renderer (HTML or three.js) alone and after one on the other has run in the same page |
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
 | `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
-| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update and refresh passes, and reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count |
+| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update scene pass and refresh scene pass, and reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count |
 
 ## Layout
 

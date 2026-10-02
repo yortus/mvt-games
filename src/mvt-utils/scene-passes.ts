@@ -1,3 +1,4 @@
+import { sceneCounter } from './scene-counter';
 import type { RefreshMethod, UpdateMethod } from './scene-methods';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 
@@ -436,6 +437,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
             if (lastPass !== passId) {
                 const method = listedFields._mvtRefreshMethod;
                 if (method !== undefined) {
+                    if (sceneCounter.isCounting) sceneCounter.methodCalls++;
                     const skipsDescendants = method() === SKIP_DESCENDANTS;
                     listedFields._mvtLastRefreshPass = skipsDescendants ? -passId : passId;
                     if (skipsDescendants) {
@@ -553,6 +555,10 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
      * `passId`, the scene pass's id, so that `catchUpRefresh` can replay the
      * walk if the tree changed meanwhile. An entry run and stepped past
      * records nothing.
+     *
+     * The calls are counted for `sceneCounter` by what the walk elides, in
+     * the branches that elide, so a method called and stepped past costs the
+     * loop nothing extra; the count is added once, after it.
      */
     function invokeSubtreeMethods(walk: SubtreeWalk<N>, node: N, pass: Pass, deltaMs: number | undefined, passId: number): void {
         const list = walk.list;
@@ -560,6 +566,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
         const skip = walk.skip;
         const elisions = walk.elisions;
         const assignmentsAtStart = methodAssignments;
+        let elided = 0;
         for (let i = 0; i < list.length;) {
             const listed = list[i];
             // Detached by a method earlier in this scene pass: skip its whole
@@ -567,6 +574,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
             // the scene pass started from may have no parent, and is exempt.
             if (listed !== node && !tree.parent(listed)) {
                 if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_DETACHED);
+                elided += skip[i] - i;
                 i = skip[i];
                 continue;
             }
@@ -576,16 +584,19 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
             // Only when a method was cleared earlier in this scene pass
             if (method === undefined) {
                 if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_METHOD_CLEARED);
+                elided++;
                 i++;
                 continue;
             }
             if (method(deltaMs) === SKIP_DESCENDANTS) {
                 if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_DESCENDANTS);
+                elided += skip[i] - i - 1;
                 i = skip[i];
                 continue;
             }
             i++;
         }
+        if (sceneCounter.isCounting) sceneCounter.methodCalls += list.length - elided;
     }
 
     /**
@@ -594,6 +605,11 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
      * and the skip table over them.
      */
     function buildSubtreeWalk(node: N, pass: Pass): SubtreeWalk<N> {
+        // The root's visit; `has` counts the rest
+        if (sceneCounter.isCounting) {
+            sceneCounter.walkRebuilds++;
+            sceneCounter.rebuildVisits++;
+        }
         const list: N[] = [];
         const methods: SceneMethod[] = [];
         const ends: number[] = [];
@@ -641,6 +657,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
      * quietly turn every rebuild back into a walk of the whole subtree.
      */
     function has(node: N, pass: Pass): boolean {
+        if (sceneCounter.isCounting) sceneCounter.rebuildVisits++;
         const fields = visit(node);
         const cached = pass === UPDATE ? fields._mvtSubtreeHasUpdate : fields._mvtSubtreeHasRefresh;
         if (cached !== undefined) return cached;

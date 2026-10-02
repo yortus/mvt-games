@@ -141,10 +141,10 @@ A view that spawns short-lived effects, such as particles, follows the same
 split: `update()` advances a pool of effect records, and `refresh()` projects
 the pool into display objects.
 
-In this project, a view's `update(deltaMs)` step is its `onUpdate` method, and
-its `refresh()` is its `onRefresh` method. That is a project convention, not an
-MVT requirement; see
-[The Game Loop](../the-game-loop.md#in-this-project-onupdate-onrefresh-and-the-scene-passes).
+In this project, a view sets its `update(deltaMs)` and `refresh()` steps on
+its container with `setTickMethods(view, { update, refresh })`. That is a
+project convention, not an MVT requirement; see
+[The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene).
 
 ### Example: door fade
 
@@ -155,8 +155,7 @@ function DoorView(bindings: DoorViewBindings): Container {
     const view = new Container();
     const sprite = new Sprite(doorTexture);
     view.addChild(sprite);
-    view.onUpdate = update;
-    view.onRefresh = refresh;
+    setTickMethods(view, { update, refresh });
 
     // -- Presentation state --
     let fadeProgress = bindings.isOpen() ? 0 : 1; // start matching model
@@ -218,20 +217,17 @@ function GameView(bindings: GameViewBindings): Container {
 }
 ```
 
-The entry file runs one update pass over the whole view tree, after the model:
+The host ticks the whole scene once per frame, after the models:
 
 ```ts
-const gameView = GameView({ model: gameModel });
-return {
-    update(deltaMs) {
-        gameModel.update(deltaMs);
-        updateScene(gameView, deltaMs);   // every onUpdate in the tree
-    },
-};
+app.ticker.add((ticker) => {
+    gameModel.update(ticker.deltaMS);
+    tickScene({ root: app.stage, deltaMs: ticker.deltaMS });   // every update method, then every refresh method
+});
 ```
 
-`updateScene` finds every `onUpdate` in the tree, however deep, and runs it
-before its descendants'. There is no chain of parents to keep in step: adding
+The update scene pass finds every update method in the tree, however deep,
+and runs it before its descendants'. There is no chain of parents to keep in step: adding
 presentation state to a view deep in the tree needs no change anywhere else.
 Hand-forwarding `update()` through each parent, as earlier versions of this
 project did, fails silently when any link is missed - the animation simply

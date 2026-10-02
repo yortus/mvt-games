@@ -35,7 +35,7 @@ The ways of keeping the containers in step with the model:
 
 | Approach | How the view learns about a change |
 | --- | --- |
-| MVT (hand-written) | Each container's `onRefresh` method reads the model and assigns its properties, run by `refreshScene` every frame. This is polling, as the rest of these docs describe it |
+| MVT (hand-written) | Each container's refresh method reads the model and assigns its properties, run by the refresh scene pass every frame. This is polling, as the rest of these docs describe it |
 | MVT (JSX) | The same polling, but built with this repo's JSX runtime (`src/pixi-mvt/jsx/`), where each dynamic property is given as a function that reads the model |
 | Events | The model calls a listener for each record it changes, and the listener assigns the properties |
 | Solid signals | The model's values are [Solid](https://www.solidjs.com/) signals, with one effect per container that assigns its properties when they change |
@@ -195,32 +195,33 @@ and destroys it when the item goes.
 
 ## The Scene Passes
 
-What `refreshScene` itself costs, apart from the work the `onRefresh` methods
-do: each one here does almost nothing. It is compared with a plain recursive
-walk over the tree, which calls every `onRefresh` it finds, and with Pixi's own
-`onRender` callbacks. The last scenario has 100 groups of 100 containers, 90 of
-the groups inactive, either only hidden or returning `SKIP_DESCENDANTS` from
-their own `onRefresh`.
+What the refresh scene pass itself costs, apart from the work the refresh
+methods do: each one here does almost nothing. It is compared with a plain
+recursive walk over the tree, which calls every refresh method it finds, and
+with Pixi's own `onRender` callbacks. The last scenario has 100 groups of 100
+containers, 90 of the groups inactive, either only hidden or returning
+`SKIP_DESCENDANTS` from their own refresh method.
 
 <!--@include: ../../../benchmarks/results/scene-passes.md#passes-->
 
-- **`refreshScene` visits only the containers that have an `onRefresh`.** In
+- **The refresh scene pass visits only the containers that have a refresh
+  method.** In
   a large scene where few containers have one, it is hundreds of times faster
-  than walking the tree: 0.6 µs against 200 µs for 200 `onRefresh` methods
+  than walking the tree: 0.6 µs against 200 µs for 200 refresh methods
   among 20,000 containers.
-- **Replacing many containers that have an `onRefresh` every frame is its
-  worst case.** The pass caches which containers have one, and 100
+- **Replacing many containers that have a refresh method every frame is its
+  worst case.** The scene pass caches which containers have one, and 100
   replacements per frame make it rebuild that cache every frame: 91 µs,
   against 36 µs for a plain walk. The
   [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)
   explains why this is accepted.
 - **It costs about 1.5 ns more per call than Pixi's `onRender`**, which is what
-  checking for removed containers mid-pass costs.
+  checking for removed containers during a scene pass costs.
 - **Skipping inactive subtrees pays at scale.** Returning `SKIP_DESCENDANTS`
   from 90 inactive groups cut the frame from 126 µs to 9 µs. Hiding a
-  container with `visible = false` does not stop its `onRefresh` methods from
+  container with `visible = false` does not stop its refresh methods from
   running.
-- **Importing the plugin costs a tree that never uses it about 8 ns per added
+- **Importing pixi-mvt costs a tree that never uses it about 8 ns per added
   and removed container**, for tracking changes to the tree.
 
 ## The Hot Path Rules
@@ -306,8 +307,8 @@ run under Node with nothing drawn. The games are driven by a fixed pattern of
 simulated input: directions changing every half second and buttons pressed
 every second or so. The demos run unattended, as they do before anyone touches
 them. Each frame is what [the game loop](../the-game-loop.md) runs: the
-session's update (its model, then `updateScene` over its view), then
-`refreshScene`. The first 10 seconds are a warm-up, and times are averaged over
+session's update (its models), then a tick of the scene: the update scene pass,
+then the refresh scene pass. The first 10 seconds are a warm-up, and times are averaged over
 the minute after.
 
 <!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
@@ -315,7 +316,7 @@ the minute after.
 - **Each game takes 5-10 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
-- **`refreshScene` takes the larger share in most games**, since that is
+- **The refresh scene pass takes the larger share in most games**, since that is
   where the views read the model and set their properties. The updates take
   0.4-5 µs; in Galaga, with more going on in its model, the update takes
   longer than the refresh.

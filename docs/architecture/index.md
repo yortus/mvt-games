@@ -60,6 +60,10 @@ Every frame follows the same strict order:
 
 Less commmonly, some views may have cosmetic [presentation state](views.md#presentation-state). In this case the top-level view gains an `update(deltaMs)` method, and the ticker loop gains an extra step to call it between steps 2 and 3.
 
+One turn of this loop is a [tick](ticker.md#ticks): the ticker ticks the
+models, then the views, then the renderer draws. Ticking a view means calling
+its `update(deltaMs)`, if it has one, then its `refresh()`.
+
 Models always settle before views read them. Views never see a half-updated
 world. Data flows one direction within each frame: models produce state,
 views consume it.

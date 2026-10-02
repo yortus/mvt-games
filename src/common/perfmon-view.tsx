@@ -14,16 +14,26 @@ export interface PerfmonViewBindings {
 
 /** Size of the panel, for laying it out. */
 export const PERFMON_WIDTH = 220;
-export const PERFMON_HEIGHT = 80;
+export const PERFMON_HEIGHT = 128;
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
 /**
- * A small panel of frame timing: frames per second, CPU and GPU milliseconds
- * per frame, and reads per frame (`RPF`, e.g. `21K`), each with a
- * sparkline of recent values. CPU and GPU sparklines are scaled to at least
+ * A small panel of frame timing and scene work, each row with a sparkline of
+ * recent values:
+ *
+ * - `FPS`: frames per second.
+ * - `CPU`, `GPU`: milliseconds per frame.
+ * - `RPF`: reads per frame (e.g. `21K`), for scenes that count them.
+ * - `MPF`: update and refresh methods the scene passes called per frame.
+ * - `WPF`: memoised walks the scene passes rebuilt per frame, which is the
+ *   scene's churn; zero in a steady scene.
+ * - `NPF`: nodes the scene passes visited per frame rebuilding those walks,
+ *   which is what the churn cost.
+ *
+ * Each value is `n/a` when the stats were made without the counter it needs. CPU and GPU sparklines are scaled to at least
  * one 60fps frame (16.7 ms), marked by a faint line.
  *
  * The GPU figure is an upper bound: see `FrameStats.gpuMs` for what it
@@ -40,6 +50,9 @@ export function PerfmonView(bindings: PerfmonViewBindings): Container {
             {statRow(bindings, 'cpu', 1)}
             {statRow(bindings, 'gpu', 2)}
             {statRow(bindings, 'reads', 3)}
+            {statRow(bindings, 'methods', 4)}
+            {statRow(bindings, 'rebuilds', 5)}
+            {statRow(bindings, 'visits', 6)}
         </container>
     );
 }
@@ -57,12 +70,23 @@ const GRAPH_WIDTH = PERFMON_WIDTH - GRAPH_X - PADDING;
 const GRAPH_HEIGHT = 12;
 const FRAME_BUDGET_MS = 1000 / 60;
 
-const ROW_LABELS: Readonly<Record<FrameStatKind, string>> = { fps: 'FPS', cpu: 'CPU', gpu: 'GPU', reads: 'RPF' };
+const ROW_LABELS: Readonly<Record<FrameStatKind, string>> = {
+    fps: 'FPS',
+    cpu: 'CPU',
+    gpu: 'GPU',
+    reads: 'RPF',
+    methods: 'MPF',
+    rebuilds: 'WPF',
+    visits: 'NPF',
+};
 const ROW_COLORS: Readonly<Record<FrameStatKind, number>> = {
     fps: 0x7ee787,
     cpu: 0x79c0ff,
     gpu: 0xffa657,
     reads: 0xd2a8ff,
+    methods: 0xf2cc60,
+    rebuilds: 0xff7b72,
+    visits: 0xffa198,
 };
 
 function statRow(bindings: PerfmonViewBindings, kind: FrameStatKind, rowIndex: number): Container {
@@ -105,9 +129,14 @@ const NO_VALUE = '--';
 
 function formatValue(kind: FrameStatKind, stats: FrameStats): string {
     if (kind === 'fps') return String(Math.round(stats.fps));
-    if (kind === 'reads') return stats.readsPerFrame === undefined ? 'n/a' : formatCount(stats.readsPerFrame);
-    const ms = kind === 'cpu' ? stats.cpuMs : stats.gpuMs;
-    return ms === undefined ? 'n/a' : `${ms.toFixed(1)} ms`;
+    if (kind === 'cpu' || kind === 'gpu') {
+        const ms = kind === 'cpu' ? stats.cpuMs : stats.gpuMs;
+        return ms === undefined ? 'n/a' : `${ms.toFixed(1)} ms`;
+    }
+    const count = kind === 'reads'
+        ? stats.readsPerFrame
+        : kind === 'methods' ? stats.methodsPerFrame : kind === 'rebuilds' ? stats.rebuildsPerFrame : stats.visitsPerFrame;
+    return count === undefined ? 'n/a' : formatCount(count);
 }
 
 /** A count in at most four characters: `950`, `9.5K`, `21K`, `1.2M`. */
@@ -126,7 +155,7 @@ function drawSparkline(g: Graphics, kind: FrameStatKind, stats: FrameStats | und
 
     const count = stats.historyLength;
     // Frame times are scaled to include a frame's budget; counts to their own peak.
-    let max = kind === 'fps' ? 60 : kind === 'reads' ? 0 : FRAME_BUDGET_MS;
+    let max = kind === 'fps' ? 60 : kind === 'cpu' || kind === 'gpu' ? FRAME_BUDGET_MS : 0;
     for (let i = 0; i < count; i++) {
         const value = stats.historyAt(kind, i);
         if (value > max) max = value;

@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-09-30 |
+| Updated  | 2026-10-02 |
 
 ## Description
 
@@ -128,6 +128,27 @@ Settled questions that should not be reopened without new information are in
 
 ### Decide
 
+- **Dev checks from 027 that were not built.** Task 028 added only the
+  `deltaMs` check to `tickScene`. Still to decide, each argued in
+  [027](../../archive/027-mvt-method-names.md):
+  - section 7.5 (b): a stale memoised walk, which would throw;
+  - section 7.5 (c): an update method that no `tickScene` root reaches, which
+    would warn. This is the one that recovers most of what an explicit
+    `update` method's type used to say (027 section 12.3);
+  - section 7.6, item 2: a check of each method's result, catching a value
+    that is neither `undefined` nor `SKIP_DESCENDANTS` (a second copy of the
+    library, once the packages are published).
+
+  Each needs a cost check in dev against `scene-passes`, and a decision on how
+  often it runs (027 section 9, items 10 and 11).
+- **Old playground links that assign `view.onRefresh`.** Since task 028, the
+  assignment makes a plain property the scene passes never read, so a
+  playground link saved before then loads without error and never animates.
+  The presets and the new-project template use `setTickMethods`. A dev
+  warning for a node with an own `onRefresh` or `onUpdate` property, in the
+  playground's sandbox only, would point old links at the fix. Worth it only
+  if old links are in circulation.
+
 - **Button presses shorter than a frame are missed.** The games' models see
   input by polling a pressed flag in their update, so a press and release
   that both arrive between two updates leave no trace. Real presses almost
@@ -224,9 +245,20 @@ Settled questions that should not be reopened without new information are in
   the boxing item above: the boids' record with getters also boxed numbers
   written to it.
 
-- **One `_mvt` record per node instead of six `_mvt*` fields.** (Since
-  measured: 027 section 11.8 benchmarked a single `_mvt` record and found it
-  slower, and task 028 kept the named fields. Likely closable.) Each
+- **DOM churn costs 3-6% more since the tick API's storage.** In
+  `html-scene-passes`, the DOM's churn case measured 3-6% slower with the
+  private fields' defaults on `Element.prototype` (027 section 11.8, variant
+  C) than before; task 028 added nothing to it. Unexplained. The first suspect
+  is the per-node `visit()` call in rebuilds. Profile one churn frame in
+  headless Chrome before and after.
+- **Pixi's "[Cache] already has key" warnings** (`ghost-eyes`, `ship-icon`,
+  `ship`) when the cabinet loads. Seen during task 028's browser checks.
+  Check whether they predate it (likely: two games registering textures under
+  the same names), and rename or share the textures.
+- ~~**One `_mvt` record per node instead of six `_mvt*` fields.**~~ Done
+  2026-10-02: measured by 027 section 11.8 (variant D, a single `_mvt` record
+  under a named field), which was 4-7% slower at 100,000 containers and kept
+  more memory per node, so task 028 kept the named fields. Originally: each
   renderer's scene passes add `_mvtUpdateMethod`, `_mvtRefreshMethod`,
   `_mvtSubtreeHasUpdate`, `_mvtUpdateWalk`, `_mvtSubtreeHasRefresh` and
   `_mvtRefreshWalk` to its node prototype (`installFieldDefaults` in
@@ -304,7 +336,10 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Browser benchmarking and CI benchmarking each decided
 - [ ] Fractional-number boxing explained, and fixed or recorded as a rule
 - [ ] Getter literals on per-item models measured, and fixed or recorded as a rule
-- [ ] One `_mvt` record per node measured against six `_mvt*` fields, and adopted or recorded
+- [x] One `_mvt` record per node measured against six `_mvt*` fields, and adopted or recorded
+- [ ] 027's remaining dev checks each built or dropped
+- [ ] DOM churn cost since the tick API explained, or recorded
+- [ ] Pixi's texture cache warnings fixed, or recorded as harmless
 - [ ] 020's experiments each run, or dropped
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
@@ -342,3 +377,7 @@ falling-sand demo. Each is a new variant, measured with
   length (Fix), from a review of 022's changes.
 - 2026-09-30: Added the one-`_mvt`-record experiment (Investigate), from a
   review of 022's scene passes.
+- 2026-10-02: Closed the one-`_mvt`-record item, measured by 027 section
+  11.8. Took in task 028's loose ends: 027's unbuilt dev checks and old
+  playground links (Decide), and the DOM churn cost and Pixi's texture cache
+  warnings (Investigate). Its publishing items went to 011's phase 6.
