@@ -13,12 +13,12 @@ core that [022](./022-renderer-agnostic-jsx.md) phase 2 made of pixi-mvt's
 walk; see 2.4. Sections 3-5 are still proposed. Measured 2026-09-25; written
 2026-09-26.
 
-**Related:** [`src/mvt-utils/scene-passes.ts`](../../src/mvt-utils/scene-passes.ts)
+**Related:** [`src/mvt-utils/scene-passes.ts`](../../packages/utils/src/scene-passes.ts)
 (the walk, since 022 phase 2),
 [`benchmarks/`](../../benchmarks/README.md),
 [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
 [Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md),
-[`src/pixi-mvt/frame-stats.ts`](../../src/pixi-mvt/frame-stats.ts),
+[`src/pixi-mvt/frame-stats.ts`](../../packages/pixi/src/frame-stats.ts),
 [010 - Performance docs proposal](../archive/010-performance-docs-proposal.md).
 
 ---

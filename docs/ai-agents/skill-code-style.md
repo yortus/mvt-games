@@ -47,7 +47,7 @@ score_model.ts    ❌
 
 ## Barrel File Rules
 
-Every directory under `src/` provides a barrel file (`index.ts`) that defines
+Every directory under a package's `src/` provides a barrel file (`index.ts`) that defines
 its public API.
 
 - **Cross-directory imports:** always go through `index.ts` (never past it).
@@ -79,6 +79,17 @@ import { createTimerModel } from '../timer-model';
 
 Enforced by ESLint: `import/no-internal-modules` for reaching past a barrel,
 and `no-restricted-imports` for importing your own or an ancestor's.
+
+Between packages ([details](../reference/project-structure.md#between-packages)):
+
+- Import a package by name (`@mvtjs/pixi`, `@mvtjs/pixi/jsx`), never a path
+  into it; its `exports` are its barrel.
+- Every import names a dependency of the nearest `package.json`; tests,
+  scripts and config may use `devDependencies` (`import/no-extraneous-dependencies`).
+- In the site and benchmarks, take `SKIP_DESCENDANTS`, `hasUpdate`,
+  `hasRefresh`, the counters and the method types from the renderer package,
+  not `@mvtjs/utils` (`no-restricted-imports`).
+- `site/src/playground/` and the rest of the site never import each other.
 
 ## String-Literal Unions
 
@@ -118,7 +129,7 @@ as a JSX tag and as a plain call. A top-level view takes the model in its
 bindings: `GameView({ model })`. The body may be JSX (`.tsx`) or plain
 TypeScript (`.ts`), whichever suits the view; neither is required. Each query
 binding's type says what the view supports: `() => T` for changing state, `T`
-for a value read once at construction, `ValueOrGetter<T>` (from `#pixi-mvt/jsx`)
+for a value read once at construction, `ValueOrGetter<T>` (from `@mvtjs/pixi/jsx`)
 for either. Never declare a function and read it only once. Full rules:
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings);
 how to write one: [skill-mvt-view.md](skill-mvt-view.md).
@@ -187,7 +198,7 @@ implementing the interface may still use method shorthand. Enforced by lint.
 ## Assertions
 
 State preconditions, postconditions and invariants with `assert` from
-`#mvt-utils` (`assert(loaded, 'call load() first')`), not `if (...) throw`.
+`@mvtjs/utils` (`assert(loaded, 'call load() first')`), not `if (...) throw`.
 Pass a message built from values as a function, so it is built only on
 failure. Not on hot paths: in code that runs every frame, keep a plain
 `if` and `throw`. Costly checks go under the caller's `if (DEV)`. See

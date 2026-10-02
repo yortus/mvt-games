@@ -110,7 +110,7 @@ views, which runs every view's refresh method, and Pixi renders afterwards.
 Neither the model nor the view knows about the other's internals.
 
 `setTickMethods` and `tickScene` are this project's way of scheduling view
-refreshes in Pixi, from [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt).
+refreshes in Pixi, from [`packages/pixi/src/`](https://github.com/yortus/mvt-games/tree/main/packages/pixi/src).
 MVT only requires that views read the model after it updates and before the
 frame is drawn; any mechanism that does that works.
 

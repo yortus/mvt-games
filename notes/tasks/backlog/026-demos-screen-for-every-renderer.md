@@ -8,17 +8,17 @@
 
 ## Description
 
-The demos gallery (`site/demos/index.html`, run by `src/demos/main.ts`) only
+The demos gallery (`site/demos/index.html`, run by `site/src/demos/main.ts`) only
 knows Pixi. A `DemoEntry` starts on a Pixi `Container`, with a host that
-gives it Pixi's `Renderer` and `Ticker` (`src/demos/demo-entry.ts`); the
+gives it Pixi's `Renderer` and `Ticker` (`site/src/demos/demo-entry.ts`); the
 runner makes a Pixi `Application` for each launch; and thumbnails are drawn
 into a Pixi `RenderTexture`. So "Boids in 3D", drawn with three.js
-(`src/demos/boids-3d/`), cannot be a card: it is a page of its own, linked
+(`site/src/demos/boids-3d/`), cannot be a card: it is a page of its own, linked
 from the gallery's subtitle. Any later demo on three.js or the DOM would be
 the same.
 
 Rework the gallery so every demo is a card, whatever it renders with, and
-build the gallery itself with HTML JSX (`#html-mvt/jsx`, from 022's step 10),
+build the gallery itself with HTML JSX (`@mvtjs/html/jsx`, from 022's step 10),
 the MVT way: a gallery model, and an HTML view of it.
 
 ### What to design
@@ -50,7 +50,7 @@ the MVT way: a gallery model, and an HTML view of it.
 
 - [ ] A `DemoEntry` that works for Pixi, three.js and DOM demos
 - [ ] Thumbnails, and launching, for demos on every renderer
-- [ ] The gallery built with `#html-mvt/jsx`, from a gallery model
+- [ ] The gallery built with `@mvtjs/html/jsx`, from a gallery model
 - [ ] Boids in 3D in the gallery as a card, and its separate page removed
 - [ ] Findings about the HTML JSX runtime, from building a real screen with
       it, recorded in its design notes or a task

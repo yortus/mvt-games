@@ -11,7 +11,7 @@ import { assert } from '@mvtjs/utils';
  * and queues no mutation record for the scene passes to process.
  *
  * An element with `text` holds that text and no elements: JSX has no text
- * children (proposal 022 section 5.4), so text and elements never mix. Dev
+ * children (a string child is a type error), so text and elements never mix. Dev
  * builds throw if they would.
  */
 export function writeText(el: Element, value: string | number): void {

@@ -230,7 +230,7 @@ Current diagram inventory:
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
 | Ticker frame sequence | building-with-mvt/the-game-loop.md | Mermaid sequence diagram |
 | Pattern reinforcement | architecture/heritage.md | Mermaid flowchart |
-| JSX runtime: building and refreshing | src/mvt-utils/jsx/README.md (outside the docs site) | Mermaid flowchart |
+| JSX runtime: building and refreshing | packages/utils/src/jsx/README.md (outside the docs site) | Mermaid flowchart |
 | Real game model/view tree | (removed) | Mermaid graph |
 
 Before adding a new diagram, check this list to avoid duplicating an

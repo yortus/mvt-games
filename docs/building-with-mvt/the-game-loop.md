@@ -137,7 +137,7 @@ Models don't know or care - they only ever see the `deltaMs` they receive.
 ## In This Project: The Ticker Ticks Models, Then the Scene
 
 MVT requires the order above, not a particular mechanism. This project
-implements the view side with [`src/pixi-mvt/`](https://github.com/yortus/mvt-games/tree/main/src/pixi-mvt):
+implements the view side with [`packages/pixi/src/`](https://github.com/yortus/mvt-games/tree/main/packages/pixi/src):
 a view sets its two steps on its Pixi `Container` with `setTickMethods`, and
 the host ticks the whole scene with `tickScene`. This is a **project
 convention**, not part of MVT itself.
@@ -168,7 +168,7 @@ tickScene({ root: app.stage, deltaMs });       // 2. the update scene pass, then
   method. A view anywhere in the tree takes part just by setting its methods;
   its parents do not need to know it exists or pass anything on.
 - **Sessions advance only their models.** A game session's `update()` runs its
-  model and nothing else. The host (`src/main.ts`) ticks the whole stage once
+  model and nothing else. The host (`site/src/main.ts`) ticks the whole stage once
   per frame, after the models.
 - **Pausing is the host's call.** While paused, the host stops advancing the
   models, and its game container sits out the update scene pass. It is still
@@ -183,7 +183,7 @@ tickScene({ root: app.stage, deltaMs });       // 2. the update scene pass, then
   thumbnail.
 - **Why not Pixi's `onRender`?** It fires during rendering, so it is tied to
   render cadence and cannot skip a subtree. The
-  [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)
+  [`packages/pixi/src/` README](https://github.com/yortus/mvt-games/blob/main/packages/pixi/src/README.md)
   explains the difference in full.
 
 ## Hierarchies

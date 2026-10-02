@@ -36,7 +36,7 @@ The ways of keeping the containers in step with the model:
 | Approach | How the view learns about a change |
 | --- | --- |
 | MVT (hand-written) | Each container's refresh method reads the model and assigns its properties, run by the refresh scene pass every frame. This is polling, as the rest of these docs describe it |
-| MVT (JSX) | The same polling, but built with this repo's JSX runtime (`src/pixi-mvt/jsx/`), where each dynamic property is given as a function that reads the model |
+| MVT (JSX) | The same polling, but built with this repo's JSX runtime (`packages/pixi/src/jsx/`), where each dynamic property is given as a function that reads the model |
 | Events | The model calls a listener for each record it changes, and the listener assigns the properties |
 | Solid signals | The model's values are [Solid](https://www.solidjs.com/) signals, with one effect per container that assigns its properties when they change |
 | Model only, no view | Just the model's changes, to show how much of a frame they are |
@@ -178,7 +178,7 @@ it. A bare `new Container()` and `destroy()` is included for scale.
 <!--@include: ../../../benchmarks/results/construction.md#build-->
 
 The second is a pool of short-lived items, such as bullets, held in a
-[`SlotList`](https://github.com/yortus/mvt-games/tree/main/src/mvt-utils/slot-list).
+[`SlotList`](https://github.com/yortus/mvt-games/tree/main/packages/utils/src/slot-list).
 About 500 are alive at once. Either
 `<List>` shows the slots, building one container per slot and reusing it for
 every later item, or a hand-written view builds a container for each new item
@@ -214,7 +214,7 @@ containers, 90 of the groups inactive, either only hidden or returning
   worst case.** The scene pass caches which containers have one, and 100
   replacements per frame make it rebuild that cache every frame: 127 µs,
   against 29 µs for a plain walk. The
-  [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)
+  [`packages/pixi/src/` README](https://github.com/yortus/mvt-games/blob/main/packages/pixi/src/README.md)
   explains why this is accepted.
 - **It costs about 2 ns more per call than Pixi's `onRender`**, which is what
   checking for removed containers during a scene pass costs.
@@ -222,7 +222,7 @@ containers, 90 of the groups inactive, either only hidden or returning
   from 90 inactive groups cut the frame from 128 µs to 10 µs. Hiding a
   container with `visible = false` does not stop its refresh methods from
   running.
-- **Importing pixi-mvt costs a tree that never uses it about 6 ns per added
+- **Importing @mvtjs/pixi costs a tree that never uses it about 6 ns per added
   and removed container**, for tracking changes to the tree.
 
 ## The Hot Path Rules

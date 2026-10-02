@@ -16,8 +16,8 @@ kept. Nothing is implemented.
 **Written:** 2026-09-26. Measured on an Intel Core Ultra 9 185H, Node.js
 22.11, headless, timing the model's `update` alone.
 
-**Related:** [`flock-model.ts`](../../src/demos/boids/flock-model.ts),
-[`boids-view.ts`](../../src/demos/boids/boids-view.ts),
+**Related:** [`flock-model.ts`](../../site/src/demos/boids/flock-model.ts),
+[`boids-view.ts`](../../site/src/demos/boids/boids-view.ts),
 [017](../tasks/backlog/017-misc-loose-ends.md) (the boids allocation fix),
 [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
 

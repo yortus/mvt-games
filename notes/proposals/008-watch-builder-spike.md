@@ -1,9 +1,9 @@
 # 008 - `Watch()` fluent builder (spike)
 
 > Status: **Spike / design investigation.** A working prototype lives in
-> [`src/mvt-utils/watch-builder.spike.ts`](../../src/mvt-utils/watch-builder.spike.ts)
+> [`src/mvt-utils/watch-builder.spike.ts`](../../packages/utils/src/watch-builder.spike.ts)
 > with tests in
-> [`src/mvt-utils/watch-builder.spike.test.ts`](../../src/mvt-utils/watch-builder.spike.test.ts)
+> [`src/mvt-utils/watch-builder.spike.test.ts`](../../packages/utils/src/watch-builder.spike.test.ts)
 > (tsc + eslint + vitest green). It is not exported from the `#mvt-utils` barrel,
 > and nothing else in `src/` imports it. Living under `src/` means
 > `npm run build` type-checks it and `npm test` runs its tests.

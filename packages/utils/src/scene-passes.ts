@@ -136,7 +136,8 @@ interface SubtreeWalk<N> {
     readonly list: N[];
     /**
      * Each listed node's method, read when the list was built, so the loop
-     * calls it without reading the node's field (proposal 012 section 2).
+     * calls it without reading the node's field, a read that a scene of
+     * mixed node shapes makes megamorphic.
      * Assigning any method during a scene pass sends the rest of that scene
      * pass back to reading them live; see `invokeSubtreeMethods`.
      */
@@ -545,11 +546,11 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
      *
      * Methods are called from the list's cache rather than read from each
      * node's field: a scene of mixed node shapes makes that read
-     * megamorphic, and caching made refresh 30-40% cheaper on such scenes
-     * (proposal 012 section 2). A method assigned or cleared during the scene
-     * pass (a `<List>` building slots, a view silencing a sibling) bumps
-     * `methodAssignments`, and from then on this scene pass reads methods live,
-     * so a method cleared earlier in the scene pass never runs later in it.
+     * megamorphic, and caching made refresh 30-40% cheaper on such scenes.
+     * A method assigned or cleared during the scene pass (a `<List>` building
+     * slots, a view silencing a sibling) bumps `methodAssignments`, and from
+     * then on this scene pass reads methods live, so a method cleared earlier
+     * in the scene pass never runs later in it.
      *
      * A refresh walk also records what it elides at each entry, tagged with
      * `passId`, the scene pass's id, so that `catchUpRefresh` can replay the

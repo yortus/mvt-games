@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
-    'src/**/*.{ts,tsx}',
+    'site/src/**/*.{ts,tsx}',
     'packages/*/src/**/*.{ts,tsx}',
 ];
 
@@ -40,7 +40,7 @@ const DEV_FILES = [
     '**/scripts/**',
     'benchmarks/**',
     'docs/**',
-    '*.config.{ts,js}',
+    '**/*.config.{ts,js}',
 ];
 
 export default tseslint.config(
@@ -87,7 +87,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['src/**/*.{ts,tsx}', 'packages/*/src/**/*.{ts,tsx}'],
+        files: ['site/src/**/*.{ts,tsx}', 'packages/*/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -128,14 +128,14 @@ export default tseslint.config(
         settings: {
             'import/resolver': {
                 typescript: {
-                    project: ['./src/tsconfig.json', './packages/*/tsconfig.json'],
+                    project: ['./site/tsconfig.json', './packages/*/tsconfig.json'],
                     noWarnOnMultipleProjects: true,
                 },
             },
         },
     },
     {
-        files: ['src/**/*.{ts,tsx}'],
+        files: ['site/src/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
         },
@@ -147,10 +147,35 @@ export default tseslint.config(
         },
     },
     {
+        // The playground and the rest of the site share no code, so either
+        // could move to a package of its own without untangling them.
+        files: ['site/src/**/*.{ts,tsx}'],
+        plugins: {
+            import: importPlugin,
+        },
+        rules: {
+            'import/no-restricted-paths': ['error', {
+                zones: [
+                    {
+                        target: './site/src/playground',
+                        from: './site/src',
+                        except: ['./playground'],
+                        message: 'The playground shares no code with the rest of the site.',
+                    },
+                    {
+                        target: ['./site/src/!(playground)/**', './site/src/*.{ts,tsx}'],
+                        from: './site/src/playground',
+                        message: 'The rest of the site shares no code with the playground.',
+                    },
+                ],
+            }],
+        },
+    },
+    {
         files: VIEW_CONVENTION_FILES,
         // The playground builds DOM and CodeMirror views, and its presets follow
         // the sandbox's own `createView(model)` contract.
-        ignores: ['src/playground/**'],
+        ignores: ['site/src/playground/**'],
         rules: {
             'no-restricted-syntax': [
                 'error',

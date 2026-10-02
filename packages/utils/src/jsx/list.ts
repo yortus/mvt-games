@@ -22,7 +22,7 @@
  * `length` are detached, so a list that was once long costs nothing for its
  * unused tail, and are reattached, not rebuilt, when the list grows back.
  *
- * See `notes/archive/004-list-proposal.md` for the design.
+ * The design is explained in `design-notes.md`, beside this file.
  */
 
 import { readCounter } from '../read-counter';

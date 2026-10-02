@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoSnapshot, DemoView, type GrainKind, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
-} from '../../src/demos/falling-sand';
+} from '../../site/src/demos/falling-sand';
 import { countReads, tickScene } from '@mvtjs/pixi';
 import { cached } from '../harness/case-cache';
 import { readParams, report } from '../harness/measure';

@@ -43,8 +43,7 @@ export interface RefreshBuilder {
  * A builder of refresh methods, with no generated code, so that it runs
  * wherever the page's Content Security Policy forbids `new Function`. Each
  * method writes every-frame bindings every frame and on-change bindings only
- * on change, and counts its reads. What keeps it fast, each measured in task
- * 025:
+ * on change, and counts its reads. What keeps it fast:
  *
  * - **A copy of the code per shape.** V8 keeps its feedback per function in
  *   source, so the refresh code for each number of bindings, 1 to 6, is
@@ -70,8 +69,8 @@ export interface RefreshBuilder {
  * generated per shape with `new Function`, where each shape is on one class
  * of element, and faster where one shape is on many. The runtime used to
  * generate such code, with a build-time precompiler for pages that forbid
- * `new Function`; both were removed for this (task 025; the last commit with
- * them is tagged `jsx-precompiler-last`).
+ * `new Function`; both were removed for this (the last commit with them is
+ * tagged `jsx-precompiler-last`).
  */
 export function createRefreshBuilder(options: RefreshBuilderOptions): RefreshBuilder {
     const ownCopyAt = options.ownCopyAt;

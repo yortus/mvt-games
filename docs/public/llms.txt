@@ -16,7 +16,7 @@ MVT splits applications into three layers:
   One turn is a tick: the ticker ticks the models, then the views. In this
   repo, views set update and refresh methods on their Pixi containers with
   setTickMethods(view, { update, refresh }), and the host calls
-  tickScene({ root: app.stage, deltaMs }) (src/pixi-mvt/) once per frame,
+  tickScene({ root: app.stage, deltaMs }) (from @mvtjs/pixi) once per frame,
   after the models: its update scene pass runs every update method in the
   tree, then its refresh scene pass every refresh method, parents first.
   Views never forward these calls by hand.

@@ -9,8 +9,10 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phases 0 and 1 are done (sections 12.1 and 12.2): the four libraries are
-workspace packages under `packages/`. The npm scopes and GitHub org in section 3 are
+Phases 0 to 4 are done (sections 12.1 to 12.5): the four libraries are
+workspace packages under `packages/`, the site, the docs, the benchmarks and
+the new checks are private workspace packages beside them, and the docs and
+agent files describe the new layout. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -342,6 +344,35 @@ demos or playground. `site/src/` is organised by area (`cabinet/`, `games/`,
 `demos/`, `playground/`, `shared/`), so extracting any of them later is a move,
 not a refactor.
 
+**Reconsidered before phase 2 (2026-10-02): should the playground be a
+package of its own?** It was already the most separable part: it imports
+nothing from the games, demos, cabinet or shared views, only the libraries and
+its own dependencies (CodeMirror, `sucrase`, `lz-string`). Splitting it out
+would mean:
+
+- its own `package.json`, Vite config (two page entries) and tsconfig;
+- a build into `dist/playground/` with its own `base`, and a root `build` that
+  runs the site's, the playground's and the docs' builds in turn;
+- a second dev server, with the site's forwarding `/playground` to it as it
+  forwards `/docs` today, or the nav's links break in development;
+- the nav (`nav.css` and the links every page repeats) shared across
+  packages, through a small package of its own or by copying.
+
+| | For | Against |
+| --- | --- | --- |
+| Split the playground out | Its dependencies in their own manifest; tests and build that run alone; ready to be hosted elsewhere, or to run against the published packages | Nothing changes for users: Vite already gives each page only its own imports, so no game page loads CodeMirror. The costs above are all new problems |
+| Keep one `site` package (chosen) | One dev server, one build, one nav | The site's manifest carries the playground's dependencies |
+
+The independence that matters, the playground sharing no code with the rest
+of the site, is kept by lint instead (`import/no-restricted-paths`, both
+ways). Splitting games from demos was ruled out too: both use the shared views,
+so it would need a shared package first, and the benchmarks would depend on
+two app packages, for no gain.
+
+**Revisit if** the playground needs Vite settings or plugins the site does
+not, is hosted elsewhere (its own origin would isolate the sandbox), or should
+run against the published packages.
+
 ### 6.2 Docs stay separate
 
 `docs/` becomes its own private package at the top level:
@@ -371,17 +402,19 @@ notes/                proposals/, tasks/, archive/
 packages/
     utils/            @mvtjs/utils   src/, scripts/
     pixi/             @mvtjs/pixi    src/
-benchmarks/           the benchmark harness and suites, for libraries and games alike
+    three/            @mvtjs/three   src/
+    html/             @mvtjs/html    src/
+benchmarks/           private package: the harness and suites, for libraries and games alike
 checks/               private package: tests of the repo's structure, not behaviour
 site/                 private package
     src/              cabinet/, games/, demos/, playground/, shared/, main.ts
-    public/
     scripts/          texture generation, spritesheet plugin
     index.html, games/, demos/, playground/  (HTML entry points)
     vite.config.ts
-.editorconfig  .gitignore  AGENTS.md  README.md
-package.json  package-lock.json  tsconfig.base.json
-eslint.config.js      (root vite.config.ts instead, under Vite+)
+dist/                 the Pages output (ignored): the site, and the docs in docs/
+.editorconfig  .gitignore  .node-version  AGENTS.md  README.md
+package.json  package-lock.json  tsconfig.json  tsconfig.base.json
+eslint.config.js  vitest.config.ts   (one root vite.config.ts instead, under Vite+)
 ```
 
 Where each current top-level entry goes:
@@ -391,12 +424,13 @@ Where each current top-level entry goes:
 | `site/nav.css` | `site/src/shared/nav.css` |
 | `vite.config.ts` | `site/` |
 | `src/main.ts`, `cabinet/`, `games/`, `demos/`, `playground/` | `site/src/` |
-| `src/common/` | Already split per sections 5.1 and 5.2 (2026-09-30); what is left is the site's shared views |
+| `src/common/` | Already split per sections 5.1 and 5.2 (2026-09-30); what is left is the site's shared views, in `site/src/shared/` (its alias renamed `#shared`) |
 | `src/pixi-mvt/`, `src/pixi-mvt/jsx/` | `packages/pixi/src/` |
 | `scripts/generate-refresh-copies.ts` | `packages/utils/scripts/` (done in phase 1) |
 | `scripts/generate-*-textures.ts`, `generate-textures.ts`, `vite-plugin-spritesheet.ts` | `site/scripts/` |
-| `benchmarks/` | Stays. It became one harness after this proposal was written, and its suites measure the games and demos as well as the libraries, so it cannot split by package. It imports the libraries by package name, and its bundler sets the source condition |
-| `dist/` (build output) | `site/dist/`, still ignored |
+| `benchmarks/` | Stays, as a private package (phase 2). It became one harness after this proposal was written, and its suites measure the games and demos as well as the libraries, so it cannot split by package. It imports the libraries by package name, the site's code by path, and its bundler sets the source condition |
+| `dist/` (build output) | Stays at the top level, still ignored. It is the Pages output of two packages, the site and the docs (in `dist/docs/`), so inside `site/` the docs package would write into the site's |
+| The site's test settings in `vite.config.ts` | A root `vitest.config.ts`, which runs every workspace's tests (phase 2) |
 | `package-lock.json` | Stays, covering every workspace |
 | `tsconfig.json` | `tsconfig.base.json` for shared options, one `tsconfig.json` per project, and the root `tsconfig.json` as the solution file `tsc -b` reads (done in phase 1) |
 
@@ -770,10 +804,10 @@ gave way to `tsc -b`.
 
 ### 12.3 Phase 2: move the app into `site/`
 
-- Everything listed for `site/` in section 7.
-- The site's own `package.json` takes the app's dependencies (`gsap`,
-  CodeMirror, `sucrase`, `lz-string`) and its scripts.
-- `src/renderer-packages.test.ts` does not move with the site. It checks the
+- ~~Everything listed for `site/` in section 7.~~
+- ~~The site's own `package.json` takes the app's dependencies (`gsap`,
+  CodeMirror, `sucrase`, `lz-string`) and its scripts.~~
+- ~~`src/renderer-packages.test.ts` does not move with the site. It checks the
   libraries' shape (every renderer re-exports the same tick API, section
   5.2), and sits in `src/` only because the app was the one project depending
   on all four packages. It moves to a new top-level private package,
@@ -782,41 +816,118 @@ gave way to `tsc -b`.
   packages it checks) and a `tsconfig.json` listed in the root solution.
   Rename the test for what it guards (such as `renderer-tick-api.test.ts`).
   Later candidates: checks that each package's `exports` match its source
-  tree.
-- A `README.md` in `checks/`, in plain words: what a check is (a test of a
+  tree.~~
+- ~~A `README.md` in `checks/`, in plain words: what a check is (a test of a
   property the repo has chosen to keep, such as how the packages fit
   together, rather than of what the code does), what belongs there and what
   does not (a unit test of one package stays beside its code; a rule lint
   can express stays in lint), and how to add one. It alludes to the idea's
   name in the literature, fitness functions (from *Building Evolutionary
   Architectures*), for readers who know it, without making it the repo's
-  term.
+  term.~~
+
+All done, 2026-10-02.
+
+**Progress.** The app moved into `site/src/` and its build tooling into
+`site/`: `vite.config.ts`, the texture scripts and the spritesheet plugin,
+which needed no path changes, since each finds `src/games/` relative to its
+own package. The pages load `nav.css` from `/src/shared/`, and the `/src/`
+alias is gone: the pages and `src/` now share a root. `src/common/` became
+`site/src/shared/`, and its alias, defined in `site/package.json`, `#shared`.
+
+The root is now tooling only: ESLint, TypeScript, Vitest and, until phase 3,
+VitePress. Its scripts call the site's with `-w site`, so every command is
+unchanged. The workspaces are `packages/*`, `site`, `benchmarks` and
+`checks`; the benchmarks became a package because, without one, the root
+would have to declare everything they import. The tests' settings moved to a
+root `vitest.config.ts`, which also stops the run picking up the agent
+worktrees under `.claude/`: the counts before this phase included up to two
+other checkouts' tests. 55 test files and 1158 tests are this repo's own.
+
+Lint covers the site's new paths, lets config files at any depth use their
+package's dev dependencies, and keeps the playground boundary (section 6.1),
+shown to report a deliberate import each way, including from the level of
+`main.ts`. Checked with `tsc -b`, lint, the tests, the full build (every
+game's spritesheet emitted, the docs in `dist/docs/`), the dev server (every
+page, the `/playground` redirect, `#shared`, the spritesheets), and three
+Node benchmark cases through the site's new paths, one of them on solid-js.
+The browser cases were not run.
 
 ### 12.4 Phase 3: docs package and top-level cleanup
 
-- `docs/` gets its own `package.json` (VitePress, the Mermaid plugin).
-  Keep the combined Pages output (site at the root, docs under `/docs`).
+- ~~`docs/` gets its own `package.json` (VitePress, the Mermaid plugin).
+  Keep the combined Pages output (site at the root, docs under `/docs`).~~
 - ~~Create `notes/`; move `CLAUDE.md` into `.claude/` and `llms.txt` to where
   it is served.~~ Done (section 7).
 
+All done, 2026-10-02.
+
+**Progress.** `docs/package.json` declares VitePress, the Mermaid plugin,
+`mermaid` and `vue`, which the docs' theme imports directly and nobody
+declared before (lint skips `docs/.vitepress/`). Its scripts run VitePress
+from `docs/`, and the root's `build`, `build:docs` and `docs:dev` call them
+with `-w docs`, so the commands are unchanged. VitePress keeps its own Vite 5,
+resolved exactly as before. The output still lands in `dist/docs/`, with the
+benchmark tables the docs include from `benchmarks/results/`, and a build with
+CI's `BASE_URL` gives `/mvt-games/docs/` paths. The rest of the top level
+already matched section 7, so there was nothing else to clean up.
+
 ### 12.5 Phase 4: references
 
-Update every path that moved. A grep for
+~~Update every path that moved. A grep for
 `src/(common|pixi-mvt|pixi-jsx|games|demos|playground|cabinet)` finds them in
 `AGENTS.md`, `README.md`, `docs/public/llms.txt`, seven `docs/` files
 (including the AI-agent skills), two task files and four scripts. Also update
 `AGENTS.md`'s project structure and commands table, and
 `docs/reference/project-structure.md`. Archived notes are historical and keep
-their old paths; `notes/README.md` gets one line saying so.
+their old paths; `notes/README.md` gets one line saying so.~~
 
 Also in this phase:
 
-- The prose of the packages' own notes (`README.md`, `design-notes.md`),
-  which still says `pixi-mvt`, `mvt-utils` and the like.
-- Comments in code that cite proposals (such as "proposal 012 section 2" in
+- ~~The prose of the packages' own notes (`README.md`, `design-notes.md`),
+  which still says `pixi-mvt`, `mvt-utils` and the like.~~
+- ~~Comments in code that cite proposals (such as "proposal 012 section 2" in
   `scene-passes.ts`, and 022 in `owned-text.ts`, `html-elements.ts` and the
   conformance suite): each says the reason itself instead. Code and config
-  never cite `notes/`.
+  never cite `notes/`.~~
+
+All done, 2026-10-02.
+
+**Progress.** What changed, and what was left alone on purpose:
+
+- **Rewritten by hand:** the layout sections of `AGENTS.md`, `README.md` and
+  `docs/reference/project-structure.md`, now a workspace tree plus
+  `site/src/`. `AGENTS.md` also gained three conventions agents now meet in
+  lint (imports between packages by name, declared dependencies, the tick
+  API from the renderer package) and `npm test` and `npm run docs:dev` in
+  its commands table. Those conventions are written out once, in a new
+  "Between Packages" section of the project-structure page, with short
+  versions in the code-style skill and a row in the style guide's quick
+  reference.
+- **Rewritten by script, then read line by line:** repo-root paths, GitHub
+  URLs, the alias pragmas (`#pixi-mvt/jsx` to `@mvtjs/pixi/jsx`, `#common` to
+  `#shared`) and the library names in prose, across the docs, `llms.txt`, the
+  READMEs and notes in `site/src/` and `packages/`, the demos' source links,
+  and the two backlog tasks. Where a doc says where a function comes from,
+  it names the package (`from @mvtjs/pixi`), not a path. 52 relative links
+  were re-pointed, counting phase 1's, and every repo path and GitHub URL the
+  updated files name was checked to exist.
+- **Code comments:** twelve citations of proposals and tasks (in
+  `scene-passes.ts`, the JSX base and the HTML renderer, two benchmark notes
+  and a repro script) each now give the reason itself; `<List>` and
+  `<Switch>` point at the design notes beside them.
+- **Left alone:** archived notes; the history recorded in open proposals,
+  where rewriting "moved from `src/common/`" would make it false (their
+  links were re-pointed, and `notes/README.md` now explains the old paths);
+  this proposal, which describes the migration in the old paths; paths
+  inside `site/` that are relative to the site package (its pages load
+  `/src/main.ts`, its scripts write to `src/games/`); the planning notes of
+  two games; and the two `scene-passes` benchmark labels.
+- **Broken from before:** two links in 022 to precompiler files that task 025
+  deleted. They are now plain names, marked "since removed".
+
+Checked with the docs build (VitePress fails on dead links), lint, `tsc -b`
+and the tests.
 
 ### 12.6 Phase 5: Vite+ trial
 
