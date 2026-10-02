@@ -12,6 +12,7 @@ export const hotPathRulesSuite: Suite = {
         ...combinations({ measure: ['allocation'], rule: RULES, variant: ['avoid', 'prefer'] }).map((params): Case => ({
             params,
             nodeArgs: ['--expose-gc', '--max-semi-space-size=128'],
+            countsOnly: true,
         })),
     ],
     tables: [

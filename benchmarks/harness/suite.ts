@@ -10,6 +10,19 @@ export interface Case {
     readonly params: Readonly<Record<string, ParamValue>>;
     /** Extra Node flags for this case's process, on top of the suite's. */
     readonly nodeArgs?: readonly string[];
+    /**
+     * `'extended'`: run only with `--extended`. For slow cases that answer a
+     * settled question, such as a variant kept for comparison. A save without
+     * `--extended` keeps their last saved results, marked as carried over.
+     */
+    readonly tier?: 'extended';
+    /**
+     * The case reports only counts (bytes, objects, calls), nothing timed, so
+     * its processes may run in parallel with other such cases' without
+     * changing what they report. Timed cases always run one process at a
+     * time.
+     */
+    readonly countsOnly?: boolean;
 }
 
 /** A metric shown as its own column. */
@@ -64,7 +77,11 @@ export interface Suite {
      */
     readonly environment?: 'node' | 'browser';
     readonly nodeArgs?: readonly string[];
-    /** Processes per case. Default 3. */
+    /**
+     * Processes per case, always. Left out, each case runs twice, and a third
+     * time only if the two disagree by more than 5% on a metric its tables
+     * show.
+     */
     readonly runs?: number;
     readonly cases: readonly Case[];
     readonly tables: readonly TableSpec[];

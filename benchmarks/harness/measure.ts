@@ -39,13 +39,22 @@ interface BrowserCase {
 
 const WARMUP_MIN_MS = 300;
 const WARMUP_MIN_FRAMES = 1000;
+/**
+ * A warm-up stops here even short of `WARMUP_MIN_FRAMES`, once it has run
+ * `WARMUP_SLOW_MIN_FRAMES`: a frame slow enough to reach it loops over tens
+ * of thousands of objects, so V8 has optimised its code within the first few
+ * frames, and a thousand of them would take tens of seconds.
+ */
+const WARMUP_MAX_MS = 2000;
+const WARMUP_SLOW_MIN_FRAMES = 100;
 const BATCHES = 15;
 const BATCH_TARGET_MS = 30;
 
 /**
  * Median microseconds per frame. Warms up for at least 1000 frames and
- * 300 ms, then times 15 batches sized from the warm-up so that each lasts
- * about 30 ms, whether a frame costs 0.1 µs or 10 ms.
+ * 300 ms (or, for a slow frame, 2 s and 100 frames), then times 15 batches
+ * sized from the warm-up so that each lasts about 30 ms, whether a frame
+ * costs 0.1 µs or 10 ms.
  */
 export function timeFrames(frame: () => void): number {
     const framesPerMs = warmUp(frame);
@@ -62,10 +71,17 @@ export function timeFrames(frame: () => void): number {
 // --- Allocation -----------------------------------------------------------
 
 const ALLOCATION_WINDOWS = 5;
+/**
+ * Frames per allocation window, however long a frame takes. A game's
+ * allocation is not the same in every frame, so a shorter window measures a
+ * different answer, not a noisier one: windows sized to half a second
+ * reported boids at 88 bytes per frame, and 34 over 10,000 frames.
+ */
+const ALLOCATION_WINDOW_FRAMES = 10000;
 
 /**
  * Median bytes allocated on the JavaScript heap per frame, net of the
- * measurement's own overhead.
+ * measurement's own overhead, over windows of 10,000 frames.
  *
  * Needs `--expose-gc`, and a young generation large enough that no garbage
  * collection runs inside a window (`--max-semi-space-size=128`): heap growth
@@ -75,8 +91,8 @@ const ALLOCATION_WINDOWS = 5;
 export async function allocationPerFrame(frame: () => void): Promise<number> {
     requireGc();
     warmUp(frame);
-    const baseline = await allocationOf(noop, 10000);
-    return Math.max(0, (await allocationOf(frame, 10000)) - baseline);
+    const baseline = await allocationOf(noop, ALLOCATION_WINDOW_FRAMES);
+    return Math.max(0, (await allocationOf(frame, ALLOCATION_WINDOW_FRAMES)) - baseline);
 }
 
 // --- Garbage collection ---------------------------------------------------
@@ -136,7 +152,10 @@ function warmUp(frame: () => void): number {
     const start = performance.now();
     let frames = 0;
     let elapsed = 0;
-    while (frames < WARMUP_MIN_FRAMES || elapsed < WARMUP_MIN_MS) {
+    while (
+        (frames < WARMUP_MIN_FRAMES || elapsed < WARMUP_MIN_MS)
+        && !(elapsed >= WARMUP_MAX_MS && frames >= WARMUP_SLOW_MIN_FRAMES)
+    ) {
         frame();
         frames++;
         elapsed = performance.now() - start;

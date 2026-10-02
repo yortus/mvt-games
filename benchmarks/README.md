@@ -13,17 +13,43 @@ How they are measured, and why, is in
 npm run bench                                    # list the suites
 npm run bench -- reactivity                      # run one suite
 npm run bench -- reactivity approach=solid       # only cases whose params match
-npm run bench -- reactivity --runs=5             # processes per case (default 3)
-npm run bench -- all --save                      # every suite, saving results/
+npm run bench -- reactivity --runs=5             # always this many processes per case
+npm run bench -- all --save                      # every suite whose inputs changed, saving results/
+npm run bench -- all --save --force              # every suite, changed or not
+npm run bench -- all --save --extended           # every suite, extended cases included
+npm run bench -- memory --jobs=4                 # counts-only processes at once
+npm run bench -- memory --report                 # re-render results/<suite>.md from its saved JSON
 ```
 
-A full run takes about an hour. Close other programs first: the numbers are
+A full run takes about 25 minutes. Close other programs first: the numbers are
 only as quiet as the machine.
 
+- **Runs.** Each case runs in its own process, twice, and a third time only
+  when the two disagree by more than 5% on a metric its tables show. Each
+  cell is the median, and `±` marks a remaining disagreement. `--runs=N`
+  always runs N.
+- **One timed process at a time.** Cases marked `countsOnly` (allocation and
+  memory kept alive, which sharing the machine cannot change) run first,
+  several at once (`--jobs`, by default half the logical processors, at most
+  8); every other case runs alone.
+- **Extended cases.** Cases marked `tier: 'extended'` are slow and answer a
+  settled question; they run only with `--extended`. A save without it keeps
+  their previous results, marked † in the tables with the date measured.
+- **Unchanged suites are skipped.** A save records a hash of the suite's
+  inputs: its bundled measured file, its cases, the run policy, the driver,
+  and the Node, Pixi and Solid versions (and the installed Chrome, for a
+  browser suite). A later save with the same hash re-renders the tables
+  without measuring; `--force` measures anyway, for example on a quieter
+  machine.
+- **A cache per suite run.** A case can keep something slow to build and the
+  same for every case, such as a filled falling-sand tank, with `cached()`
+  from `harness/case-cache.ts`. It lasts for one suite run, so it can never
+  come from other code.
+
 `--save` refuses to run with filters, so saved results always cover a whole
-suite. It writes `results/<suite>.json` (every run's numbers, and the machine
-and library versions) and `results/<suite>.md` (the tables, which the docs
-include).
+suite. It writes `results/<suite>.json` (every run's numbers, the machine and
+library versions, and the inputs' hash) and `results/<suite>.md` (the tables,
+which the docs include).
 
 ## Suites
 
@@ -39,7 +65,7 @@ include).
 | `hot-path-rules` | Each rule on the Hot Paths page: the pattern it warns against, and the one it recommends, for time and allocation |
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
 | `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
-| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update scene pass and refresh scene pass, and reads per frame. Builds the demo's model and view directly, since its entry cannot set a grain count |
+| `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, update scene pass and refresh scene pass, and reads per frame. Its SolidJS store variants flipping at 10,000 grains and more are extended cases. Builds the demo's model and view directly, since its entry cannot set a grain count |
 
 ## Layout
 
@@ -50,6 +76,7 @@ benchmarks/
 │   ├── suite.ts        Suite, Case and TableSpec types
 │   ├── driver.ts       Bundles a suite's measured file, runs each case in its own process (or headless Chrome page), prints and saves tables
 │   ├── measure.ts      Used inside each case's process: timeFrames, allocationPerFrame, gcDuring, retainedPerItem
+│   ├── case-cache.ts   Used inside a Node case's process: cached(), for what a suite run's cases share
 │   └── text-measurement.ts  Lets Pixi measure text under Node, for games and demos that read a text's size
 ├── shared/             Scenes used by more than one suite
 ├── repro/              Standalone reproducers of costs not yet explained; not part of any suite

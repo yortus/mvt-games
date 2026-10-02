@@ -142,6 +142,11 @@ export const memorySuite: Suite = {
     },
 };
 
+/**
+ * Cases run with these Node flags. Allocation and retained memory are counts,
+ * so those cases may run in parallel; garbage collection cases also time the
+ * collections, so they run alone.
+ */
 function withFlags(params: Record<string, string | number>[], nodeArgs: readonly string[]): Case[] {
-    return params.map((p) => ({ params: p, nodeArgs }));
+    return params.map((p) => ({ params: p, nodeArgs, countsOnly: p.measure !== 'gc' }));
 }

@@ -9,23 +9,23 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, in head
 <!-- #endregion notes -->
 
 <!-- #region walk -->
-**The refresh scene pass over a DOM tree against a naive walk of it: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**The refresh scene pass over a DOM tree against a naive walk of it: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Methods | Elements | Refresh scene pass (memoised) | Naive walk |
 | --- | --- | --- | --- |
-| Every element has a method | 1000 | 8.06 | 13.1 |
-|  | 10000 | 78.6 | 143 |
-| 1 in 20 has one | 1000 | 0.57 | 13.9 |
-|  | 10000 | 4.42 | 131 |
-| Every element, and a child added or removed each frame | 1000 | 57.3 | 13.7 |
-|  | 10000 | 502 | 133 |
+| Every element has a method | 1000 | 7.72 | 13.7 |
+|  | 10000 | 77.4 | 134 |
+| 1 in 20 has one | 1000 | 0.55 | 13.1 |
+|  | 10000 | 4.49 | 132 |
+| Every element, and a child added or removed each frame | 1000 | 54.6 | 13.5 |
+|  | 10000 | 497 | 143 |
 <!-- #endregion walk -->
 
 <!-- #region two-targets -->
-**A 1000-item JSX list refreshed alone, and after a list on the other target has run in the same page: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**A 1000-item JSX list refreshed alone, and after a list on the other target has run in the same page: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Measured | Alone | After the other target's |
 | --- | --- | --- |
-| HTML list | 59.6 | 60.5 |
-| three.js list | 34.1 ±7% | 36.5 |
+| HTML list | 69.9 | 62.6 |
+| three.js list | 30.8 ±8% | 34.9 |
 <!-- #endregion two-targets -->

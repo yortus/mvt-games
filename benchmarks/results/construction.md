@@ -5,18 +5,18 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region build -->
-**One Pixi container and its model record, from construction to destruction** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**One Pixi container and its model record, from construction to destruction** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Scenario | bare container | MVT (hand-written) | MVT (JSX) | events | Solid signals |
 | --- | --- | --- | --- | --- | --- |
-| build, first update, destroy | 0.135 ±6% | 0.235 | 0.534 ±7% | 0.131 | 0.432 |
+| build, first update, destroy | 0.125 | 0.202 | 0.491 | 0.125 | 0.398 |
 <!-- #endregion build -->
 
 <!-- #region pool -->
-**About 500 short-lived items alive at once: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**About 500 short-lived items alive at once: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | New items per frame | `<List>` over a `SlotList` (reuses containers) | build and destroy a container per item |
 | --- | --- | --- |
-| 5 | 16.9 | 21.4 |
-| 50 | 17.9 ±6% | 94.6 |
+| 5 | 15.7 | 19.8 |
+| 50 | 17.5 | 91 |
 <!-- #endregion pool -->

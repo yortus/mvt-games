@@ -79,14 +79,19 @@ A single timing is dominated by whatever else the machine and the engine were
 doing at that moment. The pattern used in this repo:
 
 1. **Warm up.** Run at least 1000 frames and 300 ms untimed, so the code under
-   test is optimised before timing starts.
+   test is optimised before timing starts. A frame slow enough to take 2 s
+   over it stops at 100 frames: a frame that slow loops over tens of
+   thousands of objects, so its code is optimised within the first few, and a
+   thousand would take tens of seconds.
 2. **Time in batches.** Time batches of many frames rather than single frames,
    because a frame of a few microseconds is close to the timer's resolution.
    Each batch here lasts about 30 ms, however long a frame takes.
 3. **Report the median batch**, not the mean. Garbage collection and other
    interruptions produce outliers that drag a mean upwards.
 4. **Repeat across processes.** Run each case in several fresh processes and
-   report the median with the range.
+   report the median with the range. Here, each case runs twice, and a third
+   time only when the two disagree by more than 5%, the point at which the
+   tables mark a result as noisy.
 
 Expect noise of about 5-10% between identical processes. Two
 approaches whose ranges overlap are not measurably different. When a
@@ -127,8 +132,11 @@ while it watches:
 1. Start Node with `--expose-gc` and a large young generation
    (`--max-semi-space-size=128`).
 2. Force a full collection, then note the heap size.
-3. Run a few thousand frames, and note the heap size again. With no collection
-   in between, the growth is exactly what the frames allocated.
+3. Run 10,000 frames, and note the heap size again. With no collection in
+   between, the growth is exactly what the frames allocated. Keep the window
+   the same length however long a frame takes: a game does not allocate the
+   same in every frame, and windows sized to half a second reported 2.5 times
+   as much for one demo.
 4. Watch for collections with a `PerformanceObserver` for `gc` entries. If one
    ran, the window is thrown away and retried with fewer frames.
 5. Subtract the same measurement of an empty frame, which is the measurement's
@@ -196,19 +204,30 @@ to be larger than anything measured when values change.
 
 The benchmarks live in the repo's
 [`benchmarks/`](https://github.com/yortus/mvt-games/tree/main/benchmarks) directory, one suite per topic. Each suite's cases
-run under plain Node, each in its own process, three processes per case by
-default.
+run under plain Node, each in its own process: two processes per case, or
+three when the first two disagree by more than 5%. Timed cases run one
+process at a time. Cases that only count (bytes allocated, memory kept
+alive) run several processes at once, since sharing the machine cannot
+change a count. A full run of every suite takes about 25 minutes.
 
 ```sh
 npm run bench                                    # list the suites
 npm run bench -- reactivity                      # run one suite
 npm run bench -- reactivity approach=solid       # only the matching cases
-npm run bench -- reactivity --runs=5             # more processes per case
-npm run bench -- all --save                      # every suite, saving the results
+npm run bench -- reactivity --runs=5             # always this many processes per case
+npm run bench -- all --save                      # every suite whose inputs changed, saving the results
+npm run bench -- all --save --force              # every suite, changed or not
+npm run bench -- all --save --extended           # every suite, its slow extended cases included
 ```
 
-`--save` writes `benchmarks/results/<suite>.json` (every run's numbers, and
-the machine and versions they were measured on) and `<suite>.md` (the tables).
+A save skips a suite whose inputs are unchanged since its saved results: the
+bundled code it measures, its cases, the harness, and the Node, Pixi and Solid
+versions. Some slow cases that answer a settled question are in an extended
+tier, run only with `--extended`; a save without it keeps their previous
+results, marked † with the date they were measured.
+
+`--save` writes `benchmarks/results/<suite>.json` (every run's numbers, the
+machine and versions they were measured on, and a hash of the inputs) and `<suite>.md` (the tables).
 [Performance Measurements](measurements.md) includes those tables directly, so
 re-running with `--save` updates the page. The suites are described in
 [`benchmarks/README.md`](https://github.com/yortus/mvt-games/blob/main/benchmarks/README.md).

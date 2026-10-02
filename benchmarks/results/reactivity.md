@@ -5,25 +5,25 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region three-dynamic -->
-**1000 containers, 3 dynamic properties each: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 containers, 3 dynamic properties each: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | model only, no view | MVT (hand-written) | MVT (JSX) | events | Solid signals |
 | --- | --- | --- | --- | --- | --- |
-| 0% | 0 | 5.11 | 13.3 | 0 | 0.01 |
-| 1% | 0.01 | 5.58 | 13.9 | 0.09 | 2.5 |
-| 10% | 0.12 | 6.14 | 14.5 | 1.07 ±6% | 24 |
-| 50% | 0.61 | 7.9 | 16.8 | 5.52 | 131 |
-| 100% | 1.21 | 10.2 | 19.2 | 6.85 ±29% | 240 |
+| 0% | 0 | 4.96 | 13.3 | 0 | 0.01 |
+| 1% | 0.01 | 5.75 | 14 | 0.09 | 2.5 |
+| 10% | 0.12 | 6.12 | 14.6 | 1.09 | 23.3 |
+| 50% | 0.61 | 7.85 | 16.3 | 5.28 | 117 |
+| 100% | 1.2 | 9.8 | 18.9 | 6.67 | 244 |
 <!-- #endregion three-dynamic -->
 
 <!-- #region one-dynamic -->
-**1000 containers, 1 dynamic property and 2 static properties each: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 containers, 1 dynamic property and 2 static properties each: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | model only, no view | MVT (hand-written) | MVT (JSX) | events | Solid signals |
 | --- | --- | --- | --- | --- | --- |
-| 0% | 0 | 4.25 | 9.42 | 0 | 0.01 |
-| 1% | 0.01 | 4.26 | 9.04 | 0.03 | 1.06 |
-| 10% | 0.08 | 4.61 | 9.42 | 0.42 | 10.5 ±6% |
-| 50% | 0.4 | 5.37 | 10.5 | 2.06 | 48.2 |
-| 100% | 0.83 | 6.64 | 11.8 | 4.15 | 97.8 |
+| 0% | 0 | 4.17 | 8.96 | 0 | 0.01 |
+| 1% | 0.01 | 4.32 | 9.07 | 0.03 | 1.07 |
+| 10% | 0.08 | 4.48 | 9.18 | 0.36 | 10.1 |
+| 50% | 0.38 | 5.27 | 10.3 | 2 | 49.1 |
+| 100% | 0.8 | 6.66 | 11.9 | 4.18 | 95.5 |
 <!-- #endregion one-dynamic -->

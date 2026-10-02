@@ -5,17 +5,17 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region allocation -->
-**1000 containers, 3 dynamic properties each: bytes allocated per frame** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 containers, 3 dynamic properties each: bytes allocated per frame** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | MVT (hand-written) | MVT (JSX) | events | Solid signals | MVT (hand-written, wasteful) |
 | --- | --- | --- | --- | --- | --- |
-| 0% changed | 1 ±21% | 0 | 0 | 104 | 96,600 |
-| 10% changed | 0 | 9 | 0 | 62,600 | 96,700 |
-| 100% changed | 1 ±21% | 8 | 0 | 629,000 | 96,700 |
+| 0% changed | 0 | 0 | 0 | 104 | 96,600 |
+| 10% changed | 0 | 9 | 0 | 62,600 | 99,000 |
+| 100% changed | 1 ±21% | 9 | 0 | 631,000 | 96,700 |
 <!-- #endregion allocation -->
 
 <!-- #region allocation-watched -->
-**1000 JSX sprites with a fractional `width`, which the runtime writes only on a change: bytes allocated per frame** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 JSX sprites with a fractional `width`, which the runtime writes only on a change: bytes allocated per frame** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | MVT (JSX) |
 | --- | --- |
@@ -24,7 +24,7 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion allocation-watched -->
 
 <!-- #region allocation-discrete -->
-**1000 containers reacting to a value that changes occasionally, 10% changed per frame: bytes allocated per frame** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 containers reacting to a value that changes occasionally, 10% changed per frame: bytes allocated per frame** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | compare by hand | `watch()` | events | Solid signals |
 | --- | --- | --- | --- | --- |
@@ -32,7 +32,7 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion allocation-discrete -->
 
 <!-- #region allocation-pool -->
-**About 500 short-lived items, 50 new per frame: bytes allocated per frame** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**About 500 short-lived items, 50 new per frame: bytes allocated per frame** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | New items per frame | `<List>` over a `SlotList` | build and destroy per item |
 | --- | --- | --- |
@@ -40,28 +40,28 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion allocation-pool -->
 
 <!-- #region gc -->
-**1000 containers, 3 dynamic properties, all changed every frame, for one simulated minute (3600 frames)** (median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**1000 containers, 3 dynamic properties, all changed every frame, for one simulated minute (3600 frames)** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Approach | Young-generation collections | Full collections | Time in collections (ms) |
 | --- | --- | --- | --- |
 | MVT (hand-written) | 0 | 0 | 0 |
 | MVT (JSX) | 0 | 0 | 0 |
 | events | 0 | 0 | 0 |
-| Solid signals | 272 | 0 | 31.8 |
-| MVT (hand-written, wasteful) | 41 | 0 | 4.5 ±6% |
+| Solid signals | 271 | 0 | 45.2 ±8% |
+| MVT (hand-written, wasteful) | 41 | 0 | 6.9 |
 <!-- #endregion gc -->
 
 <!-- #region gc-pool -->
-**About 500 short-lived items, 50 new per frame, for one simulated minute (3600 frames)** (median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**About 500 short-lived items, 50 new per frame, for one simulated minute (3600 frames)** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Approach | Young-generation collections | Full collections | Time in collections (ms) |
 | --- | --- | --- | --- |
-| `<List>` over a `SlotList` | 5 | 0 | 0.9 ±83% |
-| build and destroy per item | 14 | 0 | 4.2 |
+| `<List>` over a `SlotList` | 5 | 0 | 0.8 |
+| build and destroy per item | 15 | 0 | 4.9 |
 <!-- #endregion gc-pool -->
 
 <!-- #region retained -->
-**Memory kept alive per Pixi container and its model record** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Memory kept alive per Pixi container and its model record** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Measure | bare container | MVT (hand-written) | MVT (JSX) | events | Solid signals |
 | --- | --- | --- | --- | --- | --- |

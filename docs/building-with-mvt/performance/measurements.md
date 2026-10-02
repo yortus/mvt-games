@@ -41,7 +41,8 @@ The ways of keeping the containers in step with the model:
 | Solid signals | The model's values are [Solid](https://www.solidjs.com/) signals, with one effect per container that assigns its properties when they change |
 | Model only, no view | Just the model's changes, to show how much of a frame they are |
 
-Each cell is the median of three runs, each in its own Node process, rounded
+Each cell is the median of two runs, or three where the first two disagreed by
+more than 5%, each in its own Node process, rounded
 to 3 significant figures. Where the runs disagreed by more than 5% either way,
 the cell also shows half the spread between the fastest and slowest run, as a
 share of the median: `3.8 ±40%` marks a noisy result. A cell without "±" had

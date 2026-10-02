@@ -24,8 +24,9 @@ memoised walks they rebuild and the nodes they visit doing it: the scene's
 churn, zero while the tank's grains stay put. The panel's (i) button explains
 each figure.
 `npm run bench -- falling-sand-scaling` measures every combination headless,
-from 1,000 to 200,000 grains; the demo as it ships is in the
-`games-and-demos` suite.
+from 1,000 to 200,000 grains (with `--extended` for a store flipping 10,000
+grains or more, which takes most of the suite's time); the demo as it ships is
+in the `games-and-demos` suite.
 
 ## What it shows
 

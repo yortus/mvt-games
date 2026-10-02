@@ -5,23 +5,23 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region time -->
-**Time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Rule (per frame, over 1000 game objects unless stated) | Avoid | Prefer |
 | --- | --- | --- |
-| `.filter().map()` vs an index loop | 3.24 | 0.85 |
-| `for...of` vs an index loop | 0.91 | 0.92 |
-| template-string key into a `Map` vs arithmetic index into an array | 49.5 | 4.26 |
-| numeric key into a `Map` vs index into an array | 5.55 | 4.29 |
-| `forEach` with a new closure vs an index loop | 2.5 | 2.54 |
-| `Object.values()` vs reading properties | 48.5 | 1.52 |
-| returning a `[col, row]` tuple vs an out-parameter | 4.85 | 4.54 |
+| `.filter().map()` vs an index loop | 3.11 | 0.85 |
+| `for...of` vs an index loop | 0.9 | 0.91 |
+| template-string key into a `Map` vs arithmetic index into an array | 50.1 | 4.21 |
+| numeric key into a `Map` vs index into an array | 5.46 | 4.27 |
+| `forEach` with a new closure vs an index loop | 2.46 | 2.46 |
+| `Object.values()` vs reading properties | 48 | 1.53 |
+| returning a `[col, row]` tuple vs an out-parameter | 4.67 | 4.49 |
 | summing 1000 scores every frame vs caching the sum | 0.36 | 0.02 |
-| 100 `Text` labels: set every frame vs only on change | 0.65 | 0.19 |
+| 100 `Text` labels: set every frame vs only on change | 0.66 | 0.21 |
 <!-- #endregion time -->
 
 <!-- #region allocation -->
-**Bytes allocated per frame** (bytes; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Bytes allocated per frame** (bytes; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Rule (per frame, over 1000 game objects unless stated) | Avoid | Prefer |
 | --- | --- | --- |
@@ -33,5 +33,5 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 | `Object.values()` vs reading properties | 80,000 | 0 |
 | returning a `[col, row]` tuple vs an out-parameter | 0 | 0 |
 | summing 1000 scores every frame vs caching the sum | 0 | 0 |
-| 100 `Text` labels: set every frame vs only on change | 1 ±84% | 0 |
+| 100 `Text` labels: set every frame vs only on change | 1 ±44% | 1 ±26% |
 <!-- #endregion allocation -->

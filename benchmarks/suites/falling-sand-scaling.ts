@@ -1,4 +1,4 @@
-import { combinations, type MetricColumn, type Suite } from '../harness/suite';
+import { type Case, combinations, type MetricColumn, type Suite } from '../harness/suite';
 
 const METRICS: readonly MetricColumn[] = [
     { key: 'movingGrains', title: 'Moving grains', maxDecimals: 0 },
@@ -22,6 +22,13 @@ const VARIANTS = [
 const GRAINS = [1000, 10000, 20000, 50000, 200000];
 /** A store steps at about 15 µs per moving grain, a second a frame at 200,000 grains. */
 const MAX_STORE_GRAINS = 20000;
+/**
+ * A store with most of its grains moving costs 100-190 ms a frame from
+ * 10,000 grains, so flipping those takes most of the suite's time. What they
+ * show, a store's steady cost per moving grain, does not change from one run
+ * to the next, so they run only with `--extended`.
+ */
+const MIN_EXTENDED_STORE_GRAINS = 10000;
 
 /**
  * How the falling-sand demo's frame cost scales with its grain count, from
@@ -41,7 +48,7 @@ export const fallingSandScalingSuite: Suite = {
         grains: GRAINS,
     })
         .filter((params) => !String(params.variant).startsWith('store') || Number(params.grains) <= MAX_STORE_GRAINS)
-        .map((params) => ({ params })),
+        .map((params): Case => (isExtended(params) ? { params, tier: 'extended' } : { params })),
     tables: [
         {
             id: 'settled-total',
@@ -77,6 +84,9 @@ export const fallingSandScalingSuite: Suite = {
         },
     ],
     titles: { grains: 'Grains', variant: 'Model, view' },
+    notes: [
+        'Since 2026-10-02, every variant times the same cycle, replayed from a tank loaded from a snapshot (the second cycle after loading when flipping), rather than cycles 3-12 of a tank it poured itself (3-5 above 20,000 grains, 2-3 for a store). Up to 20,000 grains the times match the earlier method\'s within about 5%. At 200,000, flipping times 7-24% less: a different window, and a heap without the pour\'s history. A store\'s settled times, a few µs, fell by about half, since its process no longer also runs the arrays storage.',
+    ],
     labels: {
         grains: { 1000: '1,000', 10000: '10,000', 20000: '20,000', 50000: '50,000', 200000: '200,000' },
         variant: {
@@ -91,3 +101,13 @@ export const fallingSandScalingSuite: Suite = {
         },
     },
 };
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function isExtended(params: Record<string, string | number>): boolean {
+    return params.scenario === 'flipping'
+        && String(params.variant).startsWith('store')
+        && Number(params.grains) >= MIN_EXTENDED_STORE_GRAINS;
+}

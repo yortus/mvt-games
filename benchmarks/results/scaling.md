@@ -5,34 +5,34 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region unchanged -->
-**Nothing changed: time per frame per container** (ns; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Nothing changed: time per frame per container** (ns; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) | Solid signals |
 | --- | --- | --- | --- |
-| 100 | 5.01 | 12.9 | 0.16 |
-| 1,000 | 4.94 | 13.4 | 0.01 |
-| 10,000 | 11.7 | 20.8 ±8% | 0 |
-| 100,000 | 41.7 | 55 | 0 |
+| 100 | 4.8 | 12.8 | 0.15 |
+| 1,000 | 4.97 | 13.1 | 0.01 |
+| 10,000 | 11.3 | 16.6 | 0 |
+| 100,000 | 37.1 | 49.8 | 0 |
 <!-- #endregion unchanged -->
 
 <!-- #region all-changed -->
-**Every container changed each frame: time per frame per container** (ns; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Every container changed each frame: time per frame per container** (ns; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) | Solid signals |
 | --- | --- | --- | --- |
-| 100 | 10.3 | 19.3 | 246 |
-| 1,000 | 10.6 | 19 | 255 |
-| 10,000 | 16.5 | 31.4 | 318 |
-| 100,000 | 50 | 63.2 | 435 |
+| 100 | 9.96 | 18.6 | 235 |
+| 1,000 | 10 | 20.4 | 239 |
+| 10,000 | 14.9 | 27.2 | 301 |
+| 100,000 | 47 | 60.7 | 435 |
 <!-- #endregion all-changed -->
 
 <!-- #region frame-time -->
-**Every container changed each frame: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Every container changed each frame: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) | Solid signals |
 | --- | --- | --- | --- |
-| 100 | 1.03 | 1.92 | 24.6 |
-| 1,000 | 10.6 | 19 | 255 |
-| 10,000 | 165 | 314 | 3,180 |
-| 100,000 | 5,000 | 6,320 | 43,500 |
+| 100 | 1 | 1.86 | 23.5 |
+| 1,000 | 10 | 20.4 | 239 |
+| 10,000 | 149 | 272 | 3,010 |
+| 100,000 | 4,690 | 6,070 | 43,500 |
 <!-- #endregion frame-time -->

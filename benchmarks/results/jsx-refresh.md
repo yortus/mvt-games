@@ -5,31 +5,31 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region uniform -->
-**Containers binding x, y and alpha, all changing every frame: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Containers binding x, y and alpha, all changing every frame: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) |
 | --- | --- | --- |
-| 1000 | 13.2 | 20.5 |
-| 10000 | 220 | 253 |
-| 50000 | 3,180 ±6% | 3,870 |
+| 1000 | 12.6 | 19.4 |
+| 10000 | 204 | 249 |
+| 50000 | 3,010 | 3,730 |
 <!-- #endregion uniform -->
 
 <!-- #region mixed -->
-**Six element shapes over every write kind: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**Six element shapes over every write kind: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) |
 | --- | --- | --- |
-| 1000 | 30.5 | 37 |
-| 10000 | 483 ±9% | 624 ±11% |
-| 50000 | 5,520 | 6,420 |
+| 1000 | 29.3 | 36.3 |
+| 10000 | 381 ±7% | 568 |
+| 50000 | 4,830 | 6,440 |
 <!-- #endregion mixed -->
 
 <!-- #region kinds -->
-**All eight kinds of Pixi element, binding x, y, alpha and rotation: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**All eight kinds of Pixi element, binding x, y, alpha and rotation: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Containers | MVT (hand-written) | MVT (JSX) |
 | --- | --- | --- |
-| 1000 | 97.4 | 121 |
-| 10000 | 1,430 | 2,060 |
-| 50000 | 11,200 ±28% | 11,700 |
+| 1000 | 92.4 | 114 |
+| 10000 | 1,330 | 1,690 |
+| 50000 | 10,400 ±6% | 11,500 |
 <!-- #endregion kinds -->

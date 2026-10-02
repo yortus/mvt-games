@@ -75,10 +75,19 @@ export const gamesAndDemosSuite: Suite = {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** One case per game, then one per demo, for one measure. */
+/**
+ * One case per game, then one per demo, for one measure. Allocation is a
+ * count, so its cases may run in parallel; the others are timed (garbage
+ * collection cases time the collections).
+ */
 function entryCases(measure: string, nodeArgs: readonly string[]): Case[] {
+    const countsOnly = measure === 'allocation';
     return [
         ...combinations({ measure: [measure], kind: ['game'], entry: GAMES }),
         ...combinations({ measure: [measure], kind: ['demo'], entry: DEMOS }),
-    ].map((params): Case => (nodeArgs.length > 0 ? { params, nodeArgs } : { params }));
+    ].map((params): Case => ({
+        params,
+        ...(nodeArgs.length > 0 ? { nodeArgs } : {}),
+        ...(countsOnly ? { countsOnly } : {}),
+    }));
 }

@@ -5,21 +5,21 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region discrete -->
-**A value that changes occasionally, updating two properties when it does: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**A value that changes occasionally, updating two properties when it does: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | compare by hand | `watch()` | events | Solid signals |
 | --- | --- | --- | --- | --- |
-| 0% | 4.28 | 12.1 | 0 | 0.01 |
-| 1% | 4.01 | 12 | 0.11 | 1.1 |
-| 10% | 4.7 | 12.7 | 1.21 | 10.3 |
+| 0% | 4.02 | 12 | 0 | 0.01 |
+| 1% | 4.16 | 12 | 0.11 | 1.11 |
+| 10% | 4.62 | 12.9 | 1.21 | 10.3 |
 <!-- #endregion discrete -->
 
 <!-- #region derived -->
-**A property computed from 8 model values: time per frame** (µs; median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**A property computed from 8 model values: time per frame** (µs; median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Changed per frame | recompute every frame | `watch()` | events | Solid signals |
 | --- | --- | --- | --- | --- |
-| 0% | 8.43 | 68.3 | 0 | 0.01 |
-| 10% | 7.88 | 70 | 0.84 | 59.2 |
-| 100% | 10.3 ±6% | 77.9 | 8.06 | 589 |
+| 0% | 8.19 | 68.6 | 0 | 0.01 |
+| 10% | 7.79 | 69 | 0.82 | 59.8 |
+| 100% | 11.5 | 75.6 | 8.05 | 591 |
 <!-- #endregion derived -->

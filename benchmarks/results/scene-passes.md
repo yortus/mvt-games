@@ -5,21 +5,21 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region passes -->
-**The scene passes** (median of 3 runs, each in its own process; ± marks runs that disagreed by more than 5%)
+**The scene passes** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
 | Scenario | Approach | Time per frame (µs) | Method calls per frame |
 | --- | --- | --- | --- |
-| 20,000 containers, 200 with a refresh method | plain recursive walk | 206 | 200 |
-|  | Refresh scene pass | 0.65 ±19% | 200 |
-| 2,000 containers, all with a refresh method | plain recursive walk | 9.25 | 2,000 |
-|  | Pixi `onRender` | 1.94 | 2,000 |
-|  | Refresh scene pass | 5.62 | 2,000 |
-| 2,000 containers, all with a refresh method, 100 replaced per frame | plain recursive walk | 28.9 | 2,000 |
-|  | Refresh scene pass | 127 ±7% | 2,000 |
-| 100 subtrees of 25 containers without a refresh method, detached and re-attached per frame | plain recursive walk | 44 | 1 |
-|  | Refresh scene pass | 8.69 | 1 |
-| 100 containers added and removed per frame, no scene pass run | pixi-mvt not imported | 11.4 | 0 |
-|  | pixi-mvt imported | 12 | 0 |
-| 10,000 containers with a refresh method each, in 100 groups, 90 groups inactive | inactive groups hidden (`visible = false`) only | 128 | 10,000 |
-|  | inactive groups return `SKIP_DESCENDANTS` | 10.2 | 1,090 |
+| 20,000 containers, 200 with a refresh method | plain recursive walk | 197 | 200 |
+|  | Refresh scene pass | 0.6 | 200 |
+| 2,000 containers, all with a refresh method | plain recursive walk | 8.76 | 2,000 |
+|  | Pixi `onRender` | 1.85 | 2,000 |
+|  | Refresh scene pass | 5.34 | 2,000 |
+| 2,000 containers, all with a refresh method, 100 replaced per frame | plain recursive walk | 26.7 | 2,000 |
+|  | Refresh scene pass | 105 | 2,000 |
+| 100 subtrees of 25 containers without a refresh method, detached and re-attached per frame | plain recursive walk | 39.8 | 1 |
+|  | Refresh scene pass | 8.32 | 1 |
+| 100 containers added and removed per frame, no scene pass run | pixi-mvt not imported | 11 | 0 |
+|  | pixi-mvt imported | 11.1 | 0 |
+| 10,000 containers with a refresh method each, in 100 groups, 90 groups inactive | inactive groups hidden (`visible = false`) only | 117 | 10,000 |
+|  | inactive groups return `SKIP_DESCENDANTS` | 9.41 | 1,090 |
 <!-- #endregion passes -->
