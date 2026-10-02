@@ -8,7 +8,7 @@ import { type Renderer, RendererType, type Ticker, UPDATE_PRIORITY, type WebGLRe
 export type FrameStatKind = 'fps' | 'cpu' | 'gpu' | 'reads' | 'methods' | 'rebuilds' | 'visits';
 
 /**
- * Something that counts events while switched on, such as `pixi-mvt`'s
+ * Something that counts events while switched on, such as `@mvtjs/pixi`'s
  * `readCounter`. `FrameStats` switches it on for one frame in each
  * window and reports the count for that frame.
  */
@@ -19,7 +19,7 @@ export interface SampledCounter {
 
 /**
  * Something that counts the scene passes' work while switched on, such as
- * `pixi-mvt`'s `sceneCounter`. `FrameStats` samples it in the same frame as
+ * `@mvtjs/pixi`'s `sceneCounter`. `FrameStats` samples it in the same frame as
  * the `SampledCounter`.
  */
 export interface SampledSceneCounter {
@@ -109,11 +109,11 @@ export interface FrameStatsOptions {
     readonly windowMs?: number;
     /** How many windows to keep for `historyAt`. Defaults to 60. */
     readonly historyLength?: number;
-    /** A counter to sample for `readsPerFrame`, e.g. `readCounter` from `src/pixi-mvt/`. */
+    /** A counter to sample for `readsPerFrame`, e.g. `readCounter` from `@mvtjs/pixi`. */
     readonly readCounter?: SampledCounter;
     /**
      * A counter to sample for `methodsPerFrame`, `rebuildsPerFrame` and
-     * `visitsPerFrame`, e.g. `sceneCounter` from `src/pixi-mvt/`.
+     * `visitsPerFrame`, e.g. `sceneCounter` from `@mvtjs/pixi`.
      */
     readonly sceneCounter?: SampledSceneCounter;
 }

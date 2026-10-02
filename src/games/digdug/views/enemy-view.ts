@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
-import { setTickMethods } from '../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

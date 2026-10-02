@@ -5,7 +5,7 @@ import { CactusView } from '../cactus-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
-import { setTickMethods } from '../../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -2,7 +2,7 @@
 import { Container, Texture } from 'pixi.js';
 import { Power2 } from 'gsap';
 import { afterEach, describe, expect, it } from 'vitest';
-import { tickScene } from '../pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 import type { CabinetPhase } from './cabinet-model';
 import { CabinetView } from './cabinet-view';
 

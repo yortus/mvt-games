@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { setTickMethods } from '../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

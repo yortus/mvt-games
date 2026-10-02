@@ -3,7 +3,7 @@ import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { isTouchDevice } from '#common';
 import { watch } from '@mvtjs/utils';
 import type { CabinetPhase } from './cabinet-model';
-import { setTickMethods } from '../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -8,7 +8,7 @@
  * doing the reads adds them.
  *
  * - The JSX runtime (`@mvtjs/utils/jsx`, and each renderer's built on it, such
- *   as `pixi-mvt/jsx`) has this built in. It counts each call of a function
+ *   as `@mvtjs/pixi/jsx`) has this built in. It counts each call of a function
  *   attribute, each read of a `<List>`'s `items` (once per frame,
  *   plus once per slot for its presence check), and each `<Match>` `when` a
  *   `<Switch>` tests. A hidden container counts only its `visible` read, since

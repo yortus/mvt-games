@@ -9,7 +9,7 @@ import { MatchEffectsView } from './match-effects-view';
 import { MATCH_EFFECT_STEPS } from './match-sequence-defs';
 import { PiecesView } from './pieces-view';
 import { ShakeContainerView } from './shake-container-view';
-import { setTickMethods } from '../../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -6,15 +6,15 @@
 > [the README](./README.md), and in detail in the header comments of
 > [create-jsx.ts](./create-jsx.ts), [refresh-builder.ts](./refresh-builder.ts),
 > [list.ts](./list.ts) and [switch.ts](./switch.ts). The design and its measurements are in
-> [022](../../../notes/proposals/022-renderer-agnostic-jsx.md); the design of
-> `<List>` and `<Switch>` is in [004](../../../notes/archive/004-list-proposal.md).
+> [022](../../../../notes/proposals/022-renderer-agnostic-jsx.md); the design of
+> `<List>` and `<Switch>` is in [004](../../../../notes/archive/004-list-proposal.md).
 > Pixi facts the Pixi JSX target relies on are in
-> [its design notes](../../pixi-mvt/jsx/design-notes.md).
+> [its design notes](../../../pixi/src/jsx/design-notes.md).
 
 **Written:** 2026-09-28, when the base was split out of `src/pixi-mvt/jsx/`
 (022 phase 1). Sections 1-4 were first written for the Pixi runtime, from a
 comparison with other runtimes
-([task 021](../../../notes/archive/021-jsx-and-teardown-quick-wins.md)), and
+([task 021](../../../../notes/archive/021-jsx-and-teardown-quick-wins.md)), and
 apply unchanged to every JSX target.
 
 ## Settled decisions
@@ -53,7 +53,7 @@ Either way it would hide inputs. A view's bindings are its whole contract and
 its test seam; a value looked up from wherever the view ends up is an input
 that neither shows, and a missing one fails at run time rather than compile
 time. The needs context meets are met instead by the four ways in
-[Sharing What Many Views Need](../../../docs/building-with-mvt/presenting-the-world/view-composition.md#sharing-what-many-views-need):
+[Sharing What Many Views Need](../../../../docs/building-with-mvt/presenting-the-world/view-composition.md#sharing-what-many-views-need):
 imports, a function that makes views over shared things, handing over a built
 child, and grouping shared bindings.
 
@@ -73,7 +73,7 @@ What there is (`window` listeners, a shared resource, a texture a view made,
 a GSAP timeline) is released by the `onDestroyed` attribute in JSX, which the
 JSX target runs when the element is destroyed (on Pixi, the `'destroyed'`
 event). See
-[Releasing What a View Holds](../../../docs/building-with-mvt/presenting-the-world/views.md#releasing-what-a-view-holds).
+[Releasing What a View Holds](../../../../docs/building-with-mvt/presenting-the-world/views.md#releasing-what-a-view-holds).
 
 If scopes are added one day, two constraints follow from section 1:
 

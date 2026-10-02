@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { tickScene } from '../../src/pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 import { readParams, report, timeFrames } from '../harness/measure';
 import { createPoolFrame } from '../shared/pool-scene';
 import { createSyncedScene, type Approach } from '../shared/synced-scene';

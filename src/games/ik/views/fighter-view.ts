@@ -2,7 +2,7 @@ import { Container, Sprite, type Texture } from 'pixi.js';
 import type { DefeatVariant, Facing, FighterPhase, MoveKind } from '../data';
 import { textures, ARENA_WIDTH, MOVE_DATA, TURN_TEXTURE_SEQUENCE } from '../data';
 import { SCREEN_WIDTH, GROUND_Y_PX } from './view-constants';
-import { setTickMethods } from '../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

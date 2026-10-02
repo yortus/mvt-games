@@ -9,7 +9,7 @@
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
 // Importing it also readies `Container` for the scene passes, before any user
 // view code runs
-import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '../../pixi-mvt';
+import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '@mvtjs/pixi';
 import { type CodeKind, jsxGlobals, transpile as compile } from './compile';
 import type { HostMessage, SandboxMessage } from './messages';
 

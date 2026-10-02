@@ -59,7 +59,7 @@ function installMixin(): void {
  * not call `add`: it calls `removeFromParent` and then pushes onto `children`
  * itself, so it is wrapped too.
  *
- * Like pixi-mvt's wrappers, these use `this`, which the style guide otherwise
+ * Like @mvtjs/pixi's wrappers, these use `this`, which the style guide otherwise
  * rules out: a wrapped prototype method has no other way to reach its
  * instance.
  */

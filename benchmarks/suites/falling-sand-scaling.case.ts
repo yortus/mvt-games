@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoModel, DemoView, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
 } from '../../src/demos/falling-sand';
-import { countReads, tickScene } from '../../src/pixi-mvt';
+import { countReads, tickScene } from '@mvtjs/pixi';
 import { readParams, report } from '../harness/measure';
 
 // Measured file for the `falling-sand-scaling` suite: the falling-sand demo,

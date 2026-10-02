@@ -9,8 +9,8 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phase 0 is done (section 12.1); phase 1 is under way, with `@mvtjs/utils`
-extracted (section 12.2). The npm scopes and GitHub org in section 3 are
+Phases 0 and 1 are done (sections 12.1 and 12.2): the four libraries are
+workspace packages under `packages/`. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -40,7 +40,7 @@ Decisions this proposal makes, and where each is argued:
 | Later libraries: `@mvtjs/html`, `@mvtjs/three`, `@mvtjs/pixi-widgets`, `@mvtjs/eslint-plugin` | 5.5, 10 |
 | Libraries consumed from source inside the repo; built only for publishing | 5.3 |
 | All libraries share one version, starting at `0.1.0` | 5.4 |
-| `@mvtjs/pixi` does not re-export the dependency-free library | 5.2 |
+| Each renderer package re-exports the tick API it shares with `@mvtjs/utils`, and nothing else from it | 5.2 |
 | Games, demos, playground and cabinet stay together as one private `site` package, with the site-specific input views | 5.2, 6 |
 | Planning material moves under `notes/` | 6.3 |
 | Formatting stays this repo's own (`@stylistic` plus custom rules), enforced and auto-fixed. No Prettier-style formatter | 8.4 |
@@ -226,10 +226,18 @@ installs itself on `Container` when loaded.
 They move to `site/src/shared/`. The input views in particular are shaped
 around this site's cabinet and games, and are not general enough to publish.
 
-**`@mvtjs/pixi` does not re-export `@mvtjs/utils`.** Each name is imported from
-the package that defines it. A re-export would give Pixi users one import
-source, at the cost of two valid ways to import the same name, and the question
-repeating for every later renderer package.
+**Each renderer package re-exports the tick API it shares with
+`@mvtjs/utils`, and nothing else from it.** That is `SKIP_DESCENDANTS`,
+`hasUpdate`, `hasRefresh`, the read and scene counters, and the method types:
+with the renderer's own `tickScene` and `setTickMethods`, everything a view
+needs to take part in the tick. So a game installs one renderer package and
+imports its whole tick API from it, and `@mvtjs/utils` stays optional, for its
+helpers (`watch`, tweens, sequences, slot lists). `@mvtjs/utils` still
+defines those names, and the renderer packages use them from there. In this
+repo, lint makes the site and the benchmarks import them from a renderer
+package, and a test checks that every renderer re-exports the same names, as
+the base's own values. Decided 2026-10-02, reversing this proposal's first
+draft; the trade-offs are in section 13.2.
 
 ### 5.3 Consumption inside the repo
 
@@ -364,6 +372,7 @@ packages/
     utils/            @mvtjs/utils   src/, scripts/
     pixi/             @mvtjs/pixi    src/
 benchmarks/           the benchmark harness and suites, for libraries and games alike
+checks/               private package: tests of the repo's structure, not behaviour
 site/                 private package
     src/              cabinet/, games/, demos/, playground/, shared/, main.ts
     public/
@@ -389,7 +398,7 @@ Where each current top-level entry goes:
 | `benchmarks/` | Stays. It became one harness after this proposal was written, and its suites measure the games and demos as well as the libraries, so it cannot split by package. It imports the libraries by package name, and its bundler sets the source condition |
 | `dist/` (build output) | `site/dist/`, still ignored |
 | `package-lock.json` | Stays, covering every workspace |
-| `tsconfig.json` | `tsconfig.base.json` plus one `tsconfig.json` per package |
+| `tsconfig.json` | `tsconfig.base.json` for shared options, one `tsconfig.json` per project, and the root `tsconfig.json` as the solution file `tsc -b` reads (done in phase 1) |
 
 **Done already (2026-09-26).** Without the package split:
 
@@ -691,28 +700,30 @@ the renames when the moved files are staged, so history follows them.
 
 ### 12.2 Phase 1: extract the libraries
 
-- Add `workspaces` to the root `package.json`, and `tsconfig.base.json`.
-- Create `packages/utils` and `packages/pixi` from the files in sections 5.1
+- ~~Add `workspaces` to the root `package.json`, and `tsconfig.base.json`.~~
+- ~~Create `packages/utils` and `packages/pixi` from the files in sections 5.1
   and 5.2, with their tests, and `packages/three` and
   `packages/html` from 022's renderers. Each is one directory already
   (`src/mvt-utils/`, `src/pixi-mvt/`, `src/three-mvt/`, `src/html-mvt/`,
   each renderer's JSX in `jsx/`), so this moves directories. **The `-mvt`
   suffixes go here**: they only tell renderers apart from the site's code in
-  one `src/`, and a package directory is named for its package.
-- The root package (still the app) depends on both through `^0.1.0` ranges,
+  one `src/`, and a package directory is named for its package.~~
+- ~~The root package (still the app) depends on both through `^0.1.0` ranges,
   which npm links to the workspaces.
   Replace the `#mvt-utils` and `#<renderer>-mvt/jsx` imports, and relative
   imports into the library directories, with the package names, and the
   `@jsxImportSource #<renderer>-mvt/jsx` pragmas with `@mvtjs/<renderer>/jsx`.
-  `#common` is the site's own and stays.
-- Wire the `@mvtjs/source` condition into TypeScript, Vite and Vitest.
-- Turn on `import/no-extraneous-dependencies` for each package (section 8.1),
-  verified with a deliberate violation.
+  `#common` is the site's own and stays.~~
+- ~~Wire the `@mvtjs/source` condition into TypeScript, Vite and Vitest.~~
+- ~~Turn on `import/no-extraneous-dependencies` for each package (section 8.1),
+  verified with a deliberate violation.~~
 - Worktrees need their own `npm ci` from here on. A `node_modules` junctioned
   from the main checkout holds links to the main checkout's packages, so a
   worktree would run the main checkout's library code.
-- Rework the barrel rule for the new layout and **fix section 11.1**,
-  verified with a deliberate violation.
+- ~~Rework the barrel rule for the new layout and **fix section 11.1**,
+  verified with a deliberate violation.~~
+
+All done, 2026-10-02.
 
 **Progress.** Done one library at a time, each checked with lint, the tests,
 the full build, the dev server, and a Node and a browser benchmark case.
@@ -720,22 +731,66 @@ the full build, the dev server, and a Node and a browser benchmark case.
 - `@mvtjs/utils` (2026-10-02). The generator for `refresh-copies.ts` moved
   into the package and runs on Node's type stripping, so it needs no `tsx`;
   the root's `prepare` and `pre*` hooks call it through `-w @mvtjs/utils`.
-  `tsconfig.base.json` holds the shared options. A new `typecheck` script,
-  which `build` and `build:site` both run, checks the root's, the package's and
-  the benchmarks' tsconfigs; the package's own covers its tests, which nothing
-  in the site imports. The barrel rule now covers `packages/*/src/`, and
+  `tsconfig.base.json` holds the shared options. The root `tsconfig.json`
+  became a solution file listing each project (the packages, `src/` and
+  `benchmarks/`), and `build` and `build:site` run `tsc -b`, which checks each
+  in turn and re-checks only what changed. It needs no project references
+  between them: TypeScript 5.9 builds `noEmit` projects this way. A package's
+  own tsconfig covers its tests, which nothing in the site imports. The barrel rule now covers `packages/*/src/`, and
   allows `@mvtjs/**`, whose `exports` set the boundary. Both rules reported a
   deliberate violation inside the package. The new dependency rule found four
   `@codemirror/*` packages the playground imported without declaring, which
   are now declared. The tarball leaves out tests and the spike
   (`npm pack --dry-run`), and publint finds nothing wrong except the missing
   `dist/`, which phase 6 builds.
+- `@mvtjs/pixi`, `@mvtjs/three` and `@mvtjs/html` (2026-10-02), together,
+  on the pattern `utils` set. Each exports `.`, `./jsx`, `./jsx/jsx-runtime`
+  and `./jsx/jsx-dev-runtime` (the last two the same file, as the aliases
+  were), depends on `@mvtjs/utils`, and takes its renderer as a peer. The root
+  `imports` keeps only `#common`, and so does the barrel rule's allow list.
+  Relative links in the notes that moved, `utils`'s included, were re-pointed
+  for their new depth. The old names were renamed where code uses them as
+  names: comments, the JSX targets' `name` (which error messages show), and
+  test titles. Two benchmark labels keep `pixi-mvt` until the suite is next
+  saved, so they match the saved results the docs include. The prose of the
+  packages' own notes (`README.md`, `design-notes.md`) still says `pixi-mvt`
+  and the like: phase 4 updates it with the rest of the docs.
+
+**Left for phase 6:** each renderer package's `sideEffects`, which must list
+its mixin (left unset for now, so nothing is tree-shaken by mistake while the
+site builds from source), and wider peer ranges for `three` and
+`@types/three`. On a 0.x version, `^0.186.1` allows only 0.186.x, and three
+releases a new 0.x minor about every month, so a consumer a release ahead
+would get a peer conflict from npm. `pixi.js`'s `^8.16.0` is fine.
+
+**Since phase 1:** the renderers' re-exports were settled (section 5.2), with
+the lint rule and the test described there, and `@mvtjs/three` takes
+`@types/three` as an optional peer (section 13.2). The root `typecheck` script
+gave way to `tsc -b`.
 
 ### 12.3 Phase 2: move the app into `site/`
 
 - Everything listed for `site/` in section 7.
 - The site's own `package.json` takes the app's dependencies (`gsap`,
   CodeMirror, `sucrase`, `lz-string`) and its scripts.
+- `src/renderer-packages.test.ts` does not move with the site. It checks the
+  libraries' shape (every renderer re-exports the same tick API, section
+  5.2), and sits in `src/` only because the app was the one project depending
+  on all four packages. It moves to a new top-level private package,
+  `checks/`, for tests that guard the repo's structure rather than test
+  behaviour. `checks/` gets its own `package.json` (depending on the
+  packages it checks) and a `tsconfig.json` listed in the root solution.
+  Rename the test for what it guards (such as `renderer-tick-api.test.ts`).
+  Later candidates: checks that each package's `exports` match its source
+  tree.
+- A `README.md` in `checks/`, in plain words: what a check is (a test of a
+  property the repo has chosen to keep, such as how the packages fit
+  together, rather than of what the code does), what belongs there and what
+  does not (a unit test of one package stays beside its code; a rule lint
+  can express stays in lint), and how to add one. It alludes to the idea's
+  name in the literature, fitness functions (from *Building Evolutionary
+  Architectures*), for readers who know it, without making it the repo's
+  term.
 
 ### 12.4 Phase 3: docs package and top-level cleanup
 
@@ -753,6 +808,15 @@ Update every path that moved. A grep for
 `AGENTS.md`'s project structure and commands table, and
 `docs/reference/project-structure.md`. Archived notes are historical and keep
 their old paths; `notes/README.md` gets one line saying so.
+
+Also in this phase:
+
+- The prose of the packages' own notes (`README.md`, `design-notes.md`),
+  which still says `pixi-mvt`, `mvt-utils` and the like.
+- Comments in code that cite proposals (such as "proposal 012 section 2" in
+  `scene-passes.ts`, and 022 in `owned-text.ts`, `html-elements.ts` and the
+  conformance suite): each says the reason itself instead. Code and config
+  never cite `notes/`.
 
 ### 12.6 Phase 5: Vite+ trial
 
@@ -796,15 +860,16 @@ None.
 | Where the repo lives | For now, `github.com/yortus/mvt-games`. The `mvtjs` GitHub org is reserved. What a later move involves is below |
 | Where the site lives | `yortus.com/mvt-games/`, on the owner's personal domain (section 13.3). MVT gets its own domain only if it outgrows being a personal project |
 | Name of the planning folder | `notes/` |
-| Should `@mvtjs/pixi` re-export `@mvtjs/utils`? | No (section 5.2) |
+| Do the renderer packages re-export from `@mvtjs/utils`? | The tick API they share with it, and nothing else (section 5.2) |
+| How does `@mvtjs/three` declare `@types/three`? | As an optional peer |
 | Where the input views go | They stay in `site/src/shared/`; they are not general enough to publish (section 5.2) |
 | npm or pnpm? | npm workspaces. Nothing in this plan needs pnpm (decided 2026-10-02; the first draft chose pnpm 11) |
 | Release tooling | Changesets, without release PRs (section 8.5) |
 | Name of the dependency-free library | `utils` (section 5.1) |
 
 The trade-offs behind the repo's home, the package manager, the release
-tooling and the library's name are kept below, so they can be revisited with
-the same information.
+tooling, the library's name, the re-exports and `@types/three` are kept below,
+so they can be revisited with the same information.
 
 **If the repo moves later.** Candidate homes are `github.com/mvtjs/mvt`
 (libraries named after the pattern, like `vitejs/vite` or `pixijs/pixijs`),
@@ -895,6 +960,31 @@ beyond today's time and change-detection helpers.
 
 Whatever the name, the docs should say plainly that MVT needs no library, and
 that these packages are optional helpers.
+
+**The renderers' re-exports.** The first draft said `@mvtjs/pixi` would not
+re-export `@mvtjs/utils`. 022 then had `pixi-mvt` re-export the names it moved
+into the base, so no call site changed, and the other renderers followed. Seen
+from a game built on one renderer:
+
+| | Keep the re-exports (chosen) | Remove them |
+| --- | --- | --- |
+| Installing | The renderer package and its renderer | Also `@mvtjs/utils`, as soon as a view skips a subtree, types its methods or reads a counter |
+| Importing | The whole tick API from one package | Two imports, split along this repo's package internals rather than the game's task (`tickScene` from the renderer, `SKIP_DESCENDANTS` from utils) |
+| `@mvtjs/utils` | Optional, as the docs promise | Needed by nearly every game |
+| Counters | Always the copy the renderer counts into | A second installed copy of utils would count separately |
+| One place per name | No: each of these names can be imported from two packages. Lint holds this repo to one | Yes |
+| Upkeep | Three renderers keep one list in step; a test checks it | None |
+
+**`@types/three`.** three ships no types; `@types/three` tracks its versions.
+`@mvtjs/three`'s published types import `three`'s in their signatures
+(`Object3D`, `Light`), and add nothing to them.
+
+| Option | For a consumer |
+| --- | --- |
+| A dev dependency only | TypeScript users without `@types/three` lose `@mvtjs/three`'s types silently: with `skipLibCheck`, which most projects set, its imports from `three` become `any`. Mismatched versions go unnoticed |
+| A dependency | Installed for everyone, but a consumer whose own range differs gets two copies, and classes with private members, such as `Object3D`, stop matching across them |
+| A required peer | npm installs it for every consumer, JavaScript ones included, and checks its version |
+| **An optional peer (chosen)** | Nothing extra is installed; when a consumer has it, as every TypeScript user of three does, npm checks its version against ours |
 
 ### 13.3 The site on `yortus.com`
 

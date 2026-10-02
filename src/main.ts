@@ -12,7 +12,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { setTickMethods, SKIP_DESCENDANTS, tickScene } from './pixi-mvt';
+import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)

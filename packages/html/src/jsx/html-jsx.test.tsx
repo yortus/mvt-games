@@ -1,4 +1,4 @@
-/** @jsxImportSource #html-mvt/jsx */
+/** @jsxImportSource @mvtjs/html/jsx */
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tickScene } from '../element-mixin';
@@ -12,7 +12,7 @@ import { List } from './list';
 // What the HTML JSX target does beyond the conformance suite
 // (`src/jsx-conformance/html.test.ts`): the DOM's own attributes, groups and
 // text, written as a view would write them.
-describe('html-mvt/jsx', () => {
+describe('@mvtjs/html/jsx', () => {
     afterEach(() => {
         document.body.replaceChildren();
     });
@@ -184,7 +184,7 @@ describe('html-mvt/jsx', () => {
     });
 });
 
-describe('html-mvt/jsx where new Function is blocked', () => {
+describe('@mvtjs/html/jsx where new Function is blocked', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
         vi.restoreAllMocks();

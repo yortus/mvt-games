@@ -15,7 +15,7 @@ export const scenePassesSuite: Suite = {
         { scenario: 'churn', approach: 'memo' },
         { scenario: 'attach', approach: 'naive' },
         { scenario: 'attach', approach: 'memo' },
-        // Differ only in whether this process ever imported pixi-mvt
+        // Differ only in whether this process ever imported @mvtjs/pixi
         { scenario: 'mutation', approach: 'unpatched' },
         { scenario: 'mutation', approach: 'patched' },
         { scenario: 'skip', approach: 'hidden' },

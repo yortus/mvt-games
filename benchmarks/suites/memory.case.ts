@@ -1,6 +1,6 @@
 import { Container, type Sprite, Texture } from 'pixi.js';
-import { jsx } from '#pixi-mvt/jsx';
-import { tickScene } from '../../src/pixi-mvt';
+import { jsx } from '@mvtjs/pixi/jsx';
+import { tickScene } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report, retainedPerItem } from '../harness/measure';
 import { createChangeDetectionFrame } from '../shared/change-detection-scene';
 import { createPoolFrame } from '../shared/pool-scene';

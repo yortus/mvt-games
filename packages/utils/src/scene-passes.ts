@@ -205,7 +205,7 @@ interface Invalidators {
 // ---------------------------------------------------------------------------
 
 /**
- * The scene passes over one kind of tree. See the pixi-mvt design notes for
+ * The scene passes over one kind of tree. See the @mvtjs/pixi design notes for
  * how the memoised walk works and what was measured; nothing here is specific
  * to Pixi.
  *

@@ -1,7 +1,7 @@
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 import { type Container, type Graphics, Rectangle, Text, type TextStyleOptions } from 'pixi.js';
-import type { FrameStatKind, FrameStats } from '../pixi-mvt';
+import type { FrameStatKind, FrameStats } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

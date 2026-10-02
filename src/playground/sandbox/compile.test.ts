@@ -1,6 +1,6 @@
 import { type Container, Container as ContainerClass, Rectangle } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { setTickMethods, tickScene } from '../../pixi-mvt';
+import { setTickMethods, tickScene } from '@mvtjs/pixi';
 import { newProjectTemplate, presets } from '../presets';
 import { jsxGlobals, transpile } from './compile';
 

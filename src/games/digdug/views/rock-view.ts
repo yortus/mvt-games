@@ -2,7 +2,7 @@ import { Container, Sprite, Ticker } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { RockPhase } from '../models';
-import { setTickMethods } from '../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

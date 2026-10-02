@@ -2,22 +2,22 @@
 
 > How the two scene passes work, what was tried and rejected, and what has been
 > measured. The product document is [README.md](./README.md); this page assumes
-> you have read it. [the appraisal](../../notes/archive/003-mvt-plugin-appraisal.md) is an independent review of
+> you have read it. [the appraisal](../../../notes/archive/003-mvt-plugin-appraisal.md) is an independent review of
 > whether this repo should adopt any of it, and
-> [the rework plan](../../notes/archive/001-mvt-plugin-rework-plan.md) is the plan this implementation follows.
+> [the rework plan](../../../notes/archive/001-mvt-plugin-rework-plan.md) is the plan this implementation follows.
 
 **Written against Pixi 8.16.0.**
 
 **Where the code is now.** Since proposal
-[022](../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
+[022](../../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the walk
 described here is generic over any tree, in
-[scene-passes.ts](../../packages/utils/src/scene-passes.ts) in `@mvtjs/utils`
+[scene-passes.ts](../../utils/src/scene-passes.ts) in `@mvtjs/utils`
 (`createScenePasses`), which the three.js and DOM scene passes use too.
 pixi-mvt keeps what is Pixi's: the structural wrappers, the destroy warning,
 and `tickScene` / `setTickMethods` typed to containers. The walk also now
 calls methods cached in the memoised list rather than reading each
 container's method, as
-[012](../../notes/proposals/012-falling-sand-performance-findings.md) section
+[012](../../../notes/proposals/012-falling-sand-performance-findings.md) section
 2 proposed. Since task 028, views set their methods with `setTickMethods` and
 hosts run both scene passes with `tickScene`; the `onUpdate` / `onRefresh`
 accessors on `Container` are gone (see "Methods are set with
@@ -69,7 +69,7 @@ read.
 
 Shown for update; refresh is the identical code with `pass = REFRESH` against
 the other pair of fields - the two scene passes are one implementation.
-See [scene-passes.ts](../../packages/utils/src/scene-passes.ts) in `@mvtjs/utils`.
+See [scene-passes.ts](../../utils/src/scene-passes.ts) in `@mvtjs/utils`.
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
@@ -129,7 +129,7 @@ function has(node: Container, pass: Pass): boolean {
 ### Invalidation
 
 One climb per method kind, stopping at the first container already dirty for that
-kind. It lives in [scene-passes.ts](../../packages/utils/src/scene-passes.ts) in
+kind. It lives in [scene-passes.ts](../../utils/src/scene-passes.ts) in
 `@mvtjs/utils`, next to the setters that trigger it; pixi-mvt's wrappers in
 [container-mixin.ts](./container-mixin.ts) call it too:
 
@@ -371,7 +371,7 @@ methods with `setTickMethods(node, { update, refresh })`, and hosts run both
 scene passes with `tickScene`. There is no second way: the `onUpdate` /
 `onRefresh` accessors are gone, and the setters and scene passes underneath
 are private to `scene-passes.ts`
-([proposal 027](../../notes/archive/027-mvt-method-names.md), task 028).
+([proposal 027](../../../notes/archive/027-mvt-method-names.md), task 028).
 Nothing is added to a node's public surface. Each renderer's prototype
 carries the fields' defaults, including `_mvtInvalidators`, the invalidation
 climbs of that renderer's scene passes, so `setTickMethods` works on any
@@ -431,7 +431,7 @@ published from it was an artifact, and all of them have been deleted.
 
 The benchmark driver spawns one child process **per arm**, each running exactly
 one implementation against one scenario. The scenes are now the `scene-passes`
-suite in [benchmarks/](../../benchmarks/README.md)
+suite in [benchmarks/](../../../benchmarks/README.md)
 (`benchmarks/suites/scene-passes.case.ts`), run with
 `npm run bench -- scene-passes`; they were first written as
 `src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`. Results
@@ -520,7 +520,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself
   during rendering whenever `sortableChildren` is set.
 - `runOnRender` is called unconditionally and is **never gated on visibility**.
-  The workaround at [pause-menu-view.ts:33](../common/pause-menu-view.ts#L33)
+  The workaround at [pause-menu-view.ts:33](../../../src/common/pause-menu-view.ts#L33)
   ("outer stays visible so onRender fires") was never needed.
 - `cacheAsTexture` suppresses `onRender` for nested groups: `_updateRenderGroups`
   returns early when a cached group's texture is current.

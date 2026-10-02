@@ -3,7 +3,7 @@ import { watch } from '@mvtjs/utils';
 import type { CactusKind } from '../models';
 import { textures } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX, PANEL_COLOURS } from './view-constants';
-import { setTickMethods } from '../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

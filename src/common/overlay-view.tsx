@@ -1,4 +1,4 @@
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 import type { Container, Cursor, Graphics } from 'pixi.js';
 

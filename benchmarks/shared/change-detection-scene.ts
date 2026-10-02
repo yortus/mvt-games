@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { batch, createMemo, createRenderEffect, createRoot, createSignal } from 'solid-js';
 import { watch } from '@mvtjs/utils';
-import { setTickMethods, tickScene } from '../../src/pixi-mvt';
+import { setTickMethods, tickScene } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface

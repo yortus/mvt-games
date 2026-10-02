@@ -1,6 +1,6 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { tickScene as tickElements } from '../../html-mvt';
-import { createPointerPicker, tickScene } from '../../three-mvt';
+import { tickScene as tickElements } from '@mvtjs/html';
+import { createPointerPicker, tickScene } from '@mvtjs/three';
 import { createFlockModel } from '../boids';
 import { FlockPanelView } from './flock-panel-view';
 import { FlockView } from './flock-view';

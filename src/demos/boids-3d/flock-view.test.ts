@@ -1,6 +1,6 @@
 import { type Mesh, PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { createPointerPicker, type PointerLike, tickScene } from '../../three-mvt';
+import { createPointerPicker, type PointerLike, tickScene } from '@mvtjs/three';
 import { createFlockModel } from '../boids';
 import { FlockView } from './flock-view';
 

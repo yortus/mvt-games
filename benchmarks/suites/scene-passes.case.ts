@@ -8,7 +8,7 @@ import { readParams, report, timeFrames } from '../harness/measure';
 // walk (`naive`) and Pixi's own `onRender`. A frame is one scene pass plus
 // whatever changes the scenario makes to the tree.
 //
-// pixi-mvt is imported dynamically, and only by the approaches that use it:
+// @mvtjs/pixi is imported dynamically, and only by the approaches that use it:
 // importing it is what installs its mixin on `Container.prototype`, and the
 // `unpatched` approach has to stay unpatched. The bundle keeps that import
 // lazy.
@@ -24,7 +24,7 @@ let skipDescendants: symbol | undefined;
 /**
  * A container with the refresh method a baseline approach keeps for itself, in
  * a property of its own: the plain recursive walk reads it, and the `onRender`
- * approach moves it to Pixi's `onRender`. pixi-mvt is never loaded for them.
+ * approach moves it to Pixi's `onRender`. @mvtjs/pixi is never loaded for them.
  */
 type BaselineContainer = Container & { baselineRefresh?: () => void };
 
@@ -36,14 +36,14 @@ function bump(): void {
 }
 
 if (approach !== 'naive' && approach !== 'onRender' && approach !== 'unpatched') {
-    const pixiMvt = await import('../../src/pixi-mvt');
+    const pixiMvt = await import('@mvtjs/pixi');
     refreshPass = (node) => pixiMvt.tickScene({ root: node, only: 'refresh' });
     setMvtRefresh = (node, method) => pixiMvt.setTickMethods(node, { refresh: method });
     skipDescendants = pixiMvt.SKIP_DESCENDANTS as unknown as symbol;
 }
-// pixi-mvt's mixin puts the scene passes' private fields' defaults on the prototype
+// @mvtjs/pixi's mixin puts the scene passes' private fields' defaults on the prototype
 else if ('_mvtRefreshMethod' in Container.prototype) {
-    throw new Error('pixi-mvt was imported in an approach that must not have it');
+    throw new Error('@mvtjs/pixi was imported in an approach that must not have it');
 }
 
 const frame = createFrame(scenario, approach);
@@ -207,7 +207,7 @@ function skipFrame(approach: string): Frame {
 }
 
 /**
- * Gives a container its refresh method: through pixi-mvt when it is loaded,
+ * Gives a container its refresh method: through @mvtjs/pixi when it is loaded,
  * and otherwise as the baseline's own property.
  */
 function giveRefresh(node: Container, method: () => void): void {
@@ -216,7 +216,7 @@ function giveRefresh(node: Container, method: () => void): void {
 }
 
 function requireRefreshPass(): (node: Container) => void {
-    if (refreshPass === undefined) throw new Error('this approach needs pixi-mvt, which was not imported');
+    if (refreshPass === undefined) throw new Error('this approach needs @mvtjs/pixi, which was not imported');
     return refreshPass;
 }
 

@@ -19,9 +19,9 @@ function recorded(name: string, calls: string[]): Group {
 // ---------------------------------------------------------------------------
 
 // The structural paths three.js takes, each of which must invalidate the
-// memoised walk. The walk itself is covered by pixi-mvt's tests and the
+// memoised walk. The walk itself is covered by @mvtjs/pixi's tests and the
 // conformance suite.
-describe('three-mvt scene passes', () => {
+describe('@mvtjs/three scene passes', () => {
     it('runs every method in a subtree, parents first, and updates with the time', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);

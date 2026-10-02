@@ -10,6 +10,27 @@ const VIEW_CONVENTION_FILES = [
     'packages/*/src/**/*.{ts,tsx}',
 ];
 
+// No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
+// `./index` and the like): inside a directory, import the file directly
+// (docs/reference/project-structure.md).
+const OWN_BARREL_IMPORT = {
+    regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
+    message: 'Import the file directly, not your own or an ancestor\'s barrel (docs/reference/project-structure.md).',
+};
+
+// The tick API a renderer package re-exports from @mvtjs/utils. Code that uses
+// a renderer imports these from it: one place to import each from, and the
+// same copy of the counters that the renderer counts into.
+const TICK_API_FROM_RENDERER = {
+    name: '@mvtjs/utils',
+    importNames: [
+        'SKIP_DESCENDANTS', 'hasUpdate', 'hasRefresh',
+        'addReads', 'countReads', 'readCounter', 'countScene', 'sceneCounter',
+        'UpdateMethod', 'RefreshMethod', 'SceneCounts',
+    ],
+    message: 'Import this from the renderer package (@mvtjs/pixi, @mvtjs/three or @mvtjs/html), which re-exports it.',
+};
+
 // Files that may import a package's devDependencies: tests, spikes, scripts,
 // benchmarks and config. Library source may import only its dependencies and
 // peer dependencies.
@@ -94,37 +115,35 @@ export default tseslint.config(
                         'pixi-solid',
                         'three',
                         'three/**',
-                        // Allow project-level import-map aliases. Escaped: the
-                        // rule compiles each entry with minimatch, which reads a
+                        // Allow the site's import-map alias. Escaped: the rule
+                        // compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
-                        // violation instead of reporting it (proposal 011 section 11.1)
-                        // Each is a module's public entry, as a package would
-                        // export it. The JSX base and each renderer's JSX support
-                        // are reached only this way from outside their directories.
+                        // violation instead of reporting it.
                         '\\#common',
-                        '\\#pixi-mvt/jsx',
-                        '\\#three-mvt/jsx',
-                        '\\#html-mvt/jsx',
                     ],
                 },
             ],
-            // No module imports its own barrel or an ancestor's (`.`, `..`,
-            // `../..`, `./index` and the like): inside a directory, import the
-            // file directly (docs/reference/project-structure.md).
-            'no-restricted-imports': ['error', {
-                patterns: [{
-                    regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
-                    message: 'Import the file directly, not your own or an ancestor\'s barrel (docs/reference/project-structure.md).',
-                }],
-            }],
+            'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT] }],
         },
         settings: {
             'import/resolver': {
                 typescript: {
-                    project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+                    project: ['./src/tsconfig.json', './packages/*/tsconfig.json'],
                     noWarnOnMultipleProjects: true,
                 },
             },
+        },
+    },
+    {
+        files: ['src/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
+        },
+    },
+    {
+        files: ['benchmarks/**/*.ts'],
+        rules: {
+            'no-restricted-imports': ['error', { paths: [TICK_API_FROM_RENDERER] }],
         },
     },
     {

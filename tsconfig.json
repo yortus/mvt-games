@@ -1,4 +1,13 @@
 {
-    "extends": "./tsconfig.base.json",
-    "include": ["src"]
+    // Lists every project for `tsc -b`, which type-checks each in turn and
+    // re-checks only what changed since the last run
+    "files": [],
+    "references": [
+        { "path": "./packages/utils" },
+        { "path": "./packages/pixi" },
+        { "path": "./packages/three" },
+        { "path": "./packages/html" },
+        { "path": "./src" },
+        { "path": "./benchmarks" }
+    ]
 }

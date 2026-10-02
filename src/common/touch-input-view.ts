@@ -1,6 +1,6 @@
 import { Container, Graphics, Text, type FederatedPointerEvent } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
-import { setTickMethods } from '../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

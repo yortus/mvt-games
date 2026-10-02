@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import type { GamePhase, TileKind } from '../models';
-import { setTickMethods } from '../../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -1,6 +1,6 @@
 import { type Container, Sprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, tickScene } from '../../../pixi-mvt';
+import { countReads, tickScene } from '@mvtjs/pixi';
 import {
     createDemoModel, type DemoModel, type GrainStorageKind, TANK_SIZES, type TankSize, type TankSizeKind,
 } from '../models';

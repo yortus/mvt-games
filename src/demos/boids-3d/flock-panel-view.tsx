@@ -1,4 +1,4 @@
-/** @jsxImportSource #html-mvt/jsx */
+/** @jsxImportSource @mvtjs/html/jsx */
 import type { FlockModel } from '../boids';
 
 // ---------------------------------------------------------------------------

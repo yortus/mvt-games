@@ -1,5 +1,5 @@
 import { BufferImageSource, type Container, Sprite, Texture } from 'pixi.js';
-import { addReads, setTickMethods } from '../../../pixi-mvt';
+import { addReads, setTickMethods } from '@mvtjs/pixi';
 import type { Grains } from '../models';
 import { pickGrainPixel } from './grain-colors';
 

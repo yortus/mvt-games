@@ -1,5 +1,5 @@
 import type { Container } from 'pixi.js';
-import { createFrameStats, readCounter, sceneCounter } from '../../pixi-mvt';
+import { createFrameStats, readCounter, sceneCounter } from '@mvtjs/pixi';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createDemoModel, TANK_SIZES } from './models';
 import { DEFAULT_VARIANTS, type DemoVariants, formatVariants, parseVariants } from './variants';

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { tickScene } from '../../html-mvt';
+import { tickScene } from '@mvtjs/html';
 import { createFlockModel } from '../boids';
 import { FlockPanelView } from './flock-panel-view';
 

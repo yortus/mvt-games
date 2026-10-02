@@ -13,9 +13,9 @@
 // only to investigate; a tidier version may no longer reproduce it.
 
 import { Container } from 'pixi.js';
-import { jsx } from '#pixi-mvt/jsx';
+import { jsx } from '@mvtjs/pixi/jsx';
 import { allocationPerFrame } from '../harness/measure';
-import { setTickMethods } from '../../src/pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 type ViewKind = 'jsx' | 'hand-written';
 

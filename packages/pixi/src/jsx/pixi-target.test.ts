@@ -75,12 +75,12 @@ describe('pixiTarget', () => {
     });
 
     it('rejects a function for an attribute that takes only a fixed value', () => {
-        expect(() => jsx('sprite', { anchor: () => 0.5 })).toThrow(/'anchor' takes a fixed value in pixi-mvt\/jsx/);
+        expect(() => jsx('sprite', { anchor: () => 0.5 })).toThrow(/'anchor' takes a fixed value in @mvtjs\/pixi\/jsx/);
     });
 
     it('rejects an attribute the element does not have', () => {
         // `anchor` is defined only on sprites and text
-        expect(() => jsx('container', { anchor: 0.5 })).toThrow(/<container> has no attribute 'anchor' in pixi-mvt\/jsx/);
+        expect(() => jsx('container', { anchor: 0.5 })).toThrow(/<container> has no attribute 'anchor' in @mvtjs\/pixi\/jsx/);
     });
 
     it('lets <List> build into a container it is given', () => {

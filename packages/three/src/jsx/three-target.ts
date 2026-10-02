@@ -8,10 +8,10 @@ import { destroyObject, onDestroyed, tickScene } from '../object3d-mixin';
 
 /**
  * three.js's scene graph, as the JSX base needs it. Nodes are `Object3D`s,
- * whose methods the three-mvt scene passes call.
+ * whose methods the @mvtjs/three scene passes call.
  */
 export const threeTarget: JsxTarget<Object3D> = {
-    name: 'three-mvt/jsx',
+    name: '@mvtjs/three/jsx',
 
     createGroup: () => new Group(),
     append: (parent, child) => {

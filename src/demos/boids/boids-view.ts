@@ -1,11 +1,11 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
 import { PerfmonView } from '#common';
-import type { FrameStats } from '../../pixi-mvt';
+import type { FrameStats } from '@mvtjs/pixi';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { SliderView } from './slider-view';
 import { CheckboxView } from './checkbox-view';
-import { setTickMethods } from '../../pixi-mvt';
+import { setTickMethods } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings

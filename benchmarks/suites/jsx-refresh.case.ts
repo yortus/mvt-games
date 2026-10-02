@@ -1,7 +1,7 @@
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { JsxFactory } from '@mvtjs/utils/jsx';
-import { jsx as pixiJsx } from '#pixi-mvt/jsx';
-import { setTickMethods, tickScene } from '../../src/pixi-mvt';
+import { jsx as pixiJsx } from '@mvtjs/pixi/jsx';
+import { setTickMethods, tickScene } from '@mvtjs/pixi';
 import { readParams, report, timeFrames } from '../harness/measure';
 
 // Measured file for the `jsx-refresh` suite: microseconds per frame to change

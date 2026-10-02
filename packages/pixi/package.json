@@ -1,0 +1,38 @@
+{
+    "name": "@mvtjs/pixi",
+    "version": "0.1.0",
+    "description": "MVT (Model-View-Ticker) for Pixi.js: scene passes, and a JSX runtime at ./jsx",
+    "type": "module",
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./jsx": {
+            "@mvtjs/source": "./src/jsx/index.ts",
+            "types": "./dist/jsx/index.d.ts",
+            "default": "./dist/jsx/index.js"
+        },
+        "./jsx/jsx-runtime": {
+            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "types": "./dist/jsx/jsx-runtime.d.ts",
+            "default": "./dist/jsx/jsx-runtime.js"
+        },
+        "./jsx/jsx-dev-runtime": {
+            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "types": "./dist/jsx/jsx-dev-runtime.d.ts",
+            "default": "./dist/jsx/jsx-dev-runtime.js"
+        }
+    },
+    "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx"],
+    "dependencies": {
+        "@mvtjs/utils": "^0.1.0"
+    },
+    "peerDependencies": {
+        "pixi.js": "^8.16.0"
+    },
+    "devDependencies": {
+        "vitest": "^4.1.0"
+    }
+}

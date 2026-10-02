@@ -8,10 +8,10 @@ import { tickScene } from '../container-mixin';
 
 /**
  * Pixi's scene graph, as the JSX base needs it. Nodes are `Container`s,
- * whose methods the pixi-mvt scene passes call.
+ * whose methods the @mvtjs/pixi scene passes call.
  */
 export const pixiTarget: JsxTarget<Container> = {
-    name: 'pixi-mvt/jsx',
+    name: '@mvtjs/pixi/jsx',
 
     createGroup: () => new Container(),
     append: (parent, child) => {

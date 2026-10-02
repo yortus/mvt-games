@@ -5,7 +5,7 @@
  *
  * How the runtime behaves is in the base's `create-jsx.ts`; what each
  * attribute does, and how often it is written, is in the element table. The
- * elements' methods are called by three-mvt's scene passes (`tickScene`),
+ * elements' methods are called by @mvtjs/three's scene passes (`tickScene`),
  * not from three's `onBeforeRender`, which skips objects out of view.
  */
 

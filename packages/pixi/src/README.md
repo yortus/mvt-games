@@ -460,7 +460,7 @@ Three more worth having:
   return `SKIP_DESCENDANTS`.
 
 The full results, and the other benchmarks, are in the docs'
-[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
+[Performance Measurements](../../../docs/building-with-mvt/performance/measurements.md).
 
 ## Running it
 
@@ -473,7 +473,7 @@ The full results, and the other benchmarks, are in the docs'
 
 - [the design notes](./design-notes.md) - how the traversal is memoised, what was
   tried and rejected, the benchmark method, and the open questions.
-- [the appraisal](../../notes/archive/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
+- [the appraisal](../../../notes/archive/003-mvt-plugin-appraisal.md) - an independent review of whether this repo
   should adopt it at all.
 - Once game state outgrows a few closures, the rest of this repo shows the
   model-and-view split these two methods were designed for: the ticker ticks

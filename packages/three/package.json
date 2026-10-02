@@ -1,0 +1,43 @@
+{
+    "name": "@mvtjs/three",
+    "version": "0.1.0",
+    "description": "MVT (Model-View-Ticker) for three.js: scene passes, a pointer picker, and a JSX runtime at ./jsx",
+    "type": "module",
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./jsx": {
+            "@mvtjs/source": "./src/jsx/index.ts",
+            "types": "./dist/jsx/index.d.ts",
+            "default": "./dist/jsx/index.js"
+        },
+        "./jsx/jsx-runtime": {
+            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "types": "./dist/jsx/jsx-runtime.d.ts",
+            "default": "./dist/jsx/jsx-runtime.js"
+        },
+        "./jsx/jsx-dev-runtime": {
+            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "types": "./dist/jsx/jsx-dev-runtime.d.ts",
+            "default": "./dist/jsx/jsx-dev-runtime.js"
+        }
+    },
+    "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx"],
+    "dependencies": {
+        "@mvtjs/utils": "^0.1.0"
+    },
+    "peerDependencies": {
+        "@types/three": "^0.186.0",
+        "three": "^0.186.1"
+    },
+    "peerDependenciesMeta": {
+        "@types/three": { "optional": true }
+    },
+    "devDependencies": {
+        "@types/three": "^0.186.0",
+        "vitest": "^4.1.0"
+    }
+}

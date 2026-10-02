@@ -1,5 +1,5 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
-import { tickScene } from '../pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
 import { createFallingSandEntry } from './falling-sand';

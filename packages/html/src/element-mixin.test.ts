@@ -26,9 +26,9 @@ function quiet(id: string): HTMLDivElement {
 
 // Nothing wraps the DOM's methods: every change below reaches the memoised
 // walk through the `MutationObserver`, taken synchronously at the start of the
-// next scene pass. The walk itself is covered by pixi-mvt's tests and the
+// next scene pass. The walk itself is covered by @mvtjs/pixi's tests and the
 // conformance suite.
-describe('html-mvt scene passes', () => {
+describe('@mvtjs/html scene passes', () => {
     it('runs every method in a subtree, parents first, and updates with the time', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);

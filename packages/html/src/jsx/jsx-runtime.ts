@@ -5,7 +5,7 @@
  *
  * How the runtime behaves is in the base's `create-jsx.ts`; what each
  * attribute does, and how often it is written, is in the element table. The
- * elements' methods are called by html-mvt's scene passes (`tickScene`).
+ * elements' methods are called by @mvtjs/html's scene passes (`tickScene`).
  *
  * Not a framework for web pages: an HTML view here is built once and follows
  * its model through bindings, like any other MVT view. There is no text

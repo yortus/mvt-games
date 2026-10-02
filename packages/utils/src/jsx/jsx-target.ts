@@ -15,7 +15,7 @@ import type { ChangeableAttribute } from './attributes';
  * each element's bindings in its refresh method, set with `setTickMethods`.
  */
 export interface JsxTarget<N extends object> {
-    /** Names the runtime in error messages, e.g. `'pixi-mvt/jsx'`. */
+    /** Names the runtime in error messages, e.g. `'@mvtjs/pixi/jsx'`. */
     readonly name: string;
 
     /**

@@ -1,7 +1,7 @@
-import { jsx as htmlJsx, List as HtmlList } from '#html-mvt/jsx';
-import { setTickMethods, SKIP_DESCENDANTS, tickScene as tickElements } from '../../src/html-mvt';
-import { jsx as threeJsx, List as ThreeList } from '#three-mvt/jsx';
-import { tickScene as tickObjects } from '../../src/three-mvt';
+import { jsx as htmlJsx, List as HtmlList } from '@mvtjs/html/jsx';
+import { setTickMethods, SKIP_DESCENDANTS, tickScene as tickElements } from '@mvtjs/html';
+import { jsx as threeJsx, List as ThreeList } from '@mvtjs/three/jsx';
+import { tickScene as tickObjects } from '@mvtjs/three';
 import type { Object3D } from 'three';
 import { readParams, report, timeFrames } from '../harness/measure';
 
@@ -75,12 +75,12 @@ function naiveRefresh(node: BaselineElement): void {
     for (let child = node.firstElementChild; child !== null; child = child.nextElementSibling) naiveRefresh(child);
 }
 
-/** The memoised walk: html-mvt's refresh scene pass. */
+/** The memoised walk: @mvtjs/html's refresh scene pass. */
 function refreshElements(root: Element): void {
     tickElements({ root, only: 'refresh' });
 }
 
-/** three-mvt's refresh scene pass. */
+/** @mvtjs/three's refresh scene pass. */
 function refreshObjects(root: Object3D): void {
     tickObjects({ root, only: 'refresh' });
 }

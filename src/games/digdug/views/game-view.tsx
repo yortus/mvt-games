@@ -1,8 +1,8 @@
-/** @jsxImportSource #pixi-mvt/jsx */
+/** @jsxImportSource @mvtjs/pixi/jsx */
 
 import type { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#common';
-import { List } from '#pixi-mvt/jsx';
+import { List } from '@mvtjs/pixi/jsx';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';

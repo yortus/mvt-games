@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { tickScene } from '../pixi-mvt';
+import { tickScene } from '@mvtjs/pixi';
 import { OverlayView } from './overlay-view';
 
 describe('OverlayView', () => {
