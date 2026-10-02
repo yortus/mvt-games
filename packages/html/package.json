@@ -20,7 +20,7 @@
             "default": "./dist/jsx/jsx-runtime.js"
         },
         "./jsx/jsx-dev-runtime": {
-            "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
+            "@mvtjs/source": "./src/jsx/jsx-dev-runtime.ts",
             "types": "./dist/jsx/jsx-dev-runtime.d.ts",
             "default": "./dist/jsx/jsx-dev-runtime.js"
         }
@@ -30,6 +30,6 @@
         "@mvtjs/utils": "^0.1.0"
     },
     "devDependencies": {
-        "vitest": "^4.1.0"
+        "vitest": "^5.0.1"
     }
 }

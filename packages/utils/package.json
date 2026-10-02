@@ -25,12 +25,12 @@
         "generate-refresh-copies": "node scripts/generate-refresh-copies.ts"
     },
     "peerDependencies": {
-        "vitest": "^4.1.0"
+        "vitest": "^5.0.1"
     },
     "peerDependenciesMeta": {
         "vitest": { "optional": true }
     },
     "devDependencies": {
-        "vitest": "^4.1.0"
+        "vitest": "^5.0.1"
     }
 }

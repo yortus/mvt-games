@@ -9,10 +9,11 @@
 > enforce this repo's own formatting, and a phased migration plan.
 
 **Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phases 0 to 4 are done (sections 12.1 to 12.5): the four libraries are
+Phases 0 to 5 are done (sections 12.1 to 12.6): the four libraries are
 workspace packages under `packages/`, the site, the docs, the benchmarks and
 the new checks are private workspace packages beside them, and the docs and
-agent files describe the new layout. The npm scopes and GitHub org in section 3 are
+agent files describe the new layout. Vite+ was trialled and not adopted for
+now (section 9.4); Vite 8 and Vitest 5 were taken on their own. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -47,7 +48,7 @@ Decisions this proposal makes, and where each is argued:
 | Planning material moves under `notes/` | 6.3 |
 | Formatting stays this repo's own (`@stylistic` plus custom rules), enforced and auto-fixed. No Prettier-style formatter | 8.4 |
 | npm workspaces (not pnpm), Changesets (no release PRs), tsdown, publint/attw, npm trusted publishing | 8, 13.2 |
-| Vite+ gets a time-boxed trial with go/no-go criteria. The lint side is already shown to work | 9 |
+| Vite+ was trialled against go/no-go criteria, and is not adopted for now: it works, but buys this repo little. Vite 8 and Vitest 5 are taken on their own | 9.4 |
 | The repo stays at `yortus/mvt-games` for now. The site moves to `yortus.com/mvt-games/` | 13.2, 13.3 |
 | ~~Fix the barrel-rule crash (section 11.1) as part of the restructure~~ Fixed early, 2026-09-30 | 11 |
 
@@ -652,6 +653,97 @@ trial used (both in `1.0.0-rc.1`) affect how it is set up:
   than Oxlint directly. Fix-on-save (criterion 4) is checked against that
   setup.
 
+### 9.4 Trial results (2026-10-02)
+
+Run on the branch `vite-plus-trial`, from `vnext-011` after phase 4, with
+Vite+ 1.0.0 (Oxlint 1.85.0, Vitest 5.0.1), Vite 8.3.2 and Node 26.10.
+
+| # | Criterion | Result |
+| --- | --- | --- |
+| 1 | `vp lint` clean on the clean tree, and matches ESLint on a scrambled one | **Pass.** On the clean tree both report nothing, except one finding only Oxlint makes, and rightly (below). 383 scrambled files (82,011 changed lines), fixed with each tool: byte-identical results. ESLint converges in one run, Oxlint in five, as in 9.2 |
+| 2 | Oxlint covers `@eslint/js` and typescript-eslint recommended | **Pass.** Every typescript-eslint rule is native. Three `@eslint/js` rules are not (`no-dupe-args`, `no-octal`, `no-new-symbol`): strict mode and TypeScript make them moot, and they run anyway through a plugin that wraps ESLint's own rules |
+| 3 | The barrel rule reports a deliberate violation | **Pass, and more.** One deliberate violation of each rule this repo adds, linted with both tools: the barrel rule, the dependency rule, the playground boundary, `no-restricted-imports` (paths and patterns), the view-naming rules, and the method signature style, plus the playground's exemption from view naming. Both tools report the same, in all eight cases |
+| 4 | Fix-on-save in VS Code applies `@stylistic` fixes, no formatter | **Not checked.** The decision below did not depend on it; check it first if Vite+ is reconsidered |
+| 5 | `vp test` runs every suite after the Vitest 5 upgrade | **Pass.** 55 files, 1158 tests, with no change to the tests or their config |
+| 6 | `vp install` and `vp run` on npm, caching across packages, `vp pack` output passes publint and attw | **Pass, with caveats.** `vp install` hands off to npm. A cached `vp run` of the four libraries' builds replays in 0.6 s, and editing a `@mvtjs/utils` file rebuilds the libraries that read it. All four pass publint and attw, after two library fixes (below) |
+| 7 | The docs still build | **Pass.** VitePress keeps its own Vite 5, untouched |
+
+**`vp migrate` cannot be used on this repo.** Run as the docs advise, it:
+
+- ran Oxfmt over the 41 files whose imports it rewrote, into Prettier's
+  style (double quotes, single-line bodies split), against section 8.4;
+- rewrote the `package.json` files with two-space indents and reordered keys,
+  replaced `vite` and `vitest` across the workspace through `overrides`, and
+  added a `devEngines` entry that tells npm to download a pinned npm;
+- installed a pre-commit hook running `vp staged` by setting the local git
+  config `core.hooksPath`, which applies to every branch in the checkout;
+- dropped four rule families this repo depends on: the barrel rule (claimed
+  covered by `no-restricted-imports`, which it is not: that rule has no
+  notion of reaching past an `index.ts`), the dependency rule, the
+  playground boundary and the view-naming rules; and silently lost
+  overrides such as `arrow-parens: always`.
+
+All of it was undone (the hook path included), and Vite+ was set up by hand
+instead:
+
+- Vite 8 first, on its own: everything passed, and the site's production
+  build fell from about 4.8 s to 0.5 s (Rolldown). Then Vitest 5 in every
+  workspace and `vite-plus` at the root. Vitest 5 accepts plain Vite 8, so no
+  `overrides` were needed.
+- The Oxlint config is generated from `eslint.config.js` by a script: blocks
+  without `files` become base rules, blocks with `files` become overrides in
+  the same order (a block's `ignores` becomes `excludeFiles`, which Oxlint
+  honours), and Oxlint's own rule categories are switched off so it runs
+  exactly this repo's rules. `@stylistic` and `eslint-plugin-import` load as
+  JS plugins, the latter as `import-js` beside Oxlint's native `import`; the
+  four core rules Oxlint lacks (the three above and `no-restricted-syntax`)
+  load from a ten-line plugin that re-exports ESLint's own. The result is
+  about 800 lines of rule settings in place of `eslint.config.js`'s 200.
+- A full lint takes 3.6 s with `vp lint`, 5.9 s with ESLint: most of this
+  repo's rules run as JS plugins, so Oxlint's native speed counts for little.
+
+**Found on the way, needed whichever stack wins:**
+
+- **`TickMethods` must be exported from `@mvtjs/utils`.** Each renderer's
+  `setTickMethods` has it in its type, so their declarations could not be
+  emitted (TS4023). Exported (done on `vnext-011`).
+- **Each renderer needs a `jsx-dev-runtime.ts` of its own** (one line,
+  `export * from './jsx-runtime'`). With two entries on one source file,
+  tsdown wrote declarations for only one. Added, and each renderer's
+  `./jsx/jsx-dev-runtime` export points at it (done on `vnext-011`); dev
+  builds now load it.
+- **ESLint's `dist/**` ignore covers only the root.** Packed packages'
+  `packages/*/dist/` must be ignored too (`**/dist/**`, done on
+  `vnext-011`).
+- **The dependency rule under ESLint misses `eslint/use-at-your-own-risk`**
+  (it cannot resolve the subpath, so it skips the import); Oxlint's resolver
+  finds it and reports it.
+- **Vite 8 warns about the site's config** for a future loader: `__dirname`
+  (use `import.meta.dirname`) and the spritesheet plugin imported without a
+  file extension, which this repo's style forbids. The two will need
+  reconciling for config files.
+- **`vp run -r` takes in the root, `site` and `docs` as well**, and splits
+  the root's `build` script at `&&` into tasks run alongside the others, so
+  the site build emptied `dist/` while the docs built into it. Library builds
+  need `--filter "./packages/*"`.
+
+**Recommendation.** Whatever criterion 4 shows, take the parts that stand on
+their own: Vite 8, Vitest 5, and the two library fixes. Whether to adopt
+Vite+ itself is closer than the criteria suggest. It works, but for this
+repo it buys little: lint is 2 s faster, cached library builds save about
+12 s, and `vp pack` is tsdown underneath, available directly. It costs a
+generated lint config in place of a short readable one, dependence on
+Oxlint's JS plugins (still alpha) for nearly every rule, a wrapper for
+ESLint's core rules, five `--fix` passes on badly damaged files, and a young
+tool whose own migration path misfires here. Suggested: stay on ESLint, npm
+scripts and tsdown for now, and revisit when Oxlint's JS plugins are stable
+or lint time starts to matter.
+
+**Decided (2026-10-02): as recommended.** Vite 8, Vitest 5 and the fixes
+above moved to `vnext-011`; nothing of Vite+ did. To reconsider later: set it
+up by hand as above, not with `vp migrate`, and generate the lint config from
+`eslint.config.js` rather than keeping two by hand.
+
 ---
 
 ## 10. Lint rules package
@@ -934,9 +1026,19 @@ and the tests.
 Section 9.3, on a branch. It comes before publishing so the build and release
 setup is written once, for whichever stack wins.
 
+**Progress.** Run 2026-10-02 on `vite-plus-trial`; results in section 9.4.
+Criteria 1 to 3 and 5 to 7 pass; criterion 4 was not checked. Decided: the
+repo stays on ESLint, npm scripts and tsdown. Vite 8 (with Rolldown), Vitest
+5, the `TickMethods` export, the renderers' `jsx-dev-runtime.ts` and the
+`**/dist/**` lint ignore moved to `vnext-011`; the trial's own config was not
+kept (its method is in section 9.4). The `vite-plus-trial` branch has no
+commits of its own and can be deleted.
+
 ### 12.7 Phase 6: publishing
 
-- tsdown builds (or `vp pack`), with publint and attw.
+- tsdown builds, with publint and attw. From the trial (section 9.4): one
+  entry per export, `platform: 'neutral'`, and declarations; all four
+  libraries already pass publint and attw that way.
 - Changesets and `release.yml`, set up as in section 8.5.
 - Set up npm trusted publishing for each package, against
   `yortus/mvt-games` and `release.yml`. Each package's `repository` field

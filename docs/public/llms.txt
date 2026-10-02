@@ -57,7 +57,7 @@ presentation state, refresh views, render. Models settle before views read.
 - Barrel imports only: never import past index.ts
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest
-- TypeScript 5.9, Pixi.js 8, GSAP 3, Vite 7
+- TypeScript 5.9, Pixi.js 8, GSAP 3, Vite 8
 
 ## Documentation
 

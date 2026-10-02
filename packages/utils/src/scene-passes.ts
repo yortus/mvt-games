@@ -104,7 +104,7 @@ interface TickWithoutUpdate<N> {
  * method, its refresh method, or both. A member left out is left as it is;
  * one given as `undefined` is cleared.
  */
-interface TickMethods {
+export interface TickMethods {
     readonly update?: UpdateMethodOrWrapper | undefined;
     readonly refresh?: RefreshMethodOrWrapper | undefined;
 }

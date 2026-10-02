@@ -152,4 +152,4 @@ Load the relevant skills file for task-specific instructions:
 
 ## Tech Stack
 
-TypeScript 5.9 - Pixi.js 8 - three.js (one demo) - GSAP 3 - Vite 7 - ESLint 9 - ESLint Stylistic
+TypeScript 5.9 - Pixi.js 8 - three.js (one demo) - GSAP 3 - Vite 8 - Vitest 5 - ESLint 9 - ESLint Stylistic
