@@ -1,5 +1,5 @@
 import { jsx as htmlJsx, List as HtmlList } from '#html-mvt/jsx';
-import { refreshScene as refreshElements, SKIP_DESCENDANTS } from '../../src/html-mvt';
+import { refreshScene as refreshElements, setRefresh, SKIP_DESCENDANTS } from '../../src/html-mvt';
 import { jsx as threeJsx, List as ThreeList } from '#three-mvt/jsx';
 import { refreshScene as refreshObjects } from '../../src/three-mvt';
 import { readParams, report, timeFrames } from '../harness/measure';
@@ -26,8 +26,11 @@ function walkScene(methods: string, count: number, walk: string): () => void {
         calls++;
         return undefined;
     };
+    // Each walk gets only what it reads: the memoised walk the scene passes'
+    // method, the naive walk a property of its own.
     const withMethod = (el: Element): void => {
-        el.onRefresh = () => method();
+        if (walk === 'memoised') setRefresh(el, () => method());
+        else (el as BaselineElement).baselineRefresh = () => method();
     };
     const rows = count / 10;
     for (let r = 0; r < rows; r++) {
@@ -58,12 +61,15 @@ function walkScene(methods: string, count: number, walk: string): () => void {
     };
 }
 
+/** An element with the refresh method the naive walk keeps for itself, in a property of its own. */
+type BaselineElement = Element & { baselineRefresh?: () => undefined };
+
 /**
  * Every element's method, parents first, found afresh each frame by walking
  * the tree. What the memoised walk replaces.
  */
-function naiveRefresh(node: Element): void {
-    const method = node.onRefresh;
+function naiveRefresh(node: BaselineElement): void {
+    const method = node.baselineRefresh;
     if (method !== undefined && method() === SKIP_DESCENDANTS) return;
     for (let child = node.firstElementChild; child !== null; child = child.nextElementSibling) naiveRefresh(child);
 }

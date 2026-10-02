@@ -39,7 +39,7 @@
  */
 
 import { readCounter } from '../read-counter';
-import type { SceneNode } from '../scene-node';
+import { setRefresh } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import type { JsxTarget } from './jsx-target';
 
@@ -98,7 +98,7 @@ export interface SwitchComponents<N> {
 // ---------------------------------------------------------------------------
 
 /** Options for {@link createSwitch}. */
-export interface SwitchOptions<N extends SceneNode> {
+export interface SwitchOptions<N extends object> {
     /** The renderer's scene graph, as the base needs it. */
     readonly target: JsxTarget<N>;
 }
@@ -108,7 +108,7 @@ export interface SwitchOptions<N extends SceneNode> {
 // ---------------------------------------------------------------------------
 
 /** Makes the `<Switch>` and `<Match>` components for a JSX target. They work only with each other. */
-export function createSwitch<N extends SceneNode>(options: SwitchOptions<N>): SwitchComponents<N> {
+export function createSwitch<N extends object>(options: SwitchOptions<N>): SwitchComponents<N> {
     const target = options.target;
     const setVisible = target.visible.apply;
 
@@ -152,18 +152,17 @@ export function createSwitch<N extends SceneNode>(options: SwitchOptions<N>): Sw
             setVisible(branch, false);
             target.append(container, branch);
 
-            // Wraps the `<Match>`'s own `onRefresh` (its misuse check and lazy build) in
-            // a gate, so it only runs while its branch is selected.
-            const ownRefresh = branch.onRefresh;
-            branch.onRefresh = () => {
+            // Wraps the `<Match>`'s own refresh (its misuse check and lazy build) in a
+            // gate, so it only runs while its branch is selected.
+            setRefresh(branch, (ownRefresh) => {
                 if (index !== selected) return SKIP_DESCENDANTS;
                 return ownRefresh?.();
-            };
+            });
         }
 
         // Runs before any branch's `onRefresh`, so a newly selected branch refreshes on
         // the frame it is selected, with no structural change and no lag.
-        container.onRefresh = select;
+        setRefresh(container, select);
 
         return container;
 
@@ -210,14 +209,14 @@ export function createSwitch<N extends SceneNode>(options: SwitchOptions<N>): Sw
         // The enclosing `<Switch>` wraps this and only lets it run while this
         // branch is selected. Without one, nothing would ever hide the branch, so
         // fail loudly instead.
-        container.onRefresh = () => {
+        setRefresh(container, () => {
             if (!entry.isAdopted) throw new Error('<Match> must be a direct child of <Switch>');
             if (build === undefined) return;
             const branch = build();
             build = undefined;
             // Added during a scene pass, which refreshes it before it returns
             target.append(container, branch);
-        };
+        });
 
         return container;
     }

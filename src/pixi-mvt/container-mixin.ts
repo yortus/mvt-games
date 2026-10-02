@@ -1,13 +1,9 @@
 import { Container } from 'pixi.js';
-import { createScenePasses, type SceneMemoFields, type SceneNode } from '../mvt-utils';
+import { createScenePasses, type SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
-
-// Pixi's `Container`, named outside the `PixiMixins` namespace, where
-// `Container` means the interface being declared.
-type PixiContainer = Container;
 
 // Pixi's own mixins declare `PixiMixins.Container` without type parameters even
 // though `Container.d.ts` references it as `PixiMixins.Container<C>`. That only
@@ -16,8 +12,11 @@ type PixiContainer = Container;
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
     namespace PixiMixins {
-        // The scene passes' methods, and the fields behind them, on every container
-        interface Container extends SceneNode, SceneMemoFields<PixiContainer> {}
+        // The transitional `onUpdate` / `onRefresh` accessors on every
+        // container, until views use `setUpdate` / `setRefresh`. An interface,
+        // to merge with Pixi's.
+        // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+        interface Container extends SceneNode {}
     }
 }
 
@@ -41,7 +40,7 @@ const containerScenePasses = createScenePasses<Container>({
     describe,
 });
 
-export const { updateScene, refreshScene } = containerScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh } = containerScenePasses;
 
 // Installed at module load rather than lazily on first use. An update or
 // refresh method assigned before the accessors exist creates an own data
@@ -152,8 +151,8 @@ function wrapStructuralMethods(): void {
         // `updateScene` itself has no parent to be detached from, so nothing
         // else would ever take it out of its own list. Doing it before the base
         // call means the setters still climb through the ancestors.
-        this.onUpdate = undefined;
-        this.onRefresh = undefined;
+        setUpdate(this, undefined);
+        setRefresh(this, undefined);
         baseDestroy.call(this, options);
     };
 }

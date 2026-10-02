@@ -1,21 +1,18 @@
 import { Object3D } from 'three';
 import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
-import type { SceneMemoFields, SceneNode } from '../mvt-utils';
+import type { SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
 
-// three's `Object3D`, named outside the augmentation, where `Object3D` means
-// the interface being declared.
-type ThreeObject3D = Object3D;
-
 declare module 'three/src/core/Object3D.js' {
-    // The scene passes' methods, and the fields behind them, on every object.
-    // Merges with the class, so it repeats the class's type parameter.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // The transitional `onUpdate` / `onRefresh` accessors on every object,
+    // until views use `setUpdate` / `setRefresh`. Merges with the class, so it
+    // repeats the class's type parameter.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-object-type
     interface Object3D<TEventMap extends Object3DEventMap = Object3DEventMap>
-        extends SceneNode, SceneMemoFields<ThreeObject3D> {}
+        extends SceneNode {}
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +32,7 @@ const objectScenePasses = createScenePasses<Object3D>({
     describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
 });
 
-export const { updateScene, refreshScene } = objectScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh } = objectScenePasses;
 
 /**
  * Destroying three.js objects, which have no destroy of their own

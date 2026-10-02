@@ -1,4 +1,3 @@
-import type { SceneNode } from '../scene-node';
 import type { ChangeableAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------
@@ -11,10 +10,10 @@ import type { ChangeableAttribute } from './attributes';
  * listening) and the attribute that shows and hides them. Nothing else about
  * a renderer reaches the base.
  *
- * `N` is the renderer's node type, a {@link SceneNode}: the base keeps each
- * element's bindings in its `onRefresh` method.
+ * `N` is the renderer's node type. The base needs nothing of it: it keeps
+ * each element's bindings in its refresh method, set with `setRefresh`.
  */
-export interface JsxTarget<N extends SceneNode> {
+export interface JsxTarget<N extends object> {
     /** Names the runtime in error messages, e.g. `'pixi-mvt/jsx'`. */
     readonly name: string;
 

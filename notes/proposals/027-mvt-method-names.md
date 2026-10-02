@@ -1085,78 +1085,83 @@ make every remaining case loud. 3 removes the most common case outright.
 
 ### 11.8 Spike results (2026-10-01)
 
-**What was built.** It is on local branch `spike/027-set-refresh`, in worktree
-`.claude/worktrees/spike-027`, from `54734dd`. It is not committed: 13 files,
-+251 / -156.
+**What was built.** It is uncommitted on branch `vnext-027`, on top of
+`6b431f7` (task 025's single eval-free refresh builder): 13 files.
 
-- Each node's methods and memo live in one record, under the symbol-keyed
-  property `Symbol('mvt.sceneRecord')`.
 - `setUpdate`, `setRefresh`, `getUpdate` and `getRefresh` are exported from
-  `mvt-utils`. Records are linked to their scene passes on first visit, as in
-  11.2.
+  `mvt-utils`, and work on any renderer's nodes.
 - The JSX base, `<List>`, `<Switch>`, `DestroyRegistry` and Pixi's `destroy`
-  wrapper use the new functions.
-- `onUpdate` / `onRefresh` remain only as transitional accessors over them,
-  so views and benchmarks are unchanged.
+  wrapper use them, and no longer read or write `onUpdate` / `onRefresh`.
+- Each node's passes are reached through a default on its prototype, which
+  is how a setter invalidates the right tree with no dispatch by renderer
+  (11.2). A plain-object node gets them when a walk first visits it.
+- `onUpdate` / `onRefresh` remain only as transitional accessors over the
+  setters, so views, tests and benchmarks are otherwise unchanged.
 - The structural wrappers are untouched.
 
-**Feasible: yes.**
+**Feasible: yes, for all three variants tried.**
 
 - Type checks (app and benchmarks) and lint pass.
-- The test suite matches the baseline exactly: 1007 pass, and the same 3
-  fail for reasons in the worktree's environment (CRLF in the saved
-  precompile manifests, `solid-js` not resolving under Vitest).
-- With the transitional accessors switched off, all 445 JSX tests pass:
-  the base, and the conformance suites of all three renderers. So no library
-  code needs a method name any more.
-- The JSX base's own tests now run on plain-object nodes with no method
-  properties at all.
+- All 1115 tests pass.
+- With the transitional accessors and the prototype defaults switched off,
+  all 443 JSX tests pass: the base, and the conformance suites of all three
+  renderers. So no library code needs a public method name.
 
-**Performance: not settled; measure again on a quiet machine.** Baseline
-numbers come from a second, detached worktree at the same commit, run
-alternately with the spike. The machine had Vite and VitePress dev servers
-and Chrome running, and runs were only good to about ±10%.
+**Where the per-node data lives decides the performance.** Each variant was
+benchmarked against a detached baseline worktree at the same commit,
+interleaved, with the order reversed in the second round:
 
-- **`scene-passes`.** The steady-state scenarios are level.
-  - Churn (2,000 plain containers, 100 replaced per frame): the spike's
-    medians were 3-14% slower over four interleaved rounds, with the same
-    order and with the order reversed.
-  - A control scenario whose loop never touches the record (`skip` /
-    `hidden`) was also 5-7% slower in the harness. A standalone copy of it
-    showed no consistent difference: the spike was faster in 4 of 6 pairs.
-  - So part of the gap is how V8 compiles the changed module, not the record.
-    The churn scene uses only plain `Container`s, which is today's best case;
-    no mixed-shape scene was measured, so 11.4's hoped-for gain on mixed
-    scenes is untested.
-- **`memory`, kept alive per container: +88 bytes** (hand-written views 880
-  to 969, JSX 1,134 to 1,222). This is the record object itself, and it is
-  structural.
-- **`memory`, allocation in the `watched` scene: 0.3 to 16,006 bytes per
-  frame** (1,000 JSX sprites with a fractional `width`). That is one boxed
-  number per sprite per frame. It is **not caused by the record**:
-  - A variant of the same scene allocates 16,006 bytes per frame on the
-    baseline too.
-  - Calling the same refresh methods in a plain loop allocates nothing on
-    either.
+| Variant | Per-node storage | Result |
+| --- | --- | --- |
+| A | One record object per node, behind `Symbol('mvt.sceneRecord')` | Level at 1,000 nodes. 3-10% slower at 10,000-100,000, where the extra object per node spreads the nodes out in memory. +88 bytes kept alive per node, and +110 bytes allocated per node built. `<List>` pools 6-7% faster |
+| B | The same fields as symbol-keyed properties of the node, with symbol-keyed defaults on the prototype | Memory identical to the baseline. Level at scale. But churn 40-90% slower: V8 reads a symbol-keyed property found only on the prototype slowly once the read site sees many node shapes (profiled: `visit`, then `has`). A named property in the same position is fast |
+| **C** | **The baseline's own private `_mvt*` fields, with their prototype defaults** | **Level with the baseline on every suite run, and identical memory.** Churn 2% faster |
+| D | One record object per node, like A, but under one named field, `_mvt`, with a prototype default | +88 bytes kept alive per node and +9% allocated per node built, as A. 4-7% slower at 100,000 containers (C, in the same run: +1% to +6%); churn +7%; attaching subtrees 12% faster. A dummy 8-field object allocated next to each node in C slows the steady loop by 2.5-4% on its own, so the extra object explains D's cost at scale, and the symbol key in A was not the problem |
+| E1 | One record object per node, in a module-level `WeakMap`: nothing stored on nodes at all | Ruled out. Churn +137%, invalidation and attach +15-24% (a hash lookup per node). Steady frames 45-234% slower in the harness at 50,000-100,000 nodes, about 20% in a standalone bundle of the same scene. That steady-state cost is not garbage collection (4% of time in both profiles) and not lookups (the loop does none); it is unexplained |
 
-  The allocation depends on how V8 optimizes the generated refresh methods
-  when the scene pass calls them, and unrelated code changes tip it either
-  way. That is the per-call-site feedback problem that the uncommitted
-  refresh-copies work in the main checkout (apparently part of task 025)
-  addresses, so measure again on top of it.
-- The other suites (`construction`, `scaling`, `jsx-refresh`,
-  `games-and-demos`, `html-scene-passes`) were not run.
+For C, `scene-passes`, `construction`, `jsx-refresh`, `scaling` and
+`memory` are all within noise. At 100,000 containers, C first looked 5-13%
+slower. Rerun with both sides in worktrees, it was within -1.3% to +2.8%. The
+first runs were from the main checkout, where `npm run bench` rewrites
+`refresh-copies.ts` under the running Vite dev server; Solid's rows, which
+the change cannot affect, were 3-5% slower there too. `games-and-demos`,
+`falling-sand-scaling` and `html-scene-passes` were not run.
+
+**Not tried: E2**, events instead of the structural wrappers. Leaving
+renderer objects untouched also means keeping the per-node data off them,
+which is E1's storage and its costs, before any listener costs. Revisit only
+if a concrete need appears, such as frozen nodes, or a library that rejects
+patched prototypes.
+
+**Decision for 11.2: the private fields stay named.** 11.4 expected a
+symbol-keyed record to be at least as fast. It is not (A), and moving the
+same fields to symbol keys is worse (B). What section 11 is for still
+holds with C:
+
+- There are no public method names.
+- There is no global type augmentation for the methods, once the
+  transitional accessors go.
+- There are no class clashes, since a class's own `update` or `refresh` is
+  never seen.
+
+What remains on the prototype is the `_mvt*` fields that are already there
+today. They are underscore-prefixed implementation details that need no
+declared types, and they are the fastest storage measured.
+
+**Noise, for whoever measures next.** The `memory` suite's `watch()` case
+allocated 1,437 bytes per frame in some rounds of both baseline and spike,
+and none in others. That is a V8 optimization flip, not the change. Vitest
+in the main checkout also picks up test files inside
+`.claude/worktrees/`; run it with `--exclude ".claude/**"` while spike
+worktrees exist.
 
 **Next steps.**
 
-1. Rebase the spike onto the refresh-copies work once it is committed.
-2. Spike the variant that has no record object: the same fields as
-   symbol-keyed properties on the node itself. It keeps every benefit in
-   11.3, since no names are claimed, and it should match today's memory
-   exactly (no +88 bytes) and today's access patterns. It gives up 11.4's
-   single-record-shape argument, which the churn numbers did not support
-   anyway.
-3. Measure both variants on a quiet machine: `scene-passes`, `construction`,
-   `scaling`, `memory` and `games-and-demos`, plus a mixed-shape scene (012's
-   proposed variant of `scaling`).
-4. Only then migrate the call sites and remove the transitional accessors.
+1. Migrate the call sites from `view.onRefresh = ...` to
+   `setRefresh(view, ...)`: about 160 in `src/`, plus the benchmarks and the
+   docs.
+2. Remove the transitional accessors and the `SceneNode` augmentation from
+   the three mixins.
+3. Decide 11.5's open points: whether to export the getters, and whether to
+   add a helper for composing steps.
+4. Run `games-and-demos` from two worktrees as a final check.

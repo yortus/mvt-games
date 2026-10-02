@@ -1,4 +1,5 @@
-import type { RefreshMethod, SceneNode, UpdateMethod } from '../scene-node';
+import type { UpdateMethod } from '../scene-node';
+import { hasRefresh, setRefresh, setUpdate } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { MVT_ATTRIBUTE_KEYS } from './attributes';
 import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
@@ -26,7 +27,7 @@ export type ElementTable<N> = Readonly<Record<
 >>;
 
 /** Options for {@link createJsx}. */
-export interface JsxOptions<N extends SceneNode> {
+export interface JsxOptions<N extends object> {
     /** The renderer's scene graph, as the base needs it. */
     readonly target: JsxTarget<N>;
     /** The JSX target's intrinsic elements. */
@@ -79,7 +80,7 @@ export interface JsxRuntime<N> {
  * Why there are no cleanup scopes or context providers, as SolidJS has:
  * `design-notes.md`.
  */
-export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRuntime<N> {
+export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<N> {
     const { target, elements } = options;
     // Attribute definitions, resolved once each, by definition.
     const resolvedAttributes = new Map<object, ResolvedAttribute>();
@@ -159,14 +160,14 @@ export function createJsx<N extends SceneNode>(options: JsxOptions<N>): JsxRunti
             if (visibleBinding !== undefined) bindings.push(visibleBinding);
             if (everyFrame !== undefined) bindings.push(...everyFrame);
             if (onChange !== undefined) bindings.push(...onChange);
-            el.onRefresh = refreshBuilder.build(el, bindings, visibleBinding !== undefined);
+            setRefresh(el, refreshBuilder.build(el, bindings, visibleBinding !== undefined));
         }
 
         if (typeof attributes.onRefresh === 'function') {
             addRefreshStep(el, attributes.onRefresh as RefreshStep<N>);
         }
         if (typeof attributes.onUpdate === 'function') {
-            el.onUpdate = attributes.onUpdate as UpdateMethod;
+            setUpdate(el, attributes.onUpdate as UpdateMethod);
         }
         if (typeof attributes.onDestroyed === 'function') {
             target.onDestroyed(el, attributes.onDestroyed as DestroyedCallback<N>);
@@ -276,9 +277,9 @@ function callRef(ref: unknown, node: unknown): void {
  * the step runs after them, unless a `visible` binding has just hidden the
  * element.
  */
-function addRefreshStep<N extends SceneNode>(el: N, step: RefreshStep<N>): void {
-    const ownRefresh: RefreshMethod | undefined = el.onRefresh;
-    el.onRefresh = ownRefresh === undefined
-        ? () => step(el)
-        : () => (ownRefresh() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el));
+function addRefreshStep<N extends object>(el: N, step: RefreshStep<N>): void {
+    // Wraps the bindings' refresh method when there is one; otherwise the step
+    // is the element's whole refresh, with nothing to call first.
+    if (!hasRefresh(el)) setRefresh(el, () => step(el));
+    else setRefresh(el, (own) => (own?.() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el)));
 }

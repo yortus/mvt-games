@@ -1,13 +1,16 @@
 import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
-import type { SceneMemoFields, SceneNode } from '../mvt-utils';
+import type { SceneNode } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Type Augmentation
 // ---------------------------------------------------------------------------
 
 declare global {
-    // The scene passes' methods, and the fields behind them, on every element
-    interface Element extends SceneNode, SceneMemoFields<Element> {}
+    // The transitional `onUpdate` / `onRefresh` accessors on every element,
+    // until views use `setUpdate` / `setRefresh`. An interface, to merge with
+    // the DOM's.
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    interface Element extends SceneNode {}
 }
 
 // ---------------------------------------------------------------------------
@@ -34,7 +37,7 @@ const elementScenePasses = createScenePasses<Element>({
     beforeScenePass: watchElementTree,
 });
 
-export const { updateScene, refreshScene } = elementScenePasses;
+export const { updateScene, refreshScene, setUpdate, setRefresh } = elementScenePasses;
 
 /**
  * Destroying elements, which have no destroy of their own

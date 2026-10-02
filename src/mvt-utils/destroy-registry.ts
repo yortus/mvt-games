@@ -1,4 +1,4 @@
-import type { SceneNode } from './scene-node';
+import { setRefresh, setUpdate } from './scene-passes';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -13,7 +13,7 @@ export interface DestroyRegistry<N> {
     /**
      * Destroys `node` and its subtree: runs every `onDestroyed` callback in it,
      * a node's before its descendants', as Pixi does, clears each node's
-     * `onUpdate` and `onRefresh` so no scene pass calls it again, then detaches
+     * update and refresh methods so no scene pass calls it again, then detaches
      * `node` from its parent. Destroying a node twice does nothing the second
      * time.
      */
@@ -35,7 +35,7 @@ export interface DestroyRegistryOptions<N> {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createDestroyRegistry<N extends SceneNode & object>(options: DestroyRegistryOptions<N>): DestroyRegistry<N> {
+export function createDestroyRegistry<N extends object>(options: DestroyRegistryOptions<N>): DestroyRegistry<N> {
     const callbacks = new WeakMap<N, ((node: N) => void)[]>();
     const destroyed = new WeakSet<N>();
 
@@ -56,8 +56,8 @@ export function createDestroyRegistry<N extends SceneNode & object>(options: Des
     function destroySubtree(node: N): void {
         destroyed.add(node);
         // Cleared first, so the setters still climb through the ancestors
-        node.onUpdate = undefined;
-        node.onRefresh = undefined;
+        setUpdate(node, undefined);
+        setRefresh(node, undefined);
         const list = callbacks.get(node);
         if (list !== undefined) {
             callbacks.delete(node);

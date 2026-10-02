@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countReads, readCounter } from '../../read-counter';
-import type { SceneNode } from '../../scene-node';
+import { hasRefresh, setRefresh } from '../../scene-passes';
 import { SKIP_DESCENDANTS } from '../../skip-descendants';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
@@ -30,7 +30,7 @@ export interface AttributeProbe<N, T> {
 }
 
 /** What the conformance suite needs to know about a JSX target, beyond its `JsxTarget`. */
-export interface ConformanceFixture<N extends SceneNode> {
+export interface ConformanceFixture<N extends object> {
     readonly target: JsxTarget<N>;
     readonly elements: ElementTable<N>;
     /** An every-frame attribute. */
@@ -61,7 +61,7 @@ export interface ConformanceFixture<N extends SceneNode> {
  * with every shape's own copy, which assigns properties by name. Call it
  * inside a test file.
  */
-export function describeJsxConformance<N extends SceneNode>(fixture: ConformanceFixture<N>): void {
+export function describeJsxConformance<N extends object>(fixture: ConformanceFixture<N>): void {
     for (const ownCopyAt of [16, 1]) {
         describe(`${fixture.target.name}, ${ownCopyAt === 1 ? 'own copies' : 'shared copy'}`, () => {
             const runtime = createJsx({ target: fixture.target, elements: fixture.elements, ownCopyAt });
@@ -79,7 +79,7 @@ export function describeJsxConformance<N extends SceneNode>(fixture: Conformance
 // Internals
 // ---------------------------------------------------------------------------
 
-interface SuiteContext<N extends SceneNode> {
+interface SuiteContext<N extends object> {
     readonly fixture: ConformanceFixture<N>;
     readonly jsx: JsxFactory<N>;
     readonly List: ListComponent<N>;
@@ -89,7 +89,7 @@ interface SuiteContext<N extends SceneNode> {
 
 // --- The runtime -----------------------------------------------------------
 
-function describeRuntime<N extends SceneNode>({ fixture, jsx }: SuiteContext<N>): void {
+function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): void {
     const { target, everyFrame, onChange, onChangeNumber } = fixture;
     const refresh = target.refreshScene;
     /** A fragment of `children`, nested as JSX children may be. */
@@ -324,7 +324,7 @@ function describeRuntime<N extends SceneNode>({ fixture, jsx }: SuiteContext<N>)
                 let calls = 0;
                 const el = jsx(everyFrame.tag, { onDestroyed: () => void calls++ });
 
-                expect(el.onRefresh).toBeUndefined();
+                expect(hasRefresh(el)).toBe(false);
                 refresh(el);
                 expect(calls).toBe(0);
             });
@@ -397,7 +397,7 @@ function itemsWithIds(...ids: number[]): Item[] {
     return ids.map((id) => ({ id }));
 }
 
-function describeList<N extends SceneNode>({ fixture, jsx, List }: SuiteContext<N>): void {
+function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
     const refresh = target.refreshScene;
     const [labelA, labelB] = onChange.values;
@@ -758,7 +758,7 @@ function describeList<N extends SceneNode>({ fixture, jsx, List }: SuiteContext<
                 items,
                 children: () => {
                     const view = target.createGroup();
-                    view.onRefresh = () => void refreshes++;
+                    setRefresh(view, () => void refreshes++);
                     return view;
                 },
             });
@@ -851,7 +851,7 @@ function describeList<N extends SceneNode>({ fixture, jsx, List }: SuiteContext<
 
 interface Boss { hp: number; isEnraged: boolean }
 
-function describeSwitch<N extends SceneNode>({ fixture, jsx, Switch, Match }: SuiteContext<N>): void {
+function describeSwitch<N extends object>({ fixture, jsx, Switch, Match }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
     const refresh = target.refreshScene;
     const [valueA, valueB] = onChange.values;

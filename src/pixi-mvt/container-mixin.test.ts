@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { refreshScene, updateScene } from './container-mixin';
+import { refreshScene, setRefresh, setUpdate, updateScene } from './container-mixin';
 import { SKIP_DESCENDANTS } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
@@ -9,10 +9,13 @@ import { SKIP_DESCENDANTS } from '../mvt-utils';
 
 /**
  * The two passes are the same algorithm against different fields, so the core
- * suite runs against both through this adapter.
+ * suite runs against both through this adapter, with methods set both ways:
+ * through `setUpdate` / `setRefresh`, and through the transitional
+ * `onUpdate` / `onRefresh` accessors, which call them.
  */
 interface Driver {
     readonly kind: 'update' | 'refresh';
+    readonly via: 'function' | 'accessor';
     assign: (container: Container, fn: () => void) => void;
     clear: (container: Container) => void;
     run: (node: Container) => void;
@@ -21,6 +24,21 @@ interface Driver {
 const drivers: Driver[] = [
     {
         kind: 'update',
+        via: 'function',
+        assign: (container, fn) => setUpdate(container, fn),
+        clear: (container) => setUpdate(container, undefined),
+        run: (node) => updateScene(node, 16),
+    },
+    {
+        kind: 'refresh',
+        via: 'function',
+        assign: (container, fn) => setRefresh(container, fn),
+        clear: (container) => setRefresh(container, undefined),
+        run: (node) => refreshScene(node),
+    },
+    {
+        kind: 'update',
+        via: 'accessor',
         assign: (container, fn) => {
             container.onUpdate = fn;
         },
@@ -31,6 +49,7 @@ const drivers: Driver[] = [
     },
     {
         kind: 'refresh',
+        via: 'accessor',
         assign: (container, fn) => {
             container.onRefresh = fn;
         },
@@ -110,7 +129,7 @@ function parentMap(root: Container): Map<string, string | undefined> {
 // Core
 // ---------------------------------------------------------------------------
 
-describe.each(drivers)('$kind pass', (driver) => {
+describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
     let rec: Recorder;
 
     beforeEach(() => {
@@ -377,7 +396,7 @@ describe.each(drivers)('$kind pass', (driver) => {
         root.addChild(child);
 
         driver.run(root);
-        const other = drivers.find((candidate) => candidate !== driver);
+        const other = drivers.find((candidate) => candidate.kind !== driver.kind && candidate.via === driver.via);
         expect(other).toBeDefined();
 
         rec.clear();

@@ -16,7 +16,15 @@ const scenario = String(params.scenario);
 const approach = String(params.approach);
 
 let refreshScene: ((node: Container) => void) | undefined;
+let setRefresh: ((node: Container, method: () => void) => void) | undefined;
 let skipDescendants: symbol | undefined;
+
+/**
+ * A container with the refresh method a baseline approach keeps for itself, in
+ * a property of its own: the plain recursive walk reads it, and the `onRender`
+ * approach moves it to Pixi's `onRender`. The plugin is never loaded for them.
+ */
+type BaselineContainer = Container & { baselineRefresh?: () => void };
 
 // Counts `onRefresh` calls. Read after timing, so the engine cannot drop their work.
 let sink = 0;
@@ -28,6 +36,7 @@ function bump(): void {
 if (approach !== 'naive' && approach !== 'onRender' && approach !== 'unpatched') {
     const plugin = await import('../../src/pixi-mvt');
     refreshScene = plugin.refreshScene;
+    setRefresh = plugin.setRefresh;
     skipDescendants = plugin.SKIP_DESCENDANTS as unknown as symbol;
 }
 else if (Object.getOwnPropertyDescriptor(Container.prototype, 'onRefresh') !== undefined) {
@@ -88,7 +97,7 @@ function passFrame(size: number, withMethods: number, swapsPerFrame: number, mem
 function attachFrame(memo: boolean): Frame {
     const pass = memo ? requireRefreshScene() : naiveRefresh;
     const root = new Container();
-    root.onRefresh = bump;
+    giveRefresh(root, bump);
     const subtrees: Container[] = [];
     for (let i = 0; i < 100; i++) {
         const subtree = new Container();
@@ -172,13 +181,13 @@ function skipFrame(approach: string): Frame {
     for (let g = 0; g < 100; g++) {
         const group = new Container();
         const active = g < 10;
-        if (!active && skip) group.onRefresh = () => skipDescendants as never;
+        if (!active && skip) giveRefresh(group, () => skipDescendants as never);
         if (!active) group.visible = false;
         for (let i = 0; i < 100; i++) {
             const leaf = new Container();
-            leaf.onRefresh = () => {
+            giveRefresh(leaf, () => {
                 leaf.x = model.x;
-            };
+            });
             group.addChild(leaf);
         }
         calls += skip && !active ? 1 : 100;
@@ -191,6 +200,15 @@ function skipFrame(approach: string): Frame {
             pass(root);
         },
     };
+}
+
+/**
+ * Gives a container its refresh method: through the plugin when it is loaded,
+ * and otherwise as the baseline's own property.
+ */
+function giveRefresh(node: Container, method: () => void): void {
+    if (setRefresh !== undefined) setRefresh(node, method);
+    else (node as BaselineContainer).baselineRefresh = method;
 }
 
 function requireRefreshScene(): (node: Container) => void {
@@ -224,7 +242,7 @@ function buildScene(size: number, withMethods: number): Scene {
     const stride = Math.max(1, Math.floor(leaves.length / withMethods));
     let placed = 0;
     for (let i = 0; i < leaves.length && placed < withMethods; i += stride) {
-        leaves[i].onRefresh = bump;
+        giveRefresh(leaves[i], bump);
         placed++;
     }
 
@@ -239,7 +257,7 @@ function churn(scene: Scene, count: number, cursor: number): number {
         at++;
         scene.leaves[index].removeFromParent();
         const replacement = new Container();
-        replacement.onRefresh = bump;
+        giveRefresh(replacement, bump);
         scene.branches[index % scene.branches.length].addChild(replacement);
         scene.leaves[index] = replacement;
     }
@@ -247,8 +265,8 @@ function churn(scene: Scene, count: number, cursor: number): number {
 }
 
 /** A recursive walk with no index and no memo, which is the baseline to beat. */
-function naiveRefresh(node: Container): void {
-    const method = node.onRefresh;
+function naiveRefresh(node: BaselineContainer): void {
+    const method = node.baselineRefresh;
     if (method !== undefined) method();
     const children = node.children;
     for (let i = 0; i < children.length; i++) {
@@ -256,9 +274,9 @@ function naiveRefresh(node: Container): void {
     }
 }
 
-function reassignToOnRender(node: Container): void {
-    if (node.onRefresh !== undefined) {
-        node.onRefresh = undefined;
+function reassignToOnRender(node: BaselineContainer): void {
+    if (node.baselineRefresh !== undefined) {
+        node.baselineRefresh = undefined;
         node.onRender = bump;
     }
     const children = node.children;

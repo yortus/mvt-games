@@ -68,14 +68,35 @@ export interface ScenePasses<N> {
      */
     readonly invalidate: (node: N) => void;
     /**
-     * Adds the `onUpdate` and `onRefresh` accessors, and the fields behind
-     * them, to a node prototype. Assigning a method through them invalidates
-     * the memoised walks above the node. Must run before any node of that
-     * prototype is given a method: one assigned earlier becomes an own
-     * property that shadows the accessors, and loses every invalidation.
+     * Adds the defaults of the scene passes' private fields to a node
+     * prototype, and the transitional `onUpdate` / `onRefresh` accessors, which
+     * call `setUpdate` / `setRefresh`. Must run before any node of that
+     * prototype is given a method through an accessor: one assigned earlier
+     * becomes an own property that shadows the accessors, and loses every
+     * invalidation.
      */
     readonly installMethods: (prototype: object) => void;
+    /**
+     * `setUpdate`, typed to this kind of node, so a renderer's code can export
+     * it for views as it exports `updateScene`: passing anything but one of
+     * its nodes is then a type error.
+     */
+    readonly setUpdate: (node: N, method: UpdateMethodOrWrapper | undefined) => void;
+    /** `setRefresh`, typed to this kind of node, as `setUpdate` is. */
+    readonly setRefresh: (node: N, method: RefreshMethodOrWrapper | undefined) => void;
 }
+
+/**
+ * An update method as `setUpdate` takes it: one that declares a second
+ * parameter is given the update method it replaces.
+ */
+type UpdateMethodOrWrapper = (deltaMs: number, previous: UpdateMethod | undefined) => typeof SKIP_DESCENDANTS | void;
+
+/**
+ * A refresh method as `setRefresh` takes it: one that declares a parameter is
+ * given the refresh method it replaces.
+ */
+type RefreshMethodOrWrapper = (previous: RefreshMethod | undefined) => typeof SKIP_DESCENDANTS | void;
 
 /**
  * The memoised walk for a node's subtree, shared by both scene passes: a
@@ -112,29 +133,46 @@ export interface SubtreeInfo<N> {
 }
 
 /**
- * The fields the scene passes keep on every node of a renderer, alongside its
- * methods. A renderer's code declares them on its node type (Pixi's, through
- * `PixiMixins.Container`) so the memo is typed; `installMethods` adds them.
+ * Everything the scene passes keep for one node: its two methods and the memo
+ * of its subtree, as private `_mvt` fields of the node. A renderer's
+ * prototype carries their defaults (see `installMethods`), so a node only
+ * gains own properties for what is written to it. Plain objects with no
+ * defaults read `undefined` for every field, which means the same.
+ *
+ * Named, not symbol-keyed, and kept on the node rather than in a record or a
+ * `WeakMap`: V8 reads a named property found only on the prototype quickly
+ * even across many node shapes, a symbol-keyed one slowly, and every other
+ * layout measured was slower or larger.
  */
-export interface SceneMemoFields<N> {
-    /** Backing field for `onUpdate`. */
-    _mvtOnUpdate: UpdateMethod | undefined;
-    /** Backing field for `onRefresh`. */
-    _mvtOnRefresh: RefreshMethod | undefined;
-    /** Does this subtree hold any `onUpdate`? `undefined` = dirty. */
-    _mvtHasUpdate: boolean | undefined;
+interface SceneFields {
+    _mvtOnUpdate?: UpdateMethod;
+    _mvtOnRefresh?: RefreshMethod;
+    /** Does this subtree hold any update method? `undefined` = dirty. */
+    _mvtHasUpdate?: boolean;
     /** Update walk for this subtree. `undefined` = dirty. */
-    _mvtUpdate: SubtreeInfo<N> | undefined;
-    /** Does this subtree hold any `onRefresh`? `undefined` = dirty. */
-    _mvtHasRefresh: boolean | undefined;
+    _mvtUpdate?: SubtreeInfo<object>;
+    /** Does this subtree hold any refresh method? `undefined` = dirty. */
+    _mvtHasRefresh?: boolean;
     /** Refresh walk for this subtree. `undefined` = dirty. */
-    _mvtRefresh: SubtreeInfo<N> | undefined;
+    _mvtRefresh?: SubtreeInfo<object>;
     /**
      * The id of the refresh scene pass that last ran this node, negated if it
      * returned `SKIP_DESCENDANTS`. Written only while catching up a scene pass
      * whose tree changed during it; see `catchUpRefresh`.
      */
-    _mvtRefreshedInPass: number;
+    _mvtRefreshedInPass?: number;
+    /**
+     * The invalidation climbs of the scene passes that walk this node, so
+     * setting a method can invalidate the walks above it. On a renderer's
+     * prototype; written on a plain object when a walk first visits it.
+     */
+    _mvtInvalidators?: Invalidators;
+}
+
+/** The invalidation climbs of one kind of tree's scene passes, which a node's fields lead to. */
+interface Invalidators {
+    readonly invalidateUpdate: (node: object) => void;
+    readonly invalidateRefresh: (node: object) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +188,7 @@ export interface SceneMemoFields<N> {
  * per kind of node. Nodes of different kinds never share a tree, so they
  * never need to share them.
  */
-export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): ScenePasses<N> {
+export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePasses<N> {
     // Nodes with a scene pass in flight, so a method that re-enters the scene
     // pass it is already inside is caught rather than silently running the
     // list twice. Starting a scene pass on a different node from a method is
@@ -168,18 +206,30 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     // Catching up needs them, as well as its own walk, to know what ran.
     const nestedWalks: SubtreeInfo<N>[] = [];
 
-    return { updateScene, refreshScene, invalidate, installMethods };
+    // Whether `installMethods` has put the fields' defaults, these passes
+    // among them, on the nodes' prototype. Until it has (a tree of plain
+    // objects), each node visited is given the passes itself.
+    let hasPrototypeDefaults = false;
+
+    // Reached from every node these passes visit, through its fields, so that
+    // setting a method on it later can invalidate the walks above it.
+    const invalidators: Invalidators = {
+        invalidateUpdate: (node) => invalidateUpdate(node as N),
+        invalidateRefresh: (node) => invalidateRefresh(node as N),
+    };
+
+    return { updateScene, refreshScene, invalidate, installMethods, setUpdate, setRefresh };
 
     function updateScene(node: N, deltaMs: number): void {
         tree.beforeScenePass?.(node);
         enter(activeUpdates, node, 'updateScene');
         try {
-            const memo = memoOf(node);
-            let info = memo._mvtUpdate;
+            const fields = visit(node);
+            let info = fields._mvtUpdate as SubtreeInfo<N> | undefined;
             if (info === undefined) {
                 if (DEV) assertNoShadowedMethods(node);
                 info = buildSubtreeInfo(node, UPDATE);
-                memo._mvtUpdate = info;
+                fields._mvtUpdate = info;
             }
             invokeSubtreeMethods(info, node, UPDATE, deltaMs, 0);
         }
@@ -194,19 +244,19 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
         const isOutermost = activeRefreshes.length === 1;
         if (isOutermost) refreshPassId = refreshPassId === MAX_REFRESH_PASS_ID ? 1 : refreshPassId + 1;
         try {
-            const memo = memoOf(node);
-            let info = memo._mvtRefresh;
+            const fields = visit(node);
+            let info = fields._mvtRefresh as SubtreeInfo<N> | undefined;
             if (info === undefined) {
                 if (DEV) assertNoShadowedMethods(node);
                 info = buildSubtreeInfo(node, REFRESH);
-                memo._mvtRefresh = info;
+                fields._mvtRefresh = info;
             }
-            invokeSubtreeMethods(info, node, REFRESH, 0, refreshPassId);
+            invokeSubtreeMethods(info, node, REFRESH, undefined, refreshPassId);
 
             // Any change to the subtree during the walk cleared its memo. A
             // renderer that hears of changes only when it asks is asked again.
             tree.beforeScenePass?.(node);
-            if (memo._mvtRefresh !== info) catchUpRefresh(node, info);
+            if (fields._mvtRefresh !== info) catchUpRefresh(node, info);
             else if (!isOutermost) nestedWalks.push(info);
         }
         finally {
@@ -234,7 +284,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
      */
     function catchUpRefresh(node: N, firstWalk: SubtreeInfo<N>): void {
         const passId = refreshPassId;
-        const memo = memoOf(node);
+        const fields = visit(node);
         markRefreshedNodes(firstWalk, passId);
         for (let round = 1; ; round++) {
             if (round > MAX_CATCH_UP_ROUNDS) {
@@ -248,16 +298,16 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
             for (let w = 0; w < nestedWalks.length; w++) markRefreshedNodes(nestedWalks[w], passId);
             nestedWalks.length = 0;
 
-            let info = memo._mvtRefresh;
+            let info = fields._mvtRefresh as SubtreeInfo<N> | undefined;
             if (info === undefined) {
                 if (DEV) assertNoShadowedMethods(node);
                 info = buildSubtreeInfo(node, REFRESH);
-                memo._mvtRefresh = info;
+                fields._mvtRefresh = info;
             }
             invokeMissedMethods(info, node, passId);
 
             tree.beforeScenePass?.(node);
-            if (memo._mvtRefresh === info) return;
+            if (fields._mvtRefresh === info) return;
         }
     }
 
@@ -285,7 +335,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
                 i++;
                 continue;
             }
-            memoOf(list[i])._mvtRefreshedInPass = elision === descendantsElision ? -passId : passId;
+            fieldsOf(list[i])._mvtRefreshedInPass = elision === descendantsElision ? -passId : passId;
             i = elision === descendantsElision ? skip[i] : i + 1;
         }
     }
@@ -306,17 +356,17 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
                 i = skip[i];
                 continue;
             }
-            const listedMemo = memoOf(listed);
-            const refreshedInPass = listedMemo._mvtRefreshedInPass;
+            const listedFields = fieldsOf(listed);
+            const refreshedInPass = listedFields._mvtRefreshedInPass;
             if (refreshedInPass === -passId) {
                 i = skip[i];
                 continue;
             }
             if (refreshedInPass !== passId) {
-                const method = listed.onRefresh;
+                const method = listedFields._mvtOnRefresh;
                 if (method !== undefined) {
                     const skipsDescendants = method() === SKIP_DESCENDANTS;
-                    listedMemo._mvtRefreshedInPass = skipsDescendants ? -passId : passId;
+                    listedFields._mvtRefreshedInPass = skipsDescendants ? -passId : passId;
                     if (skipsDescendants) {
                         i = skip[i];
                         continue;
@@ -347,12 +397,12 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     function invalidateUpdate(node: N): void {
         let cursor: N | null | undefined = node;
         while (cursor) {
-            const memo = memoOf(cursor);
-            if (memo._mvtHasUpdate === undefined && memo._mvtUpdate === undefined) return;
+            const fields = fieldsOf(cursor);
+            if (fields._mvtHasUpdate === undefined && fields._mvtUpdate === undefined) return;
             // Both fields of a kind are cleared together: they are maintained in
             // lockstep and the short-circuit above tests both.
-            memo._mvtHasUpdate = undefined;
-            memo._mvtUpdate = undefined;
+            fields._mvtHasUpdate = undefined;
+            fields._mvtUpdate = undefined;
             cursor = tree.parent(cursor);
         }
     }
@@ -361,30 +411,28 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     function invalidateRefresh(node: N): void {
         let cursor: N | null | undefined = node;
         while (cursor) {
-            const memo = memoOf(cursor);
-            if (memo._mvtHasRefresh === undefined && memo._mvtRefresh === undefined) return;
-            memo._mvtHasRefresh = undefined;
-            memo._mvtRefresh = undefined;
+            const fields = fieldsOf(cursor);
+            if (fields._mvtHasRefresh === undefined && fields._mvtRefresh === undefined) return;
+            fields._mvtHasRefresh = undefined;
+            fields._mvtRefresh = undefined;
             cursor = tree.parent(cursor);
         }
     }
 
     /**
-     * Copies the method accessors and memo fields onto `prototype`, with
-     * `Object.defineProperties`, accessors intact.
-     *
-     * The methods are accessors rather than plain fields because assigning
-     * one has to invalidate the memoised walks above the node. Without that,
-     * giving an already-attached node a method would leave it out of a list
-     * built before it carried one.
+     * Puts the fields' defaults on `prototype`, then the transitional
+     * `onUpdate` / `onRefresh` accessors, so code not yet moved to
+     * `setUpdate` / `setRefresh` keeps working. The accessors only call those;
+     * the scene passes never read them.
      *
      * This is the one place the scene passes use `this`, which the style
      * guide otherwise rules out: a prototype accessor has no other way to
-     * reach its instance. Methods themselves are invoked as plain calls with
-     * no receiver, so a view's method stays an ordinary closure.
+     * reach its instance.
      */
     function installMethods(prototype: object): void {
-        const source: SceneMemoFields<N> & SceneNode & ThisType<N & SceneMemoFields<N>> = {
+        // The fields' defaults, so reading one on a node that never had it
+        // written finds it on the prototype, and these passes with them.
+        const defaults: SceneFields = {
             _mvtOnUpdate: undefined,
             _mvtOnRefresh: undefined,
             _mvtHasUpdate: undefined,
@@ -392,28 +440,39 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
             _mvtHasRefresh: undefined,
             _mvtRefresh: undefined,
             _mvtRefreshedInPass: 0,
-
+            _mvtInvalidators: invalidators,
+        };
+        Object.defineProperties(prototype, Object.getOwnPropertyDescriptors(defaults));
+        hasPrototypeDefaults = true;
+        const source: SceneNode & ThisType<object> = {
             get onUpdate(): UpdateMethod | undefined {
-                return this._mvtOnUpdate;
+                return fieldsOf(this)._mvtOnUpdate;
             },
             set onUpdate(method: UpdateMethod | undefined) {
-                if (this._mvtOnUpdate === method) return;
-                this._mvtOnUpdate = method;
-                methodAssignments++;
-                invalidateUpdate(this);
+                setUpdate(this, method);
             },
-
             get onRefresh(): RefreshMethod | undefined {
-                return this._mvtOnRefresh;
+                return fieldsOf(this)._mvtOnRefresh;
             },
             set onRefresh(method: RefreshMethod | undefined) {
-                if (this._mvtOnRefresh === method) return;
-                this._mvtOnRefresh = method;
-                methodAssignments++;
-                invalidateRefresh(this);
+                setRefresh(this, method);
             },
         };
         Object.defineProperties(prototype, Object.getOwnPropertyDescriptors(source));
+    }
+
+    /**
+     * The node's fields, for a walk that visits it. A node whose prototype
+     * carries no defaults (a plain object) is given these passes'
+     * invalidation climbs here, which is what lets `setUpdate` /
+     * `setRefresh` invalidate its walks later.
+     */
+    function visit(node: N): SceneFields {
+        const fields = fieldsOf(node);
+        // A renderer's nodes find the climbs on their prototype. Not read
+        // when they do: it would be one more read per node per rebuild.
+        if (!hasPrototypeDefaults && fields._mvtInvalidators === undefined) fields._mvtInvalidators = invalidators;
+        return fields;
     }
 
     function enter(active: N[], node: N, name: string): void {
@@ -446,7 +505,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
      * walk if the tree changed meanwhile. An entry run and stepped past
      * records nothing.
      */
-    function invokeSubtreeMethods(info: SubtreeInfo<N>, node: N, pass: Pass, deltaMs: number, passId: number): void {
+    function invokeSubtreeMethods(info: SubtreeInfo<N>, node: N, pass: Pass, deltaMs: number | undefined, passId: number): void {
         const list = info.list;
         const methods = info.methods;
         const skip = info.skip;
@@ -464,7 +523,7 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
             }
             const method = methodAssignments === assignmentsAtStart
                 ? methods[i]
-                : pass === UPDATE ? listed.onUpdate : listed.onRefresh;
+                : (pass === UPDATE ? fieldsOf(listed)._mvtOnUpdate : fieldsOf(listed)._mvtOnRefresh) as SceneMethod | undefined;
             // Only when a method was cleared earlier in this scene pass
             if (method === undefined) {
                 if (elisions !== undefined) elisions[i] = encodeElision(passId, ELIDED_METHOD_CLEARED);
@@ -505,7 +564,10 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     function collectSubtreeMethods(node: N, pass: Pass, list: N[], methods: SceneMethod[], ends: number[]): void {
         // Read here rather than through a shared helper: measured, V8 did not
         // inline one, and the rebuild of a churning scene was 25% slower.
-        const method: SceneMethod | undefined = pass === UPDATE ? node.onUpdate : node.onRefresh;
+        const fields = visit(node);
+        // An update method only ever runs in the update scene pass, which
+        // always passes a number (see `SceneMethod`).
+        const method = (pass === UPDATE ? fields._mvtOnUpdate : fields._mvtOnRefresh) as SceneMethod | undefined;
         let selfIndex = -1;
         if (method !== undefined) {
             selfIndex = list.length;
@@ -530,17 +592,17 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
      * quietly turn every rebuild back into a walk of the whole subtree.
      */
     function has(node: N, pass: Pass): boolean {
-        const memo = memoOf(node);
-        const cached = pass === UPDATE ? memo._mvtHasUpdate : memo._mvtHasRefresh;
+        const fields = visit(node);
+        const cached = pass === UPDATE ? fields._mvtHasUpdate : fields._mvtHasRefresh;
         if (cached !== undefined) return cached;
         if (DEV) assertNoShadowedMethods(node);
-        let found = (pass === UPDATE ? node.onUpdate : node.onRefresh) !== undefined;
+        let found = (pass === UPDATE ? fields._mvtOnUpdate : fields._mvtOnRefresh) !== undefined;
         const children = tree.children(node);
         for (let i = 0; i < children.length; i++) {
             if (has(children[i], pass)) found = true;
         }
-        if (pass === UPDATE) memo._mvtHasUpdate = found;
-        else memo._mvtHasRefresh = found;
+        if (pass === UPDATE) fields._mvtHasUpdate = found;
+        else fields._mvtHasRefresh = found;
         return found;
     }
 
@@ -561,15 +623,85 @@ export function createScenePasses<N extends SceneNode>(tree: SceneTree<N>): Scen
     }
 }
 
+/**
+ * Sets `node`'s update method, the step `updateScene` calls to advance its
+ * cosmetic presentation state, or clears it with `undefined`. Works on a node
+ * of any renderer, attached or not, and on any plain object a renderer's
+ * scene passes walk. Setting it on a node already walked invalidates the
+ * walks above it, so the next scene pass includes it.
+ *
+ * A method declaring a second parameter wraps the update method it replaces:
+ * it is given that method, or `undefined` if there was none, and may call it
+ * (at most once per call). Any other method replaces it. See `setRefresh`
+ * for the rules, which are the same.
+ */
+export function setUpdate(node: object, method: UpdateMethodOrWrapper | undefined): void {
+    const fields = fieldsOf(node);
+    const previous = fields._mvtOnUpdate;
+    const stored = method !== undefined && method.length > 1 && previous !== undefined
+        ? bindPreviousUpdate(method, previous)
+        : method as UpdateMethod | undefined;
+    if (fields._mvtOnUpdate === stored) return;
+    fields._mvtOnUpdate = stored;
+    methodAssignments++;
+    fields._mvtInvalidators?.invalidateUpdate(node);
+}
+
+/**
+ * Sets `node`'s refresh method, the step `refreshScene` calls to write model
+ * state to its presentation output, or clears it with `undefined`. Works on
+ * any node, as `setUpdate` does.
+ *
+ * A method declaring a parameter wraps the refresh method it replaces: it is
+ * given that method, or `undefined` if there was none, once, when it is set,
+ * and may call it (at most once per call), which is how a component gates or
+ * extends a child view's own step. Any other method replaces it, and the one
+ * it replaces is released.
+ *
+ * ```ts
+ * setRefresh(view, () => { view.x = model.x; });                   // replaces
+ * setRefresh(slot, (own) => (isPresent() ? own?.() : SKIP_DESCENDANTS)); // wraps
+ * ```
+ *
+ * The parameter is found by the method's declared `length`, so a parameter
+ * with a default value, or a rest parameter, does not count: such a method
+ * replaces. Wrap after the node's own method is set; setting a method
+ * afterwards, or clearing it, replaces the whole chain.
+ */
+export function setRefresh(node: object, method: RefreshMethodOrWrapper | undefined): void {
+    const fields = fieldsOf(node);
+    const previous = fields._mvtOnRefresh;
+    const stored = method !== undefined && method.length > 0 && previous !== undefined
+        ? bindPreviousRefresh(method, previous)
+        : method as RefreshMethod | undefined;
+    if (fields._mvtOnRefresh === stored) return;
+    fields._mvtOnRefresh = stored;
+    methodAssignments++;
+    fields._mvtInvalidators?.invalidateRefresh(node);
+}
+
+/** Whether `node` has an update method. Never hands out the method itself. */
+export function hasUpdate(node: object): boolean {
+    return fieldsOf(node)._mvtOnUpdate !== undefined;
+}
+
+/** Whether `node` has a refresh method. Never hands out the method itself. */
+export function hasRefresh(node: object): boolean {
+    return fieldsOf(node)._mvtOnRefresh !== undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
 /**
- * An update or refresh method, as the loop calls it: with `deltaMs`, which a
- * refresh method ignores. One call site for both scene passes.
+ * An update or refresh method, as the loop calls it: with `deltaMs` in the
+ * update scene pass, and `undefined` in the refresh scene pass. One call site
+ * for both. `undefined`, not a placeholder number, so a refresh method that
+ * declares a parameter without wrapping (one with a default value, which
+ * `setRefresh` does not count) sees that default.
  */
-type SceneMethod = (deltaMs: number) => typeof SKIP_DESCENDANTS | void;
+type SceneMethod = (deltaMs: number | undefined) => typeof SKIP_DESCENDANTS | void;
 
 // Which scene pass a shared helper is serving. A tiny discriminator keeps the
 // collection, the presence cache and the invoke loop as one implementation
@@ -616,13 +748,32 @@ function encodeElision(passId: number, kind: ElisionKind): number {
 const MAX_CATCH_UP_ROUNDS = 100;
 
 /**
- * How many times any node's `onUpdate` or `onRefresh` has been assigned, by
- * any tree. A scene pass records it on entry and, if it has changed, reads
+ * How many times any node's update or refresh method has been set, by any
+ * tree. A scene pass records it on entry and, if it has changed, reads
  * methods live for the rest of that scene pass. Shared by every tree, so a
  * method that assigns a method on another kind of node is safe too.
  */
 let methodAssignments = 0;
 
-function memoOf<N>(node: N): SceneMemoFields<N> {
-    return node as unknown as SceneMemoFields<N>;
+/**
+ * A wrapping update method, bound to the one it replaces. Bound once, when it
+ * is set, so the scene passes call every method the same way and pay nothing
+ * for methods that do not wrap. A wrapper with nothing to wrap is stored as it
+ * is: the scene passes give it no second argument, which is `undefined`.
+ */
+function bindPreviousUpdate(method: UpdateMethodOrWrapper, previous: UpdateMethod): UpdateMethod {
+    return (deltaMs) => method(deltaMs, previous);
+}
+
+/**
+ * A wrapping refresh method, bound to the one it replaces, as
+ * `bindPreviousUpdate`. A wrapper with nothing to wrap is stored as it is:
+ * the refresh scene pass calls it with `undefined` (see `SceneMethod`).
+ */
+function bindPreviousRefresh(method: RefreshMethodOrWrapper, previous: RefreshMethod): RefreshMethod {
+    return () => method(previous);
+}
+
+function fieldsOf(node: object): SceneFields {
+    return node as SceneFields;
 }

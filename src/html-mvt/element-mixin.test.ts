@@ -137,13 +137,14 @@ describe('html-mvt scene passes', () => {
         const root = recorded('root', calls);
         root.append(recorded('child', calls));
         refreshScene(root);
-        const walk = root._mvtRefresh;
+        const walk = refreshWalkOf(root);
 
         root.append(document.createTextNode('hello'));
         (root.lastChild as Text).data = 'changed';
         refreshScene(root);
 
-        expect(root._mvtRefresh).toBe(walk);
+        expect(walk).toBeDefined();
+        expect(refreshWalkOf(root)).toBe(walk);
     });
 
     it('follows a method assigned after the walk was built', () => {
@@ -218,3 +219,8 @@ describe('html-mvt scene passes', () => {
         });
     });
 });
+
+/** The node's memoised refresh walk, read off its private field. */
+function refreshWalkOf(node: Element): unknown {
+    return (node as unknown as { _mvtRefresh?: unknown })._mvtRefresh;
+}

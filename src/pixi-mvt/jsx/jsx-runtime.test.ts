@@ -1,6 +1,6 @@
 import { type Container, type Graphics, Rectangle, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, readCounter, SKIP_DESCENDANTS } from '#mvt-utils';
+import { countReads, hasRefresh, readCounter, SKIP_DESCENDANTS } from '#mvt-utils';
 import { refreshScene, updateScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 
@@ -320,7 +320,7 @@ describe('jsx runtime', () => {
                 },
             });
 
-            expect(el.onRefresh).toBeUndefined();
+            expect(hasRefresh(el)).toBe(false);
             refreshScene(el);
             expect(calls).toBe(0);
         });

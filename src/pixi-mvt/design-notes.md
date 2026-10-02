@@ -351,6 +351,37 @@ The rule that removes the hazard is for views, not the passes: a view's first
 state starts valid at construction. The presentation-state guide and the
 mvt-view skill say so.
 
+**Methods are set with `setUpdate` / `setRefresh`, and the fields stay named.**
+Library code sets a node's methods through these two functions, not through
+the `onUpdate` / `onRefresh` accessors, which remain only as transitional
+wrappers for views
+([proposal 027](../../notes/proposals/027-mvt-method-names.md) section 11).
+Each renderer's prototype carries the fields' defaults, including
+`_mvtInvalidators`, the invalidation climbs of that renderer's scene passes,
+so the functions work on any renderer's nodes with no dispatch; a plain-object
+node is given them when a walk first visits it. Views take them from their
+renderer (`pixi-mvt`, `three-mvt`, `html-mvt`), which exports them typed to
+its own node, as it exports `updateScene` and `refreshScene`, so passing
+anything else is a type error; `mvt-utils` keeps the untyped pair for the
+library's own code. The fields stay named `_mvt*`
+properties of the node. One record object per node, a `WeakMap`, and
+symbol-keyed fields were each measured, and each was slower or larger
+(027 section 11.8).
+
+**A method that declares a parameter wraps the one it replaces; there are no
+getters.** `setRefresh(node, (own) => ...)` is given the node's current
+refresh method, or `undefined`, and may call it; `setUpdate` does the same
+with a second parameter, after `deltaMs`. The wrapper is bound to the method
+it replaces once, when it is set, so the scene passes call every method the
+same way, and a method that does not wrap costs nothing extra. The parameter
+is found by the method's declared `length`, so a default-valued or rest
+parameter does not count. `<List>`, `<Switch>` and the JSX `onRefresh`
+attribute compose this way, so nothing hands out a node's method, which
+would be a way to call a view's step by hand; `hasUpdate` / `hasRefresh`
+answer whether a node has one. The refresh scene pass calls methods with
+`undefined` rather than a placeholder `deltaMs`, so a refresh method with a
+default-valued parameter sees its default.
+
 ## Accepted limitations
 
 - **Dense-plus-churning scenes are slower than a naive walk.** When every

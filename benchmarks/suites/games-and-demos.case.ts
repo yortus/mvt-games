@@ -14,6 +14,7 @@ import {
     createFallingSandEntry,
     createReorderingListsEntry,
 } from '../../src/demos';
+import { hasRefresh, hasUpdate } from '../../src/mvt-utils';
 import { refreshScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
@@ -144,8 +145,8 @@ function countScene(root: Container): { containers: number; methods: number } {
     let methods = 0;
     const visit = (node: Container): void => {
         containers++;
-        if (node.onRefresh !== undefined) methods++;
-        if (node.onUpdate !== undefined) methods++;
+        if (hasRefresh(node)) methods++;
+        if (hasUpdate(node)) methods++;
         const children = node.children;
         for (let i = 0; i < children.length; i++) visit(children[i]);
     };

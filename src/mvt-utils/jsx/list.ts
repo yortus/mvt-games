@@ -26,7 +26,7 @@
  */
 
 import { readCounter } from '../read-counter';
-import type { SceneNode } from '../scene-node';
+import { setRefresh } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import type { JsxTarget } from './jsx-target';
 
@@ -108,7 +108,7 @@ export type ListComponent<N> = <T>(bindings: ListBindings<T, N>) => N;
 // ---------------------------------------------------------------------------
 
 /** Options for {@link createList}. */
-export interface ListOptions<N extends SceneNode> {
+export interface ListOptions<N extends object> {
     /** The renderer's scene graph, as the base needs it. */
     readonly target: JsxTarget<N>;
 }
@@ -118,7 +118,7 @@ export interface ListOptions<N extends SceneNode> {
 // ---------------------------------------------------------------------------
 
 /** Makes the `<List>` component for a JSX target. */
-export function createList<N extends SceneNode>(options: ListOptions<N>): ListComponent<N> {
+export function createList<N extends object>(options: ListOptions<N>): ListComponent<N> {
     const target = options.target;
     const setVisible = target.visible.apply;
 
@@ -150,7 +150,7 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
         let currentSource: ListSource<T> = EMPTY_SOURCE;
         let currentLength = 0;
 
-        container.onRefresh = fitToLength;
+        setRefresh(container, fitToLength);
         // Detached slots are not the container's children, so destroying the
         // container would not reach them.
         target.onDestroyed(container, destroyDetachedSlots);
@@ -212,7 +212,7 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
         function buildPlaceholder(index: number): N {
             const placeholder = target.createGroup();
             setVisible(placeholder, false);
-            placeholder.onRefresh = () => {
+            setRefresh(placeholder, () => {
                 const item = index < currentLength ? currentSource.at(index) : undefined;
                 if (item === undefined) return;
                 const slot = buildItemView(index, item);
@@ -222,7 +222,7 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
                 // it returns.
                 target.replace(container, placeholder, slot);
                 target.destroy(placeholder);
-            };
+            });
             return placeholder;
         }
 
@@ -233,16 +233,16 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
             slotItems[index] = item;
             const slot = bindings.children(() => slotItems[index] as T, index);
 
-            // The slot's presence check runs before its own refresh, so no item
-            // binding ever runs for an empty slot. When present, the item view's
-            // own refresh then runs as normal, including a `visible` binding of its
-            // own, which can only hide an occupied slot further.
-            const itemViewRefresh = slot.onRefresh;
+            // The slot's presence check wraps the item view's own refresh and runs
+            // before it, so no item binding ever runs for an empty slot. When
+            // present, the item view's own refresh then runs as normal, including a
+            // `visible` binding of its own, which can only hide an occupied slot
+            // further.
             // Whether the slot held an item at its last refresh; a new slot starts
             // visible, as every JSX target's nodes do. Unchanged while detached, as is
             // the slot's visibility, so the two still agree when it is reattached.
             let wasPresent = true;
-            slot.onRefresh = () => {
+            setRefresh(slot, (itemViewRefresh) => {
                 const item = index < currentLength ? currentSource.at(index) : undefined;
                 slotItems[index] = item;
                 const isPresent = item !== undefined;
@@ -257,7 +257,7 @@ export function createList<N extends SceneNode>(options: ListOptions<N>): ListCo
                 }
                 if (!isPresent) return SKIP_DESCENDANTS;
                 return itemViewRefresh?.();
-            };
+            });
             return slot;
         }
     }

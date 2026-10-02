@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countReads } from '../read-counter';
-import type { RefreshMethod, SceneNode, UpdateMethod } from '../scene-node';
+import type { RefreshMethod } from '../scene-node';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { attributesOf, defineElements, element, event } from './attributes';
 import { createJsx, Fragment } from './create-jsx';
@@ -13,7 +13,7 @@ import type { JsxTarget } from './jsx-target';
 // No Pixi here: the base must work on any scene graph. Every write an
 // attribute makes is logged, so the tests can see what was written and when.
 
-interface FakeNode extends SceneNode {
+interface FakeNode {
     readonly kind: string;
     readonly children: FakeNode[];
     parent: FakeNode | undefined;
@@ -32,8 +32,6 @@ function createNode(kind: string): FakeNode {
         values: {},
         log: [],
         listeners: {},
-        onUpdate: undefined as UpdateMethod | undefined,
-        onRefresh: undefined as RefreshMethod | undefined,
     };
 }
 
@@ -44,8 +42,18 @@ function write(el: FakeNode, key: string, value: unknown): void {
 
 /** Parent before children; `SKIP_DESCENDANTS` skips the subtree. */
 function refreshScene(node: FakeNode): void {
-    if (node.onRefresh?.() === SKIP_DESCENDANTS) return;
+    if (refreshOf(node)?.() === SKIP_DESCENDANTS) return;
     for (let i = 0; i < node.children.length; i++) refreshScene(node.children[i]);
+}
+
+/**
+ * A node's refresh method, read from the scene passes' private field. This
+ * file drives its fake tree with a walk of its own, and checks which
+ * generated refresh method an element was given, so it reads the field the
+ * library writes; nothing else outside the library should.
+ */
+function refreshOf(node: object): RefreshMethod | undefined {
+    return (node as { _mvtOnRefresh?: RefreshMethod })._mvtOnRefresh;
 }
 
 const fake = attributesOf<FakeNode>();
@@ -286,11 +294,11 @@ describe('createJsx', () => {
             const elements: FakeNode[] = [];
             for (let i = 0; i < 16; i++) elements.push(jsx('box', { x: () => i }));
 
-            expect(elements[14].onRefresh).not.toBe(elements[15].onRefresh);
-            expect(String(elements[14].onRefresh)).toBe(String(elements[15].onRefresh));
-            expect(elements[0].onRefresh?.name).toBe('refresh1Copy0');
-            expect(elements[14].onRefresh?.name).toBe('refresh1Copy0');
-            expect(elements[15].onRefresh?.name).toMatch(/^refresh1Copy([1-9]|1\d)$/);
+            expect(refreshOf(elements[14])).not.toBe(refreshOf(elements[15]));
+            expect(String(refreshOf(elements[14]))).toBe(String(refreshOf(elements[15])));
+            expect(refreshOf(elements[0])?.name).toBe('refresh1Copy0');
+            expect(refreshOf(elements[14])?.name).toBe('refresh1Copy0');
+            expect(refreshOf(elements[15])?.name).toMatch(/^refresh1Copy([1-9]|1\d)$/);
         });
 
         it('write the same past the six bindings the copies are written for', () => {
