@@ -12,7 +12,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { onTick, SKIP_DESCENDANTS, tickScene } from './pixi-mvt';
+import { setTickMethods, SKIP_DESCENDANTS, tickScene } from './pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -114,12 +114,9 @@ async function main(): Promise<void> {
     app.stage.addChild(gameContainer);
     // The ticker ticks the whole stage once a frame (below), so pausing a game
     // is this container's call: while paused, the game's view is left out of
-    // the update scene pass, and still refreshed. EXPERIMENT (proposal 027):
-    // it is also left out while the running game updates its own view, as
-    // every game but one still does.
-    onTick(gameContainer, {
-        update: () => (paused || currentSession?.isViewTickedByHost !== true ? SKIP_DESCENDANTS : undefined),
-    });
+    // the update scene pass, and still refreshed, so it shows frozen under the
+    // pause menu. No game knows about pause.
+    setTickMethods(gameContainer, { update: () => (paused ? SKIP_DESCENDANTS : undefined) });
 
     // ---- URL fragment helpers --------------------------------------------
     function setUrlFragment(gameId: string | null): void {
@@ -536,13 +533,15 @@ async function generateThumbnails(games: GameEntry[], app: Application): Promise
             const session = entry.start(tempStage);
 
             // Simulate many small ticks so state machines and GSAP
-            // timelines advance correctly across phase boundaries.
+            // timelines advance correctly across phase boundaries. Each
+            // advances the models and the views' presentation state; one
+            // refresh scene pass at the end is all the snapshot needs.
             const totalMs = entry.thumbnailAdvanceMs ?? TICK_MS;
             let remaining = totalMs;
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;
                 session.update(step);
-                if (session.isViewTickedByHost === true) tickScene({ root: tempStage, deltaMs: step, only: 'update' });
+                tickScene({ root: tempStage, deltaMs: step, only: 'update' });
                 remaining -= step;
             }
             tickScene({ root: tempStage, only: 'refresh' });

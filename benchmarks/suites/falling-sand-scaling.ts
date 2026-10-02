@@ -3,8 +3,8 @@ import { combinations, type MetricColumn, type Suite } from '../harness/suite';
 const METRICS: readonly MetricColumn[] = [
     { key: 'movingGrains', title: 'Moving grains', maxDecimals: 0 },
     { key: 'modelUs', title: 'Model (µs)' },
-    { key: 'updateUs', title: '`updateScene` (µs)' },
-    { key: 'refreshUs', title: '`refreshScene` (µs)' },
+    { key: 'updateUs', title: 'Update scene pass (µs)' },
+    { key: 'refreshUs', title: 'Refresh scene pass (µs)' },
     { key: 'totalUs', title: 'Total (µs)' },
     { key: 'refreshNsPerGrain', title: 'Refresh per grain (ns)' },
     { key: 'readsPerFrame', title: 'Reads per frame', maxDecimals: 0 },

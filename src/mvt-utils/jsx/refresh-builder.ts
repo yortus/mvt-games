@@ -1,5 +1,5 @@
 import { readCounter } from '../read-counter';
-import type { RefreshMethod } from '../scene-node';
+import type { RefreshMethod } from '../scene-methods';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import type { WriteKind } from './attributes';
 import { REFRESH_COPIES, type RefreshCopy, type Write, type Writer } from './refresh-copies';

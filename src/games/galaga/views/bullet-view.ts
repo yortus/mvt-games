@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -21,7 +22,7 @@ export function BulletView(bindings: BulletViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function initialiseView(): void {

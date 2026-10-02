@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoModel, DemoView, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
 } from '../../src/demos/falling-sand';
-import { countReads, refreshScene, updateScene } from '../../src/pixi-mvt';
+import { countReads, tickScene } from '../../src/pixi-mvt';
 import { readParams, report } from '../harness/measure';
 
 // Measured file for the `falling-sand-scaling` suite: the falling-sand demo,
@@ -61,8 +61,7 @@ const frame = (): void => {
     if (scenario === 'flipping' && frameIndex % CYCLE_FRAMES === 0) model.flip();
     frameIndex++;
     model.update(FRAME_MS);
-    updateScene(view, FRAME_MS);
-    refreshScene(stage);
+    tickScene({ root: stage, deltaMs: FRAME_MS });
 };
 
 for (let f = 0; f < WARMUP_FRAMES; f++) frame();
@@ -77,9 +76,9 @@ for (let f = 0; f < MEASURED_FRAMES; f++) {
     const start = performance.now();
     model.update(FRAME_MS);
     const modelled = performance.now();
-    updateScene(view, FRAME_MS);
+    tickScene({ root: stage, deltaMs: FRAME_MS, only: 'update' });
     const updated = performance.now();
-    refreshScene(stage);
+    tickScene({ root: stage, only: 'refresh' });
     const refreshed = performance.now();
     modelMs += modelled - start;
     updateMs += updated - modelled;

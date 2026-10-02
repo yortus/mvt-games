@@ -1,5 +1,5 @@
-import type { UpdateMethod } from '../scene-node';
-import { hasRefresh, setRefresh, setUpdate } from '../scene-passes';
+import type { UpdateMethod } from '../scene-methods';
+import { hasRefresh, setTickMethods } from '../scene-passes';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { MVT_ATTRIBUTE_KEYS } from './attributes';
 import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
@@ -58,13 +58,13 @@ export interface JsxRuntime<N> {
  *
  * - An attribute is written as its definition in the element table says. A
  *   function given to a changeable attribute is a binding, polled from the
- *   element's `onRefresh` method (called by the renderer's `refreshScene`) and written
- *   every frame or on change.
+ *   element's refresh method (called by the renderer's refresh scene pass)
+ *   and written every frame or on change.
  * - Construction is inert: fixed values are applied at once, but no getter
  *   runs until the element's first refresh. Until then a bound property holds
- *   its default. The ticker refreshes the whole scene before every render, and
- *   `refreshScene` also refreshes whatever `<List>` / `<Switch>` build during
- *   it, so nothing is ever shown with defaults.
+ *   its default. The ticker ticks the whole scene before every render, and
+ *   the refresh scene pass also refreshes whatever `<List>` / `<Switch>`
+ *   build during it, so nothing is ever shown with defaults.
  * - A `visible` binding is evaluated first, and a hidden element skips its
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
  * - Event attributes are wired before any other attribute is applied, so a
@@ -160,14 +160,14 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
             if (visibleBinding !== undefined) bindings.push(visibleBinding);
             if (everyFrame !== undefined) bindings.push(...everyFrame);
             if (onChange !== undefined) bindings.push(...onChange);
-            setRefresh(el, refreshBuilder.build(el, bindings, visibleBinding !== undefined));
+            setTickMethods(el, { refresh: refreshBuilder.build(el, bindings, visibleBinding !== undefined) });
         }
 
         if (typeof attributes.onRefresh === 'function') {
             addRefreshStep(el, attributes.onRefresh as RefreshStep<N>);
         }
         if (typeof attributes.onUpdate === 'function') {
-            setUpdate(el, attributes.onUpdate as UpdateMethod);
+            setTickMethods(el, { update: attributes.onUpdate as UpdateMethod });
         }
         if (typeof attributes.onDestroyed === 'function') {
             target.onDestroyed(el, attributes.onDestroyed as DestroyedCallback<N>);
@@ -280,6 +280,6 @@ function callRef(ref: unknown, node: unknown): void {
 function addRefreshStep<N extends object>(el: N, step: RefreshStep<N>): void {
     // Wraps the bindings' refresh method when there is one; otherwise the step
     // is the element's whole refresh, with nothing to call first.
-    if (!hasRefresh(el)) setRefresh(el, () => step(el));
-    else setRefresh(el, (own) => (own?.() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el)));
+    if (!hasRefresh(el)) setTickMethods(el, { refresh: () => step(el) });
+    else setTickMethods(el, { refresh: (own) => (own?.() === SKIP_DESCENDANTS ? SKIP_DESCENDANTS : step(el)) });
 }

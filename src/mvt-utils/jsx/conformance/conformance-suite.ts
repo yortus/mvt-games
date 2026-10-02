@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countReads, readCounter } from '../../read-counter';
-import { hasRefresh, setRefresh } from '../../scene-passes';
+import { hasRefresh, setTickMethods } from '../../scene-passes';
 import { SKIP_DESCENDANTS } from '../../skip-descendants';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
@@ -47,7 +47,6 @@ export interface ConformanceFixture<N extends object> {
     readonly parent: (node: N) => N | undefined;
     readonly isVisible: (node: N) => boolean;
     readonly isDestroyed: (node: N) => boolean;
-    readonly updateScene: (node: N, deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +90,7 @@ interface SuiteContext<N extends object> {
 
 function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): void {
     const { target, everyFrame, onChange, onChangeNumber } = fixture;
-    const refresh = target.refreshScene;
+    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
     /** A fragment of `children`, nested as JSX children may be. */
     const group = (children?: unknown): N => jsx(Fragment, { children });
 
@@ -293,8 +292,8 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
             refresh(el);
             expect(deltas).toEqual([]);
 
-            fixture.updateScene(el, 16);
-            fixture.updateScene(el, 17);
+            target.tickScene({ root: el, deltaMs: 16, only: 'update' });
+            target.tickScene({ root: el, deltaMs: 17, only: 'update' });
             expect(deltas).toEqual([16, 17]);
         });
 
@@ -399,7 +398,7 @@ function itemsWithIds(...ids: number[]): Item[] {
 
 function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
-    const refresh = target.refreshScene;
+    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
     const [labelA, labelB] = onChange.values;
     /** The value an item view shows: the probe's first value for even ids, its second for odd. */
     const labelFor = (id: number): unknown => (id % 2 === 0 ? labelA : labelB);
@@ -758,7 +757,7 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
                 items,
                 children: () => {
                     const view = target.createGroup();
-                    setRefresh(view, () => void refreshes++);
+                    setTickMethods(view, { refresh: () => void refreshes++ });
                     return view;
                 },
             });
@@ -853,7 +852,7 @@ interface Boss { hp: number; isEnraged: boolean }
 
 function describeSwitch<N extends object>({ fixture, jsx, Switch, Match }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
-    const refresh = target.refreshScene;
+    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
     const [valueA, valueB] = onChange.values;
 
     /** The motivating case: branches whose bindings are only valid when they apply. */

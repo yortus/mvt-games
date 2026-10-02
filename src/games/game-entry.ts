@@ -56,16 +56,15 @@ export interface GameInputConfig {
 
 /** A running game instance - updated each tick and destroyable. */
 export interface GameSession {
-    /** Advance game state by the given elapsed milliseconds. */
+    /**
+     * Advance the game's models by the given elapsed milliseconds. Models
+     * only: the host ticks the game's view with the rest of its stage
+     * (`tickScene`). Pausing is the host's call too: while paused, it stops
+     * calling this and leaves the view out of the update scene pass.
+     */
     update: (deltaMs: number) => void;
     /** Tear down the game session and remove visuals from the stage. */
     destroy: () => void;
     /** Input control configuration for the game. */
     inputConfig?: GameInputConfig;
-    /**
-     * EXPERIMENT (proposal 027): whether the host ticks this game's view with
-     * the rest of the stage (`tickScene`), so `update` advances only the
-     * game's models. Absent: `update` also updates the game's view, as before.
-     */
-    readonly isViewTickedByHost?: boolean;
 }

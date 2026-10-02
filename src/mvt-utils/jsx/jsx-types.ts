@@ -1,4 +1,4 @@
-import type { UpdateMethod } from '../scene-node';
+import type { UpdateMethod } from '../scene-methods';
 import type { SKIP_DESCENDANTS } from '../skip-descendants';
 import type { ChangeableAttribute, ElementDefinition, EventAttribute, FixedAttribute } from './attributes';
 
@@ -56,7 +56,7 @@ export interface MvtAttributes<E, N> {
      * whole subtree are skipped.
      */
     visible?: ValueOrGetter<boolean>;
-    /** Installed as the element's `onUpdate` method. */
+    /** Installed as the element's update method. */
     onUpdate?: UpdateMethod;
     onRefresh?: RefreshStep<E>;
     onDestroyed?: DestroyedCallback<E>;

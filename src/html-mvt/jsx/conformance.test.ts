@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describeJsxConformance } from '#mvt-utils/jsx/conformance';
-import { isDestroyed, updateScene } from '../element-mixin';
+import { isDestroyed } from '../element-mixin';
 import { htmlElements } from './html-elements';
 import { htmlTarget } from './html-target';
 
@@ -59,5 +59,4 @@ describeJsxConformance<Element>({
     parent: (node) => node.parentElement ?? undefined,
     isVisible: (node) => !node.hasAttribute('hidden'),
     isDestroyed,
-    updateScene,
 });

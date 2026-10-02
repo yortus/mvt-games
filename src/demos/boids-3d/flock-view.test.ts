@@ -1,6 +1,6 @@
 import { type Mesh, PerspectiveCamera, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
-import { createPointerPicker, type PointerLike, refreshScene, updateScene } from '../../three-mvt';
+import { createPointerPicker, type PointerLike, tickScene } from '../../three-mvt';
 import { createFlockModel } from '../boids';
 import { FlockView } from './flock-view';
 
@@ -27,8 +27,7 @@ function setup() {
     scene.add(FlockView({ model }));
     const frame = (): void => {
         model.update(16);
-        updateScene(scene, 16);
-        refreshScene(scene);
+        tickScene({ root: scene, deltaMs: 16 });
     };
     frame();
     // The view's root group, then its list of boids, the last of its children

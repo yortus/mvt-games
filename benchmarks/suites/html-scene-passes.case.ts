@@ -1,7 +1,8 @@
 import { jsx as htmlJsx, List as HtmlList } from '#html-mvt/jsx';
-import { refreshScene as refreshElements, setRefresh, SKIP_DESCENDANTS } from '../../src/html-mvt';
+import { setTickMethods, SKIP_DESCENDANTS, tickScene as tickElements } from '../../src/html-mvt';
 import { jsx as threeJsx, List as ThreeList } from '#three-mvt/jsx';
-import { refreshScene as refreshObjects } from '../../src/three-mvt';
+import { tickScene as tickObjects } from '../../src/three-mvt';
+import type { Object3D } from 'three';
 import { readParams, report, timeFrames } from '../harness/measure';
 
 // Runs in headless Chrome, with a real DOM. Nothing is laid out or drawn: the
@@ -29,7 +30,7 @@ function walkScene(methods: string, count: number, walk: string): () => void {
     // Each walk gets only what it reads: the memoised walk the scene passes'
     // method, the naive walk a property of its own.
     const withMethod = (el: Element): void => {
-        if (walk === 'memoised') setRefresh(el, () => method());
+        if (walk === 'memoised') setTickMethods(el, { refresh: () => method() });
         else (el as BaselineElement).baselineRefresh = () => method();
     };
     const rows = count / 10;
@@ -72,6 +73,16 @@ function naiveRefresh(node: BaselineElement): void {
     const method = node.baselineRefresh;
     if (method !== undefined && method() === SKIP_DESCENDANTS) return;
     for (let child = node.firstElementChild; child !== null; child = child.nextElementSibling) naiveRefresh(child);
+}
+
+/** The memoised walk: html-mvt's refresh scene pass. */
+function refreshElements(root: Element): void {
+    tickElements({ root, only: 'refresh' });
+}
+
+/** three-mvt's refresh scene pass. */
+function refreshObjects(root: Object3D): void {
+    tickObjects({ root, only: 'refresh' });
 }
 
 // ---------------------------------------------------------------------------

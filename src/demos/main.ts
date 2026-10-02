@@ -1,5 +1,5 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
-import { refreshScene } from '../pixi-mvt';
+import { tickScene } from '../pixi-mvt';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
 import { createFallingSandEntry } from './falling-sand';
@@ -125,9 +125,10 @@ async function generateThumbnails(): Promise<void> {
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;
                 session.update(step);
+                tickScene({ root: tempStage, deltaMs: step, only: 'update' });
                 remaining -= step;
             }
-            refreshScene(tempStage);
+            tickScene({ root: tempStage, only: 'refresh' });
 
             const renderTexture = RenderTexture.create({
                 width: entry.screenWidth,
@@ -191,11 +192,10 @@ async function launchDemo(index: number): Promise<void> {
     await entry.load?.();
     const session = entry.start(app.stage, { renderer: app.renderer, ticker: app.ticker });
 
-    // Sessions advance their own models and views (`onUpdate`); one refresh
-    // pass then syncs the whole stage.
+    // Each frame ticks the demo's models, then the whole stage.
     app.ticker.add((ticker) => {
         session.update(ticker.deltaMS);
-        refreshScene(app.stage);
+        tickScene({ root: app.stage, deltaMs: ticker.deltaMS });
     });
 
     activeApp = app;

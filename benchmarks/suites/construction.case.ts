@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { refreshScene } from '../../src/pixi-mvt';
+import { tickScene } from '../../src/pixi-mvt';
 import { readParams, report, timeFrames } from '../harness/measure';
 import { createPoolFrame } from '../shared/pool-scene';
 import { createSyncedScene, type Approach } from '../shared/synced-scene';
@@ -44,7 +44,7 @@ function buildSyncedScenes(sceneApproach: Approach, count: number): () => void {
         const scene = createSyncedScene({ approach: sceneApproach, count, dynamicProperties: 3, changedPercent: 0 });
         // The first refresh is part of a container's cost. Signals and events
         // bring their views up to date as they are built.
-        if (polled) refreshScene(scene.root);
+        if (polled) tickScene({ root: scene.root, only: 'refresh' });
         scene.dispose();
     };
 }

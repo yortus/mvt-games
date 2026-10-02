@@ -5,6 +5,7 @@ import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { SliderView } from './slider-view';
 import { CheckboxView } from './checkbox-view';
+import { setTickMethods } from '../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -194,7 +195,7 @@ export function BoidsView(bindings: BoidsViewBindings): Container {
     simBg.rect(0, 0, simWidth, simHeight).fill({ color: 0x111122 });
     simBg.rect(0, 0, simWidth, simHeight).stroke({ color: 0x333355, width: 1 });
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     // ---- Refresh -----------------------------------------------------------

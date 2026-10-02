@@ -1,5 +1,4 @@
 import type { Container } from 'pixi.js';
-import { updateScene } from '../../pixi-mvt';
 import type { DemoEntry, DemoSession } from '../demo-entry';
 import { createCardRowModel } from './card-row-model';
 import { CardRowView } from './card-row-view';
@@ -40,9 +39,9 @@ export function createReorderingListsEntry(): DemoEntry {
             stage.addChild(view);
 
             return {
+                // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
                     model.update(deltaMs);
-                    updateScene(view, deltaMs);
                 },
                 destroy(): void {
                     stage.removeChild(view);

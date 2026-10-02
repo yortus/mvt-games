@@ -16,11 +16,11 @@ function setup(readCounter?: SampledCounter, gl?: FakeGl) {
     let nowMs = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
-    let onTick: (() => void) | undefined;
+    let setTickMethods: (() => void) | undefined;
     const hooks: { prerender: () => void; postrender: () => void }[] = [];
     const ticker = {
-        add: (fn: () => void) => { onTick = fn; },
-        remove: () => { onTick = undefined; },
+        add: (fn: () => void) => { setTickMethods = fn; },
+        remove: () => { setTickMethods = undefined; },
     } as unknown as Ticker;
     const runner = {
         add: (item: { prerender: () => void; postrender: () => void }) => { if (!hooks.includes(item)) hooks.push(item); },
@@ -36,7 +36,7 @@ function setup(readCounter?: SampledCounter, gl?: FakeGl) {
 
     /** One frame: tick, `work` (the frame's update and refresh), render; `frameMs` of it busy, the rest idle. */
     function frame(frameMs: number, busyMs: number, work?: () => void): void {
-        onTick!();
+        setTickMethods!();
         work?.();
         nowMs += busyMs;
         for (const h of hooks) h.prerender();

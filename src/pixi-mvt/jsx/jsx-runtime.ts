@@ -4,7 +4,7 @@
  * (`pixi-elements.ts`).
  *
  * How the runtime behaves (rendering once, inert construction, bindings
- * polled from each element's `onRefresh`, `visible` first) is in the base's
+ * polled from each element's refresh method, `visible` first) is in the base's
  * `create-jsx.ts`; what each Pixi attribute does, and how often it is
  * written, is in the element table. Why there are no cleanup scopes or
  * context providers: the base's `design-notes.md`. Pixi facts the JSX target

@@ -1,4 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
+import { setTickMethods } from '../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -42,7 +43,7 @@ export function CheckboxView(bindings: CheckboxViewBindings): Container {
         bindings.onToggled?.(!bindings.isChecked());
     });
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     // ---- Refresh -----------------------------------------------------------

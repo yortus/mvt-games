@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#mvt-utils';
 import type { GamePhase, TileKind } from '../models';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -31,7 +32,7 @@ export function MazeView(bindings: MazeViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function initialiseView(): void {

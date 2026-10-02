@@ -1,4 +1,4 @@
-# Move to the Tick API (`tickScene` / `onTick`)
+# Move to the Tick API (`tickScene` / `setTickMethods`)
 
 | Field    | Value      |
 | -------- | ---------- |
@@ -33,14 +33,14 @@ its own node type, so passing anything else is a type error:
 ```ts
 // What a view does on each tick. A member left out is left as it is; one
 // given as `undefined` is cleared.
-onTick(view, {
+setTickMethods(view, {
     update: (deltaMs) => { flash.update(deltaMs); },
     refresh: () => { view.alpha = flash.alpha; },
 });
 
 // A member that declares a parameter for the method it replaces wraps it:
-onTick(slot, { refresh: (own) => (isPresent() ? own?.() : SKIP_DESCENDANTS) });
-onTick(node, { update: (deltaMs, own) => own?.(deltaMs) });
+setTickMethods(slot, { refresh: (own) => (isPresent() ? own?.() : SKIP_DESCENDANTS) });
+setTickMethods(node, { update: (deltaMs, own) => own?.(deltaMs) });
 
 // Ticking a scene: a whole tick, or one of its two scene passes
 tickScene({ root: app.stage, deltaMs });         // update, then refresh
@@ -77,7 +77,7 @@ How it works underneath, all already built (see "State at creation"):
   `tickScene({ root: app.stage, deltaMs })`.
 - **Pausing is the host's call.** The host's game container sits out the
   update scene pass while paused, with
-  `onTick(gameContainer, { update: () => (paused ? SKIP_DESCENDANTS : undefined) })`.
+  `setTickMethods(gameContainer, { update: () => (paused ? SKIP_DESCENDANTS : undefined) })`.
   It is still refreshed, so the pause menu shows over the frozen game. No game
   knows about pause.
 
@@ -113,13 +113,13 @@ staged by the user for review. Phase 0 commits it.
 
 - **Library, done and tested:**
   - `src/mvt-utils/scene-passes.ts` has `setUpdate` / `setRefresh` (untyped,
-    with the wrapping rule), `onTick`, `hasUpdate` / `hasRefresh`, and the
+    with the wrapping rule), `setTickMethods`, `hasUpdate` / `hasRefresh`, and the
     variant C storage.
   - `createScenePasses` returns `updateScene`, `refreshScene`, `invalidate`,
-    `installMethods`, `setUpdate`, `setRefresh`, `tickScene` and `onTick`,
+    `installMethods`, `setUpdate`, `setRefresh`, `tickScene` and `setTickMethods`,
     typed to the node.
   - The renderer barrels export all of these.
-  - `tickScene` and `onTick` still carry "EXPERIMENT (proposal 027)"
+  - `tickScene` and `setTickMethods` still carry "EXPERIMENT (proposal 027)"
     markers.
 - **Transitional layer, still in place:**
   - `installMethods` adds the `onUpdate` / `onRefresh` accessors as well as
@@ -133,7 +133,7 @@ staged by the user for review. Phase 0 commits it.
 - **Kwazy Cactii is converted:**
   - Its session updates only its model, with `isViewTickedByHost: true`, an
     experimental flag on `GameSession`.
-  - Its views use `onTick`.
+  - Its views use `setTickMethods`.
 - **`src/main.ts` runs the experiment:**
   - `tickScene` once per frame.
   - The game container's update gate, which also skips games without the
@@ -150,76 +150,76 @@ staged by the user for review. Phase 0 commits it.
 
 ### Phase 0: commit
 
-- [ ] The state above is committed (the user stages and commits).
+- [x] The state above is committed (the user stages and commits).
 
 ### Phase 1: finish the library API
 
-- [ ] `tickScene` throws in dev builds unless `deltaMs` is a finite number.
+- [x] `tickScene` throws in dev builds unless `deltaMs` is a finite number.
   Negative values are allowed. Add tests. This is 027 section 7.6's check,
   minus its sign rule.
-- [ ] The "EXPERIMENT" markers on `tickScene` and `onTick` are gone, and
+- [x] The "EXPERIMENT" markers on `tickScene` and `setTickMethods` are gone, and
   their doc comments read as the main API.
-- [ ] Old exports stay in place until phase 4, so the build stays green.
+- [x] Old exports stay in place until phase 4, so the build stays green.
 
 ### Phase 2: hosts and sessions
 
-- [ ] Every session advances only its models:
+- [x] Every session advances only its models:
   - game entries: `asteroids`, `digdug`, `galaga`, `ik`, `pacman`,
     `scramble` (cactii is done);
   - demo entries: `boids`, `falling-sand`, `reordering-lists`.
-- [ ] Every host ticks its stage once per frame with `tickScene`:
+- [x] Every host ticks its stage once per frame with `tickScene`:
   - `src/main.ts`;
   - `src/demos/main.ts`;
   - `src/demos/boids-3d/main.ts` (three.js, plus its HTML settings panel);
   - `src/playground/sandbox/sandbox-runner.ts`.
-- [ ] Pause works as a gate on each host's game or demo container. The gate
+- [x] Pause works as a gate on each host's game or demo container. The gate
   in `src/main.ts` becomes `paused` alone.
-- [ ] The experiment scaffolding is removed:
+- [x] The experiment scaffolding is removed:
   - `GameSession.isViewTickedByHost`;
   - the second condition in the host's gate;
   - the special cases in the thumbnail code and in
     `benchmarks/suites/games-and-demos.case.ts`.
-- [ ] Both thumbnail paths (`src/main.ts`, `src/demos/main.ts`) tick views
+- [x] Both thumbnail paths (`src/main.ts`, `src/demos/main.ts`) tick views
   while advancing, then refresh once with `{ only: 'refresh' }`.
-- [ ] The `games-and-demos` harness is uniform: `session.update(dt)`, then the
+- [x] The `games-and-demos` harness is uniform: `session.update(dt)`, then the
   tick. It times models, the update scene pass and the refresh scene pass
   separately, using `only`. Today's "update" column mixes models with view
   updates.
-- [ ] Every game and demo is checked in a browser, including pause (see
+- [x] Every game and demo is checked in a browser, including pause (see
   "Working notes").
 
 ### Phase 3: views and other callers
 
-- [ ] About 113 `x.onUpdate =` / `x.onRefresh =` assignments become `onTick`:
+- [x] About 113 `x.onUpdate =` / `x.onRefresh =` assignments become `setTickMethods`:
   games, demos, `src/common/` (touch input, pause menu), and
   `src/cabinet/cabinet-view.ts`. Merge an update and a refresh on the same
   node into one call.
-- [ ] Re-run the arity audit first. In the 2026-10-02 audit, no refresh method
+- [x] Re-run the arity audit first. In the 2026-10-02 audit, no refresh method
   declared a parameter and no update method declared two, so nothing changes
   meaning. Re-check anything added since.
-- [ ] The playground's presets (`src/playground/presets.ts`, six
+- [x] The playground's presets (`src/playground/presets.ts`, six
   `view.onRefresh = refresh` samples and a comment explaining them) use
-  `onTick`, and the sandbox exposes `onTick` to user code. Check what
+  `setTickMethods`, and the sandbox exposes `setTickMethods` to user code. Check what
   `src/playground/sandbox/compile.ts` hands to compiled code.
-- [ ] The benchmark suites (15 files) set methods with `onTick`, or with the
+- [x] The benchmark suites (15 files) set methods with `setTickMethods`, or with the
   renderer's internal setters where a suite measures the scene passes
   themselves.
-- [ ] The tests (14 files call the scene passes directly) use `tickScene`, or
+- [x] The tests (14 files call the scene passes directly) use `tickScene`, or
   import the internal functions from the mixin files.
 
 ### Phase 4: remove the transitional layer
 
-- [ ] The `onUpdate` / `onRefresh` accessors are gone. `installMethods` only
+- [x] The `onUpdate` / `onRefresh` accessors are gone. `installMethods` only
   installs the field defaults, and is renamed to match.
-- [ ] Each mixin's type declarations for `Container`, `Object3D` and
+- [x] Each mixin's type declarations for `Container`, `Object3D` and
   `Element` (`SceneNode`) are gone. Remove `SceneNode` itself if nothing else
   needs it.
-- [ ] `assertNoShadowedMethods` is gone. It only protected the accessors.
-- [ ] The renderer barrels stop exporting `updateScene`, `refreshScene`,
-  `setUpdate` and `setRefresh`. The public surface is `tickScene`, `onTick`,
+- [x] `assertNoShadowedMethods` is gone. It only protected the accessors.
+- [x] The renderer barrels stop exporting `updateScene`, `refreshScene`,
+  `setUpdate` and `setRefresh`. The public surface is `tickScene`, `setTickMethods`,
   `hasUpdate`, `hasRefresh`, `SKIP_DESCENDANTS`, the destroy helpers, and what
   each renderer already exports besides.
-- [ ] `grep -rn "onUpdate\|onRefresh" src` finds only the JSX attributes,
+- [x] `grep -rn "onUpdate\|onRefresh" src` finds only the JSX attributes,
   their types, and docs about them.
 
 ### Phase 5: scene counter for the perfmon
@@ -252,6 +252,12 @@ staged by the user for review. Phase 0 commits it.
   24 files mentioned the old names at creation.
 - [ ] No coined jargon; use the existing terms (the user's standing
   preference).
+- [ ] "The plugin" meaning pixi-mvt is gone from the pixi-mvt README and
+  design notes: it says "pixi-mvt", or "the mixin" where it means the
+  patching of `Container.prototype`. The term dates from when pixi-mvt was a
+  single Pixi add-on (archived notes 001 and 003), and it registers nothing
+  with Pixi. Links to those archived notes keep their file names. Build-tool
+  plugins (Vite, esbuild) keep the word.
 
 ### Phase 7: benchmarks
 
@@ -262,12 +268,14 @@ staged by the user for review. Phase 0 commits it.
     faster;
   - the `games-and-demos` columns are new.
 - [ ] `docs/building-with-mvt/performance/measurements.md` is updated if it
-  quotes changed numbers.
+  quotes changed numbers, and says "importing pixi-mvt", not "importing the
+  plugin". The re-saved `scene-passes` results carry the suite's new labels
+  ("pixi-mvt imported", "no scene pass run", "Refresh scene pass").
 
 ### Phase 8: notes
 
 - [ ] Proposal 027 is rewritten around what was decided: the tick vocabulary,
-  `tickScene` / `onTick`, and variant C storage. Mark the rename sections
+  `tickScene` / `setTickMethods`, and variant C storage. Mark the rename sections
   (3-6.3) superseded, and keep them as the record of why. Then archive it, with
   its index row.
 - [ ] This task is archived, and its loose ends below are filed.
@@ -283,7 +291,7 @@ staged by the user for review. Phase 0 commits it.
   `ship`) on loading the cabinet. Check whether they predate this work.
 - **When the packages are published (proposal 011):** 027 section 11.7's
   duplicate-copy mitigations, and `Symbol.for` for `SKIP_DESCENDANTS`.
-- **Rename `onTick` to `setTickMethods`:** follow-up task
+- **Rename `setTickMethods` to `setTickMethods`:** follow-up task
   [029](../backlog/029-rename-ontick-to-settickmethods.md), after this one.
   Adoption, mixed-library and dependency-direction notes for the docs phase
   are in [027 section 12](../../proposals/027-mvt-method-names.md).
@@ -324,3 +332,80 @@ staged by the user for review. Phase 0 commits it.
 
 - **2026-10-02** Created from the session that ran 027's spikes. The state at
   creation is described above.
+- **2026-10-02** Phases 1-4 done. Both type-checks pass, lint is clean, and
+  1176 tests pass (one fewer: the shadowed-method test went with its guard).
+  Every game, the cabinet, the three demos, the demos gallery, boids-3d and
+  three playground presets were checked in headless Chrome: no exceptions;
+  games move, freeze under the pause menu, and move again on resume; the
+  playground's clock freezes on its Pause button. The only warnings are the
+  known `[Cache] already has key` ones (see "Out of scope"). Decisions:
+  - **The demos runner and boids-3d have no pause**, so no gate: Escape exits
+    a demo. The playground's sandbox gates its stage, since the user's view
+    is added straight to it, and reports a view error as "a view's update or
+    refresh" now that one `tickScene` runs both scene passes.
+  - **boids-3d ticks both of its scenes in full**, the three.js scene and the
+    HTML panel. The panel has no update methods, so its update scene pass is
+    an empty list walk.
+  - **The mixin files kept exporting `updateScene`, `refreshScene`,
+    `setUpdate` and `setRefresh`** for their own code, the JSX targets and the
+    tests. Superseded the same day: see the next entry.
+  - **Benchmarks use only the public API**, since they import through the
+    barrels: `tickScene` with `only`, and `setTickMethods`. `scene-passes` and
+    `html-scene-passes` wrap them in a local function per scene pass, which
+    adds one call per frame (phase 7 re-saves anyway). `scene-passes` now
+    tells whether the plugin loaded by `'_mvtRefreshMethod' in
+    Container.prototype`, since the accessor it looked for is gone. Column
+    and row labels that named `refreshScene` / `onRefresh` say "refresh scene
+    pass" / "refresh method".
+  - **`installMethods` is `installFieldDefaults`.** `scene-node.ts` is
+    `scene-methods.ts`, since it now holds only `UpdateMethod` and
+    `RefreshMethod`; `scripts/generate-refresh-copies.ts` writes the new path.
+  - **`setTickMethods`'s doc comment carries the wrapping rules**, which used to live
+    on `setRefresh`. The setters' comments now point to it.
+  - **Scene pass errors no longer name internal functions:** "The update
+    scene pass was started re-entrantly...", "The refresh scene pass on X was
+    still changing the tree...".
+  - **Playground links saved before this change** that assign
+    `view.onRefresh` no longer animate: the assignment makes a plain property
+    the scene passes never read, and nothing warns. The presets and the
+    new-project template use `setTickMethods`, and the editor's globals hint lists it.
+  - **Left for phase 6:** the `.md` files under `src/` (the pixi-mvt README
+    and design notes, `src/games/README.md`, the JSX base's README and design
+    notes) still describe the old names, and are the only matches for the
+    phase 4 grep besides the JSX attributes.
+- **2026-10-02** `onTick` renamed to `setTickMethods` by task
+  [029](../../archive/029-rename-ontick-to-settickmethods.md), before phases
+  1-4 were committed. This file uses the new name throughout, including in
+  the entries above. It returns `void`.
+- **2026-10-02** No second way to do the same thing: `updateScene`,
+  `refreshScene`, `setUpdate` and `setRefresh` are now private to
+  `scene-passes.ts`, not only left out of the barrels. `ScenePasses` is
+  `invalidate`, `installFieldDefaults`, `tickScene` and `setTickMethods`, and
+  the mixins export only the last two (and their destroy helpers).
+  - The JSX base, `<List>`, `<Switch>`, `DestroyRegistry` and Pixi's destroy
+    wrapper set methods with `setTickMethods`.
+  - `JsxTarget.refreshScene` is `JsxTarget.tickScene` (typed with
+    `TickSceneOptions`, now exported from `mvt-utils`). The conformance
+    suite's fixtures lose their `updateScene`; the suite drives each target
+    through its `tickScene`.
+  - Every test uses `tickScene` and `setTickMethods`. The container-mixin
+    suite ran its core tests twice, once per way of setting a method; with one
+    way left, the 34 duplicates went, so 1142 tests pass.
+  - **For phase 7:** each JSX element now sets its methods through
+    `setTickMethods`, which takes an options object, rather than through
+    `setRefresh`. Not measured; `construction` and `jsx-refresh` will show it
+    if it costs anything.
+- **2026-10-02** The scene passes' per-node fields renamed to say what they
+  hold: `_mvtUpdateMethod` / `_mvtRefreshMethod` (were `_mvtOnUpdate` /
+  `_mvtOnRefresh`), `_mvtUpdateWalk` / `_mvtRefreshWalk` (were `_mvtUpdate` /
+  `_mvtRefresh`), `_mvtSubtreeHasUpdate` / `_mvtSubtreeHasRefresh` (were
+  `_mvtHasUpdate` / `_mvtHasRefresh`), and `_mvtLastRefreshPass` (was
+  `_mvtRefreshedInPass`). `SubtreeInfo` is `SubtreeWalk`, private to
+  `scene-passes.ts` and no longer exported from `mvt-utils`. Only the names
+  changed, not the layout 027 section 11.8 measured. That section still
+  quotes the old names, as history.
+- **2026-10-02** "The plugin" meaning pixi-mvt is legacy wording, from when
+  pixi-mvt was a single Pixi add-on. Replaced in the `scene-passes` benchmark
+  (its import variable, comments, errors and row labels), along with a "no
+  pass run" label. Its docs and saved results are in the phase 6 and 7
+  criteria.

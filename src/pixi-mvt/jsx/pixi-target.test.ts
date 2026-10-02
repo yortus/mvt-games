@@ -2,7 +2,7 @@ import { Container, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { countReads } from '#mvt-utils';
 import { createJsx } from '#mvt-utils/jsx';
-import { refreshScene } from '../container-mixin';
+import { tickScene } from '../container-mixin';
 import { jsx } from './jsx-runtime';
 import { List } from './list';
 import { pixiElements } from './pixi-elements';
@@ -44,7 +44,7 @@ describe('pixiTarget', () => {
             ];
             for (const change of changes) {
                 change();
-                const reads = countReads(() => refreshScene(root));
+                const reads = countReads(() => tickScene({ root, only: 'refresh' }));
                 frames.push([
                     root.visible, sprite.x, text.scale.y, sprite.tint, sprite.width.toFixed(2), sprite.label, text.text,
                     `reads ${reads}`,
@@ -66,11 +66,11 @@ describe('pixiTarget', () => {
         let style = { fontSize: 12 };
         const text = jsx('text', { text: 'x', style: () => style }) as Text;
 
-        refreshScene(text);
+        tickScene({ root: text, only: 'refresh' });
         expect(text.style.fontSize).toBe(12);
 
         style = { fontSize: 20 };
-        refreshScene(text);
+        tickScene({ root: text, only: 'refresh' });
         expect(text.style.fontSize).toBe(20);
     });
 
@@ -93,12 +93,12 @@ describe('pixiTarget', () => {
         });
 
         expect(list).toBe(container);
-        refreshScene(list);
+        tickScene({ root: list, only: 'refresh' });
         expect(container.children.map((c) => c.label)).toEqual(['item-1', 'item-2', 'item-3']);
         expect(container.sortableChildren).toBe(true);
 
         items.length = 1;
-        refreshScene(list);
+        tickScene({ root: list, only: 'refresh' });
         expect(container.children.map((c) => c.label)).toEqual(['item-1']);
     });
 });

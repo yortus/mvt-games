@@ -3,30 +3,32 @@ import { Container } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { readParams, report, timeFrames } from '../harness/measure';
 
-// Measured file for the `scene-passes` suite: the cost of `refreshScene`
-// itself, against a plain recursive walk (`naive`) and Pixi's own `onRender`.
-// A frame is one pass plus whatever changes the scenario makes to the tree.
+// Measured file for the `scene-passes` suite: the cost of the refresh scene
+// pass itself (`tickScene` with `only: 'refresh'`), against a plain recursive
+// walk (`naive`) and Pixi's own `onRender`. A frame is one scene pass plus
+// whatever changes the scenario makes to the tree.
 //
-// The plugin is imported dynamically, and only by the approaches that use it:
-// importing it is what installs the mixin, and the `unpatched` approach has to
-// stay unpatched. The bundle keeps that import lazy.
+// pixi-mvt is imported dynamically, and only by the approaches that use it:
+// importing it is what installs its mixin on `Container.prototype`, and the
+// `unpatched` approach has to stay unpatched. The bundle keeps that import
+// lazy.
 
 const params = readParams();
 const scenario = String(params.scenario);
 const approach = String(params.approach);
 
-let refreshScene: ((node: Container) => void) | undefined;
-let setRefresh: ((node: Container, method: () => void) => void) | undefined;
+let refreshPass: ((node: Container) => void) | undefined;
+let setMvtRefresh: ((node: Container, method: () => void) => void) | undefined;
 let skipDescendants: symbol | undefined;
 
 /**
  * A container with the refresh method a baseline approach keeps for itself, in
  * a property of its own: the plain recursive walk reads it, and the `onRender`
- * approach moves it to Pixi's `onRender`. The plugin is never loaded for them.
+ * approach moves it to Pixi's `onRender`. pixi-mvt is never loaded for them.
  */
 type BaselineContainer = Container & { baselineRefresh?: () => void };
 
-// Counts `onRefresh` calls. Read after timing, so the engine cannot drop their work.
+// Counts refresh method calls. Read after timing, so the engine cannot drop their work.
 let sink = 0;
 
 function bump(): void {
@@ -34,13 +36,14 @@ function bump(): void {
 }
 
 if (approach !== 'naive' && approach !== 'onRender' && approach !== 'unpatched') {
-    const plugin = await import('../../src/pixi-mvt');
-    refreshScene = plugin.refreshScene;
-    setRefresh = plugin.setRefresh;
-    skipDescendants = plugin.SKIP_DESCENDANTS as unknown as symbol;
+    const pixiMvt = await import('../../src/pixi-mvt');
+    refreshPass = (node) => pixiMvt.tickScene({ root: node, only: 'refresh' });
+    setMvtRefresh = (node, method) => pixiMvt.setTickMethods(node, { refresh: method });
+    skipDescendants = pixiMvt.SKIP_DESCENDANTS as unknown as symbol;
 }
-else if (Object.getOwnPropertyDescriptor(Container.prototype, 'onRefresh') !== undefined) {
-    throw new Error('the plugin was installed in an approach that must not have it');
+// pixi-mvt's mixin puts the scene passes' private fields' defaults on the prototype
+else if ('_mvtRefreshMethod' in Container.prototype) {
+    throw new Error('pixi-mvt was imported in an approach that must not have it');
 }
 
 const frame = createFrame(scenario, approach);
@@ -75,7 +78,7 @@ function createFrame(scenario: string, approach: string): Frame {
 
 function passFrame(size: number, withMethods: number, swapsPerFrame: number, memo: boolean): Frame {
     const scene = buildScene(size, withMethods);
-    const pass = memo ? requireRefreshScene() : naiveRefresh;
+    const pass = memo ? requireRefreshPass() : naiveRefresh;
     let cursor = 0;
     return {
         callsPerFrame: withMethods,
@@ -87,15 +90,16 @@ function passFrame(size: number, withMethods: number, swapsPerFrame: number, mem
 }
 
 /**
- * 100 subtrees of 25 containers, none of which has an `onRefresh`, detached
+ * 100 subtrees of 25 containers, none of which has a refresh method, detached
  * and re-attached every frame.
  *
  * The point of the scenario: attaching a subtree costs the depth of the
- * ancestor chain rather than the size of the subtree, and a subtree with no `onRefresh`
- * whose own shape never changes keeps its cached answer throughout.
+ * ancestor chain rather than the size of the subtree, and a subtree with no
+ * refresh method whose own shape never changes keeps its cached answer
+ * throughout.
  */
 function attachFrame(memo: boolean): Frame {
-    const pass = memo ? requireRefreshScene() : naiveRefresh;
+    const pass = memo ? requireRefreshPass() : naiveRefresh;
     const root = new Container();
     giveRefresh(root, bump);
     const subtrees: Container[] = [];
@@ -166,14 +170,14 @@ function mutationFrame(): Frame {
 }
 
 /**
- * 100 groups of 100 containers, each container with an `onRefresh` that reads a
- * model value; 90 of the groups are inactive. `skip`: an inactive group's own
- * `onRefresh` returns `SKIP_DESCENDANTS`, so its containers' methods do not run.
- * `hidden`: inactive groups are only hidden (`visible = false`), so every
- * `onRefresh` still runs.
+ * 100 groups of 100 containers, each container with a refresh method that
+ * reads a model value; 90 of the groups are inactive. `skip`: an inactive
+ * group's own refresh method returns `SKIP_DESCENDANTS`, so its containers'
+ * methods do not run. `hidden`: inactive groups are only hidden
+ * (`visible = false`), so every refresh method still runs.
  */
 function skipFrame(approach: string): Frame {
-    const pass = requireRefreshScene();
+    const pass = requireRefreshPass();
     const skip = approach === 'skip';
     const root = new Container();
     const model = { x: 0 };
@@ -203,17 +207,17 @@ function skipFrame(approach: string): Frame {
 }
 
 /**
- * Gives a container its refresh method: through the plugin when it is loaded,
+ * Gives a container its refresh method: through pixi-mvt when it is loaded,
  * and otherwise as the baseline's own property.
  */
 function giveRefresh(node: Container, method: () => void): void {
-    if (setRefresh !== undefined) setRefresh(node, method);
+    if (setMvtRefresh !== undefined) setMvtRefresh(node, method);
     else (node as BaselineContainer).baselineRefresh = method;
 }
 
-function requireRefreshScene(): (node: Container) => void {
-    if (refreshScene === undefined) throw new Error('this approach needs the plugin, which was not imported');
-    return refreshScene;
+function requireRefreshPass(): (node: Container) => void {
+    if (refreshPass === undefined) throw new Error('this approach needs pixi-mvt, which was not imported');
+    return refreshPass;
 }
 
 /** A tree of `size` containers, three levels deep, `withMethods` of them carrying one. */
@@ -249,7 +253,7 @@ function buildScene(size: number, withMethods: number): Scene {
     return { root, branches, leaves };
 }
 
-/** Swaps `count` leaves for fresh ones that have an `onRefresh`, which dirties the memo. */
+/** Swaps `count` leaves for fresh ones that have a refresh method, which dirties the memo. */
 function churn(scene: Scene, count: number, cursor: number): number {
     let at = cursor;
     for (let i = 0; i < count; i++) {

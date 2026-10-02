@@ -3,6 +3,7 @@ import { watch } from '#mvt-utils';
 import type { GamePhase } from '../data';
 import { POINTS_TO_WIN_ROUND } from '../data';
 import { SCREEN_WIDTH, HUD_HEIGHT } from './view-constants';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -110,7 +111,7 @@ export function HudView(bindings: HudViewBindings): Container {
     let lastPlayerRounds = -1;
     let lastOpponentRounds = -1;
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {

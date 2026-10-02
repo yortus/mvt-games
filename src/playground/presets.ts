@@ -162,7 +162,7 @@ function createView(model: any): any {
     });
 
     drawBall(false);
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -333,7 +333,7 @@ function createView(model: any): any {
         model.hit(e.globalX, e.globalY);
     });
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -448,7 +448,7 @@ function createView(model: any): any {
     const watcher = watch({ phase: () => model.phase });
 
     drawLights(model.phase);
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -576,7 +576,7 @@ function createView(model: any): any {
     view.addChild(hint);
 
     drawTriangle();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -687,7 +687,7 @@ function createView(model: any): any {
     statusText.anchor.set(0.5, 0.5);
     view.addChild(statusText);
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -805,7 +805,7 @@ function createView(model: any): any {
     face.circle(CENTRE_X, CENTRE_Y, 3);
     face.fill(0xff4444);
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {
@@ -959,15 +959,18 @@ function createModel(): any {
 }
 `,
     viewCode: `// View - reads the model and updates the scene
-// Return a Pixi Container. Its onRefresh runs every frame, after the model
-// updates: read the model there, and set the container's properties.
-// (Or write the view in JSX; see the (JSX) presets.)
+// Return a Pixi Container. Give it a refresh method with setTickMethods: it
+// runs every frame, after the model updates. Read the model there, and set
+// the container's properties. (Or write the view in JSX; see the (JSX)
+// presets.)
 
 function createView(model: any): any {
     const view = new Container();
 
-    view.onRefresh = () => {
-    };
+    setTickMethods(view, {
+        refresh: () => {
+        },
+    });
     return view;
 }
 `,

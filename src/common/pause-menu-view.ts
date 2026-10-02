@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { watch } from '../mvt-utils';
+import { setTickMethods } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -132,7 +133,7 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Container {
 
     view.on('destroyed', () => window.removeEventListener('keydown', onKeyDown));
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     // ---- Refresh -----------------------------------------------------------

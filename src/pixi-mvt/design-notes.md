@@ -48,10 +48,10 @@ Two fields per method kind, both pure memoisation - derivable, discardable, and
 correct for any caller by construction:
 
 ```ts
-_mvtHasUpdate?: boolean;   // does my subtree contain any onUpdate? undefined = dirty
-_mvtUpdate?: SubtreeInfo;   // preorder update list plus a skip table for SKIP_DESCENDANTS
-_mvtHasRefresh?: boolean;
-_mvtRefresh?: SubtreeInfo;  // preorder refresh list plus the same skip table
+_mvtSubtreeHasUpdate?: boolean;   // does my subtree contain any onUpdate? undefined = dirty
+_mvtUpdateWalk?: SubtreeWalk;   // preorder update list plus a skip table for SKIP_DESCENDANTS
+_mvtSubtreeHasRefresh?: boolean;
+_mvtRefreshWalk?: SubtreeWalk;  // preorder refresh list plus the same skip table
 ```
 
 The lists are only populated on containers that have actually been driven,
@@ -67,10 +67,10 @@ See [scene-passes.ts](../mvt-utils/scene-passes.ts) in `mvt-utils`.
 
 ```ts
 export function updateScene(node: Container, deltaMs: number): void {
-    let info = node._mvtUpdate;
+    let info = node._mvtUpdateWalk;
     if (info === undefined) {
-        info = buildSubtreeInfo(node, UPDATE);
-        node._mvtUpdate = info;
+        info = buildSubtreeWalk(node, UPDATE);
+        node._mvtUpdateWalk = info;
     }
     invokeSubtreeMethods(info, node, UPDATE, deltaMs);
 }
@@ -78,7 +78,7 @@ export function updateScene(node: Container, deltaMs: number): void {
 // Walk the memoised list, each container before its descendants. A method that
 // returns SKIP_DESCENDANTS jumps past its whole subtree in one step (via the
 // skip table), having already run itself.
-function invokeSubtreeMethods(info: SubtreeInfo, node: Container, pass: Pass, deltaMs: number): void {
+function invokeSubtreeMethods(info: SubtreeWalk, node: Container, pass: Pass, deltaMs: number): void {
     const { list, skip } = info;
     for (let i = 0; i < list.length;) {
         const listed = list[i];
@@ -107,15 +107,15 @@ function collectSubtreeMethods(node: Container, pass: Pass, out: Container[], en
 }
 
 function has(node: Container, pass: Pass): boolean {
-    const cached = pass === UPDATE ? node._mvtHasUpdate : node._mvtHasRefresh;
+    const cached = pass === UPDATE ? node._mvtSubtreeHasUpdate : node._mvtSubtreeHasRefresh;
     if (cached !== undefined) return cached;
     let found = (pass === UPDATE ? node.onUpdate : node.onRefresh) !== undefined;
     const ch = node.children;
     for (let i = 0; i < ch.length; i++) {
         if (has(ch[i], pass)) found = true; // no early exit, deliberately
     }
-    if (pass === UPDATE) node._mvtHasUpdate = found;
-    else node._mvtHasRefresh = found;
+    if (pass === UPDATE) node._mvtSubtreeHasUpdate = found;
+    else node._mvtSubtreeHasRefresh = found;
     return found;
 }
 ```
@@ -131,9 +131,9 @@ kind. It lives in [scene-passes.ts](../mvt-utils/scene-passes.ts) in
 function invalidateUpdate(node: Container): void {
     let cursor: Container | null = node;
     while (cursor) {
-        if (cursor._mvtHasUpdate === undefined && cursor._mvtUpdate === undefined) return;
-        cursor._mvtHasUpdate = undefined;
-        cursor._mvtUpdate = undefined;
+        if (cursor._mvtSubtreeHasUpdate === undefined && cursor._mvtUpdateWalk === undefined) return;
+        cursor._mvtSubtreeHasUpdate = undefined;
+        cursor._mvtUpdateWalk = undefined;
         cursor = cursor.parent;
     }
 }
@@ -302,7 +302,7 @@ How it stays off the hot path:
   (the entry and its descendants), an entry whose method was cleared earlier
   in the pass (the entry), and an entry that returned `SKIP_DESCENDANTS` (its
   descendants). Each elision goes in an `Int32Array` beside the list
-  (`SubtreeInfo.elisions`), tagged with the pass's id. An entry run and
+  (`SubtreeWalk.elisions`), tagged with the pass's id. An entry run and
   stepped past records nothing, so the common path has no store at all. A
   first version marked every entry it ran, and measured 20% slower on the
   dense scene; recording only the elisions measured as noise.
@@ -311,7 +311,7 @@ How it stays off the hot path:
   the whole subtree was clean when the walk began. html-mvt hears of changes
   only when it asks, so `beforeScenePass` is called again first.
 - Only then (`catchUpRefresh`) does it replay the walk from its elisions,
-  marking each node that ran (`_mvtRefreshedInPass`), rebuild the list, and
+  marking each node that ran (`_mvtLastRefreshPass`), rebuild the list, and
   walk it running only the nodes it missed, skipping any subtree whose root
   returned `SKIP_DESCENDANTS` this pass. It repeats until a round changes nothing, and throws after 100
   rounds, which only methods adding nodes that add nodes without end reach.
@@ -486,7 +486,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   only because of `skipLibCheck: true`. The plugin copies the shipped pattern
   rather than "fixing" it.
 - `Container.prototype._onUpdate` already exists as Pixi's private transform
-  callback, so the backing fields are `_mvtOnUpdate` / `_mvtOnRefresh`.
+  callback, so the backing fields are `_mvtUpdateMethod` / `_mvtRefreshMethod`.
 - Structural methods needing wrappers: `addChild`, `addChildAt`, `removeChild`,
   `removeChildren`, `destroy`. Everything else delegates to these.
   `addChildAt` splices a child out of its previous parent **without** calling

@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import { watch } from '#mvt-utils';
 import type { TileKind, DepthLayer } from '../data';
 import type { GamePhase } from '../models';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -36,7 +37,7 @@ export function FieldView(bindings: FieldViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function initialiseView(): void {

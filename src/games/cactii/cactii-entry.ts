@@ -50,7 +50,6 @@ export function createCactiiEntry(): GameEntry {
                 update(deltaMs: number): void {
                     gameModel.update(deltaMs);
                 },
-                isViewTickedByHost: true,
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });

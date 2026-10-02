@@ -1,4 +1,4 @@
-import { setRefresh, setUpdate } from './scene-passes';
+import { setTickMethods } from './scene-passes';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -56,8 +56,7 @@ export function createDestroyRegistry<N extends object>(options: DestroyRegistry
     function destroySubtree(node: N): void {
         destroyed.add(node);
         // Cleared first, so the setters still climb through the ancestors
-        setUpdate(node, undefined);
-        setRefresh(node, undefined);
+        setTickMethods(node, { update: undefined, refresh: undefined });
         const list = callbacks.get(node);
         if (list !== undefined) {
             callbacks.delete(node);

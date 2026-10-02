@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countReads } from '../read-counter';
-import type { RefreshMethod } from '../scene-node';
+import type { RefreshMethod } from '../scene-methods';
 import { SKIP_DESCENDANTS } from '../skip-descendants';
 import { attributesOf, defineElements, element, event } from './attributes';
 import { createJsx, Fragment } from './create-jsx';
@@ -41,9 +41,9 @@ function write(el: FakeNode, key: string, value: unknown): void {
 }
 
 /** Parent before children; `SKIP_DESCENDANTS` skips the subtree. */
-function refreshScene(node: FakeNode): void {
+function refreshTree(node: FakeNode): void {
     if (refreshOf(node)?.() === SKIP_DESCENDANTS) return;
-    for (let i = 0; i < node.children.length; i++) refreshScene(node.children[i]);
+    for (let i = 0; i < node.children.length; i++) refreshTree(node.children[i]);
 }
 
 /**
@@ -53,7 +53,7 @@ function refreshScene(node: FakeNode): void {
  * library writes; nothing else outside the library should.
  */
 function refreshOf(node: object): RefreshMethod | undefined {
-    return (node as { _mvtOnRefresh?: RefreshMethod })._mvtOnRefresh;
+    return (node as { _mvtRefreshMethod?: RefreshMethod })._mvtRefreshMethod;
 }
 
 const fake = attributesOf<FakeNode>();
@@ -84,7 +84,10 @@ const fakeTarget: JsxTarget<FakeNode> = {
         node.listeners[eventName] = handler;
         node.log.push(`listen ${eventName}`);
     },
-    refreshScene,
+    // Only the refresh scene pass: this file's tests use no update methods
+    tickScene: (options) => {
+        if (options.only !== 'update') refreshTree(options.root);
+    },
 };
 
 const fakeElements = defineElements({
@@ -118,9 +121,9 @@ describe('createJsx', () => {
 
         expect(el.log).toEqual(['mode=a']);
 
-        refreshScene(el);
+        refreshTree(el);
         x = 2;
-        refreshScene(el);
+        refreshTree(el);
         expect(el.log).toEqual(['mode=a', 'x=1', 'x=2']);
     });
 
@@ -176,12 +179,12 @@ describe('createJsx', () => {
         const child = jsx('box', { x: () => 1 });
         const el = jsx('box', { x: () => 2, visible: () => isShown, children: child });
 
-        refreshScene(el);
+        refreshTree(el);
         expect(el.log).toEqual(['visible=false']);
         expect(child.log).toEqual([]);
 
         isShown = true;
-        refreshScene(el);
+        refreshTree(el);
         expect(el.log).toEqual(['visible=false', 'visible=true', 'x=2']);
         expect(child.log).toEqual(['x=1']);
     });
@@ -215,10 +218,10 @@ describe('createJsx', () => {
 
             const a = t.jsx('tagged', { 'tag-size': 'big', 'tag-colour': () => colour });
             const b = t.jsx('tagged', { 'tag-colour': () => colour });
-            refreshScene(a);
-            refreshScene(b);
+            refreshTree(a);
+            refreshTree(b);
             colour = 'blue';
-            refreshScene(a);
+            refreshTree(a);
 
             expect(a.log).toEqual(['tag-size=big', 'tag-colour=red', 'tag-colour=blue']);
             expect(b.log).toEqual(['tag-colour=red']);
@@ -268,7 +271,7 @@ describe('createJsx', () => {
             for (const change of changes) {
                 change();
                 el.log.length = 0;
-                const reads = countReads(() => refreshScene(el));
+                const reads = countReads(() => refreshTree(el));
                 frames.push(`${el.log.join(' ')} | reads ${reads}`);
             }
             return frames;
@@ -325,7 +328,7 @@ describe('createJsx', () => {
             for (const change of changes) {
                 change();
                 el.log.length = 0;
-                const reads = countReads(() => refreshScene(el));
+                const reads = countReads(() => refreshTree(el));
                 frames.push(`${el.log.join(' ')} ${String(el.isShown)} | reads ${reads}`);
             }
 
@@ -342,10 +345,10 @@ describe('createJsx', () => {
             for (const ownCopyAt of [16, 1]) {
                 let isShown = false;
                 const el = runtime(ownCopyAt)('box', { isShown: () => isShown });
-                refreshScene(el);
+                refreshTree(el);
                 expect(el.isShown).toBe(false);
                 isShown = true;
-                refreshScene(el);
+                refreshTree(el);
                 expect(el.isShown).toBe(true);
             }
         });
@@ -359,7 +362,7 @@ describe('createJsx', () => {
 
             let stack = '';
             try {
-                refreshScene(el);
+                refreshTree(el);
             }
             catch (error) {
                 stack = (error as Error).stack ?? '';

@@ -1,5 +1,6 @@
 import { Container, Graphics, Text, type FederatedPointerEvent } from 'pixi.js';
 import { watch } from '../mvt-utils';
+import { setTickMethods } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -63,7 +64,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         secondaryLabel: bindings.secondaryLabel,
     });
 
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     // ---- Refresh / layout --------------------------------------------------

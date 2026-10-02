@@ -1,3 +1,4 @@
+import type { TickSceneOptions } from '../scene-passes';
 import type { ChangeableAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------
@@ -11,7 +12,7 @@ import type { ChangeableAttribute } from './attributes';
  * a renderer reaches the base.
  *
  * `N` is the renderer's node type. The base needs nothing of it: it keeps
- * each element's bindings in its refresh method, set with `setRefresh`.
+ * each element's bindings in its refresh method, set with `setTickMethods`.
  */
 export interface JsxTarget<N extends object> {
     /** Names the runtime in error messages, e.g. `'pixi-mvt/jsx'`. */
@@ -52,11 +53,9 @@ export interface JsxTarget<N extends object> {
     listen: (node: N, eventName: string, handler: (event: never) => void) => void;
 
     /**
-     * The renderer's `refreshScene`: calls every `onRefresh` in `node`'s
-     * subtree, a node's before its descendants', including nodes attached
-     * during the scene pass. The runtime never calls it: `<List>` and
-     * `<Switch>` rely on the scene pass to refresh what they build. The
-     * conformance suite drives each target through it.
+     * The renderer's `tickScene`. The runtime never calls it: `<List>` and
+     * `<Switch>` rely on the refresh scene pass to refresh what they build.
+     * The conformance suite drives each target through it.
      */
-    refreshScene: (node: N) => void;
+    tickScene: (options: TickSceneOptions<N>) => void;
 }

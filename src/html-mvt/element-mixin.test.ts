@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { destroyElement, isDestroyed, onDestroyed, refreshScene, updateScene } from './element-mixin';
+import { destroyElement, isDestroyed, onDestroyed, setTickMethods, tickScene } from './element-mixin';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** A `<div>` whose `onRefresh` records its id in `calls`. */
+/** A `<div>` whose refresh method records its id in `calls`. */
 function recorded(id: string, calls: string[]): HTMLDivElement {
     const div = quiet(id);
-    div.onRefresh = () => void calls.push(id);
+    setTickMethods(div, { refresh: () => void calls.push(id) });
     return div;
 }
 
@@ -36,10 +36,10 @@ describe('html-mvt scene passes', () => {
         root.append(child);
         child.append(recorded('grandchild', calls));
         const deltas: number[] = [];
-        child.onUpdate = (deltaMs) => void deltas.push(deltaMs);
+        setTickMethods(child, { update: (deltaMs) => void deltas.push(deltaMs) });
 
-        refreshScene(root);
-        updateScene(root, 16);
+        tickScene({ root, only: 'refresh' });
+        tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['root', 'child', 'grandchild']);
         expect(deltas).toEqual([16]);
@@ -48,10 +48,10 @@ describe('html-mvt scene passes', () => {
     it('follows changes made just before a scene pass, however they are made', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         const expectCalls = (expected: string[]): void => {
             calls.length = 0;
-            refreshScene(root);
+            tickScene({ root, only: 'refresh' });
             expect(calls).toEqual(expected);
         };
 
@@ -71,7 +71,7 @@ describe('html-mvt scene passes', () => {
         // Markup makes elements with no methods; giving one a method still counts
         root.innerHTML = '<p id="e"><span id="f"></span></p>';
         expectCalls(['root']);
-        root.querySelector('#f')!.onRefresh = () => void calls.push('f');
+        setTickMethods(root.querySelector('#f')!, { refresh: () => void calls.push('f') });
         expectCalls(['root', 'f']);
 
         root.firstElementChild!.remove();
@@ -85,11 +85,11 @@ describe('html-mvt scene passes', () => {
         const inner = quiet('inner');
         root.append(middle);
         middle.append(inner);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         inner.append(recorded('deep', calls));
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'deep']);
     });
@@ -100,13 +100,13 @@ describe('html-mvt scene passes', () => {
         const right = recorded('right', calls);
         const moving = recorded('moving', calls);
         left.append(moving);
-        refreshScene(left);
-        refreshScene(right);
+        tickScene({ root: left, only: 'refresh' });
+        tickScene({ root: right, only: 'refresh' });
 
         right.append(moving);
         calls.length = 0;
-        refreshScene(left);
-        refreshScene(right);
+        tickScene({ root: left, only: 'refresh' });
+        tickScene({ root: right, only: 'refresh' });
 
         expect(calls).toEqual(['left', 'right', 'moving']);
     });
@@ -117,17 +117,17 @@ describe('html-mvt scene passes', () => {
         const branch = quiet('branch');
         root.append(branch);
         // The walk now knows `branch` holds no methods
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         branch.remove();
         // Lets the removal be processed. Browsers need no scene pass here, as
         // their transient observers report changes to a just-removed element,
         // but happy-dom has none.
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         branch.append(recorded('late', calls));
         root.append(branch);
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'late']);
     });
@@ -136,12 +136,12 @@ describe('html-mvt scene passes', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);
         root.append(recorded('child', calls));
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         const walk = refreshWalkOf(root);
 
         root.append(document.createTextNode('hello'));
         (root.lastChild as Text).data = 'changed';
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(walk).toBeDefined();
         expect(refreshWalkOf(root)).toBe(walk);
@@ -152,11 +152,11 @@ describe('html-mvt scene passes', () => {
         const root = recorded('root', calls);
         const later = quiet('later');
         root.append(later);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
-        later.onRefresh = () => void calls.push('later');
+        setTickMethods(later, { refresh: () => void calls.push('later') });
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'later']);
     });
@@ -166,16 +166,18 @@ describe('html-mvt scene passes', () => {
         const root = quiet('root');
         const doomed = recorded('doomed', calls);
         let shouldRemove = false;
-        root.onRefresh = () => {
-            if (shouldRemove) doomed.remove();
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                if (shouldRemove) doomed.remove();
+            },
+        });
         root.append(doomed);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['doomed']);
 
         shouldRemove = true;
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
     });
@@ -185,11 +187,13 @@ describe('html-mvt scene passes', () => {
         // its walk is done.
         const calls: string[] = [];
         const root = quiet('root');
-        root.onRefresh = () => {
-            if (root.childElementCount === 0) root.append(recorded('added', calls));
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                if (root.childElementCount === 0) root.append(recorded('added', calls));
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['added']);
     });
@@ -212,9 +216,9 @@ describe('html-mvt scene passes', () => {
             expect(destroyed).toEqual(['doomed', 'inner']);
             expect(doomed.parentNode).toBeNull();
             expect(isDestroyed(inner)).toBe(true);
-            // A destroyed element passed to refreshScene itself runs nothing
+            // A destroyed element ticked itself runs nothing
             calls.length = 0;
-            refreshScene(doomed);
+            tickScene({ root: doomed, only: 'refresh' });
             expect(calls).toEqual([]);
         });
     });
@@ -222,5 +226,5 @@ describe('html-mvt scene passes', () => {
 
 /** The node's memoised refresh walk, read off its private field. */
 function refreshWalkOf(node: Element): unknown {
-    return (node as unknown as { _mvtRefresh?: unknown })._mvtRefresh;
+    return (node as unknown as { _mvtRefreshWalk?: unknown })._mvtRefreshWalk;
 }

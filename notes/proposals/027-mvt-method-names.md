@@ -1340,7 +1340,7 @@ binding or an event handler.
 | `tickable` | could return the node, for a one-line view | reads like a predicate |
 | `defineView`, `asView` | MVT's "a view has update and refresh" | "view" already means the `XxxView` function here |
 
-**Chosen: `setTickMethods`.** The rename is task
-[029](../tasks/backlog/029-rename-ontick-to-settickmethods.md), after 028.
-Still open: whether it should return the node, so a view's last line can be
-`return setTickMethods(view, { refresh })`.
+**Chosen: `setTickMethods`.** The rename was task
+[029](../archive/029-rename-ontick-to-settickmethods.md), done 2026-10-02.
+Decided there: it returns nothing, as `onTick` did, so a view ends with
+`setTickMethods(view, { refresh });` and then `return view;`.

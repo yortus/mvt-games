@@ -52,7 +52,7 @@ function refreshCopiesSource(): string {
         '// bindings, in copy 1, and the line names the binding: `g0()` is the first.',
         '',
         'import { readCounter } from \'../read-counter\';',
-        'import type { RefreshMethod } from \'../scene-node\';',
+        'import type { RefreshMethod } from \'../scene-methods\';',
         'import { SKIP_DESCENDANTS } from \'../skip-descendants\';',
         '',
         '/** Reads one binding. */',

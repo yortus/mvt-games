@@ -1,5 +1,5 @@
 import type { Container } from 'pixi.js';
-import { createFrameStats, readCounter, updateScene } from '../../pixi-mvt';
+import { createFrameStats, readCounter } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createDemoModel, TANK_SIZES } from './models';
 import { DEFAULT_VARIANTS, type DemoVariants, formatVariants, parseVariants } from './variants';
@@ -55,9 +55,9 @@ export function createFallingSandEntry(): DemoEntry {
             stage.addChild(view);
 
             return {
+                // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
                     model.update(deltaMs);
-                    updateScene(view, deltaMs);
                 },
                 destroy(): void {
                     frameStats?.destroy();

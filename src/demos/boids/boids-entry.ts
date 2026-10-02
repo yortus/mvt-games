@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { PERFMON_HEIGHT } from '#common';
-import { createFrameStats, updateScene } from '../../pixi-mvt';
+import { createFrameStats } from '../../pixi-mvt';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { BoidsView } from './boids-view';
@@ -66,9 +66,9 @@ export function createBoidsEntry(): DemoEntry {
             stage.addChild(view);
 
             return {
+                // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
                     model.update(deltaMs * timeScale);
-                    updateScene(view, deltaMs);
                 },
                 resize(): void {
                     stage.removeChild(view);

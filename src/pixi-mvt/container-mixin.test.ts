@@ -1,21 +1,19 @@
 import { Container } from 'pixi.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { refreshScene, setRefresh, setUpdate, updateScene } from './container-mixin';
-import { SKIP_DESCENDANTS } from '../mvt-utils';
+import { setTickMethods, tickScene } from './container-mixin';
+import { hasRefresh, SKIP_DESCENDANTS } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * The two passes are the same algorithm against different fields, so the core
- * suite runs against both through this adapter, with methods set both ways:
- * through `setUpdate` / `setRefresh`, and through the transitional
- * `onUpdate` / `onRefresh` accessors, which call them.
+ * The two scene passes are the same algorithm against different fields, so
+ * the core suite runs against both through this adapter: one member of
+ * `setTickMethods`, and one scene pass of `tickScene`.
  */
 interface Driver {
     readonly kind: 'update' | 'refresh';
-    readonly via: 'function' | 'accessor';
     assign: (container: Container, fn: () => void) => void;
     clear: (container: Container) => void;
     run: (node: Container) => void;
@@ -24,39 +22,15 @@ interface Driver {
 const drivers: Driver[] = [
     {
         kind: 'update',
-        via: 'function',
-        assign: (container, fn) => setUpdate(container, fn),
-        clear: (container) => setUpdate(container, undefined),
-        run: (node) => updateScene(node, 16),
+        assign: (container, fn) => setTickMethods(container, { update: fn }),
+        clear: (container) => setTickMethods(container, { update: undefined }),
+        run: (node) => tickScene({ root: node, deltaMs: 16, only: 'update' }),
     },
     {
         kind: 'refresh',
-        via: 'function',
-        assign: (container, fn) => setRefresh(container, fn),
-        clear: (container) => setRefresh(container, undefined),
-        run: (node) => refreshScene(node),
-    },
-    {
-        kind: 'update',
-        via: 'accessor',
-        assign: (container, fn) => {
-            container.onUpdate = fn;
-        },
-        clear: (container) => {
-            container.onUpdate = undefined;
-        },
-        run: (node) => updateScene(node, 16),
-    },
-    {
-        kind: 'refresh',
-        via: 'accessor',
-        assign: (container, fn) => {
-            container.onRefresh = fn;
-        },
-        clear: (container) => {
-            container.onRefresh = undefined;
-        },
-        run: (node) => refreshScene(node),
+        assign: (container, fn) => setTickMethods(container, { refresh: fn }),
+        clear: (container) => setTickMethods(container, { refresh: undefined }),
+        run: (node) => tickScene({ root: node, only: 'refresh' }),
     },
 ];
 
@@ -129,7 +103,7 @@ function parentMap(root: Container): Map<string, string | undefined> {
 // Core
 // ---------------------------------------------------------------------------
 
-describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
+describe.each(drivers)('$kind scene pass', (driver) => {
     let rec: Recorder;
 
     beforeEach(() => {
@@ -163,7 +137,7 @@ describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
         expectAncestorsFirst(rec.calls, root);
     });
 
-    it('calls an ancestor given an onUpdate or onRefresh after its descendants were listed before it', () => {
+    it('calls an ancestor given a method after its descendants were listed before it', () => {
         // The hole `onRender` has: its registration list is append-only, so
         // giving an already-attached ancestor an `onRender` places it after its own
         // descendants.
@@ -341,7 +315,7 @@ describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
         expect(rec.calls.length).toBe(4);
     });
 
-    it('prunes subtrees in which no container has an onUpdate or onRefresh', () => {
+    it('prunes subtrees in which no container has a method', () => {
         const root = container('root');
         const active: Container[] = [];
         // 200 branches of 100 containers each. Only every tenth branch has
@@ -370,10 +344,10 @@ describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
         expect(rec.calls.length).toBe(200);
     });
 
-    it('still invalidates when a method is reassigned after the mixin installed', () => {
-        // Regression for the accessor-shadowing defect: a method assigned before
-        // the mixin was installed used to create an own data property, and
-        // every later assignment then bypassed the setter.
+    it('still invalidates when a method is set again after being cleared', () => {
+        // Regression for the accessor-shadowing defect, from when methods were
+        // properties: a method assigned before the mixin was installed created
+        // an own data property, and every later assignment bypassed the setter.
         const root = node('root', driver, rec);
         const parent = container('parent');
         root.addChild(parent);
@@ -396,7 +370,7 @@ describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
         root.addChild(child);
 
         driver.run(root);
-        const other = drivers.find((candidate) => candidate.kind !== driver.kind && candidate.via === driver.via);
+        const other = drivers.find((candidate) => candidate.kind !== driver.kind);
         expect(other).toBeDefined();
 
         rec.clear();
@@ -446,40 +420,43 @@ describe.each(drivers)('$kind pass, methods set through the $via', (driver) => {
 // Behaviour specific to each scene pass
 // ---------------------------------------------------------------------------
 
-describe('updateScene', () => {
+describe('the update scene pass', () => {
     it('passes deltaMs through to every method', () => {
         const deltas: number[] = [];
         const root = new Container();
         const child = new Container();
         root.addChild(child);
-        root.onUpdate = (deltaMs) => void deltas.push(deltaMs);
-        child.onUpdate = (deltaMs) => void deltas.push(deltaMs);
+        setTickMethods(root, { update: (deltaMs) => void deltas.push(deltaMs) });
+        setTickMethods(child, { update: (deltaMs) => void deltas.push(deltaMs) });
 
-        updateScene(root, 16.5);
+        tickScene({ root, deltaMs: 16.5, only: 'update' });
 
         expect(deltas).toEqual([16.5, 16.5]);
     });
 });
 
-describe('refreshScene', () => {
+describe('the refresh scene pass', () => {
     it('is idempotent across three consecutive scene passes', () => {
         const root = new Container();
         const child = new Container();
         root.addChild(child);
         let angle = 0;
-        root.onUpdate = (deltaMs) => {
-            angle += deltaMs * 0.001;
-        };
-        child.onRefresh = () => {
-            child.rotation = angle;
-            child.alpha = 0.5;
-        };
+        setTickMethods(root, {
+            update: (deltaMs) => {
+                angle += deltaMs * 0.001;
+            },
+        });
+        setTickMethods(child, {
+            refresh: () => {
+                child.rotation = angle;
+                child.alpha = 0.5;
+            },
+        });
 
-        updateScene(root, 500);
-        refreshScene(root);
+        tickScene({ root, deltaMs: 500 });
         const after = { rotation: child.rotation, alpha: child.alpha };
-        refreshScene(root);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
+        tickScene({ root, only: 'refresh' });
 
         expect({ rotation: child.rotation, alpha: child.alpha }).toEqual(after);
     });
@@ -494,12 +471,13 @@ describe('refreshScene', () => {
         for (let i = 0; i < all.length; i++) {
             const current = all[i];
             current.label = `n${i}`;
-            current.onUpdate = () => void order.push(`update:${current.label}`);
-            current.onRefresh = () => void order.push(`refresh:${current.label}`);
+            setTickMethods(current, {
+                update: () => void order.push(`update:${current.label}`),
+                refresh: () => void order.push(`refresh:${current.label}`),
+            });
         }
 
-        updateScene(root, 16);
-        refreshScene(root);
+        tickScene({ root, deltaMs: 16 });
 
         expect(order.filter((entry) => entry.startsWith('update:')).length).toBe(3);
         expect(order[2].startsWith('update:')).toBe(true);
@@ -519,14 +497,16 @@ describe('SKIP_DESCENDANTS', () => {
         const child = new Container();
         gate.addChild(child);
         root.addChild(gate);
-        root.onRefresh = () => void calls.push('root');
-        gate.onRefresh = () => {
-            calls.push('gate');
-            return SKIP_DESCENDANTS;
-        };
-        child.onRefresh = () => void calls.push('child');
+        setTickMethods(root, { refresh: () => void calls.push('root') });
+        setTickMethods(gate, {
+            refresh: () => {
+                calls.push('gate');
+                return SKIP_DESCENDANTS;
+            },
+        });
+        setTickMethods(child, { refresh: () => void calls.push('child') });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'gate']); // the gate ran; its child did not
     });
@@ -540,11 +520,11 @@ describe('SKIP_DESCENDANTS', () => {
         child.addChild(grandchild);
         gate.addChild(child);
         root.addChild(gate);
-        gate.onRefresh = () => SKIP_DESCENDANTS;
-        child.onRefresh = () => void calls.push('child');
-        grandchild.onRefresh = () => void calls.push('grandchild');
+        setTickMethods(gate, { refresh: () => SKIP_DESCENDANTS });
+        setTickMethods(child, { refresh: () => void calls.push('child') });
+        setTickMethods(grandchild, { refresh: () => void calls.push('grandchild') });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
     });
@@ -557,14 +537,14 @@ describe('SKIP_DESCENDANTS', () => {
         const child = new Container();
         root.addChild(child);
         let open = false;
-        root.onRefresh = () => (open ? undefined : SKIP_DESCENDANTS);
-        child.onRefresh = () => void calls.push('child');
+        setTickMethods(root, { refresh: () => (open ? undefined : SKIP_DESCENDANTS) });
+        setTickMethods(child, { refresh: () => void calls.push('child') });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual([]);
 
         open = true;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['child']);
     });
 
@@ -575,11 +555,11 @@ describe('SKIP_DESCENDANTS', () => {
         const child = new Container();
         frozen.addChild(child);
         root.addChild(frozen);
-        root.onUpdate = () => void calls.push('root');
-        frozen.onUpdate = () => SKIP_DESCENDANTS;
-        child.onUpdate = () => void calls.push('child');
+        setTickMethods(root, { update: () => void calls.push('root') });
+        setTickMethods(frozen, { update: () => SKIP_DESCENDANTS });
+        setTickMethods(child, { update: () => void calls.push('child') });
 
-        updateScene(root, 16);
+        tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['root']); // the frozen subtree did not advance
     });
@@ -591,13 +571,15 @@ describe('SKIP_DESCENDANTS', () => {
         const root = new Container();
         const child = new Container();
         root.addChild(child);
-        root.onRefresh = () => {
-            calls.push('root');
-            return SKIP_DESCENDANTS;
-        };
-        child.onRefresh = () => void calls.push('child');
+        setTickMethods(root, {
+            refresh: () => {
+                calls.push('root');
+                return SKIP_DESCENDANTS;
+            },
+        });
+        setTickMethods(child, { refresh: () => void calls.push('child') });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root']);
     });
@@ -615,12 +597,12 @@ describe('visibility', () => {
         const child = new Container();
         hidden.addChild(child);
         root.addChild(hidden);
-        root.onRefresh = () => void calls.push('root');
-        hidden.onRefresh = () => void calls.push('hidden');
-        child.onRefresh = () => void calls.push('child');
+        setTickMethods(root, { refresh: () => void calls.push('root') });
+        setTickMethods(hidden, { refresh: () => void calls.push('hidden') });
+        setTickMethods(child, { refresh: () => void calls.push('child') });
 
         hidden.visible = false;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect([...calls].sort()).toEqual(['child', 'hidden', 'root']);
     });
@@ -630,13 +612,15 @@ describe('visibility', () => {
         // can reveal itself again. The old design forbade this; now it is free.
         const calls: string[] = [];
         const root = new Container();
-        root.onRefresh = () => {
-            root.visible = false;
-            calls.push('root');
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                root.visible = false;
+                calls.push('root');
+            },
+        });
 
-        expect(() => refreshScene(root)).not.toThrow();
-        refreshScene(root);
+        expect(() => tickScene({ root, only: 'refresh' })).not.toThrow();
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['root', 'root']);
     });
 });
@@ -655,20 +639,22 @@ describe('mutation during a scene pass', () => {
     it('refreshes a container added by a method in the same scene pass', () => {
         const root = container('root');
         let spawned = false;
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            if (spawned) return;
-            spawned = true;
-            const child = container('child');
-            child.onRefresh = () => void rec.calls.push('child');
-            root.addChild(child);
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (spawned) return;
+                spawned = true;
+                const child = container('child');
+                setTickMethods(child, { refresh: () => void rec.calls.push('child') });
+                root.addChild(child);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual(['root', 'child']);
 
         rec.clear();
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual(['root', 'child']);
     });
 
@@ -682,38 +668,42 @@ describe('mutation during a scene pass', () => {
         let generation = 0;
         build();
         let isBuilt = false;
-        grid.onRefresh = () => {
-            rec.calls.push('grid');
-            if (isBuilt) return;
-            isBuilt = true;
-            for (const child of [...grid.children]) child.destroy({ children: true });
-            build();
-        };
+        setTickMethods(grid, {
+            refresh: () => {
+                rec.calls.push('grid');
+                if (isBuilt) return;
+                isBuilt = true;
+                for (const child of [...grid.children]) child.destroy({ children: true });
+                build();
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['grid', 'cell1.0', 'cell1.1']);
 
         function build(): void {
             for (let i = 0; i < 2; i++) {
                 const cell = container(`cell${generation}.${i}`);
-                cell.onRefresh = () => void rec.calls.push(cell.label);
+                setTickMethods(cell, { refresh: () => void rec.calls.push(cell.label) });
                 grid.addChild(cell);
             }
             generation++;
         }
     });
 
-    it('refreshes a container given an onRefresh by a method in the same scene pass', () => {
+    it('refreshes a container given a refresh method by a method in the same scene pass', () => {
         const root = container('root');
         const late = container('late');
         root.addChild(late);
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            late.onRefresh ??= () => void rec.calls.push('late');
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (!hasRefresh(late)) setTickMethods(late, { refresh: () => void rec.calls.push('late') });
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['root', 'late']);
     });
@@ -723,12 +713,14 @@ describe('mutation during a scene pass', () => {
         const branch = node('branch', drivers[1], rec);
         const leaf = node('leaf', drivers[1], rec);
         branch.addChild(leaf);
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            if (branch.parent === null) root.addChild(branch);
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (branch.parent === null) root.addChild(branch);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['root', 'branch', 'leaf']);
     });
@@ -739,20 +731,24 @@ describe('mutation during a scene pass', () => {
         const spawn = (parent: Container): void => {
             const child = container(`d${++depth}`);
             let hasSpawned = false;
-            child.onRefresh = () => {
-                rec.calls.push(child.label);
-                if (hasSpawned || depth >= 4) return;
-                hasSpawned = true;
-                spawn(child);
-            };
+            setTickMethods(child, {
+                refresh: () => {
+                    rec.calls.push(child.label);
+                    if (hasSpawned || depth >= 4) return;
+                    hasSpawned = true;
+                    spawn(child);
+                },
+            });
             parent.addChild(child);
         };
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            if (depth === 0) spawn(root);
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (depth === 0) spawn(root);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['root', 'd1', 'd2', 'd3', 'd4']);
     });
@@ -761,30 +757,36 @@ describe('mutation during a scene pass', () => {
         const root = container('root');
         const spawn = (parent: Container): void => {
             const child = container('endless');
-            child.onRefresh = () => spawn(child);
+            setTickMethods(child, { refresh: () => spawn(child) });
             parent.addChild(child);
         };
-        root.onRefresh = () => {
-            if (root.children.length === 0) spawn(root);
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                if (root.children.length === 0) spawn(root);
+            },
+        });
 
-        expect(() => refreshScene(root)).toThrow(/still changing the tree/);
+        expect(() => tickScene({ root, only: 'refresh' })).toThrow(/still changing the tree/);
     });
 
     it('does not refresh a container added beneath one that skipped its descendants', () => {
         const root = container('root');
         const gate = container('gate');
         root.addChild(gate);
-        gate.onRefresh = () => {
-            rec.calls.push('gate');
-            return SKIP_DESCENDANTS;
-        };
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            if (gate.children.length === 0) gate.addChild(node('hidden', drivers[1], rec));
-        };
+        setTickMethods(gate, {
+            refresh: () => {
+                rec.calls.push('gate');
+                return SKIP_DESCENDANTS;
+            },
+        });
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (gate.children.length === 0) gate.addChild(node('hidden', drivers[1], rec));
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['root', 'gate']);
     });
@@ -795,16 +797,20 @@ describe('mutation during a scene pass', () => {
         const wanderer = node('wanderer', drivers[1], rec);
         const last = container('last');
         root.addChild(first, wanderer, last);
-        first.onRefresh = () => {
-            rec.calls.push('first');
-            root.removeChild(wanderer);
-        };
-        last.onRefresh = () => {
-            rec.calls.push('last');
-            if (wanderer.parent === null) root.addChild(wanderer);
-        };
+        setTickMethods(first, {
+            refresh: () => {
+                rec.calls.push('first');
+                root.removeChild(wanderer);
+            },
+        });
+        setTickMethods(last, {
+            refresh: () => {
+                rec.calls.push('last');
+                if (wanderer.parent === null) root.addChild(wanderer);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect([...rec.calls].sort()).toEqual(['first', 'last', 'wanderer']);
     });
@@ -816,17 +822,21 @@ describe('mutation during a scene pass', () => {
         const last = container('last');
         root.addChild(first, fickle, last);
         const fickleRefresh = (): void => void rec.calls.push('fickle');
-        fickle.onRefresh = fickleRefresh;
-        first.onRefresh = () => {
-            rec.calls.push('first');
-            fickle.onRefresh = undefined;
-        };
-        last.onRefresh = () => {
-            rec.calls.push('last');
-            fickle.onRefresh = fickleRefresh;
-        };
+        setTickMethods(fickle, { refresh: fickleRefresh });
+        setTickMethods(first, {
+            refresh: () => {
+                rec.calls.push('first');
+                setTickMethods(fickle, { refresh: undefined });
+            },
+        });
+        setTickMethods(last, {
+            refresh: () => {
+                rec.calls.push('last');
+                setTickMethods(fickle, { refresh: fickleRefresh });
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect([...rec.calls].sort()).toEqual(['fickle', 'first', 'last']);
     });
@@ -835,16 +845,18 @@ describe('mutation during a scene pass', () => {
         // What `<List>` did by hand before scene passes caught up: refresh what it
         // just attached. Still allowed, and it must not run anything twice.
         const root = container('root');
-        root.onRefresh = () => {
-            rec.calls.push('root');
-            if (root.children.length > 0) return;
-            const branch = node('branch', drivers[1], rec);
-            branch.addChild(node('leaf', drivers[1], rec));
-            root.addChild(branch);
-            refreshScene(branch);
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                rec.calls.push('root');
+                if (root.children.length > 0) return;
+                const branch = node('branch', drivers[1], rec);
+                branch.addChild(node('leaf', drivers[1], rec));
+                root.addChild(branch);
+                tickScene({ root: branch, only: 'refresh' });
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['root', 'branch', 'leaf']);
     });
@@ -853,19 +865,21 @@ describe('mutation during a scene pass', () => {
         // An update advances time. A container that did not exist when the
         // frame began has no time to catch up on, so it starts next frame.
         const root = container('root');
-        root.onUpdate = () => {
-            rec.calls.push('root');
-            if (root.children.length > 0) return;
-            const child = container('child');
-            child.onUpdate = () => void rec.calls.push('child');
-            root.addChild(child);
-        };
+        setTickMethods(root, {
+            update: () => {
+                rec.calls.push('root');
+                if (root.children.length > 0) return;
+                const child = container('child');
+                setTickMethods(child, { update: () => void rec.calls.push('child') });
+                root.addChild(child);
+            },
+        });
 
-        updateScene(root, 16);
+        tickScene({ root, deltaMs: 16, only: 'update' });
         expect(rec.calls).toEqual(['root']);
 
         rec.clear();
-        updateScene(root, 16);
+        tickScene({ root, deltaMs: 16, only: 'update' });
         expect(rec.calls).toEqual(['root', 'child']);
     });
 
@@ -874,13 +888,15 @@ describe('mutation during a scene pass', () => {
         const first = container('first');
         const doomed = container('doomed');
         root.addChild(first, doomed);
-        doomed.onRefresh = () => void rec.calls.push('doomed');
-        first.onRefresh = () => {
-            rec.calls.push('first');
-            root.removeChild(doomed);
-        };
+        setTickMethods(doomed, { refresh: () => void rec.calls.push('doomed') });
+        setTickMethods(first, {
+            refresh: () => {
+                rec.calls.push('first');
+                root.removeChild(doomed);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['first']);
     });
@@ -890,17 +906,19 @@ describe('mutation during a scene pass', () => {
         const early = container('early');
         const later = container('later');
         root.addChild(early, later);
-        early.onRefresh = () => void rec.calls.push('early');
-        later.onRefresh = () => {
-            rec.calls.push('later');
-            root.removeChild(early);
-        };
+        setTickMethods(early, { refresh: () => void rec.calls.push('early') });
+        setTickMethods(later, {
+            refresh: () => {
+                rec.calls.push('later');
+                root.removeChild(early);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual(['early', 'later']);
 
         rec.clear();
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual(['later']);
     });
 
@@ -909,13 +927,15 @@ describe('mutation during a scene pass', () => {
         const first = container('first');
         const silenced = container('silenced');
         root.addChild(first, silenced);
-        silenced.onRefresh = () => void rec.calls.push('silenced');
-        first.onRefresh = () => {
-            rec.calls.push('first');
-            silenced.onRefresh = undefined;
-        };
+        setTickMethods(silenced, { refresh: () => void rec.calls.push('silenced') });
+        setTickMethods(first, {
+            refresh: () => {
+                rec.calls.push('first');
+                setTickMethods(silenced, { refresh: undefined });
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['first']);
     });
@@ -927,14 +947,16 @@ describe('mutation during a scene pass', () => {
         const movable = container('movable');
         left.addChild(movable);
         root.addChild(left, right);
-        movable.onRefresh = () => void rec.calls.push('movable');
-        right.onRefresh = () => void rec.calls.push('right');
-        left.onRefresh = () => {
-            rec.calls.push('left');
-            right.addChild(movable);
-        };
+        setTickMethods(movable, { refresh: () => void rec.calls.push('movable') });
+        setTickMethods(right, { refresh: () => void rec.calls.push('right') });
+        setTickMethods(left, {
+            refresh: () => {
+                rec.calls.push('left');
+                right.addChild(movable);
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['left', 'movable', 'right']);
     });
@@ -946,51 +968,31 @@ describe('mutation during a scene pass', () => {
         const cargo = container('cargo');
         doomed.addChild(cargo);
         root.addChild(first, doomed);
-        doomed.onRefresh = () => void rec.calls.push('doomed');
-        cargo.onRefresh = () => void rec.calls.push('cargo');
-        first.onRefresh = () => {
-            rec.calls.push('first');
-            doomed.destroy();
-        };
+        setTickMethods(doomed, { refresh: () => void rec.calls.push('doomed') });
+        setTickMethods(cargo, { refresh: () => void rec.calls.push('cargo') });
+        setTickMethods(first, {
+            refresh: () => {
+                rec.calls.push('first');
+                doomed.destroy();
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(rec.calls).toEqual(['first']);
     });
 
     it('stops calling a destroyed container that a scene pass starts from', () => {
         const root = container('root');
-        root.onRefresh = () => void rec.calls.push('root');
+        setTickMethods(root, { refresh: () => void rec.calls.push('root') });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual(['root']);
 
         rec.clear();
         root.destroy();
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(rec.calls).toEqual([]);
-    });
-});
-
-// ---------------------------------------------------------------------------
-// Own-property shadowing
-// ---------------------------------------------------------------------------
-
-describe('shadowed methods', () => {
-    it('throws in dev when a method is defined as an own property', () => {
-        const root = new Container();
-        const child = new Container();
-        child.label = 'child';
-        root.addChild(child);
-        // What an assignment made before the mixin installed used to leave
-        // behind, and what the eager install now prevents.
-        Object.defineProperty(child, 'onRefresh', {
-            value: () => {},
-            writable: true,
-            configurable: true,
-        });
-
-        expect(() => refreshScene(root)).toThrow(/own property/);
     });
 });
 
@@ -1062,7 +1064,7 @@ describe('against a naive walk', () => {
 
     /** What the memoised pass has to agree with, in preorder. */
     function naiveWalk(root: Container, out: string[]): void {
-        if (root.onRefresh !== undefined) out.push(root.label);
+        if (hasRefresh(root)) out.push(root.label);
         const children = root.children;
         for (let i = 0; i < children.length; i++) {
             naiveWalk(children[i], out);
@@ -1085,7 +1087,7 @@ describe('against a naive walk', () => {
     it.each(seeds)('agrees with it under a random mutation script (seed %i)', (seed) => {
         const rec = createRecorder();
         const root = container('root');
-        root.onRefresh = () => void rec.calls.push('root');
+        setTickMethods(root, { refresh: () => void rec.calls.push('root') });
         const random = createRandom(seed);
         const pool: Container[] = [root];
         let counter = 0;
@@ -1097,7 +1099,7 @@ describe('against a naive walk', () => {
                 const target = pool[Math.floor(random() * pool.length)];
                 if (roll < 0.45) {
                     const child = container(`n${counter++}`);
-                    child.onRefresh = () => void rec.calls.push(child.label);
+                    setTickMethods(child, { refresh: () => void rec.calls.push(child.label) });
                     target.addChild(child);
                     pool.push(child);
                 }
@@ -1118,16 +1120,18 @@ describe('against a naive walk', () => {
                 }
                 else if (pool.length > 1) {
                     const victim = pool[1 + Math.floor(random() * (pool.length - 1))];
-                    victim.onRefresh = victim.onRefresh === undefined
-                        ? () => void rec.calls.push(victim.label)
-                        : undefined;
+                    setTickMethods(victim, {
+                        refresh: hasRefresh(victim)
+                            ? undefined
+                            : () => void rec.calls.push(victim.label),
+                    });
                 }
             }
 
             const expected: string[] = [];
             naiveWalk(root, expected);
             rec.clear();
-            refreshScene(root);
+            tickScene({ root, only: 'refresh' });
 
             expect([...rec.calls].sort(), `frame ${frame}`).toEqual([...expected].sort());
             expectAncestorsFirst(rec.calls, root);
@@ -1139,7 +1143,7 @@ describe('against a naive walk', () => {
             const branchExpected: string[] = [];
             naiveWalk(branch, branchExpected);
             rec.clear();
-            refreshScene(branch);
+            tickScene({ root: branch, only: 'refresh' });
             expect([...rec.calls].sort(), `frame ${frame} branch`).toEqual([...branchExpected].sort());
         }
     });

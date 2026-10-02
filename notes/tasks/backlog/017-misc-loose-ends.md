@@ -224,10 +224,13 @@ Settled questions that should not be reopened without new information are in
   the boxing item above: the boids' record with getters also boxed numbers
   written to it.
 
-- **One `_mvt` record per node instead of six `_mvt*` fields.** Each
-  renderer's scene passes add `_mvtOnUpdate`, `_mvtOnRefresh`,
-  `_mvtHasUpdate`, `_mvtUpdate`, `_mvtHasRefresh` and `_mvtRefresh` to its
-  node prototype (`installMethods` in `src/mvt-utils/scene-passes.ts`), and a
+- **One `_mvt` record per node instead of six `_mvt*` fields.** (Since
+  measured: 027 section 11.8 benchmarked a single `_mvt` record and found it
+  slower, and task 028 kept the named fields. Likely closable.) Each
+  renderer's scene passes add `_mvtUpdateMethod`, `_mvtRefreshMethod`,
+  `_mvtSubtreeHasUpdate`, `_mvtUpdateWalk`, `_mvtSubtreeHasRefresh` and
+  `_mvtRefreshWalk` to its node prototype (`installFieldDefaults` in
+  `src/mvt-utils/scene-passes.ts`), and a
   node gains them as own properties lazily, in whatever order it is used.
   Reads of them see every node class (`Container`, `Sprite`, `Graphics`,
   `Text`, and so on) and every order of those writes, so in a mixed scene

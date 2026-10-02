@@ -3,7 +3,7 @@ import type { Suite } from '../harness/suite';
 /** The cost of the scene passes themselves. */
 export const scenePassesSuite: Suite = {
     name: 'scene-passes',
-    description: 'refreshScene against a plain recursive walk, Pixi\'s onRender, and skipped subtrees',
+    description: 'the refresh scene pass against a plain recursive walk, Pixi\'s onRender, and skipped subtrees',
     entry: 'scene-passes.case.ts',
     cases: [
         { scenario: 'sparse', approach: 'naive' },
@@ -15,7 +15,7 @@ export const scenePassesSuite: Suite = {
         { scenario: 'churn', approach: 'memo' },
         { scenario: 'attach', approach: 'naive' },
         { scenario: 'attach', approach: 'memo' },
-        // Differ only in whether this process ever imported the plugin
+        // Differ only in whether this process ever imported pixi-mvt
         { scenario: 'mutation', approach: 'unpatched' },
         { scenario: 'mutation', approach: 'patched' },
         { scenario: 'skip', approach: 'hidden' },
@@ -34,19 +34,19 @@ export const scenePassesSuite: Suite = {
     ],
     labels: {
         scenario: {
-            sparse: '20,000 containers, 200 with an `onRefresh`',
-            dense: '2,000 containers, all with an `onRefresh`',
-            churn: '2,000 containers, all with an `onRefresh`, 100 replaced per frame',
-            attach: '100 subtrees of 25 containers without `onRefresh`, detached and re-attached per frame',
-            mutation: '100 containers added and removed per frame, no pass run',
-            skip: '10,000 containers with an `onRefresh` each, in 100 groups, 90 groups inactive',
+            sparse: '20,000 containers, 200 with a refresh method',
+            dense: '2,000 containers, all with a refresh method',
+            churn: '2,000 containers, all with a refresh method, 100 replaced per frame',
+            attach: '100 subtrees of 25 containers without a refresh method, detached and re-attached per frame',
+            mutation: '100 containers added and removed per frame, no scene pass run',
+            skip: '10,000 containers with a refresh method each, in 100 groups, 90 groups inactive',
         },
         approach: {
             naive: 'plain recursive walk',
-            memo: '`refreshScene`',
+            memo: 'Refresh scene pass',
             onRender: 'Pixi `onRender`',
-            unpatched: 'plugin not imported',
-            patched: 'plugin imported',
+            unpatched: 'pixi-mvt not imported',
+            patched: 'pixi-mvt imported',
             hidden: 'inactive groups hidden (`visible = false`) only',
             skip: 'inactive groups return `SKIP_DESCENDANTS`',
         },

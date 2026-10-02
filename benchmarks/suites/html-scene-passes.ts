@@ -22,7 +22,7 @@ export const htmlScenePassesSuite: Suite = {
     tables: [
         {
             id: 'walk',
-            title: 'refreshScene over a DOM tree against a naive walk of it: time per frame',
+            title: 'The refresh scene pass over a DOM tree against a naive walk of it: time per frame',
             metric: 'usPerFrame',
             unit: 'µs',
             where: { scene: 'walk' },
@@ -46,7 +46,7 @@ export const htmlScenePassesSuite: Suite = {
             churn: 'Every element, and a child added or removed each frame',
         },
         walk: {
-            memoised: 'refreshScene (memoised)',
+            memoised: 'Refresh scene pass (memoised)',
             naive: 'Naive walk',
         },
         measured: {

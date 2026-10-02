@@ -1,5 +1,5 @@
 import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
-import { destroyElement, onDestroyed, refreshScene } from '../element-mixin';
+import { destroyElement, onDestroyed, tickScene } from '../element-mixin';
 import { hasOwnedText } from './owned-text';
 
 // ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ export const htmlTarget: JsxTarget<Element> = {
         node.addEventListener(eventName, handler as EventListener);
     },
 
-    refreshScene,
+    tickScene,
 };
 
 // ---------------------------------------------------------------------------

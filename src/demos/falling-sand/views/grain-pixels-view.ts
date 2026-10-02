@@ -1,5 +1,5 @@
 import { BufferImageSource, type Container, Sprite, Texture } from 'pixi.js';
-import { addReads } from '../../../pixi-mvt';
+import { addReads, setTickMethods } from '../../../pixi-mvt';
 import type { Grains } from '../models';
 import { pickGrainPixel } from './grain-colors';
 
@@ -54,7 +54,7 @@ export function GrainPixelsView(bindings: GrainPixelsViewBindings): Container {
     const texture = new Texture({ source });
 
     const sprite = new Sprite(texture);
-    sprite.onRefresh = refresh;
+    setTickMethods(sprite, { refresh });
     // A sprite does not destroy its texture unless told to.
     sprite.on('destroyed', () => texture.destroy(true));
     return sprite;

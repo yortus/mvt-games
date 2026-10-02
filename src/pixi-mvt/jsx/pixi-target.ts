@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
-import { refreshScene } from '../container-mixin';
+import { tickScene } from '../container-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target
@@ -52,5 +52,5 @@ export const pixiTarget: JsxTarget<Container> = {
         node.on(eventName, handler as (event: unknown) => void);
     },
 
-    refreshScene,
+    tickScene,
 };

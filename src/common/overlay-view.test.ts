@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { refreshScene, updateScene } from '../pixi-mvt';
+import { tickScene } from '../pixi-mvt';
 import { OverlayView } from './overlay-view';
 
 describe('OverlayView', () => {
@@ -13,7 +13,7 @@ describe('OverlayView', () => {
             text: () => 'GAME OVER',
             onRestartPressed: (pressed) => relayed.push(pressed),
         });
-        refreshScene(view);
+        tickScene({ root: view, only: 'refresh' });
         return { view, backdrop: view.children[0], relayed };
     }
 
@@ -29,10 +29,10 @@ describe('OverlayView', () => {
         backdrop.emit('pointerup', {} as never);
         expect(relayed).toEqual([true]);
 
-        updateScene(view, 16);
+        tickScene({ root: view, deltaMs: 16, only: 'update' });
         expect(relayed).toEqual([true, false]);
 
-        updateScene(view, 16);
+        tickScene({ root: view, deltaMs: 16, only: 'update' });
         expect(relayed).toEqual([true, false]);
     });
 
@@ -42,7 +42,7 @@ describe('OverlayView', () => {
         backdrop.emit('pointerup', {} as never);
         backdrop.emit('pointerdown', {} as never);
 
-        updateScene(view, 16);
+        tickScene({ root: view, deltaMs: 16, only: 'update' });
         expect(relayed).toEqual([true, true]);
     });
 

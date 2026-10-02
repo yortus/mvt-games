@@ -1,6 +1,6 @@
 import { Group, type Object3D } from 'three';
 import { attributesOf, type JsxTarget } from '#mvt-utils/jsx';
-import { destroyObject, onDestroyed, refreshScene } from '../object3d-mixin';
+import { destroyObject, onDestroyed, tickScene } from '../object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target
@@ -49,5 +49,5 @@ export const threeTarget: JsxTarget<Object3D> = {
         node.addEventListener(eventName as never, handler as never);
     },
 
-    refreshScene,
+    tickScene,
 };

@@ -5,9 +5,8 @@
  *
  * How the runtime behaves is in the base's `create-jsx.ts`; what each
  * attribute does, and how often it is written, is in the element table. The
- * elements' methods are called by three-mvt's `updateScene` and
- * `refreshScene`, not from three's `onBeforeRender`, which skips objects out
- * of view.
+ * elements' methods are called by three-mvt's scene passes (`tickScene`),
+ * not from three's `onBeforeRender`, which skips objects out of view.
  */
 
 import type { Object3D } from 'three';

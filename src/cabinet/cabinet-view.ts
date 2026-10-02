@@ -3,6 +3,7 @@ import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { isTouchDevice } from '#common';
 import { watch } from '#mvt-utils';
 import type { CabinetPhase } from './cabinet-model';
+import { setTickMethods } from '../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -219,8 +220,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container {
 
     // ---- Lifecycle --------------------------------------------------------
 
-    view.onUpdate = update;
-    view.onRefresh = refresh;
+    setTickMethods(view, { update, refresh });
 
     view.on('destroyed', () => {
         window.removeEventListener('keydown', onKeyDown);

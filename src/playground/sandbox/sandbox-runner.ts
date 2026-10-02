@@ -7,9 +7,9 @@
 // ---------------------------------------------------------------------------
 
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
-// Also installs the `onUpdate`/`onRefresh` methods on `Container`, before any
-// user view code runs
-import { refreshScene, SKIP_DESCENDANTS, updateScene } from '../../pixi-mvt';
+// Importing it also readies `Container` for the scene passes, before any user
+// view code runs
+import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '../../pixi-mvt';
 import { type CodeKind, jsxGlobals, transpile as compile } from './compile';
 import type { HostMessage, SandboxMessage } from './messages';
 
@@ -150,8 +150,10 @@ function createUserGlobals(): Record<string, unknown> {
         Texture,
         Rectangle,
         TextStyle,
-        // Views set `onRefresh` (and `onUpdate`); either may return this to
-        // skip its container's descendants for that pass
+        // Views set their update and refresh methods with `setTickMethods`;
+        // either may return `SKIP_DESCENDANTS` to skip the container's
+        // descendants for that scene pass
+        setTickMethods,
         SKIP_DESCENDANTS,
         // We include a minimal watch implementation so users can use it
         watch: createWatch,
@@ -214,6 +216,9 @@ async function ensureApp(width: number, height: number): Promise<Application> {
     app.renderer.background.color = 0x1a1a2e;
     document.body.appendChild(app.canvas);
     fitCanvas(app.canvas);
+    // Pausing is the stage's call: while paused, the user's view is left out
+    // of the update scene pass, and still refreshed.
+    setTickMethods(app.stage, { update: () => (paused ? SKIP_DESCENDANTS : undefined) });
     // Expose for Pixi DevTools (accessible from parent via iframe.contentWindow)
     (window as any).__PIXI_APP__ = app; // eslint-disable-line @typescript-eslint/no-explicit-any
     window.addEventListener('resize', () => {
@@ -338,20 +343,17 @@ async function runCode(
 
     pixiApp.stage.addChild(view);
 
-    // Ticker loop: the MVT frame sequence, as the main app runs it. Time only
-    // advances when not paused; the refresh pass runs every tick regardless,
-    // so the view still reflects the model while paused.
+    // Ticker loop: the MVT frame sequence, as the main app runs it: the
+    // model, then the whole stage. Time only advances when not paused; the
+    // stage is still refreshed while paused (see its gate in `ensureApp`), so
+    // the view still reflects the model.
     tickerCallback = (ticker) => {
         let phase = 'model.update()';
         try {
-            if (!paused) {
-                const deltaMs = ticker.deltaMS * speedMultiplier;
-                if (typeof model.update === 'function') model.update(deltaMs);
-                phase = 'a view\'s onUpdate';
-                updateScene(view, deltaMs);
-            }
-            phase = 'a view\'s onRefresh';
-            refreshScene(pixiApp.stage);
+            const deltaMs = ticker.deltaMS * speedMultiplier;
+            if (!paused && typeof model.update === 'function') model.update(deltaMs);
+            phase = 'a view\'s update or refresh';
+            tickScene({ root: pixiApp.stage, deltaMs });
         }
         catch (err: unknown) {
             sendToHost({

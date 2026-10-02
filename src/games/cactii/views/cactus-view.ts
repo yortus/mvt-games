@@ -3,7 +3,7 @@ import { watch } from '#mvt-utils';
 import type { CactusKind } from '../models';
 import { textures } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX, PANEL_COLOURS } from './view-constants';
-import { onTick } from '../../../pixi-mvt';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -32,7 +32,7 @@ export function CactusView(bindings: CactusViewBindings): Container {
     });
 
     view.addChild(panel, sprite);
-    onTick(view, { refresh });
+    setTickMethods(view, { refresh });
     return view;
 
     function refresh(): void {

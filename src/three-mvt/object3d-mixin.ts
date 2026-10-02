@@ -1,19 +1,5 @@
 import { Object3D } from 'three';
 import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
-import type { SceneNode } from '../mvt-utils';
-
-// ---------------------------------------------------------------------------
-// Type Augmentation
-// ---------------------------------------------------------------------------
-
-declare module 'three/src/core/Object3D.js' {
-    // The transitional `onUpdate` / `onRefresh` accessors on every object,
-    // until views use `setUpdate` / `setRefresh`. Merges with the class, so it
-    // repeats the class's type parameter.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-empty-object-type
-    interface Object3D<TEventMap extends Object3DEventMap = Object3DEventMap>
-        extends SceneNode {}
-}
 
 // ---------------------------------------------------------------------------
 // Install
@@ -32,7 +18,8 @@ const objectScenePasses = createScenePasses<Object3D>({
     describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = objectScenePasses;
+/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
+export const { tickScene, setTickMethods } = objectScenePasses;
 
 /**
  * Destroying three.js objects, which have no destroy of their own
@@ -51,13 +38,12 @@ const objectDestroyRegistry = createDestroyRegistry<Object3D>({
 
 export const { destroy: destroyObject, onDestroyed, isDestroyed } = objectDestroyRegistry;
 
-// Installed at module load, before any object can be given a method: one
-// assigned before the accessors exist becomes an own property that shadows
-// them, and loses every invalidation.
+// Installed at module load, so every object carries the scene passes' field
+// defaults before any is given a method or walked.
 installMixin();
 
 function installMixin(): void {
-    objectScenePasses.installMethods(Object3D.prototype);
+    objectScenePasses.installFieldDefaults(Object3D.prototype);
     wrapStructuralMethods();
 }
 

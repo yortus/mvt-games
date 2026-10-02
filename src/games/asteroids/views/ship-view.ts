@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { watch } from '#mvt-utils';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -24,7 +25,7 @@ export function ShipView(bindings: ShipViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function initialiseView(): void {

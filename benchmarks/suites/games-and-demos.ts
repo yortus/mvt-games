@@ -23,11 +23,12 @@ export const gamesAndDemosSuite: Suite = {
             where: { measure: 'time' },
             rows: ['kind', 'entry'],
             metrics: [
-                { key: 'updateUs', title: 'Model and view updates (µs)' },
-                { key: 'refreshUs', title: '`refreshScene` (µs)' },
+                { key: 'modelsUs', title: 'Models (µs)' },
+                { key: 'updateUs', title: 'Update scene pass (µs)' },
+                { key: 'refreshUs', title: 'Refresh scene pass (µs)' },
                 { key: 'totalUs', title: 'Total (µs)' },
                 { key: 'containers', title: 'Pixi containers', maxDecimals: 0 },
-                { key: 'methods', title: '`onUpdate` and `onRefresh` methods', maxDecimals: 0 },
+                { key: 'methods', title: 'Update and refresh methods', maxDecimals: 0 },
             ],
         },
         {

@@ -1,24 +1,5 @@
 import { Container } from 'pixi.js';
-import { createScenePasses, type SceneNode } from '../mvt-utils';
-
-// ---------------------------------------------------------------------------
-// Type Augmentation
-// ---------------------------------------------------------------------------
-
-// Pixi's own mixins declare `PixiMixins.Container` without type parameters even
-// though `Container.d.ts` references it as `PixiMixins.Container<C>`. That only
-// survives because of `skipLibCheck`. Match the shipped pattern rather than
-// trying to correct it.
-declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace PixiMixins {
-        // The transitional `onUpdate` / `onRefresh` accessors on every
-        // container, until views use `setUpdate` / `setRefresh`. An interface,
-        // to merge with Pixi's.
-        // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-        interface Container extends SceneNode {}
-    }
-}
+import { createScenePasses } from '../mvt-utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -40,29 +21,28 @@ const containerScenePasses = createScenePasses<Container>({
     describe,
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = containerScenePasses;
+/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
+export const { tickScene, setTickMethods } = containerScenePasses;
 
-// Installed at module load rather than lazily on first use. An update or
-// refresh method assigned before the accessors exist creates an own data
-// property that shadows them for the life of that container, so its setter -
-// and with it invalidation - would never fire again. Importing this module is
-// the only ordering requirement, and ES modules evaluate imports before the
-// importing module's own code.
+// Installed at module load rather than lazily on first use, so every container
+// carries the scene passes' field defaults before any is given a method or
+// walked. Importing this module is the only ordering requirement, and ES
+// modules evaluate imports before the importing module's own code.
 installMixin();
 
 /**
- * Adds `onUpdate` / `onRefresh` to `Container.prototype` and wraps the
+ * Puts the scene passes' field defaults on `Container.prototype` and wraps the
  * structural methods so the memo fields can be invalidated.
  *
  * The wrapped prototype methods use `this`, which the style guide otherwise
  * rules out: a wrapped prototype method has no way to reach its instance
- * without it. The accessors do too, in `createScenePasses`. The exemption
- * stops there: the update and refresh methods are invoked as plain calls, so
- * they stay ordinary closures over their own state - the receiver they close
- * over is enough - exactly like a view's own `refresh`.
+ * without it. The exemption stops there: the update and refresh methods are
+ * invoked as plain calls, so they stay ordinary closures over their own state
+ * - the receiver they close over is enough - exactly like a view's own
+ * `refresh`.
  */
 function installMixin(): void {
-    containerScenePasses.installMethods(Container.prototype);
+    containerScenePasses.installFieldDefaults(Container.prototype);
     wrapStructuralMethods();
 }
 
@@ -148,11 +128,10 @@ function wrapStructuralMethods(): void {
         if (DEV) warnOfUnrunDestroyedListeners(this, options);
         // Clearing the methods is what stops a destroyed container being called
         // again. Detaching alone is not enough: a container passed to
-        // `updateScene` itself has no parent to be detached from, so nothing
+        // `tickScene` itself has no parent to be detached from, so nothing
         // else would ever take it out of its own list. Doing it before the base
         // call means the setters still climb through the ancestors.
-        setUpdate(this, undefined);
-        setRefresh(this, undefined);
+        setTickMethods(this, { update: undefined, refresh: undefined });
         baseDestroy.call(this, options);
     };
 }

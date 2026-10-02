@@ -2,6 +2,7 @@ import { Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { watch } from '#mvt-utils';
 import { textures } from '../data';
 import { type EnemyKind, type EnemyPhase, type InflationStage, type Direction } from '../models';
+import { setTickMethods } from '../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -41,7 +42,7 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    view.onRefresh = refresh;
+    setTickMethods(view, { refresh });
     return view;
 
     function initialiseView(): void {

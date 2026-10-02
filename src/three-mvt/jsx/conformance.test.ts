@@ -1,6 +1,6 @@
 import { BoxGeometry, type BufferGeometry, type Mesh, type Object3D, type PerspectiveCamera, SphereGeometry } from 'three';
 import { describeJsxConformance } from '#mvt-utils/jsx/conformance';
-import { isDestroyed, updateScene } from '../object3d-mixin';
+import { isDestroyed } from '../object3d-mixin';
 import { threeElements } from './three-elements';
 import { threeTarget } from './three-target';
 
@@ -53,5 +53,4 @@ describeJsxConformance<Object3D>({
     parent: (node) => node.parent ?? undefined,
     isVisible: (node) => node.visible,
     isDestroyed,
-    updateScene,
 });

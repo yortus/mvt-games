@@ -2,7 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { createSequenceReaction, type Sequence } from '#mvt-utils';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
-import { onTick } from '../../../../pixi-mvt';
+import { setTickMethods } from '../../../../pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -91,7 +91,7 @@ export function BannerView(bindings: BannerViewBindings): Container {
         },
     });
 
-    onTick(view, { refresh: updateBanner });
+    setTickMethods(view, { refresh: updateBanner });
     return view;
 }
 

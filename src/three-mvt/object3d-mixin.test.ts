@@ -1,16 +1,16 @@
 import { Group, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
-import { destroyObject, isDestroyed, onDestroyed, refreshScene, updateScene } from './object3d-mixin';
+import { destroyObject, isDestroyed, onDestroyed, setTickMethods, tickScene } from './object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** A group whose `onRefresh` records its name in `calls`. */
+/** A group whose refresh method records its name in `calls`. */
 function recorded(name: string, calls: string[]): Group {
     const group = new Group();
     group.name = name;
-    group.onRefresh = () => void calls.push(name);
+    setTickMethods(group, { refresh: () => void calls.push(name) });
     return group;
 }
 
@@ -29,10 +29,10 @@ describe('three-mvt scene passes', () => {
         root.add(child);
         child.add(recorded('grandchild', calls));
         const deltas: number[] = [];
-        child.onUpdate = (deltaMs) => void deltas.push(deltaMs);
+        setTickMethods(child, { update: (deltaMs) => void deltas.push(deltaMs) });
 
-        refreshScene(root);
-        updateScene(root, 16);
+        tickScene({ root, only: 'refresh' });
+        tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['root', 'child', 'grandchild']);
         expect(deltas).toEqual([16]);
@@ -41,23 +41,23 @@ describe('three-mvt scene passes', () => {
     it('follows add, remove and clear after the walk was first built', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         const a = recorded('a', calls);
         const b = recorded('b', calls);
         root.add(a, b);
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['root', 'a', 'b']);
 
         root.remove(a);
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['root', 'b']);
 
         root.clear();
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
         expect(calls).toEqual(['root']);
     });
 
@@ -67,19 +67,19 @@ describe('three-mvt scene passes', () => {
         const right = recorded('right', calls);
         const moving = recorded('moving', calls);
         left.add(moving);
-        refreshScene(left);
-        refreshScene(right);
+        tickScene({ root: left, only: 'refresh' });
+        tickScene({ root: right, only: 'refresh' });
 
         // `add` detaches from the old parent through `removeFromParent`
         right.add(moving);
         calls.length = 0;
-        refreshScene(left);
-        refreshScene(right);
+        tickScene({ root: left, only: 'refresh' });
+        tickScene({ root: right, only: 'refresh' });
         expect(calls).toEqual(['left', 'right', 'moving']);
 
         moving.removeFromParent();
         calls.length = 0;
-        refreshScene(right);
+        tickScene({ root: right, only: 'refresh' });
         expect(calls).toEqual(['right']);
     });
 
@@ -89,13 +89,13 @@ describe('three-mvt scene passes', () => {
         const to = recorded('to', calls);
         const moving = recorded('moving', calls);
         from.add(moving);
-        refreshScene(from);
-        refreshScene(to);
+        tickScene({ root: from, only: 'refresh' });
+        tickScene({ root: to, only: 'refresh' });
 
         to.attach(moving);
         calls.length = 0;
-        refreshScene(from);
-        refreshScene(to);
+        tickScene({ root: from, only: 'refresh' });
+        tickScene({ root: to, only: 'refresh' });
 
         expect(calls).toEqual(['from', 'to', 'moving']);
     });
@@ -105,11 +105,11 @@ describe('three-mvt scene passes', () => {
         const root = recorded('root', calls);
         const quiet: Object3D = new Group();
         root.add(quiet);
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
-        quiet.onRefresh = () => void calls.push('quiet');
+        setTickMethods(quiet, { refresh: () => void calls.push('quiet') });
         calls.length = 0;
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'quiet']);
     });
@@ -117,11 +117,13 @@ describe('three-mvt scene passes', () => {
     it('refreshes an object a method adds, in the same scene pass', () => {
         const calls: string[] = [];
         const root = new Group();
-        root.onRefresh = () => {
-            if (root.children.length === 0) root.add(recorded('added', calls));
-        };
+        setTickMethods(root, {
+            refresh: () => {
+                if (root.children.length === 0) root.add(recorded('added', calls));
+            },
+        });
 
-        refreshScene(root);
+        tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['added']);
     });
@@ -144,9 +146,9 @@ describe('three-mvt scene passes', () => {
             expect(destroyed).toEqual(['doomed', 'inner']);
             expect(doomed.parent).toBeNull();
             expect(isDestroyed(inner)).toBe(true);
-            // A destroyed node passed to refreshScene itself runs nothing
+            // A destroyed node ticked itself runs nothing
             calls.length = 0;
-            refreshScene(doomed);
+            tickScene({ root: doomed, only: 'refresh' });
             expect(calls).toEqual([]);
         });
     });

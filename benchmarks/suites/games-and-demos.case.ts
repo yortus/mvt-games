@@ -15,7 +15,7 @@ import {
     createReorderingListsEntry,
 } from '../../src/demos';
 import { hasRefresh, hasUpdate } from '../../src/mvt-utils';
-import { refreshScene, updateScene } from '../../src/pixi-mvt';
+import { tickScene } from '../../src/pixi-mvt';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
@@ -24,12 +24,12 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // Node. The games get scripted input; the demos run unattended, as they do
 // before anyone touches them. Textures and text measurement are stubbed (see
 // the driver and `stubTextMeasurement`), and nothing is rendered, so this is
-// each one's own frame work: the session's update (model, then `updateScene`
-// over its view) and `refreshScene` over the stage, as `src/main.ts` and
-// `src/demos/main.ts` run them.
+// each one's own frame work: the session's update, which advances its models,
+// then a tick of the stage, as `src/main.ts` and `src/demos/main.ts` run them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
-//   after a 10-second warm-up, split into the two passes.
+//   after a 10-second warm-up, split into the models, the update scene pass
+//   and the refresh scene pass.
 // measure `allocation`: bytes allocated per frame.
 // measure `gc`: garbage collections over one simulated minute.
 
@@ -55,36 +55,36 @@ const session = entry.start(stage);
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
-// EXPERIMENT (proposal 027): a session whose view the host ticks leaves the
-// view's update to the host, as `src/main.ts` does with `tickScene`.
-const isViewTickedByHost = 'isViewTickedByHost' in session && session.isViewTickedByHost === true;
-
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
-    if (isViewTickedByHost) updateScene(stage, FRAME_MS);
-    refreshScene(stage);
+    tickScene({ root: stage, deltaMs: FRAME_MS });
 };
 
 if (measure === 'time') {
     for (let f = 0; f < WARMUP_FRAMES; f++) frame();
+    let modelsMs = 0;
     let updateMs = 0;
     let refreshMs = 0;
     for (let f = 0; f < MEASURED_FRAMES; f++) {
         input(frameIndex++);
         const start = performance.now();
         session.update(FRAME_MS);
-        if (isViewTickedByHost) updateScene(stage, FRAME_MS);
-        const updated = performance.now();
-        refreshScene(stage);
-        refreshMs += performance.now() - updated;
-        updateMs += updated - start;
+        const modelsDone = performance.now();
+        tickScene({ root: stage, deltaMs: FRAME_MS, only: 'update' });
+        const updateDone = performance.now();
+        tickScene({ root: stage, only: 'refresh' });
+        const refreshDone = performance.now();
+        modelsMs += modelsDone - start;
+        updateMs += updateDone - modelsDone;
+        refreshMs += refreshDone - updateDone;
     }
     const counts = countScene(stage);
     report({
+        modelsUs: (modelsMs * 1000) / MEASURED_FRAMES,
         updateUs: (updateMs * 1000) / MEASURED_FRAMES,
         refreshUs: (refreshMs * 1000) / MEASURED_FRAMES,
-        totalUs: ((updateMs + refreshMs) * 1000) / MEASURED_FRAMES,
+        totalUs: ((modelsMs + updateMs + refreshMs) * 1000) / MEASURED_FRAMES,
         containers: counts.containers,
         methods: counts.methods,
     });

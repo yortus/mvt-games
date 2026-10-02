@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScenePasses, hasRefresh, hasUpdate, onTick, setRefresh, setUpdate } from './scene-passes';
+import { createScenePasses, hasRefresh, hasUpdate, setTickMethods } from './scene-passes';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 
 // ---------------------------------------------------------------------------
@@ -46,15 +46,14 @@ function detach(child: PlainNode): void {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('setUpdate / setRefresh on plain objects', () => {
+describe('setTickMethods on plain objects', () => {
     it('sets the methods the scene passes call', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setUpdate(root, (deltaMs) => void calls.push(`update ${deltaMs}`));
-        setRefresh(root, () => void calls.push('refresh'));
+        setTickMethods(root, { update: (deltaMs) => void calls.push(`update ${deltaMs}`) });
+        setTickMethods(root, { refresh: () => void calls.push('refresh') });
 
-        passes.updateScene(root, 16);
-        passes.refreshScene(root);
+        passes.tickScene({ root, deltaMs: 16 });
 
         expect(calls).toEqual(['update 16', 'refresh']);
     });
@@ -64,12 +63,12 @@ describe('setUpdate / setRefresh on plain objects', () => {
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('root'));
-        passes.refreshScene(root);
+        setTickMethods(root, { refresh: () => void calls.push('root') });
+        passes.tickScene({ root, only: 'refresh' });
         calls.length = 0;
 
-        setRefresh(child, () => void calls.push('child'));
-        passes.refreshScene(root);
+        setTickMethods(child, { refresh: () => void calls.push('child') });
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'child']);
     });
@@ -81,12 +80,12 @@ describe('setUpdate / setRefresh on plain objects', () => {
         append(root, middle);
         append(middle, leaf);
         const calls: string[] = [];
-        setUpdate(root, () => void calls.push('root'));
-        passes.updateScene(root, 16);
+        setTickMethods(root, { update: () => void calls.push('root') });
+        passes.tickScene({ root, deltaMs: 16, only: 'update' });
         calls.length = 0;
 
-        setUpdate(leaf, () => void calls.push('leaf'));
-        passes.updateScene(root, 16);
+        setTickMethods(leaf, { update: () => void calls.push('leaf') });
+        passes.tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['root', 'leaf']);
     });
@@ -94,14 +93,14 @@ describe('setUpdate / setRefresh on plain objects', () => {
     it('includes a node given a method before it was attached', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('root'));
-        passes.refreshScene(root);
+        setTickMethods(root, { refresh: () => void calls.push('root') });
+        passes.tickScene({ root, only: 'refresh' });
         calls.length = 0;
 
         const late = plainNode('late');
-        setRefresh(late, () => void calls.push('late'));
+        setTickMethods(late, { refresh: () => void calls.push('late') });
         append(root, late);
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root', 'late']);
     });
@@ -111,12 +110,12 @@ describe('setUpdate / setRefresh on plain objects', () => {
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        setRefresh(child, () => void calls.push('child'));
-        passes.refreshScene(root);
+        setTickMethods(child, { refresh: () => void calls.push('child') });
+        passes.tickScene({ root, only: 'refresh' });
         calls.length = 0;
 
-        setRefresh(child, undefined);
-        passes.refreshScene(root);
+        setTickMethods(child, { refresh: undefined });
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
     });
@@ -126,12 +125,12 @@ describe('setUpdate / setRefresh on plain objects', () => {
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        setRefresh(child, () => void calls.push('child'));
-        passes.refreshScene(root);
+        setTickMethods(child, { refresh: () => void calls.push('child') });
+        passes.tickScene({ root, only: 'refresh' });
         calls.length = 0;
 
         detach(child);
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
     });
@@ -141,26 +140,28 @@ describe('setUpdate / setRefresh on plain objects', () => {
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        setRefresh(root, () => {
-            calls.push('root');
-            return SKIP_DESCENDANTS;
+        setTickMethods(root, {
+            refresh: () => {
+                calls.push('root');
+                return SKIP_DESCENDANTS;
+            },
         });
-        setRefresh(child, () => void calls.push('child'));
+        setTickMethods(child, { refresh: () => void calls.push('child') });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['root']);
     });
 });
 
-describe('wrapping with setRefresh / setUpdate', () => {
+describe('wrapping with setTickMethods', () => {
     it('replaces a method when the new one declares no parameter, and never calls the old one', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('old'));
-        setRefresh(root, () => void calls.push('new'));
+        setTickMethods(root, { refresh: () => void calls.push('old') });
+        setTickMethods(root, { refresh: () => void calls.push('new') });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['new']);
     });
@@ -168,14 +169,16 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('gives a method that declares a parameter the one it replaces', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('own'));
-        setRefresh(root, (own) => {
-            calls.push('before');
-            own?.();
-            calls.push('after');
+        setTickMethods(root, { refresh: () => void calls.push('own') });
+        setTickMethods(root, {
+            refresh: (own) => {
+                calls.push('before');
+                own?.();
+                calls.push('after');
+            },
         });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['before', 'own', 'after']);
     });
@@ -183,11 +186,13 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('gives it undefined when there was none', () => {
         const root = plainNode('root');
         let received: unknown = 'not called';
-        setRefresh(root, (own) => {
-            received = own;
+        setTickMethods(root, {
+            refresh: (own) => {
+                received = own;
+            },
         });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(received).toBeUndefined();
     });
@@ -195,17 +200,21 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('stacks wraps, the last one set running first', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('own'));
-        setRefresh(root, (inner) => {
-            calls.push('first wrap');
-            return inner?.();
+        setTickMethods(root, { refresh: () => void calls.push('own') });
+        setTickMethods(root, {
+            refresh: (inner) => {
+                calls.push('first wrap');
+                return inner?.();
+            },
         });
-        setRefresh(root, (inner) => {
-            calls.push('second wrap');
-            return inner?.();
+        setTickMethods(root, {
+            refresh: (inner) => {
+                calls.push('second wrap');
+                return inner?.();
+            },
         });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['second wrap', 'first wrap', 'own']);
     });
@@ -215,11 +224,11 @@ describe('wrapping with setRefresh / setUpdate', () => {
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        setRefresh(child, () => void calls.push('child'));
-        setRefresh(root, () => SKIP_DESCENDANTS);
-        setRefresh(root, (own) => own?.());
+        setTickMethods(child, { refresh: () => void calls.push('child') });
+        setTickMethods(root, { refresh: () => SKIP_DESCENDANTS });
+        setTickMethods(root, { refresh: (own) => own?.() });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
     });
@@ -227,11 +236,11 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('removes the whole chain when the method is cleared', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('own'));
-        setRefresh(root, (own) => own?.());
-        setRefresh(root, undefined);
+        setTickMethods(root, { refresh: () => void calls.push('own') });
+        setTickMethods(root, { refresh: (own) => own?.() });
+        setTickMethods(root, { refresh: undefined });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual([]);
         expect(hasRefresh(root)).toBe(false);
@@ -240,12 +249,14 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('replaces when the parameter has a default value, which the declared length does not count', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setRefresh(root, () => void calls.push('own'));
-        setRefresh(root, (own: (() => void) | undefined = undefined) => {
-            calls.push(own === undefined ? 'replaced' : 'wrapped');
+        setTickMethods(root, { refresh: () => void calls.push('own') });
+        setTickMethods(root, {
+            refresh: (own: (() => void) | undefined = undefined) => {
+                calls.push(own === undefined ? 'replaced' : 'wrapped');
+            },
         });
 
-        passes.refreshScene(root);
+        passes.tickScene({ root, only: 'refresh' });
 
         expect(calls).toEqual(['replaced']);
     });
@@ -253,13 +264,15 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('gives an update method that declares a second parameter the one it replaces, with deltaMs', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setUpdate(root, (deltaMs) => void calls.push(`own ${deltaMs}`));
-        setUpdate(root, (deltaMs, own) => {
-            calls.push(`wrap ${deltaMs}`);
-            own?.(deltaMs * 2);
+        setTickMethods(root, { update: (deltaMs) => void calls.push(`own ${deltaMs}`) });
+        setTickMethods(root, {
+            update: (deltaMs, own) => {
+                calls.push(`wrap ${deltaMs}`);
+                own?.(deltaMs * 2);
+            },
         });
 
-        passes.updateScene(root, 16);
+        passes.tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['wrap 16', 'own 32']);
     });
@@ -267,10 +280,10 @@ describe('wrapping with setRefresh / setUpdate', () => {
     it('replaces an update method when the new one declares only deltaMs', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        setUpdate(root, () => void calls.push('old'));
-        setUpdate(root, (deltaMs) => void calls.push(`new ${deltaMs}`));
+        setTickMethods(root, { update: () => void calls.push('old') });
+        setTickMethods(root, { update: (deltaMs) => void calls.push(`new ${deltaMs}`) });
 
-        passes.updateScene(root, 16);
+        passes.tickScene({ root, deltaMs: 16, only: 'update' });
 
         expect(calls).toEqual(['new 16']);
     });
@@ -286,31 +299,31 @@ describe('hasUpdate / hasRefresh', () => {
 
     it('are true once a method is set, and false once it is cleared', () => {
         const node = plainNode('node');
-        setUpdate(node, () => {});
-        setRefresh(node, () => {});
+        setTickMethods(node, { update: () => {} });
+        setTickMethods(node, { refresh: () => {} });
 
         expect(hasUpdate(node)).toBe(true);
         expect(hasRefresh(node)).toBe(true);
 
-        setUpdate(node, undefined);
-        setRefresh(node, undefined);
+        setTickMethods(node, { update: undefined });
+        setTickMethods(node, { refresh: undefined });
 
         expect(hasUpdate(node)).toBe(false);
         expect(hasRefresh(node)).toBe(false);
     });
 });
 
-describe('tickScene (experiment)', () => {
+describe('tickScene', () => {
     it('runs the whole update scene pass, then the whole refresh scene pass, parents first', () => {
         const root = plainNode('root');
         const child = plainNode('child');
         append(root, child);
         const calls: string[] = [];
-        onTick(root, {
+        setTickMethods(root, {
             update: (deltaMs) => void calls.push(`update root ${deltaMs}`),
             refresh: () => void calls.push('refresh root'),
         });
-        onTick(child, {
+        setTickMethods(child, {
             update: (deltaMs) => void calls.push(`update child ${deltaMs}`),
             refresh: () => void calls.push('refresh child'),
         });
@@ -323,13 +336,12 @@ describe('tickScene (experiment)', () => {
     it('runs only the scene pass `only` names', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        onTick(root, {
+        setTickMethods(root, {
             update: () => void calls.push('update'),
             refresh: () => void calls.push('refresh'),
         });
 
-        passes.tickScene({ root, deltaMs: 16, only: 'update' });
-        passes.tickScene({ root, only: 'refresh' });
+        passes.tickScene({ root, deltaMs: 16 });
 
         expect(calls).toEqual(['update', 'refresh']);
     });
@@ -340,8 +352,8 @@ describe('tickScene (experiment)', () => {
         append(root, game);
         const calls: string[] = [];
         let isPaused = true;
-        onTick(root, { update: () => (isPaused ? SKIP_DESCENDANTS : undefined) });
-        onTick(game, {
+        setTickMethods(root, { update: () => (isPaused ? SKIP_DESCENDANTS : undefined) });
+        setTickMethods(game, {
             update: () => void calls.push('update game'),
             refresh: () => void calls.push('refresh game'),
         });
@@ -352,12 +364,48 @@ describe('tickScene (experiment)', () => {
 
         expect(calls).toEqual(['refresh game', 'update game', 'refresh game']);
     });
+
+    it('accepts a negative deltaMs, for time run backwards', () => {
+        const root = plainNode('root');
+        const deltas: number[] = [];
+        setTickMethods(root, { update: (deltaMs) => void deltas.push(deltaMs) });
+
+        passes.tickScene({ root, deltaMs: -16 });
+        passes.tickScene({ root, deltaMs: 0, only: 'update' });
+
+        expect(deltas).toEqual([-16, 0]);
+    });
+
+    it.runIf(import.meta.env.DEV)('throws in dev when deltaMs is not a finite number', () => {
+        const root = plainNode('root');
+        const calls: string[] = [];
+        setTickMethods(root, {
+            update: () => void calls.push('update'),
+            refresh: () => void calls.push('refresh'),
+        });
+
+        expect(() => passes.tickScene({ root, deltaMs: Number.NaN })).toThrow(/deltaMs NaN/);
+        expect(() => passes.tickScene({ root, deltaMs: Infinity, only: 'update' })).toThrow(/deltaMs Infinity/);
+        // A caller without type checks can leave it out
+        expect(() => passes.tickScene({ root } as unknown as { root: PlainNode; deltaMs: number })).toThrow(/deltaMs undefined/);
+        expect(calls).toEqual([]);
+    });
+
+    it('takes no deltaMs for the refresh scene pass alone', () => {
+        const root = plainNode('root');
+        const calls: string[] = [];
+        setTickMethods(root, { refresh: () => void calls.push('refresh') });
+
+        passes.tickScene({ root, only: 'refresh' });
+
+        expect(calls).toEqual(['refresh']);
+    });
 });
 
-describe('onTick (experiment)', () => {
+describe('setTickMethods', () => {
     it('sets both methods at once', () => {
         const node = plainNode('node');
-        onTick(node, { update: () => {}, refresh: () => {} });
+        setTickMethods(node, { update: () => {}, refresh: () => {} });
 
         expect(hasUpdate(node)).toBe(true);
         expect(hasRefresh(node)).toBe(true);
@@ -366,8 +414,8 @@ describe('onTick (experiment)', () => {
     it('leaves a member it is not given as it is', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        onTick(root, { update: () => void calls.push('update') });
-        onTick(root, { refresh: () => void calls.push('refresh') });
+        setTickMethods(root, { update: () => void calls.push('update') });
+        setTickMethods(root, { refresh: () => void calls.push('refresh') });
 
         passes.tickScene({ root, deltaMs: 16 });
 
@@ -376,21 +424,21 @@ describe('onTick (experiment)', () => {
 
     it('clears a member given as undefined', () => {
         const node = plainNode('node');
-        onTick(node, { update: () => {}, refresh: () => {} });
-        onTick(node, { refresh: undefined });
+        setTickMethods(node, { update: () => {}, refresh: () => {} });
+        setTickMethods(node, { refresh: undefined });
 
         expect(hasUpdate(node)).toBe(true);
         expect(hasRefresh(node)).toBe(false);
     });
 
-    it('wraps per member, as setUpdate and setRefresh do', () => {
+    it('wraps per member', () => {
         const root = plainNode('root');
         const calls: string[] = [];
-        onTick(root, {
+        setTickMethods(root, {
             update: (deltaMs) => void calls.push(`own update ${deltaMs}`),
             refresh: () => void calls.push('own refresh'),
         });
-        onTick(root, {
+        setTickMethods(root, {
             update: (deltaMs, own) => {
                 calls.push('wrapped update');
                 own?.(deltaMs);

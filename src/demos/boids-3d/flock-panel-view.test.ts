@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { refreshScene } from '../../html-mvt';
+import { tickScene } from '../../html-mvt';
 import { createFlockModel } from '../boids';
 import { FlockPanelView } from './flock-panel-view';
 
@@ -25,7 +25,7 @@ function setup() {
     });
     const panel = FlockPanelView({ model });
     document.body.replaceChildren(panel);
-    refreshScene(panel);
+    tickScene({ root: panel, only: 'refresh' });
     const slider = (key: string): HTMLInputElement => panel.querySelector(`#flock-${key}`) as HTMLInputElement;
     const shown = (key: string): string => slider(key).parentElement?.querySelector('.range-value')?.textContent ?? '';
     return { model, panel, slider, shown };
@@ -50,7 +50,7 @@ describe('FlockPanelView', () => {
 
         t.slider('boidCount').valueAsNumber = 120;
         t.slider('boidCount').dispatchEvent(new Event('input'));
-        refreshScene(t.panel);
+        tickScene({ root: t.panel, only: 'refresh' });
 
         expect(t.model.boidCount).toBe(120);
         expect(t.shown('boidCount')).toBe('120');
@@ -61,7 +61,7 @@ describe('FlockPanelView', () => {
 
         // As a click in the three.js scene does
         t.model.boidCount = 60;
-        refreshScene(t.panel);
+        tickScene({ root: t.panel, only: 'refresh' });
 
         expect(t.slider('boidCount').valueAsNumber).toBe(60);
         expect(t.shown('boidCount')).toBe('60');

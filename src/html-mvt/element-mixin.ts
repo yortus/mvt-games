@@ -1,17 +1,4 @@
 import { createDestroyRegistry, createScenePasses } from '../mvt-utils';
-import type { SceneNode } from '../mvt-utils';
-
-// ---------------------------------------------------------------------------
-// Type Augmentation
-// ---------------------------------------------------------------------------
-
-declare global {
-    // The transitional `onUpdate` / `onRefresh` accessors on every element,
-    // until views use `setUpdate` / `setRefresh`. An interface, to merge with
-    // the DOM's.
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    interface Element extends SceneNode {}
-}
 
 // ---------------------------------------------------------------------------
 // Install
@@ -37,7 +24,8 @@ const elementScenePasses = createScenePasses<Element>({
     beforeScenePass: watchElementTree,
 });
 
-export const { updateScene, refreshScene, setUpdate, setRefresh, tickScene, onTick } = elementScenePasses;
+/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
+export const { tickScene, setTickMethods } = elementScenePasses;
 
 /**
  * Destroying elements, which have no destroy of their own
@@ -112,11 +100,11 @@ const watched = new WeakSet<Node>();
 /** Made on first use, so this module can load where there is no DOM. */
 let observer: MutationObserver | undefined;
 
-// Installed at module load, before any element can be given a method: one
-// assigned before the accessors exist becomes an own property that shadows
-// them, and loses every invalidation. Skipped where there is no DOM, such as
-// in Node, where scripts and benchmarks may load the HTML element table.
-if (typeof Element !== 'undefined') elementScenePasses.installMethods(Element.prototype);
+// Installed at module load, so every element carries the scene passes' field
+// defaults before any is given a method or walked. Skipped where there is no
+// DOM, such as in Node, where scripts and benchmarks may load the HTML element
+// table.
+if (typeof Element !== 'undefined') elementScenePasses.installFieldDefaults(Element.prototype);
 
 function watch(node: Node): void {
     observer ??= new MutationObserver(processRecords);

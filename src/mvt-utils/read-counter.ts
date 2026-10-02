@@ -38,7 +38,7 @@ export function addReads(n: number): void {
 }
 
 /**
- * Count the reads made while `run` runs, typically one `refreshScene`.
+ * Count the reads made while `run` runs, typically one refresh scene pass.
  * Restores the counter's previous on/off state afterwards.
  */
 export function countReads(run: () => void): number {

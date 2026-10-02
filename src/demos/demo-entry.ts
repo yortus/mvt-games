@@ -40,13 +40,17 @@ export interface DemoEntry {
 /** The application a demo runs in, for demos that measure or extend it. */
 export interface DemoHost {
     readonly renderer: Renderer;
-    /** Drives the demo: each tick runs the session's `update`, then refreshes and renders the stage. */
+    /** Drives the demo: each tick runs the session's `update`, then ticks and renders the stage. */
     readonly ticker: Ticker;
 }
 
 /** A running demo instance - updated each tick and destroyable. */
 export interface DemoSession {
-    /** Advance demo state by the given elapsed milliseconds. */
+    /**
+     * Advance the demo's models by the given elapsed milliseconds. Models
+     * only: the host ticks the demo's view with the rest of its stage
+     * (`tickScene`).
+     */
     update: (deltaMs: number) => void;
     /**
      * Re-layout after a viewport size change.

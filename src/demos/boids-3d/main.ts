@@ -1,6 +1,6 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { refreshScene as refreshElements } from '../../html-mvt';
-import { createPointerPicker, refreshScene, updateScene } from '../../three-mvt';
+import { tickScene as tickElements } from '../../html-mvt';
+import { createPointerPicker, tickScene } from '../../three-mvt';
 import { createFlockModel } from '../boids';
 import { FlockPanelView } from './flock-panel-view';
 import { FlockView } from './flock-view';
@@ -58,11 +58,11 @@ renderer.setAnimationLoop((time: number) => {
     const deltaMs = lastTime === undefined ? 0 : Math.min(time - lastTime, MAX_STEP_MS);
     lastTime = time;
 
+    // The model, then each renderer's scene: the three.js scene, and the
+    // settings panel's elements
     model.update(deltaMs);
-    updateScene(scene, deltaMs);
-    refreshScene(scene);
-    // The panel has no update methods, so it needs only a refresh
-    refreshElements(panel);
+    tickScene({ root: scene, deltaMs });
+    tickElements({ root: panel, deltaMs });
 
     orbitAngle += deltaMs * ORBIT_RADIANS_PER_MS;
     camera.position.set(Math.sin(orbitAngle) * ORBIT_RADIUS, ORBIT_HEIGHT, Math.cos(orbitAngle) * ORBIT_RADIUS);

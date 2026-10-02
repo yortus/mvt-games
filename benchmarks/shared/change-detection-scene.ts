@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { batch, createMemo, createRenderEffect, createRoot, createSignal } from 'solid-js';
 import { watch } from '../../src/mvt-utils';
-import { refreshScene } from '../../src/pixi-mvt';
+import { setTickMethods, tickScene } from '../../src/pixi-mvt';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -79,19 +79,23 @@ function createDiscrete(approach: string, changedCount: number): () => void {
         }
         else if (approach === 'watch') {
             const watcher = watch({ level: () => item.level });
-            view.onRefresh = () => {
-                const w = watcher.poll();
-                if (w.level.changed) applyLevel(view, w.level.value);
-            };
+            setTickMethods(view, {
+                refresh: () => {
+                    const w = watcher.poll();
+                    if (w.level.changed) applyLevel(view, w.level.value);
+                },
+            });
         }
         else if (approach === 'manual') {
             let previous = item.level;
-            view.onRefresh = () => {
-                const level = item.level;
-                if (level === previous) return;
-                previous = level;
-                applyLevel(view, level);
-            };
+            setTickMethods(view, {
+                refresh: () => {
+                    const level = item.level;
+                    if (level === previous) return;
+                    previous = level;
+                    applyLevel(view, level);
+                },
+            });
         }
         else {
             throw new Error(`unknown approach: ${approach}`);
@@ -105,7 +109,7 @@ function createDiscrete(approach: string, changedCount: number): () => void {
             item.level++;
             item.listener?.(item.level);
         }
-        if (polled) refreshScene(root);
+        if (polled) tickScene({ root, only: 'refresh' });
     };
 }
 
@@ -171,9 +175,11 @@ function createDerived(approach: string, changedCount: number): () => void {
             };
         }
         else if (approach === 'recompute') {
-            view.onRefresh = () => {
-                view.x = sum(inputs);
-            };
+            setTickMethods(view, {
+                refresh: () => {
+                    view.x = sum(inputs);
+                },
+            });
         }
         else if (approach === 'watch') {
             const watcher = watch({
@@ -186,13 +192,15 @@ function createDerived(approach: string, changedCount: number): () => void {
                 i6: () => inputs[6],
                 i7: () => inputs[7],
             });
-            view.onRefresh = () => {
-                const w = watcher.poll();
-                if (w.i0.changed || w.i1.changed || w.i2.changed || w.i3.changed
-                    || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
-                    view.x = sum(inputs);
-                }
-            };
+            setTickMethods(view, {
+                refresh: () => {
+                    const w = watcher.poll();
+                    if (w.i0.changed || w.i1.changed || w.i2.changed || w.i3.changed
+                        || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
+                        view.x = sum(inputs);
+                    }
+                },
+            });
         }
         else {
             throw new Error(`unknown approach: ${approach}`);
@@ -206,6 +214,6 @@ function createDerived(approach: string, changedCount: number): () => void {
             item.inputs[0]++;
             item.listener?.();
         }
-        if (polled) refreshScene(root);
+        if (polled) tickScene({ root, only: 'refresh' });
     };
 }
