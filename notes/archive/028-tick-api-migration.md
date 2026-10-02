@@ -10,7 +10,7 @@
 
 Move the whole repo from the `onUpdate` / `onRefresh` properties and the
 `updateScene` / `refreshScene` functions to the tick API, which settles
-[proposal 027](../../proposals/027-mvt-method-names.md)'s question of how this
+[proposal 027](027-mvt-method-names.md)'s question of how this
 repo's scene methods should line up with MVT's `update` and `refresh`.
 
 ### The tick vocabulary
@@ -261,13 +261,13 @@ staged by the user for review. Phase 0 commits it.
 
 ### Phase 7: benchmarks
 
-- [ ] Every suite is re-run and re-saved (`npm run bench -- all --save`) from
+- [x] Every suite is re-run and re-saved (`npm run bench -- all --save`) from
   a worktree, on a quiet machine.
-- [ ] The saved results note the two known shifts:
+- [x] The saved results note the two known shifts:
   - the DOM naive baseline reads its own property now, which made it 2-6%
     faster;
   - the `games-and-demos` columns are new.
-- [ ] `docs/building-with-mvt/performance/measurements.md` is updated if it
+- [x] `docs/building-with-mvt/performance/measurements.md` is updated if it
   quotes changed numbers, and says "importing pixi-mvt", not "importing the
   plugin". The re-saved `scene-passes` results carry the suite's new labels
   ("pixi-mvt imported", "no scene pass run", "Refresh scene pass").
@@ -278,7 +278,7 @@ staged by the user for review. Phase 0 commits it.
   `tickScene` / `setTickMethods`, and variant C storage. Mark the rename sections
   (3-6.3) superseded, and keep them as the record of why. Then archive it, with
   its index row.
-- [ ] This task is archived, and its loose ends below are filed.
+- [x] This task is archived, and its loose ends below are filed.
 
 ## Out of scope (filed on 2026-10-02: see the last progress entry)
 
@@ -374,7 +374,7 @@ staged by the user for review. Phase 0 commits it.
     notes) still describe the old names, and are the only matches for the
     phase 4 grep besides the JSX attributes.
 - **2026-10-02** `onTick` renamed to `setTickMethods` by task
-  [029](../../archive/029-rename-ontick-to-settickmethods.md), before phases
+  [029](029-rename-ontick-to-settickmethods.md), before phases
   1-4 were committed. This file uses the new name throughout, including in
   the entries above. It returns `void`.
 - **2026-10-02** No second way to do the same thing: `updateScene`,
@@ -409,3 +409,51 @@ staged by the user for review. Phase 0 commits it.
   (its import variable, comments, errors and row labels), along with a "no
   pass run" label. Its docs and saved results are in the phase 6 and 7
   criteria.
+
+- **2026-10-02** Phases 5 and 6 done (committed as "028 phases 5-6").
+  - **The scene counter** is `sceneCounter` / `countScene` in
+    `src/mvt-utils/scene-counter.ts`, exported from every renderer. It counts
+    `methodCalls`, `walkRebuilds` and `rebuildVisits` (every `has()` visit in
+    a rebuild, plus the root). `createFrameStats` takes it as `sceneCounter`
+    and samples it in the same frame as `readCounter`; the perfmon shows
+    `MPF`, `WPF` and `NPF` rows. Boids and falling sand pass it. Checked in
+    headless Chrome: falling sand shows about 3.8K methods per frame and no
+    rebuilds once settled; boids 23 methods.
+  - **Its cost switched off** is one flag check per scene pass, per walk
+    rebuilt and per node visited rebuilding it. The loop counts calls by
+    what it elides, in the branches that elide, so a method called and
+    stepped past costs nothing extra. A first version counted every call in
+    a local; in four interleaved rounds against `5fd3057`, `scene-passes` was
+    level and `jsx-refresh` noisy, with some JSX rows at scale 5-17% slower
+    and the hand-written rows on the same loop level. A three-way A/B (15 runs
+    a side, 10,000 elements) put both versions within ±5% of the commit
+    before, so the slow rows were noise. The elision-count version was kept.
+    `games-and-demos` (falling sand) and `html-scene-passes` were also level
+    against that commit, interleaved.
+  - **Docs:** the architecture section introduces ticks (`ticker.md`,
+    "Ticks"), the game loop's project section is "The Ticker Ticks Models,
+    Then the Scene", and the glossary has "Tick", `tickScene` and
+    `setTickMethods`, with "Scene pass" as one half of a tick. Bare "refresh
+    pass" became "refresh scene pass" wherever it appeared.
+- **2026-10-02** Phases 7 and 8 done.
+  - **Benchmarks.** Every suite re-saved from a worktree with Node 26.10,
+    Pixi 8.21 and solid-js 1.9.15 (the previous saves were Node 22.11 and Pixi
+    8.16). The machine was not quiet throughout: `hot-path-rules`,
+    `html-scene-passes`, `change-detection` and `games-and-demos` came out
+    disturbed, with ±20-40% spreads and baselines far off, and were re-saved
+    alone. Suites now take `notes`, written into the saved Markdown;
+    `html-scene-passes` and `games-and-demos` carry this task's two shifts.
+    The saved `games-and-demos` results predate 030's perfmon changes, which
+    only touch the two demos' panels.
+  - **Numbers.** The measurements page, the pixi-mvt README's cost table and
+    the design notes' churn figure were updated, and the JSX-against-hand-written
+    ratio in the style guide and view skill (1.1-1.6x). Two shifts since the
+    September saves are not attributed, and went to 017: `scene-passes` churn
+    91 to 127 µs, and falling sand's refresh 120 to 159 µs. The commit before
+    the scene counter measures the same, so neither is the counter.
+  - **Notes.** Proposal 027 is rewritten around the outcome (a new section 0),
+    with sections 3-6.3 marked superseded and section 7's checks marked done,
+    moot or filed. 027 and this task are archived. Loose ends went to 017
+    (027's unbuilt dev checks, old playground links, DOM churn, the texture
+    cache warnings, and the two unattributed slowdowns) and to 011's
+    publishing phase (duplicate copies, `Symbol.for`).

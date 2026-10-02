@@ -403,12 +403,13 @@ default-valued parameter sees its default.
 - **Dense-plus-churning scenes are slower than a naive walk.** When every
   container has a refresh method and the tree is dirtied every frame, pruning prunes
   nothing and the list is rebuilt every frame, so caching is pure overhead:
-  65 us against 37 us on 2000 containers, all with a refresh method, and 100 swaps per frame. Two
+  127 us against 29 us on 2000 containers, all with a refresh method, and 100 swaps per frame
+  (2026-10-02; 65 us against 37 us when first measured, on Node 22). Two
   fixes were tried during design and neither worked - dispatching during the
   rebuild was marginally *worse*, and reusing the array rather than allocating
   is noise, because building a 2000-entry list costs about the same either way.
   It is structural. The realistic shape is the opposite one, where the cache
-  wins by 450x.
+  wins by over 300x.
 - **Direct `container.children` mutation bypasses everything.** Documented
   non-support.
 

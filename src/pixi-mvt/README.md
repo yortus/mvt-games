@@ -428,15 +428,15 @@ window, and the perfmon panel in `src/common/` shows the results.
 
 Measured with `npm run bench -- scene-passes`: each case in its own process,
 bundled to plain JavaScript, microseconds per frame on a 2025 machine
-(2026-09-25). A frame is one refresh scene pass plus the scenario's changes to
+(2026-10-02). A frame is one refresh scene pass plus the scenario's changes to
 the tree.
 
 | Scenario                                                          | naive walk  | pixi-mvt    |
 | ----------------------------------------------------------------- | ----------- | ----------- |
-| 20k containers, 200 with a refresh method, static                 | 200 us      | **0.60 us** |
-| 2k containers, all with a refresh method, static                  | 9.4 us      | **5.1 us**  |
-| 2k containers, all with a refresh method, 100 swaps/frame         | **36.0 us** | 91.0 us     |
-| 100 subtrees of 25 containers with no refresh method, re-attached | 42.3 us     | **9.6 us**  |
+| 20k containers, 200 with a refresh method, static                 | 206 us      | **0.65 us** |
+| 2k containers, all with a refresh method, static                  | 9.3 us      | **5.6 us**  |
+| 2k containers, all with a refresh method, 100 swaps/frame         | **28.9 us** | 127 us      |
+| 100 subtrees of 25 containers with no refresh method, re-attached | 44.0 us     | **8.7 us**  |
 
 The first row is the realistic shape - a large scene where few containers have
 a refresh method - and it is why the list is cached rather than walked. The third row is
@@ -447,16 +447,16 @@ structural and documented rather than fixed.
 Three more worth having:
 
 - **Dispatch against the incumbent.** 2000 methods through Pixi's own `onRender`
-  list cost 2.1 us; the same 2000 through the refresh scene pass cost 5.1 us.
-  The difference is about 1.5 ns per container, and buys the detachment check
+  list cost 1.9 us; the same 2000 through the refresh scene pass cost 5.6 us.
+  The difference is about 2 ns per container, and buys the detachment check
   that makes removal during a scene pass safe.
 - **What the mixin costs a tree that never uses it.** 100 attach and
-  detach pairs on an unmanaged tree: 11.3 us unpatched, 12.1 us patched, about
-  8 ns per pair. Small, but measurable. The mixin's patching of
+  detach pairs on an unmanaged tree: 11.4 us unpatched, 12.0 us patched, about
+  6 ns per pair. Small, but measurable. The mixin's patching of
   `Container.prototype` is the main adoption objection, and the objection is about trust rather than speed, so the number
   is here.
 - **Skipping subtrees.** 10k containers, each with a refresh method, in 100 groups, 90 of them
-  inactive: 126 us when the inactive groups are only hidden, 8.7 us when they
+  inactive: 128 us when the inactive groups are only hidden, 10.2 us when they
   return `SKIP_DESCENDANTS`.
 
 The full results, and the other benchmarks, are in the docs'

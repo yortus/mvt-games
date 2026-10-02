@@ -34,11 +34,11 @@ latter was `scene-node.ts`) -
 [element-mixin.ts](../../src/html-mvt/element-mixin.ts) (the three installs) -
 [destroy-registry.ts](../../src/mvt-utils/destroy-registry.ts) -
 [attributes.ts](../../src/mvt-utils/jsx/attributes.ts) (`MVT_ATTRIBUTE_KEYS`) -
-[001](../archive/001-mvt-plugin-rework-plan.md) (where the current names come
-from) - [003](../archive/003-mvt-plugin-appraisal.md) "API review" (which
+[001](001-mvt-plugin-rework-plan.md) (where the current names come
+from) - [003](003-mvt-plugin-appraisal.md) "API review" (which
 praised them for mirroring Pixi's `onRender`) -
-[011](011-multi-package-repo.md) (the published packages) -
-[022](022-renderer-agnostic-jsx.md) section 9.2 (methods on
+[011](../proposals/011-multi-package-repo.md) (the published packages) -
+[022](../proposals/022-renderer-agnostic-jsx.md) section 9.2 (methods on
 `Element.prototype`).
 
 ---
@@ -1431,6 +1431,6 @@ binding or an event handler.
 | `defineView`, `asView` | MVT's "a view has update and refresh" | "view" already means the `XxxView` function here |
 
 **Chosen: `setTickMethods`.** The rename was task
-[029](../archive/029-rename-ontick-to-settickmethods.md), done 2026-10-02.
+[029](029-rename-ontick-to-settickmethods.md), done 2026-10-02.
 Decided there: it returns nothing, as `onTick` did, so a view ends with
 `setTickMethods(view, { refresh });` and then `return view;`.

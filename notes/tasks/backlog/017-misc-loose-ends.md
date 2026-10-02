@@ -251,6 +251,15 @@ Settled questions that should not be reopened without new information are in
   C) than before; task 028 added nothing to it. Unexplained. The first suspect
   is the per-node `visit()` call in rebuilds. Profile one churn frame in
   headless Chrome before and after.
+- **Two slowdowns between the 2026-09-25 and 2026-10-02 saves, not yet
+  attributed.** The `scene-passes` churn case went from 91 to 127 µs while
+  its naive walk went from 36 to 29 µs, and falling sand's refresh scene pass
+  in `games-and-demos` from 120 to 159 µs. Between the two saves, Node went
+  from 22.11 to 26.10, Pixi from 8.16 to 8.21, and task 028 moved the scene
+  passes to the tick API. Task 028's scene counter is not the cause: the
+  commit before it measures the same (127 and 159-164 µs) in interleaved
+  runs. To attribute: run both cases on Node 22 and 26 at that commit, then
+  at the commit before 028's phases 1-4.
 - **Pixi's "[Cache] already has key" warnings** (`ghost-eyes`, `ship-icon`,
   `ship`) when the cabinet loads. Seen during task 028's browser checks.
   Check whether they predate it (likely: two games registering textures under
@@ -339,6 +348,7 @@ falling-sand demo. Each is a new variant, measured with
 - [x] One `_mvt` record per node measured against six `_mvt*` fields, and adopted or recorded
 - [ ] 027's remaining dev checks each built or dropped
 - [ ] DOM churn cost since the tick API explained, or recorded
+- [ ] Churn and falling-sand slowdowns between the September and October saves attributed
 - [ ] Pixi's texture cache warnings fixed, or recorded as harmless
 - [ ] 020's experiments each run, or dropped
 - [ ] Parked items each still parked, or moved into their own task
@@ -381,3 +391,5 @@ falling-sand demo. Each is a new variant, measured with
   11.8. Took in task 028's loose ends: 027's unbuilt dev checks and old
   playground links (Decide), and the DOM churn cost and Pixi's texture cache
   warnings (Investigate). Its publishing items went to 011's phase 6.
+  Added the two unattributed slowdowns found re-saving the benchmarks
+  (Investigate).

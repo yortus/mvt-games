@@ -10,7 +10,7 @@
 
 Rename the tick API's per-node function, `onTick(node, { update, refresh })`,
 to `setTickMethods(node, { update, refresh })`. Do it after task
-[028](../tasks/active/028-tick-api-migration.md), which introduces `onTick` and
+[028](028-tick-api-migration.md), which introduces `onTick` and
 migrates the repo to it. Another session was working on 028 when this was
 decided, so it was kept out of 028 to avoid rewriting a moving target.
 
@@ -29,7 +29,7 @@ handler. `setTickMethods` says what happens, uses MVT's word ("methods"), and
 matches the internal `TickMethods` type.
 
 The candidates and the reasoning are in
-[027 section 12.4](../proposals/027-mvt-method-names.md). `whenTicked` was
+[027 section 12.4](027-mvt-method-names.md). `whenTicked` was
 the runner-up, rejected because its event flavour invites people to expect
 calls to add up.
 

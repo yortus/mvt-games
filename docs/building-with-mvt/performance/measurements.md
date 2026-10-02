@@ -70,13 +70,13 @@ Re-run the benchmarks on your own machine to get your own numbers; see
   does.** They win when fewer than about 4-10% of containers change per frame, cost
   7-13x as much when everything changes, and leave garbage on every change.
 - **Scene size matters more than it looks.** Past a few thousand containers
-  the cost per container climbs; 100,000 containers at rest cost about 3.7 ms
+  the cost per container climbs; 100,000 containers at rest cost about 4.2 ms
   per frame. Skipping inactive subtrees with `SKIP_DESCENDANTS` is the remedy.
 - **Four hot path rules matter a lot, two not at all (in V8).** Strings built
   per game object, `Object.values()`, array methods and recomputing unchanged values
   cost several to tens of times more, and the first three leave kilobytes of
   garbage per frame. `for...of` and returned tuples cost nothing extra.
-- **This repo's games take 5-10 µs per frame** before drawing.
+- **This repo's games take 4-9 µs per frame** before drawing.
 
 ## Keeping Containers in Step
 
@@ -87,11 +87,11 @@ per frame goes from nothing to everything.
 
 <!--@include: ../../../benchmarks/results/reactivity.md#one-dynamic-->
 
-- **Polling costs about 4-12 µs per frame for 1000 containers at rest**, under
+- **Polling costs about 4-13 µs per frame for 1000 containers at rest**, under
   0.1% of a frame. It rises to 7-19 µs when everything changes, mostly
   because Pixi's setters then have real work to do.
-- **Signals cost almost nothing at rest, and about 260 ns per changed
-  container (95 ns with 1 dynamic property).** They are cheaper than polling
+- **Signals cost almost nothing at rest, and about 240 ns per changed
+  container (100 ns with 1 dynamic property).** They are cheaper than polling
   until about 2-5% of containers change per frame with 3 dynamic properties,
   or 4-9% with 1. Past that they cost more, and when everything changes they
   cost 8-24x as much.
@@ -100,15 +100,15 @@ per frame goes from nothing to everything.
   not a recommendation: [Events and Signals](../reacting-to-changes/events-and-signals.md)
   covers what events cost in design, and at 1000 containers the difference
   from polling is a few microseconds per frame.
-- **The JSX runtime costs 1.7-2.3x as much as hand-written refresh methods**: about
-  4-7 ns more per container, most of it per container rather than per
+- **The JSX runtime costs 1.8-2.6x as much as hand-written refresh methods**: about
+  5-9 ns more per container, most of it per container rather than per
   property. Its refresh methods are closures, with no generated code, so they
   work under any Content Security Policy; in scenes of thousands of
   elements, where the cost matters, they come within 1.1-1.3x of code
   generated per element shape, which an earlier runtime used.
   A static property costs nothing per frame, so in JSX, pass values that
   never change as plain values rather than getters.
-- **The model's own changes are small**: at most 1.4 µs per frame, even with
+- **The model's own changes are small**: at most 1.2 µs per frame, even with
   every record changed each frame.
 
 ## Scaling
@@ -123,16 +123,16 @@ containers, so a flat column means the cost grows in proportion.
 
 - **The cost per container is flat up to about 1,000 containers, then climbs.**
   Polling a scene at rest costs about 5 ns per container at 1,000, 12 ns at
-  10,000, and 36 ns at 100,000: past a few thousand containers, the scene no
+  10,000, and 42 ns at 100,000: past a few thousand containers, the scene no
   longer fits in the CPU's caches. Do not multiply a small scene's numbers up
   to a large one.
-- **At 100,000 containers, polling a scene at rest takes about 3.6 ms per frame**
-  with hand-written refresh methods, and 5.1 ms with the JSX runtime: a quarter
+- **At 100,000 containers, polling a scene at rest takes about 4.2 ms per frame**
+  with hand-written refresh methods, and 5.5 ms with the JSX runtime: a quarter
   to a third of a 60fps frame, before anything is drawn. Scenes that large are where
   [skipping inactive subtrees](#the-scene-passes) pays.
 - **Signals slow down at scale too.** With everything changed each frame, each container
-  costs 260 ns at 1,000 containers and 480 ns at 100,000, which is 48 ms per
-  frame: almost three frames' worth.
+  costs 255 ns at 1,000 containers and 435 ns at 100,000, which is 44 ms per
+  frame: more than two and a half frames' worth.
 
 <!--@include: ../../../benchmarks/results/scaling.md#frame-time-->
 
@@ -152,8 +152,8 @@ on all 8 values and recomputes only when one changed. Signals use a
 
 <!--@include: ../../../benchmarks/results/change-detection.md#derived-->
 
-- **`watch()` costs about 8 ns per watched value per frame**, over three times
-  as much as comparing by hand. It allocates nothing (see
+- **`watch()` costs about 8 ns per watched value per frame**, nearly three
+  times as much as comparing by hand. It allocates nothing (see
   [Memory](#memory-and-garbage-collection)), so the cost is in the calls. The
   likely cause, not yet confirmed with a profile, is that every watcher calls
   its getters from the same line of `poll()`, which the engine cannot inline
@@ -165,8 +165,8 @@ on all 8 values and recomputes only when one changed. Signals use a
   expensive, such as rebuilding text or restructuring the scene, not when the
   work is a little arithmetic.
 - **A memo per container is expensive when its inputs change often.** With
-  every input changed each frame, Solid's memos cost about 295 ns per container per
-  frame, against about 13 ns to recompute by polling.
+  every input changed each frame, Solid's memos cost about 590 ns per container per
+  frame, against about 10 ns to recompute by polling.
 
 ## Building, Destroying and Reusing Containers
 
@@ -186,12 +186,12 @@ and destroys it when the item goes.
 <!--@include: ../../../benchmarks/results/construction.md#pool-->
 
 - **A container costs about 0.1-0.5 µs over its life**, most of it Pixi's own
-  `Container`. The JSX runtime and signals cost about 3.5x a bare container.
+  `Container`. The JSX runtime and signals cost about 3-4x a bare container.
   Building a few containers per frame is cheap; building hundreds is not.
 - **Reusing containers makes a pool's cost independent of how fast items come
-  and go.** With `<List>`, the frame costs about 15-16 µs whether 5 or 50 items
-  appear per frame. Building and destroying costs 20 µs at 5 per frame and
-  93 µs at 50, and it allocates far more (see [Memory](#memory-and-garbage-collection)).
+  and go.** With `<List>`, the frame costs about 17-18 µs whether 5 or 50 items
+  appear per frame. Building and destroying costs 21 µs at 5 per frame and
+  95 µs at 50, and it allocates far more (see [Memory](#memory-and-garbage-collection)).
 
 ## The Scene Passes
 
@@ -207,21 +207,21 @@ containers, 90 of the groups inactive, either only hidden or returning
 - **The refresh scene pass visits only the containers that have a refresh
   method.** In
   a large scene where few containers have one, it is hundreds of times faster
-  than walking the tree: 0.6 µs against 200 µs for 200 refresh methods
+  than walking the tree: 0.65 µs against 206 µs for 200 refresh methods
   among 20,000 containers.
 - **Replacing many containers that have a refresh method every frame is its
   worst case.** The scene pass caches which containers have one, and 100
-  replacements per frame make it rebuild that cache every frame: 91 µs,
-  against 36 µs for a plain walk. The
+  replacements per frame make it rebuild that cache every frame: 127 µs,
+  against 29 µs for a plain walk. The
   [`src/pixi-mvt/` README](https://github.com/yortus/mvt-games/blob/main/src/pixi-mvt/README.md)
   explains why this is accepted.
-- **It costs about 1.5 ns more per call than Pixi's `onRender`**, which is what
+- **It costs about 2 ns more per call than Pixi's `onRender`**, which is what
   checking for removed containers during a scene pass costs.
 - **Skipping inactive subtrees pays at scale.** Returning `SKIP_DESCENDANTS`
-  from 90 inactive groups cut the frame from 126 µs to 9 µs. Hiding a
+  from 90 inactive groups cut the frame from 128 µs to 10 µs. Hiding a
   container with `visible = false` does not stop its refresh methods from
   running.
-- **Importing pixi-mvt costs a tree that never uses it about 8 ns per added
+- **Importing pixi-mvt costs a tree that never uses it about 6 ns per added
   and removed container**, for tracking changes to the tree.
 
 ## The Hot Path Rules
@@ -235,21 +235,21 @@ objects with a position, a velocity and a few stats).
 
 <!--@include: ../../../benchmarks/results/hot-path-rules.md#allocation-->
 
-- **Four rules clearly matter.** `Object.values()` per game object is 44x slower
+- **Four rules clearly matter.** `Object.values()` per game object is 32x slower
   than reading the properties and leaves 80 KB of garbage per frame. A
-  template-string key is 16x slower (48 KB), `.filter().map()` 4x (24 KB), and
+  template-string key is 12x slower (48 KB), `.filter().map()` 4x (24 KB), and
   recomputing an unchanged sum 20x, though that last one costs only 0.4 µs.
 - **Two make no difference in V8.** A `for...of` loop over an array runs as
   fast as an index loop and allocates nothing. A function returning a
   `[col, row]` tuple allocates nothing either: once it is inlined, the engine
   never builds the array.
-- **Two matter a little.** A `Map` with numeric keys is 2.4x slower than an
+- **Two matter a little.** A `Map` with numeric keys is 1.3x slower than an
   array but leaves no garbage. A closure created per frame costs 56 bytes and
   no measurable time.
 - **Pixi's `Text` already skips unchanged text.** Setting the same string
   every frame costs about 7 ns per label, and V8 reuses the strings of small
   numbers, so it allocates nothing. Checking for a change first is still about
-  4x cheaper.
+  3x cheaper.
 
 ## Memory and Garbage Collection
 
@@ -278,11 +278,12 @@ happens.
   allocate nothing per frame, and the JSX runtime a constant 8 bytes per
   frame, however much changes. Over a simulated minute with everything
   changed each frame, the engine never needed to collect.
-- **Signals allocate on every change.** Solid's effects left about 520
+- **Signals allocate on every change.** Solid's effects left about 630
   bytes of garbage per changed container per frame (330-380 with solid-js
-  1.9.11), and 64 bytes per frame even at rest. With everything changed each
-  frame, that is 255 collections a minute, about 43 ms of pauses: five times
-  the garbage of the deliberately wasteful refresh methods.
+  1.9.11 under Node 22), and about 100 bytes per frame even at rest. With
+  everything changed each frame, that is 272 collections a minute, about 32 ms
+  of pauses: six times the garbage of the deliberately wasteful refresh
+  methods.
 - **Events allocate nothing** in this benchmark, because each record's
   listener is created once and called with the record.
 - **These scenes use whole numbers.** V8 stores whole numbers without
@@ -294,7 +295,7 @@ happens.
 - **Reusing containers avoids most of a pool's garbage.** With `<List>` over a
   `SlotList`, the only allocation is the new model records (5.6 KB per frame at
   50 new items). Building and destroying a container per item allocates about
-  60 KB per frame, and collects about three times as often.
+  70 KB per frame, and collects about three times as often.
 - **A Pixi container is already about 710 bytes.** Following a model record
   with a hand-written refresh method or an event listener adds about 170 bytes,
   including the record itself; the JSX runtime adds about 470, and signals
@@ -313,22 +314,22 @@ the minute after.
 
 <!--@include: ../../../benchmarks/results/games-and-demos.md#time-->
 
-- **Each game takes 5-10 µs per frame**, well under 0.1% of a 60fps frame,
+- **Each game takes 4-9 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
   more.
 - **The refresh scene pass takes the larger share in most games**, since that is
-  where the views read the model and set their properties. The updates take
-  0.4-5 µs; in Galaga, with more going on in its model, the update takes
-  longer than the refresh.
+  where the views read the model and set their properties. The models take
+  0.2-4 µs, and the update scene pass under 1 µs; in Galaga, with more going
+  on in its model, the models take longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
-  settles, and its refresh takes about 120 µs, about 31 ns per container with
+  settles, and its refresh takes about 160 µs, about 41 ns per container with
   nothing moving. How that grows with the number of grains is in the
   [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
-  about 1.9 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
+  about 2.2 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
-  800 bytes. The hot path rules aim for none, and the allocation benchmark is a
+  1 KB. The hot path rules aim for none, and the allocation benchmark is a
   way to find where it comes from. At these rates the engine collects at most
   three times a minute, for under a millisecond in total.
 - **Scramble and Pac-Man used to allocate 2-3 KB per frame.** Scramble's
@@ -336,7 +337,7 @@ the minute after.
   fuel bar), now drawn once and then scaled or resized. Pac-Man's came from
   its model: every one-tile step of Pac-Man or a ghost started a GSAP tween.
   The steps are now plain arithmetic advanced by `update(deltaMs)`, and the
-  model allocates nothing, with its update down from about 6 µs to 0.4 µs.
+  model allocates nothing, with its update down from about 6 µs to 0.2 µs.
 - **Boids used to allocate about 360 KB per frame**, and the engine collected
   88 times a minute. Most of it was the view redrawing all 200 boids into one
   Pixi `Graphics` every frame, which makes Pixi build new shape data each

@@ -200,7 +200,7 @@ export function RocketView(bindings: RocketViewBindings): Container {
 | | Tends to suit | Why |
 | --- | --- | --- |
 | **JSX** (`.tsx`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
-| **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one read or change check shared by many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.2-1.7x as much per property as a hand-written one, which matters only at that scale |
+| **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one read or change check shared by many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.1-1.6x as much per property as a hand-written one, which matters only at that scale |
 
 Mixing is fine: a JSX view can embed a plain TypeScript child, or reach a
 Pixi object directly through a `ref`, and plain TypeScript can call any view
