@@ -13,7 +13,8 @@ Phases 0 to 5 are done (sections 12.1 to 12.6): the four libraries are
 workspace packages under `packages/`, the site, the docs, the benchmarks and
 the new checks are private workspace packages beside them, and the docs and
 agent files describe the new layout. Vite+ was trialled and not adopted for
-now (section 9.4); Vite 8 and Vitest 5 were taken on their own. The npm scopes and GitHub org in section 3 are
+now (section 9.4); Vite 8 and Vitest 5 were taken on their own. Phase 6
+is done up to the first publish, which is done by hand (section 12.7). The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -271,8 +272,7 @@ build output otherwise:
         }
     },
     "files": ["dist", "src"],
-    "dependencies": { "@mvtjs/utils": "^0.1.0" },
-    "peerDependencies": { "pixi.js": "^8.16.0" }
+    "peerDependencies": { "@mvtjs/utils": "^0.1.0", "pixi.js": "^8.16.0" }
 }
 ```
 
@@ -537,8 +537,9 @@ about a minute of attention.
 
 **One-time setup:** `.changeset/config.json` (the `fixed` group, public
 access, base branch `main`, `commit: false`), the `release.yml` workflow, and
-a trusted-publisher entry on npm for each package (`npm trust` configures
-several at once).
+a trusted-publisher entry on npm for each package. npm can only trust a
+workflow to publish a package that already exists, so each package's first
+version is published by hand (section 12.7).
 
 **Optional additions, if they ever pay for themselves:**
 
@@ -1036,22 +1037,105 @@ commits of its own and can be deleted.
 
 ### 12.7 Phase 6: publishing
 
-- tsdown builds, with publint and attw. From the trial (section 9.4): one
-  entry per export, `platform: 'neutral'`, and declarations; all four
-  libraries already pass publint and attw that way.
-- Changesets and `release.yml`, set up as in section 8.5.
+- ~~tsdown builds, with publint and attw.~~
+- ~~Changesets and `release.yml`, set up as in section 8.5.~~
 - Set up npm trusted publishing for each package, against
-  `yortus/mvt-games` and `release.yml`. Each package's `repository` field
+  `yortus/mvt-games` and `release.yml`. ~~Each package's `repository` field
   names the same repo, with `directory` set to the package's folder, and its
   `homepage` is `https://yortus.com/mvt-games/docs/` (section 13.3; ideally
-  switched over before this phase).
-- Before the first publish, from the tick API's design
+  switched over before this phase).~~ The registration is the owner's, after
+  the first publish.
+- ~~Before the first publish, from the tick API's design
   ([027](../archive/027-mvt-method-names.md), task
   [028](../archive/028-tick-api-migration.md)): 027 section 11.7's mitigations
   for two copies of the scene passes in one program, and `SKIP_DESCENDANTS`
   made with `Symbol.for('mvt.skipDescendants')`, so every copy agrees (027
-  section 7.6, item 3).
-- Publish `@mvtjs/utils` and `@mvtjs/pixi` at `0.1.0`.
+  section 7.6, item 3).~~
+- Publish ~~`@mvtjs/utils` and `@mvtjs/pixi`~~ all four libraries at `0.1.0`:
+  by hand, as `.changeset/README.md` describes, since npm trusts a workflow
+  only for packages that already exist.
+
+**Decided at the start (2026-10-02):** MIT; all five of 027's mitigations;
+all four libraries in the first release (they share one version, and three
+and HTML were as ready as the others); and 0.1.0 published from the owner's
+machine, then later releases from CI with provenance, rather than empty
+placeholder versions to create the packages first.
+
+**Progress.** Done 2026-10-02, up to the first publish.
+
+- **Two copies in one program (027 section 11.7).** All five mitigations,
+  shaped by what 028 left: the per-node fields are named (`_mvtUpdateMethod`
+  and the rest), so copies of one protocol already share them, and what
+  split was module-level state.
+  - `packages/utils/src/copies.ts` holds the protocol number
+    (`PROTOCOL = 1`), `shareAcrossCopies(host, name, create)`, which keeps one
+    object per protocol on `host` under a `Symbol.for` key, and
+    `registerCopy(name, version)`.
+  - **3, a shared core:** `@mvtjs/utils` keeps `methodAssignments` and both
+    counters in one object on `globalThis`. Each renderer keeps its core on
+    the prototype it extends: Pixi's scene passes on `Container.prototype`,
+    three's scene passes and destroy registry on `Object3D.prototype`, and
+    the DOM's scene passes, destroy registry and `MutationObserver` on
+    `Element.prototype` (on `globalThis` where there is no DOM). Keyed to the
+    prototype rather than `globalThis`, a renderer's core is shared by every
+    copy that extends the same class, and by nothing else.
+  - **5, wrap once:** follows from 3. The prototype is wrapped when the core
+    is made, so a second copy of the same protocol never wraps it again.
+  - **1, warn at load:** each package registers its name and version (read
+    from its `package.json`, which the build inlines). A second copy at
+    another version, or another protocol, logs one warning with how to
+    deduplicate. Unlike 027's sketch, a second copy of the same version
+    loads silently: it shares everything, so there is nothing to fix.
+  - **4, foreign nodes in dev:** in dev builds `setTickMethods` marks a node
+    with its protocol in `_mvtProtocol`, the one field whose name never
+    changes, and a walk warns once on a node another protocol marked. A
+    named field, not a symbol, since symbol-keyed reads on nodes are slow.
+  - **2, one copy the norm:** `@mvtjs/utils` is a peer of each renderer, not
+    a dependency.
+  - `SKIP_DESCENDANTS` is `Symbol.for('mvt.skipDescendants')`.
+  - 027's Vitest worry does not apply: each test file runs in its own
+    process here, so neither `globalThis` nor a prototype outlives a file.
+  - Tests: the helpers; a second copy of `@mvtjs/utils` (loaded as a
+    separate module instance through a query string) sharing its state; a
+    second copy of each renderer sharing the first's core, wrapping once,
+    loading silently, and (HTML) ticking a view set up through the other
+    copy; and the foreign-node warning.
+  - The one change on a hot path is `methodAssignments` becoming a
+    property of the shared object, read per walk entry. Six interleaved A/B
+    rounds of `scene-passes`, `jsx-refresh`, `construction` and `scaling`,
+    each side in its own worktree with `npm ci`, found no difference: every
+    row within about 5% (median ratio 0.99), and the rows the change cannot
+    touch (naive walks, Solid, `onRender`) spread as widely.
+- **Builds:** tsdown in each library, one entry per `exports` path, and
+  `unbundle`, so each source module is its own output file. That keeps the
+  modules with side effects at load (each renderer's mixin, and utils'
+  `shared-state.ts`) under the names `sideEffects` lists; bundled, they
+  landed in hashed shared chunks. The inlined `package.json` becomes a
+  `dist/package.js` holding only the version. publint and attw pass for all
+  four; the tarballs carry `dist/`, `src/` without tests, the README and the
+  LICENSE. `npm run build:packages` builds the four.
+- **Metadata:** MIT (`LICENSE` at the root and in each package), author,
+  keywords, `homepage`, `repository` with `directory`, `bugs`,
+  `publishConfig.access: public`, `sideEffects`, and `three` and
+  `@types/three` peers widened to `>=0.186.0`. A README per package for its
+  npm page.
+- **Changesets:** the `fixed` group, public access, no commits, private
+  packages left alone, and `onlyUpdatePeerDependentsWhenOutOfRange`. Without
+  it, Changesets gives a package a major bump whenever a peer dependency's
+  version changes, and `@mvtjs/utils` is now a peer of the three renderers.
+  Checked: a utils-only patch plans 0.1.1 for all four, and a minor release,
+  run on a scratch copy, gives 0.2.0 everywhere with the peer ranges moved
+  to `^0.2.0`. `npm run release` versions and updates the lockfile.
+- **`release.yml`:** on every push to `main`, install, lint, test, build the
+  libraries, `changeset publish`, push the tags. Changesets makes annotated
+  tags, which need a git identity, so the job sets the Actions bot's.
+- **Documented** in `.changeset/README.md` (day to day, releasing, and the
+  first release by hand), and in `AGENTS.md`'s commands table.
+
+**Left for the owner:** the first publish and the four trusted-publisher
+registrations, as `.changeset/README.md` lists. Pushing `release.yml` to
+`main` before then is harmless: until the packages exist it fails at
+`changeset publish` rather than publishing anything.
 
 ### 12.8 Phase 7: lint rules package
 

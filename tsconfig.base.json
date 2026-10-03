@@ -12,6 +12,7 @@
         "allowImportingTsExtensions": true,
         "verbatimModuleSyntax": true,
         "moduleDetection": "force",
+        "resolveJsonModule": true,
         "noEmit": true,
 
         /* Inside the repo, the @mvtjs packages resolve to their source */

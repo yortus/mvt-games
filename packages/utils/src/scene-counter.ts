@@ -1,3 +1,5 @@
+import { utilsState } from './shared-state';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -22,9 +24,10 @@
  *
  * While off, it costs a flag check per scene pass, and one per walk rebuilt
  * and per node visited rebuilding it, which a steady scene never does. Only
- * the scene passes add to the counts.
+ * the scene passes add to the counts. Every copy of @mvtjs/utils in a program
+ * counts into the same object.
  */
-export const sceneCounter = { isCounting: false, methodCalls: 0, walkRebuilds: 0, rebuildVisits: 0 };
+export const sceneCounter = utilsState.sceneCounter;
 
 /** What the scene passes did while `run` ran, as {@link countScene} returns it. */
 export interface SceneCounts {

@@ -2,7 +2,18 @@
     "name": "@mvtjs/utils",
     "version": "0.1.0",
     "description": "Optional, renderer-agnostic helpers for MVT (Model-View-Ticker): scene passes, change detection, tweens, and the base for JSX targets",
+    "license": "MIT",
+    "author": "Troy Gerwien",
+    "keywords": ["mvt", "model-view-ticker", "game", "scene graph", "jsx", "reactivity", "tween"],
+    "homepage": "https://yortus.com/mvt-games/docs/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/utils"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
+    "sideEffects": ["./src/shared-state.ts", "./dist/shared-state.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",
@@ -22,7 +33,8 @@
     },
     "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.spike.ts"],
     "scripts": {
-        "generate-refresh-copies": "node scripts/generate-refresh-copies.ts"
+        "generate-refresh-copies": "node scripts/generate-refresh-copies.ts",
+        "build": "npm run generate-refresh-copies && tsdown"
     },
     "peerDependencies": {
         "vitest": "^5.0.1"
@@ -31,6 +43,8 @@
         "vitest": { "optional": true }
     },
     "devDependencies": {
+        "tsdown": "^0.23.0",
         "vitest": "^5.0.1"
-    }
+    },
+    "publishConfig": { "access": "public" }
 }

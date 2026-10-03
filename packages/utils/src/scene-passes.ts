@@ -1,5 +1,7 @@
+import { PROTOCOL } from './copies';
 import { sceneCounter } from './scene-counter';
 import type { RefreshMethod, UpdateMethod } from './scene-methods';
+import { utilsState } from './shared-state';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 
 // ---------------------------------------------------------------------------
@@ -193,6 +195,13 @@ interface SceneFields {
      * prototype; written on a plain object when a walk first visits it.
      */
     _mvtInvalidators?: Invalidators;
+    /**
+     * Dev builds only: the protocol (`PROTOCOL` in `copies.ts`) of the copy
+     * that set this node's methods, so that a copy with another protocol,
+     * whose scene passes cannot see them, can say so. The one field whose
+     * name never changes with the protocol.
+     */
+    _mvtProtocol?: number;
 }
 
 /** The invalidation climbs of one kind of tree's scene passes, which a node's fields lead to. */
@@ -508,6 +517,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
             _mvtRefreshWalk: undefined,
             _mvtLastRefreshPass: 0,
             _mvtInvalidators: invalidators,
+            _mvtProtocol: undefined,
         };
         Object.defineProperties(prototype, Object.getOwnPropertyDescriptors(defaults));
         hasPrototypeDefaults = true;
@@ -524,7 +534,23 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
         // A renderer's nodes find the climbs on their prototype. Not read
         // when they do: it would be one more read per node per rebuild.
         if (!hasPrototypeDefaults && fields._mvtInvalidators === undefined) fields._mvtInvalidators = invalidators;
+        if (DEV && fields._mvtProtocol !== undefined && fields._mvtProtocol !== PROTOCOL) warnOfForeignNode(node, fields._mvtProtocol);
         return fields;
+    }
+
+    /**
+     * Dev builds only: warns, once per program, of a node whose methods were
+     * set by a copy of @mvtjs with another protocol. Its fields have other
+     * names, so these scene passes never run its methods.
+     */
+    function warnOfForeignNode(node: N, protocol: number): void {
+        if (hasWarnedOfForeignNode) return;
+        hasWarnedOfForeignNode = true;
+        console.warn(
+            `[mvt] ${tree.describe(node)} was set up by an incompatible copy of @mvtjs (protocol ${protocol}; `
+            + `this copy's is ${PROTOCOL}), so its update and refresh methods will not run here. `
+            + 'Keep one copy of the @mvtjs packages in the program.',
+        );
     }
 
     function enter(active: N[], node: N, pass: 'update' | 'refresh'): void {
@@ -566,7 +592,8 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
         const methods = walk.methods;
         const skip = walk.skip;
         const elisions = walk.elisions;
-        const assignmentsAtStart = methodAssignments;
+        const state = utilsState;
+        const assignmentsAtStart = state.methodAssignments;
         let elided = 0;
         for (let i = 0; i < list.length;) {
             const listed = list[i];
@@ -579,7 +606,7 @@ export function createScenePasses<N extends object>(tree: SceneTree<N>): ScenePa
                 i = skip[i];
                 continue;
             }
-            const method = methodAssignments === assignmentsAtStart
+            const method = state.methodAssignments === assignmentsAtStart
                 ? methods[i]
                 : (pass === UPDATE ? fieldsOf(listed)._mvtUpdateMethod : fieldsOf(listed)._mvtRefreshMethod) as SceneMethod | undefined;
             // Only when a method was cleared earlier in this scene pass
@@ -787,13 +814,8 @@ function encodeElision(passId: number, kind: ElisionKind): number {
  */
 const MAX_CATCH_UP_ROUNDS = 100;
 
-/**
- * How many times any node's update or refresh method has been set, by any
- * tree. A scene pass records it on entry and, if it has changed, reads
- * methods live for the rest of that scene pass. Shared by every tree, so a
- * method that assigns a method on another kind of node is safe too.
- */
-let methodAssignments = 0;
+/** Whether a node set up by a copy with another protocol has been warned of. */
+let hasWarnedOfForeignNode = false;
 
 /**
  * Sets `node`'s update method, or clears it with `undefined`:
@@ -807,7 +829,8 @@ function setUpdate(node: object, method: UpdateMethodOrWrapper | undefined): voi
         : method as UpdateMethod | undefined;
     if (fields._mvtUpdateMethod === stored) return;
     fields._mvtUpdateMethod = stored;
-    methodAssignments++;
+    utilsState.methodAssignments++;
+    if (DEV) fields._mvtProtocol = PROTOCOL;
     fields._mvtInvalidators?.invalidateUpdate(node);
 }
 
@@ -823,7 +846,8 @@ function setRefresh(node: object, method: RefreshMethodOrWrapper | undefined): v
         : method as RefreshMethod | undefined;
     if (fields._mvtRefreshMethod === stored) return;
     fields._mvtRefreshMethod = stored;
-    methodAssignments++;
+    utilsState.methodAssignments++;
+    if (DEV) fields._mvtProtocol = PROTOCOL;
     fields._mvtInvalidators?.invalidateRefresh(node);
 }
 

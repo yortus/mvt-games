@@ -2,7 +2,18 @@
     "name": "@mvtjs/pixi",
     "version": "0.1.0",
     "description": "MVT (Model-View-Ticker) for Pixi.js: scene passes, and a JSX runtime at ./jsx",
+    "license": "MIT",
+    "author": "Troy Gerwien",
+    "keywords": ["mvt", "model-view-ticker", "game", "pixi", "pixi.js", "jsx"],
+    "homepage": "https://yortus.com/mvt-games/docs/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/pixi"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
+    "sideEffects": ["./src/container-mixin.ts", "./dist/container-mixin.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",
@@ -26,13 +37,16 @@
         }
     },
     "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx"],
-    "dependencies": {
-        "@mvtjs/utils": "^0.1.0"
+    "scripts": {
+        "build": "tsdown"
     },
     "peerDependencies": {
+        "@mvtjs/utils": "^0.1.0",
         "pixi.js": "^8.16.0"
     },
     "devDependencies": {
+        "tsdown": "^0.23.0",
         "vitest": "^5.0.1"
-    }
+    },
+    "publishConfig": { "access": "public" }
 }

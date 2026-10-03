@@ -4,6 +4,7 @@ export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOption
 export { addReads, countReads, readCounter } from './read-counter';
 export { countScene, sceneCounter, type SceneCounts } from './scene-counter';
 export { createScenePasses, hasRefresh, hasUpdate } from './scene-passes';
+export { PROTOCOL, registerCopy, shareAcrossCopies } from './copies';
 export type { ScenePasses, SceneTree, TickMethods, TickSceneOptions } from './scene-passes';
 export { assert } from './assert';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';

@@ -1,3 +1,5 @@
+import { utilsState } from './shared-state';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -28,9 +30,9 @@
  * Only `addReads` and the JSX runtime add to `count`. The runtime
  * writes it directly, without a call, from the refresh functions it
  * generates, which are handed this object, so it must stay one object for
- * the life of the program.
+ * the life of the program; every copy of @mvtjs/utils in a program shares it.
  */
-export const readCounter = { isCounting: false, count: 0 };
+export const readCounter = utilsState.readCounter;
 
 /** Add `n` reads to {@link readCounter} if it is counting; otherwise do nothing. */
 export function addReads(n: number): void {

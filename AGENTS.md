@@ -87,6 +87,8 @@ Full reference: [Style Guide](docs/reference/style-guide.md)
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm test`             | Every workspace's tests (Vitest) |
 | `npm run docs:dev`     | Start the VitePress dev server |
+| `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw) |
+| `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
 | `npm run bench`        | Performance benchmarks ([benchmarks/](benchmarks/README.md)) |
 
 ## Notes: Proposals and Tasks

@@ -1,9 +1,29 @@
 import { Container } from 'pixi.js';
-import { createScenePasses } from '@mvtjs/utils';
+import { createScenePasses, registerCopy, type ScenePasses, shareAcrossCopies } from '@mvtjs/utils';
+import { version } from '../package.json';
 
 // ---------------------------------------------------------------------------
 // Install
 // ---------------------------------------------------------------------------
+
+/**
+ * The scene passes over Pixi containers, installed on `Container.prototype`
+ * (see `createContainerScenePasses`). Every copy of @mvtjs/pixi in a program
+ * that extends the same `Container` shares one set, made by the first copy to
+ * load, so the prototype is wrapped once and every copy's views are ticked by
+ * every copy's `tickScene`.
+ *
+ * Installed at module load rather than lazily on first use, so every container
+ * carries the scene passes' field defaults before any is given a method or
+ * walked. Importing this module is the only ordering requirement, and ES
+ * modules evaluate imports before the importing module's own code.
+ */
+const containerScenePasses = shareAcrossCopies(Container.prototype, '@mvtjs/pixi', createContainerScenePasses);
+
+/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
+export const { tickScene, setTickMethods } = containerScenePasses;
+
+registerCopy('@mvtjs/pixi', version);
 
 /**
  * The scene passes over Pixi containers: the generic memoised walk
@@ -12,27 +32,9 @@ import { createScenePasses } from '@mvtjs/utils';
  * culling, since presentation state that stops advancing while hidden is
  * stale when it reappears; a view skips its descendants by returning
  * `SKIP_DESCENDANTS`.
- */
-const containerScenePasses = createScenePasses<Container>({
-    children: (node) => node.children,
-    // Pixi types `parent` as `Container | null`, one of the few places it hands
-    // back `null`; the walk tests truthiness.
-    parent: (node) => node.parent,
-    describe,
-});
-
-/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
-export const { tickScene, setTickMethods } = containerScenePasses;
-
-// Installed at module load rather than lazily on first use, so every container
-// carries the scene passes' field defaults before any is given a method or
-// walked. Importing this module is the only ordering requirement, and ES
-// modules evaluate imports before the importing module's own code.
-installMixin();
-
-/**
- * Puts the scene passes' field defaults on `Container.prototype` and wraps the
- * structural methods so the memo fields can be invalidated.
+ *
+ * Making them also puts their field defaults on `Container.prototype` and
+ * wraps its structural methods, so the memo fields can be invalidated.
  *
  * The wrapped prototype methods use `this`, which the style guide otherwise
  * rules out: a wrapped prototype method has no way to reach its instance
@@ -41,9 +43,17 @@ installMixin();
  * - the receiver they close over is enough - exactly like a view's own
  * `refresh`.
  */
-function installMixin(): void {
-    containerScenePasses.installFieldDefaults(Container.prototype);
-    wrapStructuralMethods();
+function createContainerScenePasses(): ScenePasses<Container> {
+    const passes = createScenePasses<Container>({
+        children: (node) => node.children,
+        // Pixi types `parent` as `Container | null`, one of the few places it hands
+        // back `null`; the walk tests truthiness.
+        parent: (node) => node.parent,
+        describe,
+    });
+    passes.installFieldDefaults(Container.prototype);
+    wrapStructuralMethods(passes);
+    return passes;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,14 +74,15 @@ function installMixin(): void {
  * delegate to `addChildAt` / `removeChild`, and `destroy` delegates to
  * `removeChildren` and `removeFromParent`.
  */
-function wrapStructuralMethods(): void {
+function wrapStructuralMethods(passes: ScenePasses<Container>): void {
     const proto = Container.prototype;
     const baseAddChild = proto.addChild;
     const baseAddChildAt = proto.addChildAt;
     const baseRemoveChild = proto.removeChild;
     const baseRemoveChildren = proto.removeChildren;
     const baseDestroy = proto.destroy;
-    const invalidate = containerScenePasses.invalidate;
+    const invalidate = passes.invalidate;
+    const setTickMethods = passes.setTickMethods;
 
     proto.addChild = function addChild(this: Container, ...children: Container[]): Container {
         if (children.length !== 1) {

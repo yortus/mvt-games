@@ -2,7 +2,18 @@
     "name": "@mvtjs/three",
     "version": "0.1.0",
     "description": "MVT (Model-View-Ticker) for three.js: scene passes, a pointer picker, and a JSX runtime at ./jsx",
+    "license": "MIT",
+    "author": "Troy Gerwien",
+    "keywords": ["mvt", "model-view-ticker", "game", "three", "three.js", "jsx"],
+    "homepage": "https://yortus.com/mvt-games/docs/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/three"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
+    "sideEffects": ["./src/object3d-mixin.ts", "./dist/object3d-mixin.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",
@@ -26,18 +37,21 @@
         }
     },
     "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx"],
-    "dependencies": {
-        "@mvtjs/utils": "^0.1.0"
+    "scripts": {
+        "build": "tsdown"
     },
     "peerDependencies": {
-        "@types/three": "^0.186.0",
-        "three": "^0.186.1"
+        "@mvtjs/utils": "^0.1.0",
+        "@types/three": ">=0.186.0",
+        "three": ">=0.186.0"
     },
     "peerDependenciesMeta": {
         "@types/three": { "optional": true }
     },
     "devDependencies": {
         "@types/three": "^0.186.0",
+        "tsdown": "^0.23.0",
         "vitest": "^5.0.1"
-    }
+    },
+    "publishConfig": { "access": "public" }
 }
