@@ -56,6 +56,7 @@ const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 const GRAINS_VIEWS: readonly GrainsViewKind[] = ['sprites', 'pixels'];
 const TANK_SIZES: readonly TankSizeKind[] = ['small', 'medium', 'large'];
 
+// eslint-disable-next-line @mvtjs/no-null -- `URLSearchParams.get` returns `null` for a missing parameter
 function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
     return allowed.find((kind) => kind === value) ?? fallback;
 }

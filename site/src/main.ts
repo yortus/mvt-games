@@ -26,12 +26,14 @@ const NAV_HEIGHT = 48;
 
 /** Returns the effective nav height (0 when hidden during gameplay). */
 function getNavHeight(): number {
+    // eslint-disable-next-line @mvtjs/no-null -- `querySelector` returns `null` when nothing matches
     const nav = document.querySelector('.site-nav') as HTMLElement | null;
     if (!nav) return 0;
     return nav.style.display === 'none' ? 0 : NAV_HEIGHT;
 }
 
 function setNavVisible(visible: boolean): void {
+    // eslint-disable-next-line @mvtjs/no-null -- `querySelector` returns `null` when nothing matches
     const nav = document.querySelector('.site-nav') as HTMLElement | null;
     if (!nav) return;
     nav.style.display = visible ? '' : 'none';
@@ -119,9 +121,9 @@ async function main(): Promise<void> {
     setUpdate(gameContainer, () => (paused ? SKIP_DESCENDANTS : undefined));
 
     // ---- URL fragment helpers --------------------------------------------
-    function setUrlFragment(gameId: string | null): void {
+    function setUrlFragment(gameId: string | undefined): void {
         const url = gameId ? '#' + gameId : location.pathname + location.search;
-        history.replaceState(null, '', url);
+        history.replaceState(undefined, '', url);
     }
 
     function doLaunchGame(): void {
@@ -153,7 +155,7 @@ async function main(): Promise<void> {
         cabinet.exitToMenu();
         isCabinetScreen = true;
         setNavVisible(true);
-        setUrlFragment(null);
+        setUrlFragment(undefined);
         updatePauseBtnVisibility();
         fitCanvasToScreen();
     }
@@ -501,7 +503,7 @@ async function main(): Promise<void> {
             doLaunchGame();
         }
         else {
-            setUrlFragment(null);
+            setUrlFragment(undefined);
         }
     }
 }

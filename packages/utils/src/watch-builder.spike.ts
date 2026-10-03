@@ -50,6 +50,7 @@
 // ---------------------------------------------------------------------------
 
 /** Values safe for `===` change detection. Excludes objects and arrays. */
+// eslint-disable-next-line @mvtjs/no-null -- a watched value may be `null`, from a model or an outside API
 export type Watchable = string | number | boolean | null | undefined;
 
 /** A record of named primitive getters (SET mode). */

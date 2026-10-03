@@ -24,7 +24,8 @@ packages/
 ├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-└── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+├── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+└── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
 site/                    The games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
 docs/                    VitePress
 benchmarks/              Performance benchmarks, for the libraries and the games
@@ -65,6 +66,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`. Between packages, import the package name (`@mvtjs/pixi`, `@mvtjs/pixi/jsx`): its `exports` are its barrel
 - **Declared dependencies** - every import names a dependency of the nearest `package.json` (lint: `import/no-extraneous-dependencies`); add it there rather than relying on npm's hoisting
 - **Tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
+- **No `null`, no `this`** - `undefined` instead of `null` (comparing a value from an outside API with `null` is fine; a type describing one takes an `eslint-disable` comment saying so); closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
 - **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi/jsx */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
@@ -102,8 +104,8 @@ done. Proposals and tasks share one number sequence.
 
 ## Critical Rules (Do Not Violate)
 
-0. **No em-dashes** - use hyphens instead.
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. [Time Management](docs/building-with-mvt/simulating-the-world/time-management.md)
+0. **No em-dashes** - use hyphens instead (lint: `@mvtjs/no-em-dash`, which auto-fixes).
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files. [Time Management](docs/building-with-mvt/simulating-the-world/time-management.md)
 2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/building-with-mvt/adding-visual-polish/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)

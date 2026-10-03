@@ -65,6 +65,7 @@ const VIEW_OPTIONS: Options = {
  */
 function h(
     type: Parameters<typeof jsx>[0],
+    // eslint-disable-next-line @mvtjs/no-null -- classic JSX passes `null` for an element with no attributes
     attributes: Record<string, unknown> | null,
     ...children: unknown[]
 ): Container {

@@ -14,9 +14,11 @@ workspace packages under `packages/`, the site, the docs, the benchmarks and
 the new checks are private workspace packages beside them, and the docs and
 agent files describe the new layout. Vite+ was trialled and not adopted for
 now (section 9.4); Vite 8 and Vitest 5 were taken on their own. Phase 6
-is done up to the first publish, which is done by hand (section 12.7).
-[031](../archive/031-tick-api-in-mvt-terms.md)'s renames of the tick API,
-which the publish waited for, were done on 2026-10-03. The npm scopes and GitHub org in section 3 are
+is done: [031](../archive/031-tick-api-in-mvt-terms.md)'s renames of the
+tick API, which the publish waited for, were done on 2026-10-03, and the four
+libraries were published at 0.1.0 the same day (section 12.7). Phase 7 is
+under way: the lint rules package, with the `style` preset and the first
+`architecture` rule (section 12.8). The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -1156,8 +1158,54 @@ four trusted-publisher registrations, as `.changeset/README.md` lists. Pushing `
 
 ### 12.8 Phase 7: lint rules package
 
-Section 10: the `style` preset first (it enforces this repo's existing rules),
+Section 10: ~~the `style` preset first (it enforces this repo's existing rules),~~
 then `architecture` rules one at a time.
+
+**Progress (2026-10-03).** `packages/eslint-plugin`, `@mvtjs/eslint-plugin`,
+private for now: a new public package would make the release workflow fail,
+since npm trusts a workflow only for packages that already exist. It is
+published by hand, like 0.1.0, once its `architecture` rules are worth having
+outside this repo.
+
+- **Built, not run from source.** ESLint loads the plugin through Node, which
+  resolves the package's `exports` to `dist/`. Running the TypeScript source
+  directly would work (VS Code's ESLint runs on Node 24.21, which strips
+  types) but needs `.ts` extensions in relative imports, against the style
+  guide; decided instead to build it with tsdown. The root's `prepare`,
+  `prelint` and `prelint:fix` scripts build it, so `npm run lint` and CI
+  always run the current rules; after editing a rule, the editor needs
+  `npm run build:lint-plugin`.
+- **`style` preset**, on all code:
+  - `no-em-dash`: comments, strings, template literals and JSX text, with an
+    auto-fix to a hyphen. Its first run found one in its own source, put
+    there when a comment's `\u` escape was written out as the character.
+  - `no-null`: values and types; comparisons with `null` are allowed. Of 24
+    findings, three own choices became `undefined` (the two site entry
+    points' `setUrlFragment` and `history.replaceState`, and the spritesheet
+    plugin's `packSprites`), and fourteen describe outside APIs or callers'
+    values (three.js's and Pixi's `parent`, `querySelector`,
+    `URLSearchParams.get`, classic JSX's props, `watch`'s and `memoiseLast`'s
+    inputs, JSX children, one test), each with an
+    `eslint-disable-next-line` saying why.
+  - `no-this`: all 28 findings were in the Pixi and three mixins' prototype
+    wrappers and the spritesheet plugin's Rollup hooks, exempted by name in
+    `eslint.config.js`.
+  - Self-imports were already covered by `no-restricted-imports`.
+- **`architecture` preset**, on model files (`site/src/**/models/**` and
+  `*-model.ts`, tests excluded): `no-wall-clock`, for `AGENTS.md`'s critical
+  rule 1. It reports timers, `Date.now()`, `new Date()`, `performance.now()`
+  and GSAP tweens or timelines made without `paused: true`. All 47 model files
+  already passed.
+- 40 `RuleTester` tests; every rule and exemption also checked against
+  deliberate violations in real file paths. `AGENTS.md`, `README.md`, the
+  style guide and the project-structure page say what lint now enforces.
+
+**Next:** the second `architecture` candidate, no allocation per tick in
+update and refresh methods. Unlike the others it is a heuristic, and needs a
+design first: which functions count (those passed to `setUpdate` and
+`setRefresh`, function attributes in JSX, named `update`/`refresh`
+members?), which allocations to report, and whether it warns rather than
+errors.
 
 ---
 

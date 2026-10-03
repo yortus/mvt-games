@@ -41,6 +41,7 @@ export type JsxChildren<N> = N | JsxChildList<N>;
 // Children may be `null` as well as `undefined`, as they always could be here
 // (and as JSX habitually writes them), even though the repo otherwise avoids
 // `null`.
+// eslint-disable-next-line @mvtjs/no-null -- JSX children may be `null`, as in `cond ? <a /> : null`
 export type JsxChildList<N> = (N | JsxChildList<N> | undefined | null)[];
 
 /**

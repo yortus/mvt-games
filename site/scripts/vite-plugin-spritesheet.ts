@@ -37,12 +37,12 @@ interface PackedSheet {
 // Simple grid packer
 // ---------------------------------------------------------------------------
 
-function packSprites(dir: string, gameName: string): PackedSheet | null {
+function packSprites(dir: string, gameName: string): PackedSheet | undefined {
     const files = readdirSync(dir)
         .filter((f) => extname(f).toLowerCase() === '.png')
         .sort();
 
-    if (files.length === 0) return null;
+    if (files.length === 0) return undefined;
 
     // Decode all source PNGs
     const images: { name: string; png: PNG }[] = [];

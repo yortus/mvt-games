@@ -20,6 +20,7 @@
  * The argument must be a primitive. An object changed in place is still `===`
  * to itself, so the wrapped function would keep returning a stale result.
  */
+// eslint-disable-next-line @mvtjs/no-null -- callers may memoise on a `null` argument
 export function memoiseLast<T extends string | number | boolean | bigint | symbol | null | undefined, R>(
     fn: (arg: T) => R,
 ): (arg: T) => R {

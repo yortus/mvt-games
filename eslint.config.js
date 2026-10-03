@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
+import mvt from '@mvtjs/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
@@ -210,6 +211,28 @@ export default tseslint.config(
                 includeTypes: true,
             }],
         },
+    },
+    // MVT's own rules (packages/eslint-plugin), for models: no wall-clock time
+    {
+        files: ['site/src/**/models/**/*.{ts,tsx}', 'site/src/**/*-model.ts'],
+        ignores: ['**/*.test.{ts,tsx}'],
+        ...mvt.configs.architecture,
+    },
+    // This repo's own style rules (packages/eslint-plugin): no em-dashes, no
+    // `null`, no `this`
+    {
+        files: ['**/*.{ts,tsx,js,mjs,cjs}'],
+        ...mvt.configs.style,
+    },
+    {
+        // Methods wrapped onto a library's prototype, and Rollup plugin hooks,
+        // can reach their instance or plugin context only through `this`
+        files: [
+            'packages/pixi/src/container-mixin.ts',
+            'packages/three/src/object3d-mixin.ts',
+            'site/scripts/vite-plugin-spritesheet.ts',
+        ],
+        rules: { '@mvtjs/no-this': 'off' },
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.

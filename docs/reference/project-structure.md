@@ -19,7 +19,8 @@ packages/
 ├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-└── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+├── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+└── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
 site/                    The games, demos and playground: one Vite site of several pages
 docs/                    This documentation (VitePress)
 benchmarks/              Performance benchmarks, for the libraries and the games alike

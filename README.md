@@ -75,7 +75,8 @@ packages/
 ├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
 ├── pixi/                The tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
 ├── three/               The tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-└── html/                The tick API for DOM elements; its JSX runtime at ./jsx
+├── html/                The tick API for DOM elements; its JSX runtime at ./jsx
+└── eslint-plugin/       This repo's lint rules (private for now)
 
 site/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker

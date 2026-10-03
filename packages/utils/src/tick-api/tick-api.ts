@@ -169,6 +169,7 @@ export interface RegisterRendererOptions<N extends object> {
      * The node's parent, if it has one. Read once per entry per call, to skip
      * nodes detached during it, and when clearing method lists.
      */
+    // eslint-disable-next-line @mvtjs/no-null -- renderers such as Pixi and three.js return `null` for a node with no parent
     readonly parent: (node: N) => N | null | undefined;
     /** Names a node in error and warning messages. */
     readonly describe: (node: N) => string;
@@ -593,6 +594,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
      * and costs one comparison per change.
      */
     function invalidateUpdate(node: N): void {
+        // eslint-disable-next-line @mvtjs/no-null -- holds what a renderer's `parent` returns, which may be `null`
         let cursor: N | null | undefined = node;
         while (cursor) {
             const fields = fieldsOf(cursor);
@@ -607,6 +609,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
 
     /** The refresh half of {@link invalidateUpdate}. */
     function invalidateRefresh(node: N): void {
+        // eslint-disable-next-line @mvtjs/no-null -- holds what a renderer's `parent` returns, which may be `null`
         let cursor: N | null | undefined = node;
         while (cursor) {
             const fields = fieldsOf(cursor);

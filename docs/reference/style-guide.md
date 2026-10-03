@@ -161,6 +161,12 @@ function find(id: string): Item | null;
 let selected: Item | null = null;
 ```
 
+Enforced by lint: `@mvtjs/no-null`, from this repo's `packages/eslint-plugin`.
+Comparing with `null` is allowed, since that is how code checks a value from
+an API that returns it, such as the DOM's `querySelector` or a Pixi
+container's `parent`. A type that has to describe such an API takes an
+`eslint-disable-next-line` comment that says so.
+
 ## No `this`
 
 Avoid `this` throughout the codebase. In JavaScript, `this` is determined by
@@ -201,6 +207,11 @@ const combined = {
 
 These patterns work because every function closes over its own state rather
 than relying on a `this` binding at the call site.
+
+Enforced by lint: `@mvtjs/no-this`. The few files that have no other way to
+reach their instance, the renderer mixins' methods wrapped onto a library's
+prototype and a Rollup plugin's hooks, are exempted by name in
+`eslint.config.js`.
 
 ## Function-Valued Properties in Types
 

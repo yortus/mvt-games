@@ -398,6 +398,7 @@ describe('updateView and refreshView', () => {
         expect(() => asUntyped(new Map())).toThrow(/was given an object of class Map,/);
         expect(() => asUntyped(undefined)).toThrow(/was given undefined,/);
         // What a caller outside TypeScript may pass
+        // eslint-disable-next-line @mvtjs/no-null -- checks the message for a `null` passed by untyped code
         expect(() => asUntyped(null)).toThrow(/was given null,/);
     });
 

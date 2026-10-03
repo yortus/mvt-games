@@ -158,9 +158,9 @@ async function generateThumbnails(): Promise<void> {
 // Launch / exit demo
 // ---------------------------------------------------------------------------
 
-function setUrlFragment(demoId: string | null): void {
+function setUrlFragment(demoId: string | undefined): void {
     const url = demoId ? '#' + demoId : location.pathname + location.search;
-    history.replaceState(null, '', url);
+    history.replaceState(undefined, '', url);
 }
 
 async function launchDemo(index: number): Promise<void> {
@@ -273,7 +273,7 @@ function exitDemo(): void {
 
     runnerEl.classList.remove('active');
     galleryEl.style.display = '';
-    setUrlFragment(null);
+    setUrlFragment(undefined);
     ensureThumbnails();
 }
 
@@ -338,6 +338,6 @@ if (autoLaunchIndex >= 0) {
     launchDemo(autoLaunchIndex);
 }
 else {
-    if (initialHash) setUrlFragment(null);
+    if (initialHash) setUrlFragment(undefined);
     ensureThumbnails();
 }

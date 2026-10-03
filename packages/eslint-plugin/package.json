@@ -1,0 +1,29 @@
+{
+    "name": "@mvtjs/eslint-plugin",
+    "version": "0.1.0",
+    "private": true,
+    "description": "ESLint rules for MVT (Model-View-Ticker), and for this repo's own code style",
+    "license": "MIT",
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "files": ["dist", "src", "!src/**/*.test.ts"],
+    "scripts": {
+        "build": "tsdown"
+    },
+    "peerDependencies": {
+        "eslint": "^9.39.4"
+    },
+    "devDependencies": {
+        "eslint": "^9.39.4",
+        "tsdown": "^0.23.0",
+        "typescript-eslint": "^8.56.1",
+        "vitest": "^5.0.1"
+    }
+}
