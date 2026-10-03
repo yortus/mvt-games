@@ -8,7 +8,7 @@ import { assert } from '@mvtjs/utils';
  * The `text` attribute's write: sets the text of a `Text` node the element
  * owns, made on the first write. Writing the node's `data`, rather than the
  * element's `textContent`, keeps the node, so a change of text is cheaper
- * and queues no mutation record for the scene passes to process.
+ * and queues no mutation record for `refreshView` to process.
  *
  * An element with `text` holds that text and no elements: JSX has no text
  * children (a string child is a type error), so text and elements never mix. Dev

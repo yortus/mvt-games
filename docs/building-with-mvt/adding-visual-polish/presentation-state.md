@@ -142,9 +142,9 @@ split: `update()` advances a pool of effect records, and `refresh()` projects
 the pool into display objects.
 
 In this project, a view sets its `update(deltaMs)` and `refresh()` steps on
-its container with `setTickMethods(view, { update, refresh })`. That is a
-project convention, not an MVT requirement; see
-[The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene).
+its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`.
+That is a project convention, not an MVT requirement; see
+[The Game Loop](../the-game-loop.md#in-this-project-updating-and-refreshing-views).
 
 ### Example: door fade
 
@@ -155,7 +155,8 @@ function DoorView(bindings: DoorViewBindings): Container {
     const view = new Container();
     const sprite = new Sprite(doorTexture);
     view.addChild(sprite);
-    setTickMethods(view, { update, refresh });
+    setUpdate(view, update);
+    setRefresh(view, refresh);
 
     // -- Presentation state --
     let fadeProgress = bindings.isOpen() ? 0 : 1; // start matching model
@@ -217,17 +218,19 @@ function GameView(bindings: GameViewBindings): Container {
 }
 ```
 
-The host ticks the whole scene once per frame, after the models:
+The host updates and refreshes the whole stage once per frame, after the
+models:
 
 ```ts
 app.ticker.add((ticker) => {
     gameModel.update(ticker.deltaMS);
-    tickScene({ root: app.stage, deltaMs: ticker.deltaMS });   // every update method, then every refresh method
+    updateView(app.stage, ticker.deltaMS);  // every update method
+    refreshView(app.stage);                 // then every refresh method
 });
 ```
 
-The update scene pass finds every update method in the tree, however deep,
-and runs it before its descendants'. There is no chain of parents to keep in step: adding
+`updateView` finds every update method in the tree, however deep, and calls
+it before its descendants'. There is no chain of parents to keep in step: adding
 presentation state to a view deep in the tree needs no change anywhere else.
 Hand-forwarding `update()` through each parent, as earlier versions of this
 project did, fails silently when any link is missed - the animation simply

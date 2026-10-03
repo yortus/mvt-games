@@ -67,7 +67,7 @@ function BallView(bindings: { model: BallModel }): Container {
     const gfx = new Graphics();
     const view = new Container();
     view.addChild(gfx);
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
 
     function refresh() {
         gfx.clear();
@@ -100,17 +100,20 @@ stage.addChild(view);
 
 app.ticker.add((ticker) => {
     ball.update(ticker.deltaMS);
-    tickScene({ root: app.stage, deltaMs: ticker.deltaMS });
+    updateView(app.stage, ticker.deltaMS);
+    refreshView(app.stage);
 });
 ```
 
-The sequence every frame is: **update model** -> **refresh view** -> **render**.
-The ticker drives both: it advances the model, then `tickScene` ticks the
-views, which runs every view's refresh method, and Pixi renders afterwards.
+The sequence every frame is: **update model** -> **update and refresh views**
+-> **render**. The ticker drives both: it advances the model, then
+`updateView` calls every view's update method (this view has none) and
+`refreshView` every view's refresh method, and Pixi renders afterwards.
 Neither the model nor the view knows about the other's internals.
 
-`setTickMethods` and `tickScene` are this project's way of scheduling view
-refreshes in Pixi, from [`packages/pixi/src/`](https://github.com/yortus/mvt-games/tree/main/packages/pixi/src).
+`setRefresh`, `updateView` and `refreshView` are this project's way of
+scheduling view refreshes in Pixi, from
+[`@mvtjs/pixi`](https://github.com/yortus/mvt-games/tree/main/packages/pixi).
 MVT only requires that views read the model after it updates and before the
 frame is drawn; any mechanism that does that works.
 

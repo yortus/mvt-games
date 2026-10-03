@@ -1,10 +1,10 @@
 import { combinations, type Suite } from '../harness/suite';
 
-/** The DOM's scene passes, in headless Chrome: the memoised walk against a naive one, and two targets in one page. */
-export const htmlScenePassesSuite: Suite = {
-    name: 'html-scene-passes',
-    description: 'the DOM\'s scene passes in headless Chrome: the memoised walk against a naive one, and two JSX targets in one page',
-    entry: 'html-scene-passes.case.ts',
+/** `refreshView` on the DOM, in headless Chrome: against a naive walk, and with two targets in one page. */
+export const htmlRefreshViewSuite: Suite = {
+    name: 'html-refresh-view',
+    description: 'refreshView on the DOM in headless Chrome: against a naive walk, and with two JSX targets in one page',
+    entry: 'html-refresh-view.case.ts',
     environment: 'browser',
     cases: [
         ...combinations({
@@ -22,7 +22,7 @@ export const htmlScenePassesSuite: Suite = {
     tables: [
         {
             id: 'walk',
-            title: 'The refresh scene pass over a DOM tree against a naive walk of it: time per frame',
+            title: '`refreshView` over a DOM tree against a naive walk of it: time per frame',
             metric: 'usPerFrame',
             unit: 'µs',
             where: { scene: 'walk' },
@@ -46,7 +46,7 @@ export const htmlScenePassesSuite: Suite = {
             churn: 'Every element, and a child added or removed each frame',
         },
         walk: {
-            memoised: 'Refresh scene pass (memoised)',
+            memoised: '`refreshView` (cached method lists)',
             naive: 'Naive walk',
         },
         measured: {
@@ -59,7 +59,7 @@ export const htmlScenePassesSuite: Suite = {
         },
     },
     notes: [
-        'Since 2026-10-02, the naive walk reads each element\'s method from its own property, rather than through an accessor the scene passes no longer install. That made it 2-6% faster than in earlier saved results; the memoised walk is unchanged.',
+        'Since 2026-10-02, the naive walk reads each element\'s method from its own property, rather than through an accessor the library no longer installs. That made it 2-6% faster than in earlier saved results; `refreshView` is unchanged.',
     ],
     titles: {
         methods: 'Methods',

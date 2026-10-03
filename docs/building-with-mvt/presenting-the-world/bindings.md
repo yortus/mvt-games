@@ -68,7 +68,7 @@ function BulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.x(), bindings.y());
     }
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 }
 ```
@@ -202,7 +202,7 @@ function GoodView(bindings: MyViewBindings): Container {
         // ...
     }
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 }
 ```

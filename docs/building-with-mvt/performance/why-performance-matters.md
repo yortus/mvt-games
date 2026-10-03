@@ -63,7 +63,7 @@ At game scale this is cheap: polling 1000 Pixi containers takes well under
 0.1% of the frame budget. But it grows, and faster than you might guess: each
 container costs about 8 times as much in a scene of 100,000 as in a scene of
 1,000, and polling that scene at rest takes over a fifth of the budget. Knowing where those limits are lets you design for them, for
-example by [skipping inactive parts of the scene](measurements.md#the-scene-passes).
+example by [skipping inactive parts of the scene](measurements.md#what-refreshview-costs).
 
 ## When You Need to Care
 

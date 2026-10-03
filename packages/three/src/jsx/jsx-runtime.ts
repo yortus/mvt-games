@@ -5,12 +5,15 @@
  *
  * How the runtime behaves is in the base's `create-jsx.ts`; what each
  * attribute does, and how often it is written, is in the element table. The
- * elements' methods are called by @mvtjs/three's scene passes (`tickScene`),
- * not from three's `onBeforeRender`, which skips objects out of view.
+ * elements' methods are called by `updateView` and `refreshView`, not from
+ * three's `onBeforeRender`, which skips objects out of view.
  */
 
 import type { Object3D } from 'three';
 import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
+// Registers three.js objects, so `refreshView` walks what this runtime builds,
+// and brings the `RendererViews` declaration with this entry's types.
+import '../object3d-mixin';
 import { threeElements } from './three-elements';
 import { threeTarget } from './three-target';
 

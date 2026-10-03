@@ -1,6 +1,6 @@
 import { Group, type Object3D } from 'three';
 import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
-import { destroyObject, onDestroyed, tickScene } from '../object3d-mixin';
+import { destroyObject, onDestroyed } from '../object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target
@@ -8,7 +8,7 @@ import { destroyObject, onDestroyed, tickScene } from '../object3d-mixin';
 
 /**
  * three.js's scene graph, as the JSX base needs it. Nodes are `Object3D`s,
- * whose methods the @mvtjs/three scene passes call.
+ * whose methods `updateView` and `refreshView` call.
  */
 export const threeTarget: JsxTarget<Object3D> = {
     name: '@mvtjs/three/jsx',
@@ -21,7 +21,7 @@ export const threeTarget: JsxTarget<Object3D> = {
         // three has no `addChildAt`. Child order does not change how three
         // draws, but `<List>` keeps slot i as child i, and detaches its tail
         // from the end, so `next` takes `current`'s place in `children`. The
-        // `add` has already invalidated the scene passes' walk; moving a child
+        // `add` has already cleared the cached method lists; moving a child
         // among its siblings needs no more.
         const index = parent.children.indexOf(current);
         parent.remove(current);
@@ -48,6 +48,4 @@ export const threeTarget: JsxTarget<Object3D> = {
     listen: (node, eventName, handler) => {
         node.addEventListener(eventName as never, handler as never);
     },
-
-    tickScene,
 };

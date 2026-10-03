@@ -7,9 +7,9 @@
 // ---------------------------------------------------------------------------
 
 import { Application, Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle } from 'pixi.js';
-// Importing it also readies `Container` for the scene passes, before any user
-// view code runs
-import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '@mvtjs/pixi';
+// Importing it also registers `Container` with `updateView` and `refreshView`,
+// before any user view code runs
+import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import { type CodeKind, jsxGlobals, transpile as compile } from './compile';
 import type { HostMessage, SandboxMessage } from './messages';
 
@@ -150,10 +150,11 @@ function createUserGlobals(): Record<string, unknown> {
         Texture,
         Rectangle,
         TextStyle,
-        // Views set their update and refresh methods with `setTickMethods`;
-        // either may return `SKIP_DESCENDANTS` to skip the container's
-        // descendants for that scene pass
-        setTickMethods,
+        // Views set their update and refresh methods with `setUpdate` and
+        // `setRefresh`; either may return `SKIP_DESCENDANTS` to skip the
+        // container's descendants for that call
+        setUpdate,
+        setRefresh,
         SKIP_DESCENDANTS,
         // We include a minimal watch implementation so users can use it
         watch: createWatch,
@@ -217,8 +218,8 @@ async function ensureApp(width: number, height: number): Promise<Application> {
     document.body.appendChild(app.canvas);
     fitCanvas(app.canvas);
     // Pausing is the stage's call: while paused, the user's view is left out
-    // of the update scene pass, and still refreshed.
-    setTickMethods(app.stage, { update: () => (paused ? SKIP_DESCENDANTS : undefined) });
+    // of `updateView`, and still refreshed.
+    setUpdate(app.stage, () => (paused ? SKIP_DESCENDANTS : undefined));
     // Expose for Pixi DevTools (accessible from parent via iframe.contentWindow)
     (window as any).__PIXI_APP__ = app; // eslint-disable-line @typescript-eslint/no-explicit-any
     window.addEventListener('resize', () => {
@@ -353,7 +354,8 @@ async function runCode(
             const deltaMs = ticker.deltaMS * speedMultiplier;
             if (!paused && typeof model.update === 'function') model.update(deltaMs);
             phase = 'a view\'s update or refresh';
-            tickScene({ root: pixiApp.stage, deltaMs });
+            updateView(pixiApp.stage, deltaMs);
+            refreshView(pixiApp.stage);
         }
         catch (err: unknown) {
             sendToHost({

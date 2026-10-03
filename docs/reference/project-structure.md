@@ -16,10 +16,10 @@ benchmarks and the checks.
 
 ```
 packages/
-├── utils/               @mvtjs/utils: renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base at ./jsx
-├── pixi/                @mvtjs/pixi: Pixi scene passes and helpers; Pixi's JSX runtime at ./jsx
-├── three/               @mvtjs/three: three.js scene passes and pointer picker; its JSX runtime at ./jsx
-└── html/                @mvtjs/html: DOM scene passes; its JSX runtime at ./jsx
+├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
+├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
+├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
+└── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
 site/                    The games, demos and playground: one Vite site of several pages
 docs/                    This documentation (VitePress)
 benchmarks/              Performance benchmarks, for the libraries and the games alike
@@ -248,10 +248,14 @@ The rules above apply inside each package. Between packages:
   package. ESLint's `import/no-extraneous-dependencies` reports it. Tests,
   scripts and config files may import `devDependencies`; other code may not.
 - **Import the tick API from your renderer package.** Each renderer package
-  re-exports the names it shares with `@mvtjs/utils`: `SKIP_DESCENDANTS`,
-  `hasUpdate`, `hasRefresh`, the read and scene counters, and the method
-  types. The site and the benchmarks import them from the renderer they use,
-  so each name has one place to come from (`no-restricted-imports`).
+  re-exports the names it shares with `@mvtjs/utils`: `updateView`,
+  `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`,
+  `hasRefresh`, the tick counter, and the method types. The site and the
+  benchmarks import them from the renderer they use, so each name has one
+  place to come from, and the import also loads the renderer, which
+  registers its views (`no-restricted-imports`). They are the same functions
+  in every renderer package, so code that uses two renderers imports them
+  from either.
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
   sequences, slot lists.
 - **The playground stands alone.** `site/src/playground/` and the rest of the

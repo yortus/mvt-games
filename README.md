@@ -72,10 +72,10 @@ notes/        Proposals, tasks, and the archive of finished work
 
 ```
 packages/
-├── utils/               Renderer-agnostic helpers (watch, SlotList, tweens, scene passes); JSX base at ./jsx
-├── pixi/                Pixi scene passes and helpers; Pixi's JSX runtime at ./jsx
-├── three/               three.js scene passes and pointer picker; its JSX runtime at ./jsx
-└── html/                DOM scene passes; its JSX runtime at ./jsx
+├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
+├── pixi/                The tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
+├── three/               The tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
+└── html/                The tick API for DOM elements; its JSX runtime at ./jsx
 
 site/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker

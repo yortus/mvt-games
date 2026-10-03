@@ -185,7 +185,7 @@ export function RocketView(bindings: RocketViewBindings): Container {
     const view = new Container();
     view.addChild(idleSprite, launchSprite);
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
@@ -279,8 +279,8 @@ Any view can also be called as an expression inside a JSX body:
    ```
 
    A `ref` that wraps the element's own refresh method with
-   `setTickMethods(g, { refresh: (own) => ... })` does the same; the attribute
-   is simpler to get right.
+   `setRefresh(g, (own) => ...)` does the same; the attribute is simpler to
+   get right.
 3. **An `onDestroyed` attribute** to release what the view made for the
    element: `<container onDestroyed={() => sharedContext.destroy()}>`. See
    [Releasing Resources](#releasing-resources).
@@ -299,7 +299,7 @@ export function TerrainView(bindings: TerrainViewBindings): Container {
     const columns = createColumns(visibleCols + 4);
     view.addChild(...columns);
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
@@ -317,46 +317,47 @@ Key points:
   `List`: `List({ items: model.bullets.slots, children: (slot) => BulletView({ ... }) })`.
 - Return the root `Container`. The parent view adds it to its own container.
 
-## Using `setTickMethods` and `tickScene`
+## Using `setUpdate`, `setRefresh`, `updateView` and `refreshView`
 
 **[project convention]** A view sets its per-frame steps on its container with
-`setTickMethods` from `@mvtjs/pixi` (the same function exists in `@mvtjs/three`
-and `@mvtjs/html`, typed to their nodes): `refresh()` always, and
+`setRefresh` and `setUpdate` from `@mvtjs/pixi` (`@mvtjs/three` and
+`@mvtjs/html` re-export the same functions): `refresh()` always, and
 `update(deltaMs)` only if it has presentation state. In a JSX body the runtime
 sets the refresh method from the function attributes, and the update method
 comes from the `onUpdate` attribute.
 
 ```ts
-setTickMethods(view, { update, refresh });   // update only for views with presentation state
+setRefresh(view, refresh);
+setUpdate(view, update);     // only for views with presentation state
 ```
 
-- A member left out is left as it is; one given as `undefined` is cleared.
-- The host ticks the scene each frame, after the models: `model.update(deltaMs)`,
-  then `tickScene({ root: app.stage, deltaMs })`, whose update scene pass runs
-  every update method in the tree, then its refresh scene pass every refresh
-  method. Game sessions advance only their models; `site/src/main.ts` ticks the
-  stage once per frame, and pauses by leaving the game container out of the
-  update scene pass. Games know nothing about pause.
-- **Never forward `update()` or `refresh()` to child views.** The scene passes
-  walk the whole tree, parents before children, and find every update and
-  refresh method themselves. A view is an ordinary `Container`; return it as one.
+- `undefined` clears a method: `setRefresh(view, undefined)`.
+- The host updates and refreshes the stage each frame, after the models:
+  `model.update(deltaMs)`, then `updateView(app.stage, deltaMs)`, which calls
+  every update method in the stage, then `refreshView(app.stage)`, which calls
+  every refresh method. Game sessions advance only their models;
+  `site/src/main.ts` updates and refreshes the stage once per frame, and pauses
+  by leaving the game container out of `updateView`. Games know nothing about
+  pause.
+- **Never forward `update()` or `refresh()` to child views.** `updateView` and
+  `refreshView` walk the whole tree, parents before children, and find every
+  update and refresh method themselves. A view is an ordinary `Container`;
+  return it as one.
 - Either method may return `SKIP_DESCENDANTS` to skip its container's
-  descendants for that scene pass (a hidden subtree). Setting
-  `visible = false` alone skips nothing, and a view may set its own `visible`
-  freely.
-- A container added, or given a refresh method, during the refresh scene pass
-  is refreshed before that scene pass returns, so a view may build children in
-  its own `refresh()`. A container added during the update scene pass is first
-  updated on the next frame: it did not exist for this frame's time step.
+  descendants for that call (a hidden subtree). Setting `visible = false`
+  alone skips nothing, and a view may set its own `visible` freely.
+- A container added, or given a refresh method, during `refreshView` is
+  refreshed before `refreshView` returns, so a view may build children in its
+  own `refresh()`. A container added during `updateView` is first updated on
+  the next frame: it did not exist for this frame's time step.
 - A method that declares a parameter for the one it replaces wraps it
-  (`refresh: (own) => ...`, `update: (deltaMs, own) => ...`). Library code
-  (`<List>`, `<Switch>`) uses this to gate a child's own step; views rarely
-  need it.
+  (`setRefresh(view, (own) => ...)`, `setUpdate(view, (deltaMs, own) => ...)`).
+  Library code (`<List>`, `<Switch>`) uses this to gate a child's own step;
+  views rarely need it.
 - Do not use Pixi's `onRender` for view refresh. It is tied to render cadence
   and cannot skip subtrees.
-- In tests, drive a view with `tickScene({ root: view, deltaMs })`, or one
-  scene pass with `only: 'update'` or `only: 'refresh'`; no renderer or ticker
-  is needed.
+- In tests, drive a view with `updateView(view, deltaMs)` and
+  `refreshView(view)`, or either alone; no renderer or ticker is needed.
 
 The language-neutral spec (`docs/architecture/`) describes these only as a
 view's `update(deltaMs)` and `refresh()` steps, and as ticking a view; it must
@@ -416,9 +417,9 @@ that the model doesn't track (the model has no reason to track it because no
 domain outcome depends on it).
 
 Views with presentation state gain an `update(deltaMs)` step, set with
-`setTickMethods(view, { update })` (or the `onUpdate` attribute) in this
-project. The update scene pass runs it after models update and before any
-refresh. Parent views do not propagate it; the scene pass finds it.
+`setUpdate(view, update)` (or the `onUpdate` attribute) in this project.
+`updateView` calls it after models update and before any refresh. Parent views
+do not propagate it; `updateView` finds it.
 
 **`update` advances state; `refresh` writes output.** `update(deltaMs)`
 changes presentation state and nothing else. `refresh()` writes all
@@ -498,13 +499,13 @@ once, when the element is built, not per frame.
 | ------------------------------------------ | --------------- | --------------------------------------------- |
 | Domain state in a view                     | V-stateless     | Move to the model                             |
 | Complex presentation logic in a view       | V-presentation  | Extract to a view model                       |
-| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's update method (`setTickMethods`) |
+| Hardcoded frame delta (`timerMs += 16`)    | V-presentation  | Use the view's update method (`setUpdate`) |
 | `refresh()` only correct after the first `update()` | V-presentation | Initialise presentation state at construction |
 | Adding or removing display objects in `update()` | V-presentation | Change structure in `refresh()` |
 | A timeline advanced in `update()` tweening display objects | V-presentation | Tween a state object; apply it in `refresh()` |
 | Query binding declared as a function but read only at construction | V-reactive | Read it in `refresh()`, or declare it as `T` |
 | Mutating models in `refresh()`             | V-readonly      | Report input through relay bindings           |
-| `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's update method (`setTickMethods`) |
+| `setTimeout` / `setInterval` in a view     | V-stateless     | Use the view's update method (`setUpdate`) |
 | Computing own deltaMs from `Date.now()`    | V-presentation  | Receive `deltaMs` from the ticker             |
 | `createXxxView`, `get*()` bindings, `props` in new code | Style | `XxxView(bindings)`, query bindings named for what they return |
 | Using `class`                              | Style           | Factory function + plain record               |
@@ -545,9 +546,7 @@ Or with a plain TypeScript body, in `bullet-view.ts`:
 ```ts
 export function BulletView(bindings: BulletViewBindings): Container {
     const view = new Sprite({ texture: textures.get().bullet, anchor: 0.5 });
-    setTickMethods(view, {
-        refresh: () => { view.position.set(bindings.screenX(), bindings.screenY()); },
-    });
+    setRefresh(view, () => { view.position.set(bindings.screenX(), bindings.screenY()); });
     return view;
 }
 ```

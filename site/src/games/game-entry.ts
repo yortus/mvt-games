@@ -58,9 +58,10 @@ export interface GameInputConfig {
 export interface GameSession {
     /**
      * Advance the game's models by the given elapsed milliseconds. Models
-     * only: the host ticks the game's view with the rest of its stage
-     * (`tickScene`). Pausing is the host's call too: while paused, it stops
-     * calling this and leaves the view out of the update scene pass.
+     * only: the host updates and refreshes the game's view with the rest of
+     * its stage (`updateView`, `refreshView`). Pausing is the host's call too:
+     * while paused, it stops calling this and leaves the view out of
+     * `updateView`.
      */
     update: (deltaMs: number) => void;
     /** Tear down the game session and remove visuals from the stage. */

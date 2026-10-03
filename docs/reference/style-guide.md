@@ -26,7 +26,7 @@ is written and organized in this project.
 | Enum-like types       | `type TileKind = 'wall' \| 'empty'`   | [Enumeration Types](#enumeration-types)        |
 | Clear names           | `Kind` not `Type`, `phase` not `state` | [Easily Confused Names](#easily-confused-names)|
 | Barrel imports        | `import { Foo } from './module'`       | [Project Structure](project-structure.md)      |
-| Package imports       | `import { tickScene } from '@mvtjs/pixi'` | [Between Packages](project-structure.md#between-packages) |
+| Package imports       | `import { updateView } from '@mvtjs/pixi'` | [Between Packages](project-structure.md#between-packages) |
 | Module specifiers     | `'./foo'` not `'./foo.ts'`             | [Project Structure](project-structure.md)      |
 | Indentation           | 4 spaces                               | [Formatting](#formatting)                      |
 | Unused parameters     | `_deltaMs`                             | [Naming Conventions](#naming-conventions)      |
@@ -483,12 +483,10 @@ export function ShipView(bindings: ShipViewBindings): Container {
 ```ts
 export function ShipView(bindings: ShipViewBindings): Container {
     const view = new Sprite({ texture: textures.get().ship, anchor: 0.5 });
-    setTickMethods(view, {
-        refresh: () => {
-            view.visible = bindings.isAlive();
-            if (!view.visible) return;
-            view.position.set(bindings.screenX(), bindings.screenY());
-        },
+    setRefresh(view, () => {
+        view.visible = bindings.isAlive();
+        if (!view.visible) return;
+        view.position.set(bindings.screenX(), bindings.screenY());
     });
     return view;
 }

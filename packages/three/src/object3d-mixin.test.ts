@@ -1,6 +1,7 @@
 import { Group, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
-import { destroyObject, isDestroyed, onDestroyed, setTickMethods, tickScene } from './object3d-mixin';
+import { refreshView, setRefresh, setUpdate, updateView } from '@mvtjs/utils';
+import { destroyObject, isDestroyed, onDestroyed } from './object3d-mixin';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -10,7 +11,7 @@ import { destroyObject, isDestroyed, onDestroyed, setTickMethods, tickScene } fr
 function recorded(name: string, calls: string[]): Group {
     const group = new Group();
     group.name = name;
-    setTickMethods(group, { refresh: () => void calls.push(name) });
+    setRefresh(group, () => void calls.push(name));
     return group;
 }
 
@@ -18,10 +19,10 @@ function recorded(name: string, calls: string[]): Group {
 // Tests
 // ---------------------------------------------------------------------------
 
-// The structural paths three.js takes, each of which must invalidate the
-// memoised walk. The walk itself is covered by @mvtjs/pixi's tests and the
-// conformance suite.
-describe('@mvtjs/three scene passes', () => {
+// The structural paths three.js takes, each of which must clear the cached
+// method lists. The method lists themselves are covered by @mvtjs/utils' and
+// @mvtjs/pixi's tests and the conformance suite.
+describe('updateView and refreshView on three.js objects', () => {
     it('runs every method in a subtree, parents first, and updates with the time', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);
@@ -29,10 +30,10 @@ describe('@mvtjs/three scene passes', () => {
         root.add(child);
         child.add(recorded('grandchild', calls));
         const deltas: number[] = [];
-        setTickMethods(child, { update: (deltaMs) => void deltas.push(deltaMs) });
+        setUpdate(child, (deltaMs) => void deltas.push(deltaMs));
 
-        tickScene({ root, only: 'refresh' });
-        tickScene({ root, deltaMs: 16, only: 'update' });
+        refreshView(root);
+        updateView(root, 16);
 
         expect(calls).toEqual(['root', 'child', 'grandchild']);
         expect(deltas).toEqual([16]);
@@ -41,23 +42,23 @@ describe('@mvtjs/three scene passes', () => {
     it('follows add, remove and clear after the walk was first built', () => {
         const calls: string[] = [];
         const root = recorded('root', calls);
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
 
         const a = recorded('a', calls);
         const b = recorded('b', calls);
         root.add(a, b);
         calls.length = 0;
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
         expect(calls).toEqual(['root', 'a', 'b']);
 
         root.remove(a);
         calls.length = 0;
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
         expect(calls).toEqual(['root', 'b']);
 
         root.clear();
         calls.length = 0;
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
         expect(calls).toEqual(['root']);
     });
 
@@ -67,19 +68,19 @@ describe('@mvtjs/three scene passes', () => {
         const right = recorded('right', calls);
         const moving = recorded('moving', calls);
         left.add(moving);
-        tickScene({ root: left, only: 'refresh' });
-        tickScene({ root: right, only: 'refresh' });
+        refreshView(left);
+        refreshView(right);
 
         // `add` detaches from the old parent through `removeFromParent`
         right.add(moving);
         calls.length = 0;
-        tickScene({ root: left, only: 'refresh' });
-        tickScene({ root: right, only: 'refresh' });
+        refreshView(left);
+        refreshView(right);
         expect(calls).toEqual(['left', 'right', 'moving']);
 
         moving.removeFromParent();
         calls.length = 0;
-        tickScene({ root: right, only: 'refresh' });
+        refreshView(right);
         expect(calls).toEqual(['right']);
     });
 
@@ -89,13 +90,13 @@ describe('@mvtjs/three scene passes', () => {
         const to = recorded('to', calls);
         const moving = recorded('moving', calls);
         from.add(moving);
-        tickScene({ root: from, only: 'refresh' });
-        tickScene({ root: to, only: 'refresh' });
+        refreshView(from);
+        refreshView(to);
 
         to.attach(moving);
         calls.length = 0;
-        tickScene({ root: from, only: 'refresh' });
-        tickScene({ root: to, only: 'refresh' });
+        refreshView(from);
+        refreshView(to);
 
         expect(calls).toEqual(['from', 'to', 'moving']);
     });
@@ -105,25 +106,23 @@ describe('@mvtjs/three scene passes', () => {
         const root = recorded('root', calls);
         const quiet: Object3D = new Group();
         root.add(quiet);
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
 
-        setTickMethods(quiet, { refresh: () => void calls.push('quiet') });
+        setRefresh(quiet, () => void calls.push('quiet'));
         calls.length = 0;
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
 
         expect(calls).toEqual(['root', 'quiet']);
     });
 
-    it('refreshes an object a method adds, in the same scene pass', () => {
+    it('refreshes an object a method adds, in the same call', () => {
         const calls: string[] = [];
         const root = new Group();
-        setTickMethods(root, {
-            refresh: () => {
-                if (root.children.length === 0) root.add(recorded('added', calls));
-            },
+        setRefresh(root, () => {
+            if (root.children.length === 0) root.add(recorded('added', calls));
         });
 
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
 
         expect(calls).toEqual(['added']);
     });
@@ -148,7 +147,7 @@ describe('@mvtjs/three scene passes', () => {
             expect(isDestroyed(inner)).toBe(true);
             // A destroyed node ticked itself runs nothing
             calls.length = 0;
-            tickScene({ root: doomed, only: 'refresh' });
+            refreshView(doomed);
             expect(calls).toEqual([]);
         });
     });

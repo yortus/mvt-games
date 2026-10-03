@@ -1,5 +1,4 @@
-import type { UpdateMethod } from '../scene-methods';
-import type { SKIP_DESCENDANTS } from '../skip-descendants';
+import type { SKIP_DESCENDANTS, UpdateMethod } from '../tick-api';
 import type { ChangeableAttribute, ElementDefinition, EventAttribute, FixedAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------

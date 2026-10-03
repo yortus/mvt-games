@@ -2,7 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -182,7 +182,7 @@ export function MatchEffectsView(bindings: MatchEffectsViewBindings): Container 
         },
     });
 
-    setTickMethods(view, { refresh: updateEffects });
+    setRefresh(view, updateEffects);
     return view;
 
     function computeMatchCentre(matchedCells: readonly Readonly<CactusCell>[]): { x: number; y: number } {

@@ -5,13 +5,13 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #endregion environment -->
 
 <!-- #region notes -->
-- Since 2026-10-02 (task 028), each frame is the session's update, which advances only its models, then a tick of the stage, timed one scene pass at a time. The time table's models, update scene pass and refresh scene pass columns are new: the earlier "update" column mixed the models with the views' update methods.
+- Since 2026-10-02, each frame is the session's update, which advances only its models, then a tick of the stage, timed `updateView` and `refreshView` apart. The time table's models, `updateView` and `refreshView` columns are new: the earlier "update" column mixed the models with the views' update methods.
 <!-- #endregion notes -->
 
 <!-- #region time -->
 **Time per frame, averaged over one simulated minute** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
-| Kind | Name | Models (µs) | Update scene pass (µs) | Refresh scene pass (µs) | Total (µs) | Pixi containers | Update and refresh methods |
+| Kind | Name | Models (µs) | `updateView` (µs) | `refreshView` (µs) | Total (µs) | Pixi containers | Update and refresh methods |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Game | Asteroids | 0.85 ±13% | 0.33 ±10% | 4.03 ±9% | 5.12 ±9% | 46 | 22 |
 |  | Kwazy Cactii | 0.17 ±8% | 0.71 ±14% | 8.55 | 9.6 | 306 | 76 |

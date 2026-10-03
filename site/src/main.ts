@@ -12,7 +12,7 @@ import {
     type GameEntry,
     type GameSession,
 } from './games';
-import { setTickMethods, SKIP_DESCENDANTS, tickScene } from '@mvtjs/pixi';
+import { refreshView, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Default cabinet dimensions (used for the menu screen)
@@ -112,11 +112,11 @@ async function main(): Promise<void> {
     const gameContainer = new Container();
     gameContainer.label = 'game-container';
     app.stage.addChild(gameContainer);
-    // The ticker ticks the whole stage once a frame (below), so pausing a game
-    // is this container's call: while paused, the game's view is left out of
-    // the update scene pass, and still refreshed, so it shows frozen under the
-    // pause menu. No game knows about pause.
-    setTickMethods(gameContainer, { update: () => (paused ? SKIP_DESCENDANTS : undefined) });
+    // The ticker updates and refreshes the whole stage once a frame (below), so
+    // pausing a game is this container's call: while paused, the game's view
+    // is left out of `updateView`, and still refreshed, so it shows frozen
+    // under the pause menu. No game knows about pause.
+    setUpdate(gameContainer, () => (paused ? SKIP_DESCENDANTS : undefined));
 
     // ---- URL fragment helpers --------------------------------------------
     function setUrlFragment(gameId: string | null): void {
@@ -481,15 +481,15 @@ async function main(): Promise<void> {
     }
 
     // ---- Ticker ------------------------------------------------------------
-    // Each frame ticks the models, then the whole stage: an update scene pass
-    // and then a refresh scene pass, including while paused, so the pause
-    // menu and the cabinet stay current (the game container sits out the
-    // update scene pass while paused).
+    // Each frame updates the models, then updates and refreshes the whole
+    // stage, including while paused, so the pause menu and the cabinet stay
+    // current (the game container sits out `updateView` while paused).
     app.ticker.add((ticker) => {
         if (!paused) {
             cabinet.update(ticker.deltaMS);
         }
-        tickScene({ root: app.stage, deltaMs: ticker.deltaMS });
+        updateView(app.stage, ticker.deltaMS);
+        refreshView(app.stage);
     });
 
     // ---- Auto-launch from URL fragment ------------------------------------
@@ -535,16 +535,16 @@ async function generateThumbnails(games: GameEntry[], app: Application): Promise
             // Simulate many small ticks so state machines and GSAP
             // timelines advance correctly across phase boundaries. Each
             // advances the models and the views' presentation state; one
-            // refresh scene pass at the end is all the snapshot needs.
+            // `refreshView` at the end is all the snapshot needs.
             const totalMs = entry.thumbnailAdvanceMs ?? TICK_MS;
             let remaining = totalMs;
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;
                 session.update(step);
-                tickScene({ root: tempStage, deltaMs: step, only: 'update' });
+                updateView(tempStage, step);
                 remaining -= step;
             }
-            tickScene({ root: tempStage, only: 'refresh' });
+            refreshView(tempStage);
 
             const renderTexture = RenderTexture.create({
                 width: entry.screenWidth,

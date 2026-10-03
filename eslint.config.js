@@ -19,14 +19,16 @@ const OWN_BARREL_IMPORT = {
 };
 
 // The tick API a renderer package re-exports from @mvtjs/utils. Code that uses
-// a renderer imports these from it: one place to import each from, and the
-// same copy of the counters that the renderer counts into.
+// a renderer imports these from it: one place to import each from, an import
+// that also loads the renderer, which registers its views with `updateView`
+// and declares their type in `View`, and the same copy of @mvtjs/utils that
+// the renderer was built against.
 const TICK_API_FROM_RENDERER = {
     name: '@mvtjs/utils',
     importNames: [
-        'SKIP_DESCENDANTS', 'hasUpdate', 'hasRefresh',
-        'addReads', 'countReads', 'readCounter', 'countScene', 'sceneCounter',
-        'UpdateMethod', 'RefreshMethod', 'SceneCounts',
+        'updateView', 'refreshView', 'setUpdate', 'setRefresh', 'hasUpdate', 'hasRefresh', 'SKIP_DESCENDANTS',
+        'addReads', 'countTick', 'tickCounter',
+        'UpdateMethod', 'RefreshMethod', 'TickCounter', 'TickCounts', 'View',
     ],
     message: 'Import this from the renderer package (@mvtjs/pixi, @mvtjs/three or @mvtjs/html), which re-exports it.',
 };

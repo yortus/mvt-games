@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -43,7 +43,7 @@ export function TerrainView(bindings: TerrainViewBindings): Container {
     view.addChild(content);
 
     initialiseView();
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {

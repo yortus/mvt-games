@@ -39,9 +39,7 @@
  */
 
 import { assert } from '../assert';
-import { readCounter } from '../read-counter';
-import { setTickMethods } from '../scene-passes';
-import { SKIP_DESCENDANTS } from '../skip-descendants';
+import { setNodeRefresh, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------
@@ -154,18 +152,16 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
 
             // Wraps the `<Match>`'s own refresh (its misuse check and lazy build) in a
             // gate, so it only runs while its branch is selected.
-            setTickMethods(branch, {
-                refresh: (ownRefresh) => {
-                    if (index !== selected) return SKIP_DESCENDANTS;
-                    return ownRefresh?.();
-                },
+            setNodeRefresh(branch, (ownRefresh) => {
+                if (index !== selected) return SKIP_DESCENDANTS;
+                return ownRefresh?.();
             });
         }
 
         // Runs before any branch's refresh method, so a newly selected branch
         // refreshes on the frame it is selected, with no structural change and
         // no lag.
-        setTickMethods(container, { refresh: select });
+        setNodeRefresh(container, select);
 
         return container;
 
@@ -176,7 +172,7 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
             let next = -1;
             for (let i = 0; i < conditions.length; i++) {
                 const when = conditions[i];
-                if (when !== undefined && readCounter.isCounting) readCounter.count++;
+                if (when !== undefined && tickCounter.isCounting) tickCounter.reads++;
                 if (when === undefined || when()) {
                     next = i;
                     break;
@@ -212,15 +208,13 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
         // The enclosing `<Switch>` wraps this and only lets it run while this
         // branch is selected. Without one, nothing would ever hide the branch, so
         // fail loudly instead.
-        setTickMethods(container, {
-            refresh: () => {
-                if (!entry.isAdopted) throw new Error('<Match> must be a direct child of <Switch>');
-                if (build === undefined) return;
-                const branch = build();
-                build = undefined;
-                // Added during a scene pass, which refreshes it before it returns
-                target.append(container, branch);
-            },
+        setNodeRefresh(container, () => {
+            if (!entry.isAdopted) throw new Error('<Match> must be a direct child of <Switch>');
+            if (build === undefined) return;
+            const branch = build();
+            build = undefined;
+            // Added during `refreshView`, which refreshes it before it returns
+            target.append(container, branch);
         });
 
         return container;

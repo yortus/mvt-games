@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -74,7 +74,7 @@ export function SliderView(bindings: SliderViewBindings): Container {
     hitArea.on('pointerup', onPointerUp);
     hitArea.on('pointerupoutside', onPointerUp);
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     // ---- Refresh -----------------------------------------------------------

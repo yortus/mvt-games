@@ -48,8 +48,8 @@ export interface DemoHost {
 export interface DemoSession {
     /**
      * Advance the demo's models by the given elapsed milliseconds. Models
-     * only: the host ticks the demo's view with the rest of its stage
-     * (`tickScene`).
+     * only: the host updates and refreshes the demo's view with the rest of
+     * its stage (`updateView`, `refreshView`).
      */
     update: (deltaMs: number) => void;
     /**

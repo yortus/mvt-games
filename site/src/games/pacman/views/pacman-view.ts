@@ -2,7 +2,7 @@ import { Container, Sprite } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { Direction } from '../models';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -27,7 +27,7 @@ export function PacmanView(bindings: PacmanViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {

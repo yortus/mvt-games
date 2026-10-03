@@ -48,8 +48,8 @@ each with three dynamic properties, nothing changed):
 | Hand-written refresh methods | 10.9-11.6 µs | 5.55-5.70 µs |
 | Ratio | 2.3-2.7x | about 1.8x |
 
-The in-process numbers also showed a per-container overhead for the scene pass
-that does not exist, and made a faster version of the scene pass loop look slower.
+The in-process numbers also showed a per-container overhead for `refreshView`
+that does not exist, and made a faster version of its loop look slower.
 An idea was rejected on that evidence.
 
 **Rule:** run each approach in a fresh process. A small driver script that

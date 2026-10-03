@@ -1,39 +1,22 @@
 import { type Renderer, RendererType, type Ticker, UPDATE_PRIORITY, type WebGLRenderer } from 'pixi.js';
+import { tickCounter, type TickCounts } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A statistic tracked by `FrameStats`. */
-export type FrameStatKind = 'fps' | 'cpu' | 'gpu' | 'reads' | 'methods' | 'rebuilds' | 'visits';
+/** A metric `PerformanceMetrics` tracks, named as its property. */
+export type MetricKind = 'fps' | 'cpuMs' | 'gpuMs' | 'reads' | 'methodCalls' | 'methodListRebuilds' | 'rebuildNodeVisits';
 
 /**
- * Something that counts events while switched on, such as `@mvtjs/pixi`'s
- * `readCounter`. `FrameStats` switches it on for one frame in each
- * window and reports the count for that frame.
- */
-export interface SampledCounter {
-    isCounting: boolean;
-    readonly count: number;
-}
-
-/**
- * Something that counts the scene passes' work while switched on, such as
- * `@mvtjs/pixi`'s `sceneCounter`. `FrameStats` samples it in the same frame as
- * the `SampledCounter`.
- */
-export interface SampledSceneCounter {
-    isCounting: boolean;
-    readonly methodCalls: number;
-    readonly walkRebuilds: number;
-    readonly rebuildVisits: number;
-}
-
-/**
- * Frame timing for a running Pixi application: frames per second, main-thread
- * time per frame, and GPU time per frame where the browser can measure it.
+ * Performance metrics for a running Pixi application: frames per second,
+ * main-thread and GPU time per frame where the browser can measure it, and
+ * the work of each tick, from `tickCounter`: the reads the views make while
+ * refreshing, the update and refresh methods called, and the method lists
+ * rebuilt as the scene changes.
  *
- * Values are averages over a short window (a quarter of a second by default),
+ * Times are averages over a short window (a quarter of a second by default);
+ * the tick counts come from one frame sampled in each window. Values are
  * published at the end of each window, so they are steady enough to read and
  * a view that shows them only changes when a window closes.
  *
@@ -41,14 +24,14 @@ export interface SampledSceneCounter {
  * `performance.now()`, which is exactly what a model must never do. Keep it
  * out of anything that decides game state.
  */
-export interface FrameStats {
+export interface PerformanceMetrics {
     /** Counts published windows. Changes exactly when the values below change. */
     readonly sampleCount: number;
     /** Frames per second. */
     readonly fps: number;
     /**
      * Main-thread milliseconds per frame, from the start of the tick to the end
-     * of Pixi's render: models, the update and refresh passes, and Pixi's own
+     * of Pixi's render: models, `updateView` and `refreshView`, and Pixi's own
      * work to submit the frame.
      */
     readonly cpuMs: number;
@@ -68,31 +51,29 @@ export interface FrameStats {
      */
     readonly gpuMs: number | undefined;
     /**
-     * Reads (or whatever `readCounter` counts) in one frame, sampled
-     * once per window, or `undefined` without a `readCounter`.
+     * Reads the views made in one frame, sampled once per window: what the JSX
+     * runtime counts, and what hand-written views report with `addReads`. A
+     * view that reports nothing counts as zero, so a host whose views do not
+     * count their reads should not show this.
      */
-    readonly readsPerFrame: number | undefined;
+    readonly reads: number;
+    /** Update and refresh methods called in one frame, sampled with `reads`. */
+    readonly methodCalls: number;
     /**
-     * Update and refresh methods the scene passes called in one frame,
-     * sampled once per window, or `undefined` without a `sceneCounter`.
+     * Method lists rebuilt in one frame, which is the scene's churn, sampled
+     * with `reads`. Zero in a steady scene.
      */
-    readonly methodsPerFrame: number | undefined;
-    /**
-     * Memoised walks the scene passes rebuilt in one frame, which is the
-     * scene's churn, sampled with `methodsPerFrame`. Zero in a steady scene.
-     */
-    readonly rebuildsPerFrame: number | undefined;
-    /** Nodes visited rebuilding those walks, sampled with `methodsPerFrame`. */
-    readonly visitsPerFrame: number | undefined;
+    readonly methodListRebuilds: number;
+    /** Node visits made rebuilding those method lists, sampled with `reads`. */
+    readonly rebuildNodeVisits: number;
     /** How many recent windows `historyAt` holds. */
     readonly historyLength: number;
     /**
-     * A recent window's value, oldest first, for `index` in
-     * `[0, historyLength)`. `NaN` where there is no value yet, for the GPU
-     * when it cannot be timed, for reads without a `readCounter`, and for
-     * the scene passes' counts without a `sceneCounter`.
+     * A recent window's value of a metric, oldest first, for `index` in
+     * `[0, historyLength)`. `NaN` where there is no value yet, and for the GPU
+     * when it cannot be timed.
      */
-    historyAt: (kind: FrameStatKind, index: number) => number;
+    historyAt: (kind: MetricKind, index: number) => number;
     /** Stop measuring and release GPU queries. */
     destroy: () => void;
 }
@@ -101,7 +82,7 @@ export interface FrameStats {
 // Options
 // ---------------------------------------------------------------------------
 
-export interface FrameStatsOptions {
+export interface PerformanceMetricsOptions {
     readonly renderer: Renderer;
     /** The ticker that drives the application's frames. */
     readonly ticker: Ticker;
@@ -109,44 +90,38 @@ export interface FrameStatsOptions {
     readonly windowMs?: number;
     /** How many windows to keep for `historyAt`. Defaults to 60. */
     readonly historyLength?: number;
-    /** A counter to sample for `readsPerFrame`, e.g. `readCounter` from `@mvtjs/pixi`. */
-    readonly readCounter?: SampledCounter;
-    /**
-     * A counter to sample for `methodsPerFrame`, `rebuildsPerFrame` and
-     * `visitsPerFrame`, e.g. `sceneCounter` from `@mvtjs/pixi`.
-     */
-    readonly sceneCounter?: SampledSceneCounter;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createFrameStats(options: FrameStatsOptions): FrameStats {
-    const { renderer, ticker, readCounter, sceneCounter } = options;
+export function createPerformanceMetrics(options: PerformanceMetricsOptions): PerformanceMetrics {
+    const { renderer, ticker } = options;
     const windowMs = options.windowMs ?? 250;
     const historyLength = options.historyLength ?? 60;
-
     const gpuTimer = createGpuTimer(renderer);
 
     let sampleCount = 0;
     let fps = 0;
     let cpuMs = 0;
     let gpuMs: number | undefined;
-    let readsPerFrame: number | undefined;
-    let methodsPerFrame: number | undefined;
-    let rebuildsPerFrame: number | undefined;
-    let visitsPerFrame: number | undefined;
+    // The tick counts as published, as last sampled, and as the counter stood
+    // when the sample began. The latest sample waits in `sampled` for the
+    // next publish, so every value changes together.
+    const published: TickCountsRecord = { reads: 0, methodCalls: 0, methodListRebuilds: 0, rebuildNodeVisits: 0 };
+    const sampled: TickCountsRecord = { ...published };
+    const atSampleStart: TickCountsRecord = { ...published };
 
     // Ring buffers of published values; `historyStart` is the oldest.
-    const histories: Readonly<Record<FrameStatKind, Float64Array>> = {
+    const histories: Readonly<Record<MetricKind, Float64Array>> = {
         fps: new Float64Array(historyLength).fill(NaN),
-        cpu: new Float64Array(historyLength).fill(NaN),
-        gpu: new Float64Array(historyLength).fill(NaN),
+        cpuMs: new Float64Array(historyLength).fill(NaN),
+        gpuMs: new Float64Array(historyLength).fill(NaN),
         reads: new Float64Array(historyLength).fill(NaN),
-        methods: new Float64Array(historyLength).fill(NaN),
-        rebuilds: new Float64Array(historyLength).fill(NaN),
-        visits: new Float64Array(historyLength).fill(NaN),
+        methodCalls: new Float64Array(historyLength).fill(NaN),
+        methodListRebuilds: new Float64Array(historyLength).fill(NaN),
+        rebuildNodeVisits: new Float64Array(historyLength).fill(NaN),
     };
     let historyStart = 0;
 
@@ -155,24 +130,12 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
     let windowFrames = 0;
     let windowCpuMs = 0;
     let windowCpuFrames = 0;
-
     // Start of the frame in progress, or -1 between a render and the next tick.
     let frameStartMs = -1;
     // The first frame is sampled too, so the first window has counts.
     let isFirstTick = true;
-
-    // Whether the counters are switched on for their sample frame, and their
-    // counts when they were. The latest samples wait in `sampled*` for the
-    // next publish, so every value changes together.
+    // Whether the tick counter is switched on for this sample frame.
     let isSampling = false;
-    let readsAtSampleStart = 0;
-    let methodsAtSampleStart = 0;
-    let rebuildsAtSampleStart = 0;
-    let visitsAtSampleStart = 0;
-    let sampledReads: number | undefined;
-    let sampledMethods: number | undefined;
-    let sampledRebuilds: number | undefined;
-    let sampledVisits: number | undefined;
 
     // Runs before every other tick listener, so the frame's clock starts
     // before any model or view work.
@@ -181,15 +144,15 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
     renderer.runners.prerender.add(renderHooks);
     renderer.runners.postrender.add(renderHooks);
 
-    const stats: FrameStats = {
+    const metrics: PerformanceMetrics = {
         get sampleCount() { return sampleCount; },
         get fps() { return fps; },
         get cpuMs() { return cpuMs; },
         get gpuMs() { return gpuMs; },
-        get readsPerFrame() { return readsPerFrame; },
-        get methodsPerFrame() { return methodsPerFrame; },
-        get rebuildsPerFrame() { return rebuildsPerFrame; },
-        get visitsPerFrame() { return visitsPerFrame; },
+        get reads() { return published.reads; },
+        get methodCalls() { return published.methodCalls; },
+        get methodListRebuilds() { return published.methodListRebuilds; },
+        get rebuildNodeVisits() { return published.rebuildNodeVisits; },
         historyLength,
         historyAt(kind, index) {
             return histories[kind][(historyStart + index) % historyLength];
@@ -199,12 +162,10 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
             renderer.runners.prerender.remove(renderHooks);
             renderer.runners.postrender.remove(renderHooks);
             gpuTimer?.destroy();
-            if (readCounter !== undefined) readCounter.isCounting = false;
-            if (sceneCounter !== undefined) sceneCounter.isCounting = false;
+            if (isSampling) tickCounter.isCounting = false;
         },
     };
-
-    return stats;
+    return metrics;
 
     // --- Frame hooks --------------------------------------------------------
 
@@ -222,30 +183,17 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
     /** Count the frame that starts now: switched off again at the next tick. */
     function startSample(): void {
         isSampling = true;
-        if (readCounter !== undefined) {
-            readsAtSampleStart = readCounter.count;
-            readCounter.isCounting = true;
-        }
-        if (sceneCounter !== undefined) {
-            methodsAtSampleStart = sceneCounter.methodCalls;
-            rebuildsAtSampleStart = sceneCounter.walkRebuilds;
-            visitsAtSampleStart = sceneCounter.rebuildVisits;
-            sceneCounter.isCounting = true;
-        }
+        copyCounts(tickCounter, atSampleStart);
+        tickCounter.isCounting = true;
     }
 
     function finishSample(): void {
         isSampling = false;
-        if (readCounter !== undefined) {
-            readCounter.isCounting = false;
-            sampledReads = readCounter.count - readsAtSampleStart;
-        }
-        if (sceneCounter !== undefined) {
-            sceneCounter.isCounting = false;
-            sampledMethods = sceneCounter.methodCalls - methodsAtSampleStart;
-            sampledRebuilds = sceneCounter.walkRebuilds - rebuildsAtSampleStart;
-            sampledVisits = sceneCounter.rebuildVisits - visitsAtSampleStart;
-        }
+        tickCounter.isCounting = false;
+        sampled.reads = tickCounter.reads - atSampleStart.reads;
+        sampled.methodCalls = tickCounter.methodCalls - atSampleStart.methodCalls;
+        sampled.methodListRebuilds = tickCounter.methodListRebuilds - atSampleStart.methodListRebuilds;
+        sampled.rebuildNodeVisits = tickCounter.rebuildNodeVisits - atSampleStart.rebuildNodeVisits;
     }
 
     function onPrerender(): void {
@@ -268,18 +216,15 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
         fps = ((windowFrames - 1) * 1000) / (nowMs - windowStartMs);
         if (windowCpuFrames > 0) cpuMs = windowCpuMs / windowCpuFrames;
         if (gpuTimer !== undefined) gpuMs = gpuTimer.takeMedianMs() ?? gpuMs;
-        readsPerFrame = sampledReads;
-        methodsPerFrame = sampledMethods;
-        rebuildsPerFrame = sampledRebuilds;
-        visitsPerFrame = sampledVisits;
+        copyCounts(sampled, published);
 
         histories.fps[historyStart] = fps;
-        histories.cpu[historyStart] = cpuMs;
-        histories.gpu[historyStart] = gpuMs ?? NaN;
-        histories.reads[historyStart] = readsPerFrame ?? NaN;
-        histories.methods[historyStart] = methodsPerFrame ?? NaN;
-        histories.rebuilds[historyStart] = rebuildsPerFrame ?? NaN;
-        histories.visits[historyStart] = visitsPerFrame ?? NaN;
+        histories.cpuMs[historyStart] = cpuMs;
+        histories.gpuMs[historyStart] = gpuMs ?? NaN;
+        histories.reads[historyStart] = published.reads;
+        histories.methodCalls[historyStart] = published.methodCalls;
+        histories.methodListRebuilds[historyStart] = published.methodListRebuilds;
+        histories.rebuildNodeVisits[historyStart] = published.rebuildNodeVisits;
         historyStart = (historyStart + 1) % historyLength;
         sampleCount++;
 
@@ -293,6 +238,16 @@ export function createFrameStats(options: FrameStatsOptions): FrameStats {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** The tick counts, as a record this file can update in place. */
+type TickCountsRecord = { -readonly [K in keyof TickCounts]: number };
+
+function copyCounts(from: TickCounts, to: TickCountsRecord): void {
+    to.reads = from.reads;
+    to.methodCalls = from.methodCalls;
+    to.methodListRebuilds = from.methodListRebuilds;
+    to.rebuildNodeVisits = from.rebuildNodeVisits;
+}
 
 interface GpuTimer {
     begin: () => void;

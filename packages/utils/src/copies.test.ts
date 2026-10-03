@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PROTOCOL, registerCopy, shareAcrossCopies } from './copies';
-import * as firstCounter from './scene-counter';
-import { utilsState } from './shared-state';
-import { SKIP_DESCENDANTS } from './skip-descendants';
+import { SKIP_DESCENDANTS, tickCounter } from './tick-api';
 
 afterEach(() => {
     vi.restoreAllMocks();
@@ -64,18 +62,21 @@ describe('registerCopy', () => {
 
 describe('a second copy of @mvtjs/utils', () => {
     it('shares the first copy\'s state, counters and SKIP_DESCENDANTS', async () => {
-        const second = await importSecondCopy<typeof import('./shared-state')>('./shared-state.ts');
-        const secondCounter = await importSecondCopy<typeof firstCounter>('./scene-counter.ts');
-        const secondSkip = await importSecondCopy<typeof import('./skip-descendants')>('./skip-descendants.ts');
+        const first = await importModule<{ readonly utilsState: unknown }>('./tick-api/shared-state.ts');
+        const second = await importSecondCopy<{ readonly utilsState: unknown }>('./tick-api/shared-state.ts');
+        const firstCounter = await importModule<{ readonly tickCounter: unknown }>('./tick-api/tick-counter.ts');
+        const secondCounter = await importSecondCopy<{ readonly tickCounter: unknown }>('./tick-api/tick-counter.ts');
+        const secondSkip = await importSecondCopy<{ readonly SKIP_DESCENDANTS: symbol }>('./tick-api/skip-descendants.ts');
         expect(secondCounter).not.toBe(firstCounter);
-        expect(second.utilsState).toBe(utilsState);
-        expect(secondCounter.sceneCounter).toBe(firstCounter.sceneCounter);
+        expect(second).not.toBe(first);
+        expect(second.utilsState).toBe(first.utilsState);
+        expect(secondCounter.tickCounter).toBe(tickCounter);
         expect(secondSkip.SKIP_DESCENDANTS).toBe(SKIP_DESCENDANTS);
     });
 
     it('loads silently: it is the same version', async () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        await importSecondCopy('./shared-state.ts');
+        await importSecondCopy('./tick-api/shared-state.ts');
         expect(warn).not.toHaveBeenCalled();
     });
 });
@@ -93,5 +94,10 @@ let copies = 0;
  */
 async function importSecondCopy<M>(path: string): Promise<M> {
     copies++;
-    return await import(/* @vite-ignore */ `${path}?copy=${copies}`) as M;
+    return await importModule<M>(`${path}?copy=${copies}`);
+}
+
+/** A module by path, past any barrel: the instance a second copy is compared with. */
+async function importModule<M>(path: string): Promise<M> {
+    return await import(/* @vite-ignore */ path) as M;
 }

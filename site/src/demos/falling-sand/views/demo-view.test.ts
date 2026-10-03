@@ -1,6 +1,6 @@
 import { type Container, Sprite } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, tickScene } from '@mvtjs/pixi';
+import { countTick, refreshView } from '@mvtjs/pixi';
 import {
     createDemoModel, type DemoModel, type GrainStorageKind, TANK_SIZES, type TankSize, type TankSizeKind,
 } from '../models';
@@ -30,8 +30,8 @@ interface Setup {
 function setup(options: SetupOptions): Setup {
     const { grainsView, storage = 'objects', tankSize = 'small', isReactive } = options;
     const model = createDemoModel({ ...(options.tank ?? TANK_SIZES[tankSize]), storage });
-    const view = DemoView({ model, grainsView, tankSize, isReactive, frameStats: () => undefined });
-    tickScene({ root: view, only: 'refresh' });
+    const view = DemoView({ model, grainsView, tankSize, isReactive, performanceMetrics: () => undefined });
+    refreshView(view);
     const grainsLayer = view.getChildByLabel('grains', true);
     if (grainsLayer === null) throw new Error('no grains layer');
     return { model, view, grainsLayer };
@@ -48,7 +48,7 @@ function play({ model, view }: Setup, fromFrame: number, toFrame: number): void 
         if (f === 30) model.flip();
         model.movePour(4 + ((f * 3) % 16), 3);
         model.update(1000 / 60);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
     }
 }
 
@@ -135,8 +135,8 @@ describe('demo view', () => {
         sprites.model.update(1000 / 60);
         pixels.model.update(1000 / 60);
 
-        const spriteReads = countReads(() => tickScene({ root: sprites.view, only: 'refresh' }));
-        const pixelReads = countReads(() => tickScene({ root: pixels.view, only: 'refresh' }));
+        const spriteReads = countTick(() => refreshView(sprites.view)).reads;
+        const pixelReads = countTick(() => refreshView(pixels.view)).reads;
 
         expect(pixels.model.grains.length).toBeGreaterThan(pixels.model.grainCount);
         expect(pixelReads).toBe(spriteReads);
@@ -174,11 +174,11 @@ describe('demo view', () => {
             expect(countLit(readPixels(grainsLayer))).toBe(model.grainCount);
 
             model.clear();
-            tickScene({ root: view, only: 'refresh' });
+            refreshView(view);
             expect(countLit(readPixels(grainsLayer))).toBe(0);
 
             model.reset();
-            tickScene({ root: view, only: 'refresh' });
+            refreshView(view);
             expect(countLit(readPixels(grainsLayer))).toBe(model.grainCount);
         });
 

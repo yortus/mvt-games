@@ -123,7 +123,7 @@ export function createEditorPanel(): EditorPanel {
         // Globals hint banner
         globalsHint = document.createElement('div');
         globalsHint.className = 'pg-editor-globals';
-        globalsHint.textContent = 'Available: Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle, setTickMethods, SKIP_DESCENDANTS, watch, setBackground. View code may also use JSX, with List, Switch and Match';
+        globalsHint.textContent = 'Available: Container, Graphics, Text, Sprite, Texture, Rectangle, TextStyle, setUpdate, setRefresh, SKIP_DESCENDANTS, watch, setBackground. View code may also use JSX, with List, Switch and Match';
         container.appendChild(globalsHint);
 
         // Tab bar

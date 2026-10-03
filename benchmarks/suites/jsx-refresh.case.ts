@@ -1,7 +1,7 @@
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { JsxFactory } from '@mvtjs/utils/jsx';
 import { jsx as pixiJsx } from '@mvtjs/pixi/jsx';
-import { setTickMethods, tickScene } from '@mvtjs/pixi';
+import { refreshView, setRefresh } from '@mvtjs/pixi';
 import { readParams, report, timeFrames } from '../harness/measure';
 
 // Measured file for the `jsx-refresh` suite: microseconds per frame to change
@@ -38,7 +38,7 @@ report({
     usPerFrame: timeFrames(() => {
         tick++;
         changeItems(tick);
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
     }),
 });
 
@@ -106,97 +106,81 @@ function createHandWrittenKind(kind: number, item: ItemModel): Container {
     switch (kind) {
         case 0: {
             const view = new Container();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 1: {
             const view = new Sprite();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 2: {
             const view = new Graphics();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 3: {
             const view = new Text();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 4: {
             const view = new BitmapText();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 5: {
             const view = new HTMLText();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         case 6: {
             const view = new TilingSprite();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
         default: {
             const view = new NineSliceSprite({ texture: Texture.EMPTY });
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
@@ -222,33 +206,27 @@ function createHandWrittenView(shape: number, item: ItemModel): Container {
         case 0: {
             const view = new Container();
             if (scene === 'uniform') {
-                setTickMethods(view, {
-                    refresh: () => {
-                        view.x = item.x;
-                        view.y = item.y;
-                        view.alpha = item.alpha;
-                    },
+                setRefresh(view, () => {
+                    view.x = item.x;
+                    view.y = item.y;
+                    view.alpha = item.alpha;
                 });
             }
             else {
-                setTickMethods(view, {
-                    refresh: () => {
-                        view.x = item.x;
-                        view.y = item.y;
-                    },
+                setRefresh(view, () => {
+                    view.x = item.x;
+                    view.y = item.y;
                 });
             }
             return view;
         }
         case 1: {
             const view = new Container();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    view.alpha = item.alpha;
-                    view.rotation = item.rotation;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                view.alpha = item.alpha;
+                view.rotation = item.rotation;
             });
             return view;
         }
@@ -256,46 +234,38 @@ function createHandWrittenView(shape: number, item: ItemModel): Container {
             const view = new Sprite(TEXTURE_A);
             let shownTint = NaN;
             const shownWidth = new Float64Array(1).fill(NaN);
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    if (item.tint !== shownTint) view.tint = shownTint = item.tint;
-                    if (item.width !== shownWidth[0]) view.width = shownWidth[0] = item.width;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                if (item.tint !== shownTint) view.tint = shownTint = item.tint;
+                if (item.width !== shownWidth[0]) view.width = shownWidth[0] = item.width;
             });
             return view;
         }
         case 3: {
             const view = new Sprite();
             let shownTexture: Texture | undefined;
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    if (item.texture !== shownTexture) view.texture = shownTexture = item.texture;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                if (item.texture !== shownTexture) view.texture = shownTexture = item.texture;
             });
             return view;
         }
         case 4: {
             const view = new Container();
-            setTickMethods(view, {
-                refresh: () => {
-                    view.scale.set(item.scale);
-                    view.pivot.x = item.pivotX;
-                },
+            setRefresh(view, () => {
+                view.scale.set(item.scale);
+                view.pivot.x = item.pivotX;
             });
             return view;
         }
         default: {
             const view = new Graphics();
             let shownTint = NaN;
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = item.x;
-                    view.y = item.y;
-                    if (item.tint !== shownTint) view.tint = shownTint = item.tint;
-                },
+            setRefresh(view, () => {
+                view.x = item.x;
+                view.y = item.y;
+                if (item.tint !== shownTint) view.tint = shownTint = item.tint;
             });
             return view;
         }

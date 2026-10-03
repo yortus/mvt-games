@@ -1,15 +1,21 @@
 /** @jsxImportSource @mvtjs/pixi/jsx */
 
 import { type Container, type Graphics, Rectangle, Text, type TextStyleOptions } from 'pixi.js';
-import type { FrameStatKind, FrameStats } from '@mvtjs/pixi';
+import type { MetricKind, PerformanceMetrics } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
 export interface PerfmonViewBindings {
-    /** The stats to show, or undefined where there are none (e.g. rendering a thumbnail). */
-    frameStats: () => FrameStats | undefined;
+    /** The metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
+    performanceMetrics: () => PerformanceMetrics | undefined;
+    /**
+     * Metrics the host cannot measure honestly, shown as `n/a`: `reads` where
+     * the views do not count their reads (`addReads`), which would otherwise
+     * show a false zero. Read once. None by default.
+     */
+    unmeasured?: readonly MetricKind[];
 }
 
 /** Size of the panel, for laying it out. */
@@ -29,29 +35,30 @@ export const PERFMON_INFO_HEIGHT = 256;
 // ---------------------------------------------------------------------------
 
 /**
- * A small panel of frame timing and scene work, each row with a sparkline of
- * recent values. FPS comes first; every row below the "per frame" divider is
- * per frame:
+ * A small panel of performance metrics, each row with a sparkline of recent
+ * values. FPS comes first; every row below the "per frame" divider is per
+ * frame:
  *
  * - `CPU`, `GPU`: milliseconds, averaged over the window (GPU: the median).
  * - `Reads`: values the views read (e.g. `21K`), for scenes that count them.
- * - `Methods`: update and refresh methods the scene passes called.
- * - `Rebuilds`: memoised walks the scene passes rebuilt, which is the scene's
- *   churn; zero in a steady scene.
- * - `Visits`: nodes the scene passes visited rebuilding those walks, which is
- *   what the churn cost.
+ * - `Methods`: update and refresh methods called.
+ * - `Rebuilds`: method lists rebuilt, which is the scene's churn; zero in a
+ *   steady scene.
+ * - `Visits`: node visits made rebuilding those method lists, which is what
+ *   the churn cost.
  *
- * The counts come from one frame sampled in each window. Each value is `n/a`,
- * and its row dimmed, when the stats were made without the counter it needs.
- * CPU and GPU sparklines are scaled to at least one 60fps frame (16.7 ms),
- * marked by a faint line.
+ * The counts come from one frame sampled in each window. A metric the host
+ * lists as `unmeasured`, and the GPU where it cannot be timed, shows `n/a`,
+ * its row dimmed. CPU and GPU sparklines are scaled to at least one 60fps
+ * frame (16.7 ms), marked by a faint line.
  *
  * The (i) button on the divider opens a card explaining all this, which a tap
- * closes. Its text describes `createFrameStats`' default window and history
- * length. The GPU figure is an upper bound: see `FrameStats.gpuMs` for what it
- * includes, and why some drivers overstate it.
+ * closes. Its text describes `createPerformanceMetrics`' default window and
+ * history length. The GPU figure is an upper bound: see
+ * `PerformanceMetrics.gpuMs` for what it includes, and why some drivers
+ * overstate it.
  *
- * The stats publish a few times a second, so the text and sparklines are
+ * The metrics publish a few times a second, so the text and sparklines are
  * rebuilt only then; other frames cost one comparison per row.
  */
 export function PerfmonView(bindings: PerfmonViewBindings): Container {
@@ -63,7 +70,7 @@ export function PerfmonView(bindings: PerfmonViewBindings): Container {
     return (
         <container label="perfmon">
             <graphics ref={drawPanel} />
-            {statRow(bindings, 'fps', 0)}
+            {metricRow(bindings, 'fps', 0)}
             <container y={rowY(1)}>
                 <text text="per frame" x={LABEL_X} y={2} style={CAPTION_STYLE} />
                 <graphics ref={drawDivider} />
@@ -80,12 +87,12 @@ export function PerfmonView(bindings: PerfmonViewBindings): Container {
                     <graphics ref={drawInfoButton} />
                 </container>
             </container>
-            {statRow(bindings, 'cpu', 2)}
-            {statRow(bindings, 'gpu', 3)}
-            {statRow(bindings, 'reads', 4)}
-            {statRow(bindings, 'methods', 5)}
-            {statRow(bindings, 'rebuilds', 6)}
-            {statRow(bindings, 'visits', 7)}
+            {metricRow(bindings, 'cpuMs', 2)}
+            {metricRow(bindings, 'gpuMs', 3)}
+            {metricRow(bindings, 'reads', 4)}
+            {metricRow(bindings, 'methodCalls', 5)}
+            {metricRow(bindings, 'methodListRebuilds', 6)}
+            {metricRow(bindings, 'rebuildNodeVisits', 7)}
             <container
                 label="perfmon-info"
                 y={PERFMON_HEIGHT - PERFMON_INFO_HEIGHT}
@@ -126,34 +133,34 @@ const DIM_ALPHA = 0.4;
 const CAPTION_COLOR = 0x8b949e;
 const INFO_TEXT_COLOR = 0xc9d1d9;
 
-const ROW_LABELS: Readonly<Record<FrameStatKind, string>> = {
+const ROW_LABELS: Readonly<Record<MetricKind, string>> = {
     fps: 'FPS',
-    cpu: 'CPU',
-    gpu: 'GPU',
+    cpuMs: 'CPU',
+    gpuMs: 'GPU',
     reads: 'Reads',
-    methods: 'Methods',
-    rebuilds: 'Rebuilds',
-    visits: 'Visits',
+    methodCalls: 'Methods',
+    methodListRebuilds: 'Rebuilds',
+    rebuildNodeVisits: 'Visits',
 };
-const ROW_COLORS: Readonly<Record<FrameStatKind, number>> = {
+const ROW_COLORS: Readonly<Record<MetricKind, number>> = {
     fps: 0x7ee787,
-    cpu: 0x79c0ff,
-    gpu: 0xffa657,
+    cpuMs: 0x79c0ff,
+    gpuMs: 0xffa657,
     reads: 0xd2a8ff,
-    methods: 0xf2cc60,
-    rebuilds: 0xff7b72,
-    visits: 0xffa198,
+    methodCalls: 0xf2cc60,
+    methodListRebuilds: 0xff7b72,
+    rebuildNodeVisits: 0xffa198,
 };
 
 /** What each row means, for the info card; the label is added in its colour. */
-const ROW_INFO: Readonly<Record<FrameStatKind, string>> = {
+const ROW_INFO: Readonly<Record<MetricKind, string>> = {
     fps: 'frames drawn per second.',
-    cpu: 'main-thread ms, tick to end of render. Faint line: 16.7 ms (60 fps).',
-    gpu: 'ms on the GPU, the median. An upper bound: some drivers count waiting.',
+    cpuMs: 'main-thread ms, tick to end of render. Faint line: 16.7 ms (60 fps).',
+    gpuMs: 'ms on the GPU, the median. An upper bound: some drivers count waiting.',
     reads: 'values the views read.',
-    methods: 'update and refresh calls.',
-    rebuilds: 'walks the scene passes rebuilt as the scene changed; 0 when steady.',
-    visits: 'nodes visited doing those rebuilds.',
+    methodCalls: 'update and refresh calls.',
+    methodListRebuilds: 'method lists rebuilt as the scene changed; 0 when steady.',
+    rebuildNodeVisits: 'node visits making those rebuilds.',
 };
 
 const CAPTION_STYLE = { fill: CAPTION_COLOR, fontSize: 10, fontFamily: 'monospace' };
@@ -162,8 +169,9 @@ function rowY(rowIndex: number): number {
     return PADDING + rowIndex * ROW_PITCH;
 }
 
-function statRow(bindings: PerfmonViewBindings, kind: FrameStatKind, rowIndex: number): Container {
+function metricRow(bindings: PerfmonViewBindings, kind: MetricKind, rowIndex: number): Container {
     const style = { fill: ROW_COLORS[kind], fontSize: 12, fontFamily: 'monospace' };
+    const isMeasured = bindings.unmeasured?.includes(kind) !== true;
 
     // The text shown for the last published sample, and whether it was
     // `n/a`, updated only when a new one arrives.
@@ -180,37 +188,34 @@ function statRow(bindings: PerfmonViewBindings, kind: FrameStatKind, rowIndex: n
     );
 
     function refreshValue(row: Container): void {
-        const stats = bindings.frameStats();
-        const sample = stats?.sampleCount ?? -1;
+        const metrics = bindings.performanceMetrics();
+        const sample = metrics?.sampleCount ?? -1;
         if (sample === textSample) return;
         textSample = sample;
-        text = stats === undefined ? NO_VALUE : formatValue(kind, stats);
+        text = metrics === undefined ? NO_VALUE : isMeasured ? formatValue(kind, metrics) : NOT_MEASURED;
         row.alpha = text === NOT_MEASURED ? DIM_ALPHA : 1;
     }
 
     function refreshSparkline(g: Graphics): void {
-        const stats = bindings.frameStats();
-        const sample = stats?.sampleCount ?? -1;
+        const metrics = bindings.performanceMetrics();
+        const sample = metrics?.sampleCount ?? -1;
         if (sample === drawnSample) return;
         drawnSample = sample;
-        drawSparkline(g, kind, stats);
+        drawSparkline(g, kind, isMeasured ? metrics : undefined);
     }
 }
 
 const NO_VALUE = '--';
 const NOT_MEASURED = 'n/a';
 
-function formatValue(kind: FrameStatKind, stats: FrameStats): string {
-    if (kind === 'fps') return String(Math.round(stats.fps));
-    if (kind === 'cpu' || kind === 'gpu') {
-        const ms = kind === 'cpu' ? stats.cpuMs : stats.gpuMs;
+function formatValue(kind: MetricKind, metrics: PerformanceMetrics): string {
+    if (kind === 'fps') return String(Math.round(metrics.fps));
+    if (kind === 'cpuMs' || kind === 'gpuMs') {
+        const ms = metrics[kind];
         if (ms === undefined) return NOT_MEASURED;
         return ms < 99.95 ? `${ms.toFixed(1)} ms` : `${Math.round(ms)} ms`;
     }
-    const count = kind === 'reads'
-        ? stats.readsPerFrame
-        : kind === 'methods' ? stats.methodsPerFrame : kind === 'rebuilds' ? stats.rebuildsPerFrame : stats.visitsPerFrame;
-    return count === undefined ? NOT_MEASURED : formatCount(count);
+    return formatCount(metrics[kind]);
 }
 
 /** A count in at most four characters: `950`, `9.5K`, `21K`, `1.2M`. */
@@ -222,27 +227,27 @@ function formatCount(count: number): string {
     return `${Math.round(count / 1e6)}M`;
 }
 
-function drawSparkline(g: Graphics, kind: FrameStatKind, stats: FrameStats | undefined): void {
+function drawSparkline(g: Graphics, kind: MetricKind, metrics: PerformanceMetrics | undefined): void {
     g.clear();
     g.rect(0, 0, GRAPH_WIDTH, GRAPH_HEIGHT).fill({ color: 0xffffff, alpha: 0.06 });
-    if (stats === undefined) return;
+    if (metrics === undefined) return;
 
-    const count = stats.historyLength;
+    const count = metrics.historyLength;
     // Frame times are scaled to include a frame's budget; counts to their own peak.
-    let max = kind === 'fps' ? 60 : kind === 'cpu' || kind === 'gpu' ? FRAME_BUDGET_MS : 0;
+    let max = kind === 'fps' ? 60 : kind === 'cpuMs' || kind === 'gpuMs' ? FRAME_BUDGET_MS : 0;
     for (let i = 0; i < count; i++) {
-        const value = stats.historyAt(kind, i);
+        const value = metrics.historyAt(kind, i);
         if (value > max) max = value;
     }
 
-    if (kind === 'cpu' || kind === 'gpu') {
+    if (kind === 'cpuMs' || kind === 'gpuMs') {
         const budgetY = GRAPH_HEIGHT - (FRAME_BUDGET_MS / max) * GRAPH_HEIGHT;
         g.rect(0, budgetY, GRAPH_WIDTH, 1).fill({ color: 0xffffff, alpha: 0.2 });
     }
 
     const barWidth = GRAPH_WIDTH / count;
     for (let i = 0; i < count; i++) {
-        const value = stats.historyAt(kind, i);
+        const value = metrics.historyAt(kind, i);
         if (!(value > 0)) continue; // NaN (no value yet) or zero
         const height = Math.max(1, (value / max) * GRAPH_HEIGHT);
         g.rect(i * barWidth, GRAPH_HEIGHT - height, barWidth, height);
@@ -295,8 +300,8 @@ function infoText(): Container {
         b: { fill: 0xe6edf3, fontWeight: 'bold' },
         dim: { fill: CAPTION_COLOR },
     };
-    for (let i = 0; i < STAT_KINDS.length; i++) {
-        tagStyles[STAT_KINDS[i]] = { fill: ROW_COLORS[STAT_KINDS[i]], fontWeight: 'bold' };
+    for (let i = 0; i < METRIC_KINDS.length; i++) {
+        tagStyles[METRIC_KINDS[i]] = { fill: ROW_COLORS[METRIC_KINDS[i]], fontWeight: 'bold' };
     }
     const style: TextStyleOptions = {
         fill: INFO_TEXT_COLOR,
@@ -317,24 +322,24 @@ function infoText(): Container {
     }
 }
 
-const STAT_KINDS: readonly FrameStatKind[] = ['fps', 'cpu', 'gpu', 'reads', 'methods', 'rebuilds', 'visits'];
+const METRIC_KINDS: readonly MetricKind[] = ['fps', 'cpuMs', 'gpuMs', 'reads', 'methodCalls', 'methodListRebuilds', 'rebuildNodeVisits'];
 
 /** The card's paragraphs, each with the space above it. */
 const INFO_PARAGRAPHS: readonly (readonly [gapAbove: number, text: string])[] = [
-    [0, '<b>Frame stats</b>, updated 4 times a second. Graphs show the last 15 s. <dim>Tap to close.</dim>'],
-    [INFO_PARAGRAPH_GAP, statInfo('fps')],
+    [0, '<b>Performance metrics</b>, updated 4 times a second. Graphs show the last 15 s. <dim>Tap to close.</dim>'],
+    [INFO_PARAGRAPH_GAP, metricInfo('fps')],
     [INFO_HEADING_GAP, 'Per frame, averaged:'],
-    [INFO_PARAGRAPH_GAP, statInfo('cpu')],
-    [INFO_PARAGRAPH_GAP, statInfo('gpu')],
+    [INFO_PARAGRAPH_GAP, metricInfo('cpuMs')],
+    [INFO_PARAGRAPH_GAP, metricInfo('gpuMs')],
     [INFO_HEADING_GAP, 'Per frame, in one sampled frame:'],
-    [INFO_PARAGRAPH_GAP, statInfo('reads')],
-    [INFO_PARAGRAPH_GAP, statInfo('methods')],
-    [INFO_PARAGRAPH_GAP, statInfo('rebuilds')],
-    [INFO_PARAGRAPH_GAP, statInfo('visits')],
+    [INFO_PARAGRAPH_GAP, metricInfo('reads')],
+    [INFO_PARAGRAPH_GAP, metricInfo('methodCalls')],
+    [INFO_PARAGRAPH_GAP, metricInfo('methodListRebuilds')],
+    [INFO_PARAGRAPH_GAP, metricInfo('rebuildNodeVisits')],
     [INFO_HEADING_GAP, '<dim>n/a: not measured in this demo.</dim>'],
 ];
 
-function statInfo(kind: FrameStatKind): string {
+function metricInfo(kind: MetricKind): string {
     return `<${kind}>${ROW_LABELS[kind]}</${kind}> ${ROW_INFO[kind]}`;
 }
 

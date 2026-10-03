@@ -25,9 +25,7 @@
  * The design is explained in `design-notes.md`, beside this file.
  */
 
-import { readCounter } from '../read-counter';
-import { setTickMethods } from '../scene-passes';
-import { SKIP_DESCENDANTS } from '../skip-descendants';
+import { setNodeRefresh, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------
@@ -143,14 +141,14 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
         const slotItems: (T | undefined)[] = [];
 
         // The source and its length, read once per frame by the list's own
-        // refresh method, which the refresh scene pass runs before any slot,
+        // refresh method, which `refreshView` calls before any slot's,
         // then shared by every slot's presence check. Not read at construction: like every
         // element, the list is inert until its first refresh, so an ancestor that
         // skips it keeps `items` from running.
         let currentSource: ListSource<T> = EMPTY_SOURCE;
         let currentLength = 0;
 
-        setTickMethods(container, { refresh: fitToLength });
+        setNodeRefresh(container, fitToLength);
         // Detached slots are not the container's children, so destroying the
         // container would not reach them.
         target.onDestroyed(container, destroyDetachedSlots);
@@ -168,12 +166,12 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
             // slot, which every one of them runs this frame. Counted here, once,
             // rather than in the slot's refresh, where even an untaken branch
             // costs V8's inlining budget.
-            if (readCounter.isCounting) readCounter.count += (1 + attachedCount);
+            if (tickCounter.isCounting) tickCounter.reads += (1 + attachedCount);
         }
 
         function detachTail(): void {
-            // Removed during a scene pass, which skips a node detached earlier
-            // in the same scene pass, so none of these refresh this frame.
+            // Removed during `refreshView`, which skips a node detached earlier
+            // in the same call, so none of these refresh this frame.
             target.detachTail(container, attachedCount - currentLength);
             // Forget the detached slots' items, which would otherwise stay alive.
             slotItems.length = attachedCount = currentLength;
@@ -181,8 +179,8 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
 
         function attachSlot(index: number): void {
             const slot = index < slots.length ? slots[index] : buildSlot(index);
-            // Attached during a scene pass, which refreshes it before it returns,
-            // so it is correct on the frame it appears.
+            // Attached during `refreshView`, which refreshes it before it
+            // returns, so it is correct on the frame it appears.
             target.append(container, slot);
             attachedCount++;
         }
@@ -212,18 +210,16 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
         function buildPlaceholder(index: number): N {
             const placeholder = target.createGroup();
             setVisible(placeholder, false);
-            setTickMethods(placeholder, {
-                refresh: () => {
-                    const item = index < currentLength ? currentSource.at(index) : undefined;
-                    if (item === undefined) return;
-                    const slot = buildItemView(index, item);
-                    slots[index] = slot;
-                    // Swapped during a scene pass, as an attached slot is: the scene pass
-                    // skips the detached placeholder, and refreshes the new slot before
-                    // it returns.
-                    target.replace(container, placeholder, slot);
-                    target.destroy(placeholder);
-                },
+            setNodeRefresh(placeholder, () => {
+                const item = index < currentLength ? currentSource.at(index) : undefined;
+                if (item === undefined) return;
+                const slot = buildItemView(index, item);
+                slots[index] = slot;
+                // Swapped during `refreshView`, as an attached slot is: it skips
+                // the detached placeholder, and refreshes the new slot before it
+                // returns.
+                target.replace(container, placeholder, slot);
+                target.destroy(placeholder);
             });
             return placeholder;
         }
@@ -244,23 +240,21 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
             // visible, as every JSX target's nodes do. Unchanged while detached, as is
             // the slot's visibility, so the two still agree when it is reattached.
             let wasPresent = true;
-            setTickMethods(slot, {
-                refresh: (itemViewRefresh) => {
-                    const item = index < currentLength ? currentSource.at(index) : undefined;
-                    slotItems[index] = item;
-                    const isPresent = item !== undefined;
-                    // Written only on a change of presence. The item view may hide an
-                    // occupied slot with a `visible` binding of its own; writing
-                    // visibility back to true every frame would undo that and re-hide
-                    // it each frame, and on Pixi every such flip rebuilds the render
-                    // group. It also keeps the steady-state path free of writes.
-                    if (isPresent !== wasPresent) {
-                        wasPresent = isPresent;
-                        setVisible(slot, isPresent);
-                    }
-                    if (!isPresent) return SKIP_DESCENDANTS;
-                    return itemViewRefresh?.();
-                },
+            setNodeRefresh(slot, (itemViewRefresh) => {
+                const item = index < currentLength ? currentSource.at(index) : undefined;
+                slotItems[index] = item;
+                const isPresent = item !== undefined;
+                // Written only on a change of presence. The item view may hide an
+                // occupied slot with a `visible` binding of its own; writing
+                // visibility back to true every frame would undo that and re-hide
+                // it each frame, and on Pixi every such flip rebuilds the render
+                // group. It also keeps the steady-state path free of writes.
+                if (isPresent !== wasPresent) {
+                    wasPresent = isPresent;
+                    setVisible(slot, isPresent);
+                }
+                if (!isPresent) return SKIP_DESCENDANTS;
+                return itemViewRefresh?.();
             });
             return slot;
         }

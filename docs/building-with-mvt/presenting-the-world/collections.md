@@ -178,7 +178,7 @@ destroyed.
 ### Empty slots cost one check, not one per binding
 
 `<List>` owns slot visibility. It hides any slot whose `at(i)` is
-`undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so the refresh scene pass
+`undefined`, and an empty slot returns `SKIP_DESCENDANTS`, so `refreshView`
 skips its subtree and **the bindings above do not run for an empty slot.** That
 is also why `slot()` needs no null check: it is only called while the slot is
 occupied.
@@ -449,7 +449,7 @@ Keep an `items` getter allocation-free. It runs every frame:
 | Holding per-item cosmetic state in the slot's view when items move between slots | It follows the slot, not the item | A store keyed by item id, or by storage index for a `SlotList` (rule 2) |
 | `Map<id, state>` for that store | `update()` is a hot path | Array indexed by a dense integer id |
 | Guarding each binding in a slot | `<List>` already hides empty slots, and an empty slot skips its subtree via `SKIP_DESCENDANTS` | Let the list do it. `slot()` is only called while occupied |
-| Detaching a subtree to stop it refreshing | A structural change invalidates the memoised traversal | `visible={...}`, which returns `SKIP_DESCENDANTS` and invalidates nothing |
+| Detaching a subtree to stop it refreshing | A structural change clears the cached method lists | `visible={...}`, which returns `SKIP_DESCENDANTS` and invalidates nothing |
 | An allocating `items` getter | Runs every frame | Have the model maintain the collection |
 | Passing a value for a collection the model replaces | The list keeps reading the old one | Pass a function: `items={() => model.stars}` |
 | Expecting an exit animation from a removed item | Emptied slots hide instantly | Keep the item around: in the model with a `dying` timer, or with a `SlotList` release delay while a view model fades it |

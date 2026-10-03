@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countReads } from '../read-counter';
-import type { RefreshMethod } from '../scene-methods';
-import { SKIP_DESCENDANTS } from '../skip-descendants';
+import { countTick, type RefreshMethod, SKIP_DESCENDANTS } from '../tick-api';
 import { attributesOf, defineElements, element, event } from './attributes';
 import { createJsx, Fragment } from './create-jsx';
 import type { JsxTarget } from './jsx-target';
@@ -47,7 +45,7 @@ function refreshTree(node: FakeNode): void {
 }
 
 /**
- * A node's refresh method, read from the scene passes' private field. This
+ * A node's refresh method, read from the library's private field. This
  * file drives its fake tree with a walk of its own, and checks which
  * generated refresh method an element was given, so it reads the field the
  * library writes; nothing else outside the library should.
@@ -83,10 +81,6 @@ const fakeTarget: JsxTarget<FakeNode> = {
     listen: (node, eventName, handler) => {
         node.listeners[eventName] = handler;
         node.log.push(`listen ${eventName}`);
-    },
-    // Only the refresh scene pass: this file's tests use no update methods
-    tickScene: (options) => {
-        if (options.only !== 'update') refreshTree(options.root);
     },
 };
 
@@ -271,7 +265,7 @@ describe('createJsx', () => {
             for (const change of changes) {
                 change();
                 el.log.length = 0;
-                const reads = countReads(() => refreshTree(el));
+                const { reads } = countTick(() => refreshTree(el));
                 frames.push(`${el.log.join(' ')} | reads ${reads}`);
             }
             return frames;
@@ -328,7 +322,7 @@ describe('createJsx', () => {
             for (const change of changes) {
                 change();
                 el.log.length = 0;
-                const reads = countReads(() => refreshTree(el));
+                const { reads } = countTick(() => refreshTree(el));
                 frames.push(`${el.log.join(' ')} ${String(el.isShown)} | reads ${reads}`);
             }
 

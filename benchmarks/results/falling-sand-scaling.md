@@ -36,7 +36,7 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #region settled -->
 **Every grain settled: time per frame** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
-| Model, view | Grains | Moving grains | Model (µs) | Update scene pass (µs) | Refresh scene pass (µs) | Total (µs) | Refresh per grain (ns) | Reads per frame |
+| Model, view | Grains | Moving grains | Model (µs) | `updateView` (µs) | `refreshView` (µs) | Total (µs) | Refresh per grain (ns) | Reads per frame |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | objects, sprites | 1,000 | 0 | 0.24 | 0.58 ±9% | 41.1 | 41.9 | 41 | 4,040 |
 |  | 10,000 | 0 | 0.86 ±17% | 1.94 ±10% | 789 ±9% | 791 ±9% | 78.8 ±9% | 40,000 |
@@ -75,7 +75,7 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 <!-- #region flipping -->
 **Flipping every 3 seconds: time per frame** (median of 2 runs, or 3 where the first 2 disagreed by more than 5%, each in its own process; ± marks runs that disagreed by more than 5%)
 
-| Model, view | Grains | Moving grains | Model (µs) | Update scene pass (µs) | Refresh scene pass (µs) | Total (µs) | Refresh per grain (ns) | Reads per frame |
+| Model, view | Grains | Moving grains | Model (µs) | `updateView` (µs) | `refreshView` (µs) | Total (µs) | Refresh per grain (ns) | Reads per frame |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | objects, sprites | 1,000 | 304 | 45.9 | 1.06 ±48% | 51.4 | 98.9 | 51.4 | 4,040 |
 |  | 10,000 | 7,630 | 800 | 4.12 | 969 | 1,770 | 96.9 | 40,000 |

@@ -13,6 +13,9 @@
 
 import type { Container } from 'pixi.js';
 import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
+// Registers Pixi containers, so `refreshView` walks what this runtime builds,
+// and brings the `RendererViews` declaration with this entry's types.
+import '../container-mixin';
 import { pixiElements } from './pixi-elements';
 import { pixiTarget } from './pixi-target';
 

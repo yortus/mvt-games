@@ -9,10 +9,11 @@ afterEach(() => {
 describe('a second copy of @mvtjs/three', () => {
     it('shares the first copy\'s core, and wraps Object3D once', async () => {
         const add = Object3D.prototype.add;
+        const renderer = rendererOf(Object3D.prototype);
+        // Registering `Object3D.prototype` again would throw
         const second = await importCopy('second-copy');
         expect(second).not.toBe(first);
-        expect(second.tickScene).toBe(first.tickScene);
-        expect(second.setTickMethods).toBe(first.setTickMethods);
+        expect(rendererOf(Object3D.prototype)).toBe(renderer);
         expect(second.destroyObject).toBe(first.destroyObject);
         expect(second.onDestroyed).toBe(first.onDestroyed);
         expect(Object3D.prototype.add).toBe(add);
@@ -28,6 +29,11 @@ describe('a second copy of @mvtjs/three', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** The registration `updateView` and `refreshView` find on a prototype: a private field, read only here. */
+function rendererOf(prototype: object): unknown {
+    return (prototype as { _mvtRenderer?: unknown })._mvtRenderer;
+}
 
 /**
  * A fresh instance of the module, as a second copy of the package would be: a

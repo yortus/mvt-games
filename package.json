@@ -19,7 +19,7 @@
         "prebuild:site": "npm run generate-refresh-copies",
         "build:site": "tsc -b && npm run build -w site",
         "build:docs": "npm run build -w docs",
-        "build:packages": "npm run build -w packages",
+        "build:packages": "npm run build -w packages && node checks/scripts/published-view-types.ts",
         "docs:dev": "npm run dev -w docs",
         "preview": "npm run preview -w site",
         "lint": "eslint .",

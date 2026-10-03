@@ -50,7 +50,7 @@ function BulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.x(), bindings.y());
     }
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 }
 ```
@@ -83,10 +83,10 @@ MVT imposes two architectural constraints on views:
    rules, or decide what happens next. That belongs in models.
 
 Everything else - whether you write views as functions or classes, Pixi.js
-containers or DOM elements, refresh methods found by a scene walk or manual
-call sites - is a style choice. The examples on this page use this repo's
+containers or DOM elements, refresh methods found by walking the view tree or
+manual call sites - is a style choice. The examples on this page use this repo's
 conventions (a view is a function `XxxView(bindings)` returning a Pixi
-container, with a refresh method set by `setTickMethods`). See the
+container, with a refresh method set by `setRefresh`). See the
 [Style Guide](../../reference/style-guide.md#views-and-bindings) for this
 repo's specific conventions.
 
@@ -159,17 +159,18 @@ function BulletView(bindings: BulletViewBindings): Container {
         view.position.set(bindings.x(), bindings.y());
     }
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 }
 ```
 
-`setTickMethods`, from `@mvtjs/pixi`, sets the view's per-frame steps on
-its container. Setting the refresh method once at construction means the
-view's `refresh()` runs every frame, as long as the view is in the scene: the
-host's `tickScene` call finds it wherever it sits in the tree, with no parent
-passing calls on. See [The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene) for how the scene passes are
-driven.
+`setRefresh`, from `@mvtjs/pixi`, sets the view's refresh step on its
+container. Setting the refresh method once at construction means the view's
+`refresh()` runs every frame, as long as the view is in the scene: the host's
+`refreshView` call finds it wherever it sits in the tree, with no parent
+passing calls on. See
+[The Game Loop](../the-game-loop.md#in-this-project-updating-and-refreshing-views)
+for how the host calls `updateView` and `refreshView`.
 
 `refresh()` may set the view's own `visible`, as above; nothing about hiding a
 view stops its refresh method running, so it can show itself again next frame. To also
@@ -264,10 +265,10 @@ Ticker loop:
 ```
 
 In this project, that step is the view's update method
-(`setTickMethods(view, { update, refresh })`, or the `onUpdate` attribute in
-JSX), run by the update scene pass before any refresh method. Like the refresh
-method, it is found wherever the view sits in the tree, so no parent has to
-forward `update(deltaMs)` to it.
+(`setUpdate(view, update)`, or the `onUpdate` attribute in JSX), called by
+`updateView` before any refresh method. Like the refresh method, it is found
+wherever the view sits in the tree, so no parent has to forward
+`update(deltaMs)` to it.
 
 When the presentation logic grows complex enough to warrant separate testing,
 it can be extracted into a **view model** - a technique borrowed from the

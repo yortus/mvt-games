@@ -1,6 +1,6 @@
 import { type Container, Container as ContainerClass, Rectangle } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { setTickMethods, tickScene } from '@mvtjs/pixi';
+import { refreshView, setRefresh, setUpdate } from '@mvtjs/pixi';
 import { newProjectTemplate, presets } from '../presets';
 import { jsxGlobals, transpile } from './compile';
 
@@ -30,13 +30,13 @@ describe('sandbox compile', () => {
         const createView = runView(js);
 
         const view = createView(model);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(view.x).toBe(5);
         expect(view.children.length).toBe(2);
         expect(view.children[1].children.map((c) => c.label)).toEqual(['a', 'b']);
 
         model.x = 7;
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(view.x).toBe(7);
     });
 
@@ -52,7 +52,7 @@ describe('sandbox compile', () => {
             }
         `, 'view');
         const view = runView(js)(model);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(view.children.map((c) => c.x)).toEqual([1, 2, 3]);
     });
 
@@ -61,12 +61,12 @@ describe('sandbox compile', () => {
         // Each LightView is [dim, lit]; the housing is child 0, then red, yellow, green.
         const isLit = (light: number): boolean => view.children[1 + light].children[1].visible;
 
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(model.phase).toBe('green');
         expect([isLit(0), isLit(1), isLit(2)]).toEqual([false, false, true]);
 
         model.update(3000);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(model.phase).toBe('yellow');
         expect([isLit(0), isLit(1), isLit(2)]).toEqual([false, true, false]);
     });
@@ -82,24 +82,24 @@ describe('sandbox compile', () => {
         // Children: the shadow, then the ball's container of [free, held].
         const [shadow, ball] = view.children;
 
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(ball.x).toBe(model.x);
         expect(ball.y).toBe(model.y);
         expect(shadow.x).toBe(model.x);
 
         model.update(100);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(ball.y).toBe(model.y);
         expect([ball.children[0].visible, ball.children[1].visible]).toEqual([true, false]);
 
         model.grab(model.x, model.y);
-        tickScene({ root: view, only: 'refresh' });
+        refreshView(view);
         expect(model.held).toBe(true);
         expect([ball.children[0].visible, ball.children[1].visible]).toEqual([false, true]);
     });
 
     it('starts a new project from a model and view that run', () => {
-        const globals = { ...jsxGlobals, Container: ContainerClass, setTickMethods };
+        const globals = { ...jsxGlobals, Container: ContainerClass, setUpdate, setRefresh };
         const names = Object.keys(globals);
         const values = Object.values(globals);
         const createModel = new Function(...names, `${transpile(newProjectTemplate.modelCode, 'model')}\nreturn createModel;`)(...values);
@@ -110,7 +110,7 @@ describe('sandbox compile', () => {
         // The sandbox rejects a view that is not a Container.
         expect(view).toBeInstanceOf(ContainerClass);
         model.update(16);
-        tickScene({ root: view as Container, only: 'refresh' });
+        refreshView(view as Container);
     });
 
     it('leaves JSX out of model code', () => {
@@ -122,7 +122,7 @@ describe('sandbox compile', () => {
 function runPreset<M>(id: string): { model: M; view: Container } {
     const preset = presets.find((p) => p.id === id);
     if (preset === undefined) throw new Error(`preset missing: ${id}`);
-    const globals = { ...jsxGlobals, Rectangle, setTickMethods, setBackground: () => undefined };
+    const globals = { ...jsxGlobals, Rectangle, setUpdate, setRefresh, setBackground: () => undefined };
     const names = Object.keys(globals);
     const values = Object.values(globals);
     const createModel = new Function(...names, `${transpile(preset.modelCode, 'model')}\nreturn createModel;`)(...values);

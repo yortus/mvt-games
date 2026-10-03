@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countReads, readCounter } from '../../read-counter';
-import { hasRefresh, setTickMethods } from '../../scene-passes';
-import { SKIP_DESCENDANTS } from '../../skip-descendants';
+import { countTick, hasNodeRefresh, refreshNode, setNodeRefresh, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../tick-api';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
 import type { JsxTarget } from '../jsx-target';
@@ -59,7 +57,9 @@ export interface ConformanceFixture<N extends object> {
  * `visible` first), `<List>` and `<Switch>`, each run twice: with
  * the shared copy of the refresh code, as a shape's first elements get, and
  * with every shape's own copy, which assigns properties by name. Call it
- * inside a test file.
+ * inside a test file. The suite updates and refreshes the target's nodes with
+ * `updateView` and `refreshView`, so the module that registers the target's
+ * renderer (`registerRenderer`) must be loaded first.
  */
 export function describeJsxConformance<N extends object>(fixture: ConformanceFixture<N>): void {
     for (const ownCopyAt of [16, 1]) {
@@ -91,7 +91,7 @@ interface SuiteContext<N extends object> {
 
 function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): void {
     const { target, everyFrame, onChange, onChangeNumber } = fixture;
-    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
+    const refresh = refreshNode;
     /** A fragment of `children`, nested as JSX children may be. */
     const group = (children?: unknown): N => jsx(Fragment, { children });
 
@@ -293,8 +293,8 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
             refresh(el);
             expect(deltas).toEqual([]);
 
-            target.tickScene({ root: el, deltaMs: 16, only: 'update' });
-            target.tickScene({ root: el, deltaMs: 17, only: 'update' });
+            updateNode(el, 16);
+            updateNode(el, 17);
             expect(deltas).toEqual([16, 17]);
         });
 
@@ -324,7 +324,7 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
                 let calls = 0;
                 const el = jsx(everyFrame.tag, { onDestroyed: () => void calls++ });
 
-                expect(hasRefresh(el)).toBe(false);
+                expect(hasNodeRefresh(el)).toBe(false);
                 refresh(el);
                 expect(calls).toBe(0);
             });
@@ -348,19 +348,19 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
                 });
                 const withChange = jsx(onChange.tag, { [onChange.key]: () => onChange.values[0], children: el });
 
-                expect(countReads(() => refresh(withChange))).toBe(3);
+                expect(countTick(() => refresh(withChange)).reads).toBe(3);
                 isShown = false;
-                expect(countReads(() => refresh(withChange))).toBe(2);
+                expect(countTick(() => refresh(withChange)).reads).toBe(2);
             });
 
             it('counts nothing while off', () => {
                 const el = jsx(everyFrame.tag, { [everyFrame.key]: () => everyFrame.values[0] });
-                const before = readCounter.count;
+                const before = tickCounter.reads;
 
                 refresh(el);
 
-                expect(readCounter.isCounting).toBe(false);
-                expect(readCounter.count).toBe(before);
+                expect(tickCounter.isCounting).toBe(false);
+                expect(tickCounter.reads).toBe(before);
             });
         });
 
@@ -399,7 +399,7 @@ function itemsWithIds(...ids: number[]): Item[] {
 
 function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
-    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
+    const refresh = refreshNode;
     const [labelA, labelB] = onChange.values;
     /** The value an item view shows: the probe's first value for even ids, its second for odd. */
     const labelFor = (id: number): unknown => (id % 2 === 0 ? labelA : labelB);
@@ -758,7 +758,7 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
                 items,
                 children: () => {
                     const view = target.createGroup();
-                    setTickMethods(view, { refresh: () => void refreshes++ });
+                    setNodeRefresh(view, () => void refreshes++);
                     return view;
                 },
             });
@@ -819,7 +819,7 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
             t.items[1] = undefined;
 
             // `items` + 3 presence checks + a binding for each of the 2 present items
-            expect(countReads(() => refresh(t.list))).toBe(1 + 3 + 2);
+            expect(countTick(() => refresh(t.list)).reads).toBe(1 + 3 + 2);
         });
 
         it('builds into a container it is given', () => {
@@ -853,7 +853,7 @@ interface Boss { hp: number; isEnraged: boolean }
 
 function describeSwitch<N extends object>({ fixture, jsx, Switch, Match }: SuiteContext<N>): void {
     const { target, onChange } = fixture;
-    const refresh = (node: N): void => target.tickScene({ root: node, only: 'refresh' });
+    const refresh = refreshNode;
     const [valueA, valueB] = onChange.values;
 
     /** The motivating case: branches whose bindings are only valid when they apply. */
@@ -957,11 +957,11 @@ function describeSwitch<N extends object>({ fixture, jsx, Switch, Match }: Suite
             });
             refresh(sw);
 
-            expect(countReads(() => refresh(sw))).toBe(3);
+            expect(countTick(() => refresh(sw)).reads).toBe(3);
             isSecond = false;
-            expect(countReads(() => refresh(sw))).toBe(3);
+            expect(countTick(() => refresh(sw)).reads).toBe(3);
             isFirst = true;
-            expect(countReads(() => refresh(sw))).toBe(2);
+            expect(countTick(() => refresh(sw)).reads).toBe(2);
         });
 
         it('never restructures: switching only changes visibility', () => {

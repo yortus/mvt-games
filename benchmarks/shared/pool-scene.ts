@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { createSlotList, type Slot } from '@mvtjs/utils';
 import { jsx, List } from '@mvtjs/pixi/jsx';
-import { setTickMethods, tickScene } from '@mvtjs/pixi';
+import { refreshView, setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -36,7 +36,7 @@ export function createPoolFrame(poolApproach: string, spawnPerFrame: number): ()
         }));
     }
     else if (poolApproach === 'rebuild') {
-        setTickMethods(root, { refresh: createRebuildingView(root, bullets.slots) });
+        setRefresh(root, createRebuildingView(root, bullets.slots));
     }
     else {
         throw new Error(`unknown approach: ${poolApproach}`);
@@ -55,7 +55,7 @@ export function createPoolFrame(poolApproach: string, spawnPerFrame: number): ()
             bullets.insert({ x: 0, y: spawned % 480, age: 0 });
         }
         bullets.update(16);
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
     };
 }
 

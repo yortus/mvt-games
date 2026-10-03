@@ -4,12 +4,12 @@ import { constructionSuite } from './construction';
 import { fallingSandScalingSuite } from './falling-sand-scaling';
 import { gamesAndDemosSuite } from './games-and-demos';
 import { hotPathRulesSuite } from './hot-path-rules';
-import { htmlScenePassesSuite } from './html-scene-passes';
+import { htmlRefreshViewSuite } from './html-refresh-view';
 import { jsxRefreshSuite } from './jsx-refresh';
 import { memorySuite } from './memory';
 import { reactivitySuite } from './reactivity';
+import { refreshViewSuite } from './refresh-view';
 import { scalingSuite } from './scaling';
-import { scenePassesSuite } from './scene-passes';
 
 /** Every suite, in the order `npm run bench -- all` runs them. */
 export const suites: readonly Suite[] = [
@@ -18,8 +18,8 @@ export const suites: readonly Suite[] = [
     jsxRefreshSuite,
     changeDetectionSuite,
     constructionSuite,
-    scenePassesSuite,
-    htmlScenePassesSuite,
+    refreshViewSuite,
+    htmlRefreshViewSuite,
     hotPathRulesSuite,
     memorySuite,
     gamesAndDemosSuite,

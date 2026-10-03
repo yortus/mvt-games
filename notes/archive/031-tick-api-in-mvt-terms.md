@@ -10,12 +10,12 @@
 > becomes `PerformanceMetrics`, and "scene pass" and the "walk" vocabulary
 > give way to plain CS terms.
 
-**Status:** decided 2026-10-03, in a design session that revisited 027-029.
-The type and runtime questions were spiked the same day (section 7) and
-found no blockers. Not implemented. **Blocks 011's first publish:** every
-name here is public API, and the counter fields and `_mvt` node fields are
-shared between copies of the packages (`copies.ts`), so renaming them after
-a publish costs a protocol bump.
+**Status:** implemented 2026-10-03, on `vnext-031`. Decided the same day, in
+a design session that revisited 027-029, and spiked first (section 7). What
+the implementation decided that this proposal left open, or changed, is in
+section 10. The one loose end, the draft articles on the `draft-articles`
+branch, is in task [017](../tasks/backlog/017-misc-loose-ends.md). 011's first
+publish no longer waits on it.
 
 **Written:** 2026-10-03, against `vnext-011` (`c37ad7f` plus 011's staged
 phase 5-6 work). Spiked with TypeScript 5.9.3, tsdown 0.23.0 (rolldown
@@ -34,11 +34,11 @@ phase 5-6 work). Spiked with TypeScript 5.9.3, tsdown 0.23.0 (rolldown
 [JSX attributes](../../packages/utils/src/jsx/attributes.ts),
 [eslint.config.js](../../eslint.config.js),
 [renderer-tick-api.test.ts](../../checks/renderer-tick-api.test.ts),
-[027](../archive/027-mvt-method-names.md) (sections 0, 7.2, 12.4, where the
-current names were chosen), [028](../archive/028-tick-api-migration.md),
-[029](../archive/029-rename-ontick-to-settickmethods.md),
-[030](../archive/030-self-describing-perfmon.md) (perfmon labels),
-[011](./011-multi-package-repo.md) (publishing),
+[027](./027-mvt-method-names.md) (sections 0, 7.2, 12.4, where the
+current names were chosen), [028](./028-tick-api-migration.md),
+[029](./029-rename-ontick-to-settickmethods.md),
+[030](./030-self-describing-perfmon.md) (perfmon labels),
+[011](../proposals/011-multi-package-repo.md) (publishing),
 [Glossary](../../docs/reference/glossary.md).
 
 ---
@@ -504,54 +504,118 @@ no benchmark run is needed.
 
 ## 8. Open questions
 
-1. **The exact shape of `registerRenderer`,** and how it composes with
-   `shareAcrossCopies`, which today keys a renderer's shared core on its
-   prototype by package name. To be decided during implementation, keeping
-   one `_mvt` field per prototype for dispatch.
-2. **A check that every published entry brings its augmentation.**
-   Augmentations apply program-wide, so one program can't test them per
-   entry. A check would compile a small consumer per entry against the built
-   `dist`, as the spike did. Recommended, in `checks/` or as part of
-   `build:packages`; the cost is a few `tsc` runs.
-3. **Task 030's perfmon labels against the new metric names.** The labels are
-   display text and can stay short. Check that nothing keys on the old names.
+All three were settled during implementation (section 10).
+
+1. ~~**The exact shape of `registerRenderer`,** and how it composes with
+   `shareAcrossCopies`.~~ Section 10.1.
+2. ~~**A check that every published entry brings its augmentation.**~~ Built:
+   section 10.6.
+3. ~~**Task 030's perfmon labels against the new metric names.**~~ The labels
+   are display text and kept their short forms (`Methods`, `Rebuilds`,
+   `Visits`); nothing keys on the old names.
 
 ## 9. Implementation steps
 
 1. ~~Spike the types, packaging and dispatch.~~ Done (section 7).
-2. **utils core.**
-   - `updateView`, `refreshView`, `setUpdate` and `setRefresh`;
-   - `RendererViews` and `View`;
-   - `registerRenderer`, with the renderer field on the prototype in place of
-     `_mvtInvalidators`;
-   - the dev errors, with `null` guarded and the wording fixed.
-
-   Then each renderer's mixin registers and augments, and every published
-   entry imports its mixin. `PROTOCOL` stays 1, since nothing is published.
-3. **Measuring.**
-   - `tickCounter`, `countTick` and `TickCounts` in place of the two counters,
-     including the generated JSX refresh code (`generate-refresh-copies.ts`)
-     and `utilsState`;
-   - `createPerformanceMetrics` and `MetricKind`;
-   - `PerfmonView`'s rows, and the boids and falling-sand entries.
-4. **Internal vocabulary.** The renames in 5.3, and the comments in
-   `scene-passes.ts` (which might itself become `tick.ts` or `method-lists.ts`)
-   and the mixins.
-5. **Call sites.** Mentions of `setTickMethods` (95 in the site, 32 in
-   benchmarks) and `tickScene` (55 and 25), including the playground's
-   presets and the names its sandbox exposes (`editor-panel.ts`, `presets.ts`,
-   `sandbox-runner.ts`), and the package tests.
-6. **Lint and checks.** `TICK_API_FROM_RENDERER` lists the new names.
-   `renderer-tick-api.test.ts` keeps holding the re-exports to the same
-   bindings. Add the check in open question 2 if adopted.
-7. **Docs.**
-   - "Scene pass" appears 56 times in the docs and 7 in AGENTS.md, and the
-     old function names about 80 times in the docs;
-   - the glossary entries (`Scene pass`, `tickScene` and `setTickMethods`
-     become `updateView`, `refreshView`, `setUpdate` and `setRefresh`);
-   - AGENTS.md, the skills and `llms.txt`;
-   - the package READMEs and the pixi design notes;
-   - the walk wording in
-     [why-not-just-update.md](../../docs/articles/why-not-just-update.md).
+2. ~~**utils core.**~~ Done: `tick-api.ts` (from `scene-passes.ts`),
+   `renderer-views.ts`, `tick-methods.ts` (from `scene-methods.ts`); every
+   renderer registers and declares its view type, and every published entry
+   imports its mixin. `PROTOCOL` stays 1.
+3. ~~**Measuring.**~~ Done: `tick-counter.ts` (from `scene-counter.ts` and
+   `read-counter.ts`), the generated JSX refresh code,
+   `performance-metrics.ts` (from `frame-stats.ts`), and `PerfmonView`'s
+   `unmeasured` binding (section 10.4).
+4. ~~**Internal vocabulary.**~~ Done, as 5.3, in code, tests and comments.
+5. ~~**Call sites.**~~ Done, with a codemod over the TypeScript AST that
+   rewrote each call and its imports, split full ticks into two statements,
+   and flagged anything it could not convert safely; the flagged cases were
+   done by hand. Includes the playground's presets, template and sandbox
+   globals (`setUpdate`, `setRefresh`).
+6. ~~**Lint and checks.**~~ Done: `TICK_API_FROM_RENDERER`,
+   `renderer-tick-api.test.ts`, and the new published-types check (10.6).
+7. ~~**Docs.**~~ Done: the guide, reference, architecture tick table,
+   glossary (new entries for `updateView`, `refreshView`, `setUpdate` /
+   `setRefresh` and "Method list"), AGENTS.md, the skills, `llms.txt`, the
+   package READMEs, the pixi README and design notes, the JSX base's README
+   and design notes, the site and benchmark READMEs. Planning notes keep the
+   names of their day; open backlog items were updated. The draft articles
+   are on another branch and are 017's loose end.
 8. **Changelog.** Nothing is published yet, so this is part of the first
    release's notes, not a changeset of its own.
+
+## 10. Implementation notes (2026-10-03)
+
+What the implementation settled or changed, beyond sections 3-5.
+
+### 10.1 `registerRenderer`
+
+`registerRenderer({ prototype, children, parent, describe, flushChanges })`
+returns `{ invalidate }`, and puts the private fields' defaults on the
+prototype, among them `_mvtRenderer`, which replaced `_mvtInvalidators`: the
+renderer's own `update`, `refresh` and walks up the tree. Each renderer calls
+it inside the `create` it gives `shareAcrossCopies`, so copies of one
+renderer package share one registration as they shared one core before.
+Registering a prototype that already has its own `_mvtRenderer` throws.
+@mvtjs/html registers only where `Element` exists.
+
+**Trees of plain objects are no longer supported.** `createScenePasses` gave
+a plain object the invalidation walks when it first visited it; dispatch now
+needs a registered prototype, so a tree's nodes must inherit from one. Only
+the utils tests used plain objects, and they now build their nodes on a
+prototype they register. The visit path lost a branch.
+
+### 10.2 `View` and the library's own code
+
+With no renderer installed, `View` is an object type whose one property's
+name is the message, not a string literal. That keeps `View` a subtype of
+`object` everywhere, and the error still reads as intended: "Property 'No
+renderer is installed: import a renderer package, such as @mvtjs/pixi' is
+missing in type 'Container'". Inside `@mvtjs/utils`, which installs no
+renderer, the library's own code (the JSX base, the destroy registry, the
+conformance suite) calls untyped versions over `object`: `updateNode`,
+`refreshNode`, `setUpdateMethod`, `setRefreshMethod`, `hasUpdateMethod`,
+`hasRefreshMethod`. They are not exported from the package.
+
+`JsxTarget` lost its `tickScene` member: the conformance suite calls the
+untyped functions, and needs the target's renderer registered first.
+
+### 10.3 The renderer check runs in every build
+
+The read that finds a node's renderer is the read dispatch needs anyway, so
+the check that a value is a view of an installed renderer costs nothing
+extra and runs in production too, with `null` and `undefined` guarded. The
+message names the function and the value's class.
+
+### 10.4 Perfmon rows
+
+Option (b) became an `unmeasured` binding, read once, listing the metrics a
+host cannot measure honestly; those rows show `n/a`, dimmed. The panel keeps
+all seven rows, so its fixed height (`PERFMON_HEIGHT`), which hosts lay out
+around, does not change. Boids passes `['reads']`.
+`PerformanceMetrics`' counts are numbers, zero until the first window, rather
+than `undefined` without a counter.
+
+### 10.5 Benchmarks
+
+The `scene-passes` and `html-scene-passes` suites became `refresh-view` and
+`html-refresh-view`. Their saved results moved to the new names and were
+re-rendered from their JSON (`--report`), not re-measured: the measured code
+is the same, and the case parameters, which key the saved runs, kept their
+values (`memo`, `memoised`). Labels, titles and notes moved to the new
+vocabulary in all four suites that had it.
+
+A/B against `HEAD` in a worktree with its own `npm ci`, interleaved, on
+2026-10-03: `refresh-view` churn, 116-134 us before and 115-130 us after
+(the saved 105 us is from a quieter run on 2026-10-02); `jsx-refresh` mixed
+at 10,000 elements, 521-702 us before and 536-640 us after. No difference.
+
+### 10.6 The published-types check
+
+`checks/scripts/published-view-types.ts`, which `npm run build:packages`
+runs after building, compiles a one-line program per published entry of each
+renderer against its `dist/`, and checks that the renderer's view type is a
+`View`; a control case with no renderer must fail. Deleting pixi's JSX
+runtime's mixin import made it fail for the three JSX entries, as it should.
+It caught its own first bug too: on Windows its fixture path used
+backslashes, TypeScript never found the fixture, and every case passed until
+the control case, failing, gave it away.

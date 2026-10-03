@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { refreshView, setRefresh } from '@mvtjs/utils';
 import * as first from './element-mixin';
 
 afterEach(() => {
@@ -8,22 +9,23 @@ afterEach(() => {
 
 describe('a second copy of @mvtjs/html', () => {
     it('shares the first copy\'s core', async () => {
+        const renderer = rendererOf(Element.prototype);
+        // Registering `Element.prototype` again would throw
         const second = await importCopy('second-copy');
         expect(second).not.toBe(first);
-        expect(second.tickScene).toBe(first.tickScene);
-        expect(second.setTickMethods).toBe(first.setTickMethods);
+        expect(rendererOf(Element.prototype)).toBe(renderer);
         expect(second.destroyElement).toBe(first.destroyElement);
         expect(second.onDestroyed).toBe(first.onDestroyed);
     });
 
-    it('ticks a view set up through the other copy', async () => {
-        const second = await importCopy('second-copy');
+    it('leaves views refreshed as before', async () => {
+        await importCopy('second-copy');
         const root = document.createElement('div');
         const child = document.createElement('span');
         root.append(child);
         const calls: string[] = [];
-        second.setTickMethods(child, { refresh: () => void calls.push('refresh') });
-        first.tickScene({ root, only: 'refresh' });
+        setRefresh(child, () => void calls.push('refresh'));
+        refreshView(root);
         expect(calls).toEqual(['refresh']);
     });
 
@@ -37,6 +39,11 @@ describe('a second copy of @mvtjs/html', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** The registration `updateView` and `refreshView` find on a prototype: a private field, read only here. */
+function rendererOf(prototype: object): unknown {
+    return (prototype as { _mvtRenderer?: unknown })._mvtRenderer;
+}
 
 /**
  * A fresh instance of the module, as a second copy of the package would be: a

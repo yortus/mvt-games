@@ -3,7 +3,7 @@
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { PERFMON_WIDTH, PerfmonView } from '#shared';
 import { memoiseLast } from '@mvtjs/utils';
-import type { FrameStats } from '@mvtjs/pixi';
+import type { PerformanceMetrics } from '@mvtjs/pixi';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -21,8 +21,8 @@ export interface ToolbarViewBindings {
     canFlip: () => boolean;
     grainCount: () => number;
     movingCount: () => number;
-    /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
-    frameStats: () => FrameStats | undefined;
+    /** Performance metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
+    performanceMetrics: () => PerformanceMetrics | undefined;
     /**
      * The implementations and tank size the demo is running with. Fixed for
      * the demo's life, so read once, when the view is built.
@@ -126,7 +126,7 @@ export function ToolbarView(bindings: ToolbarViewBindings): Container {
                 <text text="Tap, hold and drag to pour" y={52} style={HINT_STYLE} />
                 <text text="Switches restart the demo" y={66} style={HINT_STYLE} />
                 <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    <PerfmonView frameStats={bindings.frameStats} />
+                    <PerfmonView performanceMetrics={bindings.performanceMetrics} />
                 </container>
             </container>
         </container>

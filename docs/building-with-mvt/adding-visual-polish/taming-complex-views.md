@@ -60,7 +60,8 @@ function PlayerHudView(bindings: PlayerHudViewBindings): Container {
         // hard to tell which state drives which visual
     }
 
-    setTickMethods(view, { update, refresh });
+    setUpdate(view, update);
+    setRefresh(view, refresh);
     return view;
 }
 ```
@@ -82,9 +83,9 @@ function PlayerHudView(bindings: PlayerHudViewBindings): Container {
 Each sub-view has a single focus: one piece of presentation state, one edge
 to detect, one visual to update, each in its own update and refresh methods.
 The parent composes them without knowing their internals, and without
-forwarding anything to them: this project's scene passes find each sub-view's
-methods wherever it sits in the tree (see
-[The Game Loop](../the-game-loop.md#in-this-project-the-ticker-ticks-models-then-the-scene)).
+forwarding anything to them: in this project, `updateView` and `refreshView`
+find each sub-view's methods wherever it sits in the tree (see
+[The Game Loop](../the-game-loop.md#in-this-project-updating-and-refreshing-views)).
 
 **When this works:** the transitions are independent - they don't interact
 with each other and don't share state. Most transitions in practice are
@@ -246,10 +247,8 @@ function BoardView(bindings: BoardViewBindings): Container {
     const view = new Container();
     // ... scene graph setup ...
 
-    setTickMethods(view, {
-        update: matchEffects.update,   // the view model advances with the view
-        refresh,
-    });
+    setUpdate(view, matchEffects.update);   // the view model advances with the view
+    setRefresh(view, refresh);
     return view;
 
     function refresh() {
@@ -262,8 +261,9 @@ function BoardView(bindings: BoardViewBindings): Container {
 }
 ```
 
-The update scene pass runs a container's update method before any of its descendants',
-so child views that read the view model see this frame's state.
+`updateView` calls a container's update method before any of its
+descendants', so child views that read the view model see this frame's
+state.
 
 The view model is testable by calling `update()` with known deltas and
 asserting on its readable properties. No Pixi.js, no containers, no

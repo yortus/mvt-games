@@ -50,8 +50,8 @@ each part of it, so the ticker is named for what it does:
 | --- | --- |
 | a model | its `update(deltaMs)` |
 | a view | its `update(deltaMs)`, if it has one, then its `refresh()` |
-| the presentation (a scene) | every view's update, then every view's refresh |
-| the application | ticks the models, then the presentation; then the renderer draws |
+| a view with child views | every update in it, then every refresh in it, parents before children |
+| the application | ticks the models, then the top-level view; then the renderer draws |
 
 So the frame sequence above, steps 4 to 7, reads: the ticker ticks the
 models, then the views, then the renderer draws. A view's tick never runs

@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
 import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
-import { tickScene } from '../container-mixin';
 
 // ---------------------------------------------------------------------------
 // JSX target
@@ -8,7 +7,7 @@ import { tickScene } from '../container-mixin';
 
 /**
  * Pixi's scene graph, as the JSX base needs it. Nodes are `Container`s,
- * whose methods the @mvtjs/pixi scene passes call.
+ * whose methods `updateView` and `refreshView` call.
  */
 export const pixiTarget: JsxTarget<Container> = {
     name: '@mvtjs/pixi/jsx',
@@ -51,6 +50,4 @@ export const pixiTarget: JsxTarget<Container> = {
         node.eventMode = 'static';
         node.on(eventName, handler as (event: unknown) => void);
     },
-
-    tickScene,
 };

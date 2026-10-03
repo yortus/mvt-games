@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi/jsx */
 
 import type { Container } from 'pixi.js';
-import type { FrameStats } from '@mvtjs/pixi';
+import type { PerformanceMetrics } from '@mvtjs/pixi';
 import type { DemoModel, GrainStorageKind, TankSizeKind } from '../models';
 import { type GrainsViewKind, TankView } from './tank-view';
 import { ToolbarView } from './toolbar-view';
@@ -23,8 +23,8 @@ export interface DemoViewBindings {
     isReactive?: boolean;
     /** The size the tank was made at, to show on its switch. */
     tankSize: TankSizeKind;
-    /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
-    frameStats: () => FrameStats | undefined;
+    /** Performance metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
+    performanceMetrics: () => PerformanceMetrics | undefined;
     /**
      * A switch asked for a different storage, grains view or tank size.
      * Implementations are fixed for the demo's life, so whoever handles
@@ -57,7 +57,7 @@ export function DemoView(bindings: DemoViewBindings): Container {
                 canFlip={() => model.phase === 'running'}
                 grainCount={() => model.grainCount}
                 movingCount={() => model.movingCount}
-                frameStats={bindings.frameStats}
+                performanceMetrics={bindings.performanceMetrics}
                 storage={model.storage}
                 grainsView={bindings.grainsView}
                 isReactive={isReactive}

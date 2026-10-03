@@ -1,5 +1,5 @@
 {
-    "suite": "scene-passes",
+    "suite": "refresh-view",
     "environment": {
         "date": "2026-10-02",
         "cpu": "Intel(R) Core(TM) Ultra 9 185H",

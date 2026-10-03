@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { DebrisParticle } from '../models';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -20,7 +20,7 @@ export function DebrisView(bindings: DebrisViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {

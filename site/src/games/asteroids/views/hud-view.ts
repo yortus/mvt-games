@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,7 +29,7 @@ export function HudView(bindings: HudViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {

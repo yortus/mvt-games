@@ -1,4 +1,4 @@
-import { setTickMethods } from './scene-passes';
+import { setNodeRefresh, setNodeUpdate } from './tick-api';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -13,7 +13,7 @@ export interface DestroyRegistry<N> {
     /**
      * Destroys `node` and its subtree: runs every `onDestroyed` callback in it,
      * a node's before its descendants', as Pixi does, clears each node's
-     * update and refresh methods so no scene pass calls it again, then detaches
+     * update and refresh methods so nothing calls them again, then detaches
      * `node` from its parent. Destroying a node twice does nothing the second
      * time.
      */
@@ -56,7 +56,8 @@ export function createDestroyRegistry<N extends object>(options: DestroyRegistry
     function destroySubtree(node: N): void {
         destroyed.add(node);
         // Cleared first, so the setters still climb through the ancestors
-        setTickMethods(node, { update: undefined, refresh: undefined });
+        setNodeUpdate(node, undefined);
+        setNodeRefresh(node, undefined);
         const list = callbacks.get(node);
         if (list !== undefined) {
             callbacks.delete(node);

@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { batch, createMemo, createRenderEffect, createRoot, createSignal } from 'solid-js';
 import { watch } from '@mvtjs/utils';
-import { setTickMethods, tickScene } from '@mvtjs/pixi';
+import { refreshView, setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -79,22 +79,18 @@ function createDiscrete(approach: string, changedCount: number): () => void {
         }
         else if (approach === 'watch') {
             const watcher = watch({ level: () => item.level });
-            setTickMethods(view, {
-                refresh: () => {
-                    const w = watcher.poll();
-                    if (w.level.changed) applyLevel(view, w.level.value);
-                },
+            setRefresh(view, () => {
+                const w = watcher.poll();
+                if (w.level.changed) applyLevel(view, w.level.value);
             });
         }
         else if (approach === 'manual') {
             let previous = item.level;
-            setTickMethods(view, {
-                refresh: () => {
-                    const level = item.level;
-                    if (level === previous) return;
-                    previous = level;
-                    applyLevel(view, level);
-                },
+            setRefresh(view, () => {
+                const level = item.level;
+                if (level === previous) return;
+                previous = level;
+                applyLevel(view, level);
             });
         }
         else {
@@ -109,7 +105,7 @@ function createDiscrete(approach: string, changedCount: number): () => void {
             item.level++;
             item.listener?.(item.level);
         }
-        if (polled) tickScene({ root, only: 'refresh' });
+        if (polled) refreshView(root);
     };
 }
 
@@ -175,10 +171,8 @@ function createDerived(approach: string, changedCount: number): () => void {
             };
         }
         else if (approach === 'recompute') {
-            setTickMethods(view, {
-                refresh: () => {
-                    view.x = sum(inputs);
-                },
+            setRefresh(view, () => {
+                view.x = sum(inputs);
             });
         }
         else if (approach === 'watch') {
@@ -192,14 +186,12 @@ function createDerived(approach: string, changedCount: number): () => void {
                 i6: () => inputs[6],
                 i7: () => inputs[7],
             });
-            setTickMethods(view, {
-                refresh: () => {
-                    const w = watcher.poll();
-                    if (w.i0.changed || w.i1.changed || w.i2.changed || w.i3.changed
-                        || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
-                        view.x = sum(inputs);
-                    }
-                },
+            setRefresh(view, () => {
+                const w = watcher.poll();
+                if (w.i0.changed || w.i1.changed || w.i2.changed || w.i3.changed
+                    || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
+                    view.x = sum(inputs);
+                }
             });
         }
         else {
@@ -214,6 +206,6 @@ function createDerived(approach: string, changedCount: number): () => void {
             item.inputs[0]++;
             item.listener?.();
         }
-        if (polled) tickScene({ root, only: 'refresh' });
+        if (polled) refreshView(root);
     };
 }

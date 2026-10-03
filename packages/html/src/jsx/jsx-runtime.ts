@@ -5,7 +5,7 @@
  *
  * How the runtime behaves is in the base's `create-jsx.ts`; what each
  * attribute does, and how often it is written, is in the element table. The
- * elements' methods are called by @mvtjs/html's scene passes (`tickScene`).
+ * elements' methods are called by `updateView` and `refreshView`.
  *
  * Not a framework for web pages: an HTML view here is built once and follows
  * its model through bindings, like any other MVT view. There is no text
@@ -13,6 +13,9 @@
  */
 
 import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
+// Registers DOM elements, so `refreshView` walks what this runtime builds, and
+// brings the `RendererViews` declaration with this entry's types.
+import '../element-mixin';
 import { htmlElements } from './html-elements';
 import { htmlTarget } from './html-target';
 

@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoSnapshot, DemoView, type GrainKind, type GrainStorageKind, type GrainsViewKind, TANK_SIZES, type TankSizeKind,
 } from '../../site/src/demos/falling-sand';
-import { countReads, tickScene } from '@mvtjs/pixi';
+import { countTick, refreshView, updateView } from '@mvtjs/pixi';
 import { cached } from '../harness/case-cache';
 import { readParams, report } from '../harness/measure';
 
@@ -28,8 +28,8 @@ import { readParams, report } from '../harness/measure';
 // its large one (246,240 cells), where grains have further to fall.
 //
 // Reports mean µs per frame over one 3-second cycle (the second after the
-// tank is loaded when flipping, the first when settled), split into the model, the update scene pass and the
-// refresh scene pass as the demo runs them; and reads per frame, counted
+// tank is loaded when flipping, the first when settled), split into the model, `updateView` and
+// `refreshView` as the demo runs them; and reads per frame, counted
 // over the same cycle in an untimed pass, so counting cannot skew the times.
 //
 // Every variant times the same simulated frames. The tank is a snapshot,
@@ -72,7 +72,7 @@ const view = DemoView({
     grainsView,
     tankSize,
     isReactive: isStore && polled === undefined,
-    frameStats: () => undefined,
+    performanceMetrics: () => undefined,
 });
 stage.addChild(view);
 
@@ -81,14 +81,15 @@ const frame = (): void => {
     if (scenario === 'flipping' && frameIndex % CYCLE_FRAMES === 0) model.flip();
     frameIndex++;
     model.update(FRAME_MS);
-    tickScene({ root: stage, deltaMs: FRAME_MS });
+    updateView(stage, FRAME_MS);
+    refreshView(stage);
 };
 
 // Untimed: the lead-in, the timed cycle with its reads counted, then more
 // cycles until the code is warm
 const warmUpStart = performance.now();
 for (let c = 0; c < LEAD_IN_CYCLES; c++) runCycle();
-const readsPerFrame = countReads(runCycle) / CYCLE_FRAMES;
+const readsPerFrame = countTick(runCycle).reads / CYCLE_FRAMES;
 for (let c = LEAD_IN_CYCLES + 1; !isWarm(c * CYCLE_FRAMES, performance.now() - warmUpStart); c++) runCycle();
 
 let modelMs = 0;
@@ -106,9 +107,9 @@ do {
         const start = performance.now();
         model.update(FRAME_MS);
         const modelled = performance.now();
-        tickScene({ root: stage, deltaMs: FRAME_MS, only: 'update' });
+        updateView(stage, FRAME_MS);
         const updated = performance.now();
-        tickScene({ root: stage, only: 'refresh' });
+        refreshView(stage);
         const refreshed = performance.now();
         modelMs += modelled - start;
         updateMs += updated - modelled;

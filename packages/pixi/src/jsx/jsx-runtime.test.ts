@@ -1,7 +1,6 @@
 import { type Container, type Graphics, Rectangle, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { countReads, hasRefresh, readCounter, SKIP_DESCENDANTS } from '@mvtjs/utils';
-import { tickScene } from '../container-mixin';
+import { countTick, hasRefresh, refreshView, SKIP_DESCENDANTS, tickCounter, updateView } from '@mvtjs/utils';
 import { jsx } from './jsx-runtime';
 
 // ---------------------------------------------------------------------------
@@ -29,11 +28,11 @@ describe('jsx runtime', () => {
         expect(reads).toBe(0);
         expect(el.x).toBe(0); // Pixi's default until the first refresh
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.x).toBe(1);
 
         x = 5;
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.x).toBe(5);
     });
 
@@ -43,10 +42,10 @@ describe('jsx runtime', () => {
         const child = jsx('text', { text: () => `HP ${model.boss!.hp}` });
         const parent = jsx('container', { visible: () => model.boss !== undefined, children: child });
 
-        expect(() => tickScene({ root: parent, only: 'refresh' })).not.toThrow();
+        expect(() => refreshView(parent)).not.toThrow();
 
         model.boss = { hp: 9 };
-        tickScene({ root: parent, only: 'refresh' });
+        refreshView(parent);
         expect((child as unknown as { text: string }).text).toBe('HP 9');
     });
 
@@ -54,17 +53,17 @@ describe('jsx runtime', () => {
         let label = 'a';
         const el = jsx('container', { label: () => label });
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.label).toBe('a');
 
         // A direct write is left alone while the binding is unchanged...
         el.label = 'overwritten';
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.label).toBe('overwritten');
 
         // ...and replaced once it changes
         label = 'b';
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.label).toBe('b');
     });
 
@@ -72,15 +71,15 @@ describe('jsx runtime', () => {
         let tint = 0xff0000;
         const el = jsx('sprite', { tint: () => tint }) as Sprite;
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.tint).toBe(0xff0000);
 
         el.tint = 0x00ff00;
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.tint).toBe(0x00ff00);
 
         tint = 0x0000ff;
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.tint).toBe(0x0000ff);
     });
 
@@ -91,11 +90,11 @@ describe('jsx runtime', () => {
 
         expect(fixed.tint).toBe(0x00ff00);
 
-        tickScene({ root: bound, only: 'refresh' });
+        refreshView(bound);
         expect(bound.tint).toBe(0xff0000);
 
         tint = 0x0000ff;
-        tickScene({ root: bound, only: 'refresh' });
+        refreshView(bound);
         expect(bound.tint).toBe(0x0000ff);
     });
 
@@ -106,12 +105,12 @@ describe('jsx runtime', () => {
         expect(el.scale.x).toBe(2);
         expect(el.scale.y).toBe(1); // Pixi's default until the first refresh
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.scale.x).toBe(2);
         expect(el.scale.y).toBe(3);
 
         scaleY = 0.5;
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.scale.y).toBe(0.5);
     });
 
@@ -134,8 +133,8 @@ describe('jsx runtime', () => {
         const a = jsx('sprite', { texture: Texture.WHITE, width: () => width, height: () => height, label: () => 'a' }) as Sprite;
         const b = jsx('sprite', { texture: Texture.WHITE, width: () => 3.5, height: () => 7.75, label: () => 'b' }) as Sprite;
 
-        tickScene({ root: a, only: 'refresh' });
-        tickScene({ root: b, only: 'refresh' });
+        refreshView(a);
+        refreshView(b);
         expect(a.width).toBeCloseTo(10.25);
         expect(a.height).toBe(0);
         expect(a.label).toBe('a');
@@ -143,12 +142,12 @@ describe('jsx runtime', () => {
         expect(b.height).toBeCloseTo(7.75);
 
         a.width = 99;
-        tickScene({ root: a, only: 'refresh' });
+        refreshView(a);
         expect(a.width).toBe(99);
 
         width = 10.62;
         height = 4.5;
-        tickScene({ root: a, only: 'refresh' });
+        refreshView(a);
         expect(a.width).toBeCloseTo(10.62);
         expect(a.height).toBeCloseTo(4.5);
     });
@@ -164,8 +163,8 @@ describe('jsx runtime', () => {
 
         x1 = 10;
         label2 = 'TWO';
-        tickScene({ root: a, only: 'refresh' });
-        tickScene({ root: b, only: 'refresh' });
+        refreshView(a);
+        refreshView(b);
 
         expect(a.x).toBe(10);
         expect(a.label).toBe('one');
@@ -188,7 +187,7 @@ describe('jsx runtime', () => {
             xReads = 0;
 
             visible = false;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(el.visible).toBe(false);
             expect(xReads).toBe(0);
         });
@@ -201,12 +200,12 @@ describe('jsx runtime', () => {
 
             visible = false;
             childX = 7;
-            tickScene({ root: parent, only: 'refresh' });
+            refreshView(parent);
             expect(child.x).toBe(0);
 
             // A hidden element still runs its own refresh method, so it can show itself
             visible = true;
-            tickScene({ root: parent, only: 'refresh' });
+            refreshView(parent);
             expect(parent.visible).toBe(true);
             expect(child.x).toBe(7);
         });
@@ -220,11 +219,11 @@ describe('jsx runtime', () => {
             },
         });
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(deltas).toEqual([]);
 
-        tickScene({ root: el, deltaMs: 16, only: 'update' });
-        tickScene({ root: el, deltaMs: 17, only: 'update' });
+        updateView(el, 16);
+        updateView(el, 17);
         expect(deltas).toEqual([16, 17]);
     });
 
@@ -237,8 +236,8 @@ describe('jsx runtime', () => {
                 },
             });
 
-            tickScene({ root: el, only: 'refresh' });
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
+            refreshView(el);
             expect(calls).toBe(2);
         });
 
@@ -252,7 +251,7 @@ describe('jsx runtime', () => {
                 },
             });
 
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(order).toEqual(['x', 'step']);
             expect(el.x).toBe(1);
         });
@@ -265,7 +264,7 @@ describe('jsx runtime', () => {
                 },
             });
 
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(received).toBe(el);
         });
 
@@ -279,11 +278,11 @@ describe('jsx runtime', () => {
                 },
             });
 
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(calls).toBe(0);
 
             visible = true;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(calls).toBe(1);
         });
 
@@ -297,7 +296,7 @@ describe('jsx runtime', () => {
             });
 
             childX = 5;
-            tickScene({ root: parent, only: 'refresh' });
+            refreshView(parent);
             expect(child.x).toBe(0);
         });
     });
@@ -321,7 +320,7 @@ describe('jsx runtime', () => {
             });
 
             expect(hasRefresh(el)).toBe(false);
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(calls).toBe(0);
         });
 
@@ -394,11 +393,11 @@ describe('jsx runtime', () => {
 
         expect(el.hitArea).toBe(hitArea);
 
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.cursor).toBe('pointer');
 
         cursor = 'crosshair';
-        tickScene({ root: el, only: 'refresh' });
+        refreshView(el);
         expect(el.cursor).toBe('crosshair');
     });
 
@@ -407,19 +406,19 @@ describe('jsx runtime', () => {
             let isShown = true;
             const el = jsx('container', { visible: () => isShown, x: () => 1, label: () => 'a' });
 
-            expect(countReads(() => tickScene({ root: el, only: 'refresh' }))).toBe(3);
+            expect(countTick(() => refreshView(el)).reads).toBe(3);
             isShown = false;
-            expect(countReads(() => tickScene({ root: el, only: 'refresh' }))).toBe(1);
+            expect(countTick(() => refreshView(el)).reads).toBe(1);
         });
 
         it('counts nothing while off', () => {
             const el = jsx('container', { x: () => 1, y: () => 2 });
-            const before = readCounter.count;
+            const before = tickCounter.reads;
 
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
 
-            expect(readCounter.isCounting).toBe(false);
-            expect(readCounter.count).toBe(before);
+            expect(tickCounter.isCounting).toBe(false);
+            expect(tickCounter.reads).toBe(before);
         });
     });
 

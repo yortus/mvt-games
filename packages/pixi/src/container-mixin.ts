@@ -1,40 +1,45 @@
 import { Container } from 'pixi.js';
-import { createScenePasses, registerCopy, type ScenePasses, shareAcrossCopies } from '@mvtjs/utils';
+import { type RegisteredRenderer, registerCopy, registerRenderer, setRefresh, setUpdate, shareAcrossCopies } from '@mvtjs/utils';
 import { version } from '../package.json';
 
 // ---------------------------------------------------------------------------
 // Install
 // ---------------------------------------------------------------------------
 
+declare module '@mvtjs/utils' {
+    interface RendererViews {
+        /** Pixi containers, and every display object, which all extend `Container`. */
+        pixi: Container;
+    }
+}
+
 /**
- * The scene passes over Pixi containers, installed on `Container.prototype`
- * (see `createContainerScenePasses`). Every copy of @mvtjs/pixi in a program
- * that extends the same `Container` shares one set, made by the first copy to
- * load, so the prototype is wrapped once and every copy's views are ticked by
- * every copy's `tickScene`.
+ * Pixi containers, registered with `registerRenderer` on `Container.prototype`
+ * (see `registerContainers`), so that `updateView` and `refreshView` walk
+ * them. Every copy of @mvtjs/pixi in a program that extends the same
+ * `Container` shares one registration, made by the first copy to load, so the
+ * prototype is wrapped once and every copy's views are walked alike.
  *
  * Installed at module load rather than lazily on first use, so every container
- * carries the scene passes' field defaults before any is given a method or
+ * carries the private fields' defaults before any is given a method or
  * walked. Importing this module is the only ordering requirement, and ES
- * modules evaluate imports before the importing module's own code.
+ * modules evaluate imports before the importing module's own code. Every
+ * entry point of the package imports it, which also brings the
+ * `RendererViews` declaration above with it.
  */
-const containerScenePasses = shareAcrossCopies(Container.prototype, '@mvtjs/pixi', createContainerScenePasses);
-
-/** The tick API, typed to this renderer's nodes (see `./index.ts`). */
-export const { tickScene, setTickMethods } = containerScenePasses;
+shareAcrossCopies(Container.prototype, '@mvtjs/pixi', registerContainers);
 
 registerCopy('@mvtjs/pixi', version);
 
 /**
- * The scene passes over Pixi containers: the generic memoised walk
- * (`ScenePasses` in `@mvtjs/utils`), told how to read a container's children
- * and parent. They run whatever a container's `visible`, `renderable` or
- * culling, since presentation state that stops advancing while hidden is
- * stale when it reappears; a view skips its descendants by returning
- * `SKIP_DESCENDANTS`.
+ * Registers Pixi containers: the generic method lists of `@mvtjs/utils`,
+ * told how to read a container's children and parent. They run whatever a
+ * container's `visible`, `renderable` or culling, since presentation state
+ * that stops advancing while hidden is stale when it reappears; a view skips
+ * its descendants by returning `SKIP_DESCENDANTS`.
  *
- * Making them also puts their field defaults on `Container.prototype` and
- * wraps its structural methods, so the memo fields can be invalidated.
+ * It also wraps `Container.prototype`'s structural methods, so the method
+ * lists are cleared when the tree changes.
  *
  * The wrapped prototype methods use `this`, which the style guide otherwise
  * rules out: a wrapped prototype method has no way to reach its instance
@@ -43,17 +48,17 @@ registerCopy('@mvtjs/pixi', version);
  * - the receiver they close over is enough - exactly like a view's own
  * `refresh`.
  */
-function createContainerScenePasses(): ScenePasses<Container> {
-    const passes = createScenePasses<Container>({
+function registerContainers(): RegisteredRenderer<Container> {
+    const renderer = registerRenderer<Container>({
+        prototype: Container.prototype,
         children: (node) => node.children,
         // Pixi types `parent` as `Container | null`, one of the few places it hands
         // back `null`; the walk tests truthiness.
         parent: (node) => node.parent,
         describe,
     });
-    passes.installFieldDefaults(Container.prototype);
-    wrapStructuralMethods(passes);
-    return passes;
+    wrapStructuralMethods(renderer.invalidate);
+    return renderer;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,23 +71,21 @@ function createContainerScenePasses(): ScenePasses<Container> {
  * Deliberately absent: `swapChildren`, `sortChildren`, `setChildIndex`, and
  * `addChild` / `addChildAt` when the child is already parented here. Those are
  * pure sibling reorderings, and sibling order carries no guarantee, so they
- * cannot invalidate a list. That exclusion matters - Pixi calls `sortChildren`
- * itself during rendering whenever `sortableChildren` is set.
+ * cannot invalidate a method list. That exclusion matters - Pixi calls
+ * `sortChildren` itself during rendering whenever `sortableChildren` is set.
  *
  * Everything else funnels through these five. `setChildIndex`, `reparentChild`,
  * `reparentChildAt`, `replaceChild`, `removeChildAt` and `removeFromParent` all
  * delegate to `addChildAt` / `removeChild`, and `destroy` delegates to
  * `removeChildren` and `removeFromParent`.
  */
-function wrapStructuralMethods(passes: ScenePasses<Container>): void {
+function wrapStructuralMethods(invalidate: (node: Container) => void): void {
     const proto = Container.prototype;
     const baseAddChild = proto.addChild;
     const baseAddChildAt = proto.addChildAt;
     const baseRemoveChild = proto.removeChild;
     const baseRemoveChildren = proto.removeChildren;
     const baseDestroy = proto.destroy;
-    const invalidate = passes.invalidate;
-    const setTickMethods = passes.setTickMethods;
 
     proto.addChild = function addChild(this: Container, ...children: Container[]): Container {
         if (children.length !== 1) {
@@ -139,10 +142,11 @@ function wrapStructuralMethods(passes: ScenePasses<Container>): void {
         if (DEV) warnOfUnrunDestroyedListeners(this, options);
         // Clearing the methods is what stops a destroyed container being called
         // again. Detaching alone is not enough: a container passed to
-        // `tickScene` itself has no parent to be detached from, so nothing
-        // else would ever take it out of its own list. Doing it before the base
-        // call means the setters still climb through the ancestors.
-        setTickMethods(this, { update: undefined, refresh: undefined });
+        // `updateView` itself has no parent to be detached from, so nothing
+        // else would ever take it out of its own method list. Doing it before
+        // the base call means the setters still walk up through the ancestors.
+        setUpdate(this, undefined);
+        setRefresh(this, undefined);
         baseDestroy.call(this, options);
     };
 }

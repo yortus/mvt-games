@@ -1,5 +1,5 @@
 import type { Container } from 'pixi.js';
-import { createFrameStats, readCounter, sceneCounter } from '@mvtjs/pixi';
+import { createPerformanceMetrics } from '@mvtjs/pixi';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createDemoModel, TANK_SIZES } from './models';
 import { DEFAULT_VARIANTS, type DemoVariants, formatVariants, parseVariants } from './variants';
@@ -42,12 +42,12 @@ export function createFallingSandEntry(): DemoEntry {
             const restartWith = host === undefined ? undefined : restartPageWith;
 
             const model = createDemoModel({ ...TANK_SIZES[variants.tankSize], storage: variants.storage });
-            const frameStats = host === undefined ? undefined : createFrameStats({ ...host, readCounter, sceneCounter });
+            const performanceMetrics = host === undefined ? undefined : createPerformanceMetrics(host);
             const view = DemoView({
                 model,
                 grainsView: variants.grainsView,
                 tankSize: variants.tankSize,
-                frameStats: () => frameStats,
+                performanceMetrics: () => performanceMetrics,
                 onStoragePressed: restartWith && ((storage) => restartWith({ ...variants, storage })),
                 onGrainsViewPressed: restartWith && ((grainsView) => restartWith({ ...variants, grainsView })),
                 onTankSizePressed: restartWith && ((tankSize) => restartWith({ ...variants, tankSize })),
@@ -60,7 +60,7 @@ export function createFallingSandEntry(): DemoEntry {
                     model.update(deltaMs);
                 },
                 destroy(): void {
-                    frameStats?.destroy();
+                    performanceMetrics?.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },

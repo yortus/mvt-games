@@ -27,7 +27,8 @@ the MVT way: a gallery model, and an HTML view of it.
   somewhere to draw and a loop to be driven by. For example, `start({ host })`
   with a host that gives an element to mount into and the frame's time, and a
   session that owns its renderer (a Pixi `Application`, a three.js
-  `WebGLRenderer`, or none, for the DOM) and drives its own scene passes.
+  `WebGLRenderer`, or none, for the DOM) and calls `updateView` and
+  `refreshView` on its own views.
   Or keep one host per renderer behind a small interface. Decide which reads
   better in a demo's entry, and keeps a demo's own code free of the gallery.
 - **Thumbnails for every renderer.** Today a thumbnail starts the demo

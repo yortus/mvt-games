@@ -1,7 +1,7 @@
 {
     "name": "@mvtjs/pixi",
     "version": "0.1.0",
-    "description": "MVT (Model-View-Ticker) for Pixi.js: scene passes, and a JSX runtime at ./jsx",
+    "description": "MVT (Model-View-Ticker) for Pixi.js: updateView and refreshView over its containers, performance metrics, and a JSX runtime at ./jsx",
     "license": "MIT",
     "author": "Troy Gerwien",
     "keywords": ["mvt", "model-view-ticker", "game", "pixi", "pixi.js", "jsx"],

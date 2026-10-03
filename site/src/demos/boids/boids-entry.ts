@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import { PERFMON_HEIGHT } from '#shared';
-import { createFrameStats, sceneCounter } from '@mvtjs/pixi';
+import { createPerformanceMetrics } from '@mvtjs/pixi';
 import type { DemoEntry, DemoHost, DemoSession } from '../demo-entry';
 import { createFlockModel } from './flock-model';
 import { BoidsView } from './boids-view';
@@ -33,7 +33,7 @@ export function createBoidsEntry(): DemoEntry {
 
         start(stage: Container, host?: DemoHost): DemoSession {
             const layout = computeLayout();
-            const frameStats = host === undefined ? undefined : createFrameStats({ ...host, sceneCounter });
+            const performanceMetrics = host === undefined ? undefined : createPerformanceMetrics(host);
 
             const model = createFlockModel({
                 arenaWidth: ARENA_WIDTH,
@@ -61,7 +61,7 @@ export function createBoidsEntry(): DemoEntry {
                 onTimeScaleChanged: (v) => { timeScale = v; },
                 isShowingInfluences: () => isShowingInfluences,
                 onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                frameStats: () => frameStats,
+                performanceMetrics: () => performanceMetrics,
             });
             stage.addChild(view);
 
@@ -84,12 +84,12 @@ export function createBoidsEntry(): DemoEntry {
                         onTimeScaleChanged: (v) => { timeScale = v; },
                         isShowingInfluences: () => isShowingInfluences,
                         onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                        frameStats: () => frameStats,
+                        performanceMetrics: () => performanceMetrics,
                     });
                     stage.addChild(view);
                 },
                 destroy(): void {
-                    frameStats?.destroy();
+                    performanceMetrics?.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },

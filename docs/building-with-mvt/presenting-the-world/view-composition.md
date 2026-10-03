@@ -166,7 +166,7 @@ down:
 
 - **Hand over a built child.** A view that only places a child can take it
   ready-made, and never see the child's bindings:
-  `<ToolbarView perfmon={<PerfmonView frameStats={frameStats} />} />`.
+  `<ToolbarView perfmon={<PerfmonView performanceMetrics={metrics} />} />`.
 - **Group what travels together.** One `theme` binding holding a palette,
   text styles and a formatter costs each level one line rather than several.
 - **Make related views in one function.** `createHudViews(palette)` returns

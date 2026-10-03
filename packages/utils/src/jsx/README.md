@@ -32,7 +32,7 @@ three things, and the base does the rest:
 | --- | --- |
 | A **JSX target**: the handful of operations the base performs on its nodes ([jsx-target.ts](./jsx-target.ts)) | The `jsx` factory that JSX compiles to ([create-jsx.ts](./create-jsx.ts)) |
 | An **element table**: each intrinsic element, how to create it, and how to write each of its attributes ([attributes.ts](./attributes.ts)) | The refresh methods that read bindings ([refresh-builder.ts](./refresh-builder.ts)) |
-| Its scene passes: `tickScene` and `setTickMethods` over its nodes | `<List>` and `<Switch>` ([list.ts](./list.ts), [switch.ts](./switch.ts)) |
+| Its nodes, registered with `registerRenderer`, so `updateView` and `refreshView` walk them | `<List>` and `<Switch>` ([list.ts](./list.ts), [switch.ts](./switch.ts)) |
 
 Three renderers use it: Pixi (`packages/pixi/src/jsx/`), three.js
 (`packages/three/src/jsx/`) and the DOM (`packages/html/src/jsx/`). Pixi's is the
@@ -52,7 +52,7 @@ flowchart LR
         RB --> M["the node's refresh method"]
     end
     subgraph frame["Every frame"]
-        RS["the renderer's refresh scene pass"] --> M2["each node's refresh method, parents first"]
+        RS["refreshView"] --> M2["each node's refresh method, parents first"]
         M2 --> RW["read each binding, write it to the node"]
     end
     M -. "runs as" .-> M2
@@ -60,8 +60,7 @@ flowchart LR
 
 [create-jsx.ts](./create-jsx.ts) builds the nodes,
 [refresh-builder.ts](./refresh-builder.ts) makes each node's refresh method, and
-the renderer's [scene passes](../../../../docs/reference/glossary.md) call it
-every frame.
+[`refreshView`](../../../../docs/reference/glossary.md) calls it every frame.
 
 ## Building a node
 
@@ -81,7 +80,7 @@ arguments to their parent's call. For an intrinsic element, `jsx`:
    binding that isn't valid yet never runs.
 4. **Appends the children**, with the JSX target's `append`.
 5. **Installs one refresh method** for all the node's bindings, with
-   `setTickMethods`. It reads `visible` first, then the every-frame bindings,
+   `setRefresh`. It reads `visible` first, then the every-frame bindings,
    then the on-change ones.
 6. **Handles the attributes every element has:** `onRefresh` (a step of the
    node's own, after its bindings), `onUpdate` (the node's update method),
@@ -92,9 +91,9 @@ attributes, and returns a node.
 
 ## Refreshing a node
 
-Every frame, the renderer's refresh scene pass calls each node's refresh
-method, parents before children. The refresh method reads each binding and writes the
-value according to its attribute's **write kind**:
+Every frame, `refreshView` calls each node's refresh method, parents before
+children. The refresh method reads each binding and writes the value
+according to its attribute's **write kind**:
 
 | Write kind | Writes | For |
 | --- | --- | --- |
@@ -103,10 +102,10 @@ value according to its attribute's **write kind**:
 | `onChangeNumber` | As `onChange`, keeping the last value unboxed | Numbers that may be fractional, such as Pixi's `width` |
 
 The method reads a `visible` binding first. When it is false, the method
-writes it, reads nothing else, and returns `SKIP_DESCENDANTS`, so the scene
-pass skips the node's whole subtree too.
+writes it, reads nothing else, and returns `SKIP_DESCENDANTS`, so
+`refreshView` skips the node's whole subtree too.
 
-Each method also adds its reads to `readCounter`, which `countReads` uses, so
+Each method also adds its reads to `tickCounter`, which `countTick` reads, so
 tests and benchmarks can compare JSX with hand-written views.
 
 ## Element tables
@@ -216,7 +215,7 @@ Each renderer makes its own with `createList` and `createSwitch`.
   every branch up front (or on first selection, for a function child) and
   keeps them all; switching only changes which one is visible.
 
-Both rely on the scene pass to refresh anything they build or show during
+Both rely on `refreshView` to refresh anything they build or show during
 it, so their nodes are never displayed with stale values. Their header
 comments document their behaviour, and
 [Presenting Collections](../../../../docs/building-with-mvt/presenting-the-world/collections.md)
@@ -224,11 +223,10 @@ shows them in use.
 
 ## Adding a JSX target
 
-A new renderer needs its scene passes first: `tickScene` and `setTickMethods`
-typed to its nodes, made with `createScenePasses`
-(`scene-passes.ts` in this package), as
-`packages/pixi/src/container-mixin.ts` does for Pixi. Then, in a `jsx/` directory
-beside them:
+A new renderer first registers its nodes with `registerRenderer`
+(in this package's `tick-api/`), and declares their type in `RendererViews`,
+as `packages/pixi/src/container-mixin.ts` does for Pixi. Then, in a `jsx/`
+directory beside it:
 
 1. **The JSX target** (`<name>-target.ts`). [jsx-target.ts](./jsx-target.ts)
    gives each operation's contract. Two are easy to get wrong: a new node
@@ -239,7 +237,11 @@ beside them:
    a write is a plain assignment.
 3. **The runtime module** (`jsx-runtime.ts`): `createJsx` over the two, its
    `JSX` namespace from `IntrinsicElementsOf`, and `jsxs` and `jsxDEV` as
-   aliases of `jsx`. The compiler imports all three from this module.
+   aliases of `jsx`. The compiler imports all three from this module. It also
+   imports the module that registers the renderer, for its side effect, so
+   that a program importing only the JSX runtime has the renderer's nodes
+   registered and its view type in `View` (the `published-view-types` check
+   in `checks/` holds every entry point to this).
 4. **`<List>` and `<Switch>`** (`list.ts`, `switch.ts`): `createList` and
    `createSwitch` over the target.
 5. **The barrel** (`index.ts`), exporting only what views use: `jsx`,

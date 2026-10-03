@@ -14,7 +14,7 @@
 import { Container } from 'pixi.js';
 import { jsx } from '@mvtjs/pixi/jsx';
 import { allocationPerFrame } from '../harness/measure';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 type ViewKind = 'jsx' | 'hand-written';
 
@@ -67,12 +67,10 @@ function createView(kind: ViewKind, item: ItemModel): Container {
         return jsx('container', { x: () => item.x, y: () => item.y, alpha: () => item.alpha });
     }
     const view = new Container();
-    setTickMethods(view, {
-        refresh: () => {
-            view.x = item.x;
-            view.y = item.y;
-            view.alpha = item.alpha;
-        },
+    setRefresh(view, () => {
+        view.x = item.x;
+        view.y = item.y;
+        view.alpha = item.alpha;
     });
     return view;
 }

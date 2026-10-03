@@ -109,8 +109,8 @@ Settled questions that should not be reopened without new information are in
   `export type` line where that is enough:
 
   ```ts
-  export { addReads, countReads, readCounter, SKIP_DESCENDANTS } from '@mvtjs/utils';
-  export type { RefreshMethod, UpdateMethod } from '@mvtjs/utils';
+  export { addReads, countTick, tickCounter } from '@mvtjs/utils';
+  export type { RefreshMethod, TickCounts, UpdateMethod } from '@mvtjs/utils';
   ```
 
   The files 022 changed were fixed by hand. Lint can enforce the rest:
@@ -128,23 +128,35 @@ Settled questions that should not be reopened without new information are in
 
 ### Decide
 
+- **The draft articles still use the old tick API.** `who-calls-update.md`
+  and `why-not-just-update.md`, on the `draft-articles` branch, were written
+  against `tickScene` and `setTickMethods`, and use "scene pass" and
+  "memoised walk". Before either is published, move them to `updateView`,
+  `refreshView`, `setUpdate` and `setRefresh`, and to 031's vocabulary
+  ([031](../../archive/031-tick-api-in-mvt-terms.md) section 5). Whether
+  `who-calls-update.md`, "A Look at the Tick API", should now tell the story
+  of the API's names too is the writer's call.
+
 - **Dev checks from 027 that were not built.** Task 028 added only the
-  `deltaMs` check to `tickScene`. Still to decide, each argued in
-  [027](../../archive/027-mvt-method-names.md):
-  - section 7.5 (b): a stale memoised walk, which would throw;
-  - section 7.5 (c): an update method that no `tickScene` root reaches, which
+  `deltaMs` check (now in `updateView`), and 031 the check that a value
+  passed to `updateView` or `refreshView` is a view of an installed renderer.
+  Still to decide, each argued in [027](../../archive/027-mvt-method-names.md):
+  - section 7.5 (b): a stale cached method list, which would throw;
+  - section 7.5 (c): an update method that no `updateView` call reaches, which
     would warn. This is the one that recovers most of what an explicit
     `update` method's type used to say (027 section 12.3);
   - section 7.6, item 2: a check of each method's result, catching a value
     that is neither `undefined` nor `SKIP_DESCENDANTS` (a second copy of the
     library, once the packages are published).
 
-  Each needs a cost check in dev against `scene-passes`, and a decision on how
+  Each needs a cost check in dev against `refresh-view`, and a decision on how
   often it runs (027 section 9, items 10 and 11).
 - **Old playground links that assign `view.onRefresh`.** Since task 028, the
-  assignment makes a plain property the scene passes never read, so a
+  assignment makes a plain property `refreshView` never reads, so a
   playground link saved before then loads without error and never animates.
-  The presets and the new-project template use `setTickMethods`. A dev
+  Since 031 the same holds for links that call `setTickMethods`, which the
+  sandbox no longer provides: those at least fail with an error. The presets
+  and the new-project template use `setRefresh`. A dev
   warning for a node with an own `onRefresh` or `onUpdate` property, in the
   playground's sandbox only, would point old links at the fix. Worth it only
   if old links are in circulation.
@@ -393,3 +405,8 @@ falling-sand demo. Each is a new variant, measured with
   warnings (Investigate). Its publishing items went to 011's phase 6.
   Added the two unattributed slowdowns found re-saving the benchmarks
   (Investigate).
+- 2026-10-03: 031 renamed the tick API (`setTickMethods` and `tickScene`
+  became `setUpdate`, `setRefresh`, `updateView` and `refreshView`; the two
+  counters became `tickCounter`) and retired "scene pass". Updated the
+  pending items' names to match; the history above keeps the names of its
+  day.

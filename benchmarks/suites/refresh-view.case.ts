@@ -3,10 +3,10 @@ import { Container } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { readParams, report, timeFrames } from '../harness/measure';
 
-// Measured file for the `scene-passes` suite: the cost of the refresh scene
-// pass itself (`tickScene` with `only: 'refresh'`), against a plain recursive
-// walk (`naive`) and Pixi's own `onRender`. A frame is one scene pass plus
-// whatever changes the scenario makes to the tree.
+// Measured file for the `refresh-view` suite: the cost of `refreshView`
+// itself, against a plain recursive walk (`naive`) and Pixi's own `onRender`.
+// A frame is one `refreshView` plus whatever changes the scenario makes to the
+// tree.
 //
 // @mvtjs/pixi is imported dynamically, and only by the approaches that use it:
 // importing it is what installs its mixin on `Container.prototype`, and the
@@ -17,7 +17,7 @@ const params = readParams();
 const scenario = String(params.scenario);
 const approach = String(params.approach);
 
-let refreshPass: ((node: Container) => void) | undefined;
+let mvtRefreshView: ((node: Container) => void) | undefined;
 let setMvtRefresh: ((node: Container, method: () => void) => void) | undefined;
 let skipDescendants: symbol | undefined;
 
@@ -37,11 +37,11 @@ function bump(): void {
 
 if (approach !== 'naive' && approach !== 'onRender' && approach !== 'unpatched') {
     const pixiMvt = await import('@mvtjs/pixi');
-    refreshPass = (node) => pixiMvt.tickScene({ root: node, only: 'refresh' });
-    setMvtRefresh = (node, method) => pixiMvt.setTickMethods(node, { refresh: method });
+    mvtRefreshView = pixiMvt.refreshView;
+    setMvtRefresh = pixiMvt.setRefresh;
     skipDescendants = pixiMvt.SKIP_DESCENDANTS as unknown as symbol;
 }
-// @mvtjs/pixi's mixin puts the scene passes' private fields' defaults on the prototype
+// @mvtjs/pixi's mixin puts the private fields' defaults on the prototype
 else if ('_mvtRefreshMethod' in Container.prototype) {
     throw new Error('@mvtjs/pixi was imported in an approach that must not have it');
 }
@@ -78,13 +78,13 @@ function createFrame(scenario: string, approach: string): Frame {
 
 function passFrame(size: number, withMethods: number, swapsPerFrame: number, memo: boolean): Frame {
     const scene = buildScene(size, withMethods);
-    const pass = memo ? requireRefreshPass() : naiveRefresh;
+    const refresh = memo ? requireRefreshView() : naiveRefresh;
     let cursor = 0;
     return {
         callsPerFrame: withMethods,
         run() {
             if (swapsPerFrame > 0) cursor = churn(scene, swapsPerFrame, cursor);
-            pass(scene.root);
+            refresh(scene.root);
         },
     };
 }
@@ -99,7 +99,7 @@ function passFrame(size: number, withMethods: number, swapsPerFrame: number, mem
  * throughout.
  */
 function attachFrame(memo: boolean): Frame {
-    const pass = memo ? requireRefreshPass() : naiveRefresh;
+    const refresh = memo ? requireRefreshView() : naiveRefresh;
     const root = new Container();
     giveRefresh(root, bump);
     const subtrees: Container[] = [];
@@ -124,7 +124,7 @@ function attachFrame(memo: boolean): Frame {
             for (let i = 0; i < subtrees.length; i++) {
                 root.addChild(subtrees[i]);
             }
-            pass(root);
+            refresh(root);
         },
     };
 }
@@ -177,7 +177,7 @@ function mutationFrame(): Frame {
  * (`visible = false`), so every refresh method still runs.
  */
 function skipFrame(approach: string): Frame {
-    const pass = requireRefreshPass();
+    const refresh = requireRefreshView();
     const skip = approach === 'skip';
     const root = new Container();
     const model = { x: 0 };
@@ -201,7 +201,7 @@ function skipFrame(approach: string): Frame {
         callsPerFrame: calls,
         run() {
             model.x++;
-            pass(root);
+            refresh(root);
         },
     };
 }
@@ -215,9 +215,9 @@ function giveRefresh(node: Container, method: () => void): void {
     else (node as BaselineContainer).baselineRefresh = method;
 }
 
-function requireRefreshPass(): (node: Container) => void {
-    if (refreshPass === undefined) throw new Error('this approach needs @mvtjs/pixi, which was not imported');
-    return refreshPass;
+function requireRefreshView(): (node: Container) => void {
+    if (mvtRefreshView === undefined) throw new Error('this approach needs @mvtjs/pixi, which was not imported');
+    return mvtRefreshView;
 }
 
 /** A tree of `size` containers, three levels deep, `withMethods` of them carrying one. */

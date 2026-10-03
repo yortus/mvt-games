@@ -196,9 +196,7 @@ export function BallView(bindings: BallViewBindings): Container {
     const view = new Graphics();
     view.circle(0, 0, BALL_RADIUS * SCALE).fill(0xffffff);
 
-    setTickMethods(view, {
-        refresh: () => { view.position.set(bindings.x() * SCALE, bindings.y() * SCALE); },
-    });
+    setRefresh(view, () => { view.position.set(bindings.x() * SCALE, bindings.y() * SCALE); });
     return view;
 }
 ```
@@ -300,12 +298,13 @@ function createBreakoutEntry(): GameEntry {
 
 The `start()` method creates the model and view, mounts the view, and returns
 a session. The session's `update()` advances the model and nothing else. The
-host ticks the whole stage once per frame, after the models, with
-`tickScene({ root: app.stage, deltaMs })`: every view's update method (for
-views with presentation state), then every refresh method. So the session never
-updates or refreshes its own views. Pausing is the host's call too: while
-paused, it stops calling `update()` and leaves the game's view out of the
-update scene pass, so a game needs no pause logic of its own. The `destroy()`
+host updates and refreshes the whole stage once per frame, after the models,
+with `updateView(app.stage, deltaMs)`, which calls every view's update method
+(for views with presentation state), then `refreshView(app.stage)`, which
+calls every refresh method. So the session never updates or refreshes its own
+views. Pausing is the host's call too: while paused, it stops calling
+`update()` and leaves the game's view out of `updateView`, so a game needs no
+pause logic of its own. The `destroy()`
 method removes the view and cleans up.
 
 If your game needs to load assets (sprite sheets, textures), implement the

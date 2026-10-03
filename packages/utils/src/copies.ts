@@ -4,9 +4,9 @@
 
 /**
  * The version of what copies of the @mvtjs packages share in one program: the
- * `_mvt` fields the scene passes keep on nodes, and the objects made with
- * {@link shareAcrossCopies}. Copies with the same protocol share them; copies
- * with different ones keep apart.
+ * `_mvt` fields `updateView` and `refreshView` keep on nodes, and the objects
+ * made with {@link shareAcrossCopies}. Copies with the same protocol share
+ * them; copies with different ones keep apart.
  *
  * Bump it with any change to their layout or meaning, and rename the `_mvt`
  * fields in the same change, so that copies that disagree never read each

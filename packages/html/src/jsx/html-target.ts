@@ -1,6 +1,6 @@
 import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
 import { assert } from '@mvtjs/utils';
-import { destroyElement, onDestroyed, tickScene } from '../element-mixin';
+import { destroyElement, onDestroyed } from '../element-mixin';
 import { hasOwnedText } from './owned-text';
 
 // ---------------------------------------------------------------------------
@@ -23,8 +23,8 @@ export const MVT_GROUP_CSS = 'mvt-group:not([hidden]){display:contents}';
 // ---------------------------------------------------------------------------
 
 /**
- * The DOM, as the JSX base needs it. Nodes are `Element`s, whose methods the
- * @mvtjs/html scene passes call.
+ * The DOM, as the JSX base needs it. Nodes are `Element`s, whose methods
+ * `updateView` and `refreshView` call.
  */
 export const htmlTarget: JsxTarget<Element> = {
     name: '@mvtjs/html/jsx',
@@ -64,8 +64,6 @@ export const htmlTarget: JsxTarget<Element> = {
     listen: (node, eventName, handler) => {
         node.addEventListener(eventName, handler as EventListener);
     },
-
-    tickScene,
 };
 
 // ---------------------------------------------------------------------------

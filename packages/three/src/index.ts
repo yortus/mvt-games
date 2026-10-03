@@ -1,6 +1,7 @@
 export { createPointerPicker } from './pointer-picker';
 export type { PointerEventSource, PointerLike, PointerPickEvent } from './pointer-picker';
 export type { PointerPickEventKind, PointerPicker, PointerPickerOptions } from './pointer-picker';
-export { destroyObject, isDestroyed, onDestroyed, setTickMethods, tickScene } from './object3d-mixin';
-export { addReads, countReads, countScene, hasRefresh, hasUpdate, readCounter, sceneCounter, SKIP_DESCENDANTS } from '@mvtjs/utils';
-export type { RefreshMethod, SceneCounts, UpdateMethod } from '@mvtjs/utils';
+export { destroyObject, isDestroyed, onDestroyed } from './object3d-mixin';
+export { hasRefresh, hasUpdate, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/utils';
+export { addReads, countTick, tickCounter } from '@mvtjs/utils';
+export type { RefreshMethod, TickCounter, TickCounts, UpdateMethod, View } from '@mvtjs/utils';

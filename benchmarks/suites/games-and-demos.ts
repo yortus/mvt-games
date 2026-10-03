@@ -24,8 +24,8 @@ export const gamesAndDemosSuite: Suite = {
             rows: ['kind', 'entry'],
             metrics: [
                 { key: 'modelsUs', title: 'Models (µs)' },
-                { key: 'updateUs', title: 'Update scene pass (µs)' },
-                { key: 'refreshUs', title: 'Refresh scene pass (µs)' },
+                { key: 'updateUs', title: '`updateView` (µs)' },
+                { key: 'refreshUs', title: '`refreshView` (µs)' },
                 { key: 'totalUs', title: 'Total (µs)' },
                 { key: 'containers', title: 'Pixi containers', maxDecimals: 0 },
                 { key: 'methods', title: 'Update and refresh methods', maxDecimals: 0 },
@@ -52,7 +52,7 @@ export const gamesAndDemosSuite: Suite = {
     ],
     titles: { kind: 'Kind', entry: 'Name' },
     notes: [
-        'Since 2026-10-02, each frame is the session\'s update, which advances only its models, then a tick of the stage, timed one scene pass at a time. The time table\'s models, update scene pass and refresh scene pass columns are new: the earlier "update" column mixed the models with the views\' update methods.',
+        'Since 2026-10-02, each frame is the session\'s update, which advances only its models, then a tick of the stage, timed `updateView` and `refreshView` apart. The time table\'s models, `updateView` and `refreshView` columns are new: the earlier "update" column mixed the models with the views\' update methods.',
     ],
     labels: {
         kind: { game: 'Game', demo: 'Demo' },

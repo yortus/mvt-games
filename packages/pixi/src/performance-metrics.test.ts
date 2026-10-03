@@ -1,6 +1,7 @@
 import { type Renderer, RendererType, type Ticker } from 'pixi.js';
+import { addReads, tickCounter } from '@mvtjs/utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFrameStats, type SampledCounter, type SampledSceneCounter } from './frame-stats';
+import { createPerformanceMetrics } from './performance-metrics';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,7 +14,7 @@ import { createFrameStats, type SampledCounter, type SampledSceneCounter } from 
  * stepped by hand.
  */
 function setup(options: SetupOptions = {}) {
-    const { readCounter, sceneCounter, gl } = options;
+    const { gl } = options;
     let nowMs = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
@@ -33,7 +34,7 @@ function setup(options: SetupOptions = {}) {
         runners: { prerender: runner, postrender: runner },
     } as unknown as Renderer;
 
-    const stats = createFrameStats({ renderer, ticker, windowMs: 100, readCounter, sceneCounter });
+    const metrics = createPerformanceMetrics({ renderer, ticker, windowMs: 100 });
 
     /** One frame: tick, `work` (the frame's update and refresh), render; `frameMs` of it busy, the rest idle. */
     function frame(frameMs: number, busyMs: number, work?: () => void): void {
@@ -45,12 +46,10 @@ function setup(options: SetupOptions = {}) {
         nowMs += frameMs - busyMs;
     }
 
-    return { stats, frame };
+    return { metrics, frame };
 }
 
 interface SetupOptions {
-    readonly readCounter?: SampledCounter;
-    readonly sceneCounter?: SampledSceneCounter;
     readonly gl?: FakeGl;
 }
 
@@ -105,37 +104,38 @@ function createFakeGl(resultsMs: number[]): FakeGl {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('frame stats', () => {
+describe('performance metrics', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         delete (globalThis as { WebGL2RenderingContext?: unknown }).WebGL2RenderingContext;
+        tickCounter.isCounting = false;
     });
 
     it('publishes frames per second and CPU time per frame at the end of each window', () => {
-        const { stats, frame } = setup();
+        const { metrics, frame } = setup();
 
         for (let i = 0; i < 12; i++) frame(10, 4);
 
-        expect(stats.sampleCount).toBeGreaterThan(0);
-        expect(stats.fps).toBeCloseTo(100, 0);
-        expect(stats.cpuMs).toBeCloseTo(4, 5);
-        expect(stats.gpuMs).toBeUndefined();
-        expect(stats.readsPerFrame).toBeUndefined();
+        expect(metrics.sampleCount).toBeGreaterThan(0);
+        expect(metrics.fps).toBeCloseTo(100, 0);
+        expect(metrics.cpuMs).toBeCloseTo(4, 5);
+        expect(metrics.gpuMs).toBeUndefined();
+        expect(metrics.reads).toBe(0);
     });
 
     it('reports the median GPU time of each window, so a few inflated frames do not dominate', () => {
         // Ten frames of 0.5 ms with two inflated to 8 ms: the mean would be 1.7 ms
         const gl = createFakeGl([0.5, 0.5, 8, 0.5, 0.5, 0.5, 8, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
-        const { stats, frame } = setup({ gl });
+        const { metrics, frame } = setup({ gl });
 
         for (let i = 0; i < 12; i++) frame(10, 4);
 
-        expect(stats.gpuMs).toBe(0.5);
+        expect(metrics.gpuMs).toBe(0.5);
     });
 
     it('drops every result in flight after a disjoint event', () => {
         const gl = createFakeGl([9, 9, 9, 9, 9, ...new Array<number>(20).fill(1)]);
-        const { stats, frame } = setup({ gl });
+        const { metrics, frame } = setup({ gl });
 
         // Five frames timed at 9 ms, still in flight when a disjoint event
         // happens; then frames at 1 ms, collected normally
@@ -145,81 +145,68 @@ describe('frame stats', () => {
         gl.areResultsAvailable = true;
         for (let i = 0; i < 20; i++) frame(10, 4);
 
-        expect(stats.gpuMs).toBe(1);
+        expect(metrics.gpuMs).toBe(1);
         const history: number[] = [];
-        for (let i = 0; i < stats.historyLength; i++) history.push(stats.historyAt('gpu', i));
+        for (let i = 0; i < metrics.historyLength; i++) history.push(metrics.historyAt('gpuMs', i));
         expect(history).not.toContain(9);
     });
 
-    it('counts reads for one frame per window, and leaves the counter off otherwise', () => {
-        const counter = { isCounting: false, count: 0 };
-        const { stats, frame } = setup({ readCounter: counter });
-        const read = (): void => {
-            if (counter.isCounting) counter.count += 250;
-        };
+    it('counts ticks for one frame per window, and leaves the counter off otherwise', () => {
+        const { metrics, frame } = setup();
 
         let countingFrames = 0;
         for (let i = 0; i < 40; i++) {
             frame(10, 4, () => {
-                if (counter.isCounting) countingFrames++;
-                read();
+                if (tickCounter.isCounting) countingFrames++;
+                addReads(250);
             });
         }
 
-        expect(stats.readsPerFrame).toBe(250);
+        expect(metrics.reads).toBe(250);
         // About one frame in each 100 ms window of 10 ms frames
         expect(countingFrames).toBeGreaterThanOrEqual(3);
         expect(countingFrames).toBeLessThanOrEqual(4);
 
-        stats.destroy();
-        expect(counter.isCounting).toBe(false);
+        metrics.destroy();
+        expect(tickCounter.isCounting).toBe(false);
     });
 
-    it('samples the scene counter in the same frame as the read counter', () => {
-        const readCounter = { isCounting: false, count: 0 };
-        const sceneCounter = { isCounting: false, methodCalls: 0, walkRebuilds: 0, rebuildVisits: 0 };
-        const { stats, frame } = setup({ readCounter, sceneCounter });
+    it('publishes every tick count from the same sampled frame', () => {
+        const { metrics, frame } = setup();
 
-        let mismatchedFrames = 0;
         for (let i = 0; i < 40; i++) {
             frame(10, 4, () => {
-                if (readCounter.isCounting !== sceneCounter.isCounting) mismatchedFrames++;
-                if (!sceneCounter.isCounting) return;
-                sceneCounter.methodCalls += 120;
-                sceneCounter.walkRebuilds += 2;
-                sceneCounter.rebuildVisits += 300;
+                if (!tickCounter.isCounting) return;
+                tickCounter.reads += 50;
+                tickCounter.methodCalls += 120;
+                tickCounter.methodListRebuilds += 2;
+                tickCounter.rebuildNodeVisits += 300;
             });
         }
 
-        expect(mismatchedFrames).toBe(0);
-        expect(stats.methodsPerFrame).toBe(120);
-        expect(stats.rebuildsPerFrame).toBe(2);
-        expect(stats.visitsPerFrame).toBe(300);
-        expect(stats.historyAt('methods', stats.historyLength - 1)).toBe(120);
-
-        stats.destroy();
-        expect(sceneCounter.isCounting).toBe(false);
+        expect(metrics.reads).toBe(50);
+        expect(metrics.methodCalls).toBe(120);
+        expect(metrics.methodListRebuilds).toBe(2);
+        expect(metrics.rebuildNodeVisits).toBe(300);
+        expect(metrics.historyAt('methodCalls', metrics.historyLength - 1)).toBe(120);
     });
 
     it('has counts from the first window, by sampling the first frame', () => {
-        const counter = { isCounting: false, count: 0 };
-        const { stats, frame } = setup({ readCounter: counter });
+        const { metrics, frame } = setup();
 
-        for (let i = 0; i < 12; i++) {
-            frame(10, 4, () => {
-                if (counter.isCounting) counter.count += 250;
-            });
-        }
+        for (let i = 0; i < 12; i++) frame(10, 4, () => addReads(250));
 
-        expect(stats.sampleCount).toBe(1);
-        expect(stats.readsPerFrame).toBe(250);
+        expect(metrics.sampleCount).toBe(1);
+        expect(metrics.reads).toBe(250);
     });
 
-    it('reports no scene counts without a scene counter', () => {
-        const { stats, frame } = setup();
-        for (let i = 0; i < 20; i++) frame(10, 4);
+    it('switches the counter off when destroyed mid-sample', () => {
+        const { metrics, frame } = setup();
+        frame(10, 4);
+        expect(tickCounter.isCounting).toBe(true);
 
-        expect(stats.methodsPerFrame).toBeUndefined();
-        expect(stats.historyAt('rebuilds', stats.historyLength - 1)).toBeNaN();
+        metrics.destroy();
+
+        expect(tickCounter.isCounting).toBe(false);
     });
 });

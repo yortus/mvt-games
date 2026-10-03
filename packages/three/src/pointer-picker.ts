@@ -58,8 +58,8 @@ export interface PointerPicker {
  * Raycasts the pointer into the scene on each DOM pointer event, and
  * dispatches the matching {@link PointerPickEvent} on the nearest visible
  * object under it, then on each of its ancestors, so an `onClick` attribute
- * on a group hears clicks on any mesh inside it. Moving onto and off objects
- * dispatches `pointerover` and `pointerout`.
+ * on a group receives clicks on any mesh inside it. Moving onto and off
+ * objects dispatches `pointerover` and `pointerout`.
  *
  * Raycasting uses each object's world matrix as last rendered, which is what
  * the pointer was over.

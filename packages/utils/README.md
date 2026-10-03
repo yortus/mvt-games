@@ -12,8 +12,14 @@ make common parts of it shorter, and none of them needs a renderer:
   `update(deltaMs)` call rather than a clock.
 - **Collections:** `createSlotList` and `createOrderedSlotList`, which keep a
   stable slot per item, for views that pool what they draw.
-- **For renderer packages:** the scene passes (`createScenePasses`) and, at
-  `@mvtjs/utils/jsx`, the base that each renderer's JSX runtime is built on.
+- **The tick API:** `updateView` and `refreshView`, which call the update and
+  refresh methods that `setUpdate` and `setRefresh` give a view's nodes, for
+  every installed renderer. Use them through a renderer package
+  (`@mvtjs/pixi`, `@mvtjs/three`, `@mvtjs/html`), which registers its nodes
+  and re-exports them.
+- **For renderer packages:** `registerRenderer`, which teaches the tick API a
+  new kind of tree, and, at `@mvtjs/utils/jsx`, the base that each renderer's
+  JSX runtime is built on.
 
 ```sh
 npm install @mvtjs/utils

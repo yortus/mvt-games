@@ -1,4 +1,3 @@
-import type { TickSceneOptions } from '../scene-passes';
 import type { ChangeableAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------
@@ -12,7 +11,9 @@ import type { ChangeableAttribute } from './attributes';
  * a renderer reaches the base.
  *
  * `N` is the renderer's node type. The base needs nothing of it: it keeps
- * each element's bindings in its refresh method, set with `setTickMethods`.
+ * each element's bindings in its refresh method, set with `setRefresh`, which
+ * the renderer's `refreshView` calls. The renderer registers its nodes with
+ * `registerRenderer`; nothing about that reaches the base either.
  */
 export interface JsxTarget<N extends object> {
     /** Names the runtime in error messages, e.g. `'@mvtjs/pixi/jsx'`. */
@@ -51,11 +52,4 @@ export interface JsxTarget<N extends object> {
      * make the listener work, and an attribute can still override them.
      */
     listen: (node: N, eventName: string, handler: (event: never) => void) => void;
-
-    /**
-     * The renderer's `tickScene`. The runtime never calls it: `<List>` and
-     * `<Switch>` rely on the refresh scene pass to refresh what they build.
-     * The conformance suite drives each target through it.
-     */
-    tickScene: (options: TickSceneOptions<N>) => void;
 }

@@ -80,8 +80,9 @@ function frame(timestamp: number): void {
     // Cap to prevent spiral-of-death after backgrounding
     const clampedDelta = Math.min(deltaMs, 100);
 
-    gameSession.update(clampedDelta);                       // models
-    tickScene({ root: app.stage, deltaMs: clampedDelta });  // views: update, then refresh
+    gameSession.update(clampedDelta);           // models
+    updateView(app.stage, clampedDelta);        // views: update...
+    refreshView(app.stage);                     // ...then refresh
     app.render();
 
     requestAnimationFrame(frame);
@@ -134,53 +135,53 @@ The ticker can support **pausing** (stop calling `update()` but continue
 rendering) and **speed control** (multiply `deltaMs` before passing it).
 Models don't know or care - they only ever see the `deltaMs` they receive.
 
-## In This Project: The Ticker Ticks Models, Then the Scene
+## In This Project: Updating and Refreshing Views
 
 MVT requires the order above, not a particular mechanism. This project
-implements the view side with [`packages/pixi/src/`](https://github.com/yortus/mvt-games/tree/main/packages/pixi/src):
-a view sets its two steps on its Pixi `Container` with `setTickMethods`, and
-the host ticks the whole scene with `tickScene`. This is a **project
-convention**, not part of MVT itself.
+implements the view side with the
+[`@mvtjs` packages](https://github.com/yortus/mvt-games/tree/main/packages): a
+view sets its two steps on its Pixi `Container` with `setUpdate` and
+`setRefresh`, and the host updates and then refreshes the whole stage with
+`updateView` and `refreshView`. This is a **project convention**, not part of
+MVT itself.
 
 ```ts
-setTickMethods(view, {
-    update: (deltaMs) => { flash.update(deltaMs); },   // advance cosmetic presentation state
-    refresh: () => { view.alpha = flash.alpha; },      // read state, write presentation output
-});
+setUpdate(view, (deltaMs) => { flash.update(deltaMs); });  // advance cosmetic presentation state
+setRefresh(view, () => { view.alpha = flash.alpha; });     // read state, write presentation output
 ```
 
-| Member | MVT step | Set on |
+| Function | MVT step | Called on |
 | --- | --- | --- |
-| `update: (deltaMs) => { ... }` | a view's `update(deltaMs)`: advance cosmetic presentation state | only views that have presentation state |
-| `refresh: () => { ... }` | a view's `refresh()`: read state, write presentation output | every view that shows state |
+| `setUpdate(view, fn)` | a view's `update(deltaMs)`: advance cosmetic presentation state | only views that have presentation state |
+| `setRefresh(view, fn)` | a view's `refresh()`: read state, write presentation output | every view that shows state |
 
 Each frame, the host does this:
 
 ```ts
-cabinet.update(deltaMs);                       // 1. the models advance
-tickScene({ root: app.stage, deltaMs });       // 2. the update scene pass, then the refresh scene pass
-// 3. Pixi renders
+cabinet.update(deltaMs);            // 1. the models advance
+updateView(app.stage, deltaMs);     // 2. every update method in the stage, parents first
+refreshView(app.stage);             // 3. every refresh method in the stage, parents first
+// 4. Pixi renders
 ```
 
-- **A tick of the scene is two scene passes.** The update scene pass walks the
-  subtree it is given and calls every update method it finds, parents before
-  children; then the refresh scene pass does the same for every refresh
-  method. A view anywhere in the tree takes part just by setting its methods;
-  its parents do not need to know it exists or pass anything on.
+- **A view includes its child views.** `updateView` calls every update method
+  in the view it is given, parents before children; `refreshView` does the
+  same for every refresh method. A view anywhere in the tree takes part just
+  by setting its methods; its parents do not need to know it exists or pass
+  anything on.
 - **Sessions advance only their models.** A game session's `update()` runs its
-  model and nothing else. The host (`site/src/main.ts`) ticks the whole stage once
-  per frame, after the models.
+  model and nothing else. The host (`site/src/main.ts`) updates and refreshes
+  the whole stage once per frame, after the models.
 - **Pausing is the host's call.** While paused, the host stops advancing the
-  models, and its game container sits out the update scene pass. It is still
+  models, and its game container sits out `updateView`. It is still
   refreshed, so the pause menu shows over the frozen game. No game knows about
   pause.
 - **Skipping a subtree.** Either method may return `SKIP_DESCENDANTS` to skip
-  its container's descendants for that scene pass, for example a hidden panel
-  whose contents need not refresh. Visibility alone skips nothing.
-- **Stepping the two apart.** `tickScene({ root, deltaMs, only: 'update' })`
-  and `tickScene({ root, only: 'refresh' })` run one scene pass each, for a
-  caller that needs many updates and then one refresh, such as rendering a
-  thumbnail.
+  its container's descendants for that call, for example a hidden panel whose
+  contents need not refresh. Visibility alone skips nothing.
+- **Many updates, one refresh.** The two are separate calls, so a caller can
+  update many times and refresh once, such as fast-forwarding a game to
+  render a thumbnail.
 - **Why not Pixi's `onRender`?** It fires during rendering, so it is tied to
   render cadence and cannot skip a subtree. The
   [`packages/pixi/src/` README](https://github.com/yortus/mvt-games/blob/main/packages/pixi/src/README.md)
@@ -192,8 +193,8 @@ In practice, models and views each form trees - a root model composes child
 models, and a root view composes child views. The ticker only talks to the
 roots. Models delegate `update(deltaMs)` to their children explicitly, because
 the order of child updates and cross-model checks is domain logic. Views do not
-need to: in this project the scene passes walk the view tree for them (see
-above). The frame sequence is the same regardless of tree depth.
+need to: in this project `updateView` and `refreshView` walk the view tree for
+them (see above). The frame sequence is the same regardless of tree depth.
 
 ## Key Constraints at a Glance
 

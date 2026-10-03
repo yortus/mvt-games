@@ -1,7 +1,7 @@
 {
     "name": "@mvtjs/utils",
     "version": "0.1.0",
-    "description": "Optional, renderer-agnostic helpers for MVT (Model-View-Ticker): scene passes, change detection, tweens, and the base for JSX targets",
+    "description": "Optional, renderer-agnostic helpers for MVT (Model-View-Ticker): updateView and refreshView, change detection, tweens, and the base for JSX targets",
     "license": "MIT",
     "author": "Troy Gerwien",
     "keywords": ["mvt", "model-view-ticker", "game", "scene graph", "jsx", "reactivity", "tween"],
@@ -13,7 +13,7 @@
     },
     "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
-    "sideEffects": ["./src/shared-state.ts", "./dist/shared-state.js"],
+    "sideEffects": ["./src/tick-api/shared-state.ts", "./dist/tick-api/shared-state.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",

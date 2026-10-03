@@ -2,7 +2,7 @@ import { Container, Sprite, Ticker } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { RockPhase } from '../models';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -33,7 +33,7 @@ export function RockView(bindings: RockViewBindings): Container {
 
     const view = new Container();
     initialiseView();
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {

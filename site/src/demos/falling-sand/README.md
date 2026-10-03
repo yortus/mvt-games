@@ -19,9 +19,9 @@ how many grains are moving, and frame timing: frames per second, then, per
 frame, CPU and GPU milliseconds and `Reads`, the reads of the model the view
 makes (the pixel view counts its own reads the way the JSX runtime counts the
 sprite view's, so the two compare). Below those, `Methods` is the update and
-refresh methods the scene passes call, and `Rebuilds` and `Visits` are the
-memoised walks they rebuild and the nodes they visit doing it: the scene's
-churn, zero while the tank's grains stay put. The panel's (i) button explains
+refresh methods `updateView` and `refreshView` call, and `Rebuilds` and
+`Visits` are the method lists they rebuild and the node visits rebuilding
+them takes: the scene's churn, zero while the tank's grains stay put. The panel's (i) button explains
 each figure.
 `npm run bench -- falling-sand-scaling` measures every combination headless,
 from 1,000 to 200,000 grains (with `--extended` for a store flipping 10,000
@@ -30,8 +30,8 @@ in the `games-and-demos` suite.
 
 ## What it shows
 
-**The simulation pays for moving grains; the refresh scene pass pays for all
-of them.** A grain that cannot move for a couple of steps falls asleep, and the
+**The simulation pays for moving grains; `refreshView` pays for all of
+them.** A grain that cannot move for a couple of steps falls asleep, and the
 simulation stops visiting it until a neighbouring cell empties. A settled
 pile of thousands of grains costs the model almost nothing. The view is
 different. With the sprite view, each grain's sprite has three bindings:
@@ -51,7 +51,7 @@ different. With the sprite view, each grain's sprite has three bindings:
 </List>
 ```
 
-The refresh scene pass runs them for every grain, every frame, asleep or not. Pour
+`refreshView` runs them for every grain, every frame, asleep or not. Pour
 until the tank is deep, then compare the grain count with the moving count
 and watch the CPU time follow the first. Flip the tank to wake every grain at
 once.
@@ -101,7 +101,7 @@ neither Solid's compiler nor the Babel toolchain it runs on.
 **Pushing moves view work into the model's update.** The model makes each
 frame's changes in one Solid `batch`, so the Solid views' effects run once,
 at the end of `update()`, and never see a half-stepped tank. That is when
-they run, though: inside the model's update, not in the refresh scene pass. With a
+they run, though: inside the model's update, not in `refreshView`. With a
 store, the model is in effect pushing to its views, which is the reactive
 architecture this variant exists to compare with MVT's polling.
 
@@ -168,8 +168,8 @@ grains, before each fix:
   dropped to about 0.5 ms.
 - **`tint` parsed its colour on every write.** Pixi's setter does, even for
   an unchanged value, so the JSX runtime now writes `tint` only when it
-  changes, as it does `text` and `texture`. The refresh scene pass dropped from
-  about 2.2 ms to 0.9 ms.
+  changes, as it does `text` and `texture`. `refreshView` dropped from about
+  2.2 ms to 0.9 ms.
 - **`toLocaleString` built a number formatter on every call**, tens of
   microseconds each time. The counts now share one `Intl.NumberFormat`.
 
@@ -238,6 +238,6 @@ does not jump.
 | [`grain-colors.ts`](./views/grain-colors.ts) | Colours by kind, with a stable shade per grain, as tints and as pixels |
 | [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |
 
-The frame timing comes from `createFrameStats` in
+The performance metrics come from `createPerformanceMetrics` in
 [`packages/pixi/src/`](../../../../packages/pixi/src/index.ts) and `PerfmonView` in
 [`site/src/shared/`](../../shared/index.ts), which any demo or game can use.

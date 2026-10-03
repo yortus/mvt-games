@@ -15,7 +15,7 @@ const CHARACTER_WIDTH = 0.6;
  * Widths are estimated from the font size rather than measured, so layout
  * that depends on them is approximate, and measuring costs less than it does
  * in a browser. Like the stubbed textures (see the driver), this changes what
- * would be drawn, not the model or the scene passes.
+ * would be drawn, not the model or `updateView` and `refreshView`.
  */
 export function stubTextMeasurement(): void {
     DOMAdapter.set({

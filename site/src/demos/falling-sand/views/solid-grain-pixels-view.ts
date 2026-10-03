@@ -2,7 +2,7 @@ import { BufferImageSource, type Container, Sprite, Texture } from 'pixi.js';
 import { createMemo, createRenderEffect, createRoot, indexArray, onCleanup } from 'solid-js';
 import type { Grains } from '../models';
 import { pickGrainPixel } from './grain-colors';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -54,7 +54,7 @@ export function SolidGrainPixelsView(bindings: SolidGrainPixelsViewBindings): Co
     let isChanged = true;
 
     const sprite = new Sprite(texture);
-    setTickMethods(sprite, { refresh: uploadIfChanged });
+    setRefresh(sprite, uploadIfChanged);
 
     createRoot((dispose) => {
         sprite.on('destroyed', () => {

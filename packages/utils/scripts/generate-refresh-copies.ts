@@ -52,9 +52,7 @@ function refreshCopiesSource(): string {
         '// In a stack trace, `refresh3Copy1` is the refresh method of an element with three',
         '// bindings, in copy 1, and the line names the binding: `g0()` is the first.',
         '',
-        'import { readCounter } from \'../read-counter\';',
-        'import type { RefreshMethod } from \'../scene-methods\';',
-        'import { SKIP_DESCENDANTS } from \'../skip-descendants\';',
+        'import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from \'../tick-api\';',
         '',
         '/** Reads one binding. */',
         'export type Getter = () => unknown;',
@@ -118,8 +116,8 @@ function copySource(n: number, k: number): string[] {
     for (let i = 0; i < n; i++) lines.push(`    let l${i} = unset;`);
     lines.push(`    const ${name}: RefreshMethod = () => {`);
     lines.push(n === 1
-        ? '        if (readCounter.isCounting) readCounter.count++;'
-        : `        if (readCounter.isCounting) readCounter.count += hasVisible ? 1 : ${n};`);
+        ? '        if (tickCounter.isCounting) tickCounter.reads++;'
+        : `        if (tickCounter.isCounting) tickCounter.reads += hasVisible ? 1 : ${n};`);
     for (let i = 0; i < n; i++) {
         const bit = 1 << i;
         lines.push(
@@ -139,7 +137,7 @@ function copySource(n: number, k: number): string[] {
             lines.push(
                 '        if (hasVisible) {',
                 '            if (!v0) return SKIP_DESCENDANTS;',
-                `            if (readCounter.isCounting) readCounter.count += ${n - 1};`,
+                `            if (tickCounter.isCounting) tickCounter.reads += ${n - 1};`,
                 '        }',
             );
         }

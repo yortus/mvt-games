@@ -2,7 +2,7 @@
 import { Container, Texture } from 'pixi.js';
 import { Power2 } from 'gsap';
 import { afterEach, describe, expect, it } from 'vitest';
-import { tickScene } from '@mvtjs/pixi';
+import { refreshView, updateView } from '@mvtjs/pixi';
 import type { CabinetPhase } from './cabinet-model';
 import { CabinetView } from './cabinet-view';
 
@@ -68,7 +68,8 @@ function createCabinet(): Cabinet {
         card,
         border: (index) => card(index).children[3] as Container,
         frame: (deltaMs) => {
-            tickScene({ root: view, deltaMs });
+            updateView(view, deltaMs);
+            refreshView(view);
         },
     };
     return current;
@@ -93,7 +94,7 @@ describe('CabinetView', () => {
     it('lays out the carousel on its first refresh, before any update', () => {
         const cabinet = createCabinet();
 
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
 
         expect(cabinet.menu.visible).toBe(true);
         expect(cabinet.card(1).x).toBe(WIDTH / 2);
@@ -104,7 +105,7 @@ describe('CabinetView', () => {
 
     it('scrolls a newly selected game to the centre', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
 
         press('ArrowRight');
         run(cabinet, 1000);
@@ -115,7 +116,7 @@ describe('CabinetView', () => {
 
     it('zooms into the selected card when Enter is pressed', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
         const sideAlpha = cabinet.card(0).alpha;
 
         press('Enter');
@@ -130,13 +131,13 @@ describe('CabinetView', () => {
 
     it('draws the same zoom however many times it is refreshed', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
         press('Enter');
         cabinet.frame(ZOOM_MS / 2);
         const drawn = { scale: cabinet.card(1).scale.x, side: cabinet.card(0).alpha, border: cabinet.border(1).alpha };
 
-        tickScene({ root: cabinet.view, only: 'refresh' });
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
+        refreshView(cabinet.view);
 
         expect(cabinet.card(1).scale.x).toBe(drawn.scale);
         expect(cabinet.card(0).alpha).toBe(drawn.side);
@@ -145,7 +146,7 @@ describe('CabinetView', () => {
 
     it('reports the launch once, when the zoom in finishes', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
 
         press('Enter');
         run(cabinet, ZOOM_MS - 16);
@@ -158,7 +159,7 @@ describe('CabinetView', () => {
 
     it('stays hidden and ignores input while the launched game loads', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
         press('Enter');
         run(cabinet, ZOOM_MS);
 
@@ -178,7 +179,7 @@ describe('CabinetView', () => {
 
     it('zooms back out of the card when the game exits', () => {
         const cabinet = createCabinet();
-        tickScene({ root: cabinet.view, only: 'refresh' });
+        refreshView(cabinet.view);
         const sideAlpha = cabinet.card(0).alpha;
         press('Enter');
         run(cabinet, ZOOM_MS);

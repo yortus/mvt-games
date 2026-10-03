@@ -7,12 +7,13 @@ afterEach(() => {
 });
 
 describe('a second copy of @mvtjs/pixi', () => {
-    it('shares the first copy\'s core, and wraps Container once', async () => {
+    it('shares the first copy\'s registration, and wraps Container once', async () => {
         const addChild = Container.prototype.addChild;
+        const renderer = rendererOf(Container.prototype);
+        // Registering `Container.prototype` again would throw
         const second = await importCopy('second-copy');
         expect(second).not.toBe(first);
-        expect(second.tickScene).toBe(first.tickScene);
-        expect(second.setTickMethods).toBe(first.setTickMethods);
+        expect(rendererOf(Container.prototype)).toBe(renderer);
         expect(Container.prototype.addChild).toBe(addChild);
     });
 
@@ -26,6 +27,11 @@ describe('a second copy of @mvtjs/pixi', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** The registration `updateView` and `refreshView` find on a prototype: a private field, read only here. */
+function rendererOf(prototype: object): unknown {
+    return (prototype as { _mvtRenderer?: unknown })._mvtRenderer;
+}
 
 /**
  * A fresh instance of the module, as a second copy of the package would be: a

@@ -1,6 +1,5 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { tickScene as tickElements } from '@mvtjs/html';
-import { createPointerPicker, tickScene } from '@mvtjs/three';
+import { createPointerPicker, refreshView, updateView } from '@mvtjs/three';
 import { createFlockModel } from '../boids';
 import { FlockPanelView } from './flock-panel-view';
 import { FlockView } from './flock-view';
@@ -8,8 +7,8 @@ import { FlockView } from './flock-view';
 // The flock-in-3D demo page: the boids demo's model, drawn with three.js
 // through the three.js JSX runtime, with an HTML panel of settings beside it
 // through the HTML one: two views of one model, on two renderers. Each frame
-// runs the MVT way: the model updates, then the scene passes call both views'
-// methods, then three renders.
+// runs the MVT way: the model updates, then `updateView` and `refreshView`
+// call both views' methods, then three renders.
 
 // ---------------------------------------------------------------------------
 // Scene
@@ -58,11 +57,13 @@ renderer.setAnimationLoop((time: number) => {
     const deltaMs = lastTime === undefined ? 0 : Math.min(time - lastTime, MAX_STEP_MS);
     lastTime = time;
 
-    // The model, then each renderer's scene: the three.js scene, and the
-    // settings panel's elements
+    // The model, then the views of both renderers: the three.js scene, and
+    // the settings panel's elements. `updateView` and `refreshView` serve both.
     model.update(deltaMs);
-    tickScene({ root: scene, deltaMs });
-    tickElements({ root: panel, deltaMs });
+    updateView(scene, deltaMs);
+    updateView(panel, deltaMs);
+    refreshView(scene);
+    refreshView(panel);
 
     orbitAngle += deltaMs * ORBIT_RADIANS_PER_MS;
     camera.position.set(Math.sin(orbitAngle) * ORBIT_RADIUS, ORBIT_HEIGHT, Math.cos(orbitAngle) * ORBIT_RADIUS);

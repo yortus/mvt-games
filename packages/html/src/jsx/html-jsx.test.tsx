@@ -1,7 +1,8 @@
 /** @jsxImportSource @mvtjs/html/jsx */
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { tickScene } from '../element-mixin';
+import { refreshView } from '@mvtjs/utils';
+import '../element-mixin';
 import { MVT_GROUP_CSS } from './html-target';
 import { List } from './list';
 
@@ -33,11 +34,11 @@ describe('@mvtjs/html/jsx', () => {
         it('is the hidden attribute', () => {
             let isShown = true;
             const el = <div visible={() => isShown} />;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(el.hasAttribute('hidden')).toBe(false);
 
             isShown = false;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(el.hasAttribute('hidden')).toBe(true);
         });
     });
@@ -46,12 +47,12 @@ describe('@mvtjs/html/jsx', () => {
         it('writes a text node the element owns, keeping the node as the text changes', () => {
             let score = 10;
             const el = <span text={() => score} />;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             const node = el.firstChild;
             expect(el.textContent).toBe('10');
 
             score = 11;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
 
             expect(el.textContent).toBe('11');
             expect(el.firstChild).toBe(node);
@@ -61,7 +62,7 @@ describe('@mvtjs/html/jsx', () => {
         it('cannot be mixed with element children, in dev builds', () => {
             expect(() => <p text="score"><span /></p>).toThrow(/cannot also have element children/);
             const el = <p text={() => 'late'}><span /></p>;
-            expect(() => tickScene({ root: el, only: 'refresh' })).toThrow(/cannot also have text/);
+            expect(() => refreshView(el)).toThrow(/cannot also have text/);
         });
     });
 
@@ -69,10 +70,10 @@ describe('@mvtjs/html/jsx', () => {
         it('puts the model\'s value back when the user types something the model rejects', () => {
             const model = { name: 'Ada' };
             const input = <input value={() => model.name} /> as HTMLInputElement;
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
 
             input.value = 'Ad';
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
 
             expect(input.value).toBe('Ada');
         });
@@ -81,15 +82,15 @@ describe('@mvtjs/html/jsx', () => {
             const model = { name: 'Ada' };
             const input = <input value={() => model.name} /> as HTMLInputElement;
             document.body.append(input);
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
 
             input.focus();
             input.value = 'Ad';
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
             expect(input.value).toBe('Ad');
 
             input.blur();
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
             expect(input.value).toBe('Ada');
         });
 
@@ -103,11 +104,11 @@ describe('@mvtjs/html/jsx', () => {
                     }}
                 />
             ) as HTMLInputElement;
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
 
             input.value = 'Grace';
             input.dispatchEvent(new Event('input'));
-            tickScene({ root: input, only: 'refresh' });
+            refreshView(input);
 
             expect(model.name).toBe('Grace');
             expect(input.value).toBe('Grace');
@@ -118,10 +119,10 @@ describe('@mvtjs/html/jsx', () => {
         it('is compared with the element, so a rejected click is undone', () => {
             const model = { isOn: false };
             const box = <input type="checkbox" checked={() => model.isOn} /> as HTMLInputElement;
-            tickScene({ root: box, only: 'refresh' });
+            refreshView(box);
 
             box.checked = true;
-            tickScene({ root: box, only: 'refresh' });
+            refreshView(box);
 
             expect(box.checked).toBe(false);
         });
@@ -131,14 +132,14 @@ describe('@mvtjs/html/jsx', () => {
         it('are written as attributes, fixed or bound', () => {
             let state = 'idle';
             const el = <div data-kind="enemy" data-state={() => state} aria-live="polite" aria-busy={() => state !== 'idle'} />;
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(el.getAttribute('data-kind')).toBe('enemy');
             expect(el.getAttribute('data-state')).toBe('idle');
             expect(el.getAttribute('aria-live')).toBe('polite');
             expect(el.getAttribute('aria-busy')).toBe('false');
 
             state = 'busy';
-            tickScene({ root: el, only: 'refresh' });
+            refreshView(el);
             expect(el.getAttribute('data-state')).toBe('busy');
             expect(el.getAttribute('aria-busy')).toBe('true');
         });
@@ -173,12 +174,12 @@ describe('@mvtjs/html/jsx', () => {
                     <List items={() => model.names}>{(name) => <li text={name} />}</List>
                 </ul>
             );
-            tickScene({ root: list, only: 'refresh' });
+            refreshView(list);
             const texts = (): string[] => [...list.querySelectorAll('li:not([hidden])')].map((li) => li.textContent ?? '');
             expect(texts()).toEqual(['a', 'b']);
 
             model.names = ['c'];
-            tickScene({ root: list, only: 'refresh' });
+            refreshView(list);
             expect(texts()).toEqual(['c']);
         });
     });
@@ -197,14 +198,13 @@ describe('@mvtjs/html/jsx where new Function is blocked', () => {
     async function withBlockedFunction() {
         vi.resetModules();
         const runtime = await import('./jsx-runtime');
-        const mvt = await import('../element-mixin');
         let constructions = 0;
         vi.stubGlobal('Function', function Blocked() {
             constructions++;
             throw new EvalError('Refused to evaluate a string as JavaScript');
         });
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        return { runtime, tickScene: mvt.tickScene, warn, constructions: () => constructions };
+        return { runtime, warn, constructions: () => constructions };
     }
 
     it('builds and refreshes elements without ever calling it, and warns nothing', async () => {
@@ -214,9 +214,9 @@ describe('@mvtjs/html/jsx where new Function is blocked', () => {
         // Enough elements that the shape takes a copy of the refresh code of its own
         const elements: HTMLElement[] = [];
         for (let i = 0; i < 20; i++) elements.push(t.runtime.jsx('div', { title: () => text }) as HTMLElement);
-        for (const el of elements) t.tickScene({ root: el, only: 'refresh' });
+        for (const el of elements) refreshView(el);
         text = 'b';
-        for (const el of elements) t.tickScene({ root: el, only: 'refresh' });
+        for (const el of elements) refreshView(el);
 
         expect(elements[0].title).toBe('b');
         expect(elements[19].title).toBe('b');

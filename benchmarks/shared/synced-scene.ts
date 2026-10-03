@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { batch, createRenderEffect, createRoot, createSignal } from 'solid-js';
 import { jsx } from '@mvtjs/pixi/jsx';
-import { setTickMethods, tickScene } from '@mvtjs/pixi';
+import { refreshView, setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -12,7 +12,7 @@ import { setTickMethods, tickScene } from '@mvtjs/pixi';
  *
  * - `model-only`: the model changes, and there is no view at all.
  * - `hand-written`: a refresh method per container reads the model and
- *   assigns its properties, run by the refresh scene pass. What a compiler would emit.
+ *   assigns its properties, called by `refreshView`. What a compiler would emit.
  * - `jsx`: the same, built with this repo's JSX runtime from function
  *   attributes.
  * - `solid`: the model's fields are Solid signals, and one render effect per
@@ -110,7 +110,7 @@ function createPolledScene(options: SyncedSceneOptions, changedCount: number): S
         frame() {
             tick++;
             changeItems(items, changedCount, allDynamic, tick);
-            if (refresh) tickScene({ root, only: 'refresh' });
+            if (refresh) refreshView(root);
         },
         dispose() {
             root.destroy({ children: true });
@@ -127,33 +127,27 @@ function createPolledView(approach: Approach, item: ItemModel, allDynamic: boole
 
     const view = new Container();
     if (approach === 'wasteful') {
-        setTickMethods(view, {
-            refresh: () => {
-                // Both allocate on every call: a new string, and a new array
-                view.label = `item at ${item.x}`;
-                const doubled = [item.x, item.y].map((value) => value * 2);
-                view.x = doubled[0] / 2;
-                view.y = doubled[1] / 2;
-                view.alpha = item.alpha;
-            },
+        setRefresh(view, () => {
+            // Both allocate on every call: a new string, and a new array
+            view.label = `item at ${item.x}`;
+            const doubled = [item.x, item.y].map((value) => value * 2);
+            view.x = doubled[0] / 2;
+            view.y = doubled[1] / 2;
+            view.alpha = item.alpha;
         });
     }
     else if (allDynamic) {
-        setTickMethods(view, {
-            refresh: () => {
-                view.x = item.x;
-                view.y = item.y;
-                view.alpha = item.alpha;
-            },
+        setRefresh(view, () => {
+            view.x = item.x;
+            view.y = item.y;
+            view.alpha = item.alpha;
         });
     }
     else {
         view.y = 5;
         view.alpha = 0.5;
-        setTickMethods(view, {
-            refresh: () => {
-                view.x = item.x;
-            },
+        setRefresh(view, () => {
+            view.x = item.x;
         });
     }
     return view;

@@ -1,11 +1,11 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
 import { PerfmonView } from '#shared';
-import type { FrameStats } from '@mvtjs/pixi';
+import type { PerformanceMetrics } from '@mvtjs/pixi';
 import type { FlockModel } from './flock-model';
 import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { SliderView } from './slider-view';
 import { CheckboxView } from './checkbox-view';
-import { setTickMethods } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,8 +29,8 @@ export interface BoidsViewBindings {
     isShowingInfluences: () => boolean;
     /** Called when the user toggles the influence-vector checkbox. */
     onShowInfluencesToggled?: (isShowing: boolean) => void;
-    /** Frame timing to show, or undefined where there is none (e.g. rendering a thumbnail). */
-    frameStats: () => FrameStats | undefined;
+    /** Performance metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
+    performanceMetrics: () => PerformanceMetrics | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +185,8 @@ export function BoidsView(bindings: BoidsViewBindings): Container {
     controlsContainer.addChild(influenceCheckbox);
     yOffset += PERFMON_GAP;
 
-    const perfmon = PerfmonView({ frameStats: bindings.frameStats });
+    // Boids' hand-written views do not count their reads (`addReads`)
+    const perfmon = PerfmonView({ performanceMetrics: bindings.performanceMetrics, unmeasured: ['reads'] });
     perfmon.position.set(0, yOffset);
     controlsContainer.addChild(perfmon);
 
@@ -195,7 +196,7 @@ export function BoidsView(bindings: BoidsViewBindings): Container {
     simBg.rect(0, 0, simWidth, simHeight).fill({ color: 0x111122 });
     simBg.rect(0, 0, simWidth, simHeight).stroke({ color: 0x333355, width: 1 });
 
-    setTickMethods(view, { refresh });
+    setRefresh(view, refresh);
     return view;
 
     // ---- Refresh -----------------------------------------------------------

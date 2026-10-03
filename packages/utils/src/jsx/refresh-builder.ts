@@ -1,6 +1,4 @@
-import { readCounter } from '../read-counter';
-import type { RefreshMethod } from '../scene-methods';
-import { SKIP_DESCENDANTS } from '../skip-descendants';
+import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
 import type { WriteKind } from './attributes';
 import { REFRESH_COPIES, type RefreshCopy, type Write, type Writer } from './refresh-copies';
 
@@ -242,7 +240,7 @@ function loopRefresh(
         lastValues.push(UNSET);
     }
     return () => {
-        if (readCounter.isCounting) readCounter.count += hasVisible ? 1 : count;
+        if (tickCounter.isCounting) tickCounter.reads += hasVisible ? 1 : count;
         for (let i = 0; i < count; i++) {
             const value = getters[i]();
             if (!isOnChange[i]) {
@@ -254,7 +252,7 @@ function loopRefresh(
             }
             if (i === 0 && hasVisible) {
                 if (!value) return SKIP_DESCENDANTS;
-                if (readCounter.isCounting) readCounter.count += count - 1;
+                if (tickCounter.isCounting) tickCounter.reads += count - 1;
             }
         }
     };

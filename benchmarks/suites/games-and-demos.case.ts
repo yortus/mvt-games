@@ -14,7 +14,7 @@ import {
     createFallingSandEntry,
     createReorderingListsEntry,
 } from '../../site/src/demos';
-import { hasRefresh, hasUpdate, tickScene } from '@mvtjs/pixi';
+import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
@@ -27,8 +27,8 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // then a tick of the stage, as `site/src/main.ts` and `site/src/demos/main.ts` run them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
-//   after a 10-second warm-up, split into the models, the update scene pass
-//   and the refresh scene pass.
+//   after a 10-second warm-up, split into the models, `updateView` and
+//   `refreshView`.
 // measure `allocation`: bytes allocated per frame.
 // measure `gc`: garbage collections over one simulated minute.
 
@@ -57,7 +57,8 @@ let frameIndex = 0;
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
-    tickScene({ root: stage, deltaMs: FRAME_MS });
+    updateView(stage, FRAME_MS);
+    refreshView(stage);
 };
 
 if (measure === 'time') {
@@ -70,15 +71,15 @@ if (measure === 'time') {
         const start = performance.now();
         session.update(FRAME_MS);
         const modelsDone = performance.now();
-        tickScene({ root: stage, deltaMs: FRAME_MS, only: 'update' });
+        updateView(stage, FRAME_MS);
         const updateDone = performance.now();
-        tickScene({ root: stage, only: 'refresh' });
+        refreshView(stage);
         const refreshDone = performance.now();
         modelsMs += modelsDone - start;
         updateMs += updateDone - modelsDone;
         refreshMs += refreshDone - updateDone;
     }
-    const counts = countScene(stage);
+    const counts = countStage(stage);
     report({
         modelsUs: (modelsMs * 1000) / MEASURED_FRAMES,
         updateUs: (updateMs * 1000) / MEASURED_FRAMES,
@@ -145,7 +146,7 @@ function createInputScript(config: GameInputConfig | undefined): (frame: number)
     };
 }
 
-function countScene(root: Container): { containers: number; methods: number } {
+function countStage(root: Container): { containers: number; methods: number } {
     let containers = 0;
     let methods = 0;
     const visit = (node: Container): void => {

@@ -35,6 +35,7 @@ package depends on each package it checks, and nothing depends on it.
 | File | Keeps |
 | --- | --- |
 | [renderer-tick-api.test.ts](./renderer-tick-api.test.ts) | Every renderer package re-exports the same tick API names from `@mvtjs/utils`, as the base's own values |
+| [scripts/published-view-types.ts](./scripts/published-view-types.ts) | Every entry point a renderer package publishes brings the renderer's view type into `View`, in its built declaration files. Checks `dist/`, so `npm run build:packages` runs it after building, rather than `npm test` |
 
 ## Adding a check
 

@@ -149,7 +149,7 @@ function BoardView(bindings: BoardViewBindings): Container {
 
     // The parent's update method runs before its children's, so every child
     // reads this frame's sequence state
-    setTickMethods(view, { update });
+    setUpdate(view, update);
     return view;
 
     function update(deltaMs: number) {
@@ -215,7 +215,7 @@ const updateEffects = createSequenceReaction(matchSequence, {
 });
 
 // Run as the view's refresh:
-setTickMethods(view, { refresh: updateEffects });
+setRefresh(view, updateEffects);
 ```
 
 The reaction tracks each step's phase (before, active, after) and fires

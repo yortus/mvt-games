@@ -1,6 +1,6 @@
 import { Container, type Sprite, Texture } from 'pixi.js';
 import { jsx } from '@mvtjs/pixi/jsx';
-import { tickScene } from '@mvtjs/pixi';
+import { refreshView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report, retainedPerItem } from '../harness/measure';
 import { createChangeDetectionFrame } from '../shared/change-detection-scene';
 import { createPoolFrame } from '../shared/pool-scene';
@@ -74,6 +74,6 @@ function createWatchedFrame(changedPercent: number): () => void {
 
     return () => {
         for (let i = 0; i < changedCount; i++) widths[i].width += 0.37;
-        tickScene({ root, only: 'refresh' });
+        refreshView(root);
     };
 }
