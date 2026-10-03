@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**031**.
+**032**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -76,14 +76,15 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | # | Proposal | Status |
 | --- | --- | --- |
 | 008 | [`Watch()` fluent builder](./proposals/008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection, memoised derivation, reactions and uniform lists. The prototype is `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
-| 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Being implemented on `vnext-011`: phases 0 to 5 done (the libraries are workspace packages, beside private `site`, `docs`, `benchmarks` and `checks` packages; the docs describe the new layout; Vite+ trialled and not adopted, Vite 8 and Vitest 5 taken; phase 6 done up to the first publish, which is done by hand), and its top-level tidy-up done earlier. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in an npm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
+| 011 | [Multi-package repo](./proposals/011-multi-package-repo.md) | Being implemented on `vnext-011`: phases 0 to 5 done (the libraries are workspace packages, beside private `site`, `docs`, `benchmarks` and `checks` packages; the docs describe the new layout; Vite+ trialled and not adopted, Vite 8 and Vitest 5 taken; phase 6 done up to the first publish, which is done by hand and waits for 031's renames of the tick API), and its top-level tidy-up done earlier. Splits the libraries into `@mvtjs/utils` and `@mvtjs/pixi` in an npm workspace, with the games, demos and playground as one private `site` package. Includes a tooling briefing, a Vite+ lint trial, and a phased migration plan. Also records a barrel-rule bug in ESLint (section 11.1), left for its phase 1 |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Section 2 implemented: each container's method cached in the scene-pass loop (measured 12-27% cheaper refresh on the falling-sand demo, at a small cost on uniform scenes). Still proposed: a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
 | 022 | [A renderer-agnostic JSX base](./proposals/022-renderer-agnostic-jsx.md) | Phases 1-4 implemented: the base and Pixi's JSX target (measured level with the old runtime), generic scene passes with 012's cached methods, a conformance suite run on every JSX target, three.js, and HTML (measured in headless Chrome), with one demo using both. Its generated refresh code and build-time precompiler were built, then replaced by closures within 1.1-1.3x of their speed, with no `new Function` (section 7.7, task 025). Directories shaped as the future packages (one base, `src/mvt-utils/`, and one per renderer, JSX at `jsx/`); the moves into packages wait for 011. Splits `pixi-jsx` into a base and a Pixi JSX target that is mostly an element table, so HTML and three.js JSX targets reuse the whole runtime, intrinsic elements and `<List>`/`<Switch>` included. Generalises the pixi-mvt passes to any tree. Appraises an earlier spike of the same idea (022a) |
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
+| 031 | [The tick API in MVT's own words](./proposals/031-tick-api-in-mvt-terms.md) | Decided 2026-10-03, spiked (types, packaging and dispatch: no blockers), not implemented. Blocks 011's first publish. Renames the tick API to `updateView` / `refreshView` and `setUpdate` / `setRefresh`, defined once in `@mvtjs/utils` and typed through a `RendererViews` interface each renderer augments; merges the two counters into `tickCounter`; renames `FrameStats` to `PerformanceMetrics`; retires "scene pass" |
 
-**How they relate.** All seven can be read on their own. 022 is the
+**How they relate.** All eight can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
 012's method caching in its generic scene-pass core. 008 concerns
 the `watch()` helper (now in `@mvtjs/utils`), and now also whether `memoiseLast`
@@ -96,7 +97,9 @@ falling-sand experiments were run by 020, now archived. 023 collects what
 021 left open; two of its items would be written against 022's base if
 022 lands first. 011's publishing phase carries two items from 027, now
 archived: guarding against two copies of the scene passes in one program,
-and a shared `SKIP_DESCENDANTS` symbol.
+and a shared `SKIP_DESCENDANTS` symbol. 031 renames the tick API that 027
+named, and must land before 011's first publish, since its names and shared
+fields are public.
 
 ## Tasks
 

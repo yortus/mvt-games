@@ -14,7 +14,9 @@ workspace packages under `packages/`, the site, the docs, the benchmarks and
 the new checks are private workspace packages beside them, and the docs and
 agent files describe the new layout. Vite+ was trialled and not adopted for
 now (section 9.4); Vite 8 and Vitest 5 were taken on their own. Phase 6
-is done up to the first publish, which is done by hand (section 12.7). The npm scopes and GitHub org in section 3 are
+is done up to the first publish, which is done by hand (section 12.7), and
+which now waits for [031](./031-tick-api-in-mvt-terms.md)'s renames of the
+tick API. The npm scopes and GitHub org in section 3 are
 registered. The top-level tidy-up was done separately on 2026-09-26, without
 the package split (section 7, "Done already").
 
@@ -27,7 +29,8 @@ the package split (section 7, "Done already").
 [`docs/reference/style-guide.md`](../../docs/reference/style-guide.md),
 [`eslint.config.js`](../../eslint.config.js),
 [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml),
-[the `Watch()` builder spike](./008-watch-builder-spike.md) (its prototype moves with `watch`).
+[the `Watch()` builder spike](./008-watch-builder-spike.md) (its prototype moves with `watch`),
+[031](./031-tick-api-in-mvt-terms.md) (the tick API's names, before the first publish).
 
 ---
 
@@ -1051,6 +1054,18 @@ commits of its own and can be deleted.
   for two copies of the scene passes in one program, and `SKIP_DESCENDANTS`
   made with `Symbol.for('mvt.skipDescendants')`, so every copy agrees (027
   section 7.6, item 3).~~
+- Before the first publish, implement
+  [031](./031-tick-api-in-mvt-terms.md) (decided and spiked 2026-10-03): the
+  tick API becomes `updateView` / `refreshView` and `setUpdate` /
+  `setRefresh`, defined once in `@mvtjs/utils` and typed through a
+  `RendererViews` interface each renderer augments; the two counters become
+  `tickCounter`; `FrameStats` becomes `PerformanceMetrics`. It touches what
+  this phase built for two copies: mitigation 4 below moves from
+  `setTickMethods` to the two setters, `_mvtInvalidators` folds into a
+  renderer field on each prototype, and the counters in utils' shared object
+  get new fields. `PROTOCOL` can stay 1, since no copy has been published.
+  Every published entry of a renderer package must also import its mixin,
+  so its `.d.ts` carries the augmentation (031 section 7.2).
 - Publish ~~`@mvtjs/utils` and `@mvtjs/pixi`~~ all four libraries at `0.1.0`:
   by hand, as `.changeset/README.md` describes, since npm trusts a workflow
   only for packages that already exist.
@@ -1132,8 +1147,8 @@ placeholder versions to create the packages first.
 - **Documented** in `.changeset/README.md` (day to day, releasing, and the
   first release by hand), and in `AGENTS.md`'s commands table.
 
-**Left for the owner:** the first publish and the four trusted-publisher
-registrations, as `.changeset/README.md` lists. Pushing `release.yml` to
+**Left for the owner:** the first publish, once 031 is implemented, and the
+four trusted-publisher registrations, as `.changeset/README.md` lists. Pushing `release.yml` to
 `main` before then is harmless: until the packages exist it fails at
 `changeset publish` rather than publishing anything.
 
