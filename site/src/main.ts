@@ -26,14 +26,12 @@ const NAV_HEIGHT = 48;
 
 /** Returns the effective nav height (0 when hidden during gameplay). */
 function getNavHeight(): number {
-    // eslint-disable-next-line @mvtjs/no-null -- `querySelector` returns `null` when nothing matches
     const nav = document.querySelector('.site-nav') as HTMLElement | null;
     if (!nav) return 0;
     return nav.style.display === 'none' ? 0 : NAV_HEIGHT;
 }
 
 function setNavVisible(visible: boolean): void {
-    // eslint-disable-next-line @mvtjs/no-null -- `querySelector` returns `null` when nothing matches
     const nav = document.querySelector('.site-nav') as HTMLElement | null;
     if (!nav) return;
     nav.style.display = visible ? '' : 'none';
@@ -189,7 +187,7 @@ async function main(): Promise<void> {
             gameWidth: () => currentEntry?.screenWidth ?? 0,
             gameHeight: () => currentEntry?.screenHeight ?? 0,
             scale: () => currentScale,
-            hasDpad: () => currentSession?.inputConfig != null
+            hasDpad: () => currentSession?.inputConfig !== undefined
                 && (currentSession.inputConfig.showDpad ?? true),
             hasPrimaryButton: () => currentSession?.inputConfig?.showPrimary ?? false,
             hasSecondaryButton: () => currentSession?.inputConfig?.showSecondary ?? false,

@@ -139,7 +139,6 @@ function dispatch(type: PointerPickEventKind, object: Object3D, intersection: In
             isStopped = true;
         },
     };
-    // eslint-disable-next-line @mvtjs/no-null -- three.js types `parent` as `Object3D | null`
     for (let node: Object3D | null = object; node !== null && !isStopped; node = node.parent) {
         node.dispatchEvent(event as never);
     }
@@ -147,7 +146,6 @@ function dispatch(type: PointerPickEventKind, object: Object3D, intersection: In
 
 /** Whether `object` and all its ancestors are visible. */
 function isShown(object: Object3D): boolean {
-    // eslint-disable-next-line @mvtjs/no-null -- three.js types `parent` as `Object3D | null`
     for (let node: Object3D | null = object; node !== null; node = node.parent) {
         if (!node.visible) return false;
     }

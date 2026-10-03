@@ -1179,8 +1179,13 @@ outside this repo.
   - `no-em-dash`: comments, strings, template literals and JSX text, with an
     auto-fix to a hyphen. Its first run found one in its own source, put
     there when a comment's `\u` escape was written out as the character.
-  - `no-null`: values and types; comparisons with `null` are allowed. Of 24
-    findings, three own choices became `undefined` (the two site entry
+  - `no-null`: our own code and APIs never introduce `null`, while
+    third-party `null`s are handled explicitly where they arrive. Since our
+    code creates no `null`, every one it meets came from outside, so the rule
+    reports `null` as a value and in types outside a function body
+    (declarations, our API), and allows comparisons and local types. Reached
+    after a detour: comparisons were briefly reported too, then judged
+    better left explicit for third-party values. Of the first 24 findings, three own choices became `undefined` (the two site entry
     points' `setUrlFragment` and `history.replaceState`, and the spritesheet
     plugin's `packSprites`), and fourteen describe outside APIs or callers'
     values (three.js's and Pixi's `parent`, `querySelector`,

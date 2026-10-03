@@ -30,9 +30,9 @@ export const DEFAULT_VARIANTS: DemoVariants = { storage: 'objects', grainsView: 
 export function parseVariants(search: string): DemoVariants {
     const params = new URLSearchParams(search);
     return {
-        storage: pick(params.get('storage'), STORAGES, DEFAULT_VARIANTS.storage),
-        grainsView: pick(params.get('view'), GRAINS_VIEWS, DEFAULT_VARIANTS.grainsView),
-        tankSize: pick(params.get('tank'), TANK_SIZES, DEFAULT_VARIANTS.tankSize),
+        storage: pick(params.get('storage') ?? undefined, STORAGES, DEFAULT_VARIANTS.storage),
+        grainsView: pick(params.get('view') ?? undefined, GRAINS_VIEWS, DEFAULT_VARIANTS.grainsView),
+        tankSize: pick(params.get('tank') ?? undefined, TANK_SIZES, DEFAULT_VARIANTS.tankSize),
     };
 }
 
@@ -56,7 +56,6 @@ const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 const GRAINS_VIEWS: readonly GrainsViewKind[] = ['sprites', 'pixels'];
 const TANK_SIZES: readonly TankSizeKind[] = ['small', 'medium', 'large'];
 
-// eslint-disable-next-line @mvtjs/no-null -- `URLSearchParams.get` returns `null` for a missing parameter
-function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+function pick<T extends string>(value: string | undefined, allowed: readonly T[], fallback: T): T {
     return allowed.find((kind) => kind === value) ?? fallback;
 }

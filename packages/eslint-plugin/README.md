@@ -8,7 +8,7 @@ meant to be published once there are enough of them to be useful to others.
 | --- | --- | --- |
 | `@mvtjs/no-wall-clock` | `architecture` | Timers (`setTimeout`, `setInterval`, `requestAnimationFrame`), clock reads (`Date.now()`, `new Date()`, `performance.now()`) and GSAP tweens made without `paused: true`. Apply it to model files |
 | `@mvtjs/no-em-dash` | `style` | Em-dashes in comments, strings, template literals and JSX text. Auto-fixes each to a hyphen |
-| `@mvtjs/no-null` | `style` | `null` as a value or a type. Comparisons with `null` are allowed |
+| `@mvtjs/no-null` | `style` | `null` that our own code or APIs introduce: as a value, or in a type outside a function body. Comparisons and local types, which handle third-party values, are allowed |
 | `@mvtjs/no-this` | `style` | `this` |
 
 The repo's `eslint.config.js` applies `style` to all code and `architecture`

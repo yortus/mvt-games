@@ -161,11 +161,28 @@ function find(id: string): Item | null;
 let selected: Item | null = null;
 ```
 
+Our own code and APIs never introduce `null`. Third-party APIs still return
+it (the DOM's `querySelector`, a Pixi container's `parent`), and where one
+does, be explicit about it where the value arrives, and convert it before it
+reaches our own APIs:
+
+```ts
+// ✅ Explicit where a third-party value arrives
+if (node.parent === null) root.addChild(node);
+const nav = document.querySelector('.site-nav') as HTMLElement | null;
+
+// ✅ Converted at the boundary, so our own function never sees null
+pick(params.get('view') ?? undefined, VIEWS, 'sprites');
+
+// ❌ Our own API passing null on
+function pick(value: string | null, ...): ...
+```
+
 Enforced by lint: `@mvtjs/no-null`, from this repo's `packages/eslint-plugin`.
-Comparing with `null` is allowed, since that is how code checks a value from
-an API that returns it, such as the DOM's `querySelector` or a Pixi
-container's `parent`. A type that has to describe such an API takes an
-`eslint-disable-next-line` comment that says so.
+It reports `null` as a value, and in a type outside a function body (an
+interface, a type alias, a function's signature, a module-level variable),
+and allows comparisons and local types. A declaration that has to accept
+`null` from outside takes an `eslint-disable-next-line` comment saying why.
 
 ## No `this`
 

@@ -594,7 +594,6 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
      * and costs one comparison per change.
      */
     function invalidateUpdate(node: N): void {
-        // eslint-disable-next-line @mvtjs/no-null -- holds what a renderer's `parent` returns, which may be `null`
         let cursor: N | null | undefined = node;
         while (cursor) {
             const fields = fieldsOf(cursor);
@@ -609,7 +608,6 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
 
     /** The refresh half of {@link invalidateUpdate}. */
     function invalidateRefresh(node: N): void {
-        // eslint-disable-next-line @mvtjs/no-null -- holds what a renderer's `parent` returns, which may be `null`
         let cursor: N | null | undefined = node;
         while (cursor) {
             const fields = fieldsOf(cursor);
