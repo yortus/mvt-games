@@ -690,8 +690,8 @@ below.
 - **The hit flash is not presentation state.** Section 5.4 planned a timer
   in the enemy view. Item views inside a `<List>` show one enemy after
   another as slots are reused, so state kept per view can carry over from
-  the last occupant; and `<List>` does not skip an empty slot's update step
-  ([11.4](#114-still-open)). The enemy and boss models record `msSinceHit`
+  the last occupant; and `<List>` did not then skip an empty slot's update
+  step (since fixed, [11.4](#114-still-open)). The enemy and boss models record `msSinceHit`
   instead, and `HitFlashView` is a pure function of it. The boss health
   bar's slide stays as presentation state, outside any list.
 - **Phases.** `GamePhase` is `'playing' | 'dying' | 'tally' | 'game-over' |
@@ -755,13 +755,15 @@ so it measures the early stage and a game over, not the dense attacks.
   run, or an autopilot that writes `PlayerInput` as a player does (an
   attract mode, which would also make a good MVT example). Neither exists
   yet.
-- **`<List>` and update steps**, in `@mvtjs/utils`. `<List>` hides an empty
-  slot and skips its subtree in `refreshView`, but not in `updateView`, so
-  an item view's update step still runs for an empty slot and reads an
-  absent item. Its own documentation says no binding sees an absent item.
-  This was found when a first draft of the hit flash crashed in the
-  benchmark; no other game has an update step inside a list. Worth a task:
-  gate the slot's update step the way its refresh is gated.
+- ~~**`<List>` and update steps**, in `@mvtjs/utils`. `<List>` hid an empty
+  slot and skipped its subtree in `refreshView`, but not in `updateView`, so
+  an item view's update step still ran for an empty slot and read an absent
+  item. Found when a first draft of the hit flash crashed in the
+  benchmark.~~ Fixed (2026-10-04): an emptied slot whose item view has an
+  update step is given an update gate as it empties, kept at the list's
+  level. Measured level with the old `<List>` on the falling-sand sprites
+  view at 20,000 grains, interleaved; a first version that kept the gate's
+  state in each slot's closure was about 10% slower there.
 - **Final title**, touch movement and interpolation: open questions 1, 3
   and 5, unchanged.
 - **Balance.** The patterns were tuned from the numbers, not by playing the

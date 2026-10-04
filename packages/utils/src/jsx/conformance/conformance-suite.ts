@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countTick, hasNodeRefresh, refreshNode, setNodeRefresh, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../tick-api';
+import { countTick, hasNodeRefresh, hasNodeUpdate, refreshNode, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../tick-api';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
 import type { JsxTarget } from '../jsx-target';
@@ -653,6 +653,98 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
             expect(t.built).toEqual([]);
             expect(fixture.isDestroyed(attached)).toBe(true);
             expect(fixture.isDestroyed(detached)).toBe(true);
+        });
+
+        it('skips an empty slot\'s update steps, as it skips its refresh', () => {
+            const items: (Item | undefined)[] = itemsWithIds(1, 2);
+            const updated: number[] = [];
+            const list = List<Item>({
+                items,
+                children: (item) => jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(item().id) }),
+            });
+            refresh(list);
+            updateNode(list, 16);
+            expect(updated).toEqual([1, 2]);
+
+            // An emptied slot must not run `item().id` on undefined
+            items[1] = undefined;
+            refresh(list);
+            updated.length = 0;
+            expect(() => updateNode(list, 16)).not.toThrow();
+            expect(updated).toEqual([1]);
+
+            items[1] = { id: 3 };
+            refresh(list);
+            updated.length = 0;
+            updateNode(list, 16);
+            expect(updated).toEqual([1, 3]);
+        });
+
+        it('skips an update step anywhere in an empty slot\'s subtree', () => {
+            const items: (Item | undefined)[] = itemsWithIds(1, 2);
+            const updated: number[] = [];
+            const list = List<Item>({
+                items,
+                children: (item) => jsx(Fragment, {
+                    children: jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(item().id) }),
+                }),
+            });
+            refresh(list);
+            items[0] = undefined;
+            refresh(list);
+
+            updateNode(list, 16);
+            expect(updated).toEqual([2]);
+        });
+
+        it('updates a slot with the item it showed at its last refresh', () => {
+            const bullets = createSlotList<{ id: number }>();
+            const a = bullets.insert({ id: 2 });
+            const updated: number[] = [];
+            const list = List({
+                items: bullets.slots,
+                children: (slot) => jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(slot().value.id) }),
+            });
+            refresh(list);
+
+            // Removed by the model after the last refresh: the slot still shows it this frame.
+            bullets.remove(a);
+            updateNode(list, 16);
+            expect(updated).toEqual([2]);
+
+            refresh(list);
+            updateNode(list, 16);
+            expect(updated).toEqual([2]);
+        });
+
+        it('gates an update step an item view gains after it is built', () => {
+            const items: (Item | undefined)[] = itemsWithIds(1);
+            let updates = 0;
+            const views: N[] = [];
+            const list = List<Item>({
+                items,
+                children: () => {
+                    const view = jsx(fixture.everyFrame.tag, {});
+                    views.push(view);
+                    return view;
+                },
+            });
+            refresh(list);
+            setNodeUpdate(views[0], () => void updates++);
+            refresh(list);
+
+            items[0] = undefined;
+            refresh(list);
+            updateNode(list, 16);
+            expect(updates).toBe(0);
+        });
+
+        it('adds no update step to a slot whose item view has none, so such a list costs nothing to update', () => {
+            const t = setup(itemsWithIds(1, 2, 3));
+            refresh(t.list);
+
+            expect(hasNodeUpdate(t.list)).toBe(false);
+            expect(fixture.children(t.list).some((slot) => hasNodeUpdate(slot))).toBe(false);
         });
 
         it('accepts a plain array as the source', () => {

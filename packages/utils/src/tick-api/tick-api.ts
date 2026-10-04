@@ -263,6 +263,23 @@ export function hasNodeRefresh(node: object): boolean {
     return fieldsOf(node)._mvtRefreshMethod !== undefined;
 }
 
+/**
+ * Whether `node` or anything below it has an update method. For library code
+ * that gates a subtree's update steps, as `<List>` gates a slot's; not part
+ * of the public tick API.
+ *
+ * Answered from the same cache the method lists use, so once asked it costs a
+ * field read until something in the subtree changes. Reads the cache itself
+ * first, so a cached answer counts no rebuild work.
+ */
+export function hasNodeUpdateInSubtree(node: object): boolean {
+    const fields = fieldsOf(node);
+    const cached = fields._mvtSubtreeHasUpdate;
+    if (cached !== undefined) return cached;
+    const renderer = fields._mvtRenderer;
+    return renderer !== undefined ? renderer.subtreeHasUpdate(node) : fields._mvtUpdateMethod !== undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
@@ -278,6 +295,8 @@ interface Renderer {
     readonly invalidate: (node: object) => void;
     readonly invalidateUpdate: (node: object) => void;
     readonly invalidateRefresh: (node: object) => void;
+    /** Whether the node's subtree holds an update method, filling the cache if need be. */
+    readonly subtreeHasUpdate: (node: object) => boolean;
 }
 
 /**
@@ -395,6 +414,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
         invalidate: (node) => invalidate(node as N),
         invalidateUpdate: (node) => invalidateUpdate(node as N),
         invalidateRefresh: (node) => invalidateRefresh(node as N),
+        subtreeHasUpdate: (node) => has(node as N, UPDATE),
     };
 
     /**
