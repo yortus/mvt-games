@@ -1,8 +1,11 @@
 {
-    "name": "checks",
+    "name": "@mvtjs/checks",
     "private": true,
     "version": "0.0.0",
     "type": "module",
+    "scripts": {
+        "check:view-type-registration": "node scripts/view-type-registration.ts"
+    },
     "devDependencies": {
         "@mvtjs/html": "^0.2.0",
         "@mvtjs/pixi": "^0.2.0",

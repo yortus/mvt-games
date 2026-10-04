@@ -27,9 +27,9 @@ packages/
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
+├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): the documentation (VitePress)
 └── website/             @mvtjs/website (private): the games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
-checks/                  Tests that the packages still fit together as decided
 notes/                   Proposals and tasks
 ```
 
@@ -89,7 +89,8 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm test`             | Every workspace's tests (Vitest) |
 | `npm run docs:dev`     | Start the VitePress dev server |
-| `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw) |
+| `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
+| `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/checks/](packages/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
 | `npm run bench`        | Performance benchmarks ([packages/benchmarks/](packages/benchmarks/README.md)) |
 

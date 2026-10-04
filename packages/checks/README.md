@@ -5,7 +5,7 @@
 > the other tests, and fail when the repo's structure drifts from what was
 > decided.
 
-**Related:** [Project Structure](../packages/docs/reference/project-structure.md)
+**Related:** [Project Structure](../docs/reference/project-structure.md)
 
 ---
 
@@ -35,7 +35,7 @@ package depends on each package it checks, and nothing depends on it.
 | File | Keeps |
 | --- | --- |
 | [renderer-tick-api.test.ts](./renderer-tick-api.test.ts) | Every renderer package re-exports the same tick API names from `@mvtjs/utils`, as the base's own values |
-| [scripts/published-view-types.ts](./scripts/published-view-types.ts) | Every entry point a renderer package publishes brings the renderer's view type into `View`, in its built declaration files. Checks `dist/`, so `npm run build:packages` runs it after building, rather than `npm test` |
+| [scripts/view-type-registration.ts](./scripts/view-type-registration.ts) | Every entry point a renderer package publishes brings the renderer's view type into `View`, in its built declaration files. Checks `dist/`, so `npm run build:packages` runs it after building, rather than `npm test`. Alone, once built: `npm run check:view-type-registration` |
 
 ## Adding a check
 
@@ -46,3 +46,10 @@ package depends on each package it checks, and nothing depends on it.
 4. Add a row to the table above.
 
 `npm test` at the repo root runs the checks with every other test.
+
+A check that needs built output, as `view-type-registration` needs the
+libraries' `dist/`, cannot run as a test. It is a script in `scripts/`,
+with an npm script named `check:<name>` in this package's `package.json`,
+and one of the same name at the repo root that runs it
+(`npm run check:<name> -w @mvtjs/checks`). Whatever builds what it checks
+runs it after building.

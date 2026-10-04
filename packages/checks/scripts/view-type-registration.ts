@@ -4,7 +4,7 @@
 // that entry point cannot pass the renderer's views to any of them: every
 // call is a type error. It checks the built packages, reading their `dist/`
 // and never their source, so `npm run build:packages` runs it after building
-// them.
+// them. Once they are built, `npm run check:view-type-registration` runs it alone.
 //
 // Each case compiles a one-line program that imports one entry point, as
 // published (no `@mvtjs/source` condition), and checks that the renderer's
@@ -66,10 +66,10 @@ for (const c of cases) {
 }
 
 if (failures.length > 0) {
-    process.stderr.write(`Published view types: ${failures.length} of ${cases.length} cases failed.\n${failures.join('\n')}\n`);
+    process.stderr.write(`View type registration: ${failures.length} of ${cases.length} cases failed.\n${failures.join('\n')}\n`);
     process.exit(1);
 }
-process.stdout.write(`Published view types: all ${cases.length} cases passed.\n`);
+process.stdout.write(`View type registration: all ${cases.length} cases passed.\n`);
 
 // ---------------------------------------------------------------------------
 // Internals
@@ -78,7 +78,7 @@ process.stdout.write(`Published view types: all ${cases.length} cases passed.\n`
 /** Compiles one case's program, and returns its errors in the fixture. */
 function compile(c: Case): string[] {
     // TypeScript names files with forward slashes, on Windows too
-    const fileName = ts.sys.resolvePath(`${import.meta.dirname}/published-view-types.fixture.ts`).replaceAll('\\', '/');
+    const fileName = ts.sys.resolvePath(`${import.meta.dirname}/view-type-registration.fixture.ts`).replaceAll('\\', '/');
     const source = [
         `import '${c.entry}';`,
         'import type { View } from \'@mvtjs/utils\';',

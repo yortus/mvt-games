@@ -4,8 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "workspaces": [
-        "packages/*",
-        "checks"
+        "packages/*"
     ],
     "scripts": {
         "prepare": "npm run generate-refresh-copies && npm run build:lint-plugin",
@@ -16,7 +15,8 @@
         "prebuild:website": "npm run generate-refresh-copies",
         "build:website": "tsc -b && npm run build -w @mvtjs/website",
         "build:docs": "npm run build -w @mvtjs/docs",
-        "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html && node checks/scripts/published-view-types.ts",
+        "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html && npm run check:view-type-registration",
+        "check:view-type-registration": "npm run check:view-type-registration -w @mvtjs/checks",
         "build:lint-plugin": "npm run build -w @mvtjs/eslint-plugin",
         "docs:dev": "npm run dev -w @mvtjs/docs",
         "preview": "npm run preview -w @mvtjs/website",

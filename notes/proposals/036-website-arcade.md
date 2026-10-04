@@ -242,7 +242,7 @@ round trips (HTML, CSS and JS, images), roughly 1 s on a cold edge over
 HTTP/1.1, and less over HTTP/2. To be measured after step 9 (section 11),
 with a target of under 1.2 s cold, from the same script as section 3.
 
-A **size budget** keeps it that way: a check in `checks/` that builds the
+A **size budget** keeps it that way: a check in `packages/checks/` that builds the
 website and fails if the home page's initial JS includes `pixi.js` or
 `three`, or exceeds a set gzipped size (to be set from the first
 measurement).
@@ -739,7 +739,8 @@ and the site working.
     Done.
 3b. ~~**Move** `benchmarks/` to `packages/benchmarks/`, as `@mvtjs/benchmarks`. A commit of its own.~~
     Done.
-3c. **Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.
+3c. ~~**Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.~~
+    Done.
 4. **Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
    and `Genre` in `website/src/entries/`. Convert the seven games and three
    Pixi demos to `pixi` entries with lazy `load()`. The cabinet and the demos

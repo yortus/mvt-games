@@ -64,11 +64,9 @@ An npm workspace: the libraries, published under the `@mvtjs` npm scope,
 and private packages for everything else.
 
 ```
-packages/     The libraries (@mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html),
-              the documentation (VitePress), the performance benchmarks
-              (npm run bench), and the website: the games, demos and
-              playground (Vite)
-checks/       Tests that the packages still fit together as decided
+packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
+              @mvtjs/three, @mvtjs/html), and the private ones: the website,
+              the docs, the benchmarks, the checks and the lint rules
 notes/        Proposals, tasks, and the archive of finished work
 ```
 
@@ -79,7 +77,8 @@ packages/
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       This repo's lint rules (private for now)
-├── benchmarks/          Performance benchmarks (private)
+├── benchmarks/          Performance benchmarks (private; npm run bench)
+├── checks/              Tests that the packages still fit together as decided (private)
 ├── docs/                The documentation (VitePress, private)
 └── website/             The games, demos and playground (private)
 
