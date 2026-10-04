@@ -2,6 +2,7 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { textures } from '../data';
+import { DropShadowView } from './drop-shadow-view';
 import { HitFlashView } from './hit-flash-view';
 import { NEON } from './view-constants';
 
@@ -25,7 +26,7 @@ export interface BossViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** The Stormcore: its hull, a pulsing core, and a flash when hit. */
+/** The Stormcore: its shadow, its hull, a pulsing core, and a flash when hit. */
 export function BossView(bindings: BossViewBindings): Container {
     const hull = textures.get().boss;
 
@@ -36,6 +37,7 @@ export function BossView(bindings: BossViewBindings): Container {
             visible={bindings.isShown}
             alpha={() => (bindings.isExploding() ? flicker(bindings.stepCount()) : 1)}
         >
+            <DropShadowView texture={hull} />
             <sprite texture={hull} anchor={0.5} />
             <graphics
                 y={CORE_Y}

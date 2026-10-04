@@ -87,8 +87,10 @@ The look is mid-1990s arcade pixel art at integer scale, in a cyberpunk
 night. Seen from high above, the city is a circuit board: dark grey
 rooftops, streets like traces with neon running along the kerbs, buildings
 like chips with glowing pins, neon signs and decals, and traffic streaking
-along the avenues, all under slanting rain. The enemy craft are dark
-gunmetal with thin neon trim.
+along the avenues, all under slanting rain. The enemy craft are off-white
+with thin neon trim, casting soft shadows on the city below, so they never
+read as part of it. The player's ship is cobalt blue with cyan trim, a solid
+colour nothing else on screen has.
 
 The spectrum is split in two ([5.5](#55-readability)). Everything that glows
 in the world is cool neon: cyan, magenta, violet, blue. Every bullet is
@@ -708,6 +710,12 @@ below.
   craft gained neon trim, and the spectrum was split: bullets warm, neon
   cool, so the neon can shine without confusing the bullets. The bullet
   kinds were renamed for their new colours.
+- **The craft, after a second playtest (2026-10-04).** Dark gunmetal enemies
+  blended into the dark city, and the player's light steel ship would have
+  matched light enemies. The enemies became off-white with the same neon
+  trim, flying craft cast a drop shadow, and the player's ship became cobalt
+  with cyan trim. The hit flash became a violet tint, since brightening a
+  white hull shows nothing.
 - **Every game-phase timer is a counter**, as 4.4 recommended; no GSAP
   anywhere in the game.
 

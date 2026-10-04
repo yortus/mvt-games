@@ -2,6 +2,7 @@
 
 import type { Container, Texture } from 'pixi.js';
 import type { ValueOrGetter } from '@mvtjs/pixi';
+import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -19,8 +20,9 @@ export interface HitFlashViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * A brief white flash over a sprite each time it takes damage: the sprite
- * drawn again on top, with additive blending, fading out.
+ * A brief flash over a sprite each time it takes damage: the sprite drawn
+ * again on top, tinted violet, fading out. A tint rather than a brightening,
+ * since the enemy hulls are already near white.
  *
  * It keeps no state. The model records when each enemy was last hit, so the
  * flash is a function of that alone. That matters inside a `<List>`, where
@@ -32,9 +34,9 @@ export function HitFlashView(bindings: HitFlashViewBindings): Container {
         <sprite
             texture={bindings.texture}
             anchor={0.5}
-            ref={(sprite) => { sprite.blendMode = 'add'; }}
+            tint={NEON.violet}
             visible={() => bindings.msSinceHit() < FLASH_MS}
-            alpha={() => 1 - bindings.msSinceHit() / FLASH_MS}
+            alpha={() => MAX_ALPHA * (1 - bindings.msSinceHit() / FLASH_MS)}
         />
     );
 }
@@ -44,3 +46,4 @@ export function HitFlashView(bindings: HitFlashViewBindings): Container {
 // ---------------------------------------------------------------------------
 
 const FLASH_MS = 90;
+const MAX_ALPHA = 0.85;

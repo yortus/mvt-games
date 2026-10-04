@@ -71,6 +71,7 @@ export function GameView(bindings: GameViewBindings): Container {
                                 x={() => slot().value.x}
                                 y={() => slot().value.y}
                                 msSinceHit={() => slot().value.msSinceHit}
+                                hasShadow={false}
                             />
                         )}
                     </List>
@@ -110,6 +111,7 @@ export function GameView(bindings: GameViewBindings): Container {
                                 x={() => slot().value.x}
                                 y={() => slot().value.y}
                                 msSinceHit={() => slot().value.msSinceHit}
+                                hasShadow
                             />
                         )}
                     </List>

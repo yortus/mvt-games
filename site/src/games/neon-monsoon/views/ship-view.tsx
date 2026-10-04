@@ -2,6 +2,7 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { textures } from '../data';
+import { DropShadowView } from './drop-shadow-view';
 import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -22,8 +23,9 @@ export interface ShipViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** The interceptor and its engine flame, hidden while it is not alive. */
+/** The interceptor, its shadow and its engine flame, hidden while it is not alive. */
 export function ShipView(bindings: ShipViewBindings): Container {
+    const shipTexture = textures.get().ship.sprite;
     return (
         <container
             x={bindings.x}
@@ -31,8 +33,9 @@ export function ShipView(bindings: ShipViewBindings): Container {
             visible={bindings.isAlive}
             alpha={() => blinkAlpha(bindings.invulnerableMs())}
         >
+            <DropShadowView texture={shipTexture} />
             <graphics y={11} scale={() => flameScale(bindings.stepCount())} ref={drawFlame} />
-            <sprite texture={textures.get().ship.sprite} anchor={0.5} />
+            <sprite texture={shipTexture} anchor={0.5} />
         </container>
     );
 }
@@ -54,6 +57,6 @@ function flameScale(stepCount: number): number {
 }
 
 function drawFlame(g: Graphics): void {
-    g.moveTo(-2, 0).lineTo(2, 0).lineTo(0, 6).closePath().fill(NEON.blue);
-    g.moveTo(-1, 0).lineTo(1, 0).lineTo(0, 3).closePath().fill(0xd8fbff);
+    g.moveTo(-2, 0).lineTo(2, 0).lineTo(0, 6).closePath().fill(NEON.cyan);
+    g.moveTo(-1, 0).lineTo(1, 0).lineTo(0, 3).closePath().fill(0xffffff);
 }

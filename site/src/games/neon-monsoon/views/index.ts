@@ -7,6 +7,7 @@ export { TrafficView, type TrafficViewBindings } from './traffic-view';
 export { ShipView, type ShipViewBindings } from './ship-view';
 export { HitboxView, type HitboxViewBindings } from './hitbox-view';
 export { HitFlashView, type HitFlashViewBindings } from './hit-flash-view';
+export { DropShadowView, type DropShadowViewBindings } from './drop-shadow-view';
 export { EnemyView, type EnemyViewBindings } from './enemy-view';
 export { BossView, type BossViewBindings } from './boss-view';
 export { ItemView, type ItemViewBindings } from './item-view';

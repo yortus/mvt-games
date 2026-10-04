@@ -9,9 +9,13 @@
  * All of it is original art made for this game.
  *
  * The palette splits the spectrum in two. Bullets are warm, red to gold, with
- * white-hot cores. Everything else that glows is cool neon, cyan to magenta:
- * thin trim on dark gunmetal craft, with a dim halo pixel beside each trim
- * line, which reads as a glow at this scale.
+ * white-hot cores. Everything else that glows is cool neon, cyan to magenta.
+ *
+ * The enemy craft are off-white, with thin neon trim, so they stand out from
+ * the dark city below them. Each trim line has a dark shade of its neon
+ * beside it, a casing round the tube: crisp on the light hull, and a glow
+ * where it spills past the hull's edge. The player's ship is cobalt blue,
+ * a solid colour no enemy, bullet or building has.
  */
 
 import { PNG } from 'pngjs';
@@ -45,21 +49,21 @@ const PALETTE: Record<string, Rgba> = {
     'g': [122, 101, 16, 255], // gold rim
     'D': [255, 241, 184, 255], // rain drop
     'd': [154, 112, 32, 255], // rain drop rim
-    // The player's ship and shots: steel, with blue neon trim
-    'S': [216, 226, 240, 255], // steel, light
-    's': [139, 155, 180, 255], // steel
-    'k': [74, 86, 112, 255], // steel, dark
-    'N': [95, 240, 255, 255], // canopy
-    'n': [40, 135, 160, 255], // canopy, dark
+    // The player's ship: cobalt, with cyan trim and a white canopy
+    'S': [127, 162, 255, 255], // cobalt, light
+    's': [47, 91, 255, 255], // cobalt
+    'k': [28, 55, 168, 255], // cobalt, dark
+    'N': [236, 252, 255, 255], // canopy
+    'n': [127, 216, 255, 255], // canopy, shaded
     'Q': [224, 247, 255, 255], // shot
     'q': [122, 184, 255, 255], // shot rim
     // Gems
     'X': [125, 255, 192, 255],
     'x': [42, 154, 106, 255],
-    // Craft: dark gunmetal
-    'H': [74, 79, 99, 255], // hull, light
-    'h': [44, 47, 60, 255], // hull
-    'f': [22, 23, 31, 255], // hull, dark
+    // Enemy craft: off-white, shaded with pale greys
+    'H': [250, 248, 242, 255], // hull, lit
+    'h': [226, 222, 213, 255], // hull
+    'f': [168, 164, 158, 255], // hull, shaded
     'Z': [26, 16, 40, 255], // the boss's core socket
     'K': [11, 11, 20, 255], // item face
     // Neon, each with a dim halo shade
@@ -212,7 +216,7 @@ function gem(): string[] {
 // The player
 // ---------------------------------------------------------------------------
 
-/** The interceptor, 16 x 16, nose up, its wings edged in blue neon. */
+/** The interceptor, 16 x 16, nose up: cobalt, its wings edged in cyan neon. */
 const INTERCEPTOR: string[] = [
     '.......SS.......',
     '......SNNS......',
@@ -222,12 +226,12 @@ const INTERCEPTOR: string[] = [
     '.....sSSSSs.....',
     '....ksSSSSsk....',
     '....ksSSSSsk....',
-    '...LksSSSSskL...',
-    '..LLksSSSSskLL..',
-    '.LkkksSSSSskkkL.',
-    'LkkkksSSSSskkkkL',
-    'Lkk.ksSSSSsk.kkL',
-    'L...ksSkkSsk...L',
+    '...CksSSSSskC...',
+    '..CCksSSSSskCC..',
+    '.CkkksSSSSskkkC.',
+    'CkkkksSSSSskkkkC',
+    'Ckk.ksSSSSsk.kkC',
+    'C...ksSkkSsk...C',
     '.....sS..Ss.....',
     '.....kk..kk.....',
 ];
@@ -236,9 +240,9 @@ const INTERCEPTOR_ICON: string[] = [
     '...SS...',
     '..SNNS..',
     '..SSSS..',
-    '.LSSSSL.',
-    'LLSSSSLL',
-    'L.SSSS.L',
+    '.CSSSSC.',
+    'CCSSSSCC',
+    'C.SSSS.C',
     '..S..S..',
     '........',
 ];
@@ -255,7 +259,7 @@ const BOMB_ICON: string[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Enemies, nose down: dark hulls with neon trim
+// Enemies, nose down: off-white hulls with neon trim
 // ---------------------------------------------------------------------------
 
 /** A small dart, its leading edges in magenta, converging on a cyan cockpit. */
@@ -272,7 +276,7 @@ const KITE: string[] = [
     '......m.......',
 ];
 
-/** A spear: a cyan spine down a dark shaft, and swept cyan tips. */
+/** A spear: a cyan spine down a pale shaft, and swept cyan tips. */
 const LANCER: string[] = [
     '....hhhh....',
     '...hHHHHh...',
@@ -363,7 +367,7 @@ function gunship(): string[] {
 }
 
 /**
- * The Stormcore: a broad armoured tower-ship, dark plates with circuit
+ * The Stormcore: a broad armoured tower-ship, pale plates with circuit
  * traces running out from its core. The core socket is left dark at
  * (52, 38): the view draws the glowing core there, coloured per attack. The
  * side cannons sit 40 either side of the centre, where the cyclone's streams
