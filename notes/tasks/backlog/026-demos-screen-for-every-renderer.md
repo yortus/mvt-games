@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-30 |
-| Updated  | 2026-09-30 |
+| Updated  | 2026-10-03 |
 
 ## Description
 
@@ -46,6 +46,9 @@ the MVT way: a gallery model, and an HTML view of it.
   hand-written DOM code. It is also the first real app screen built with the
   HTML JSX runtime, so note what it shows about the runtime.
 - **Boids in 3D becomes a card.** Its page, and the subtitle's link, go.
+- **So does the Fruit Machine** (`site/src/demos/fruit-machine/`, 033): four
+  views on three renderers and the DOM, in quadrants of one page. It needs a
+  host that can mount more than one renderer, or a card that runs its page.
 
 ## Acceptance Criteria
 
@@ -53,6 +56,7 @@ the MVT way: a gallery model, and an HTML view of it.
 - [ ] Thumbnails, and launching, for demos on every renderer
 - [ ] The gallery built with `@mvtjs/html/jsx`, from a gallery model
 - [ ] Boids in 3D in the gallery as a card, and its separate page removed
+- [ ] The Fruit Machine likewise
 - [ ] Findings about the HTML JSX runtime, from building a real screen with
       it, recorded in its design notes or a task
 
@@ -61,3 +65,5 @@ the MVT way: a gallery model, and an HTML view of it.
 - 2026-09-30: Created, from review of 022's merge (step 9, the three.js
   demo), which had to be a separate page because the gallery only knows
   Pixi. Depends on the HTML JSX runtime (022's step 10).
+- 2026-10-03: The Fruit Machine (033) is a second page of its own, for the
+  same reason; added to the scope.

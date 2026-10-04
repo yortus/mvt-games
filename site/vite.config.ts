@@ -75,6 +75,7 @@ export default defineConfig({
                 'playground-sandbox': resolve(SITE_ROOT, 'playground/sandbox.html'),
                 'demos': resolve(SITE_ROOT, 'demos/index.html'),
                 'demos-boids-3d': resolve(SITE_ROOT, 'demos/boids-3d/index.html'),
+                'demos-fruit-machine': resolve(SITE_ROOT, 'demos/fruit-machine/index.html'),
             },
         },
     },
