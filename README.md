@@ -19,7 +19,7 @@ frame-consistent rendering.
 | Kwazy Cactii   | Match three or more cactii                       |
 | Neon Monsoon   | 1990s-style vertical bullet hell                 |
 
-Each game is a self-contained module under `site/src/games/<name>/` with its own
+Each game is a self-contained module under `packages/website/src/games/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to
 the active game session.
 
@@ -64,8 +64,8 @@ An npm workspace: the libraries, published under the `@mvtjs` npm scope,
 and private packages for everything else.
 
 ```
-packages/     The libraries: @mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html
-site/         The games, demos and playground (Vite)
+packages/     The libraries (@mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html),
+              and the website: the games, demos and playground (Vite)
 docs/         Documentation (VitePress)
 benchmarks/   Performance benchmarks (npm run bench)
 checks/       Tests that the packages still fit together as decided
@@ -78,9 +78,10 @@ packages/
 ├── pixi/                The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
-└── eslint-plugin/       This repo's lint rules (private for now)
+├── eslint-plugin/       This repo's lint rules (private for now)
+└── website/             The games, demos and playground (private)
 
-site/src/
+packages/website/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules

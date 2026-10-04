@@ -40,7 +40,7 @@ Settled questions that should not be reopened without new information are in
   - Crumb Chase, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was
     the model, not the views. The mouse and the four cats each started a GSAP
     tween, and a `set`, for every one-tile step. Their moves are now a
-    `TileMove` (`site/src/games/crumb-chase/models/tile-move.ts`, with tests): a
+    `TileMove` (`packages/website/src/games/crumb-chase/models/tile-move.ts`, with tests): a
     straight slide advanced by `update(deltaMs)` that allocates nothing, with
     the same semantics (linear, starting from wherever the actor is, and no
     time carried from one move to the next). The model now allocates nothing
@@ -128,7 +128,7 @@ Settled questions that should not be reopened without new information are in
   to the style guide.
 
 - **Vite 8's config-loader warning.** Every Vite run warns that
-  `site/vite.config.ts` uses two things its coming native config loader will
+  `packages/website/vite.config.ts` uses two things its coming native config loader will
   not support: `__dirname` (use `import.meta.dirname`, as `vitest.config.ts`
   should too) and the extensionless import of
   `./scripts/vite-plugin-spritesheet`. The extension is the awkward one: the
@@ -148,7 +148,7 @@ Settled questions that should not be reopened without new information are in
   (`<List as="ol">`). It affects every renderer's `<List>`, so it is a design
   question for `@mvtjs/utils/jsx`, not a fix in the HTML target alone. Found
   building the fruit machine's wins list (033), which still has the wrapper:
-  `site/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
+  `packages/website/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
 
 - **A `<List>` item view's update step sees last frame's item.** An item
   view reads its item through a cache that the slot's presence check fills

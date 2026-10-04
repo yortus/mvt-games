@@ -8,7 +8,7 @@
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`site/src/main.ts`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out `updateView`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`packages/website/src/main.ts`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](docs/architecture/index.md) -
@@ -25,8 +25,8 @@ packages/
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
-└── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
-site/                    The games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
+├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
+└── website/             The games, demos and playground (Vite, private): pages, src/, scripts/ (textures, spritesheet plugin)
 docs/                    VitePress
 benchmarks/              Performance benchmarks, for the libraries and the games
 checks/                  Tests that the packages still fit together as decided
@@ -34,7 +34,7 @@ notes/                   Proposals and tasks
 ```
 
 ```
-site/src/
+packages/website/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet (game-selection) model & view
 ├── games/               Game registry + per-game modules
@@ -59,7 +59,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `site/src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `site/src/games/index.ts`, following its [originality rules](site/src/games/README.md#originality). See [Adding a Game](site/src/games/README.md).
+- To add a new game: create `packages/website/src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `packages/website/src/games/index.ts`, following its [originality rules](packages/website/src/games/README.md#originality). See [Adding a Game](packages/website/src/games/README.md).
 
 ## Key Conventions
 
@@ -111,7 +111,7 @@ done. Proposals and tasks share one number sequence.
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/performance/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)
-7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles, character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `site/scripts/generate-*-textures.ts` script, or the views). [Originality](site/src/games/README.md#originality)
+7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles, character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/website/src/games/README.md#originality)
 
 Full rules: [Architecture Rules](docs/architecture/rules.md)
 

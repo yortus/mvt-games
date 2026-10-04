@@ -65,7 +65,7 @@ export default defineConfig({
         },
     },
     build: {
-        outDir: resolve(SITE_ROOT, '../dist'),
+        outDir: resolve(SITE_ROOT, '../../dist'),
         emptyOutDir: true,
         rollupOptions: {
             input: {

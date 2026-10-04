@@ -6,7 +6,7 @@
 > way.
 
 **Status: adopted.** Used by every game and demo, the cabinet, the
-shared views in `site/src/shared/`, the Pixi JSX runtime and the playground.
+shared views in `packages/website/src/shared/`, the Pixi JSX runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---
@@ -409,7 +409,7 @@ its own.
 
 `createPerformanceMetrics` samples `tickCounter` for one frame in each window,
 alongside frame rate and CPU and GPU time, and the perfmon panel in
-`site/src/shared/` shows the results.
+`packages/website/src/shared/` shows the results.
 
 ## What it costs
 

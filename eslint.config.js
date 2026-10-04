@@ -7,7 +7,6 @@ import tseslint from 'typescript-eslint';
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
-    'site/src/**/*.{ts,tsx}',
     'packages/*/src/**/*.{ts,tsx}',
 ];
 
@@ -90,7 +89,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['site/src/**/*.{ts,tsx}', 'packages/*/src/**/*.{ts,tsx}'],
+        files: ['packages/*/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -131,14 +130,14 @@ export default tseslint.config(
         settings: {
             'import/resolver': {
                 typescript: {
-                    project: ['./site/tsconfig.json', './packages/*/tsconfig.json'],
+                    project: ['./packages/*/tsconfig.json'],
                     noWarnOnMultipleProjects: true,
                 },
             },
         },
     },
     {
-        files: ['site/src/**/*.{ts,tsx}'],
+        files: ['packages/website/src/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
         },
@@ -152,7 +151,7 @@ export default tseslint.config(
     {
         // The playground and the rest of the site share no code, so either
         // could move to a package of its own without untangling them.
-        files: ['site/src/**/*.{ts,tsx}'],
+        files: ['packages/website/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -160,14 +159,14 @@ export default tseslint.config(
             'import/no-restricted-paths': ['error', {
                 zones: [
                     {
-                        target: './site/src/playground',
-                        from: './site/src',
+                        target: './packages/website/src/playground',
+                        from: './packages/website/src',
                         except: ['./playground'],
                         message: 'The playground shares no code with the rest of the site.',
                     },
                     {
-                        target: ['./site/src/!(playground)/**', './site/src/*.{ts,tsx}'],
-                        from: './site/src/playground',
+                        target: ['./packages/website/src/!(playground)/**', './packages/website/src/*.{ts,tsx}'],
+                        from: './packages/website/src/playground',
                         message: 'The rest of the site shares no code with the playground.',
                     },
                 ],
@@ -178,7 +177,7 @@ export default tseslint.config(
         files: VIEW_CONVENTION_FILES,
         // The playground builds DOM and CodeMirror views, and its presets follow
         // the sandbox's own `createView(model)` contract.
-        ignores: ['site/src/playground/**'],
+        ignores: ['packages/website/src/playground/**'],
         rules: {
             'no-restricted-syntax': [
                 'error',
@@ -214,7 +213,7 @@ export default tseslint.config(
     },
     // MVT's own rules (packages/eslint-plugin), for models: no wall-clock time
     {
-        files: ['site/src/**/models/**/*.{ts,tsx}', 'site/src/**/*-model.ts'],
+        files: ['packages/website/src/**/models/**/*.{ts,tsx}', 'packages/website/src/**/*-model.ts'],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
     },
@@ -230,7 +229,7 @@ export default tseslint.config(
         files: [
             'packages/pixi/src/container-mixin.ts',
             'packages/three/src/object3d-mixin.ts',
-            'site/scripts/vite-plugin-spritesheet.ts',
+            'packages/website/scripts/vite-plugin-spritesheet.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },

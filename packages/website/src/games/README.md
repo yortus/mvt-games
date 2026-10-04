@@ -4,17 +4,17 @@
 > the cabinet. Covers directory structure, GameEntry/GameSession interfaces,
 > models, views, and the registration process.
 
-See the [MVT documentation](../../../docs/index.md) for architecture background.
+See the [MVT documentation](../../../../docs/index.md) for architecture background.
 
 ## Overview
 
-Each game in this project is a self-contained module under `site/src/games/<name>/`.
+Each game in this project is a self-contained module under `packages/website/src/games/<name>/`.
 The cabinet manages game selection and delegates to the active game session
 each frame. To add a new game, you need:
 
 1. A directory structure with data, models, and views.
 2. A `GameEntry` factory that describes your game to the cabinet.
-3. A registration in `site/src/games/index.ts`.
+3. A registration in `packages/website/src/games/index.ts`.
 
 ## Originality
 
@@ -22,7 +22,7 @@ A game here can be inspired by a classic, but must not copy it. Ideas,
 genres and mechanics are free to use; titles, character names and designs,
 artwork, music and specific level layouts are not.
 
-- **Art** is drawn from scratch, in a generator script in `site/scripts/`
+- **Art** is drawn from scratch, in a generator script in `packages/website/scripts/`
   (`generate-<name>-textures.ts`) or in the game's views, so where it came
   from is in the repo. Never use sprites ripped from another game, and do not
   trace or closely follow someone else's artwork, even reworked.
@@ -35,7 +35,7 @@ artwork, music and specific level layouts are not.
 
 ## The `GameEntry` and `GameSession` Interfaces
 
-Every game implements two interfaces defined in `site/src/games/game-entry.ts`:
+Every game implements two interfaces defined in `packages/website/src/games/game-entry.ts`:
 
 **`GameEntry`** - a descriptor for a game that can be registered in the
 cabinet:
@@ -67,10 +67,10 @@ The cabinet calls `entry.start(stage)` to launch the game, then calls
 
 ## Directory Structure
 
-Create a new directory under `site/src/games/`:
+Create a new directory under `packages/website/src/games/`:
 
 ```
-site/src/games/breakout/
+packages/website/src/games/breakout/
 ├── index.ts              Barrel - re-exports createBreakoutEntry
 ├── breakout-entry.ts     GameEntry factory
 ├── data/
@@ -177,7 +177,7 @@ function createGameModel(options: GameModelOptions): GameModel {
 
 Create leaf views for each presentation entity. A view is a function that
 takes a bindings object and returns a Pixi container (see
-[Style Guide: Views and Bindings](../../../docs/reference/style-guide.md#views-and-bindings)):
+[Style Guide: Views and Bindings](../../../../docs/reference/style-guide.md#views-and-bindings)):
 
 ```ts
 export interface BallViewBindings {
@@ -338,19 +338,19 @@ async load(): Promise<void> {
 Export the entry factory from your module's barrel file:
 
 ```ts
-// site/src/games/breakout/index.ts
+// packages/website/src/games/breakout/index.ts
 export { createBreakoutEntry } from './breakout-entry';
 ```
 
 Add the export to the games registry:
 
 ```ts
-// site/src/games/index.ts
+// packages/website/src/games/index.ts
 export { createBreakoutEntry } from './breakout';
 ```
 
 Then add the entry to the cabinet's game list in the bootstrap code (typically
-`site/src/main.ts` or wherever the cabinet is constructed):
+`packages/website/src/main.ts` or wherever the cabinet is constructed):
 
 ```ts
 const cabinet = createCabinetModel({
@@ -372,6 +372,6 @@ const cabinet = createCabinetModel({
 - Views convert domain units to presentation units (pixels)
 - Entry point implements `GameEntry` with `start()` returning `GameSession`
 - Barrel files export public API at each level
-- Game is registered in `site/src/games/index.ts`
+- Game is registered in `packages/website/src/games/index.ts`
 - Model tests exist and pass
 - The title, characters, art and levels are the game's own (see [Originality](#originality))

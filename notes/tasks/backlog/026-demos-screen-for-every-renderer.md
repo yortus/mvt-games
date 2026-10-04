@@ -8,12 +8,12 @@
 
 ## Description
 
-The demos gallery (`site/demos/index.html`, run by `site/src/demos/main.ts`) only
+The demos gallery (`packages/website/demos/index.html`, run by `packages/website/src/demos/main.ts`) only
 knows Pixi. A `DemoEntry` starts on a Pixi `Container`, with a host that
-gives it Pixi's `Renderer` and `Ticker` (`site/src/demos/demo-entry.ts`); the
+gives it Pixi's `Renderer` and `Ticker` (`packages/website/src/demos/demo-entry.ts`); the
 runner makes a Pixi `Application` for each launch; and thumbnails are drawn
 into a Pixi `RenderTexture`. So "Boids in 3D", drawn with three.js
-(`site/src/demos/boids-3d/`), cannot be a card: it is a page of its own, linked
+(`packages/website/src/demos/boids-3d/`), cannot be a card: it is a page of its own, linked
 from the gallery's subtitle. Any later demo on three.js or the DOM would be
 the same.
 
@@ -46,7 +46,7 @@ the MVT way: a gallery model, and an HTML view of it.
   hand-written DOM code. It is also the first real app screen built with the
   HTML JSX runtime, so note what it shows about the runtime.
 - **Boids in 3D becomes a card.** Its page, and the subtitle's link, go.
-- **So does the Fruit Machine** (`site/src/demos/fruit-machine/`, 033): four
+- **So does the Fruit Machine** (`packages/website/src/demos/fruit-machine/`, 033): four
   views on three renderers and the DOM, in quadrants of one page. It needs a
   host that can mount more than one renderer, or a card that runs its page.
 

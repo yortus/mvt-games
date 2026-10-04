@@ -531,7 +531,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself
   during rendering whenever `sortableChildren` is set.
 - `runOnRender` is called unconditionally and is **never gated on visibility**.
-  The workaround at [pause-menu-view.ts:33](../../../site/src/shared/pause-menu-view.ts#L33)
+  The workaround at [pause-menu-view.ts:33](../../website/src/shared/pause-menu-view.ts#L33)
   ("outer stays visible so onRender fires") was never needed.
 - `cacheAsTexture` suppresses `onRender` for nested groups: `_updateRenderGroups`
   returns early when a cached group's texture is current.

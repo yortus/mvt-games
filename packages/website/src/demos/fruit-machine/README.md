@@ -6,7 +6,7 @@ control panel, and a text terminal. Spin from any of them (the Pixi button,
 the 3D lever, the panel's Spin, or `spin` in the terminal) and all four
 follow. None of them knows the others exist.
 
-The page is `site/demos/fruit-machine/` (`/demos/fruit-machine/` on the dev
+The page is `packages/website/demos/fruit-machine/` (`/demos/fruit-machine/` on the dev
 server). It is a page of its own, like Boids in 3D, because the demos gallery
 only runs Pixi demos (task 026).
 

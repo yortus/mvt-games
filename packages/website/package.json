@@ -1,8 +1,13 @@
 {
-    "name": "site",
+    "name": "@mvtjs/website",
     "private": true,
     "version": "0.0.0",
     "type": "module",
+    "exports": {
+        "./games": "./src/games/index.ts",
+        "./demos": "./src/demos/index.ts",
+        "./demos/falling-sand": "./src/demos/falling-sand/index.ts"
+    },
     "imports": {
         "#shared": "./src/shared/index.ts"
     },

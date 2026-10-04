@@ -148,7 +148,7 @@ effects add a few microseconds per changed grain on top. Leaving the store
 aside, a pushed change costs about 3 µs against a few nanoseconds (pixels)
 or about 90 ns (sprites) to poll a grain, so pushing wins only while fewer
 than about 0.15% or 3% of grains change per frame. See
-[020](../../../../notes/archive/020-falling-sand-variants.md), section 7.
+[020](../../../../../notes/archive/020-falling-sand-variants.md), section 7.
 
 **`Grains.length` is a field, not a getter.** V8 keeps an object literal
 that has a getter in slow dictionary mode, and cannot inline calls through
@@ -239,5 +239,5 @@ does not jump.
 | [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |
 
 The performance metrics come from `createPerformanceMetrics` in
-[`packages/pixi/src/`](../../../../packages/pixi/src/index.ts) and `PerfmonView` in
-[`site/src/shared/`](../../shared/index.ts), which any demo or game can use.
+[`packages/pixi/src/`](../../../../pixi/src/index.ts) and `PerfmonView` in
+[`packages/website/src/shared/`](../../shared/index.ts), which any demo or game can use.

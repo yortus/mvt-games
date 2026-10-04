@@ -10,10 +10,11 @@
 > site-wide loading screen, just a progress bar held inside the zoom when
 > an entry takes longer to load than the zoom takes to play.
 
-**Status:** proposed. Absorbs task
+**Status:** accepted, being implemented. Absorbs task
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (the demos
 screen for every renderer), whose acceptance criteria all reappear here.
-Nothing is implemented.
+The open questions are resolved (section 12). Progress is kept in section
+11's steps.
 
 **Written:** 2026-10-04, against `vnext` at `88a884f`. Load times were
 measured on the deployed site (`http://yortus.com/mvt-games/`, built from
@@ -22,12 +23,12 @@ the GPU (ANGLE, Direct3D 11), one browser launch per run (see section 3.1).
 
 **Related:**
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (absorbed),
-[`site/src/main.ts`](../../site/src/main.ts) (the cabinet's host),
-[`site/src/cabinet/`](../../site/src/cabinet/),
-[`site/src/demos/main.ts`](../../site/src/demos/main.ts) (the demos gallery),
-[`game-entry.ts`](../../site/src/games/game-entry.ts),
-[`demo-entry.ts`](../../site/src/demos/demo-entry.ts),
-[`site/src/games/README.md`](../../site/src/games/README.md) (adding a game,
+[`packages/website/src/main.ts`](../../packages/website/src/main.ts) (the cabinet's host),
+[`packages/website/src/cabinet/`](../../packages/website/src/cabinet/),
+[`packages/website/src/demos/main.ts`](../../packages/website/src/demos/main.ts) (the demos gallery),
+[`game-entry.ts`](../../packages/website/src/games/game-entry.ts),
+[`demo-entry.ts`](../../packages/website/src/demos/demo-entry.ts),
+[`packages/website/src/games/README.md`](../../packages/website/src/games/README.md) (adding a game,
 and the originality rules),
 [`@mvtjs/html`](../../packages/html/README.md) (the HTML JSX runtime),
 [034](./034-neon-monsoon-bullet-hell.md) and
@@ -37,7 +38,7 @@ and the originality rules),
 
 | # | Decision | Section |
 | --- | --- | --- |
-| 1 | `site/` becomes `packages/website/` (package `website`, private, not a library, like `packages/eslint-plugin`). A move and a rename only, in a commit of its own; `build:packages` names the four libraries | [2](#2-the-site-becomes-the-website-package) |
+| 1 | `site/` becomes `packages/website/` (package `@mvtjs/website`, private, not a library, like `@mvtjs/eslint-plugin`). A move and a rename only, in a commit of its own; `build:packages` names the four libraries | [2](#2-the-site-becomes-the-website-package) |
 | 2 | The slow first load is about ten serial round trips on a cold CDN edge (about 0.3 s each). CPU work (thumbnails included) is about 0.1 s | [3](#3-load-time-measured) |
 | 3 | No site-wide loading screen. The Arcade loads no renderer, no entry code and no textures before its first paint. Loading an entry happens under the zoom, and a progress bar shows only if loading outlasts the zoom | [4](#4-loading-recommendation) |
 | 4 | Fix HTTPS on yortus.com: its certificate does not match, so the site is served only over HTTP/1.1 | [4.4](#44-https-and-http2) |
@@ -95,10 +96,21 @@ Lines and files count each entry's own directory, tests excluded. Boids in
 ## 2. The site becomes the website package
 
 `site/` is already a private workspace package (named `site`), but it sits
-outside `packages/`. It moves to `packages/website/`, as package `website`,
+outside `packages/`. It moves to `packages/website/`, as package `@mvtjs/website`,
 so the repo's source code lives in packages. It is private and not a
-library, like `packages/eslint-plugin` already is. Nothing in the repo
-assumes everything in `packages/` is published:
+library, like `packages/eslint-plugin` already is.
+
+**Scoped names.** Every package is named under `@mvtjs`, published or not.
+The bare names `website`, `docs`, `benchmarks` and `checks` all belong to
+strangers' packages on npm. A private workspace under one of them resolves
+locally only while npm knows about the workspace. Anything that resolves
+from the registry instead would fetch the stranger's package (dependency
+confusion). Nobody else can publish under `@mvtjs`. An import from
+`@mvtjs/website/games` also reads as this repo's at a glance. Changesets
+leaves a private `@mvtjs` package alone, despite the `@mvtjs/*` fixed group:
+`@mvtjs/eslint-plugin` stayed at 0.1.0 through the 0.2.0 release.
+
+Nothing in the repo assumes everything in `packages/` is published:
 
 - **Changesets** never versions or tags a private package
   (`privatePackages: { version: false, tag: false }` in
@@ -136,7 +148,7 @@ What references `site`:
   "Declared dependencies" convention says to import a package by name, so
   the move is the time to fix this: `website/package.json` gains
   `exports` for the entry list (section 6.4), and `benchmarks` declares
-  `website` as a dependency.
+  `@mvtjs/website` as a dependency.
 - Docs and agent instructions: `AGENTS.md`, `README.md`,
   `docs/reference/project-structure.md`, four `docs/ai-agents/` files, three
   guide pages, and the games' and demos' READMEs, about 25 mentions in all.
@@ -147,10 +159,10 @@ What references `site`:
 
 The `#shared` import alias and the `scripts/` directory move unchanged.
 
-**What stays outside `packages/`.** After the move, `docs/` (VitePress
-content), `benchmarks/` and `checks/` are the workspaces left at the top
-level, beside `notes/`. Whether they follow is open question 8. Nothing here
-depends on the answer.
+**The other workspaces follow.** `docs/`, `benchmarks/` and `checks/` move
+into `packages/` too, each in a commit of its own (section 12, question 8),
+so `packages/` holds all of the repo's source and the top level keeps only
+configuration and `notes/`.
 
 In the rest of this proposal, `website/` is short for `packages/website/`.
 
@@ -383,6 +395,8 @@ interface ArcadeEntry {
     /** A paragraph, in the info panel. */
     readonly description: string;
     readonly tags: EntryTags;
+    /** When the entry joined the site (ISO date), for the "newest first" sort. */
+    readonly added: string;
     /** The entry's play area, for the card's aspect ratio and the runner's scaling. */
     readonly screenWidth: number;
     readonly screenHeight: number;
@@ -478,7 +492,8 @@ future art piece goes in `website/src/art/<name>/`.
 "exports": { "./entries": "./src/entries/index.ts" }
 ```
 
-`benchmarks` declares `"website": "*"` and imports `website/entries`. A
+`benchmarks` declares `"@mvtjs/website": "*"` and imports
+`@mvtjs/website/entries`. A
 benchmark awaits `entry.load(...)` and checks that the starter is `pixi`. The
 `games-and-demos` suite runs only Pixi entries, as it does now.
 
@@ -524,7 +539,7 @@ A first draft of the tags, for the author to correct:
 | Fruit Machine | demo | | multi-view | advanced |
 | Reordering Lists | demo | | UI | starter |
 | *Neon Monsoon (034)* | game | 1990s | shooter, bullet hell | advanced |
-| *Demoscene (035)* | demo or art | 1980s | demoscene | advanced |
+| *Demoscene (035)* | art | 1980s | demoscene | advanced |
 
 Tag wording follows the originality rules: genres and eras, never another
 game's name.
@@ -547,6 +562,9 @@ and say so in the info panel.
   leave none is disabled, not hidden, so the bar does not jump about.
 - An empty group (Type: art, today) shows no chips at all.
 - "Clear" resets them all. The query string follows the chips (section 5.2).
+- A sort control beside the chips orders the wall: as listed (the
+  default, hand-curated), by name, by era (undated entries last), or newest
+  first (by `added`). The query string keeps it too (`?sort=newest`).
 - The filter bar sticks to the top of the page under the nav. On a phone
   it collapses to a "Filters" button that opens it as a sheet.
 
@@ -608,7 +626,7 @@ WebGL context, before the Arcade can show a picture, which is what makes
 `/games/` slow. It also can't capture an `element` entry such as the Fruit
 Machine's four quadrants (026's open question).
 
-`npm run generate-thumbnails -w website`:
+`npm run generate-thumbnails -w @mvtjs/website`:
 
 1. Starts the Vite dev server, and **one** headless Chrome with a
    persistent profile under `node_modules/.cache/` (each new profile costs
@@ -711,9 +729,15 @@ and the site working.
 
 1. **HTTPS.** Fix the certificate and enforce HTTPS (section 4.4).
    Settings, not code; can happen any time.
-2. *(Optional)* Load the cabinet's game assets together (section 4.5).
-3. **Move** `site/` to `packages/website/` (section 2), references included, the
-   benchmarks importing `website/entries` by name. A commit of its own.
+2. ~~*(Optional)* Load the cabinet's game assets together (section 4.5).~~
+   Skipped: the Arcade replaces that code.
+3. ~~**Move** `site/` to `packages/website/` (section 2), references included, the
+   benchmarks importing `@mvtjs/website/entries` by name. A commit of its own.~~
+   Done. Until step 4 makes the entry list, the website exports its
+   `games`, `demos` and `demos/falling-sand` barrels for the benchmarks.
+3a. **Move** `docs/` to `packages/docs/`, as `@mvtjs/docs`. A commit of its own.
+3b. **Move** `benchmarks/` to `packages/benchmarks/`, as `@mvtjs/benchmarks`. A commit of its own.
+3c. **Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.
 4. **Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
    and `Genre` in `website/src/entries/`. Convert the seven games and three
    Pixi demos to `pixi` entries with lazy `load()`. The cabinet and the demos
@@ -740,44 +764,41 @@ and the site working.
     section. Update `docs/reference/project-structure.md`, the games'
     README ("Adding a game" becomes adding an entry, of either kind), and
     the demos' README. Record what building the Arcade showed about the HTML
-    JSX runtime (026). Archive task 026 as absorbed.
+    JSX runtime (026). Archive task 026 as absorbed. Add backlog tasks for
+    per-entry link previews (question 5) and HTML touch controls
+    (question 7).
 11. *(Later, optional)* **Attract mode:** a card that is hovered for a
     second starts its entry live in the card, muted and non-interactive,
     one at a time, so only one extra WebGL context is ever live. A fitting
     touch for an arcade, but not needed for anything above.
 
-## 12. Open questions
+## 12. Open questions, resolved
 
-1. **What makes an entry "art" rather than a demo?** A proposed line: a
-   demo shows a technique and explains it (techniques, an info panel
-   about how), while art is there to be watched, and its info panel is
-   about what it is. 035's demoscene show could be either.
-2. **Era for entries with none.** Leaving `era` out (as drafted in section
-   7.1) means filtering by any era hides every demo. The alternative is a
-   "modern" era. Leaving it out is the simpler choice, but the author should decide.
-3. **The Genre vocabulary.** Section 7.1's draft has a dozen genres for
-   fourteen entries. Too fine a vocabulary makes one-entry chips. Settle the list
-   with the author before step 4.
-4. **Sort order.** Catalogue order (curated, as now) is proposed. Newest
-   first, or by era, could be offered as a sort control later.
-5. **Link previews.** With entries on fragments, a shared link to
-   `/#fuel-run` previews as the home page. Per-entry stub pages
-   (`/play/fuel-run/`, generated at build, with the thumbnail as
-   `og:image`, redirecting to `/#fuel-run`) would give each its own
-   preview. Worth it?
-6. **Docs and Playground on the wall?** The proposal keeps them in the nav
-   only. A "Learn MVT" card at the head of the wall is the alternative.
-7. **Touch controls in HTML** (section 10.3), when an `element` entry first
-   needs them.
-8. **Do `docs/`, `benchmarks/` and `checks/` follow into `packages/`?**
-   Taken as a rule, "source code lives in packages" says the benchmarks and
-   checks should, and probably the docs site (its VitePress config and
-   theme are code, and it is already a workspace). Each move is the same
-   kind as section 2's, and each would be its own commit. The alternative
-   some workspaces use is a second folder (`apps/` for the website and docs,
-   `packages/` for libraries), which this repo has not used so far. Not
-   needed for the Arcade; worth deciding once, so `packages/` means one
-   thing.
+All eight were settled with the author on 2026-10-04. Do not reopen without
+new information.
+
+1. **Art or demo is decided by purpose.** A demo shows a technique, and
+   its info panel explains how. Art is there to be watched, and its info
+   panel says what it is. 035's demoscene show is art.
+2. **Era stays optional.** Entries without a natural era leave it out.
+   Picking any era chip hides them, which is what someone filtering by era
+   wants. There is no "modern" era.
+3. **The Genre vocabulary is section 7.1's draft as written**, several
+   genres to an entry where they apply: shooter, maze, action, fighting,
+   scrolling, puzzle, simulation, 3D, multi-view, UI, bullet hell,
+   demoscene.
+4. **Curated order, with a sort control.** The wall shows the entry list's
+   own order by default. A sort control offers name, era and newest first,
+   so each entry declares the date it was `added` (section 7.1).
+5. **Link previews come later.** Entries stay on fragments. Per-entry stub
+   pages with `og:image` go into a backlog task.
+6. **Docs and Playground stay in the nav only.** The wall is for things you
+   run. The introduction links the docs.
+7. **Touch controls stay a Pixi view**, as section 10.3 has it. A backlog
+   task records moving them to HTML for when an `element` entry needs them.
+8. **`docs/`, `benchmarks/` and `checks/` move into `packages/` too**, each
+   in a commit of its own, after the website's move and before the Arcade
+   work (steps 3a-3c). `packages/` then holds all of the repo's source.
 
 ## Settled
 

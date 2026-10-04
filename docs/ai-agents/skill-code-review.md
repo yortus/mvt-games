@@ -241,7 +241,7 @@ index-based `for` loops; cache derived values; use arithmetic keys
 Games and demos may be inspired by classics, but must not copy them. Flag:
 
 - **Art without an origin in the repo:** new or changed image assets that no
-  generator script in `site/scripts/` produces and no view draws, especially
+  generator script in `packages/website/scripts/` produces and no view draws, especially
   sprite sheets, or anything traced from or closely following other artwork.
 - **Borrowed names:** a title, character name or enemy kind taken from an
   existing game, in code, data, comments or docs.
@@ -250,7 +250,7 @@ Games and demos may be inspired by classics, but must not copy them. Flag:
   than describing its genre.
 
 These block a merge: ask for original art, names or layouts. Reference: the
-Originality section of `site/src/games/README.md`.
+Originality section of `packages/website/src/games/README.md`.
 
 ---
 

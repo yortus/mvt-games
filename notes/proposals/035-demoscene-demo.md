@@ -14,19 +14,19 @@
 **Status:** proposed. Nothing implemented.
 
 **Written:** 2026-10-03, against `vnext` at `dd3ec54`. Checked against the demo
-registry ([`demo-entry.ts`](../../site/src/demos/demo-entry.ts),
-[`main.ts`](../../site/src/demos/main.ts)), the falling-sand pixel view, which
+registry ([`demo-entry.ts`](../../packages/website/src/demos/demo-entry.ts),
+[`main.ts`](../../packages/website/src/demos/main.ts)), the falling-sand pixel view, which
 this design copies for its texture upload, and the animation pages of the docs.
 Nothing has been spiked or measured; the performance figures in section 9 are
 estimates to be checked in step 1.
 
 **Related:**
-[`grain-pixels-view.ts`](../../site/src/demos/falling-sand/views/grain-pixels-view.ts) -
+[`grain-pixels-view.ts`](../../packages/website/src/demos/falling-sand/views/grain-pixels-view.ts) -
 [Complex Sequences](../../docs/building-with-mvt/animating-transitions/complex-sequences.md) -
 [Open-Ended Phases](../../docs/building-with-mvt/animating-transitions/open-ended-phases.md) -
 [Presentation State](../../docs/building-with-mvt/adding-visual-polish/presentation-state.md) -
 [Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md) -
-[Originality](../../site/src/games/README.md#originality) (the rules this demo follows from day one) -
+[Originality](../../packages/website/src/games/README.md#originality) (the rules this demo follows from day one) -
 [033](../tasks/backlog/033-fruit-machine-demo/task.md) (the other demo in the pipeline) -
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md)
 
@@ -210,7 +210,7 @@ for a claim about the hardware.
 
 ## 4. The Model
 
-All under `site/src/demos/demoscene/models/`, in domain units: milliseconds,
+All under `packages/website/src/demos/demoscene/models/`, in domain units: milliseconds,
 beats, turns, character cells and 3D object space. Nothing in the model knows
 about pixels, raster lines or the chip.
 
@@ -324,7 +324,7 @@ alone. A show has no input, so it can be.
 
 ## 5. The View
 
-All under `site/src/demos/demoscene/views/`.
+All under `packages/website/src/demos/demoscene/views/`.
 
 ### 5.1 One view and painters, not a view per effect
 
@@ -371,7 +371,7 @@ the CRT filter should hide that, or the demo should snap to whole multiples.
 ## 6. Files
 
 ```
-site/src/demos/demoscene/
+packages/website/src/demos/demoscene/
 ├── README.md               What to look for, the effects, where the chip cheats
 ├── demoscene-entry.ts      createDemosceneEntry(): DemoEntry
 ├── index.ts
@@ -392,7 +392,7 @@ they can be edited in a text editor and reviewed in a diff.
 ## 7. Originality
 
 This demo follows the games'
-[originality rules](../../site/src/games/README.md#originality) from the
+[originality rules](../../packages/website/src/games/README.md#originality) from the
 start: ideas and techniques are free; titles, artwork, character designs and
 music are not.
 

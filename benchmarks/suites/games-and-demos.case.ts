@@ -9,12 +9,12 @@ import {
     createKwazyCactiiEntry,
     createNeonMonsoonEntry,
     type GameInputConfig,
-} from '../../site/src/games';
+} from '@mvtjs/website/games';
 import {
     createBoidsEntry,
     createFallingSandEntry,
     createReorderingListsEntry,
-} from '../../site/src/demos';
+} from '@mvtjs/website/demos';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
@@ -25,7 +25,8 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // before anyone touches them. Textures and text measurement are stubbed (see
 // the driver and `stubTextMeasurement`), and nothing is rendered, so this is
 // each one's own frame work: the session's update, which advances its models,
-// then a tick of the stage, as `site/src/main.ts` and `site/src/demos/main.ts` run them.
+// then a tick of the stage, as `packages/website/src/main.ts` and
+// `packages/website/src/demos/main.ts` run them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
 //   after a 10-second warm-up, split into the models, `updateView` and

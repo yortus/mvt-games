@@ -170,7 +170,7 @@ refreshView(app.stage);             // 3. every refresh method in the stage, par
   by setting its methods; its parents do not need to know it exists or pass
   anything on.
 - **Sessions advance only their models.** A game session's `update()` runs its
-  model and nothing else. The host (`site/src/main.ts`) updates and refreshes
+  model and nothing else. The host (`packages/website/src/main.ts`) updates and refreshes
   the whole stage once per frame, after the models.
 - **Pausing is the host's call.** While paused, the host stops advancing the
   models, and its game container sits out `updateView`. It is still

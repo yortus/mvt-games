@@ -11,7 +11,7 @@
 ## Directory Layout
 
 The repository is an npm workspace: four libraries, published under the
-`@mvtjs` npm scope, and private packages for the site, the docs, the
+`@mvtjs` npm scope, and private packages for the website, the docs, the
 benchmarks and the checks.
 
 ```
@@ -20,8 +20,8 @@ packages/
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
-└── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
-site/                    The games, demos and playground: one Vite site of several pages
+├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
+└── website/             The games, demos and playground: one Vite site of several pages (private)
 docs/                    This documentation (VitePress)
 benchmarks/              Performance benchmarks, for the libraries and the games alike
 checks/                  Tests that the packages still fit together as decided
@@ -31,7 +31,7 @@ notes/                   Proposals and tasks
 Each package's source is in its own `src/`. The site's is laid out by area:
 
 ```
-site/src/
+packages/website/src/
 ├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
 ├── cabinet/             Cabinet model & view (game selection)
 ├── games/               Game registry + per-game modules
@@ -55,7 +55,7 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
-| `site/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
+| `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -259,20 +259,20 @@ The rules above apply inside each package. Between packages:
   from either.
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
   sequences, slot lists.
-- **The playground stands alone.** `site/src/playground/` and the rest of the
+- **The playground stands alone.** `packages/website/src/playground/` and the rest of the
   site share no code in either direction (`import/no-restricted-paths`), so
   the playground could become a package of its own.
 
 Within the site, its shared views are imported as `#shared`, an alias that
-`site/package.json` defines.
+`packages/website/package.json` defines.
 
 ## Game Module Structure
 
-Each game is a self-contained module under `site/src/games/<name>/`. A
+Each game is a self-contained module under `packages/website/src/games/<name>/`. A
 typical layout:
 
 ```
-site/src/games/<name>/
+packages/website/src/games/<name>/
 ├── index.ts              Barrel - re-exports createXxxEntry
 ├── <name>-entry.ts       GameEntry factory
 ├── data/
@@ -290,4 +290,4 @@ site/src/games/<name>/
 ```
 
 For details on creating a new game module, see
-`site/src/games/README.md` in the repository.
+`packages/website/src/games/README.md` in the repository.

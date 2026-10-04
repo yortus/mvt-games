@@ -28,7 +28,7 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test
-            - run: npm run build:site
+            - run: npm run build:website
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
             - run: npm run build:docs
