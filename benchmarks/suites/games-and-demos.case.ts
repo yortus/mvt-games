@@ -12,6 +12,7 @@ import {
 } from '../../site/src/games';
 import {
     createBoidsEntry,
+    createDemosceneEntry,
     createFallingSandEntry,
     createReorderingListsEntry,
 } from '../../site/src/demos';
@@ -126,6 +127,7 @@ function createEntry(id: string): RunnableEntry {
     if (id === 'boids') return createBoidsEntry();
     if (id === 'falling-sand') return createFallingSandEntry();
     if (id === 'reordering-lists') return createReorderingListsEntry();
+    if (id === 'demoscene') return createDemosceneEntry();
     throw new Error(`unknown game or demo: ${id}`);
 }
 

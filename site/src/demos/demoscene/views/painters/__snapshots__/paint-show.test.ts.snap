@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`paintShow > draws the same frames as before 1`] = `
+{
+  "boot": "5347a8c9",
+  "credits": "ff3ab8b9",
+  "intro": "4c4e1ead",
+  "logo": "c7972a7d",
+  "plasma": "d26c60a7",
+  "sprites": "6a6e8d3e",
+  "vectors": "fd0b9117",
+}
+`;

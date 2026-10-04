@@ -11,14 +11,19 @@
 > repo: no input, a model that is a clock and a script, and views that hold no
 > state at all, which makes pause, seek and thumbnails free.
 
-**Status:** proposed. Nothing implemented.
+**Status:** implemented, steps 1-6, on the `demoscene-demo` branch (2026-10-03):
+[`site/src/demos/demoscene/`](../../site/src/demos/demoscene/README.md), in the
+gallery and the `games-and-demos` benchmark suite. Not done: music and the
+stretch effects (step 7), and a look in a real browser, which the GPU glow
+filter has not had. Section 12 records where the build differs from the
+design below.
 
 **Written:** 2026-10-03, against `vnext` at `dd3ec54`. Checked against the demo
 registry ([`demo-entry.ts`](../../site/src/demos/demo-entry.ts),
 [`main.ts`](../../site/src/demos/main.ts)), the falling-sand pixel view, which
 this design copies for its texture upload, and the animation pages of the docs.
-Nothing has been spiked or measured; the performance figures in section 9 are
-estimates to be checked in step 1.
+The performance figures in section 9 were estimates; the measured ones are in
+section 12.
 
 **Related:**
 [`grain-pixels-view.ts`](../../site/src/demos/falling-sand/views/grain-pixels-view.ts) -
@@ -462,43 +467,119 @@ loops, preallocated arrays.
 
 ## 10. Open Questions
 
+All six were built as proposed (2026-10-03), as the defaults; any can be
+reopened.
+
 1. **Name.** Proposed: id `demoscene`, name "MVT Megademo" ("megademo" being
    the era's own word for a multi-part demo). Alternatives welcome.
+   *Built as proposed.*
 2. **Keys.** Space to pause and left/right to skip parts cost a few lines,
    given section 4.3, and make the demo easier to enjoy and to debug.
-   Proposed: add them, and say so on the boot screen.
+   Proposed: add them, and say so on the boot screen. *Built as proposed:
+   the boot screen and the credits say so; pausing is the show model's.*
 3. **CRT filter.** A subtle scanline and glow filter makes the look, and hides
    uneven pixels when the gallery shrinks the canvas, but it is not part of the
    machine. Proposed: on by default, with `?crt=off` in the URL, like
-   falling-sand's switches.
+   falling-sand's switches. *Built as proposed: scanlines on the CPU (each
+   line doubled, the copy darker) and a Pixi blur, added, for the glow.*
 4. **A remastered view.** A second view drawing the same model in smooth
    modern graphics, switched with a key, would show "one model, many views" as
    033 does, from a different angle. Proposed: not in this proposal; revisit
    once the show exists. The model is designed so it could be added (section
-   4.1).
+   4.1). *Not built.*
 5. **Display rate.** Real PAL demos ran at exactly 50 frames a second, and
    effects stepped once a frame. Proposed: run at the display's rate and snap
-   positions to whole pixels; offer no 50 Hz mode.
+   positions to whole pixels; offer no 50 Hz mode. *Built as proposed; only the
+   loading stripes step at 50 Hz.*
 6. **Raster-time bar.** Demo coders changed the border colour while their code
    ran, to see how much of the frame it took. A `?debug` switch could draw the
    painters' real CPU time that way in the right border, plus a column of
-   sprite slots per line. Proposed: yes, it is cheap and on theme.
+   sprite slots per line. Proposed: yes, it is cheap and on theme. *Built as
+   proposed.*
 
 ---
 
 ## 11. Implementation Steps
 
-1. **The chip.** `VirtualChip`, `composeFrame`, palette, fade table, and the
+1. ~~**The chip.** `VirtualChip`, `composeFrame`, palette, fade table, and the
    multiplexer, with tests. `ScreenView` showing a static test frame. Register
-   the entry. Measure composing and upload (section 9) before going further.
-2. **Font and boot.** The 8x8 font as text art; the show model's clock,
-   script, beat, seek and brightness, with the seek-and-play test; part 0.
-3. **Intro and logo.** Raster bars, fades, FLD, tech-tech, the multicolour
-   logo, the border scroller. This is the thumbnail.
-4. **Plasma and vectors.** Colour plasma, DYCP, the span filler, starfield.
-5. **Sprites and credits.** The 48-sprite choreography with the no-drop test,
-   upscroller, colour wash, the loop.
-6. **Polish.** Open questions 2, 3 and 6 as decided; golden frames; the
-   benchmark; the README; the entry's description and techniques.
+   the entry. Measure composing and upload (section 9) before going further.~~
+   Done.
+2. ~~**Font and boot.** The 8x8 font as text art; the show model's clock,
+   script, beat, seek and brightness, with the seek-and-play test; part 0.~~
+   Done.
+3. ~~**Intro and logo.** Raster bars, fades, FLD, tech-tech, the multicolour
+   logo, the border scroller. This is the thumbnail.~~ Done.
+4. ~~**Plasma and vectors.** Colour plasma, DYCP, the span filler, starfield.~~
+   Done.
+5. ~~**Sprites and credits.** The 48-sprite choreography with the no-drop test,
+   upscroller, colour wash, the loop.~~ Done.
+6. ~~**Polish.** Open questions 2, 3 and 6 as decided; golden frames; the
+   benchmark; the README; the entry's description and techniques.~~ Done,
+   except a look in a real browser (section 12.3).
 7. **Later, separately:** music (section 8), stretch effects, the remastered
    view.
+
+---
+
+## 12. As Built
+
+### 12.1 Where the build differs from the design
+
+- **The logo is a multicolour bitmap, not characters** (section 2's table).
+  Slanted and bevelled, it has too many distinct 8 x 8 cells for a character
+  set, and the bitmap has no such limit. The screen is split by mode line by
+  line: bitmap for the logo's rows, text below. The logo is still built from
+  text art: a coarse mask of the three letters, scaled, slanted and bevelled
+  in [`data/logo.ts`](../../site/src/demos/demoscene/data/logo.ts).
+- **The plasma is a multicolour bitmap at 80 x 50 blocks**, four to a cell,
+  rather than colour memory and dither characters: each cell has three
+  colours of its own, so it can show the three nearest steps of the colour
+  cycle, which looks smoother. The DYCP strip is four rows of text through the
+  middle, its letters coloured by the plasma behind them.
+- **The filled vectors use a depth buffer**, added to section 3.6's list of
+  cheats: the letters' strokes overlap, and sorting faces would have drawn
+  them wrong.
+- **The part models have no `update`.** Each reads its own elapsed time from
+  the show's clock, through a function the show gives it; only the show
+  model advances time.
+- **The rows formation** in the sprites part is rows 30 lines apart, bobbing
+  3 lines, so it clears the captions on rows 0 and 24; two rows bobbing
+  together are still 24 lines apart, more than a sprite.
+- **`ScreenView` takes `hasScanlines` and `hasGlow` separately**, so that tests
+  can run the scanlines in Node, where the blur filter cannot be built.
+- **Data tests** became load-time checks: the text art parser throws on a
+  wrong size or character, and a test checks that every text fits 40 columns
+  in characters the font has.
+
+### 12.2 Measured
+
+Headless, on the development machine (Intel Core Ultra 9 185H), Node 26:
+
+| Part | Paint (µs) | Compose (µs) |
+| --- | ---: | ---: |
+| Boot | 2 | 225 |
+| Intro | 1 | 245 |
+| Logo | 7 | 339 |
+| Plasma | 191 | 286 |
+| Vectors | 61 | 232 |
+| Sprites | 15 | 607 |
+| Credits | 4 | 233 |
+
+Well inside section 9's 3 ms target, so the shader fallback is not needed.
+The `games-and-demos` suite (not saved) puts the first simulated minute at
+0.41 ms a frame for the models, `updateView` and `refreshView` together.
+
+It allocates 848 bytes a frame in that suite, against 17-204 for the other
+demos: 29 young-generation collections a minute, 3.8 ms in all. The painters
+and the chip make no objects; a probe put 16-33 bytes a frame on the model
+and up to 290 on the painters, which look like numbers V8 boxes as the part
+models' getters return them, and about 100-170 on the texture upload. Left as
+it is; computing the busiest parts' values into typed arrays once per update
+would be the fix, if it ever matters.
+
+### 12.3 Not yet checked
+
+The demo has only been looked at as frames rendered in Node (the chip and
+painters, written to PNG), not yet in a browser. So the GPU glow filter, the
+keys and the gallery's thumbnail have not been seen working.

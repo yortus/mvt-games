@@ -1,7 +1,7 @@
 import { combinations, type Case, type Suite } from '../harness/suite';
 
 const GAMES = ['astrovoid', 'burrow-bust', 'crumb-chase', 'dojo-duel', 'fuel-run', 'galaxy-raiders', 'kwazy-cactii', 'neon-monsoon'];
-const DEMOS = ['boids', 'falling-sand', 'reordering-lists'];
+const DEMOS = ['boids', 'falling-sand', 'reordering-lists', 'demoscene'];
 
 /**
  * The repo's own games and demos as they ship, each started through its entry
@@ -68,6 +68,7 @@ export const gamesAndDemosSuite: Suite = {
             'boids': 'Boids',
             'falling-sand': 'Falling sand',
             'reordering-lists': 'Reordering lists',
+            'demoscene': 'MVT Megademo',
         },
     },
 };

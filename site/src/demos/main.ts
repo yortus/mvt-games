@@ -2,6 +2,7 @@ import { Application, Container, RenderTexture } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { DemoEntry, DemoSession } from './demo-entry';
 import { createBoidsEntry } from './boids';
+import { createDemosceneEntry } from './demoscene';
 import { createFallingSandEntry } from './falling-sand';
 import { createReorderingListsEntry } from './reordering-lists';
 
@@ -13,6 +14,7 @@ const demos: DemoEntry[] = [
     createBoidsEntry(),
     createFallingSandEntry(),
     createReorderingListsEntry(),
+    createDemosceneEntry(),
 ];
 
 // ---------------------------------------------------------------------------
