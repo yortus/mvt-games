@@ -319,7 +319,7 @@ minute after.
   more.
 - **`refreshView` takes the larger share in most games**, since that is
   where the views read the model and set their properties. The models take
-  0.2-4 µs, and `updateView` under 1 µs; in Galaga, with more going
+  0.2-4 µs, and `updateView` under 1 µs; in Galaxy Raiders, with more going
   on in its model, the models take longer than the refresh.
 - **Two demos cost far more than any game, for different reasons.** Falling
   sand has a sprite per grain, about 3,800 containers once its opening scene
@@ -332,10 +332,10 @@ minute after.
   1 KB. The hot path rules aim for none, and the allocation benchmark is a
   way to find where it comes from. At these rates the engine collects at most
   three times a minute, for under a millisecond in total.
-- **Scramble and Pac-Man used to allocate 2-3 KB per frame.** Scramble's
+- **Fuel Run and Crumb Chase used to allocate 2-3 KB per frame.** Fuel Run's
   came from views redrawing graphics every frame (each explosion, and the
-  fuel bar), now drawn once and then scaled or resized. Pac-Man's came from
-  its model: every one-tile step of Pac-Man or a ghost started a GSAP tween.
+  fuel bar), now drawn once and then scaled or resized. Crumb Chase's came
+  from its model: every one-tile step of the mouse or a cat started a GSAP tween.
   The steps are now plain arithmetic advanced by `update(deltaMs)`, and the
   model allocates nothing, with its update down from about 6 µs to 0.2 µs.
 - **Boids used to allocate about 360 KB per frame**, and the engine collected

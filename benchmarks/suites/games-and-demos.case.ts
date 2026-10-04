@@ -1,12 +1,12 @@
 import { Container } from 'pixi.js';
 import {
-    createAsteroidsEntry,
-    createCactiiEntry,
-    createDigdugEntry,
-    createGalagaEntry,
-    createIkEntry,
-    createPacmanEntry,
-    createScrambleEntry,
+    createAstrovoidEntry,
+    createBurrowBustEntry,
+    createCrumbChaseEntry,
+    createDojoDuelEntry,
+    createFuelRunEntry,
+    createGalaxyRaidersEntry,
+    createKwazyCactiiEntry,
     type GameInputConfig,
 } from '../../site/src/games';
 import {
@@ -114,13 +114,13 @@ interface RunnableSession {
 }
 
 function createEntry(id: string): RunnableEntry {
-    if (id === 'asteroids') return createAsteroidsEntry();
-    if (id === 'cactii') return createCactiiEntry();
-    if (id === 'digdug') return createDigdugEntry();
-    if (id === 'galaga') return createGalagaEntry();
-    if (id === 'ik') return createIkEntry();
-    if (id === 'pacman') return createPacmanEntry();
-    if (id === 'scramble') return createScrambleEntry();
+    if (id === 'astrovoid') return createAstrovoidEntry();
+    if (id === 'burrow-bust') return createBurrowBustEntry();
+    if (id === 'crumb-chase') return createCrumbChaseEntry();
+    if (id === 'dojo-duel') return createDojoDuelEntry();
+    if (id === 'fuel-run') return createFuelRunEntry();
+    if (id === 'galaxy-raiders') return createGalaxyRaidersEntry();
+    if (id === 'kwazy-cactii') return createKwazyCactiiEntry();
     if (id === 'boids') return createBoidsEntry();
     if (id === 'falling-sand') return createFallingSandEntry();
     if (id === 'reordering-lists') return createReorderingListsEntry();

@@ -83,7 +83,7 @@ about.
 repo does not currently have.
 
 **`onUpdate` replaces surprisingly little plumbing.** `StatefulPixiView`
-appears in 2 of 7 games (cactii and scramble). Total manual `update(deltaMs)`
+appears in 2 of 7 games (cactii and fuel-run). Total manual `update(deltaMs)`
 forwarding across the repo: about 8 call sites, roughly 15 lines. Counted
 purely as lines deleted, ~700 lines of implementation to remove ~15 is a bad
 trade.
@@ -92,7 +92,7 @@ trade.
 with presentation state currently requires four coordinated edits: change the
 return type to `StatefulPixiView`, `Object.assign(view, { update })`, add a
 forwarding line in the parent, and add another in the grandparent
-(`scramble/views/game-view.ts:215` to `cactii/views/game-view.ts:20` to the
+(`fuel-run/views/game-view.ts:215` to `cactii/views/game-view.ts:20` to the
 game entry). Miss any link in that chain and the animation silently never
 advances. No error, no failing test, and nothing in the type system catches a
 missing forward in an intermediate view. That is an O(n) discipline tax whose
@@ -102,7 +102,7 @@ worth making, and it is a real one.
 
 **Drain-the-tail buys this repo nothing today.** Every game builds fixed view
 pools at init and binds them to model slots by index.
-`scramble/views/game-view.ts` does exactly this six times over, for bullets,
+`fuel-run/views/game-view.ts` does exactly this six times over, for bullets,
 bombs, rockets, UFOs, fuel tanks and explosions, each gated by an `isActive()`
 binding. No view in the repo spawns child views during refresh. The swarm
 demo's reconciliation pattern is not a pattern this repo uses anywhere. So the
@@ -310,6 +310,6 @@ detached mid-pass, and the documented direct-`children`-mutation bypass
    DESIGN-NOTES, and `onUpdate` leads.
 
 For this repo specifically, migrate one game before touching the other 58
-files. Scramble is the right candidate: it has the deepest `update` forwarding
+files. Fuel Run is the right candidate: it has the deepest `update` forwarding
 chain, so it is where the discipline tax is most visible, and it will show
 quickly whether the deleted plumbing feels like relief or like churn.

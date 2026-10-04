@@ -26,7 +26,7 @@ tests. Deviations from this proposal as written:
   names: read `slotCount` as `slots.length` and `at(i)` as `slots.at(i)`.
 
 The `<List>` projection (section 5.3) is done and covered by tests in
-`src/pixi-jsx/list.test.ts`. `asteroids` (step 3), `scramble` (step 4), and a
+`src/pixi-jsx/list.test.ts`. `astrovoid` (step 3), `fuel-run` (step 4), and a
 visual demo (`src/demos/ordered-list/`) are also done.
 
 **Related:** [the `<List>` proposal](./004-list-proposal.md) for the view-side
@@ -66,12 +66,12 @@ insertion. Section 5 covers what it composes with to cover those.
 
 ### 2.1 The repo already hand-rolls this, six times in one file
 
-`scramble/views/game-view.ts` builds fixed pools for bullets, bombs, rockets,
+`fuel-run/views/game-view.ts` builds fixed pools for bullets, bombs, rockets,
 UFOs, fuel tanks and explosions. Each is a fixed-length model array, a per-item
 `isActive` flag, a view pool bound by index, and a hand-written liveness gate:
 
 ```ts
-// scramble/views/bullet-view.ts
+// fuel-run/views/bullet-view.ts
 function refresh(): void {
     const active = bindings.isActive();
     view.visible = active;
@@ -638,11 +638,11 @@ exist and `update` has never been called is the mitigation.
    own merits.
 2. **Implement `SlotList`** - **done**, in `src/common/slot-list/` with unit
    tests and no Pixi dependency.
-3. **Convert one game** - **done**. `asteroids` now stores its variable-length
+3. **Convert one game** - **done**. `astrovoid` now stores its variable-length
    asteroid collection in a `SlotList`; the view grows a pool by storage index
    and redraws a slot only when its tenant changes, instead of destroying and
    rebuilding every view on a length change. Its fixed bullet pool was left as-is.
-4. **Convert `scramble`** - **done**. Six hand-rolled pools became six `SlotList`
+4. **Convert `fuel-run`** - **done**. Six hand-rolled pools became six `SlotList`
    declarations; the base-fuel-tank index-as-identity became a held `Slot`
    reference whose `isLive` says whether the base stands; explosions use
    `releaseDelayMs` (born removed) for their fade. The entity models dropped

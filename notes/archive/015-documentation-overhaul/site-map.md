@@ -88,9 +88,9 @@ Previous/Next in this order:
 - When to Use Bindings vs Direct Model Access
 - **Previous:** Ticker | **Next:** Walkthrough
 
-### [docs/learn/walkthrough.md](../../docs/learn/walkthrough.md) - Walkthrough: Asteroids
+### [docs/learn/walkthrough.md](../../docs/learn/walkthrough.md) - Walkthrough: Astrovoid
 
-- Why Asteroids?
+- Why Astrovoid?
 - Directory Structure
 - Constants Layer
 - The Models
@@ -527,13 +527,13 @@ sequential navigation.
 
 ### [docs/reactivity/examples.md](../../docs/reactivity/examples.md) - Worked Examples
 
-- Example 1: Score Display (Pac-Man)
+- Example 1: Score Display (Crumb Chase)
     - Events / Signals / Watchers / Observations
-- Example 2: Ghost State Transitions (Pac-Man)
+- Example 2: Cat State Transitions (Crumb Chase)
     - Events / Signals / Watchers / Observations
 - Example 3: GSAP Tween Integration (Breakout)
     - Events / Signals / Watchers / Observations
-- Example 4: Asteroid Field (Asteroids)
+- Example 4: Asteroid Field (Astrovoid)
     - Events / Signals / Watchers / Summary (comparison table)
 - Quick-Reference: Which Approach for Which Pattern?
 - **Back to:** Overview / Comparison

@@ -1,8 +1,8 @@
 export type { GameEntry, GameInputConfig, GameSession } from './game-entry';
-export { createAsteroidsEntry } from './asteroids';
-export { createCactiiEntry } from './cactii';
-export { createDigdugEntry } from './digdug';
-export { createGalagaEntry } from './galaga';
-export { createIkEntry } from './ik';
-export { createPacmanEntry } from './pacman';
-export { createScrambleEntry } from './scramble';
+export { createAstrovoidEntry } from './astrovoid';
+export { createBurrowBustEntry } from './burrow-bust';
+export { createCrumbChaseEntry } from './crumb-chase';
+export { createDojoDuelEntry } from './dojo-duel';
+export { createFuelRunEntry } from './fuel-run';
+export { createGalaxyRaidersEntry } from './galaxy-raiders';
+export { createKwazyCactiiEntry } from './kwazy-cactii';

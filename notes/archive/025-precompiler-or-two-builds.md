@@ -216,7 +216,7 @@ fallback, "after" the one from question 7. A frame at 60 fps is 16,667 µs.
 | Falling sand, 20,000 grains, flipping | 2,170 | 7,840 | 3,180 |
 
 In the games, the path makes no measurable difference: each spends under
-0.1% of a frame in `refreshScene`, whichever path runs (Scramble's 4.1 against
+0.1% of a frame in `refreshScene`, whichever path runs (Fuel Run's 4.1 against
 8.3 µs before was the largest gap). Only a scene of thousands of bound
 elements shows it: at 20,000 grains, the first fallback cost 44% of a frame
 and generated code 10%; the new fallback costs 17%. No separate HUD-heavy

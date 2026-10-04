@@ -6,9 +6,9 @@ import type { Container } from 'pixi.js';
 
 /** Descriptor for a game that can be registered in the cabinet. */
 export interface GameEntry {
-    /** Unique identifier (e.g. 'pacman'). */
+    /** Unique identifier (e.g. 'crumb-chase'). */
     readonly id: string;
-    /** Human-readable display name (e.g. 'Pac-Man'). */
+    /** Human-readable display name (e.g. 'Crumb Chase'). */
     readonly name: string;
     /** Desired canvas width in pixels. */
     readonly screenWidth: number;
@@ -17,7 +17,7 @@ export interface GameEntry {
     /**
      * Milliseconds to advance the model when generating a thumbnail.
      * Defaults to 16 ms (one tick). Games that need time for entities
-     * to assemble (e.g. Galaga) can set a higher value.
+     * to assemble (e.g. Galaxy Raiders) can set a higher value.
      */
     readonly thumbnailAdvanceMs?: number;
     /**

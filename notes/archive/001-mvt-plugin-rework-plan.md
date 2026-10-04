@@ -626,8 +626,8 @@ Add the two baselines the appraisal correctly identifies as missing:
 
 Separate from the product work, and deliberately incremental.
 
-- **Migrate `scramble` first.** It has the deepest `update` forwarding chain
-  (`scramble/views/game-view.ts:215` to `cactii/views/game-view.ts:20` to the
+- **Migrate `fuel-run` first.** It has the deepest `update` forwarding chain
+  (`fuel-run/views/game-view.ts:215` to `cactii/views/game-view.ts:20` to the
   game entry), so it is where the pain is most visible.
 - **Do the `onUpdate` migration before the `onRefresh` one.** They are
   independent, and the 59 `view.onRender = refresh` sites can stay untouched
@@ -637,7 +637,7 @@ Separate from the product work, and deliberately incremental.
   hides itself keeps working:
 
   ```ts
-  // scramble/views/bullet-view.ts, and five siblings - unchanged in shape
+  // fuel-run/views/bullet-view.ts, and five siblings - unchanged in shape
   function refresh(): void {
       const active = bindings.isActive();
       view.visible = active;          // a view may set its own visible

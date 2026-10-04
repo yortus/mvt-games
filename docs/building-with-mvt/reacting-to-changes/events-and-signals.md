@@ -35,7 +35,7 @@ consumers subscribe to what they care about. An audio manager can react to
 `'enemy-destroyed'` without the game model knowing about audio.
 
 **Discoverable API.** A model's event list serves as documentation.
-`ghostModel.on('eaten', ...)` tells a new developer what the model can report.
+`enemyModel.on('defeated', ...)` tells a new developer what the model can report.
 With polling, the consumer must know which getters to watch and what
 transitions are meaningful - that knowledge lives in the view, not in the
 model's API surface.
@@ -57,7 +57,7 @@ finishing its update, handlers see partially-updated state.
 
 ```ts
 function update(deltaMs: number): void {
-    score += combo * pointsPerGhost;
+    score += combo * pointsPerEnemy;
     emit('score-changed', score);
     // ... still updating other state ...
     combo = 0;  // handler already ran with the old combo value
@@ -86,13 +86,13 @@ state change that no event covers, the view cannot subscribe to it. Adding the
 view requires changing the model.
 
 ```ts
-// Ghost model emits phase changes.
-ghostModel.on('phase-changed', handler);
+// Enemy model emits phase changes.
+enemyModel.on('phase-changed', handler);
 
-// A new view needs to know when the ghost enters a tunnel.
+// A new view needs to know when the enemy enters a tunnel.
 // There is no 'entered-tunnel' event.
 // Options:
-//   A) Add the event to GhostModel (model now serves a specific view's needs)
+//   A) Add the event to EnemyModel (model now serves a specific view's needs)
 //   B) Poll position each tick (abandons events for this case)
 ```
 
@@ -110,19 +110,19 @@ ghostModel.on('phase-changed', handler);
 ### Challenge: Reacting to non-events (mixing paradigms)
 
 Not everything worth reacting to is a discrete event. Conditions like "health
-dropped below 25%" or "ghost is frightened AND near the player" span multiple
+dropped below 25%" or "enemy is frightened AND near the player" span multiple
 values and have no natural emission point.
 
 ```ts
-let ghostFrightened = false;
+let enemyFrightened = false;
 
-ghostModel.on('phase-changed', (phase) => {
-    ghostFrightened = phase === 'frightened';
+enemyModel.on('phase-changed', (phase) => {
+    enemyFrightened = phase === 'frightened';
 });
 
 // Still need a tick loop to check proximity - events can't express this.
 function refresh(): void {
-    if (ghostFrightened && distance(ghost, player) < 3) {
+    if (enemyFrightened && distance(enemy, player) < 3) {
         showWarning();
     }
 }
@@ -147,15 +147,15 @@ distributed. A single `emit()` can trigger a deep chain of handlers across
 multiple modules.
 
 ```ts
-// What happens when a ghost is eaten?
-ghostModel.emit('ghost-eaten', ghost);
+// What happens when an enemy is defeated?
+enemyModel.emit('enemy-defeated', enemy);
 
 // To find out, search the entire codebase for subscribers:
 //   scoreView.ts:42      - updates score display
-//   audioManager.ts:17   - plays eat sound
-//   comboTracker.ts:88   - increments ghost combo
+//   audioManager.ts:17   - plays defeat sound
+//   comboTracker.ts:88   - increments the combo
 //   analytics.ts:55      - logs event
-//   achievementSystem.ts - checks chain-eat achievement
+//   achievementSystem.ts - checks chain-defeat achievement
 ```
 
 When a handler emits another event, you get cascading dispatches on the same

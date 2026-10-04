@@ -16,7 +16,7 @@
             "params": {
                 "measure": "time",
                 "kind": "game",
-                "entry": "asteroids"
+                "entry": "astrovoid"
             },
             "metrics": {
                 "modelsUs": [
@@ -55,46 +55,7 @@
             "params": {
                 "measure": "time",
                 "kind": "game",
-                "entry": "cactii"
-            },
-            "metrics": {
-                "modelsUs": [
-                    0.15783333333336222,
-                    0.17358333333336004,
-                    0.1873333333332599
-                ],
-                "updateUs": [
-                    0.6938888888889297,
-                    0.7117777777777532,
-                    0.8861666666666126
-                ],
-                "refreshUs": [
-                    8.065000000000065,
-                    8.554333333333433,
-                    8.929527777777718
-                ],
-                "totalUs": [
-                    8.964111111111077,
-                    9.598333333333407,
-                    9.797000000000008
-                ],
-                "containers": [
-                    306,
-                    306,
-                    306
-                ],
-                "methods": [
-                    76,
-                    76,
-                    76
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "time",
-                "kind": "game",
-                "entry": "digdug"
+                "entry": "burrow-bust"
             },
             "metrics": {
                 "modelsUs": [
@@ -133,85 +94,7 @@
             "params": {
                 "measure": "time",
                 "kind": "game",
-                "entry": "galaga"
-            },
-            "metrics": {
-                "modelsUs": [
-                    3.1975555555556507,
-                    3.635111111111241,
-                    4.139361111111038
-                ],
-                "updateUs": [
-                    0.40477777777782914,
-                    0.4237222222222551,
-                    0.7962222222222022
-                ],
-                "refreshUs": [
-                    2.9910000000001147,
-                    3.3411666666665556,
-                    3.3464444444444297
-                ],
-                "totalUs": [
-                    6.943500000000036,
-                    7.422333333333558,
-                    7.909527777777722
-                ],
-                "containers": [
-                    76,
-                    79,
-                    79
-                ],
-                "methods": [
-                    38,
-                    38,
-                    38
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "time",
-                "kind": "game",
-                "entry": "ik"
-            },
-            "metrics": {
-                "modelsUs": [
-                    1.3747777777779489,
-                    1.6528611111110396,
-                    2.0206388888887377
-                ],
-                "updateUs": [
-                    0.3909722222222535,
-                    0.4023333333332404,
-                    0.4958611111111032
-                ],
-                "refreshUs": [
-                    1.8989722222221772,
-                    1.9330000000000545,
-                    2.1739722222222193
-                ],
-                "totalUs": [
-                    3.7101111111112433,
-                    3.9428055555554704,
-                    4.690472222222061
-                ],
-                "containers": [
-                    27,
-                    27,
-                    27
-                ],
-                "methods": [
-                    6,
-                    6,
-                    6
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "time",
-                "kind": "game",
-                "entry": "pacman"
+                "entry": "crumb-chase"
             },
             "metrics": {
                 "modelsUs": [
@@ -250,7 +133,46 @@
             "params": {
                 "measure": "time",
                 "kind": "game",
-                "entry": "scramble"
+                "entry": "dojo-duel"
+            },
+            "metrics": {
+                "modelsUs": [
+                    1.3747777777779489,
+                    1.6528611111110396,
+                    2.0206388888887377
+                ],
+                "updateUs": [
+                    0.3909722222222535,
+                    0.4023333333332404,
+                    0.4958611111111032
+                ],
+                "refreshUs": [
+                    1.8989722222221772,
+                    1.9330000000000545,
+                    2.1739722222222193
+                ],
+                "totalUs": [
+                    3.7101111111112433,
+                    3.9428055555554704,
+                    4.690472222222061
+                ],
+                "containers": [
+                    27,
+                    27,
+                    27
+                ],
+                "methods": [
+                    6,
+                    6,
+                    6
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "fuel-run"
             },
             "metrics": {
                 "modelsUs": [
@@ -282,6 +204,84 @@
                     42,
                     42,
                     42
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "galaxy-raiders"
+            },
+            "metrics": {
+                "modelsUs": [
+                    3.1975555555556507,
+                    3.635111111111241,
+                    4.139361111111038
+                ],
+                "updateUs": [
+                    0.40477777777782914,
+                    0.4237222222222551,
+                    0.7962222222222022
+                ],
+                "refreshUs": [
+                    2.9910000000001147,
+                    3.3411666666665556,
+                    3.3464444444444297
+                ],
+                "totalUs": [
+                    6.943500000000036,
+                    7.422333333333558,
+                    7.909527777777722
+                ],
+                "containers": [
+                    76,
+                    79,
+                    79
+                ],
+                "methods": [
+                    38,
+                    38,
+                    38
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "kind": "game",
+                "entry": "kwazy-cactii"
+            },
+            "metrics": {
+                "modelsUs": [
+                    0.15783333333336222,
+                    0.17358333333336004,
+                    0.1873333333332599
+                ],
+                "updateUs": [
+                    0.6938888888889297,
+                    0.7117777777777532,
+                    0.8861666666666126
+                ],
+                "refreshUs": [
+                    8.065000000000065,
+                    8.554333333333433,
+                    8.929527777777718
+                ],
+                "totalUs": [
+                    8.964111111111077,
+                    9.598333333333407,
+                    9.797000000000008
+                ],
+                "containers": [
+                    306,
+                    306,
+                    306
+                ],
+                "methods": [
+                    76,
+                    76,
+                    76
                 ]
             }
         },
@@ -406,7 +406,7 @@
             "params": {
                 "measure": "allocation",
                 "kind": "game",
-                "entry": "asteroids"
+                "entry": "astrovoid"
             },
             "metrics": {
                 "bytesPerFrame": [
@@ -420,20 +420,7 @@
             "params": {
                 "measure": "allocation",
                 "kind": "game",
-                "entry": "cactii"
-            },
-            "metrics": {
-                "bytesPerFrame": [
-                    19.137600000000003,
-                    19.393600000000003
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "allocation",
-                "kind": "game",
-                "entry": "digdug"
+                "entry": "burrow-bust"
             },
             "metrics": {
                 "bytesPerFrame": [
@@ -446,7 +433,46 @@
             "params": {
                 "measure": "allocation",
                 "kind": "game",
-                "entry": "galaga"
+                "entry": "crumb-chase"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    442.0176,
+                    443.5168
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "dojo-duel"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    937.0816000000001,
+                    940.6088
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "fuel-run"
+            },
+            "metrics": {
+                "bytesPerFrame": [
+                    351.70959999999997,
+                    351.7296
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "kind": "game",
+                "entry": "galaxy-raiders"
             },
             "metrics": {
                 "bytesPerFrame": [
@@ -460,38 +486,12 @@
             "params": {
                 "measure": "allocation",
                 "kind": "game",
-                "entry": "ik"
+                "entry": "kwazy-cactii"
             },
             "metrics": {
                 "bytesPerFrame": [
-                    937.0816000000001,
-                    940.6088
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "allocation",
-                "kind": "game",
-                "entry": "pacman"
-            },
-            "metrics": {
-                "bytesPerFrame": [
-                    442.0176,
-                    443.5168
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "allocation",
-                "kind": "game",
-                "entry": "scramble"
-            },
-            "metrics": {
-                "bytesPerFrame": [
-                    351.70959999999997,
-                    351.7296
+                    19.137600000000003,
+                    19.393600000000003
                 ]
             }
         },
@@ -538,7 +538,7 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "asteroids"
+                "entry": "astrovoid"
             },
             "metrics": {
                 "minorGcs": [
@@ -562,28 +562,7 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "cactii"
-            },
-            "metrics": {
-                "minorGcs": [
-                    1,
-                    1
-                ],
-                "majorGcs": [
-                    0,
-                    0
-                ],
-                "gcPauseMs": [
-                    0.3518998622894287,
-                    0.3519001007080078
-                ]
-            }
-        },
-        {
-            "params": {
-                "measure": "gc",
-                "kind": "game",
-                "entry": "digdug"
+                "entry": "burrow-bust"
             },
             "metrics": {
                 "minorGcs": [
@@ -604,23 +583,20 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "galaga"
+                "entry": "crumb-chase"
             },
             "metrics": {
                 "minorGcs": [
-                    1,
-                    1,
-                    1
+                    0,
+                    0
                 ],
                 "majorGcs": [
-                    0,
                     0,
                     0
                 ],
                 "gcPauseMs": [
-                    0.14149999618530273,
-                    0.14700007438659668,
-                    0.38519978523254395
+                    0,
+                    0
                 ]
             }
         },
@@ -628,7 +604,7 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "ik"
+                "entry": "dojo-duel"
             },
             "metrics": {
                 "minorGcs": [
@@ -652,7 +628,7 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "pacman"
+                "entry": "fuel-run"
             },
             "metrics": {
                 "minorGcs": [
@@ -673,20 +649,44 @@
             "params": {
                 "measure": "gc",
                 "kind": "game",
-                "entry": "scramble"
+                "entry": "galaxy-raiders"
             },
             "metrics": {
                 "minorGcs": [
+                    1,
+                    1,
+                    1
+                ],
+                "majorGcs": [
+                    0,
                     0,
                     0
+                ],
+                "gcPauseMs": [
+                    0.14149999618530273,
+                    0.14700007438659668,
+                    0.38519978523254395
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "gc",
+                "kind": "game",
+                "entry": "kwazy-cactii"
+            },
+            "metrics": {
+                "minorGcs": [
+                    1,
+                    1
                 ],
                 "majorGcs": [
                     0,
                     0
                 ],
                 "gcPauseMs": [
-                    0,
-                    0
+                    0.3518998622894287,
+                    0.3519001007080078
                 ]
             }
         },

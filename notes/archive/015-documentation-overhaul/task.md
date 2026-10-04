@@ -532,7 +532,7 @@ Phase 7 (polish):
   - Created topics/phase-transitions.md: mutually-exclusive phases with
     string literal union + single progress value. Banner example (closed,
     opening, open, closing). Why not separate progress properties. When model
-    vs view owns phases. Real example: cactii BoardPhase.
+    vs view owns phases. Real example: Kwazy Cactii's BoardPhase.
   - Created topics/open-ended-phases.md: phases with no fixed duration.
     phaseElapsedMs for open-ended phases. Cyclic animations derived from
     elapsed time (Math.sin). Combining fixed and open-ended phases. When view
@@ -541,8 +541,9 @@ Phase 7 (polish):
     independent timelines. Sequence concept (named steps with startMs/
     durationMs). Splitting effects across sub-views. SequenceReaction for
     lifecycle callbacks (entering/active/inactive). Triggering, ownership.
-    Looping (restart, counted loops, ping-pong). Real example: cactii match
-    celebration with 12 overlapping steps across 6 child views.
+    Looping (restart, counted loops, ping-pong). Real example: Kwazy
+    Cactii's match celebration with 12 overlapping steps across 6 child
+    views.
   - Added Animating Transitions sidebar group with 3 pages.
   - Updated landing page (item 7).
   - Added Next link from managing-view-complexity to phase-transitions.

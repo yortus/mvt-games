@@ -67,7 +67,7 @@ cannot provide it.
 Seven games, zero reconcilers. The pattern is uniform:
 
 ```ts
-// scramble/views/game-view.ts - repeated for bullets, bombs, rockets,
+// fuel-run/views/game-view.ts - repeated for bullets, bombs, rockets,
 // UFOs, fuel tanks and explosions.
 for (let i = 0; i < game.bullets.length; i++) {
     const idx = i;
@@ -78,7 +78,7 @@ for (let i = 0; i < game.bullets.length; i++) {
 }
 ```
 
-`asteroids/views/game-view.ts` holds the one genuinely variable-length list. It
+`astrovoid/views/game-view.ts` holds the one genuinely variable-length list. It
 watches `length` and, on any change, destroys every view and rebuilds by index.
 The proposed `<List>` is strictly better than that hand-roll, because it
 appends instead of rebuilding.
@@ -1151,7 +1151,7 @@ scheduled; each names what would justify picking it up.
    - A build-time rewrite of `item` to `item()`: it stops working silently
      when the children function is moved or wrapped, and adds a compiler step.
    - Permanent `Slot<T>` objects with a generation counter: they reintroduce
-     the ABA problem `SlotList` exists to prevent (Scramble's `baseSlot` and
+     the ABA problem `SlotList` exists to prevent (Fuel Run's `baseSlot` and
      the ordered-list demo both rely on fresh slot identity).
    - Rebuilding a slot when its occupant changes: that is a keyed list
      (question 5).

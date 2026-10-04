@@ -2,13 +2,13 @@ import { Application, Container, RenderTexture, TextureSource, type Texture } fr
 import { CabinetView, createCabinetModel, type CabinetViewBindings } from './cabinet';
 import { isTouchDevice, KeyboardInputView, PauseMenuView, TouchInputView } from '#shared';
 import {
-    createAsteroidsEntry,
-    createCactiiEntry,
-    createDigdugEntry,
-    createGalagaEntry,
-    createIkEntry,
-    createPacmanEntry,
-    createScrambleEntry,
+    createAstrovoidEntry,
+    createBurrowBustEntry,
+    createCrumbChaseEntry,
+    createDojoDuelEntry,
+    createFuelRunEntry,
+    createGalaxyRaidersEntry,
+    createKwazyCactiiEntry,
     type GameEntry,
     type GameSession,
 } from './games';
@@ -82,13 +82,13 @@ async function main(): Promise<void> {
 
     // ---- Game registry -----------------------------------------------------
     const games = [
-        createAsteroidsEntry(),
-        createCactiiEntry(),
-        createDigdugEntry(),
-        createGalagaEntry(),
-        createIkEntry(),
-        createPacmanEntry(),
-        createScrambleEntry(),
+        createAstrovoidEntry(),
+        createBurrowBustEntry(),
+        createCrumbChaseEntry(),
+        createDojoDuelEntry(),
+        createFuelRunEntry(),
+        createGalaxyRaidersEntry(),
+        createKwazyCactiiEntry(),
     ];
 
     // ---- Cabinet model (must be created before view) -----------------------

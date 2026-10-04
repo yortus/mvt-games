@@ -61,17 +61,17 @@ JSX runtime is untouched, and cross-consumption becomes a typed one-liner.
 
 A leaf view takes a `bindings` record of `get*` accessors and `on*` handlers,
 and self-refreshes through a Pixi container method. From
-[ghost-view.ts](../../src/games/pacman/views/ghost-view.ts):
+[cat-view.ts](../../src/games/crumb-chase/views/cat-view.ts):
 
 ```ts
-export interface GhostViewBindings {
+export interface CatViewBindings {
     getRow(): number;
     getCol(): number;
     getColor(): number;
     getTileSize(): number;
 }
 
-export function createGhostView(bindings: GhostViewBindings): Container {
+export function createCatView(bindings: CatViewBindings): Container {
     // ...
     view.onRefresh = refresh;
     return view;
@@ -79,8 +79,8 @@ export function createGhostView(bindings: GhostViewBindings): Container {
 ```
 
 This shape is pervasive: **50 `*ViewBindings` interfaces** across the cabinet,
-`common/`, and every game (pacman, galaga, digdug, scramble, asteroids, cactii,
-ik). It is the load-bearing convention of the repo.
+`common/`, and every game (crumb-chase, galaxy-raiders, burrow-bust, fuel-run,
+astrovoid, cactii, dojo-duel). It is the load-bearing convention of the repo.
 
 ### 2.2 JSX view
 
@@ -143,7 +143,7 @@ properties ([jsx-runtime.ts](../../src/pixi-jsx/jsx-runtime.ts) `applyProp`:
 `x -> el.x`, `y -> el.y`, `alpha -> el.alpha`). You cannot write
 `<container getX={...}>` without renaming Pixi's own properties and rewriting the
 runtime. So a JSX tree would be forced to mix `<container x={...}>` with
-`<Ghost getRow={...}>` - two naming rules inside one tag soup. This is a
+`<Cat getRow={...}>` - two naming rules inside one tag soup. This is a
 mechanical blocker, not a preference.
 
 ### 4.2 JSX-only everywhere (bare `thing` in imperative code too) - too costly
@@ -200,7 +200,7 @@ BindingsFromProps<PropsFromBindings<B>>  is  B
 Worked type (verified, section 11):
 
 ```ts
-type GhostProps = PropsFromBindings<GhostViewBindings>;
+type CatProps = PropsFromBindings<CatViewBindings>;
 // {
 //     row(): number;
 //     col(): number;
@@ -254,14 +254,14 @@ view into the other. Two one-liners cover both directions:
 ```ts
 import type { Container } from 'pixi.js';
 
-// Expose a bindings-view as a JSX component: <Ghost row={...} col={...} />
+// Expose a bindings-view as a JSX component: <Cat row={...} col={...} />
 export function componentFromView<B extends object>(
     view: (bindings: B) => Container,
 ): (props: PropsFromBindings<B>) => Container {
     return (props) => view(bindingsFromProps(props) as B);
 }
 
-// Expose a JSX component to imperative callers: createGhostView({ getRow, ... })
+// Expose a JSX component to imperative callers: createCatView({ getRow, ... })
 export function viewFromComponent<P extends object>(
     Component: (props: P) => Container,
 ): (bindings: BindingsFromProps<P>) => Container {
@@ -271,25 +271,25 @@ export function viewFromComponent<P extends object>(
 
 ### 5.4 Example: an existing bindings-view used in a JSX tree
 
-No change to `createGhostView`. One adapter line, then idiomatic JSX:
+No change to `createCatView`. One adapter line, then idiomatic JSX:
 
 ```tsx
 /** @jsxImportSource #pixi-jsx */
-import { createGhostView } from '../pacman/views';
+import { createCatView } from '../crumb-chase/views';
 import { componentFromView } from '#common';
 
-const Ghost = componentFromView(createGhostView);
+const Cat = componentFromView(createCatView);
 
-// row/col/color/tileSize are the bare getter props derived from GhostViewBindings
+// row/col/color/tileSize are the bare getter props derived from CatViewBindings
 export function createBoardView(model: BoardModel): Container {
     return (
         <container label="board">
-            <List items={model.ghosts}>
-                {(ghost, i) => (
-                    <Ghost
-                        row={() => ghost().row}
-                        col={() => ghost().col}
-                        color={() => GHOST_COLORS[i]}
+            <List items={model.cats}>
+                {(cat, i) => (
+                    <Cat
+                        row={() => cat().row}
+                        col={() => cat().col}
+                        color={() => CAT_COLORS[i]}
                         tileSize={() => TILE_SIZE}
                     />
                 )}
@@ -299,8 +299,8 @@ export function createBoardView(model: BoardModel): Container {
 }
 ```
 
-At runtime `jsx(Ghost, props)` calls `Ghost(props)`, which renames the props back
-to bindings and calls `createGhostView`. The returned container already wired its
+At runtime `jsx(Cat, props)` calls `Cat(props)`, which renames the props back
+to bindings and calls `createCatView`. The returned container already wired its
 own `onRefresh` method, so it refreshes inside the tree like any other node - the
 JSX runtime adds no second refresh path for a function-component result.
 
@@ -436,10 +436,10 @@ A throwaway `src/_scratch_transform_proof/proof.ts` was written with the exact
 types and runtime from section 5, then type-checked with `tsc --noEmit` and run
 with `tsx`. It asserted, at the type level:
 
-- `PropsFromBindings<GhostViewBindings>` equals the hand-written `GhostProps`
+- `PropsFromBindings<CatViewBindings>` equals the hand-written `CatProps`
   (bare keys, `onCoinTap?` optionality and its `index` argument preserved);
-- `BindingsFromProps<GhostProps>` equals `GhostViewBindings` (round-trip);
-- `GhostProps['row']` is assignable to `ValueOrGetter<number>` (so a derived prop
+- `BindingsFromProps<CatProps>` equals `CatViewBindings` (round-trip);
+- `CatProps['row']` is assignable to `ValueOrGetter<number>` (so a derived prop
   drops into an intrinsic slot).
 
 and at runtime:

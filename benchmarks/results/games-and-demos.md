@@ -6,6 +6,7 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 <!-- #region notes -->
 - Since 2026-10-02, each frame is the session's update, which advances only its models, then a tick of the stage, timed `updateView` and `refreshView` apart. The time table's models, `updateView` and `refreshView` columns are new: the earlier "update" column mixed the models with the views' update methods.
+- The games' figures were measured on 2026-10-02, before they were renamed and several were redrawn (2026-10-04); only their names have been updated here. Measure again to replace them, and this note.
 <!-- #endregion notes -->
 
 <!-- #region time -->
@@ -13,13 +14,13 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Models (µs) | `updateView` (µs) | `refreshView` (µs) | Total (µs) | Pixi containers | Update and refresh methods |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Game | Asteroids | 0.85 ±13% | 0.33 ±10% | 4.03 ±9% | 5.12 ±9% | 46 | 22 |
+| Game | Astrovoid | 0.85 ±13% | 0.33 ±10% | 4.03 ±9% | 5.12 ±9% | 46 | 22 |
+|  | Burrow Bust | 1.28 ±6% | 0.35 ±16% | 2.74 | 4.37 | 37 | 14 |
+|  | Crumb Chase | 0.18 | 0.49 ±12% | 4.06 ±6% | 4.79 ±6% | 234 | 11 |
+|  | Dojo Duel | 1.65 ±20% | 0.4 ±13% | 1.93 ±7% | 3.94 ±12% | 27 | 6 |
+|  | Fuel Run | 1.09 ±18% | 0.54 ±8% | 3.15 | 4.82 | 84 | 42 |
+|  | Galaxy Raiders | 3.64 ±13% | 0.42 ±46% | 3.34 | 7.42 ±7% | 79 | 38 |
 |  | Kwazy Cactii | 0.17 ±8% | 0.71 ±14% | 8.55 | 9.6 | 306 | 76 |
-|  | Dig Dug | 1.28 ±6% | 0.35 ±16% | 2.74 | 4.37 | 37 | 14 |
-|  | Galaga | 3.64 ±13% | 0.42 ±46% | 3.34 | 7.42 ±7% | 79 | 38 |
-|  | International Karate | 1.65 ±20% | 0.4 ±13% | 1.93 ±7% | 3.94 ±12% | 27 | 6 |
-|  | Pac-Man | 0.18 | 0.49 ±12% | 4.06 ±6% | 4.79 ±6% | 234 | 11 |
-|  | Scramble | 1.09 ±18% | 0.54 ±8% | 3.15 | 4.82 | 84 | 42 |
 | Demo | Boids | 507 ±11% | 0.86 ±7% | 15.1 | 523 ±11% | 313 | 33 |
 |  | Falling sand | 1.85 ±7% | 0.74 ±6% | 182 | 184 | 3,890 | 3,790 |
 |  | Reordering lists | 0.2 ±124% | 0.54 ±19% | 2.3 ±10% | 3.32 ±8% | 46 | 37 |
@@ -30,13 +31,13 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Bytes per frame |
 | --- | --- | --- |
-| Game | Asteroids | 104 ±7% |
+| Game | Astrovoid | 104 ±7% |
+|  | Burrow Bust | 234 |
+|  | Crumb Chase | 443 |
+|  | Dojo Duel | 939 |
+|  | Fuel Run | 352 |
+|  | Galaxy Raiders | 224 ±21% |
 |  | Kwazy Cactii | 19 |
-|  | Dig Dug | 234 |
-|  | Galaga | 224 ±21% |
-|  | International Karate | 939 |
-|  | Pac-Man | 443 |
-|  | Scramble | 352 |
 | Demo | Boids | 34 |
 |  | Falling sand | 17 |
 |  | Reordering lists | 204 |
@@ -47,13 +48,13 @@ Measured 2026-10-02 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js
 
 | Kind | Name | Young-generation collections | Full collections | Time in collections (ms) |
 | --- | --- | --- | --- | --- |
-| Game | Asteroids | 0 | 0 | 0 |
+| Game | Astrovoid | 0 | 0 | 0 |
+|  | Burrow Bust | 0 | 0 | 0 |
+|  | Crumb Chase | 0 | 0 | 0 |
+|  | Dojo Duel | 1 ±50% | 0 | 0.1 ±48% |
+|  | Fuel Run | 0 | 0 | 0 |
+|  | Galaxy Raiders | 1 | 0 | 0.1 ±83% |
 |  | Kwazy Cactii | 1 | 0 | 0.4 |
-|  | Dig Dug | 0 | 0 | 0 |
-|  | Galaga | 1 | 0 | 0.1 ±83% |
-|  | International Karate | 1 ±50% | 0 | 0.1 ±48% |
-|  | Pac-Man | 0 | 0 | 0 |
-|  | Scramble | 0 | 0 | 0 |
 | Demo | Boids | 0 | 0 | 0 |
 |  | Falling sand | 0 | 0 | 0 |
 |  | Reordering lists | 0 | 0 | 0 |

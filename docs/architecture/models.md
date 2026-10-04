@@ -77,9 +77,9 @@ to the domain - not in pixels or any other presentation measure.
 
 | Application style | Natural unit | Examples |
 |---|---|---|
-| Tile/grid-based | Tiles (fractional) | Pac-Man, Tetris, chess |
+| Tile/grid-based | Tiles (fractional) | Maze games, falling-block puzzles, chess |
 | Continuous open-world | Metres or world-units | Platformers, racing |
-| Fixed-arena action | Abstract world-units | Asteroids, space shooters |
+| Fixed-arena action | Abstract world-units | Space shooters, arena brawlers |
 | Board/card | Slots or indices | Card positions, board squares |
 
 The model defines the world; the view decides how to draw it. Even if the

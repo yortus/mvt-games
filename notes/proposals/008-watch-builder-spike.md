@@ -158,7 +158,7 @@ unsound in three ways, each failing silently:
 Explicit inputs, as `Watch()` already has, fix all three. The falling-sand
 toolbar used a local stand-in, `mapOnChange(read, map)`: one selector, one
 `===` comparison, and `map` run only on a change. Since 2026-09-27 it, and
-Scramble's HUD, use `memoiseLast(fn)` from `src/mvt-utils/` instead: a
+Fuel Run's HUD, use `memoiseLast(fn)` from `src/mvt-utils/` instead: a
 one-argument function wrapped to run only when its argument changes, called every frame
 with the polled value. Promotion should
 replace it with `Watch()`, which today would read:
@@ -448,7 +448,7 @@ without a new reason.
   `src/common/touch-input-view.ts`) to `.detect()`. Watch for `return` moving
   into a callback, where it no longer exits `refresh()`.
 - Decide whether `memoiseLast` (in `src/mvt-utils/`, used by the falling-sand
-  toolbar and Scramble's HUD) should give way to the mapping terminal, or
+  toolbar and Fuel Run's HUD) should give way to the mapping terminal, or
   stay as the simpler tool for the single-value case.
 - Port `derive` from the `derive-util` branch: its docs
   (`docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo

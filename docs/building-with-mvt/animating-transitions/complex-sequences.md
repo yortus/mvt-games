@@ -409,9 +409,9 @@ When the sequence completes, restart it.
 
 ## A Real Example: Match-3 Celebration
 
-The cactii match-3 game uses this pattern for its match celebration. The
-board model enters the `matching` phase. The board view creates a shared
-`Sequence` with 12 overlapping steps spanning over a second:
+Kwazy Cactii, the match-3 game, uses this pattern for its match
+celebration. The board model enters the `matching` phase. The board view
+creates a shared `Sequence` with 12 overlapping steps spanning over a second:
 
 ```
 Time (ms):   0       200     400     600     800     1000

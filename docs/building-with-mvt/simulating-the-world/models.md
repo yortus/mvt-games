@@ -154,24 +154,24 @@ for time or rendering:
 Models must define positions, distances, and velocities in units that are
 meaningful to the domain - not in pixels or any other presentation measure.
 
-| Game style               | Natural unit             | Examples                        |
-| ------------------------ | ------------------------ | ------------------------------- |
-| **Tile/grid-based**      | Tiles (fractional)       | Pac-Man, Dig Dug, Tetris       |
-| **Continuous open-world** | Metres or world-units   | Platformers, racing games       |
-| **Fixed-arena action**   | Abstract world-units     | Asteroids, Galaga               |
-| **Board/card**           | Slots / indices          | Chess squares, card positions   |
+| Game style               | Natural unit             | Examples                                  |
+| ------------------------ | ------------------------ | ----------------------------------------- |
+| **Tile/grid-based**      | Tiles (fractional)       | Crumb Chase, Burrow Bust, Kwazy Cactii    |
+| **Continuous open-world** | Metres or world-units   | Platformers, racing games                 |
+| **Fixed-arena action**   | Abstract world-units     | Astrovoid, Galaxy Raiders                 |
+| **Board/card**           | Slots / indices          | Chess squares, card positions             |
 
 The model defines the world; the view decides how to draw it. Even if the
 current view maps 1 world-unit to 1 pixel, that is a view-layer decision.
 
 ### Grid-based example
 
-For objects that move on a grid, such as the ghosts in Pac-Man, a model could
-expose fractional `row`/`col`. An integer means "centred on that tile"; a
-fraction means "between tiles":
+For objects that move on a grid, such as the cats in this repo's Crumb Chase,
+a model could expose fractional `row`/`col`. An integer means "centred on that
+tile"; a fraction means "between tiles":
 
 ```ts
-interface GhostModel {
+interface CatModel {
     /** Row position - fractional while moving between tiles. */
     readonly row: number;
     /** Column position - fractional while moving between tiles. */

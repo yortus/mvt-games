@@ -236,6 +236,22 @@ Code in `update()` and `refresh()` runs every tick. Flag:
 index-based `for` loops; cache derived values; use arithmetic keys
 (`row * cols + col`).
 
+### 6. Originality
+
+Games and demos may be inspired by classics, but must not copy them. Flag:
+
+- **Art without an origin in the repo:** new or changed image assets that no
+  generator script in `site/scripts/` produces and no view draws, especially
+  sprite sheets, or anything traced from or closely following other artwork.
+- **Borrowed names:** a title, character name or enemy kind taken from an
+  existing game, in code, data, comments or docs.
+- **Copied layouts:** mazes, levels or patterns transcribed from another game.
+- **Clone wording:** prose that calls a game a clone of a named game, rather
+  than describing its genre.
+
+These block a merge: ask for original art, names or layouts. Reference: the
+Originality section of `site/src/games/README.md`.
+
 ---
 
 ## Report Structure

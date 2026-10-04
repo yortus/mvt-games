@@ -8,7 +8,7 @@
 
 ## Description
 
-Code review of the Kwazy Cactii match-3 game module (`src/games/cactii/`),
+Code review of the Kwazy Cactii match-3 game module (`src/games/kwazy-cactii/`),
 performed using the project's
 [code review skill](docs/ai-agents/skill-code-review.md) checklist.
 

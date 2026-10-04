@@ -135,8 +135,8 @@ pause to disambiguate. Avoid these in favour of more precise alternatives.
 | **`state`** | `phase`, `status`, `mode`, or a domain-specific name | Every property on a model is "state." A property called `state` is confusingly meta. Use `phase` for lifecycle stages, `status` for conditions, `mode` for operational modes. |
 
 ```ts
-type EnemyType = 'pooka' | 'fygar'; // ❌ clashes with the TS concept of a type
-type EnemyKind = 'pooka' | 'fygar'; // ✅ clearly means which kind of enemy
+type EnemyType = 'mole' | 'salamander'; // ❌ clashes with the TS concept of a type
+type EnemyKind = 'mole' | 'salamander'; // ✅ clearly means which kind of enemy
 
 type GameState = 'idle' | 'playing' | 'gameover'; // ❌ confusingly meta
 type GamePhase = 'idle' | 'playing' | 'gameover'; // ✅ clearly means lifecycle stage
@@ -286,11 +286,11 @@ condition that must hold, and TypeScript narrows on it.
 
 ```ts
 // ✅ Preferred
-assert(loaded, 'pacman: preload() must be called before start()');
+assert(loaded, 'crumb-chase: load() must be called before start()');
 assert(texture, () => `Texture '${name}' not found`);
 
 // ❌ Avoid
-if (!loaded) throw new Error('pacman: preload() must be called before start()');
+if (!loaded) throw new Error('crumb-chase: load() must be called before start()');
 ```
 
 - **Build messages lazily.** A message made from values is passed as a

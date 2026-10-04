@@ -8,14 +8,15 @@ frame-consistent rendering.
 
 ## Games
 
-| Game      | Description                          |
-| --------- | ------------------------------------ |
-| Asteroids | Blast asteroids in a vector-art void |
-| Dig Dug   | Dig tunnels, defeat enemies          |
-| Galaga    | Shoot waves of alien invaders        |
-| IK        | Karate fighting game                 |
-| Pac-Man   | Navigate mazes, eat dots             |
-| Scramble  | Side-scrolling shooter               |
+| Game           | Description                                      |
+| -------------- | ------------------------------------------------ |
+| Astrovoid      | Blast space rocks in a vector-art void           |
+| Burrow Bust    | Dig tunnels, pump up moles and salamanders       |
+| Crumb Chase    | Gather crumbs in a hedge maze, dodge the cats    |
+| Dojo Duel      | Karate duel, first to three points               |
+| Fuel Run       | Side-scrolling shooter; bomb fuel to keep flying |
+| Galaxy Raiders | Shoot down waves of diving drones                |
+| Kwazy Cactii   | Match three or more cactii                       |
 
 Each game is a self-contained module under `site/src/games/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to
@@ -26,7 +27,7 @@ the active game session.
 | Layer      | Technology                 |
 | ---------- | -------------------------- |
 | Language   | TypeScript (strict mode)   |
-| Rendering  | Pixi.js                    |
+| Rendering  | Pixi.js, Three.js, HTML    |
 | Animation  | GSAP                       |
 | Build      | Vite                       |
 | Linting    | ESLint + TypeScript ESLint |

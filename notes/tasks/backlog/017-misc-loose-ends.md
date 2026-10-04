@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-10-02 |
+| Updated  | 2026-10-04 |
 
 ## Description
 
@@ -31,15 +31,16 @@ Settled questions that should not be reopened without new information are in
   generator over a `Uint32Array`), and Pixi's `rotation` setter (3.2 KB;
   boids are now turned with `skew`). The model still takes about
   0.5 ms per frame comparing every pair of boids.
-- **The games allocate on the hot path.** International Karate about 800
-  bytes per frame, unexplored. Fixed so far, 2026-09-27:
-  - Scramble, 2.7 KB to about 270 bytes, by 018's pilot migration; the likely
+- **The games allocate on the hot path.** Dojo Duel about 800 bytes per
+  frame, unexplored, measured before its sprites were replaced with fighters
+  drawn in code. Fixed so far, 2026-09-27:
+  - Fuel Run, 2.7 KB to about 270 bytes, by 018's pilot migration; the likely
     causes were graphics redrawn every frame (each explosion, and the fuel
     bar while fuel drains), now scaled or resized instead.
-  - Pac-Man, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was the
-    model, not the views. Pac-Man and the four ghosts each started a GSAP
+  - Crumb Chase, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was
+    the model, not the views. The mouse and the four cats each started a GSAP
     tween, and a `set`, for every one-tile step. Their moves are now a
-    `TileMove` (`site/src/games/pacman/models/tile-move.ts`, with tests): a
+    `TileMove` (`site/src/games/crumb-chase/models/tile-move.ts`, with tests): a
     straight slide advanced by `update(deltaMs)` that allocates nothing, with
     the same semantics (linear, starting from wherever the actor is, and no
     time carried from one move to the next). The model now allocates nothing
@@ -47,7 +48,7 @@ Settled questions that should not be reopened without new information are in
 
   To split a game's allocation between its update and its refresh, the
   `games-and-demos` case file's `frame` can be made to skip one of the two;
-  that is how Pac-Man's was found.
+  that is how Crumb Chase's was found.
 - ~~**Function members in types still use method syntax**~~ Done 2026-09-27,
   as part of 018's migrations: none are left, and `method-signature-style` is
   enforced on every TypeScript file. The variance errors expected below did
@@ -68,12 +69,12 @@ Settled questions that should not be reopened without new information are in
   function but read it only at construction, which rule
   [V-reactive](../../../docs/architecture/rules.md#view-rules) forbids. Found
   by two sweeps (the second also caught reads inside constructor arguments):
-  the overlay view's size; six Scramble views' sizes; Kwazy Cactii's
+  the overlay view's size; six Fuel Run views' sizes; Kwazy Cactii's
   `matchSequence` in five views; and, borderline, the asteroid view's radius
   and size, re-read only when its shape seed changed. All but the last are
   now fixed answers; the asteroid view now watches all three. Checked and
-  live: the touch input, cabinet, cactus, and Dig Dug and Galaga enemy
-  views.
+  live: the touch input, cabinet, cactus, and Burrow Bust and Galaxy
+  Raiders enemy views.
 
 - ~~**The overlay times its release with `requestAnimationFrame`.**~~ Done
   2026-09-27. It waited two animation frames before relaying
@@ -206,10 +207,10 @@ Settled questions that should not be reopened without new information are in
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.
-  - **Pac-Man, after its game view became JSX (2026-09-27).** It allocates
+  - **Crumb Chase, after its game view became JSX (2026-09-27).** It allocates
     about 384 bytes per frame, up from 234. Its update alone allocates
     nothing, and so does its refresh alone; together they allocate about 160
-    bytes more: five actors (Pac-Man and four ghosts) each writing a
+    bytes more: five actors (the mouse and four cats) each writing a
     fractional `row` and `col` through `TileMove`, 16 bytes each. Replacing
     the view's `<List>` with fixed views changes nothing, so it is the JSX
     setup nearby, as in the synced scene. See 018 section 21.2.
@@ -272,10 +273,11 @@ Settled questions that should not be reopened without new information are in
   commit before it measures the same (127 and 159-164 µs) in interleaved
   runs. To attribute: run both cases on Node 22 and 26 at that commit, then
   at the commit before 028's phases 1-4.
-- **Pixi's "[Cache] already has key" warnings** (`ghost-eyes`, `ship-icon`,
-  `ship`) when the cabinet loads. Seen during task 028's browser checks.
-  Check whether they predate it (likely: two games registering textures under
-  the same names), and rename or share the textures.
+- **Pixi's "[Cache] already has key" warnings** (`ship-icon`, `ship`) when
+  the cabinet loads. Seen during task 028's browser checks, with `ghost-eyes`
+  too until only Burrow Bust had an eyes texture. They predate the rework:
+  Galaxy Raiders and Fuel Run register textures under the same names.
+  Rename or share the textures.
 - ~~**One `_mvt` record per node instead of six `_mvt*` fields.**~~ Done
   2026-10-02: measured by 027 section 11.8 (variant D, a single `_mvt` record
   under a named field), which was 4-7% slower at 100,000 containers and kept
@@ -378,10 +380,10 @@ falling-sand demo. Each is a new variant, measured with
   (Fix), found by sweeping the views for V-reactive violations after the
   architecture bindings page was rewritten in terms of query and relay
   bindings.
-- 2026-09-27: 018's Scramble pilot fixed Scramble's six read-once views,
-  three of which the first sweep had missed. Scramble's method-syntax members
+- 2026-09-27: 018's Fuel Run pilot fixed Fuel Run's six read-once views,
+  three of which the first sweep had missed. Fuel Run's method-syntax members
   were converted in the same pass, and `method-signature-style` is enforced
-  there. Scramble also now allocates about 270 bytes per frame, down from
+  there. Fuel Run also now allocates about 270 bytes per frame, down from
   2.7 KB (see the hot-path allocation item).
 - 2026-09-27: 018's migration of `common/` fixed the overlay's read-once
   size and converted `common/`'s method syntax; added the overlay's
@@ -389,7 +391,7 @@ falling-sand demo. Each is a new variant, measured with
 - 2026-09-27: 018's remaining migrations (demos, cabinet, six games)
   finished the read-once views and the method syntax, both now done. Added
   the cabinet's self-playing zoom transitions (Fix).
-- 2026-09-27: Fixed Pac-Man's allocation (a model cause, not a view one), the
+- 2026-09-27: Fixed Crumb Chase's allocation (a model cause, not a view one), the
   overlay's `requestAnimationFrame` release, and the cabinet's self-playing
   transitions. Added the short-press question (Decide).
 - 2026-09-27: Archived 020 (falling sand as an implementation lab) and took
@@ -410,3 +412,6 @@ falling-sand demo. Each is a new variant, measured with
   counters became `tickCounter`) and retired "scene pass". Updated the
   pending items' names to match; the history above keeps the names of its
   day.
+- 2026-10-04: The games were renamed and redrawn. Updated every mention
+  here to the new names, history included.
+  The cache-warnings item narrowed: `ghost-eyes` no longer collides.

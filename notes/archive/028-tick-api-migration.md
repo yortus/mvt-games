@@ -144,7 +144,7 @@ staged by the user for review. Phase 0 commits it.
   references in a `baselineRefresh` property. `games-and-demos` counts methods
   with `hasUpdate` / `hasRefresh`.
 - **Checks at creation:** both type-checks pass, lint is clean, and 1174 tests
-  pass. Cactii and Pac-Man were checked in a real browser, including pause.
+  pass. Cactii and Crumb Chase were checked in a real browser, including pause.
 
 ## Acceptance Criteria
 
@@ -164,8 +164,8 @@ staged by the user for review. Phase 0 commits it.
 ### Phase 2: hosts and sessions
 
 - [x] Every session advances only its models:
-  - game entries: `asteroids`, `digdug`, `galaga`, `ik`, `pacman`,
-    `scramble` (cactii is done);
+  - game entries: `astrovoid`, `burrow-bust`, `galaxy-raiders`, `dojo-duel`,
+    `crumb-chase`, `fuel-run` (`kwazy-cactii` is done);
   - demo entries: `boids`, `falling-sand`, `reordering-lists`.
 - [x] Every host ticks its stage once per frame with `tickScene`:
   - `src/main.ts`;

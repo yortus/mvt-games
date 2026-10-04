@@ -12,7 +12,7 @@
 **Status:** implemented 2026-09-27, and archived. It supersedes 007. Done:
 the architecture docs (section 12), the `ValueOrGetter` rename, the
 `onRefresh` attribute, the convention docs, every module's migration
-(Scramble as the pilot, section 17; `common/`, section 18; the demos, the
+(Fuel Run as the pilot, section 17; `common/`, section 18; the demos, the
 cabinet and the other games, section 19), the Building with MVT rewrite with
 the `<List>` guide as a docs page (section 20), and JSX in the playground with
 the four game views that rebuilt their children now JSX with `<List>`
@@ -195,7 +195,7 @@ harder to follow: a search for `getRow` finds the interface but not the
 
 Every view is `createFooView(bindings)` with `get*`/`on*` members. JSX is
 allowed inside a body, as in the perfmon, but views are always called as
-expressions: `{createGhostView({ ... })}`.
+expressions: `{createCatView({ ... })}`.
 
 **For.** Matches every current doc page, skill, playground preset and 52 of
 the interfaces. No doc rewrite. The architecture's examples need no change.
@@ -220,15 +220,15 @@ the same outside either way; neither is required (section 10).
 choice, not a default.
 
 ```tsx
-export interface GhostViewBindings {
+export interface CatViewBindings {
     row: () => number;
     col: () => number;
     color: () => number;
     tileSize: () => number;
 }
 
-export function GhostView(bindings: GhostViewBindings): Container {
-    const { body, eyes } = textures.get().ghost;
+export function CatView(bindings: CatViewBindings): Container {
+    const { body, face } = textures.get().cat;
     return (
         <container
             x={() => (bindings.col() + 0.5) * bindings.tileSize()}
@@ -242,10 +242,10 @@ export function GhostView(bindings: GhostViewBindings): Container {
 }
 
 // Used as a tag in a JSX body...
-<GhostView row={() => ghost().row} col={() => ghost().col} color={() => GHOST_COLORS[i]} tileSize={() => TILE_SIZE} />
+<CatView row={() => cat().row} col={() => cat().col} color={() => CAT_COLORS[i]} tileSize={() => TILE_SIZE} />
 
 // ...or called from imperative code, with no adapter.
-view.addChild(GhostView({ row: () => g.row, col: () => g.col, color: () => g.color, tileSize: () => TILE_SIZE }));
+view.addChild(CatView({ row: () => g.row, col: () => g.col, color: () => g.color, tileSize: () => TILE_SIZE }));
 ```
 
 **For.** Every view can be used from JSX and from plain TypeScript, so no
@@ -279,7 +279,7 @@ In practice D becomes C with a rule that will be broken.
 ## 7. Naming the view: `createFooView` or `FooView`
 
 In JSX, a lowercase tag is an intrinsic element and a capitalised tag is a
-component, so `<createGhostView>` is not possible. `FooView` works in both
+component, so `<createCatView>` is not possible. `FooView` works in both
 places: `<FooView ... />` and `FooView({ ... })`.
 
 **Against `FooView`:**
@@ -300,7 +300,7 @@ learns one rule. The style guide gains one row: "View functions: PascalCase
 noun ending in `View`."
 
 **Ruled out:** keeping `createFooView` and adding an alias
-(`const GhostView = createGhostView`). Two names for one function, and
+(`const CatView = createCatView`). Two names for one function, and
 the docs would have to explain which to use where.
 
 ---
@@ -349,8 +349,8 @@ rename is internal and optional.
 
 | | Accessor names | In a JSX tag | Notes |
 | --- | --- | --- | --- |
-| (a) Keep `get` everywhere | `getRow` | `<GhostView getRow={...} />` beside `<container x={...}>` | Two naming rules in one tag; forwarding needs a rename, `x={bindings.getX}`. 007 section 4.1 rules this out for the same reason |
-| (b) Drop `get` everywhere | `row` | `<GhostView row={...} />` | One naming rule; bindings forward to intrinsics unchanged |
+| (a) Keep `get` everywhere | `getRow` | `<CatView getRow={...} />` beside `<container x={...}>` | Two naming rules in one tag; forwarding needs a rename, `x={bindings.getX}`. 007 section 4.1 rules this out for the same reason |
+| (b) Drop `get` everywhere | `row` | `<CatView row={...} />` | One naming rule; bindings forward to intrinsics unchanged |
 | (c) Per style | `getRow` in classic, `row` in JSX | either | Option A: needs the bridge |
 
 (c) belongs to option A. The real choice is between (a) and (b).
@@ -409,10 +409,10 @@ do not, and that it is ambiguous when `T` is itself a function type.
 
 - [overlay-view.ts](../../src/common/overlay-view.tsx) reads `getWidth()` and
   `getHeight()` once, to lay itself out.
-- [terrain-view.ts](../../src/games/scramble/views/terrain-view.ts) reads
+- [terrain-view.ts](../../src/games/fuel-run/views/terrain-view.ts) reads
   `getTileSize()`, `getVisibleCols()` and `getVisibleRows()` once, to size
   its ring buffer.
-- Scramble's base target view and HUD read `getTileSize()` and
+- Fuel Run's base target view and HUD read `getTileSize()` and
   `getScreenWidth()` once.
 
 A sweep on 2026-09-27 found these, plus some lesser cases; the full list,
@@ -451,10 +451,11 @@ item; doing both in the same pass touches each interface once.
 ## 10. Is JSX everywhere viable?
 
 As a default, yes. Most views in the repo are a fixed tree of containers
-whose properties follow the model: the game leaf views (ghost, bullet, ship,
+whose properties follow the model: the game leaf views (cat, bullet, ship,
 enemy, rock), the HUDs, the overlays. These convert directly. Game views that
-destroy and rebuild children when a count changes (galaga's `buildEnemies`,
-`buildPlayerBullets`, `buildEnemyBullets`) get simpler with `<List>`.
+destroy and rebuild children when a count changes (Galaxy Raiders'
+`buildEnemies`, `buildPlayerBullets`, `buildEnemyBullets`) get simpler with
+`<List>`.
 
 As a rule, no. Some views' work is drawing, or managing a pool of display
 objects themselves, and tags add nothing:
@@ -462,7 +463,7 @@ objects themselves, and tags add nothing:
 - [boids-view.ts](../../src/demos/boids/boids-view.ts): a grown pool of
   `Graphics` over a shared `GraphicsContext`, turned with `skew` because
   `rotation` allocated (017). Several thousand boids.
-- [terrain-view.ts](../../src/games/scramble/views/terrain-view.ts): a ring
+- [terrain-view.ts](../../src/games/fuel-run/views/terrain-view.ts): a ring
   buffer of column `Graphics`, redrawn as they scroll into view.
 - [match-effects-view.ts](../../src/games/cactii/views/board-view/match-effects-view.ts):
   pools of particles driven by a `Sequence`.
@@ -661,7 +662,7 @@ All settled 2026-09-27. Do not reopen without new information.
    into `docs/`.~~ Done 2026-09-27 (sections 18, 20 and 21).
 4. Migrate outsides, one module at a time: function names, query binding
    names, fixed answers, and property syntax. Type-check and run the
-   benchmarks after each. ~~Scramble, as the pilot.~~ Done 2026-09-27; see
+   benchmarks after each. ~~Fuel Run, as the pilot.~~ Done 2026-09-27; see
    section 17. ~~`common/`.~~ Done 2026-09-27; see section 18. ~~Each demo,
    the cabinet (with open question 5), and the other games.~~ Done
    2026-09-27; see section 19.
@@ -679,9 +680,9 @@ All settled 2026-09-27. Do not reopen without new information.
 
 ---
 
-## 17. The Scramble pilot
+## 17. The Fuel Run pilot
 
-*Done 2026-09-27.* Scramble's 14 views were moved to the convention, to test
+*Done 2026-09-27.* Fuel Run's 14 views were moved to the convention, to test
 it on real code before the other modules.
 
 ### 17.1 What changed
@@ -696,9 +697,9 @@ it on real code before the other modules.
 | 70 method-syntax members in the module | None; `method-signature-style` enforced |
 
 The lint rule (open question 4) is in `eslint.config.js`, applied to the
-files listed in `VIEW_CONVENTION_FILES`, which so far is Scramble.
+files listed in `VIEW_CONVENTION_FILES`, which so far is Fuel Run.
 
-Measured with `npm run bench -- games-and-demos entry=scramble`, median of 3
+Measured with `npm run bench -- games-and-demos entry=fuel-run`, median of 3
 runs each:
 
 | | Before | After |
@@ -783,7 +784,7 @@ Alongside:
   refresh method.
 - **`memoiseLast`** (pilot finding 5), in `common/` with tests: a one-argument
   function wrapped so it runs only when its argument changes. It replaces the
-  falling-sand toolbar's `mapOnChange`, and the toolbar and Scramble's HUD
+  falling-sand toolbar's `mapOnChange`, and the toolbar and Fuel Run's HUD
   use it. *Revised 2026-09-27:* this first landed as `mapOnChange(read, map)`,
   which bundled the read with the mapping; `memoiseLast(fn)` is simpler and
   more general, and leaves the read at the call site. It was briefly named
@@ -796,8 +797,8 @@ Alongside:
 - **Callers outside `common/`** were updated: the seven game views, the two
   demos, and `main.ts`. A module not yet migrated calls a migrated view
   directly, `OverlayView({ width, ... })`, so no glue is needed in that
-  direction. Scramble's game view now uses `<OverlayView ... />` as a tag.
-- The lint rule now covers `common/` as well as Scramble.
+  direction. Fuel Run's game view now uses `<OverlayView ... />` as a tag.
+- The lint rule now covers `common/` as well as Fuel Run.
 
 Measured with `npm run bench -- games-and-demos`, every game and demo was
 the same before and after, within the runs' noise. Each game has one more
@@ -976,46 +977,46 @@ checkbox, the reordering-lists card faces and the falling-sand brush ring.
 
 ### 21.2 The four game views
 
-Asteroids, Dig Dug, Galaga and Pac-Man each destroyed and rebuilt a pool of
-child views whenever a count changed. Each game view is now a JSX body with
-a `<List>` per collection, as Scramble's is.
+Astrovoid, Burrow Bust, Galaxy Raiders and Crumb Chase each destroyed and
+rebuilt a pool of child views whenever a count changed. Each game view is now
+a JSX body with a `<List>` per collection, as Fuel Run's is.
 
 | | Before | After |
 | --- | --- | --- |
-| Galaga, total per frame | 8.4 µs | 6.3 µs |
-| Asteroids | 6.5 µs | 5.0-6.7 µs (noisy) |
-| Dig Dug | 5.8 µs | 5.6 µs |
-| Pac-Man | 5.2 µs | 5.0 µs |
+| Galaxy Raiders, total per frame | 8.4 µs | 6.3 µs |
+| Astrovoid | 6.5 µs | 5.0-6.7 µs (noisy) |
+| Burrow Bust | 5.8 µs | 5.6 µs |
+| Crumb Chase | 5.2 µs | 5.0 µs |
 
 The conversion caught three problems, each now covered by the docs:
 
 1. **Views that read their item while being built.** A `<List>` builds a
    slot's view before the slot's first refresh, when its item accessor still
-   returns `undefined`, so Galaga's and Dig Dug's enemy views (which chose a
-   texture from `kind` at construction) and the asteroid view (which drew its
-   outline) threw. Each was changed to leave that to its first refresh, where
-   its watcher reports every value as changed. `<List>` has since been
+   returns `undefined`, so Galaxy Raiders' and Burrow Bust's enemy views
+   (which chose a texture from `kind` at construction) and the asteroid view
+   (which drew its outline) threw. Each was changed to leave that to its first
+   refresh, where its watcher reports every value as changed. `<List>` has since been
    changed so that this cannot happen, and the three views are back as they
    were (section 21.3).
 2. **Collections the model replaces.** All four games build new arrays on
-   reset (`ghosts = buildGhosts(...)`), so passing the array itself would have
+   reset (`cats = buildCats(...)`), so passing the array itself would have
    kept the list showing the old one after a restart. Each array-backed list
-   takes a function instead (`items={() => model.ghosts}`), as the page
-   advises. The `SlotList`s (Asteroids' asteroids, Scramble's pools) are made
+   takes a function instead (`items={() => model.cats}`), as the page
+   advises. The `SlotList`s (Astrovoid's asteroids, Fuel Run's pools) are made
    once and cleared, so they are passed as they are. Nothing in the tests or
    the headless benchmark restarts a game, so only reading the models found
    this.
-3. **Drawing order.** Galaga and Asteroids re-added rebuilt children at the
-   end of the scene, so after the first rebuild their bullets and new
+3. **Drawing order.** Galaxy Raiders and Astrovoid re-added rebuilt children
+   at the end of the scene, so after the first rebuild their bullets and new
    asteroids drew over the HUD and the game-over overlay. A `<List>` keeps
-   each collection where it sits in the tree. Pac-Man adds its ghosts after
+   each collection where it sits in the tree. Crumb Chase adds its cats after
    the overlay, so they draw over it; that is kept as it was.
 
-**Pac-Man now allocates about 384 bytes per frame, up from 234.** Not from
-`<List>`: replacing it with four fixed ghost views changes nothing. The
+**Crumb Chase now allocates about 384 bytes per frame, up from 234.** Not from
+`<List>`: replacing it with four fixed cat views changes nothing. The
 update alone and the refresh alone each allocate nothing; together they
 allocate about 160 bytes more, which is five actors each writing a fractional
 row and column, boxed. That matches 017's open investigation, "fractional
 numbers boxed depending on unrelated code", where the JSX setup was already
-one known trigger; recorded there. It is still a fifth of Pac-Man's 2.1 KB
+one known trigger; recorded there. It is still a fifth of Crumb Chase's 2.1 KB
 before this proposal, with no collections.

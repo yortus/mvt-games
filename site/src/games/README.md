@@ -16,6 +16,23 @@ each frame. To add a new game, you need:
 2. A `GameEntry` factory that describes your game to the cabinet.
 3. A registration in `site/src/games/index.ts`.
 
+## Originality
+
+A game here can be inspired by a classic, but must not copy it. Ideas,
+genres and mechanics are free to use; titles, character names and designs,
+artwork, music and specific level layouts are not.
+
+- **Art** is drawn from scratch, in a generator script in `site/scripts/`
+  (`generate-<name>-textures.ts`) or in the game's views, so where it came
+  from is in the repo. Never use sprites ripped from another game, and do not
+  trace or closely follow someone else's artwork, even reworked.
+- **Characters** are your own designs, named for what they are.
+- **Levels and mazes** are designed from a blank grid, not transcribed.
+- **The title** is your own. Before adopting it, search it as a game (the
+  web, Steam, the app stores) and in the trademark registers (USPTO, TMview).
+- **In prose**, describe a game by its genre ("a maze chase", "inspired by
+  golden-age arcade games"), not as a clone of a named game.
+
 ## The `GameEntry` and `GameSession` Interfaces
 
 Every game implements two interfaces defined in `site/src/games/game-entry.ts`:
@@ -214,7 +231,7 @@ Which to choose, view by view:
   happens each frame. It is also the natural choice if you would rather not
   use JSX at all.
 
-A game can mix the two freely. Scramble, for example, writes its terrain in
+A game can mix the two freely. Fuel Run, for example, writes its terrain in
 plain TypeScript and its other views in JSX.
 
 Note: `SCALE` here is a view-level constant that converts world-units to pixels. The
@@ -338,7 +355,7 @@ Then add the entry to the cabinet's game list in the bootstrap code (typically
 ```ts
 const cabinet = createCabinetModel({
     games: [
-        createAsteroidsEntry(),
+        createBurrowBustEntry(),
         createBreakoutEntry(),  // new game
         // ...
     ],
@@ -357,3 +374,4 @@ const cabinet = createCabinetModel({
 - Barrel files export public API at each level
 - Game is registered in `site/src/games/index.ts`
 - Model tests exist and pass
+- The title, characters, art and levels are the game's own (see [Originality](#originality))

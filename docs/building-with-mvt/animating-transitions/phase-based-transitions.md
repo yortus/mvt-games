@@ -218,8 +218,8 @@ how views manage their own timed state.
 
 ## A Real Example: Match-3 Board Phases
 
-The cactii match-3 game uses this pattern for its board model. The board
-cycles through five mutually-exclusive phases:
+Kwazy Cactii, the match-3 game, uses this pattern for its board model. The
+board cycles through five mutually-exclusive phases:
 
 ```ts
 type BoardPhase = 'idle' | 'swapping' | 'reversing' | 'matching' | 'settling';

@@ -185,7 +185,7 @@ occupied.
 
 An empty slot therefore costs one `at(i)` lookup and one presence check per
 frame, whatever the item view contains. Item views need no presence binding
-of their own: Scramble's bullets, bombs, rockets and explosions are each a
+of their own: Fuel Run's bullets, bombs, rockets and explosions are each a
 `<List>` over a `SlotList`, and their views have only position bindings.
 
 ## Lists that Grow and Shrink
@@ -298,7 +298,7 @@ Three things make this work:
 - **Nothing detects the swap.** The slide falls out of the targets changing.
 
 Kwazy Cactii's pieces view model
-(`site/src/games/cactii/views/board-view/pieces-view-model.ts`) is the production
+(`site/src/games/kwazy-cactii/views/board-view/pieces-view-model.ts`) is the production
 example.
 
 ### Keyed by storage index: `OrderedSlotList`
@@ -421,7 +421,7 @@ Near the end of the data, `at` returns `undefined` for rows past the last one,
 so those slots hide themselves. No guard is needed in the model.
 
 The same trick covers a count with nothing to project: a source whose `at`
-returns its index shows one slot per unit. Scramble's HUD draws its lives this
+returns its index shows one slot per unit. Fuel Run's HUD draws its lives this
 way, with `{ length: bindings.lives, at: (i) => i }`.
 
 ## Re-derived Lists

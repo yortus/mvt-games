@@ -1,6 +1,6 @@
 import { combinations, type Case, type Suite } from '../harness/suite';
 
-const GAMES = ['asteroids', 'cactii', 'digdug', 'galaga', 'ik', 'pacman', 'scramble'];
+const GAMES = ['astrovoid', 'burrow-bust', 'crumb-chase', 'dojo-duel', 'fuel-run', 'galaxy-raiders', 'kwazy-cactii'];
 const DEMOS = ['boids', 'falling-sand', 'reordering-lists'];
 
 /**
@@ -57,13 +57,13 @@ export const gamesAndDemosSuite: Suite = {
     labels: {
         kind: { game: 'Game', demo: 'Demo' },
         entry: {
-            'asteroids': 'Asteroids',
-            'cactii': 'Kwazy Cactii',
-            'digdug': 'Dig Dug',
-            'galaga': 'Galaga',
-            'ik': 'International Karate',
-            'pacman': 'Pac-Man',
-            'scramble': 'Scramble',
+            'astrovoid': 'Astrovoid',
+            'burrow-bust': 'Burrow Bust',
+            'crumb-chase': 'Crumb Chase',
+            'dojo-duel': 'Dojo Duel',
+            'fuel-run': 'Fuel Run',
+            'galaxy-raiders': 'Galaxy Raiders',
+            'kwazy-cactii': 'Kwazy Cactii',
             'boids': 'Boids',
             'falling-sand': 'Falling sand',
             'reordering-lists': 'Reordering lists',
