@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { List } from '@mvtjs/html/jsx';
+import { List } from '@mvtjs/html';
 import { memoiseLast } from '@mvtjs/utils';
 import type { SymbolKind } from '../../data';
 import type { WayWin } from '../../models';

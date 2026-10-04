@@ -1,6 +1,5 @@
 import { Container, type Sprite, Texture } from 'pixi.js';
-import { jsx } from '@mvtjs/pixi/jsx';
-import { refreshView } from '@mvtjs/pixi';
+import { jsx, refreshView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report, retainedPerItem } from '../harness/measure';
 import { createChangeDetectionFrame } from '../shared/change-detection-scene';
 import { createPoolFrame } from '../shared/pool-scene';

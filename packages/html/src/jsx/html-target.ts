@@ -27,7 +27,7 @@ export const MVT_GROUP_CSS = 'mvt-group:not([hidden]){display:contents}';
  * `updateView` and `refreshView` call.
  */
 export const htmlTarget: JsxTarget<Element> = {
-    name: '@mvtjs/html/jsx',
+    name: '@mvtjs/html',
 
     // A custom tag rather than a `<div>` with an inline style: groups are
     // recognisable in the devtools, and styled by one rule.
@@ -37,7 +37,7 @@ export const htmlTarget: JsxTarget<Element> = {
     },
     append: (parent, child) => {
         if (DEV) {
-            assert(!hasOwnedText(parent), () => `[@mvtjs/html/jsx] <${parent.localName}> has text, so it cannot also have element children; put the text in a child element`);
+            assert(!hasOwnedText(parent), () => `[@mvtjs/html] <${parent.localName}> has text, so it cannot also have element children; put the text in a child element`);
         }
         parent.appendChild(child);
     },

@@ -1,7 +1,6 @@
 import { Container } from 'pixi.js';
 import { createSlotList, type Slot } from '@mvtjs/utils';
-import { jsx, List } from '@mvtjs/pixi/jsx';
-import { refreshView, setRefresh } from '@mvtjs/pixi';
+import { jsx, List, refreshView, setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface

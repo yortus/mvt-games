@@ -6,7 +6,7 @@
 
 import type { Container } from 'pixi.js';
 import { type Options, transform } from 'sucrase';
-import { Fragment, jsx, List, Match, Switch } from '@mvtjs/pixi/jsx';
+import { Fragment, jsx, List, Match, Switch } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -74,9 +74,9 @@ notes/        Proposals, tasks, and the archive of finished work
 ```
 packages/
 ├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
-├── pixi/                The tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
-├── three/               The tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-├── html/                The tick API for DOM elements; its JSX runtime at ./jsx
+├── pixi/                The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
+├── html/                The tick API for DOM elements, and its JSX runtime
 └── eslint-plugin/       This repo's lint rules (private for now)
 
 site/src/

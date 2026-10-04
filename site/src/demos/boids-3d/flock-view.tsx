@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/three */
 
 import { ConeGeometry, MeshStandardMaterial, type Object3D, PlaneGeometry } from 'three';
-import { List } from '@mvtjs/three/jsx';
+import { List } from '@mvtjs/three';
 import type { FlockModel } from '../boids';
 
 // ---------------------------------------------------------------------------

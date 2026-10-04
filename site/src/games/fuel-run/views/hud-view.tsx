@@ -2,7 +2,7 @@
 
 import { type Container, Texture } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
-import { List } from '@mvtjs/pixi/jsx';
+import { List } from '@mvtjs/pixi';
 import { textures } from '../data';
 
 // ---------------------------------------------------------------------------

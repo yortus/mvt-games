@@ -53,7 +53,7 @@ requestAnimationFrame(frame);
 
 The package's JSX runtime builds elements whose properties follow your game's
 state. A `.tsx` file names the package in its pragma, and imports `<List>`,
-`<Switch>` and the binding types from `@mvtjs/html/jsx`:
+`<Switch>` and the binding types from the package itself:
 
 ```tsx
 /** @jsxImportSource @mvtjs/html */

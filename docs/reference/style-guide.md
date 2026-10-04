@@ -459,7 +459,7 @@ Each query binding's type says whether the view supports its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh, with [change detection](../building-with-mvt/reacting-to-changes/change-detection.md) where the work is expensive |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `@mvtjs/pixi/jsx`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `@mvtjs/pixi`) | Views reused with both fixed and changing values, where the convenience at many call sites repays the extra work | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice. Declare `T` only as an honest
 statement that the view does not support the value changing, and relax it

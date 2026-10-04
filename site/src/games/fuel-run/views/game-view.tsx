@@ -2,7 +2,7 @@
 
 import { type Container, Graphics } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
-import { List } from '@mvtjs/pixi/jsx';
+import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';

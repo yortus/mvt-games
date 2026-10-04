@@ -127,7 +127,7 @@ its value changing:
 | --- | --- | --- |
 | `() => T` | Model state, which changes | Supports change: calls it every refresh |
 | `T` | A value the view does not (yet) support changing, such as a size its structure is built around | Reads it once, at construction. A stated limitation |
-| `ValueOrGetter<T>` (from `@mvtjs/pixi/jsx`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
+| `ValueOrGetter<T>` (from `@mvtjs/pixi`) | Views reused with both fixed and changing values | Supports change, and handles both forms |
 
 Supporting change is the more flexible choice; declare `T` only as an honest
 statement of a limitation. Widening `T` to `ValueOrGetter<T>` later relaxes

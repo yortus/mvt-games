@@ -22,9 +22,9 @@ packages for everything else.
 ```
 packages/
 ├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
-├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
-├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-├── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
+├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 └── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
 site/                    The games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
 docs/                    VitePress
@@ -63,7 +63,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 
 ## Key Conventions
 
-- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`. Between packages, import the package name (`@mvtjs/pixi`, `@mvtjs/pixi/jsx`): its `exports` are its barrel
+- **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `import/no-internal-modules` and `no-restricted-imports`. Between packages, import the package name (`@mvtjs/pixi`, `@mvtjs/utils/jsx`): its `exports` are its barrel
 - **Declared dependencies** - every import names a dependency of the nearest `package.json` (lint: `import/no-extraneous-dependencies`); add it there rather than relying on npm's hoisting
 - **Tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
 - **No `null`, no `this`** - our own code and APIs never introduce `null` (`undefined` instead). Be explicit where a third-party `null` arrives (`node.parent === null`, a local `T | null`), and convert it (`?? undefined`) before it reaches our own APIs; a declaration that must accept one takes an `eslint-disable` comment saying why. Closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`

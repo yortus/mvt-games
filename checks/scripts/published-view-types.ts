@@ -36,7 +36,7 @@ interface Case {
     readonly expectView: boolean;
 }
 
-const ENTRY_SUFFIXES = ['', '/jsx', '/jsx-runtime', '/jsx-dev-runtime'];
+const ENTRY_SUFFIXES = ['', '/jsx-runtime', '/jsx-dev-runtime'];
 
 const RENDERERS = [
     { name: '@mvtjs/pixi', viewImport: 'import type { Container } from \'pixi.js\';', viewName: 'Container' },

@@ -1,7 +1,7 @@
 {
     "name": "@mvtjs/pixi",
     "version": "0.1.0",
-    "description": "MVT (Model-View-Ticker) for Pixi.js: updateView and refreshView over its containers, performance metrics, and a JSX runtime at ./jsx",
+    "description": "MVT (Model-View-Ticker) for Pixi.js: updateView and refreshView over its containers, performance metrics, and a JSX runtime",
     "license": "MIT",
     "author": "Troy Gerwien",
     "keywords": ["mvt", "model-view-ticker", "game", "pixi", "pixi.js", "jsx"],
@@ -13,17 +13,12 @@
     },
     "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
-    "sideEffects": ["./src/container-mixin.ts", "./dist/container-mixin.js"],
+    "sideEffects": ["./src/index.ts", "./src/container-mixin.ts", "./dist/index.js", "./dist/container-mixin.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
-        },
-        "./jsx": {
-            "@mvtjs/source": "./src/jsx/index.ts",
-            "types": "./dist/jsx/index.d.ts",
-            "default": "./dist/jsx/index.js"
         },
         "./jsx-runtime": {
             "@mvtjs/source": "./src/jsx/jsx-runtime.ts",

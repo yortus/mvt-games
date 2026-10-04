@@ -13,7 +13,7 @@ import { List } from './list';
 // What the HTML JSX target does beyond the conformance suite
 // (`src/jsx-conformance/html.test.ts`): the DOM's own attributes, groups and
 // text, written as a view would write them.
-describe('@mvtjs/html/jsx', () => {
+describe('@mvtjs/html JSX', () => {
     afterEach(() => {
         document.body.replaceChildren();
     });
@@ -185,7 +185,7 @@ describe('@mvtjs/html/jsx', () => {
     });
 });
 
-describe('@mvtjs/html/jsx where new Function is blocked', () => {
+describe('@mvtjs/html JSX where new Function is blocked', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
         vi.restoreAllMocks();

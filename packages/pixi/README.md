@@ -50,7 +50,7 @@ app.ticker.add((ticker) => {
 
 The package's JSX runtime builds containers whose properties follow your game's
 state. A `.tsx` file names the package in its pragma, and imports `<List>`,
-`<Switch>` and the binding types from `@mvtjs/pixi/jsx`:
+`<Switch>` and the binding types from the package itself:
 
 ```tsx
 /** @jsxImportSource @mvtjs/pixi */

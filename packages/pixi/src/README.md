@@ -6,7 +6,7 @@
 > way.
 
 **Status: adopted.** Used by every game and demo, the cabinet, the
-shared views in `site/src/shared/`, the `@mvtjs/pixi/jsx` runtime and the playground.
+shared views in `site/src/shared/`, the Pixi JSX runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---
@@ -403,7 +403,7 @@ setRefresh(view, () => {
 const { reads, methodCalls, methodListRebuilds } = countTick(() => refreshView(app.stage));
 ```
 
-The [`@mvtjs/pixi/jsx`](./jsx/) runtime counts its reads itself: every
+The [JSX runtime](./jsx/) counts its reads itself: every
 function attribute it calls, so a JSX scene is counted without any code of
 its own.
 

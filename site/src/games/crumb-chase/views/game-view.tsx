@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
-import { List } from '@mvtjs/pixi/jsx';
+import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, CAT_COLORS } from './view-constants';

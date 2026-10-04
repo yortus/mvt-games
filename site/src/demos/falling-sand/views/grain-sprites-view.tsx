@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Texture } from 'pixi.js';
-import { List } from '@mvtjs/pixi/jsx';
+import { List } from '@mvtjs/pixi';
 import { pickGrainTint } from './grain-colors';
 import type { Grains } from '../models';
 

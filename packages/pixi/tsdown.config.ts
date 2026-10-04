@@ -6,7 +6,6 @@ import { defineConfig } from 'tsdown';
 export default defineConfig({
     entry: {
         'index': 'src/index.ts',
-        'jsx/index': 'src/jsx/index.ts',
         'jsx/jsx-runtime': 'src/jsx/jsx-runtime.ts',
         'jsx/jsx-dev-runtime': 'src/jsx/jsx-dev-runtime.ts',
     },

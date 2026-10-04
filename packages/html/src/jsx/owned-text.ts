@@ -22,7 +22,7 @@ export function writeText(el: Element, value: string | number): void {
         return;
     }
     if (DEV) {
-        assert(!el.firstElementChild, () => `[@mvtjs/html/jsx] <${el.localName}> has element children, so it cannot also have text; put the text in a child element`);
+        assert(!el.firstElementChild, () => `[@mvtjs/html] <${el.localName}> has element children, so it cannot also have text; put the text in a child element`);
     }
     const created = el.ownerDocument.createTextNode(text);
     ownedText.set(el, created);

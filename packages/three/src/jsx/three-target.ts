@@ -11,7 +11,7 @@ import { destroyObject, onDestroyed } from '../object3d-mixin';
  * whose methods `updateView` and `refreshView` call.
  */
 export const threeTarget: JsxTarget<Object3D> = {
-    name: '@mvtjs/three/jsx',
+    name: '@mvtjs/three',
 
     createGroup: () => new Group(),
     append: (parent, child) => {

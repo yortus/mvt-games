@@ -12,9 +12,8 @@
 // only to investigate; a tidier version may no longer reproduce it.
 
 import { Container } from 'pixi.js';
-import { jsx } from '@mvtjs/pixi/jsx';
 import { allocationPerFrame } from '../harness/measure';
-import { setRefresh } from '@mvtjs/pixi';
+import { jsx, setRefresh } from '@mvtjs/pixi';
 
 type ViewKind = 'jsx' | 'hand-written';
 

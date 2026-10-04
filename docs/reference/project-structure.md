@@ -17,9 +17,9 @@ benchmarks and the checks.
 ```
 packages/
 ├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
-├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics; Pixi's JSX runtime at ./jsx
-├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker; its JSX runtime at ./jsx
-├── html/                @mvtjs/html: the tick API for DOM elements; its JSX runtime at ./jsx
+├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
+├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 └── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
 site/                    The games, demos and playground: one Vite site of several pages
 docs/                    This documentation (VitePress)
@@ -68,7 +68,7 @@ not an MVT architectural layer. MVT has three layers: model, view, and ticker.
 Every directory under a package's `src/` provides a barrel file (`index.ts`)
 that defines its public API. This is the backbone of the project's module
 system. Between packages, a package's `exports` field plays the same part:
-other packages import `@mvtjs/pixi` or `@mvtjs/pixi/jsx`, never a file inside
+other packages import `@mvtjs/pixi` or `@mvtjs/utils/jsx`, never a file inside
 it.
 
 ### Why Barrel Files Matter
@@ -238,7 +238,7 @@ the exporting module has not finished initializing.
 
 The rules above apply inside each package. Between packages:
 
-- **Import a package by name**: `@mvtjs/pixi` or `@mvtjs/pixi/jsx`, never a
+- **Import a package by name**: `@mvtjs/pixi` or `@mvtjs/utils/jsx`, never a
   path into it. Its `exports` field lists what can be reached, as a barrel
   does for a directory. Inside the repo these names resolve to the package's
   `src/`, through an `@mvtjs/source` export condition that TypeScript, Vite,

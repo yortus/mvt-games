@@ -16,7 +16,7 @@ import type { ChangeableAttribute } from './attributes';
  * `registerRenderer`; nothing about that reaches the base either.
  */
 export interface JsxTarget<N extends object> {
-    /** Names the runtime in error messages, e.g. `'@mvtjs/pixi/jsx'`. */
+    /** Names the runtime in error messages, e.g. `'@mvtjs/pixi'`. */
     readonly name: string;
 
     /**

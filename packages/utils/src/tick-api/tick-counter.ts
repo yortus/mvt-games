@@ -30,7 +30,7 @@ export interface TickCounts {
  * refreshing, the methods called, and the method lists rebuilt.
  *
  * - The JSX runtime (`@mvtjs/utils/jsx`, and each renderer's built on it, such
- *   as `@mvtjs/pixi/jsx`) counts its reads itself. It counts each call of a
+ *   as `@mvtjs/pixi`'s) counts its reads itself. It counts each call of a
  *   function attribute, each read of a `<List>`'s `items` (once per frame,
  *   plus once per slot for its presence check), and each `<Match>` `when` a
  *   `<Switch>` tests. A hidden container counts only its `visible` read,

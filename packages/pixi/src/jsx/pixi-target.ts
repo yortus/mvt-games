@@ -10,7 +10,7 @@ import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
  * whose methods `updateView` and `refreshView` call.
  */
 export const pixiTarget: JsxTarget<Container> = {
-    name: '@mvtjs/pixi/jsx',
+    name: '@mvtjs/pixi',
 
     createGroup: () => new Container(),
     append: (parent, child) => {
