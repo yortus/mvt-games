@@ -67,7 +67,7 @@ Settled questions that should not be reopened without new information are in
 - ~~**Views that read a query binding's getter only once.**~~ Done
   2026-09-27, by 018's migrations. Each declared a query binding as a
   function but read it only at construction, which rule
-  [V-reactive](../../../docs/architecture/rules.md#view-rules) forbids. Found
+  [V-reactive](../../../packages/docs/architecture/rules.md#view-rules) forbids. Found
   by two sweeps (the second also caught reads inside constructor arguments):
   the overlay view's size; six Fuel Run views' sizes; Kwazy Cactii's
   `matchSequence` in five views; and, borderline, the asteroid view's radius
@@ -407,7 +407,7 @@ falling-sand demo. Each is a new variant, measured with
   methods. [001](../../archive/001-mvt-plugin-rework-plan.md) section 13, item 1.
 - ~~**Fold the `<List>` patterns guide into `docs/`.**~~ Done 2026-09-27,
   with 018's Building with MVT rewrite: it is now
-  [Presenting Collections](../../../docs/building-with-mvt/presenting-the-world/collections.md).
+  [Presenting Collections](../../../packages/docs/building-with-mvt/presenting-the-world/collections.md).
 - **`<List>` follow-ups**: a `range()` helper, merging the per-slot presence
   check into the item view's method, and a typed `matchOn<T>()`. Each names its
   trigger. 004 section 11, items 1, 3 and 4. Item 2, a lint rule against

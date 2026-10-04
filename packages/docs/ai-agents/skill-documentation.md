@@ -157,10 +157,10 @@ When architecture rules or conventions change, update all of these:
 | File | What to update |
 | --- | --- |
 | AGENTS.md | Compressed orientation at repo root |
-| docs/ai-agents/index.md | Expanded agent orientation |
-| docs/ai-agents/skill-*.md | Relevant skills file(s) |
-| docs/reference/architecture-rules.md | If an architecture rule changed |
-| docs/reference/style-guide.md | If a code convention changed |
+| packages/docs/ai-agents/index.md | Expanded agent orientation |
+| packages/docs/ai-agents/skill-*.md | Relevant skills file(s) |
+| packages/docs/reference/architecture-rules.md | If an architecture rule changed |
+| packages/docs/reference/style-guide.md | If a code convention changed |
 
 These files share overlapping content. A change to one likely requires
 corresponding changes to the others.

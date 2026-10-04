@@ -54,7 +54,7 @@ npm run dev
 ## Documentation
 
 Learn the architecture, conventions, and patterns:
-**[Read the docs](docs/index.md)**
+**[Read the docs](packages/docs/index.md)**
 
 **AI agents:** see [AGENTS.md](AGENTS.md) for compressed orientation.
 
@@ -65,8 +65,8 @@ and private packages for everything else.
 
 ```
 packages/     The libraries (@mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html),
-              and the website: the games, demos and playground (Vite)
-docs/         Documentation (VitePress)
+              the documentation (VitePress), and the website: the games,
+              demos and playground (Vite)
 benchmarks/   Performance benchmarks (npm run bench)
 checks/       Tests that the packages still fit together as decided
 notes/        Proposals, tasks, and the archive of finished work
@@ -79,6 +79,7 @@ packages/
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       This repo's lint rules (private for now)
+├── docs/                The documentation (VitePress, private)
 └── website/             The games, demos and playground (private)
 
 packages/website/src/

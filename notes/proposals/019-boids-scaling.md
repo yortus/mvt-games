@@ -19,7 +19,7 @@ kept. Nothing is implemented.
 **Related:** [`flock-model.ts`](../../packages/website/src/demos/boids/flock-model.ts),
 [`boids-view.ts`](../../packages/website/src/demos/boids/boids-view.ts),
 [017](../tasks/backlog/017-misc-loose-ends.md) (the boids allocation fix),
-[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
+[Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md).
 
 ---
 

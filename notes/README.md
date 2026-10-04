@@ -2,7 +2,7 @@
 
 Planning material for the project: designs not yet built, work to do, and a
 record of what is finished. Nothing here describes how the repo currently
-works; for that, see [docs/](../docs/index.md) and the README of the module in
+works; for that, see [packages/docs/](../packages/docs/index.md) and the README of the module in
 question.
 
 ```
@@ -28,7 +28,7 @@ a progress log.
 - When a proposal or task is finished, or abandoned, move it to `archive/` and
   update the index below. Put any loose ends in a task, or in an existing one.
 - A document that turns out to describe shipped code (design notes, a usage
-  guide) moves next to that code or into `docs/`, not into the archive.
+  guide) moves next to that code or into `packages/docs/`, not into the archive.
 
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
@@ -42,7 +42,7 @@ the paths of their day: `src/mvt-utils/` is now `packages/utils/src/`,
 `packages/website/src/shared/`, and the rest of `src/` is
 `packages/website/src/`. The aliases became package names (`#pixi-mvt/jsx`
 is `@mvtjs/pixi/jsx`), and `#common` became `#shared`. On 2026-10-04 (036),
-`site/` moved to `packages/website/`.
+`site/` moved to `packages/website/`, and `docs/` to `packages/docs/`.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file
@@ -149,9 +149,9 @@ None.
 - **002** and **006** turned out to describe shipped code. 002 lives next
   to it, [packages/pixi/src/design-notes.md](../packages/pixi/src/design-notes.md); 006,
   the `<List>` patterns guide, is now the docs page
-  [Presenting Collections](../docs/building-with-mvt/presenting-the-world/collections.md).
+  [Presenting Collections](../packages/docs/building-with-mvt/presenting-the-world/collections.md).
 - **009** was never used.
 - Tasks 014-016 were numbered 001-003 before 2026-09-26.
-- [Can pull match push?](../docs/articles/can-pull-match-push.md), a write-up
-  of the `<List>` design for a general audience, is in `docs/articles/`. It is
+- [Can pull match push?](../packages/docs/articles/can-pull-match-push.md), a write-up
+  of the `<List>` design for a general audience, is in `packages/docs/articles/`. It is
   a draft, excluded from the docs build until it is published.

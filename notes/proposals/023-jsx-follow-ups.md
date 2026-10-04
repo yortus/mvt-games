@@ -181,7 +181,7 @@ instance, and several HTML and three.js details. Send both lists together.
 - The workshop's keyed `<For>`, which moves views on reorder to keep their
   state, is not wanted: this repo keeps per-item presentation state in a
   view model keyed by item id instead (004, and
-  [Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md)).
+  [Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)).
 - The workshop's per-node update methods, combined at construction, are not
   wanted either: the pixi-mvt `onUpdate` pass does the same job and also
   follows later changes to the tree.

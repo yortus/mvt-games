@@ -359,7 +359,7 @@ setUpdate(view, update);     // only for views with presentation state
 - In tests, drive a view with `updateView(view, deltaMs)` and
   `refreshView(view)`, or either alone; no renderer or ticker is needed.
 
-The language-neutral spec (`docs/architecture/`) describes these only as a
+The language-neutral spec (`packages/docs/architecture/`) describes these only as a
 view's `update(deltaMs)` and `refresh()` steps, and as ticking a view; it must
 not mention these functions.
 

@@ -22,10 +22,10 @@ estimates to be checked in step 1.
 
 **Related:**
 [`grain-pixels-view.ts`](../../packages/website/src/demos/falling-sand/views/grain-pixels-view.ts) -
-[Complex Sequences](../../docs/building-with-mvt/animating-transitions/complex-sequences.md) -
-[Open-Ended Phases](../../docs/building-with-mvt/animating-transitions/open-ended-phases.md) -
-[Presentation State](../../docs/building-with-mvt/adding-visual-polish/presentation-state.md) -
-[Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md) -
+[Complex Sequences](../../packages/docs/building-with-mvt/animating-transitions/complex-sequences.md) -
+[Open-Ended Phases](../../packages/docs/building-with-mvt/animating-transitions/open-ended-phases.md) -
+[Presentation State](../../packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md) -
+[Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md) -
 [Originality](../../packages/website/src/games/README.md#originality) (the rules this demo follows from day one) -
 [033](../tasks/backlog/033-fruit-machine-demo/task.md) (the other demo in the pipeline) -
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md)
@@ -228,7 +228,7 @@ beat, and every position, angle, offset and fade level. The view owns the
 **rendering**: how a 1985 machine would draw that choreography, in its
 palette, at its resolution, within its limits.
 
-This also answers [Presentation State](../../docs/building-with-mvt/adding-visual-polish/presentation-state.md)'s
+This also answers [Presentation State](../../packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md)'s
 question, "if the view were deleted, would the application still behave
 correctly?": for a show, the choreography is the behaviour.
 

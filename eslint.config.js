@@ -12,10 +12,10 @@ const VIEW_CONVENTION_FILES = [
 
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
-// (docs/reference/project-structure.md).
+// (packages/docs/reference/project-structure.md).
 const OWN_BARREL_IMPORT = {
     regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
-    message: 'Import the file directly, not your own or an ancestor\'s barrel (docs/reference/project-structure.md).',
+    message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/docs/reference/project-structure.md).',
 };
 
 // The tick API a renderer package re-exports from @mvtjs/utils. Code that uses
@@ -41,7 +41,7 @@ const DEV_FILES = [
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
     'benchmarks/**',
-    'docs/**',
+    'packages/docs/**',
     '**/*.config.{ts,js}',
 ];
 
@@ -235,6 +235,6 @@ export default tseslint.config(
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
-        ignores: ['**/dist/**', 'node_modules/**', 'docs/.vitepress/**', '.claude/**'],
+        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**'],
     },
 );

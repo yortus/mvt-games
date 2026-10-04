@@ -21,8 +21,8 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
-└── website/             The games, demos and playground: one Vite site of several pages (private)
-docs/                    This documentation (VitePress)
+├── docs/                @mvtjs/docs (private): this documentation (VitePress)
+└── website/             @mvtjs/website (private): the games, demos and playground, one Vite site of several pages
 benchmarks/              Performance benchmarks, for the libraries and the games alike
 checks/                  Tests that the packages still fit together as decided
 notes/                   Proposals and tasks

@@ -23,7 +23,7 @@ in the working tree. Read for it: Galaxy Raiders' and Fuel Run's models, views,
 entries and texture generators, the falling-sand demo's grain grid and its
 fixed-step `DemoModel`, the boids view, the shared keyboard and touch input,
 [game-entry.ts](../../packages/website/src/games/game-entry.ts), the
-[hot-paths guide](../../docs/building-with-mvt/performance/hot-paths.md) and
+[hot-paths guide](../../packages/docs/building-with-mvt/performance/hot-paths.md) and
 [013](./013-mvt-performance-ceiling.md). Every timing below is an estimate or
 a target; nothing has been measured yet ([section 6](#6-performance-what-to-measure)).
 
@@ -34,7 +34,7 @@ a target; nothing has been measured yet ([section 6](#6-performance-what-to-meas
 [grain-grid.ts](../../packages/website/src/demos/falling-sand/models/grain-grid/grain-grid.ts) -
 [Originality](../../packages/website/src/games/README.md#originality) (the rules this game follows) -
 [013](./013-mvt-performance-ceiling.md) -
-[Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md)
+[Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)
 
 ## Summary
 
@@ -606,7 +606,7 @@ Do not reopen without new information.
    mostly data and art once the first works.
 7. **Write up the bullet field in the docs?** If 6.2 settles cleanly, the
    field and its bindings make a good example for
-   [Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md)
+   [Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)
    or the hot-paths guide. Decide once the numbers are in.
 
 ## 10. Implementation Steps

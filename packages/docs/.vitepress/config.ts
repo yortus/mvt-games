@@ -12,7 +12,7 @@ export default withMermaid(defineConfig({
     title: 'MVT Games',
     description: 'Architecture guides, style conventions, and reactivity patterns for the MVT Games project.',
     base,
-    outDir: '../dist/docs',
+    outDir: '../../dist/docs',
     // articles/ holds drafts that are not published yet.
     srcExclude: ['RESTRUCTURE-PLAN.md', 'articles/**'],
     ignoreDeadLinks: [

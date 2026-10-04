@@ -205,10 +205,10 @@ Models are free to use any mechanism that advances state through `deltaMs`.
 When architecture rules or conventions change, update these files:
 
 1. **AGENTS.md** (repo root) - compressed orientation
-2. **docs/ai-agents/index.md** - expanded agent orientation
-3. **Relevant skills file** in `docs/ai-agents/skill-*.md`
-4. **docs/reference/architecture-rules.md** - if an architecture rule changed
-5. **docs/reference/style-guide.md** - if a code convention changed
+2. **packages/docs/ai-agents/index.md** - expanded agent orientation
+3. **Relevant skills file** in `packages/docs/ai-agents/skill-*.md`
+4. **packages/docs/reference/architecture-rules.md** - if an architecture rule changed
+5. **packages/docs/reference/style-guide.md** - if a code convention changed
 
 All five share overlapping content. A change to one likely requires a
 corresponding change to the others.

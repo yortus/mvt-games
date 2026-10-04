@@ -1,7 +1,7 @@
 # AGENTS.md - AI Agent Orientation
 
 > Terse, structured reference for AI coding agents. For expanded orientation,
-> see [docs/ai-agents/](docs/ai-agents/index.md). For task-specific
+> see [packages/docs/ai-agents/](packages/docs/ai-agents/index.md). For task-specific
 > instructions, load the relevant [skills file](#skills).
 
 ## Architecture: MVT (Model-View-Ticker)
@@ -11,8 +11,8 @@
 - **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`packages/website/src/main.ts`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
-Full reference: [Architecture Overview](docs/architecture/index.md) -
-[Architecture Rules](docs/architecture/rules.md)
+Full reference: [Architecture Overview](packages/docs/architecture/index.md) -
+[Architecture Rules](packages/docs/architecture/rules.md)
 
 ## Project Structure
 
@@ -26,8 +26,8 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
-└── website/             The games, demos and playground (Vite, private): pages, src/, scripts/ (textures, spritesheet plugin)
-docs/                    VitePress
+├── docs/                @mvtjs/docs (private): the documentation (VitePress)
+└── website/             @mvtjs/website (private): the games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
 benchmarks/              Performance benchmarks, for the libraries and the games
 checks/                  Tests that the packages still fit together as decided
 notes/                   Proposals and tasks
@@ -51,7 +51,7 @@ packages/website/src/
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
 `exports` condition), so nothing needs building to run the site or the tests.
 
-Full reference: [Project Structure](docs/reference/project-structure.md)
+Full reference: [Project Structure](packages/docs/reference/project-structure.md)
 
 ## Cabinet Architecture
 
@@ -68,7 +68,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **Tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
 - **No `null`, no `this`** - our own code and APIs never introduce `null` (`undefined` instead). Be explicit where a third-party `null` arrives (`node.parent === null`, a local `T | null`), and convert it (`?? undefined`) before it reaches our own APIs; a declaration that must accept one takes an `eslint-disable` comment saying why. Closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
-- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
+- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](packages/docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
@@ -77,7 +77,7 @@ Full reference: [Project Structure](docs/reference/project-structure.md)
 - **`_` prefix** for intentionally unused parameters
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
-Full reference: [Style Guide](docs/reference/style-guide.md)
+Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 
 ## Commands
 
@@ -105,15 +105,15 @@ done. Proposals and tasks share one number sequence.
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead (lint: `@mvtjs/no-em-dash`, which auto-fixes).
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files. [Time Management](docs/building-with-mvt/simulating-the-world/time-management.md)
-2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](docs/building-with-mvt/adding-visual-polish/presentation-state.md)
-3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](docs/reference/project-structure.md)
-4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](docs/reference/style-guide.md)
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](docs/building-with-mvt/performance/hot-paths.md)
-6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](docs/building-with-mvt/simulating-the-world/models.md)
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files. [Time Management](packages/docs/building-with-mvt/simulating-the-world/time-management.md)
+2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md)
+3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](packages/docs/reference/project-structure.md)
+4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/docs/reference/style-guide.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/docs/building-with-mvt/performance/hot-paths.md)
+6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/docs/building-with-mvt/simulating-the-world/models.md)
 7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles, character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/website/src/games/README.md#originality)
 
-Full rules: [Architecture Rules](docs/architecture/rules.md)
+Full rules: [Architecture Rules](packages/docs/architecture/rules.md)
 
 ## File Organisation Within a Module
 
@@ -140,20 +140,20 @@ Load the relevant skills file for task-specific instructions:
 
 | Task                       | Skills file                                              |
 | -------------------------- | -------------------------------------------------------- |
-| Writing a new model        | [docs/ai-agents/skill-mvt-model.md](docs/ai-agents/skill-mvt-model.md) |
-| Writing a new view         | [docs/ai-agents/skill-mvt-view.md](docs/ai-agents/skill-mvt-view.md)   |
-| Following code conventions | [docs/ai-agents/skill-code-style.md](docs/ai-agents/skill-code-style.md) |
-| Reviewing code             | [docs/ai-agents/skill-code-review.md](docs/ai-agents/skill-code-review.md) |
-| Updating documentation     | [docs/ai-agents/skill-documentation.md](docs/ai-agents/skill-documentation.md) |
+| Writing a new model        | [packages/docs/ai-agents/skill-mvt-model.md](packages/docs/ai-agents/skill-mvt-model.md) |
+| Writing a new view         | [packages/docs/ai-agents/skill-mvt-view.md](packages/docs/ai-agents/skill-mvt-view.md)   |
+| Following code conventions | [packages/docs/ai-agents/skill-code-style.md](packages/docs/ai-agents/skill-code-style.md) |
+| Reviewing code             | [packages/docs/ai-agents/skill-code-review.md](packages/docs/ai-agents/skill-code-review.md) |
+| Updating documentation     | [packages/docs/ai-agents/skill-documentation.md](packages/docs/ai-agents/skill-documentation.md) |
 
 ## Documentation
 
 | Section          | Content                                   |
 | ---------------- | ----------------------------------------- |
-| [Architecture](docs/architecture/index.md) | Transferable MVT specification |
-| [Building with MVT](docs/building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
-| [Reference](docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
-| [AI Agents](docs/ai-agents/index.md) | Expanded agent orientation   |
+| [Architecture](packages/docs/architecture/index.md) | Transferable MVT specification |
+| [Building with MVT](packages/docs/building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
+| [Reference](packages/docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
+| [AI Agents](packages/docs/ai-agents/index.md) | Expanded agent orientation   |
 
 ## Tech Stack
 

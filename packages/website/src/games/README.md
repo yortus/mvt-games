@@ -4,7 +4,7 @@
 > the cabinet. Covers directory structure, GameEntry/GameSession interfaces,
 > models, views, and the registration process.
 
-See the [MVT documentation](../../../../docs/index.md) for architecture background.
+See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 ## Overview
 
@@ -177,7 +177,7 @@ function createGameModel(options: GameModelOptions): GameModel {
 
 Create leaf views for each presentation entity. A view is a function that
 takes a bindings object and returns a Pixi container (see
-[Style Guide: Views and Bindings](../../../../docs/reference/style-guide.md#views-and-bindings)):
+[Style Guide: Views and Bindings](../../../docs/reference/style-guide.md#views-and-bindings)):
 
 ```ts
 export interface BallViewBindings {

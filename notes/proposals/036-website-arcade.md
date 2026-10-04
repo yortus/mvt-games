@@ -150,7 +150,7 @@ What references `site`:
   `exports` for the entry list (section 6.4), and `benchmarks` declares
   `@mvtjs/website` as a dependency.
 - Docs and agent instructions: `AGENTS.md`, `README.md`,
-  `docs/reference/project-structure.md`, four `docs/ai-agents/` files, three
+  `packages/docs/reference/project-structure.md`, four `packages/docs/ai-agents/` files, three
   guide pages, and the games' and demos' READMEs, about 25 mentions in all.
 - Open notes (019, 022, 034, 035, tasks 017 and 026). Archived notes keep
   their paths, as `notes/README.md` already says for 011's move. Add
@@ -735,7 +735,8 @@ and the site working.
    benchmarks importing `@mvtjs/website/entries` by name. A commit of its own.~~
    Done. Until step 4 makes the entry list, the website exports its
    `games`, `demos` and `demos/falling-sand` barrels for the benchmarks.
-3a. **Move** `docs/` to `packages/docs/`, as `@mvtjs/docs`. A commit of its own.
+3a. ~~**Move** `docs/` to `packages/docs/`, as `@mvtjs/docs`. A commit of its own.~~
+    Done.
 3b. **Move** `benchmarks/` to `packages/benchmarks/`, as `@mvtjs/benchmarks`. A commit of its own.
 3c. **Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.
 4. **Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
@@ -761,7 +762,7 @@ and the site working.
    load again (target: Arcade content under 1.2 s), and add the size budget
    check (section 4.1).
 10. **Docs.** `AGENTS.md`'s "Cabinet Architecture" becomes an "Arcade"
-    section. Update `docs/reference/project-structure.md`, the games'
+    section. Update `packages/docs/reference/project-structure.md`, the games'
     README ("Adding a game" becomes adding an entry, of either kind), and
     the demos' README. Record what building the Arcade showed about the HTML
     JSX runtime (026). Archive task 026 as absorbed. Add backlog tasks for

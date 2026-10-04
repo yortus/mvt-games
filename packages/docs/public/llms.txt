@@ -61,9 +61,9 @@ presentation state, refresh views, render. Models settle before views read.
 
 ## Documentation
 
-- docs/architecture/ - transferable MVT specification (language-neutral)
-- docs/building-with-mvt/ - progressive guide, from quickstart to
+- packages/docs/architecture/ - transferable MVT specification (language-neutral)
+- packages/docs/building-with-mvt/ - progressive guide, from quickstart to
   performance (time, composition, change detection, testing, etc.)
-- docs/reference/ - rules, style guide, glossary, project structure
-- docs/ai-agents/ - agent orientation and task-specific skills files
+- packages/docs/reference/ - rules, style guide, glossary, project structure
+- packages/docs/ai-agents/ - agent orientation and task-specific skills files
 - AGENTS.md - compressed agent entry point (canonical)

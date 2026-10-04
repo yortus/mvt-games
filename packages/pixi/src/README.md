@@ -447,7 +447,7 @@ Three more worth having:
   hidden, 10.2 us when they return `SKIP_DESCENDANTS`.
 
 The full results, and the other benchmarks, are in the docs'
-[Performance Measurements](../../../docs/building-with-mvt/performance/measurements.md).
+[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
 
 ## Running it
 

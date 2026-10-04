@@ -4,7 +4,7 @@
 > renderer or changing the runtime itself. It starts from what a JSX tag
 > becomes, and builds up to how refresh methods are made fast. You don't need
 > this to write views with JSX: see
-> [Presenting the World](../../../../docs/building-with-mvt/presenting-the-world/views.md).
+> [Presenting the World](../../../docs/building-with-mvt/presenting-the-world/views.md).
 > [The design notes](./design-notes.md) explain why the runtime is built this
 > way, and what was tried instead.
 
@@ -60,7 +60,7 @@ flowchart LR
 
 [create-jsx.ts](./create-jsx.ts) builds the nodes,
 [refresh-builder.ts](./refresh-builder.ts) makes each node's refresh method, and
-[`refreshView`](../../../../docs/reference/glossary.md) calls it every frame.
+[`refreshView`](../../../docs/reference/glossary.md) calls it every frame.
 
 ## Building a node
 
@@ -218,7 +218,7 @@ Each renderer makes its own with `createList` and `createSwitch`.
 Both rely on `refreshView` to refresh anything they build or show during
 it, so their nodes are never displayed with stale values. Their header
 comments document their behaviour, and
-[Presenting Collections](../../../../docs/building-with-mvt/presenting-the-world/collections.md)
+[Presenting Collections](../../../docs/building-with-mvt/presenting-the-world/collections.md)
 shows them in use.
 
 ## Adding a JSX target

@@ -3,9 +3,9 @@
 Performance benchmarks for MVT in this repo: keeping Pixi containers in step
 with a model, `updateView` and `refreshView`, the hot path rules, memory and
 garbage collection, and the games and demos themselves. The results, with what they mean, are in
-[Performance Measurements](../docs/building-with-mvt/performance/measurements.md).
+[Performance Measurements](../packages/docs/building-with-mvt/performance/measurements.md).
 How they are measured, and why, is in
-[Benchmarking Methods](../docs/building-with-mvt/performance/benchmarking-methods.md).
+[Benchmarking Methods](../packages/docs/building-with-mvt/performance/benchmarking-methods.md).
 
 ## Running
 

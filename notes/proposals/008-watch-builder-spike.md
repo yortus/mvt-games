@@ -433,8 +433,8 @@ without a new reason.
 - Migration notes: `watch({...})` becomes `Watch().when({...}).detect()`;
   `ReactionBuilder` `runFirstTime: false` (its default) becomes
   `changes({ from: PREVIOUS, ... })`.
-- Update references to `watch()` in `AGENTS.md`, the `docs/ai-agents/`
-  skills, the glossary and `docs/public/llms.txt`.
+- Update references to `watch()` in `AGENTS.md`, the `packages/docs/ai-agents/`
+  skills, the glossary and `packages/docs/public/llms.txt`.
 
 ### Promotion work
 
@@ -451,7 +451,7 @@ without a new reason.
   toolbar and Fuel Run's HUD) should give way to the mapping terminal, or
   stay as the simpler tool for the single-value case.
 - Port `derive` from the `derive-util` branch: its docs
-  (`docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
+  (`packages/docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
   (`src/demos/derive/`) onto `.derive(...)`.
 
 ### Housekeeping
