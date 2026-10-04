@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container, Texture } from 'pixi.js';
 import type { SymbolKind } from '../../data';
 import { CELL_SIZE, SYMBOL_SCALE } from './pixi-layout';

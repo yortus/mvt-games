@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import { CanvasTexture, MeshBasicMaterial, type Object3D, PlaneGeometry, SRGBColorSpace } from 'three';
 import { DRUM_AXIS_Y, DRUM_COUNT, DRUM_RADIUS, DRUM_WIDTH, drumX, FRONT_Z } from './bandit-layout';
 import type { MaterialKit } from './material-kit';

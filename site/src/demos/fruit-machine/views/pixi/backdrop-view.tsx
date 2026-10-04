@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
 import { SYMBOL_COLORS } from '../art';
 import { BACKDROP, BACKDROP_DECAL, FONT_FAMILY, FRAME, FRAME_SHADE, SCREEN_HEIGHT, SCREEN_WIDTH, WHITE } from './pixi-layout';

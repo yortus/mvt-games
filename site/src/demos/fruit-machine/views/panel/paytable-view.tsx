@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 import { type Paytable, PICTURE_KINDS, type SymbolKind } from '../../data';
 import { formatCredits } from '../shared';
 

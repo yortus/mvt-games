@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container, Texture } from 'pixi.js';
 import { type Paytable, PICTURE_KINDS, type SymbolKind, type WinLength } from '../../data';
 import { FONT_FAMILY, METER_LABEL, WHITE } from './pixi-layout';

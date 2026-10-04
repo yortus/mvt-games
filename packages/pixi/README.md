@@ -48,11 +48,12 @@ app.ticker.add((ticker) => {
 
 ## JSX support
 
-The package's JSX runtime, at `@mvtjs/pixi/jsx`, builds containers whose
-properties follow your game's state:
+The package's JSX runtime builds containers whose properties follow your game's
+state. A `.tsx` file names the package in its pragma, and imports `<List>`,
+`<Switch>` and the binding types from `@mvtjs/pixi/jsx`:
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import { Texture } from 'pixi.js';
 
 const boxView = (

@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import { CanvasTexture, CylinderGeometry, type Object3D, SRGBColorSpace } from 'three';
 import type { SymbolKind } from '../../data';
 import { BASE, DRUM_AXIS_Y, DRUM_AXIS_Z, DRUM_RADIUS, DRUM_WIDTH, drumX } from './bandit-layout';

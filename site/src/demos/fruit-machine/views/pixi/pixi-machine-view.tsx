@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { PAYTABLE, type SymbolKind } from '../../data';

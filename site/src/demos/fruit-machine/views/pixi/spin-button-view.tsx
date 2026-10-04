@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
 import { FONT_FAMILY, WHITE } from './pixi-layout';
 

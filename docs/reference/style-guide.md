@@ -493,7 +493,7 @@ uses, and each view can choose whichever suits it. The same ship view both
 ways:
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 export function ShipView(bindings: ShipViewBindings): Container {
     return (
@@ -522,7 +522,7 @@ export function ShipView(bindings: ShipViewBindings): Container {
 
 | | Tends to suit | Why |
 | --- | --- | --- |
-| **JSX** (`.tsx`, starting `/** @jsxImportSource @mvtjs/pixi/jsx */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
+| **JSX** (`.tsx`, starting `/** @jsxImportSource @mvtjs/pixi */`) | Views that are mostly a tree of display objects whose properties follow the model: sprites, text, HUDs, overlays, and views that compose child views or project collections with `<List>` | The structure reads at a glance, and the runtime writes the refresh step: a plain value is set once, a function is re-read every frame |
 | **Plain TypeScript** (`.ts`) | Views whose work is mostly drawing, or managing their own display objects each frame (a pool, a ring buffer); views that need tight control of per-frame work, such as one change check gating many writes; very large numbers of objects | Nothing sits between the view and Pixi. The JSX runtime's refresh costs 1.1-1.6x as much per property as a hand-written one ([measurements](../building-with-mvt/performance/measurements.md)), which matters only at that scale |
 
 Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi

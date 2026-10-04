@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html/jsx';
 import { memoiseLast } from '@mvtjs/utils';
 import type { SymbolKind } from '../../data';

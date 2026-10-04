@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { List } from '@mvtjs/pixi/jsx';

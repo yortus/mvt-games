@@ -193,7 +193,7 @@ callers cannot tell which a view uses. Here is the same ball view both ways.
 In JSX, in `ball-view.tsx`:
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 export function BallView(bindings: BallViewBindings): Container {
     return (
@@ -248,7 +248,7 @@ export interface GameViewBindings {
 ```
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 export function GameView(bindings: GameViewBindings): Container {
     const { model } = bindings;

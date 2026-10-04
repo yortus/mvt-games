@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import { CanvasTexture, MeshBasicMaterial, type Object3D, PlaneGeometry, SRGBColorSpace } from 'three';
 import { formatCredits } from '../shared';
 import { DISPLAY_FACE, DISPLAY_TEXT, FRONT_Z } from './bandit-layout';

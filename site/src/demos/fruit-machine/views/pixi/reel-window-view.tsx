@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import { type Container, Graphics, type Texture } from 'pixi.js';
 import { ROW_COUNT, type SymbolKind } from '../../data';
 import { ReelView } from './reel-view';

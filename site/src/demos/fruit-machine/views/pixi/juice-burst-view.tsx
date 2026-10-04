@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
 import { ROW_COUNT } from '../../data';
 import { cellCenterX, cellCenterY, REEL_COUNT, WHITE } from './pixi-layout';

@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import {
     BoxGeometry, CanvasTexture, CylinderGeometry, MeshBasicMaterial, type Object3D, PlaneGeometry, SphereGeometry,
     SRGBColorSpace,

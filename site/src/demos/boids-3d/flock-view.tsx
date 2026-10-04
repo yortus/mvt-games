@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 
 import { ConeGeometry, MeshStandardMaterial, type Object3D, PlaneGeometry } from 'three';
 import { List } from '@mvtjs/three/jsx';

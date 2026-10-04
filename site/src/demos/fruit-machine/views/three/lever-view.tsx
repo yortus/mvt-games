@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import { CylinderGeometry, type Object3D, SphereGeometry } from 'three';
 import { easeOutBack } from '../shared';
 import { BASE, CHROME, LEVER_BALL, LEVER_BRACKET, LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from './bandit-layout';

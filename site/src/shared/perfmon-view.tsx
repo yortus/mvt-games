@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type Graphics, Rectangle, Text, type TextStyleOptions } from 'pixi.js';
 import type { MetricKind, PerformanceMetrics } from '@mvtjs/pixi';

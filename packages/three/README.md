@@ -49,11 +49,12 @@ renderer.setAnimationLoop((now) => {
 
 ## JSX support
 
-The package's JSX runtime, at `@mvtjs/three/jsx`, builds objects whose
-properties follow your game's state:
+The package's JSX runtime builds objects whose properties follow your game's
+state. A `.tsx` file names the package in its pragma, and imports `<List>`,
+`<Switch>` and the binding types from `@mvtjs/three/jsx`:
 
 ```tsx
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 const meshView = (
     <mesh
         geometry={new BoxGeometry()}

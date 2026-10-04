@@ -25,12 +25,12 @@
             "types": "./dist/jsx/index.d.ts",
             "default": "./dist/jsx/index.js"
         },
-        "./jsx/jsx-runtime": {
+        "./jsx-runtime": {
             "@mvtjs/source": "./src/jsx/jsx-runtime.ts",
             "types": "./dist/jsx/jsx-runtime.d.ts",
             "default": "./dist/jsx/jsx-runtime.js"
         },
-        "./jsx/jsx-dev-runtime": {
+        "./jsx-dev-runtime": {
             "@mvtjs/source": "./src/jsx/jsx-dev-runtime.ts",
             "types": "./dist/jsx/jsx-dev-runtime.d.ts",
             "default": "./dist/jsx/jsx-dev-runtime.js"

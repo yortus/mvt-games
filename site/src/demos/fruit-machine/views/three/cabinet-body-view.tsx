@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import { BoxGeometry, CanvasTexture, type Material, MeshBasicMaterial, type Object3D, PlaneGeometry, SRGBColorSpace } from 'three';
 import type { SymbolKind } from '../../data';
 import {

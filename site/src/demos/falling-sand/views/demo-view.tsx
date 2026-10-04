@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
 import type { PerformanceMetrics } from '@mvtjs/pixi';

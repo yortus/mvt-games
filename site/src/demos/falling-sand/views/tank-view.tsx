@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type FederatedPointerEvent, type Graphics, Point, Rectangle } from 'pixi.js';
 import type { Grains } from '../models';

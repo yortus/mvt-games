@@ -246,10 +246,10 @@ directory beside it:
    `createSwitch` over the target.
 5. **The barrel** (`index.ts`), exporting only what views use: `jsx`,
    `Fragment`, `List`, `Switch`, `Match` and their binding types.
-6. **The import aliases** in `package.json`: `#<name>-mvt/jsx`, with its
-   `/jsx-runtime` and `/jsx-dev-runtime`. Add `#<name>-mvt/jsx` to ESLint's
-   `import/no-internal-modules` allow list too, so that views can write
-   `/** @jsxImportSource #<name>-mvt/jsx */`.
+6. **The exports** in `package.json`, with an entry for each in
+   `tsdown.config.ts`: `./jsx` for the barrel, and `./jsx-runtime` and
+   `./jsx-dev-runtime` at the package root, where the compiler looks for
+   them, so that views can write `/** @jsxImportSource @mvtjs/<name> */`.
 7. **The conformance suite** (`conformance.test.ts`): one call to
    `describeJsxConformance`, with a fixture that names an attribute of each
    write kind, an event, and how to read the renderer's tree. It checks the

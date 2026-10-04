@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 import { memoiseLast } from '@mvtjs/utils';
 import { PAYTABLE, ROW_COUNT } from '../../data';
 import type { FruitMachineModel, MachinePhase } from '../../models';

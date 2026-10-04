@@ -31,7 +31,7 @@
 
 Exports (bindings interface, view function) go above all internals. A view
 with a JSX body is a `.tsx` file whose first line is
-`/** @jsxImportSource @mvtjs/pixi/jsx */`.
+`/** @jsxImportSource @mvtjs/pixi */`.
 
 **[project convention]** The full convention is in
 [Style Guide: Views and Bindings](../reference/style-guide.md#views-and-bindings),
@@ -164,7 +164,7 @@ cannot tell which a view uses, and each view can choose whichever suits it.
 The same rocket view both ways:
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 export function RocketView(bindings: RocketViewBindings): Container {
     const { idle, launching } = textures.get().rocket;
@@ -214,7 +214,7 @@ frame.
 
 ### A JSX Body
 
-A `.tsx` file whose first line is `/** @jsxImportSource @mvtjs/pixi/jsx */`. How
+A `.tsx` file whose first line is `/** @jsxImportSource @mvtjs/pixi */`. How
 attributes behave:
 
 - **A plain value is applied once.** A function is re-read every refresh.
@@ -518,7 +518,7 @@ once, when the element is built, not per frame.
 A reusable bullet view, shown in a `<List>` above, with a JSX body:
 
 ```tsx
-/** @jsxImportSource @mvtjs/pixi/jsx */
+/** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
 import { textures } from '../data';

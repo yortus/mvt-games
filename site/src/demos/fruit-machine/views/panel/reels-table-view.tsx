@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 import { memoiseLast } from '@mvtjs/utils';
 import type { ReelPhase } from '../../models';
 

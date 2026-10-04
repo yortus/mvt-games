@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/three/jsx */
+/** @jsxImportSource @mvtjs/three */
 import type { Object3D } from 'three';
 import { ROW_COUNT } from '../../data';
 import type { FruitMachineModel } from '../../models';

@@ -51,11 +51,12 @@ requestAnimationFrame(frame);
 
 ## JSX support
 
-The package's JSX runtime, at `@mvtjs/html/jsx`, builds elements whose
-properties follow your game's state:
+The package's JSX runtime builds elements whose properties follow your game's
+state. A `.tsx` file names the package in its pragma, and imports `<List>`,
+`<Switch>` and the binding types from `@mvtjs/html/jsx`:
 
 ```tsx
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 const healthView = (
     <meter
         max={100}

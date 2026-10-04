@@ -1,4 +1,4 @@
-/** @jsxImportSource @mvtjs/html/jsx */
+/** @jsxImportSource @mvtjs/html */
 import type { FruitMachineModel } from '../../models';
 import { createTerminalViewModel } from './terminal-view-model';
 
