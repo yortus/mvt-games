@@ -1,6 +1,6 @@
 {
     "name": "@mvtjs/html",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "MVT (Model-View-Ticker) for the DOM: updateView and refreshView over its elements, and a JSX runtime",
     "license": "MIT",
     "author": "Troy Gerwien",
@@ -36,7 +36,7 @@
         "build": "tsdown"
     },
     "peerDependencies": {
-        "@mvtjs/utils": "^0.1.0"
+        "@mvtjs/utils": "^0.2.0"
     },
     "devDependencies": {
         "tsdown": "^0.23.0",

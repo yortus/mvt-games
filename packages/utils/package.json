@@ -1,6 +1,6 @@
 {
     "name": "@mvtjs/utils",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Optional, renderer-agnostic helpers for MVT (Model-View-Ticker): updateView and refreshView, change detection, tweens, and the base for JSX targets",
     "license": "MIT",
     "author": "Troy Gerwien",
