@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**036**.
+**037**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -83,6 +83,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Proposed. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Starts with a spike measuring the bullet view and how it reads 2000 bullets a frame |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
+| 036 | [The website, and one Arcade for every entry](./proposals/036-website-arcade.md) | Proposed. `site/` becomes `packages/website/`. The cabinet and the demos gallery become one Arcade, the home page, written in HTML JSX: cards in several columns for every entry on any renderer (lazy `pixi` and `element` entries), tag filters, committed thumbnails, the cabinet's zoom kept. Measured the 5 s first load as serial round trips on a cold CDN edge (thumbnails cost 97 ms of CPU): no loading screen, just a progress bar held in the zoom when loading outlasts it. Also found HTTPS broken on yortus.com. Absorbs task 026 |
 
 **How they relate.** All nine can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -100,7 +101,8 @@ archived: guarding against two copies of the scene passes in one program,
 and a shared `SKIP_DESCENDANTS` symbol. 031, now archived, renamed the tick
 API that 027 named, before 011's first publish. 034 adds a game that
 follows the games' originality rules, and tests 013's inherent cost in a
-shipping game. 035 adds a demo that follows the same rules.
+shipping game. 035 adds a demo that follows the same rules. 036 absorbs
+task 026, and would list 034 and 035 in its Arcade.
 
 ## Tasks
 
