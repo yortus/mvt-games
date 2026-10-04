@@ -29,7 +29,7 @@ uncommitted boids changes. Counts are from `grep` over `src/`.
 [Style Guide](../../docs/reference/style-guide.md),
 [017 - Miscellaneous loose ends](../tasks/backlog/017-misc-loose-ends.md) (the
 method-syntax item and the parked `<List>` guide item),
-[011 - Multi-package repo](../proposals/011-multi-package-repo.md).
+[011 - Multi-package repo](./011-multi-package-repo.md).
 
 ---
 

@@ -37,7 +37,7 @@ latter was `scene-node.ts`) -
 [001](001-mvt-plugin-rework-plan.md) (where the current names come
 from) - [003](003-mvt-plugin-appraisal.md) "API review" (which
 praised them for mirroring Pixi's `onRender`) -
-[011](../proposals/011-multi-package-repo.md) (the published packages) -
+[011](./011-multi-package-repo.md) (the published packages) -
 [022](../proposals/022-renderer-agnostic-jsx.md) section 9.2 (methods on
 `Element.prototype`).
 

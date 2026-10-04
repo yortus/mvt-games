@@ -8,19 +8,18 @@
 > 2026), the results of a hands-on lint trial that decides whether Vite+ can
 > enforce this repo's own formatting, and a phased migration plan.
 
-**Status:** being implemented, on the `vnext-011` branch from 2026-10-02.
-Phases 0 to 5 are done (sections 12.1 to 12.6): the four libraries are
-workspace packages under `packages/`, the site, the docs, the benchmarks and
-the new checks are private workspace packages beside them, and the docs and
-agent files describe the new layout. Vite+ was trialled and not adopted for
-now (section 9.4); Vite 8 and Vitest 5 were taken on their own. Phase 6
-is done: [031](../archive/031-tick-api-in-mvt-terms.md)'s renames of the
-tick API, which the publish waited for, were done on 2026-10-03, and the four
-libraries were published at 0.1.0 the same day (section 12.7). Phase 7 is
-under way: the lint rules package, with the `style` preset and the first
-`architecture` rule (section 12.8). The npm scopes and GitHub org in section 3 are
-registered. The top-level tidy-up was done separately on 2026-09-26, without
-the package split (section 7, "Done already").
+**Status:** implemented, on the `vnext-011` branch from 2026-10-02 to
+2026-10-04 (section 12). The four libraries are workspace packages under
+`packages/`, published at 0.1.0 on 2026-10-03 with trusted publishing set up
+for later releases; the site, the docs, the benchmarks and the checks are
+private workspace packages beside them; and `@mvtjs/eslint-plugin` holds the
+`style` preset and the first `architecture` rule. Vite+ was trialled and not
+adopted for now (section 9.4); Vite 8 and Vitest 5 were taken on their own.
+The per-tick allocation rule was considered and not pursued (section 12.8).
+The npm scopes and GitHub org in section 3 are registered, and the site
+moved to `yortus.com` (section 13.3). The top-level tidy-up was done
+separately on 2026-09-26, without the package split (section 7, "Done
+already"). Loose ends are in [017](../tasks/backlog/017-misc-loose-ends.md).
 
 **Written:** 2026-09-25. Updated 2026-10-02 for the Vite+ 1.0 release
 (sections 4.1 and 9), and to stay on npm rather than move to pnpm (sections
@@ -31,8 +30,8 @@ the package split (section 7, "Done already").
 [`docs/reference/style-guide.md`](../../docs/reference/style-guide.md),
 [`eslint.config.js`](../../eslint.config.js),
 [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml),
-[the `Watch()` builder spike](./008-watch-builder-spike.md) (its prototype moves with `watch`),
-[031](../archive/031-tick-api-in-mvt-terms.md) (the tick API's names, before the first publish).
+[the `Watch()` builder spike](../proposals/008-watch-builder-spike.md) (its prototype moves with `watch`),
+[031](./031-tick-api-in-mvt-terms.md) (the tick API's names, before the first publish).
 
 ---
 
@@ -199,7 +198,7 @@ section 13.2.
 
 | From | Notes |
 | --- | --- |
-| `src/mvt-utils/` | The scene-pass core ([022](./022-renderer-agnostic-jsx.md)), at `.` |
+| `src/mvt-utils/` | The scene-pass core ([022](../proposals/022-renderer-agnostic-jsx.md)), at `.` |
 | `src/mvt-utils/jsx/` | 022's renderer-agnostic JSX base, at `./jsx`: for renderer packages and authors of new JSX targets, not for views. Its `refresh-copies.ts` is generated, not checked in (by the package's own `scripts/generate-refresh-copies.ts`, task 025): the package's build must generate it first, and ship it |
 | `src/mvt-utils/watch.ts` | Moved from `src/common/` (2026-09-30), as were the rows below |
 | `src/mvt-utils/sequence.ts`, `sequence-reaction.ts` | |
@@ -207,7 +206,7 @@ section 13.2.
 | `src/mvt-utils/memoise-last.ts` | |
 | `src/mvt-utils/slot-list/` | |
 | `src/mvt-utils/type-utils.ts` | |
-| `src/mvt-utils/watch-builder.spike.ts` and its test | Moves with `watch`, still unexported, per [008](./008-watch-builder-spike.md) |
+| `src/mvt-utils/watch-builder.spike.ts` and its test | Moves with `watch`, still unexported, per [008](../proposals/008-watch-builder-spike.md) |
 | `src/mvt-utils/jsx/conformance/` | The conformance suite for JSX targets, at `./jsx/conformance`, with `vitest` an optional peer. 022 section 12 left this open beside a private package; exporting it was the smaller change, and phase 6 can still choose otherwise |
 | ~~Reactivity benchmarks~~ | Stay in `benchmarks/` (section 7) |
 
@@ -235,11 +234,12 @@ installs itself on `Container` when loaded.
 They move to `site/src/shared/`. The input views in particular are shaped
 around this site's cabinet and games, and are not general enough to publish.
 
-**Each renderer package re-exports the tick API it shares with
-`@mvtjs/utils`, and nothing else from it.** That is `SKIP_DESCENDANTS`,
-`hasUpdate`, `hasRefresh`, the read and scene counters, and the method types:
-with the renderer's own `tickScene` and `setTickMethods`, everything a view
-needs to take part in the tick. So a game installs one renderer package and
+**Each renderer package re-exports the tick API from `@mvtjs/utils`, and
+nothing else from it.** Since [031](./031-tick-api-in-mvt-terms.md),
+the tick API is one set of functions for every renderer, defined in
+`@mvtjs/utils`: `updateView`, `refreshView`, `setUpdate`, `setRefresh`,
+`SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the
+method types, everything a view needs to take part in the tick. So a game installs one renderer package and
 imports its whole tick API from it, and `@mvtjs/utils` stays optional, for its
 helpers (`watch`, tweens, sequences, slot lists). `@mvtjs/utils` still
 defines those names, and the renderer packages use them from there. In this
@@ -320,7 +320,7 @@ idea on any scene graph. When a second renderer arrives, these are the parts
 that may move into `@mvtjs/utils` behind a small host interface. Abstracting them before
 then would be guessing.
 
-*Since acted on:* [022](./022-renderer-agnostic-jsx.md) designed this against
+*Since acted on:* [022](../proposals/022-renderer-agnostic-jsx.md) designed this against
 three renderers. Its phase 1 split the JSX runtime into a base (`src/mvt-utils/jsx/`,
 with `<List>` and `<Switch>`) and Pixi's JSX target, and moved the scene-pass types to
 `src/mvt-utils/`; the generic tree walk is its phase 2. Its section 12 maps
@@ -762,7 +762,8 @@ Custom rules live in one workspace package with two presets:
   - no `setTimeout`, `setInterval`, `requestAnimationFrame` or `Date.now()` in
     models;
   - no per-tick allocation in `update`/`refresh` bodies (`.map()`,
-    `for...of` on arrays, inline closures, template-string keys).
+    `for...of` on arrays, inline closures, template-string keys). Considered
+    in phase 7 and not pursued (section 12.8).
 - **`style`**, used only in this repo: what the style guide says and lint does
   not check today. Candidates: no em-dashes (the trial rule, with auto-fix),
   no `null`, no `this`, no self-imports. On the trial copy of `src/`, `no-null`
@@ -1051,13 +1052,13 @@ commits of its own and can be deleted.
   switched over before this phase).~~ The registration is the owner's, after
   the first publish.
 - ~~Before the first publish, from the tick API's design
-  ([027](../archive/027-mvt-method-names.md), task
-  [028](../archive/028-tick-api-migration.md)): 027 section 11.7's mitigations
+  ([027](./027-mvt-method-names.md), task
+  [028](./028-tick-api-migration.md)): 027 section 11.7's mitigations
   for two copies of the scene passes in one program, and `SKIP_DESCENDANTS`
   made with `Symbol.for('mvt.skipDescendants')`, so every copy agrees (027
   section 7.6, item 3).~~
 - ~~Before the first publish, implement
-  [031](../archive/031-tick-api-in-mvt-terms.md) (decided and spiked 2026-10-03): the
+  [031](./031-tick-api-in-mvt-terms.md) (decided and spiked 2026-10-03): the
   tick API becomes `updateView` / `refreshView` and `setUpdate` /
   `setRefresh`, defined once in `@mvtjs/utils` and typed through a
   `RendererViews` interface each renderer augments; the two counters become
@@ -1151,15 +1152,16 @@ placeholder versions to create the packages first.
 - **Documented** in `.changeset/README.md` (day to day, releasing, and the
   first release by hand), and in `AGENTS.md`'s commands table.
 
-**Left for the owner:** the first publish (031, which it waited for, is done), and the
-four trusted-publisher registrations, as `.changeset/README.md` lists. Pushing `release.yml` to
-`main` before then is harmless: until the packages exist it fails at
-`changeset publish` rather than publishing anything.
+**Done by the owner (2026-10-03):** the first publish, by hand, and the four
+trusted-publisher registrations (publish only, not dist-tag), as
+`.changeset/README.md` lists. The branch was then merged to `main` and pushed
+with its tags, and `release.yml`'s first run passed, with nothing to
+publish.
 
 ### 12.8 Phase 7: lint rules package
 
-Section 10: ~~the `style` preset first (it enforces this repo's existing rules),~~
-then `architecture` rules one at a time.
+Section 10: the `style` preset first (it enforces this repo's existing
+rules), then `architecture` rules one at a time. Done 2026-10-04.
 
 **Progress (2026-10-03).** `packages/eslint-plugin`, `@mvtjs/eslint-plugin`,
 private for now: a new public package would make the release workflow fail,
@@ -1201,16 +1203,23 @@ outside this repo.
   rule 1. It reports timers, `Date.now()`, `new Date()`, `performance.now()`
   and GSAP tweens or timelines made without `paused: true`. All 47 model files
   already passed.
-- 40 `RuleTester` tests; every rule and exemption also checked against
+- 49 `RuleTester` tests; every rule and exemption also checked against
   deliberate violations in real file paths. `AGENTS.md`, `README.md`, the
   style guide and the project-structure page say what lint now enforces.
 
-**Next:** the second `architecture` candidate, no allocation per tick in
-update and refresh methods. Unlike the others it is a heuristic, and needs a
-design first: which functions count (those passed to `setUpdate` and
-`setRefresh`, function attributes in JSX, named `update`/`refresh`
-members?), which allocations to report, and whether it warns rather than
-errors.
+**Not pursued: no allocation per tick.** The second `architecture`
+candidate was weighed and dropped (2026-10-04). A lint rule sees one file's
+syntax at a time, while "runs every tick" is a fact about the call graph: an
+update or refresh method allocates just as surely through a helper in
+another file, which the rule cannot follow, and a `.map()` in a branch that
+runs once at construction looks the same as one that runs every frame. So
+the rule would miss real cases and report harmless ones, and a rule people
+learn to silence teaches nothing. Allocation is better measured than
+guessed: the benchmarks' memory suite already counts bytes allocated per
+frame, so a regression check that fails when a game's allocation over a
+long window (say 10,000 frames) rises past a budget would catch it wherever
+it comes from. That check is left as a loose end in
+[017](../tasks/backlog/017-misc-loose-ends.md).
 
 ---
 
@@ -1398,6 +1407,15 @@ phase 6 means the packages' `homepage` fields
    such as `yortus.com/mvt/` to the docs and `yortus.com/games/` to the games.
    GitHub Pages cannot do server-side redirects, so these are small HTML pages
    with a meta refresh and a canonical link.
+
+**Outcome (2026-10-04).** Steps 1 to 4 are done: the domain is verified,
+the DNS points at GitHub Pages, and `yortus.com/mvt-games/` serves the site,
+with a homepage at `yortus.com/`. HTTPS is not yet on: GitHub's certificate
+requests kept failing after the custom domain was removed and re-added, so
+the `www` CNAME was dropped (nobody types it, and an apex-only certificate
+is one name fewer to validate). If no certificate arrives, GitHub Support is
+next; re-adding `www` is a loose end in
+[017](../tasks/backlog/017-misc-loose-ends.md). Step 5 is not needed yet.
 
 **Trade-offs, for revisiting.**
 

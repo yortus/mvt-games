@@ -127,6 +127,15 @@ Settled questions that should not be reopened without new information are in
   expressions and URLs). Fix those, add both rules, and add the convention
   to the style guide.
 
+- **Vite 8's config-loader warning.** Every Vite run warns that
+  `site/vite.config.ts` uses two things its coming native config loader will
+  not support: `__dirname` (use `import.meta.dirname`, as `vitest.config.ts`
+  should too) and the extensionless import of
+  `./scripts/vite-plugin-spritesheet`. The extension is the awkward one: the
+  style guide's imports have none. Either config files get an exemption
+  that says why, or the plugin moves somewhere the config can import by
+  package name. From 011's phase 5 (Vite 8).
+
 ### Decide
 
 - **The draft articles still use the old tick API.** `who-calls-update.md`
@@ -306,6 +315,15 @@ Settled questions that should not be reopened without new information are in
   section 2.4 did for cached methods. Raised in review of 022's step 3
   (2026-09-30).
 
+- **An allocation budget check.** 011 dropped a lint rule against per-tick
+  allocation, since lint cannot tell what runs every tick
+  ([011](../../archive/011-multi-package-repo.md) section 12.8). Measuring
+  catches it instead: the memory suite already counts bytes allocated per
+  frame, so a check that runs each game for a long window (say 10,000
+  frames) and fails past a per-game budget would catch a regression wherever
+  it comes from. Open: whether it can run in CI at all (the suite needs a
+  browser), or stays a local check before release.
+
 ### Experiments (from 020)
 
 Follow-ups to [020](../../archive/020-falling-sand-variants.md), in the
@@ -348,6 +366,17 @@ falling-sand demo. Each is a new variant, measured with
   (018 section 21.3).
 - **A change-gate for idle subtrees** (`refreshWhen`). Unmeasured. Trigger: an
   idle-heavy UI appears. 010 section 8, item 5.
+- **Publish `@mvtjs/eslint-plugin`.** Private for now, with `style` (this
+  repo's own conventions) and one `architecture` rule, `no-wall-clock`.
+  Trigger: its `architecture` preset is worth having outside this repo. Then
+  publish it once by hand and register its trusted publisher, as
+  `.changeset/README.md` describes for the first release, and decide whether
+  `style` ships or stays in-repo. 011 section 12.8.
+- **`www.yortus.com`.** Dropped while GitHub's certificate requests for the
+  site kept failing. Trigger: someone asks for it, or GitHub Support says
+  the apex-plus-`www` certificate will issue. Re-adding the `www` CNAME
+  makes GitHub request a new certificate for both names, so add it only
+  once the apex one is in place and HTTPS enforced. 011 section 13.3.
 
 ## Acceptance Criteria
 
@@ -365,6 +394,8 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Churn and falling-sand slowdowns between the September and October saves attributed
 - [ ] Pixi's texture cache warnings fixed, or recorded as harmless
 - [ ] 020's experiments each run, or dropped
+- [ ] Vite's config-loader warning gone
+- [ ] An allocation budget check built, or dropped
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
 
@@ -415,3 +446,8 @@ falling-sand demo. Each is a new variant, measured with
 - 2026-10-04: The games were renamed and redrawn. Updated every mention
   here to the new names, history included.
   The cache-warnings item narrowed: `ghost-eyes` no longer collides.
+- 2026-10-04: Closed and archived 011 (multi-package repo) and took in its
+  loose ends: Vite's config-loader warning (Fix), an allocation budget check
+  in place of the per-tick allocation lint rule (Investigate), and
+  publishing `@mvtjs/eslint-plugin` and re-adding `www.yortus.com`
+  (Parked).

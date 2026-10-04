@@ -19,7 +19,7 @@ Bigger follow-ups from the same session are not part of this task: a
 `RenderLayer`-based `<Portal>`, a component that
 rebuilds its subtree when a key changes, a model-driven cross-fade
 (`<Transition>`), and generalising the pixi-mvt passes to other renderers
-(which belongs in [011](../proposals/011-multi-package-repo.md)).
+(which belongs in [011](./011-multi-package-repo.md)).
 
 ### 1. Missing element attributes
 

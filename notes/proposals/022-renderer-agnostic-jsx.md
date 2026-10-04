@@ -46,7 +46,7 @@ section 7.5 were taken on Node 22.11 with Pixi 8.15.
 phase 1),
 [pixi-mvt design notes](../../packages/pixi/src/design-notes.md),
 [004](../archive/004-list-proposal.md) (`<List>` and `<Switch>`),
-[011](./011-multi-package-repo.md) section 5.5 (later renderer packages),
+[011](../archive/011-multi-package-repo.md) section 5.5 (later renderer packages),
 [012](./012-falling-sand-performance-findings.md) section 2 (caching methods
 in the scene-pass loop).
 

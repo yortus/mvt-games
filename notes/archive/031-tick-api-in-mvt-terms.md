@@ -38,7 +38,7 @@ phase 5-6 work). Spiked with TypeScript 5.9.3, tsdown 0.23.0 (rolldown
 current names were chosen), [028](./028-tick-api-migration.md),
 [029](./029-rename-ontick-to-settickmethods.md),
 [030](./030-self-describing-perfmon.md) (perfmon labels),
-[011](../proposals/011-multi-package-repo.md) (publishing),
+[011](./011-multi-package-repo.md) (publishing),
 [Glossary](../../docs/reference/glossary.md).
 
 ---
