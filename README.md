@@ -17,6 +17,7 @@ frame-consistent rendering.
 | Fuel Run       | Side-scrolling shooter; bomb fuel to keep flying |
 | Galaxy Raiders | Shoot down waves of diving drones                |
 | Kwazy Cactii   | Match three or more cactii                       |
+| Neon Monsoon   | 1990s-style vertical bullet hell                 |
 
 Each game is a self-contained module under `site/src/games/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to

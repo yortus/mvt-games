@@ -9,6 +9,7 @@ import {
     createFuelRunEntry,
     createGalaxyRaidersEntry,
     createKwazyCactiiEntry,
+    createNeonMonsoonEntry,
     type GameEntry,
     type GameSession,
 } from './games';
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
         createFuelRunEntry(),
         createGalaxyRaidersEntry(),
         createKwazyCactiiEntry(),
+        createNeonMonsoonEntry(),
     ];
 
     // ---- Cabinet model (must be created before view) -----------------------

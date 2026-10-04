@@ -6,3 +6,4 @@ export { createDojoDuelEntry } from './dojo-duel';
 export { createFuelRunEntry } from './fuel-run';
 export { createGalaxyRaidersEntry } from './galaxy-raiders';
 export { createKwazyCactiiEntry } from './kwazy-cactii';
+export { createNeonMonsoonEntry } from './neon-monsoon';

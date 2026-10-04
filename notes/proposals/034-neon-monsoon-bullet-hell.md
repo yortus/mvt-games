@@ -12,7 +12,11 @@
 > project's rules at that scale, and ends with a spike to run before
 > building the rest.
 
-**Status:** proposed. Nothing implemented.
+**Status:** implemented, 2026-10-03 (built on branch `neon-monsoon-game`,
+brought onto `1738c19`), except the boss replay benchmark of
+[7.2](#72-benchmarks). [Section 11](#11-as-built) records what changed from
+the design and what was measured. The phase 0 spike was folded into the
+build: 6.1 and 6.2 were measured against the real field and view.
 
 **Written:** 2026-10-03, against `vnext` at `dd3ec54`, with the games' renames
 in the working tree. Read for it: Galaxy Raiders' and Fuel Run's models, views,
@@ -79,10 +83,17 @@ Night over a rain-soaked coastal city. The player flies a small interceptor
 north, against an automated weather fleet that seeds the storm. The stage
 ends at the fleet's flagship, a tower-ship called the Stormcore.
 
-The look is mid-1990s arcade: pixel art at integer scale, a dark, desaturated
-background (indigo streets, teal water, rain streaks), and bullets in hot
-pink, amber, cyan and violet with white cores, the brightest things on the
-screen ([5.5](#55-readability)).
+The look is mid-1990s arcade pixel art at integer scale, in a cyberpunk
+night. Seen from high above, the city is a circuit board: dark grey
+rooftops, streets like traces with neon running along the kerbs, buildings
+like chips with glowing pins, neon signs and decals, and traffic streaking
+along the avenues, all under slanting rain. The enemy craft are dark
+gunmetal with thin neon trim.
+
+The spectrum is split in two ([5.5](#55-readability)). Everything that glows
+in the world is cool neon: cyan, magenta, violet, blue. Every bullet is
+warm: red, orange, amber, gold, with white-hot cores, the brightest things on
+the screen.
 
 ### 2.2 Screen
 
@@ -445,8 +456,11 @@ plain `Container` (the boids view's approach) at this count.
   are; enemies through a `<List>` over the pooled enemy records.
 - **Player shots and gems:** the bullet view again, with their own fields
   and textures.
-- **City background:** plain TypeScript, a ring of tile rows positioned from
-  `scrollY`, like Fuel Run's terrain view.
+- **City background:** plain TypeScript, a ring buffer of chunks of ground
+  positioned from `scrollY`, like Fuel Run's terrain view, each drawn once
+  in two layers: the dark ground, and its neon with additive blending.
+- **Traffic:** light streaks on the avenues, a function of stage time and
+  `scrollY`, like the rain.
 - **Rain:** streaks whose positions are a function of the model's stage time,
   so the view keeps no state at all and the rain is the same on every replay.
 - **Boss health bar and chain gauge:** JSX, from the model.
@@ -470,9 +484,11 @@ The genre lives or dies on whether the player can see the bullets. Rules for
 the art and the views:
 
 - Enemy bullets are the brightest things on screen, with white cores and
-  saturated rims. The background stays dark and desaturated.
+  saturated rims, and only ever warm colours. The world's neon is only ever
+  cool, and stays thin: lines, decals and signs on dark ground.
 - Player shots are drawn at half opacity so they never hide enemy bullets.
-- No enemy bullet colour is reused for scenery or explosions.
+- No enemy bullet colour is reused for scenery, craft, items or
+  explosions. Explosions are electric (violet, cyan, white), not fiery.
 - New bullets flash larger for their first 100 ms, so a pattern announces
   itself.
 - The hitbox marker is drawn above everything but the HUD while focusing.
@@ -480,9 +496,9 @@ the art and the views:
 ### 5.6 Textures
 
 A character-grid generator, `site/scripts/generate-neon-monsoon-textures.ts`,
-loaded through `createTextureRegistry` as the other games do. Bullet kinds:
-`'orb-small'` (8 x 8), `'orb-large'` (14 x 14), `'needle'` (4 x 10, drawn
-along its angle), `'rain'` (3 x 12), each in pink, amber, cyan and violet.
+loaded through `createTextureRegistry` as the other games do. Bullet
+shapes: pellets (8 x 8), orbs (14 x 14), needles (12 x 5, drawn along their
+angle) and rain (12 x 3), in red, orange, amber and gold.
 Plus the ship (16 x 24), each enemy, items, gems, explosion frames and the
 lives and bombs icons.
 
@@ -495,6 +511,9 @@ emitter paths.
 
 ### 6.1 The bullet view: `ParticleContainer` or a sprite pool
 
+*Measured on the CPU side only, and `ParticleContainer` kept: see
+[11.3](#113-measurements).*
+
 Measure refresh and render time at 500, 1000, 2000 and 4000 bullets, for:
 
 - a `ParticleContainer` with a pool of `Particle`s;
@@ -504,6 +523,9 @@ Take whichever is cheaper. If `ParticleContainer` is awkward about a varying
 count, the sprite pool is the fallback, and it is the boids view's pattern.
 
 ### 6.2 How the view reads 2000 bullets
+
+*Settled: query bindings, wired straight to the field's methods. See
+[11.3](#113-measurements).*
 
 This is 013's inherent cost in a game. Compare:
 
@@ -591,48 +613,157 @@ Run `npm run lint`, `npm test` and `npm run build` after each step.
 
 **Phase 0: spike** (decides 6.1 and 6.2 before the rest is built).
 
-1. `BulletField`, `Emitter` and a bullet view, with one stationary emitter
-   that can fill the field, in a throwaway entry.
-2. Measure [6.1](#61-the-bullet-view-particlecontainer-or-a-sprite-pool) and
+1. ~~`BulletField`, `Emitter` and a bullet view, with one stationary emitter
+   that can fill the field, in a throwaway entry.~~ Done, folded into the
+   build rather than a throwaway entry.
+2. ~~Measure [6.1](#61-the-bullet-view-particlecontainer-or-a-sprite-pool) and
    [6.2](#62-how-the-view-reads-2000-bullets); record the numbers here and
-   pick.
+   pick.~~ Done ([11.3](#113-measurements)).
 
 **Phase 1: the core loop.**
 
-3. Module skeleton, entry with `inputConfig`, registration in
+3. ~~Module skeleton, entry with `inputConfig`, registration in
    [games/index.ts](../../site/src/games/index.ts) and
-   [main.ts](../../site/src/main.ts).
-4. Fixed step, seeded random numbers, ship with focus and shots, collisions
+   [main.ts](../../site/src/main.ts).~~ Done.
+4. ~~Fixed step, seeded random numbers, ship with focus and shots, collisions
    with hitbox and graze, lives, game over, a minimal HUD. Placeholder
-   graphics.
+   graphics.~~ Done.
 
 **Phase 2: the stage.**
 
-5. Stage script and `StageModel`, scrolling city background, rain.
-6. Kites, lancers, turrets and barges with their paths and emitters; power
-   items.
+5. ~~Stage script and `StageModel`, scrolling city background, rain.~~ Done.
+6. ~~Kites, lancers, turrets and barges with their paths and emitters; power
+   items.~~ Done.
 
 **Phase 3: scoring and bombs.**
 
-7. Bombs, cancelling into gems, `GemField`, chain and graze scoring, the
-   chain gauge.
+7. ~~Bombs, cancelling into gems, `GemField`, chain and graze scoring, the
+   chain gauge.~~ Done.
 
 **Phase 4: bosses.**
 
-8. The gunship, then the Stormcore's three phases, health segments, time
-   limits, phase bonus, warning banner and tally.
+8. ~~The gunship, then the Stormcore's three phases, health segments, time
+   limits, phase bonus, warning banner and tally.~~ Done.
 
 **Phase 5: art and feel.**
 
-9. The texture generator and palette; explosions; the readability rules in
-   [5.5](#55-readability); enemy hit flash and health bar easing.
+9. ~~The texture generator and palette; explosions; the readability rules in
+   [5.5](#55-readability); enemy hit flash and health bar easing.~~ Done.
 
 **Phase 6: finishing.**
 
-10. The second loop, `instructions` text, `thumbnailAdvanceMs` (enough to
-    show the first kites and bullets, about 8 seconds).
-11. The model tests in [7.1](#71-model-tests).
-12. The benchmark in [7.2](#72-benchmarks).
-13. The README games table and the site landing page, worded as the originality
-    rules ask ("inspired by 1990s arcade shooters", no other game's title).
+10. ~~The second loop, `instructions` text, `thumbnailAdvanceMs` (enough to
+    show the first kites and bullets, about 8 seconds).~~ Done (9 seconds).
+11. ~~The model tests in [7.1](#71-model-tests).~~ Done, plus a view test
+    for the bullet layer.
+12. The benchmark in [7.2](#72-benchmarks). In part: the game is in
+    `games-and-demos` under the suite's shared input script. The boss
+    replay is not done ([11.4](#114-still-open)).
+13. ~~The README games table and the site landing page, worded as the
+    originality rules ask ("inspired by 1990s arcade shooters", no other
+    game's title).~~ README done; the landing page names no games, so it
+    needed nothing.
 14. Move this proposal to `notes/archive/`.
+
+## 11. As Built
+
+### 11.1 Where it is
+
+[site/src/games/neon-monsoon/](../../site/src/games/neon-monsoon/), with its
+texture generator in
+[site/scripts/generate-neon-monsoon-textures.ts](../../site/scripts/generate-neon-monsoon-textures.ts).
+Everything in sections 2 to 5 was built as designed, apart from the changes
+below.
+
+### 11.2 Changes from the design
+
+- **No `'spiral'` pattern kind.** A spiral is a ring of two to four bullets
+  fired often while it spins, so `'ring'` with `spinPerVolleyDeg` covers
+  both. The kinds are `'ring'`, `'fan'`, `'stream'` and `'rain'`.
+- **`BulletField` does its own collision loops**: `findTouching(x, y, radius)`
+  and `markGrazed(x, y, radius)`, so the typed-array loops stay inside the model
+  that owns the arrays. Kinds and their hit radii are one option,
+  `hitRadii: Record<K, number>`, and the field is generic over its kinds.
+- **Ground and air enemies are two slot lists** (`groundEnemies`,
+  `airEnemies`) rather than one with a flag: turrets are drawn under
+  everything flying and cannot ram the ship, and two lists say both at once.
+- **The hit flash is not presentation state.** Section 5.4 planned a timer
+  in the enemy view. Item views inside a `<List>` show one enemy after
+  another as slots are reused, so state kept per view can carry over from
+  the last occupant; and `<List>` does not skip an empty slot's update step
+  ([11.4](#114-still-open)). The enemy and boss models record `msSinceHit`
+  instead, and `HitFlashView` is a pure function of it. The boss health
+  bar's slide stays as presentation state, outside any list.
+- **Phases.** `GamePhase` is `'playing' | 'dying' | 'tally' | 'game-over' |
+  'all-clear'`. The warning is a timer, not a phase: play goes on under it.
+  The boss's lifecycle is `BossPhase`, and its three attacks are
+  `attackKind`, so "phase" means one thing.
+- **Scoring is its own model**, `ScoreModel` (score, high score, chain,
+  grazes, extend scores), owned by the game model, which polls its
+  `extendsEarned` to give lives. Section 4.1's layout did not have it.
+- **Lives count the ship flying.** `lives` starts at 3, and the game ends at 0.
+- **The look, after a playtest (2026-10-04).** The first build's city was
+  plain dark blocks, and its bullets pink, amber, cyan and violet: nothing
+  said "neon". The city became the circuit board of 2.1, with traffic, the
+  craft gained neon trim, and the spectrum was split: bullets warm, neon
+  cool, so the neon can shine without confusing the bullets. The bullet
+  kinds were renamed for their new colours.
+- **Every game-phase timer is a counter**, as 4.4 recommended; no GSAP
+  anywhere in the game.
+
+### 11.3 Measurements
+
+CPU side only, in Node through Vitest, on the development machine: the
+median of five runs of 1500 frames each, after 200 warm-up frames, run once
+on 2026-10-03. Not interleaved from worktrees, so treat the ratios as a
+guide. Microseconds per frame. Nothing is rendered, so GPU upload and draw
+are not included.
+
+| Bullets | Model step | A: wrapped queries | B: field methods as bindings | C: raw arrays | Sprite pool |
+| --- | --- | --- | --- | --- | --- |
+| 500 | 8.7 | 25.2 | 14.4 | 2.5 | 15.6 |
+| 1000 | 17.6 | 49.8 | 28.8 | 4.3 | 31.7 |
+| 2000 | 42.7 | 120.4 | 70.4 | 10.9 | 82.7 |
+| 4000 | 86.7 | 225.2 | 144.1 | 23.4 | 159.8 |
+
+- **Model step**: the field's `update`, `markGrazed` and `findTouching` for one step.
+  43 µs at 2000 bullets, against the 1 ms target.
+- **A** wraps each read in a closure (`xAt={(i) => field.xOf(i)}`). **B**
+  passes the field's own methods as the query bindings
+  (`xAt={field.xOf}`), which is what the game does: the same bindings and
+  the same view, with one call per read instead of two. **C** is the same
+  loop reading raw typed arrays. (This differs from 6.2's table, whose B
+  was the field as one fixed binding; that was not needed.)
+- **Decision (6.2): B.** It costs about 60 µs a frame more than C at 2000
+  bullets, far under the 0.3 ms threshold, and it keeps the field's storage
+  private and the view reusable. Much of the gap is the call per read and
+  the string-keyed texture lookup; neither is worth removing at this scale.
+- **Decision (6.1): `ParticleContainer`.** On the CPU it is 15% cheaper
+  than a sprite pool doing the same reads. The GPU side, where a particle
+  container should gain most, was not measured: it needs a browser, and
+  headless Chrome launches are rationed on this machine.
+
+The game's own row in `games-and-demos` (one run, not saved): 10 µs a frame
+in all, and 1.8 KB allocated a frame. That uses the suite's shared input
+script, which loses its last life at 55 s with at most 47 bullets on screen,
+so it measures the early stage and a game over, not the dense attacks.
+
+### 11.4 Still open
+
+- **A boss replay for the benchmark** ([7.2](#72-benchmarks)). Reaching the
+  Downpour attack needs input that survives two minutes: either a recorded
+  run, or an autopilot that writes `PlayerInput` as a player does (an
+  attract mode, which would also make a good MVT example). Neither exists
+  yet.
+- **`<List>` and update steps**, in `@mvtjs/utils`. `<List>` hides an empty
+  slot and skips its subtree in `refreshView`, but not in `updateView`, so
+  an item view's update step still runs for an empty slot and reads an
+  absent item. Its own documentation says no binding sees an absent item.
+  This was found when a first draft of the hit flash crashed in the
+  benchmark; no other game has an update step inside a list. Worth a task:
+  gate the slot's update step the way its refresh is gated.
+- **Final title**, touch movement and interpolation: open questions 1, 3
+  and 5, unchanged.
+- **Balance.** The patterns were tuned from the numbers, not by playing the
+  whole stage, so the boss attacks' densities may want a pass in the
+  browser.

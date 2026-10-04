@@ -7,6 +7,7 @@ import {
     createFuelRunEntry,
     createGalaxyRaidersEntry,
     createKwazyCactiiEntry,
+    createNeonMonsoonEntry,
     type GameInputConfig,
 } from '../../site/src/games';
 import {
@@ -121,6 +122,7 @@ function createEntry(id: string): RunnableEntry {
     if (id === 'fuel-run') return createFuelRunEntry();
     if (id === 'galaxy-raiders') return createGalaxyRaidersEntry();
     if (id === 'kwazy-cactii') return createKwazyCactiiEntry();
+    if (id === 'neon-monsoon') return createNeonMonsoonEntry();
     if (id === 'boids') return createBoidsEntry();
     if (id === 'falling-sand') return createFallingSandEntry();
     if (id === 'reordering-lists') return createReorderingListsEntry();
