@@ -1,5 +1,5 @@
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
-import type { FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
+import type { ColorSource, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import { attributesOf, defineElements, element, event } from '@mvtjs/utils/jsx';
 
 // ---------------------------------------------------------------------------
@@ -8,6 +8,13 @@ import { attributesOf, defineElements, element, event } from '@mvtjs/utils/jsx';
 
 // Plain assignments name their property, which refresh methods assign
 // directly; see `attributesOf`. The rest are apply functions.
+//
+// `tint` is an apply function though its write is a plain assignment. Pixi's
+// `tint` setters take any `ColorSource` (a number, or a CSS colour such as
+// `'#ff5468'`), but their getters return a number, and a named property is
+// typed by its getter. An apply function lets TypeScript check the value
+// against the setter itself. It costs little: `tint` is written only when it
+// changes, so only frames where a tint changes take the slower write.
 
 const container = attributesOf<Container>();
 const anchored = attributesOf<Sprite | Text | BitmapText | HTMLText | TilingSprite | NineSliceSprite>();
@@ -33,6 +40,17 @@ const containerAttributes = {
     sortableChildren: container.fixed('sortableChildren'),
     isRenderGroup: container.fixed('isRenderGroup'),
     hitArea: container.fixed('hitArea'),
+    /**
+     * The container that masks this one. The mask is not added to the tree:
+     * add it yourself, usually as a child of the element it masks, so it
+     * moves with it:
+     *
+     * ```tsx
+     * const mask = <graphics ref={drawMask} />;
+     * <container mask={mask}>{mask}{content}</container>
+     * ```
+     */
+    mask: container.fixed('mask'),
     /**
      * How the element takes part in pointer events. Without it, an element
      * with an event handler attribute is made `'static'`.
@@ -60,7 +78,7 @@ const anchorAttributes = {
 /** Attributes of sprites of every kind. */
 const texturedAttributes = {
     texture: textured.onChange('texture'),
-    tint: textured.onChange('tint'),
+    tint: textured.onChange((e, v: ColorSource) => { e.tint = v; }),
     width: textured.onChangeNumber('width'),
     height: textured.onChangeNumber('height'),
 };
@@ -68,7 +86,7 @@ const texturedAttributes = {
 /** Attributes of text of every kind. */
 const textAttributes = {
     text: texts.onChange('text'),
-    tint: texts.onChange('tint'),
+    tint: texts.onChange((e, v: ColorSource) => { e.tint = v; }),
     style: texts.onChange((e, v: Record<string, unknown>) => { Object.assign(e.style, v); }),
 };
 
@@ -116,6 +134,6 @@ export const pixiElements = defineElements({
     }),
     graphics: element(() => new Graphics(), {
         ...containerAttributes,
-        tint: graphics.onChange('tint'),
+        tint: graphics.onChange((e, v: ColorSource) => { e.tint = v; }),
     }),
 });

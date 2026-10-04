@@ -1,4 +1,4 @@
-import { Container, type Sprite, type Text, Texture } from 'pixi.js';
+import { type ColorSource, Container, type Graphics, type Sprite, type Text, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { countTick, refreshView } from '@mvtjs/utils';
 import { createJsx } from '@mvtjs/utils/jsx';
@@ -72,6 +72,47 @@ describe('pixiTarget', () => {
         style = { fontSize: 20 };
         refreshView(text);
         expect(text.style.fontSize).toBe(20);
+    });
+
+    it('takes a tint as any colour Pixi does, CSS strings included', () => {
+        let tint: ColorSource = '#ff5468';
+        const sprite = jsx('sprite', { texture: Texture.WHITE, tint: () => tint }) as Sprite;
+        const text = jsx('text', { text: 'x', tint: '#00ff00' }) as Text;
+        const graphics = jsx('graphics', { tint: 'red' }) as Graphics;
+
+        refreshView(sprite);
+        expect(sprite.tint).toBe(0xff5468);
+        expect(text.tint).toBe(0x00ff00);
+        expect(graphics.tint).toBe(0xff0000);
+
+        tint = 0x123456;
+        refreshView(sprite);
+        expect(sprite.tint).toBe(0x123456);
+    });
+
+    it("writes a CSS tint in a busy shape's own copy of the refresh code", () => {
+        // Past 16 elements a shape takes a copy of its own; its tint still goes
+        // through Pixi's setter, which turns the string into a number
+        const root = new Container();
+        const sprites: Sprite[] = [];
+        for (let i = 0; i < 20; i++) {
+            const sprite = jsx('sprite', { texture: Texture.WHITE, tint: () => '#3d7bff' }) as Sprite;
+            sprites.push(sprite);
+            root.addChild(sprite);
+        }
+
+        refreshView(root);
+
+        expect(sprites.every((sprite) => sprite.tint === 0x3d7bff)).toBe(true);
+    });
+
+    it('masks a container with the one it is given, leaving the mask where its caller puts it', () => {
+        const mask = jsx('graphics', {}) as Graphics;
+        const el = jsx('container', { mask });
+
+        expect(el.mask).toBe(mask);
+        expect(mask.parent).toBeNull();
+        expect(() => jsx('container', { mask: () => mask })).toThrow(/'mask' takes a fixed value in @mvtjs\/pixi, /);
     });
 
     it('rejects a function for an attribute that takes only a fixed value', () => {

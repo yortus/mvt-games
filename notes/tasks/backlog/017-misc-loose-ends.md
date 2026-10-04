@@ -136,6 +136,20 @@ Settled questions that should not be reopened without new information are in
   that says why, or the plugin moves somewhere the config can import by
   package name. From 011's phase 5 (Vite 8).
 
+- **`<List>` inside a list element wraps its items.** In a JSX body,
+  `<ol><List items={...}>{(item) => <li ... />}</List></ol>` builds the items
+  into an `mvt-group` (`display: contents`), so the markup is
+  `ol > mvt-group > li`. It looks right, but it isn't valid list markup, and
+  assistive technology may not read it as a list. `<List>`'s `container`
+  option avoids the wrapper, but needs the `<ol>` built first, outside the
+  JSX expression it belongs in. Options: `<List>` adopting its parent as its
+  container when it is the parent's only child (a hook when the JSX target
+  appends it), or an option that builds the container itself
+  (`<List as="ol">`). It affects every renderer's `<List>`, so it is a design
+  question for `@mvtjs/utils/jsx`, not a fix in the HTML target alone. Found
+  building the fruit machine's wins list (033), which still has the wrapper:
+  `site/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
+
 ### Decide
 
 - **The draft articles still use the old tick API.** `who-calls-update.md`
@@ -398,6 +412,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] An allocation budget check built, or dropped
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
+- [ ] `<List>` builds list items straight into a list element, with no wrapper
 
 ## Progress Log
 
@@ -451,3 +466,5 @@ falling-sand demo. Each is a new variant, measured with
   in place of the per-tick allocation lint rule (Investigate), and
   publishing `@mvtjs/eslint-plugin` and re-adding `www.yortus.com`
   (Parked).
+- 2026-10-04: Added `<List>` wrapping its items inside a list element (Fix),
+  found building the fruit machine demo (033).

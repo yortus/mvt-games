@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/pixi */
-import { type Container, Graphics, type Texture } from 'pixi.js';
+import type { Container, Graphics, Texture } from 'pixi.js';
 import { ROW_COUNT, type SymbolKind } from '../../data';
 import { ReelView } from './reel-view';
 import {
@@ -25,10 +25,14 @@ export interface ReelWindowViewBindings {
 
 /** The window and its frame, with a reel behind each column, masked to the window. */
 export function ReelWindowView(bindings: ReelWindowViewBindings): Container {
+    // One rounded mask over the window, a child of the reels so it moves with them
+    const windowMask = <graphics ref={drawWindowMask} />;
+
     return (
         <container>
             <graphics ref={drawFrame} />
-            <container x={WINDOW_X} y={WINDOW_Y} ref={maskToWindow}>
+            <container x={WINDOW_X} y={WINDOW_Y} mask={windowMask}>
+                {windowMask}
                 {bindings.strips.map((strip, reel) => (
                     <container x={reel * (CELL_SIZE + REEL_GAP)}>
                         <ReelView
@@ -63,9 +67,6 @@ function drawFrame(g: Graphics): void {
     }
 }
 
-/** The reels' columns, as one rounded mask over the window. */
-function maskToWindow(reels: Container): void {
-    const mask = new Graphics().roundRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 12).fill(REEL_FACE);
-    reels.addChild(mask);
-    reels.mask = mask;
+function drawWindowMask(g: Graphics): void {
+    g.roundRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 12).fill(REEL_FACE);
 }

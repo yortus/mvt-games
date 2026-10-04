@@ -22,31 +22,33 @@ export function PaytableView(bindings: PaytableViewBindings): Element {
     const { paytable, urlFor, nameFor } = bindings;
 
     return (
-        <div class="paytable">
-            <table>
-                <thead>
+        <table class="paytable">
+            <thead>
+                <tr>
+                    <th text="Symbol" />
+                    <th class="number" text="x3" />
+                    <th class="number" text="x4" />
+                    <th class="number" text="x5" />
+                </tr>
+            </thead>
+            <tbody>
+                {PICTURE_KINDS.map((kind) => (
                     <tr>
-                        <th text="Symbol" />
-                        <th class="number" text="x3" />
-                        <th class="number" text="x4" />
-                        <th class="number" text="x5" />
+                        <td>
+                            <img src={urlFor(kind)} alt="" />
+                            <span text={nameFor(kind)} />
+                        </td>
+                        <td class="number" text={formatCredits(paytable[kind][3])} />
+                        <td class="number" text={formatCredits(paytable[kind][4])} />
+                        <td class="number" text={formatCredits(paytable[kind][5])} />
                     </tr>
-                </thead>
-                <tbody>
-                    {PICTURE_KINDS.map((kind) => (
-                        <tr>
-                            <td>
-                                <img src={urlFor(kind)} alt="" />
-                                <span text={nameFor(kind)} />
-                            </td>
-                            <td class="number" text={formatCredits(paytable[kind][3])} />
-                            <td class="number" text={formatCredits(paytable[kind][4])} />
-                            <td class="number" text={formatCredits(paytable[kind][5])} />
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            <p class="paytable-note" text="The wild stands in for any fruit, on reels 2 to 5. Every way pays." />
-        </div>
+                ))}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="paytable-note" colSpan={4} text="The wild stands in for any fruit, on reels 2 to 5. Every way pays." />
+                </tr>
+            </tfoot>
+        </table>
     );
 }

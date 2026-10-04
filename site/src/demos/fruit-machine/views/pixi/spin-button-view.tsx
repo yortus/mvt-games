@@ -58,11 +58,11 @@ export function SpinButtonView(bindings: SpinButtonViewBindings): Container {
 /** How far the button sinks when held, and how deep its edge shows. */
 const PRESS_DEPTH = 6;
 
-const STYLES: { readonly [M in SpinButtonMode]: { readonly face: number; readonly shade: number; readonly label: string } } = {
-    spin: { face: 0x2fd27a, shade: 0x1f9e57, label: 'SPIN' },
-    stop: { face: 0xff5468, shade: 0xc4283d, label: 'STOP' },
-    skip: { face: 0xffb020, shade: 0xc97f00, label: 'SKIP' },
-    disabled: { face: 0x6e6390, shade: 0x4b4268, label: 'SPIN' },
+const STYLES: { readonly [M in SpinButtonMode]: { readonly face: string; readonly shade: string; readonly label: string } } = {
+    spin: { face: '#2fd27a', shade: '#1f9e57', label: 'SPIN' },
+    stop: { face: '#ff5468', shade: '#c4283d', label: 'STOP' },
+    skip: { face: '#ffb020', shade: '#c97f00', label: 'SKIP' },
+    disabled: { face: '#6e6390', shade: '#4b4268', label: 'SPIN' },
 };
 
 const LABEL_STYLE = { fontFamily: FONT_FAMILY, fontSize: 24, fontWeight: '900', letterSpacing: 2, fill: WHITE };

@@ -27,6 +27,7 @@ const progress = attributesOf<HTMLProgressElement>();
 const meter = attributesOf<HTMLMeterElement>();
 const canvas = attributesOf<HTMLCanvasElement>();
 const details = attributesOf<HTMLDetailsElement>();
+const cell = attributesOf<HTMLTableCellElement>();
 
 /** Attributes every HTML element accepts. */
 const globalAttributes = {
@@ -42,6 +43,8 @@ const globalAttributes = {
      */
     text: html.onChange(writeText),
     tabIndex: html.fixed('tabIndex'),
+    /** Whether the browser checks the element's text as it is typed. */
+    spellcheck: html.fixed('spellcheck'),
     role: html.fixed((e, v: string) => { e.setAttribute('role', v); }),
 
     onClick: event<MouseEvent>('click'),
@@ -76,9 +79,9 @@ const globalPatterns = {
 const PLAIN_TAGS = [
     'div', 'span', 'p', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-    'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+    'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr',
     'strong', 'em', 'small', 'b', 'i', 'code', 'pre', 'kbd', 'abbr', 'br', 'hr',
-    'figure', 'figcaption', 'form', 'fieldset', 'legend', 'summary',
+    'figure', 'figcaption', 'form', 'fieldset', 'legend', 'summary', 'output',
 ] as const;
 
 /**
@@ -101,6 +104,8 @@ export const htmlElements = defineElements({
         disabled: input.onChange('disabled'),
         readOnly: input.onChange('readOnly'),
         placeholder: input.onChange('placeholder'),
+        /** What the browser may fill the field with, if anything: `'off'`, `'email'` and so on. */
+        autocomplete: input.fixed('autocomplete'),
         min: input.onChange('min'),
         max: input.onChange('max'),
         step: input.onChange('step'),
@@ -113,6 +118,7 @@ export const htmlElements = defineElements({
         disabled: textArea.onChange('disabled'),
         readOnly: textArea.onChange('readOnly'),
         placeholder: textArea.onChange('placeholder'),
+        autocomplete: textArea.fixed('autocomplete'),
         rows: textArea.fixed('rows'),
         name: textArea.fixed('name'),
     }, globalPatterns),
@@ -131,6 +137,18 @@ export const htmlElements = defineElements({
         ...globalAttributes,
         disabled: button.onChange('disabled'),
         type: button.fixed('type'),
+    }, globalPatterns),
+    td: element(() => document.createElement('td'), {
+        ...globalAttributes,
+        /** How many columns the cell spans. */
+        colSpan: cell.fixed('colSpan'),
+        /** How many rows the cell spans. */
+        rowSpan: cell.fixed('rowSpan'),
+    }, globalPatterns),
+    th: element(() => document.createElement('th'), {
+        ...globalAttributes,
+        colSpan: cell.fixed('colSpan'),
+        rowSpan: cell.fixed('rowSpan'),
     }, globalPatterns),
     label: element(() => document.createElement('label'), {
         ...globalAttributes,

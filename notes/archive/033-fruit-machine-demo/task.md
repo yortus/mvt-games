@@ -600,3 +600,14 @@ Recorded so the plan above still reads as it was agreed.
   game over within 20 spins. Tests now take their expected values from the
   constants, and the game-over test checks the machine's steadiness from an
   explicit ten bets, so tuning a constant no longer breaks them.
+- 2026-10-04: Fixed the JSX gaps the demo had worked around, upstream (a
+  minor changeset): Pixi's `tint` takes any `ColorSource`, and containers a
+  `mask`; HTML gains `colSpan`/`rowSpan` on cells, `<output>`, `autocomplete`
+  and `spellcheck`. The demo's workarounds went: `toTint` and numeric
+  colours, the mask `ref`, the input `ref`, the footnote outside its table,
+  and `<span>` meters. Still open, not readily fixed: the three.js picker
+  clicks after a drag, and `<List>` inside an `<ol>` wraps its items.
+- 2026-10-04: The three.js picker takes a `dragThreshold` (minor changeset)
+  and drops the click that ends a drag; the page passes the cabinet's own
+  6-pixel threshold, and the lever no longer checks for drags itself. The
+  `<List>`-in-`<ol>` wrapper went to task 017 (Fix).

@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 import type { Container } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
-import { PAYTABLE, type SymbolKind } from '../../data';
+import { PAYTABLE } from '../../data';
 import type { FruitMachineModel, WayWin } from '../../models';
 import { SYMBOL_COLORS, SYMBOL_NAMES, type SymbolArt } from '../art';
 import { createLitCells, easeOutBack, formatCredits, lastFor, shownReelPosition } from '../shared';
@@ -11,7 +11,7 @@ import { JuiceBurstView } from './juice-burst-view';
 import { type LightsMode, MarqueeLightsView } from './marquee-lights-view';
 import { MetersView } from './meters-view';
 import { PaytableStripView } from './paytable-strip-view';
-import { BUTTON_RADIUS, BUTTON_X, BUTTON_Y, toTint, WINDOW_Y } from './pixi-layout';
+import { BUTTON_RADIUS, BUTTON_X, BUTTON_Y, WINDOW_Y } from './pixi-layout';
 import { ReelWindowView } from './reel-window-view';
 import { type SpinButtonMode, SpinButtonView } from './spin-button-view';
 import { createSymbolTextures } from './symbol-textures';
@@ -62,7 +62,7 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
                 isCelebrating={() => celebration.isActive}
                 isLitAt={litCells.isLitAt}
                 pathRows={() => celebration.win?.rows}
-                pathColor={() => SYMBOL_TINTS[celebration.win?.symbol ?? 'wild']}
+                pathColor={() => SYMBOL_COLORS[celebration.win?.symbol ?? 'wild']}
                 progress={() => celebration.progress}
             />
             <JuiceBurstView stepIndex={() => celebration.stepIndex} isLitAt={litCells.isLitAt} colorAt={juiceColorAt} />
@@ -101,22 +101,8 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
     }
 
     /** A way's juice is its fruit's; the opener splashes each cell's own. */
-    function juiceColorAt(reel: number, row: number): number {
+    function juiceColorAt(reel: number, row: number): string {
         const symbol = celebration.win?.symbol ?? model.outcome?.window[reel][row] ?? 'wild';
-        return SYMBOL_TINTS[symbol];
+        return SYMBOL_COLORS[symbol];
     }
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-const SYMBOL_TINTS: { readonly [K in SymbolKind]: number } = {
-    pic1: toTint(SYMBOL_COLORS.pic1),
-    pic2: toTint(SYMBOL_COLORS.pic2),
-    pic3: toTint(SYMBOL_COLORS.pic3),
-    pic4: toTint(SYMBOL_COLORS.pic4),
-    pic5: toTint(SYMBOL_COLORS.pic5),
-    pic6: toTint(SYMBOL_COLORS.pic6),
-    wild: toTint(SYMBOL_COLORS.wild),
-};

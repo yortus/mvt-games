@@ -46,6 +46,13 @@ export const LEVER_Z = 2.1;
 export const LEVER_BRACKET = 0.75;
 export const LEVER_LENGTH = 2.6;
 
+/**
+ * How far, in CSS pixels, a press may move and still be a tap. Further, and
+ * it turns the cabinet instead; the page gives the pointer picker the same
+ * figure, so the lever isn't pulled at the end of a drag.
+ */
+export const DRAG_THRESHOLD_PX = 6;
+
 // ---------------------------------------------------------------------------
 // Colours
 // ---------------------------------------------------------------------------

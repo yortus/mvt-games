@@ -5,7 +5,8 @@ import { refreshView, updateView } from '@mvtjs/pixi';
 import { createPointerPicker } from '@mvtjs/three';
 import { assert } from '@mvtjs/utils';
 import { createFruitMachineModel } from './models';
-import { BanditView, ControlPanelView, loadSymbolArt, PixiMachineView, SCREEN_HEIGHT, SCREEN_WIDTH, TerminalView } from './views';
+import { BanditView, ControlPanelView, loadSymbolArt, PixiMachineView, TerminalView } from './views';
+import { DRAG_THRESHOLD_PX, SCREEN_HEIGHT, SCREEN_WIDTH } from './views';
 
 // The fruit machine page: one model, four views of it, in four quadrants.
 // A Pixi machine, a three.js one-armed bandit, an HTML control panel and a
@@ -50,7 +51,8 @@ async function main(): Promise<void> {
     environment.dispose();
     const camera = new PerspectiveCamera(30, 1, 0.1, 100);
     scene.add(BanditView({ model, art, dragSurface: threeCanvas }));
-    createPointerPicker({ domElement: threeCanvas, camera: () => camera, scene });
+    // A drag turns the cabinet; the picker drops the click that ends one, so letting go over the lever doesn't pull it
+    createPointerPicker({ domElement: threeCanvas, camera: () => camera, scene, dragThreshold: DRAG_THRESHOLD_PX });
 
     // --- HTML: the control panel and the terminal ---------------------------
     const panel = ControlPanelView({ model, art });

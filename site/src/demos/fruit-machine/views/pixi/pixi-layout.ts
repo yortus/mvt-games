@@ -42,27 +42,21 @@ export function cellCenterY(row: number): number {
 // Colours
 // ---------------------------------------------------------------------------
 
-// Flat, bright, a few tones each, like the symbols. Numbers, as Pixi's tints
-// need them.
+// Flat, bright, a few tones each, like the symbols.
 
-export const BACKDROP = 0x2a1766;
-export const BACKDROP_DECAL = 0x35208a;
-export const FRAME = 0xff4f8b;
-export const FRAME_SHADE = 0xc72e68;
-export const WINDOW_BACKING = 0xffd6e6;
-export const REEL_FACE = 0xfff7ea;
-export const BULB_ON = 0xffe45c;
-export const BULB_OFF = 0x5b3db5;
-export const METER_FACE = 0x1b0f47;
-export const METER_LABEL = 0xb9a8ff;
-export const METER_VALUE = 0xffe45c;
-export const DIM = 0x1b0f47;
-export const SHADOW = 0x140a38;
-export const WHITE = 0xffffff;
+export const BACKDROP = '#2a1766';
+export const BACKDROP_DECAL = '#35208a';
+export const FRAME = '#ff4f8b';
+export const FRAME_SHADE = '#c72e68';
+export const WINDOW_BACKING = '#ffd6e6';
+export const REEL_FACE = '#fff7ea';
+export const BULB_ON = '#ffe45c';
+export const BULB_OFF = '#5b3db5';
+export const METER_FACE = '#1b0f47';
+export const METER_LABEL = '#b9a8ff';
+export const METER_VALUE = '#ffe45c';
+export const DIM = '#1b0f47';
+export const SHADOW = '#140a38';
+export const WHITE = '#ffffff';
 
 export const FONT_FAMILY = '"Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif';
-
-/** A CSS hex colour (`'#ff5468'`) as a number, for a Pixi tint. */
-export function toTint(hex: string): number {
-    return Number.parseInt(hex.slice(1), 16);
-}

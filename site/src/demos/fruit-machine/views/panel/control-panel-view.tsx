@@ -138,7 +138,7 @@ function MeterView(bindings: MeterViewBindings): Element {
     return (
         <div class="meter">
             <span class="meter-label" text={bindings.label} />
-            <span class="meter-value" text={bindings.value} />
+            <output class="meter-value" text={bindings.value} />
         </div>
     );
 }

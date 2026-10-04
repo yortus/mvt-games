@@ -4,6 +4,7 @@ import { ROW_COUNT } from '../../data';
 import type { FruitMachineModel } from '../../models';
 import type { SymbolArt } from '../art';
 import { createLitCells, easeClunk, shownReelPosition } from '../shared';
+import { DRAG_THRESHOLD_PX } from './bandit-layout';
 import { CabinetBodyView } from './cabinet-body-view';
 import { CellFramesView } from './cell-frames-view';
 import { CreditDisplayView } from './credit-display-view';
@@ -45,8 +46,8 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
     let swayMs = 0;
     let dragYaw = 0;
     let drag: Drag | undefined;
-    /** True when the last press moved far enough to count as a drag, not a tap. */
-    let wasDrag = false;
+    /** True once the current press has moved far enough to turn the cabinet. */
+    let isTurning = false;
     let isLeverHovered = false;
     let shownCursor = '';
 
@@ -87,9 +88,8 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
         </group>
     );
 
+    /** A tap: the picker sends no click at the end of a drag. */
     function pullLever(): void {
-        // The press that ended a drag isn't a tap
-        if (wasDrag) return;
         if (model.canStop) model.stop();
         else if (model.canSpin) void model.spin();
     }
@@ -113,15 +113,15 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
 
     function onPointerDown(event: PointerEvent): void {
         drag = { pointerId: event.pointerId, startX: event.clientX, startYaw: dragYaw };
-        wasDrag = false;
+        isTurning = false;
         dragSurface.setPointerCapture(event.pointerId);
     }
 
     function onPointerMove(event: PointerEvent): void {
         if (drag === undefined || event.pointerId !== drag.pointerId) return;
         const dx = event.clientX - drag.startX;
-        if (Math.abs(dx) > TAP_SLOP_PX) wasDrag = true;
-        if (wasDrag) dragYaw = drag.startYaw + dx * DRAG_RADIANS_PER_PX;
+        if (Math.abs(dx) > DRAG_THRESHOLD_PX) isTurning = true;
+        if (isTurning) dragYaw = drag.startYaw + dx * DRAG_RADIANS_PER_PX;
     }
 
     function onPointerUp(event: PointerEvent): void {
@@ -152,5 +152,3 @@ interface Drag {
 const SWAY_ANGLE = 0.13;
 const SWAY_RADIANS_PER_MS = (Math.PI * 2) / 8000;
 const DRAG_RADIANS_PER_PX = 0.012;
-/** A press that moves less than this is a tap. */
-const TAP_SLOP_PX = 6;

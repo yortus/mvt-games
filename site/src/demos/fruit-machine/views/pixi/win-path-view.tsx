@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/pixi */
-import type { Container, Graphics } from 'pixi.js';
+import type { ColorSource, Container, Graphics } from 'pixi.js';
 import { ROW_COUNT } from '../../data';
 import { CELL_SIZE, cellCenterX, cellCenterY, DIM, REEL_COUNT, REEL_GAP, WHITE } from './pixi-layout';
 
@@ -13,7 +13,7 @@ export interface WinPathViewBindings {
     /** The rows of the way being shown, first reel first; undefined during the opener. */
     readonly pathRows: () => readonly number[] | undefined;
     /** The colour of the way's fruit. */
-    readonly pathColor: () => number;
+    readonly pathColor: () => ColorSource;
     /** How far through the current step, from 0 to 1. */
     readonly progress: () => number;
 }
@@ -85,7 +85,7 @@ export function WinPathView(bindings: WinPathViewBindings): Container {
 /** How much a lit cell's frame swells, at the height of each pulse. */
 const PULSE = 0.05;
 /** Gold, to stand out on the cream reels. */
-const FRAME_GOLD = 0xffc233;
+const FRAME_GOLD = '#ffc233';
 
 function drawDimmer(g: Graphics): void {
     // As wide as a cell and the gap beside it, so neighbouring dimmers meet

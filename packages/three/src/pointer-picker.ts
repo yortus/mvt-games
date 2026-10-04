@@ -43,6 +43,14 @@ export interface PointerPickerOptions {
     readonly camera: () => Camera;
     /** The objects to pick among: usually the scene. */
     readonly scene: Object3D;
+    /**
+     * How far, in CSS pixels, the pointer may move while pressed and still
+     * click. A press that moves further is a drag: its `click` is not
+     * dispatched, so dragging the view (to turn a model, say) and letting go
+     * over an object doesn't click it. Defaults to no limit: every DOM click
+     * is dispatched.
+     */
+    readonly dragThreshold?: number;
 }
 
 export interface PointerPicker {
@@ -65,17 +73,22 @@ export interface PointerPicker {
  * the pointer was over.
  */
 export function createPointerPicker(options: PointerPickerOptions): PointerPicker {
-    const { domElement, camera, scene } = options;
+    const { domElement, camera, scene, dragThreshold = Infinity } = options;
     const raycaster = new Raycaster();
     const pointer = new Vector2();
     const hits: Intersection[] = [];
     let hovered: Object3D | undefined;
+    // Where the current press began, and whether it has moved too far to click
+    let isPressed = false;
+    let pressX = 0;
+    let pressY = 0;
+    let isDrag = false;
 
     const listeners: Record<string, (event: PointerLike) => void> = {
         pointermove: onMove,
-        pointerdown: (event) => onButton('pointerdown', event),
-        pointerup: (event) => onButton('pointerup', event),
-        click: (event) => onButton('click', event),
+        pointerdown: onDown,
+        pointerup: onUp,
+        click: onClick,
         pointerleave: (event) => hover(undefined, event),
     };
     for (const type in listeners) domElement.addEventListener(type, listeners[type]);
@@ -87,7 +100,29 @@ export function createPointerPicker(options: PointerPickerOptions): PointerPicke
         },
     };
 
+    function onDown(event: PointerLike): void {
+        isPressed = true;
+        isDrag = false;
+        pressX = event.clientX;
+        pressY = event.clientY;
+        onButton('pointerdown', event);
+    }
+
+    function onUp(event: PointerLike): void {
+        noteMovement(event);
+        isPressed = false;
+        onButton('pointerup', event);
+    }
+
+    /** A click after a drag is dropped. The DOM sends `click` after `pointerup`, so the drag is remembered until then. */
+    function onClick(event: PointerLike): void {
+        const wasDrag = isDrag;
+        isDrag = false;
+        if (!wasDrag) onButton('click', event);
+    }
+
     function onMove(event: PointerLike): void {
+        if (isPressed) noteMovement(event);
         const hit = pick(event);
         hover(hit, event);
         if (hit !== undefined) dispatch('pointermove', hit.object, hit, event);
@@ -96,6 +131,12 @@ export function createPointerPicker(options: PointerPickerOptions): PointerPicke
     function onButton(kind: PointerPickEventKind, event: PointerLike): void {
         const hit = pick(event);
         if (hit !== undefined) dispatch(kind, hit.object, hit, event);
+    }
+
+    function noteMovement(event: PointerLike): void {
+        const dx = event.clientX - pressX;
+        const dy = event.clientY - pressY;
+        if (dx * dx + dy * dy > dragThreshold * dragThreshold) isDrag = true;
     }
 
     function hover(hit: Intersection | undefined, event: PointerLike): void {

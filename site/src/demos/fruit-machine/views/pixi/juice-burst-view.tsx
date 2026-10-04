@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/pixi */
-import type { Container, Graphics } from 'pixi.js';
+import type { ColorSource, Container, Graphics } from 'pixi.js';
 import { ROW_COUNT } from '../../data';
 import { cellCenterX, cellCenterY, REEL_COUNT, WHITE } from './pixi-layout';
 
@@ -12,7 +12,7 @@ export interface JuiceBurstViewBindings {
     readonly stepIndex: () => number;
     readonly isLitAt: (reel: number, row: number) => boolean;
     /** The colour of the juice from a cell: its fruit's. */
-    readonly colorAt: (reel: number, row: number) => number;
+    readonly colorAt: (reel: number, row: number) => ColorSource;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ export function JuiceBurstView(bindings: JuiceBurstViewBindings): Container {
         }
     }
 
-    function launch(x: number, y: number, color: number): void {
+    function launch(x: number, y: number, color: ColorSource): void {
         const droplet = droplets[nextDroplet];
         nextDroplet = (nextDroplet + 1) % droplets.length;
         const angle = random() * Math.PI * 2;
@@ -110,7 +110,7 @@ interface Droplet {
     lifeMs: number;
     maxLifeMs: number;
     size: number;
-    color: number;
+    color: ColorSource;
 }
 
 const POOL_SIZE = 96;

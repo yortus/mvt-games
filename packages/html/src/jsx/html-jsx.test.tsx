@@ -166,6 +166,55 @@ describe('@mvtjs/html JSX', () => {
         });
     });
 
+    describe('table cells', () => {
+        it('span columns and rows', () => {
+            const row = (
+                <tr>
+                    <td colSpan={3} text="wide" />
+                    <th rowSpan={2} text="tall" />
+                </tr>
+            );
+            const [td, th] = [...row.children] as HTMLTableCellElement[];
+
+            expect(td.colSpan).toBe(3);
+            expect(td.textContent).toBe('wide');
+            expect(th.rowSpan).toBe(2);
+        });
+
+        it('take a span only as a fixed value', () => {
+            // The types reject a getter; untyped, the runtime does too
+            const attributes: Record<string, unknown> = { colSpan: () => 2 };
+            expect(() => <td {...attributes} />).toThrow(/'colSpan' takes a fixed value in @mvtjs\/html, /);
+        });
+    });
+
+    describe('<output>', () => {
+        it('is an element of its own, whose text can follow the model', () => {
+            let total = 1;
+            const el = <output text={() => total} />;
+            refreshView(el);
+            expect(el.localName).toBe('output');
+            expect(el.textContent).toBe('1');
+
+            total = 2;
+            refreshView(el);
+            expect(el.textContent).toBe('2');
+        });
+    });
+
+    describe('typing hints', () => {
+        it('set autocomplete on fields, and spellcheck on any element', () => {
+            const input = <input autocomplete="off" spellcheck={false} /> as HTMLInputElement;
+            const area = <textarea autocomplete="off" /> as HTMLTextAreaElement;
+            const div = <div spellcheck={true} /> as HTMLElement;
+
+            expect(input.autocomplete).toBe('off');
+            expect(input.spellcheck).toBe(false);
+            expect(area.autocomplete).toBe('off');
+            expect(div.spellcheck).toBe(true);
+        });
+    });
+
     describe('<List>', () => {
         it('lists items in a group, following the model', () => {
             const model = { names: ['a', 'b'] };

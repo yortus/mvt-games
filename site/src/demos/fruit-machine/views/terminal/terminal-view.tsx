@@ -37,11 +37,9 @@ export function TerminalView(bindings: TerminalViewBindings): Element {
                         type="text"
                         aria-label="Command"
                         placeholder={() => (viewModel.isBusy ? 'spinning... Ctrl+C to stop' : 'type help, or spin')}
-                        ref={(el) => {
-                            input = el;
-                            el.autocomplete = 'off';
-                            el.spellcheck = false;
-                        }}
+                        autocomplete="off"
+                        spellcheck={false}
+                        ref={(el) => { input = el; }}
                         onKeyDown={onKeyDown}
                     />
                 </div>
