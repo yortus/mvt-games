@@ -763,7 +763,9 @@ so it measures the early stage and a game over, not the dense attacks.
   update step is given an update gate as it empties, kept at the list's
   level. Measured level with the old `<List>` on the falling-sand sprites
   view at 20,000 grains, interleaved; a first version that kept the gate's
-  state in each slot's closure was about 10% slower there.
+  state in each slot's closure was about 10% slower there. An update step still
+  sees last frame's item in the frame after the model removes it: a
+  follow-up in [017](../tasks/backlog/017-misc-loose-ends.md) (Fix).
 - **Final title**, touch movement and interpolation: open questions 1, 3
   and 5, unchanged.
 - **Balance.** The patterns were tuned from the numbers, not by playing the

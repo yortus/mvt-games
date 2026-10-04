@@ -150,6 +150,42 @@ Settled questions that should not be reopened without new information are in
   building the fruit machine's wins list (033), which still has the wrapper:
   `site/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
 
+- **A `<List>` item view's update step sees last frame's item.** An item
+  view reads its item through a cache that the slot's presence check fills
+  during `refreshView`. `updateView` runs between the models' update and
+  that refresh, so in the frame after the model removes or replaces an item,
+  the item view's update step still gets the old one. Empty slots no longer
+  run update steps at all (fixed 2026-10-04 for 034, by a gate each slot
+  gets as it first empties). But the gate goes by presence at the last
+  refresh, and is only added once the slot empties, so it never covers this
+  frame. Nothing in the repo is exposed yet; it bites when:
+  - **a value is torn down on release.** `SlotList`'s `onRelease` is
+    documented for "return it to a pool, free resources". If a model resets
+    a pooled value there, the update step reads a gutted object, or throws
+    if a field it reads is now `undefined`.
+  - **a value is recycled in the same model update**, as a pooled bullet is
+    fired again from the gun. The stale reference now points at another live
+    entity, and the old slot's cosmetic state follows it for a frame.
+  - **an update step calls a relay binding with item data**, which the docs
+    allow (reporting that a fade has finished). It reports a removed or
+    replaced item: a second `SlotList.remove` of the same slot, or scoring
+    or moving the wrong entity. The one case that is a logic bug, not a
+    glitch.
+
+  Suggested fix: update steps see the current item, as every view outside a
+  list sees the model. Give the update gate to every slot whose item view
+  has an update step from its first refresh, not from when it first
+  empties. In `updateView` the gate looks the item up afresh with `at(index)`,
+  stores it for the accessor, and skips the subtree when it is gone. Only
+  lists whose item views have update steps pay: one `at()` per slot per
+  frame, plus re-reading `items` once per frame when it is a getter. Tests
+  for all three cases above; re-run the interleaved `falling-sand-scaling`
+  A/B (`arrays-sprites`, 20,000 grains), which must stay level, since its
+  item views have no update steps. The alternative is to keep last-refresh
+  semantics and document the three hazards in `ListBindings.children`;
+  cheaper, but a trap. See `gateUpdatesOnceEmpty` in
+  `packages/utils/src/jsx/list.ts`, and 034 section 11.4.
+
 ### Decide
 
 - **The draft articles still use the old tick API.** `who-calls-update.md`
@@ -413,6 +449,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
 - [ ] `<List>` builds list items straight into a list element, with no wrapper
+- [ ] A `<List>` item view's update step sees the current item, or the hazards are documented
 
 ## Progress Log
 
@@ -468,3 +505,5 @@ falling-sand demo. Each is a new variant, measured with
   (Parked).
 - 2026-10-04: Added `<List>` wrapping its items inside a list element (Fix),
   found building the fruit machine demo (033).
+- 2026-10-04: Added `<List>` item views' update steps seeing last frame's
+  item (Fix), found reviewing the empty-slot update fix made for 034.
