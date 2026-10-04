@@ -68,7 +68,7 @@ export interface TableSpec {
 export interface Suite {
     readonly name: string;
     readonly description: string;
-    /** The measured file, relative to `benchmarks/suites/`. */
+    /** The measured file, relative to `packages/benchmarks/suites/`. */
     readonly entry: string;
     /**
      * Where each case runs: a Node process (the default), or a page in

@@ -1670,7 +1670,7 @@ Each phase ends with `npm run lint`, `npm run build` and `npm test` passing.
    generated, fallback and hand-written arms, so the fallback's cost is on
    record and re-measured with the others.~~ Done, as an A/B against the old
    runtime rather than the saved results, with results in section 7.5.1. The
-   suite is `jsx-refresh`. Its results are not saved to `benchmarks/results/`
+   suite is `jsx-refresh`. Its results are not saved to `packages/benchmarks/results/`
    yet: `--save` refuses filtered runs, and a full save takes about an hour.
 7. ~~Update the pixi-jsx design notes and runtime header; add design notes for
    the base.~~ Done: the settled decisions moved to

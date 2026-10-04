@@ -142,7 +142,7 @@ What references `site`:
   `eslint.config.js` (ten `site/src` paths and globs, including the playground's
   import boundaries, and the import resolver's `./site/tsconfig.json`, which
   `./packages/*/tsconfig.json` then covers).
-- `benchmarks/suites/games-and-demos.case.ts` and
+- `packages/benchmarks/suites/games-and-demos.case.ts` and
   `falling-sand-scaling.case.ts` import `../../site/src/games` and
   `../../site/src/demos` by relative path, past the package boundary. The
   "Declared dependencies" convention says to import a package by name, so
@@ -177,7 +177,7 @@ also read the page's resource timings and long tasks, and recorded a CPU
 profile of the local build. The machine was a laptop with an RTX 4070 (WebGL
 on the GPU, not a software renderer), at 1280x800, with
 `devicePixelRatio` 1. Each run launched Chrome once, with one profile (see
-the Chrome profile lockout note in `benchmarks/harness/driver.ts`). The
+the Chrome profile lockout note in `packages/benchmarks/harness/driver.ts`). The
 script lived in the session's scratch space, not in the repo. Section 11's
 step 6 would make it a repeatable check.
 
@@ -737,7 +737,8 @@ and the site working.
    `games`, `demos` and `demos/falling-sand` barrels for the benchmarks.
 3a. ~~**Move** `docs/` to `packages/docs/`, as `@mvtjs/docs`. A commit of its own.~~
     Done.
-3b. **Move** `benchmarks/` to `packages/benchmarks/`, as `@mvtjs/benchmarks`. A commit of its own.
+3b. ~~**Move** `benchmarks/` to `packages/benchmarks/`, as `@mvtjs/benchmarks`. A commit of its own.~~
+    Done.
 3c. **Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.
 4. **Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
    and `Genre` in `website/src/entries/`. Convert the seven games and three

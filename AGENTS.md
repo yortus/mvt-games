@@ -26,9 +26,9 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
+├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── docs/                @mvtjs/docs (private): the documentation (VitePress)
 └── website/             @mvtjs/website (private): the games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
-benchmarks/              Performance benchmarks, for the libraries and the games
 checks/                  Tests that the packages still fit together as decided
 notes/                   Proposals and tasks
 ```
@@ -91,7 +91,7 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
-| `npm run bench`        | Performance benchmarks ([benchmarks/](benchmarks/README.md)) |
+| `npm run bench`        | Performance benchmarks ([packages/benchmarks/](packages/benchmarks/README.md)) |
 
 ## Notes: Proposals and Tasks
 

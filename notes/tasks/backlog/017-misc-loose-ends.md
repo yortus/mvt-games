@@ -98,7 +98,7 @@ Settled questions that should not be reopened without new information are in
 
 - **An interrupted `npm run bench -- all --save` empties every results
   file.** Stopping one partway through (2026-09-27, during its first suite)
-  rewrote all nine `benchmarks/results/*.md` and `.json` files with their
+  rewrote all nine `packages/benchmarks/results/*.md` and `.json` files with their
   headers but no tables, removing about 4,000 lines; they were restored from
   git. A save should write only the suites that finished, or write nothing
   until the run is complete. Until then, save one suite at a time
@@ -236,7 +236,7 @@ Settled questions that should not be reopened without new information are in
   drop? From [010](../../archive/010-performance-docs-proposal.md) section 9,
   step 7.
 - **Benchmarks in browsers, with rendering included.** Everything so far is V8
-  under Node with nothing rendered. See `benchmarks/README.md`, "What is
+  under Node with nothing rendered. See `packages/benchmarks/README.md`, "What is
   excluded", and 010 section 8, items 1-2.
 - **CI benchmarking.** Timing noise on shared runners makes it hard; 010
   recommended treating the harness as an on-demand tool. 010 section 8, item
@@ -262,7 +262,7 @@ Settled questions that should not be reopened without new information are in
     over each item and a plain `Container`), but goes when the `jsx` approach
     runs the hand-written view code. A tidier standalone copy of the JSX setup
     allocates nothing. Reproduce with
-    [`benchmarks/repro/fractional-boxing.ts`](../../../benchmarks/repro/fractional-boxing.ts)
+    [`packages/benchmarks/repro/fractional-boxing.ts`](../../../packages/benchmarks/repro/fractional-boxing.ts)
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.

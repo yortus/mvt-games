@@ -54,7 +54,7 @@ An idea was rejected on that evidence.
 
 **Rule:** run each approach in a fresh process. A small driver script that
 starts one Node process per case and collects the results is enough; that is
-what [`benchmarks/run.ts`](https://github.com/yortus/mvt-games/blob/main/benchmarks/run.ts) does.
+what [`packages/benchmarks/run.ts`](https://github.com/yortus/mvt-games/blob/main/packages/benchmarks/run.ts) does.
 
 ## Bundle First
 
@@ -203,7 +203,7 @@ to be larger than anything measured when values change.
 ## Running the Repo's Benchmarks
 
 The benchmarks live in the repo's
-[`benchmarks/`](https://github.com/yortus/mvt-games/tree/main/benchmarks) directory, one suite per topic. Each suite's cases
+[`packages/benchmarks/`](https://github.com/yortus/mvt-games/tree/main/packages/benchmarks) directory, one suite per topic. Each suite's cases
 run under plain Node, each in its own process: two processes per case, or
 three when the first two disagree by more than 5%. Timed cases run one
 process at a time. Cases that only count (bytes allocated, memory kept
@@ -226,8 +226,8 @@ versions. Some slow cases that answer a settled question are in an extended
 tier, run only with `--extended`; a save without it keeps their previous
 results, marked † with the date they were measured.
 
-`--save` writes `benchmarks/results/<suite>.json` (every run's numbers, the
+`--save` writes `packages/benchmarks/results/<suite>.json` (every run's numbers, the
 machine and versions they were measured on, and a hash of the inputs) and `<suite>.md` (the tables).
 [Performance Measurements](measurements.md) includes those tables directly, so
 re-running with `--save` updates the page. The suites are described in
-[`benchmarks/README.md`](https://github.com/yortus/mvt-games/blob/main/benchmarks/README.md).
+[`packages/benchmarks/README.md`](https://github.com/yortus/mvt-games/blob/main/packages/benchmarks/README.md).

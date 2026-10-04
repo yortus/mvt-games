@@ -65,9 +65,9 @@ and private packages for everything else.
 
 ```
 packages/     The libraries (@mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html),
-              the documentation (VitePress), and the website: the games,
-              demos and playground (Vite)
-benchmarks/   Performance benchmarks (npm run bench)
+              the documentation (VitePress), the performance benchmarks
+              (npm run bench), and the website: the games, demos and
+              playground (Vite)
 checks/       Tests that the packages still fit together as decided
 notes/        Proposals, tasks, and the archive of finished work
 ```
@@ -79,6 +79,7 @@ packages/
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
 ├── eslint-plugin/       This repo's lint rules (private for now)
+├── benchmarks/          Performance benchmarks (private)
 ├── docs/                The documentation (VitePress, private)
 └── website/             The games, demos and playground (private)
 

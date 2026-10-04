@@ -7,13 +7,13 @@ import { suites } from './suites';
 // Command line
 // ---------------------------------------------------------------------------
 
-// Runs benchmark suites. See benchmarks/README.md.
+// Runs benchmark suites. See packages/benchmarks/README.md.
 //
 //     npm run bench                                   # list the suites
 //     npm run bench -- reactivity                     # run one suite
 //     npm run bench -- reactivity approach=solid      # only matching cases
 //     npm run bench -- reactivity --runs=5            # processes per case, always (default: 2, or 3 if they disagree)
-//     npm run bench -- memory --save                  # write benchmarks/results/
+//     npm run bench -- memory --save                  # write packages/benchmarks/results/
 //     npm run bench -- all --save                     # every suite whose inputs changed since its save
 //     npm run bench -- all --save --force             # every suite, changed or not
 //     npm run bench -- all --save --extended          # every suite, extended cases included

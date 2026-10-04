@@ -565,7 +565,7 @@ Record the numbers in this section whichever way it goes.
 
 ### 7.2 Benchmarks
 
-Add `neon-monsoon` to `benchmarks/suites/games-and-demos.ts`, driven by a
+Add `neon-monsoon` to `packages/benchmarks/suites/games-and-demos.ts`, driven by a
 recorded-input replay that reaches the boss's Downpour phase (seeded, so the
 same every run), timing the densest stretch. If 6.1 and 6.2 come out close,
 add a bullet-count sweep in the style of `falling-sand-scaling` using a

@@ -4,7 +4,7 @@
 > model, reacting to changes, building and reusing containers, the scene
 > passes, each hot path rule, memory and garbage collection, and the games
 > and demos themselves. The tables come straight from this repo's
-> [benchmark suites](https://github.com/yortus/mvt-games/tree/main/benchmarks), and each section says what the
+> [benchmark suites](https://github.com/yortus/mvt-games/tree/main/packages/benchmarks), and each section says what the
 > numbers mean.
 
 **Related:** [Why Performance Matters](why-performance-matters.md) · [Hot Paths](hot-paths.md) · [Benchmarking Methods](benchmarking-methods.md) ·
@@ -47,7 +47,7 @@ to 3 significant figures. Where the runs disagreed by more than 5% either way,
 the cell also shows half the spread between the fastest and slowest run, as a
 share of the median: `3.8 ±40%` marks a noisy result. A cell without "±" had
 runs within 5% of each other. Every run's numbers are in the
-[saved results](https://github.com/yortus/mvt-games/tree/main/benchmarks/results).
+[saved results](https://github.com/yortus/mvt-games/tree/main/packages/benchmarks/results).
 Times are in microseconds (µs); a frame at 60 frames per second lasts
 16,667 µs.
 
@@ -325,7 +325,7 @@ minute after.
   sand has a sprite per grain, about 3,800 containers once its opening scene
   settles, and its refresh takes about 160 µs, about 41 ns per container with
   nothing moving. How that grows with the number of grains is in the
-  [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/benchmarks/results/falling-sand-scaling.md):
+  [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/packages/benchmarks/results/falling-sand-scaling.md):
   about 2.2 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about

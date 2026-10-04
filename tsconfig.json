@@ -9,7 +9,7 @@
         { "path": "./packages/html" },
         { "path": "./packages/eslint-plugin" },
         { "path": "./packages/website" },
-        { "path": "./benchmarks" },
+        { "path": "./packages/benchmarks" },
         { "path": "./checks" }
     ]
 }

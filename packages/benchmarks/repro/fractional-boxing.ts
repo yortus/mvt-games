@@ -6,7 +6,7 @@
 // bytes per record per frame; with hand-written views, nothing. The views are
 // never refreshed, so the cost is in the model update alone.
 //
-//     node --expose-gc --import tsx benchmarks/repro/fractional-boxing.ts [jsx | hand-written]
+//     node --expose-gc --import tsx packages/benchmarks/repro/fractional-boxing.ts [jsx | hand-written]
 //
 // The effect depends on the shape of the code around it, so change this file
 // only to investigate; a tidier version may no longer reproduce it.

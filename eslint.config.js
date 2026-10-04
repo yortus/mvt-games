@@ -40,7 +40,7 @@ const DEV_FILES = [
     '**/*.test.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
-    'benchmarks/**',
+    'packages/benchmarks/**',
     'packages/docs/**',
     '**/*.config.{ts,js}',
 ];
@@ -143,7 +143,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['benchmarks/**/*.ts'],
+        files: ['packages/benchmarks/**/*.ts'],
         rules: {
             'no-restricted-imports': ['error', { paths: [TICK_API_FROM_RENDERER] }],
         },

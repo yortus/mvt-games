@@ -114,7 +114,7 @@ export function reportSuite(suite: Suite): void {
     if (saved === undefined) throw new Error(`no saved results for ${suite.name}`);
     const markdown = formatTables(suite, saved.results, saved.runs);
     writeMarkdown(suite, saved.environment, saved.results, markdown);
-    process.stdout.write(`${markdown}\n\nRewrote benchmarks/results/${suite.name}.md\n`);
+    process.stdout.write(`${markdown}\n\nRewrote packages/benchmarks/results/${suite.name}.md\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +185,7 @@ function carryOverExtended(suite: Suite, results: CaseResult[], saved: SavedResu
 }
 
 const BENCHMARKS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const REPO_DIR = resolve(BENCHMARKS_DIR, '..');
+const REPO_DIR = resolve(BENCHMARKS_DIR, '..', '..');
 
 function matches(params: Readonly<Record<string, ParamValue>>, filters: Readonly<Record<string, string>>): boolean {
     for (const key in filters) {
@@ -689,7 +689,7 @@ function save(
     const saved: SavedResults & { readonly suite: string } = { suite: suite.name, environment, runs, inputsHash, results };
     writeFileSync(join(dir, `${suite.name}.json`), `${JSON.stringify(saved, undefined, 4)}\n`);
     writeMarkdown(suite, environment, results, markdown);
-    process.stdout.write(`\nSaved benchmarks/results/${suite.name}.json and .md\n`);
+    process.stdout.write(`\nSaved packages/benchmarks/results/${suite.name}.json and .md\n`);
 }
 
 function writeMarkdown(suite: Suite, environment: Record<string, string>, results: readonly CaseResult[], markdown: string): void {

@@ -42,7 +42,8 @@ the paths of their day: `src/mvt-utils/` is now `packages/utils/src/`,
 `packages/website/src/shared/`, and the rest of `src/` is
 `packages/website/src/`. The aliases became package names (`#pixi-mvt/jsx`
 is `@mvtjs/pixi/jsx`), and `#common` became `#shared`. On 2026-10-04 (036),
-`site/` moved to `packages/website/`, and `docs/` to `packages/docs/`.
+`site/` moved to `packages/website/`, `docs/` to `packages/docs/`, and
+`benchmarks/` to `packages/benchmarks/`.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file

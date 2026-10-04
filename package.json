@@ -5,7 +5,6 @@
     "type": "module",
     "workspaces": [
         "packages/*",
-        "benchmarks",
         "checks"
     ],
     "scripts": {
@@ -27,7 +26,7 @@
         "lint:fix": "eslint . --fix",
         "release": "changeset version && npm install --package-lock-only",
         "prebench": "npm run generate-refresh-copies",
-        "bench": "tsx benchmarks/run.ts",
+        "bench": "tsx packages/benchmarks/run.ts",
         "pretest": "npm run generate-refresh-copies",
         "test": "vitest run",
         "test:watch": "vitest",
