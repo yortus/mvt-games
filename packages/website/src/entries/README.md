@@ -325,9 +325,9 @@ A game gives an `inputConfig`: the controls it takes. The host turns the
 keyboard, and touch controls on a touch screen, into the calls it lists.
 The starter's other options say how the host should show the entry:
 `pixelArt` (nearest-neighbour textures, no antialiasing), `integerScale`
-(scale by whole numbers only, for crisp pixels), `fitsViewport` (a play area
-that follows the window), and `thumbnailAdvanceMs` (how far to run the entry
-before taking its thumbnail).
+(scale by whole numbers only, for crisp pixels), `fitTo` (for an entry that
+lays itself out for the area it is given, as Boids does), and
+`thumbnailAdvanceMs` (how far to run the entry before taking its thumbnail).
 
 ### Entries with their own renderers
 

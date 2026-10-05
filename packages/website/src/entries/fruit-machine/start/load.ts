@@ -108,6 +108,8 @@ export async function load(): Promise<ElementEntryStarter> {
                     if (isPixiReady) pixi.destroy(true, { children: true });
                     destroyObject(scene);
                     renderer.dispose();
+                    // `dispose` keeps the WebGL context until it is collected; a browser allows only so many
+                    renderer.forceContextLoss();
                     destroyElement(panel);
                     destroyElement(terminal);
                     element.replaceChildren();

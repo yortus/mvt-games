@@ -362,6 +362,15 @@ button { font: inherit; color: inherit; }
 /* A window on the thumbnail, placed by the view to show the entry's crop */
 .card-photo { position: relative; overflow: hidden; background: #000; }
 .card-photo img { position: absolute; display: block; max-width: none; }
+/*
+ * Attract mode: the entry playing live over the photo, cropped as the photo
+ * is, faded in once it has drawn. It is drawn at its play size and scaled to
+ * the photo (`--live-scale`, set by the card), so it looks as its thumbnail
+ * does. It takes no pointer: a press goes to the card under it.
+ */
+.card-live { position: absolute; overflow: hidden; opacity: 0; transition: opacity 0.4s ease-out; pointer-events: none; }
+.card-live.is-showing { opacity: 1; }
+.card-live-stage { position: absolute; top: 0; left: 0; transform: scale(var(--live-scale, 1)); transform-origin: 0 0; }
 /* The polaroid leaves the card while the way into its entry, and back, carries it */
 .card.is-lifted .card-polaroid { visibility: hidden; }
 

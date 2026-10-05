@@ -29,7 +29,12 @@ export interface EntryHost {
      * and its views are still refreshed and drawn: it shows frozen.
      */
     isPaused: boolean;
-    /** Gets ready to start `starter`: for a Pixi entry, loads Pixi and makes its application. */
+    /**
+     * Gets ready to start `starter`. For a Pixi entry, loads Pixi and makes its
+     * application, and fits the entry to the host's area if it fits itself.
+     * For an element entry, which brings its own renderers, lets go of the
+     * Pixi application, so the host holds no renderer it does not use.
+     */
     prepare: (starter: EntryStarter) => Promise<void>;
     /** Starts a session of `starter`, which must have been prepared, ending any session running. */
     start: (starter: EntryStarter) => void;
@@ -79,6 +84,11 @@ export interface EntryHostOptions {
     readonly element: HTMLElement;
     /** Whether the page is used by touch, so games get on-screen controls. */
     readonly isTouch: boolean;
+    /**
+     * Whether the entry takes input from the keyboard and touch controls.
+     * Defaults to true; false for an entry that only plays, as a preview.
+     */
+    readonly takesInput?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +97,7 @@ export interface EntryHostOptions {
 
 export function createEntryHost(options: EntryHostOptions): EntryHost {
     const { element, isTouch } = options;
+    const takesInput = options.takesInput ?? true;
 
     let starter: EntryStarter | undefined;
     let session: EntrySession | undefined;
@@ -124,7 +135,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
 
         async prepare(next) {
-            if (next.kind !== 'pixi') return;
+            if (next.kind !== 'pixi') {
+                pixiStage?.destroy();
+                pixiStage = undefined;
+                return;
+            }
+            fitStarter(next);
             const pixelArt = next.pixelArt ?? false;
             if (pixiStage !== undefined && pixiStage.isPixelArt === pixelArt) return;
             // Antialiasing is fixed when a renderer is made, so a change of style needs a new one
@@ -135,6 +151,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 element,
                 isPixelArt: pixelArt,
                 isTouch,
+                takesInput,
                 session: () => session,
                 isPaused: () => isPaused,
             });
@@ -209,19 +226,31 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     function startSession(next: EntryStarter): EntrySession {
         if (next.kind === 'pixi') {
             if (pixiStage === undefined) throw new Error('entry host: prepare a Pixi entry before starting it');
-            return pixiStage.start(next as PixiEntryStarter);
+            fitStarter(next);
+            return pixiStage.start(next);
         }
         entryElement.hidden = false;
         return next.start({ element: entryElement });
     }
 
-    /** Follows the element's size: a Pixi entry is fitted again, and an element entry follows its element itself. */
+    /**
+     * Follows the element's size: a Pixi entry is fitted again, and an element
+     * entry follows its element itself. The size is the element's own, before
+     * any transform: a preview is drawn at its play size and scaled down.
+     */
     function fit(): void {
         const bounds = element.getBoundingClientRect();
-        areaRect = { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height };
+        areaRect = { x: bounds.left, y: bounds.top, width: element.offsetWidth, height: element.offsetHeight };
         if (pixiStage === undefined) return;
+        if (starter?.kind === 'pixi' && fitStarter(starter)) session?.resize?.();
         pixiStage.fit(areaRect.width, areaRect.height);
-        if (starter?.kind === 'pixi' && starter.fitsViewport) session?.resize?.();
+    }
+
+    /** Fits a Pixi entry that lays itself out (`fitTo`) to the host's area, once it has one. Returns whether it did. */
+    function fitStarter(next: PixiEntryStarter): boolean {
+        if (next.fitTo === undefined || areaRect.width <= 0 || areaRect.height <= 0) return false;
+        next.fitTo(areaRect.width, areaRect.height);
+        return true;
     }
 }
 

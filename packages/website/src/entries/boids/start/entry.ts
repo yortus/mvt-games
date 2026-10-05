@@ -24,13 +24,13 @@ export const entry: ArcadeEntry = {
         'Frame timing panel (perfmon)',
     ],
     tags: { kind: 'demo', genres: ['simulation'] },
-    // Its play area follows the viewport; this is the shape of a typical one.
+    // It lays itself out for the area it plays in; this is the one it is designed around
     screenWidth: 960,
-    screenHeight: 600,
+    screenHeight: 605,
     thumbnail,
     // The colour of its flock
     cardColor: 'seafoam',
     // The arena, without its sliders
-    thumbnailCrop: { x: 0, y: 0, width: 592, height: 467 },
+    thumbnailCrop: { x: 0, y: 0, width: 600, height: 492 },
     load: async () => (await import('./load')).load(),
 };

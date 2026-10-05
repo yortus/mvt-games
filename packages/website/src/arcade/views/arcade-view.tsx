@@ -27,6 +27,17 @@ export interface ArcadeViewBindings {
     readonly exitFrame: () => HTMLCanvasElement | undefined;
     /** Whether the visitor has asked their system for less motion (`prefers-reduced-motion`). */
     readonly isMotionReduced: () => boolean;
+    /**
+     * The element the page plays an entry live in, on its card (attract
+     * mode), drawn at the entry's play size. Absent where the page plays
+     * none, as on a touch screen.
+     */
+    readonly liveElement?: HTMLElement;
+    /** The entry the page is playing live, if any, and whether it has drawn yet. */
+    readonly liveEntry: () => ArcadeEntry | undefined;
+    readonly isLiveShowing: () => boolean;
+    /** Reported with the entry whose card wants to play it live, or undefined for none, as it changes. */
+    readonly onLiveWanted?: (entry: ArcadeEntry | undefined) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +90,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         liftedIndex: () => (transition.phase === 'idle' && model.phase === 'browsing' ? -1 : activeIndex()),
         isActive: isWallActive,
         isMotionReduced: bindings.isMotionReduced,
+        canPlayLive: () => bindings.liveElement !== undefined && !bindings.isMotionReduced() && isWallActive(),
+        liveIndex: () => indexOf(bindings.liveEntry()),
+        liveElement: bindings.liveElement,
+        isLiveShowing: bindings.isLiveShowing,
+        onLiveWanted: (index) => bindings.onLiveWanted?.(entries[index]),
         onLaunchPressed: (index, from) => launch(index, from),
         onInfoPressed: (index) => model.openInfo(entries[index].id),
     });
@@ -196,8 +212,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     function activeIndex(): number {
-        const active = model.activeEntry;
-        return active === undefined ? -1 : entries.indexOf(active);
+        return indexOf(model.activeEntry);
+    }
+
+    function indexOf(entry: ArcadeEntry | undefined): number {
+        return entry === undefined ? -1 : entries.indexOf(entry);
     }
 
     function playRect(): Rect {

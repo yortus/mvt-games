@@ -8,17 +8,23 @@ import { BoidsView, PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } f
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Returns how to start the boids demo, which has no assets to load. Its play area follows the viewport. */
+/**
+ * Returns how to start the boids demo, which has no assets to load. It lays
+ * itself out for the area it plays in: the arena with the controls beside it,
+ * or below it in a tall, narrow area.
+ */
 export async function load(): Promise<PixiEntryStarter> {
+    let layout = computeLayout(DESIGN_WIDTH, DESIGN_HEIGHT);
     return {
         kind: 'pixi',
-        get screenWidth() { return computeLayout().screenWidth; },
-        get screenHeight() { return computeLayout().screenHeight; },
-        fitsViewport: true,
+        get screenWidth() { return layout.screenWidth; },
+        get screenHeight() { return layout.screenHeight; },
+        fitTo(width, height) {
+            layout = computeLayout(width, height);
+        },
         thumbnailAdvanceMs: 2000,
 
         start({ stage, host }): EntrySession {
-            const layout = computeLayout();
             const performanceMetrics = host === undefined ? undefined : createPerformanceMetrics(host);
 
             const model = createFlockModel({
@@ -60,12 +66,11 @@ export async function load(): Promise<PixiEntryStarter> {
                     stage.removeChild(view);
                     view.destroy({ children: true });
 
-                    const newLayout = computeLayout();
                     view = BoidsView({
                         model,
-                        simWidth: newLayout.simWidth,
-                        simHeight: newLayout.simHeight,
-                        isPortrait: newLayout.isPortrait,
+                        simWidth: layout.simWidth,
+                        simHeight: layout.simHeight,
+                        isPortrait: layout.isPortrait,
                         timeScale: () => timeScale,
                         onTimeScaleChanged: (v) => { timeScale = v; },
                         isShowingInfluences: () => isShowingInfluences,
@@ -96,9 +101,14 @@ const PANEL_TOTAL = SLIDER_WIDTH + PANEL_PADDING * 2;
 /** Seven sliders, the influence checkbox and the perfmon panel, with padding. */
 const CONTROLS_HEIGHT = 7 * SLIDER_SPACING + PERFMON_GAP + PERFMON_HEIGHT + PANEL_PADDING * 2;
 
-// Viewport sizing
-const NAV_HEIGHT = 48;
-const CANVAS_MARGIN = 12;
+/**
+ * The area the demo is designed around, before it is fitted to one: its
+ * entry lists the play area this lays out to, the arena with the controls
+ * beside it, filling it exactly.
+ */
+const DESIGN_WIDTH = 960;
+const DESIGN_HEIGHT = 605;
+
 const MIN_SIM_WIDTH = 300;
 const PORTRAIT_THRESHOLD = 0.67;
 
@@ -110,13 +120,10 @@ interface Layout {
     isPortrait: boolean;
 }
 
-function computeLayout(): Layout {
-    const avW = typeof window !== 'undefined'
-        ? window.innerWidth - CANVAS_MARGIN * 2
-        : 1600;
-    const avH = typeof window !== 'undefined'
-        ? window.innerHeight - NAV_HEIGHT - CANVAS_MARGIN * 2
-        : 1000;
+/** The layout for an area of this size, in CSS pixels. */
+function computeLayout(availableWidth: number, availableHeight: number): Layout {
+    const avW = availableWidth;
+    const avH = availableHeight;
 
     const isPortrait = avW / avH < PORTRAIT_THRESHOLD;
     const arenaAspect = ARENA_HEIGHT / ARENA_WIDTH;

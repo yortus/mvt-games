@@ -10,7 +10,7 @@
 > site-wide loading screen, just a progress bar held inside the zoom when
 > an entry takes longer to load than the zoom takes to play.
 
-**Status:** accepted, steps 1 to 10 implemented: the Arcade is the home page, and the docs describe it. Step 11 (attract mode, optional) remains. Absorbed task
+**Status:** accepted, steps 1 to 11 implemented: the Arcade is the home page, the docs describe it, and attract mode plays a selected card's entry live (step 11, awaiting review). Absorbed task
 [026](../archive/026-demos-screen-for-every-renderer.md) (the demos
 screen for every renderer), whose acceptance criteria all reappear here.
 The open questions are resolved (section 12). Progress is kept in section
@@ -812,10 +812,11 @@ and the site working.
     and the docs don't answer yet (reading layout back, hand-offs between a
     view model and the model, reduced motion, the URL as a projection of
     the model) become docs tasks of their own.
-11. *(Later, optional)* **Attract mode:** a card that is hovered for a
+11. ~~*(Later, optional)* **Attract mode:** a card that is hovered for a
     second starts its entry live in the card, muted and non-interactive,
     one at a time, so only one extra WebGL context is ever live. A fitting
-    touch for an arcade, but not needed for anything above.
+    touch for an arcade, but not needed for anything above.~~ Done
+    (section 11.20).
 
 ### 11.1 Notes from steps 4 to 8
 
@@ -1358,6 +1359,53 @@ Step 10, on 2026-10-05:
   runtime, from section 11.1 and the later rounds), 039 (link previews,
   question 5), 040 (touch controls in HTML, question 7), and 041 (docs for
   the questions the Arcade raised). Task 026 is archived, absorbed.
+
+### 11.20 Attract mode
+
+Step 11, on 2026-10-05:
+
+- **A card that stays selected for a second plays its entry live** over its
+  photo: hovering its polaroid selects it, and so do the arrow keys. It
+  stops the moment another card is selected, and that one waits its own
+  second. One at a time.
+- **The page plays it**, in a second entry host (`playLive` in
+  `arcade/main.ts`), ticked in the same loop. The wall decides which card,
+  through an attract view model (`views/attract-view-model.ts`, with tests),
+  and reports it (`onLiveWanted`); the card shows the host's element over
+  its photo, faded in once it has drawn three frames. The model never knows.
+- **Drawn at its play size, scaled and cropped as the photo is**, so the
+  live picture lines up with the thumbnail it covers. The entry host now
+  measures its element's own size, before transforms (`offsetWidth`), which
+  this needs.
+- **Non-interactive.** The host takes an option, `takesInput: false`: no
+  keyboard input, no touch controls. The card's live layer is `inert`, with
+  no pointer events, so a press goes to the card under it. Muted needs
+  nothing: no entry plays sound.
+- **One WebGL renderer more, at most.** Only an entry that draws with one
+  WebGL renderer plays (its measured renderers: Pixi or three.js, with or
+  without HTML), so the Fruit Machine, with Pixi and three.js, keeps its
+  photo. Boids in 3D plays: preparing an entry that brings its own renderer
+  makes a host let go of its Pixi application, and the next Pixi entry
+  makes another. Both three.js entries now call `forceContextLoss()` after
+  `dispose()`, which keeps the context until it is collected; Pixi's
+  `destroy` already lets go of its own. Eight swaps between the two Boids
+  cards leave two canvases on the page, the burn's and the preview's.
+- **Boids lays itself out for the area it is given.** It read the window,
+  less a nav bar the Arcade no longer has, so it never quite fitted the
+  runner, and its preview could not match its thumbnail. The Pixi starter's
+  `fitsViewport` is now `fitTo(width, height)`: the host calls it as it
+  prepares and starts the entry, and as its area changes, then the
+  session's `resize`. Boids is designed around 960 by 605, which lays out
+  exactly (the arena beside its controls), as its entry now lists; the
+  development check fits it to that and compares, and the snapshot page
+  photographs it there (thumbnail taken again, crop 600 by 492: the arena).
+  A tall, narrow area still puts the controls below.
+- **Not on a touch screen**, which has no pointer to rest on a card, **nor
+  for reduced motion**, and only while the wall is active: not under an
+  entry, an info panel or a transition. Launching the entry playing live
+  stops the preview, and the entry plays as before.
+- The home page's first load is 34.1 KB of its 40 KB budget, still with no
+  renderer: the preview loads Pixi only when a card first plays.
 
 ## 12. Open questions, resolved
 

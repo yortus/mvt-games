@@ -86,7 +86,7 @@ nothing has happened since.
 
 ## 4. View Models, Tested on Their Own
 
-Four parts of the views are complex enough to test without a browser, so
+Five parts of the views are complex enough to test without a browser, so
 each is a view model or a pure helper, with its own tests:
 
 | View model | Test | What it decides |
@@ -95,6 +95,7 @@ each is a view model or a pure helper, with its own tests:
 | [`transition-view-model.ts`](./views/transition-view-model.ts) | [`transition-view-model.test.ts`](./views/transition-view-model.test.ts) | The way in (the wall burns, the picture floats to the play area, the screen powers on) and out, and the quiet fade for reduced motion |
 | [`search-suggestions.ts`](./views/search-suggestions.ts) | [`search-suggestions.test.ts`](./views/search-suggestions.test.ts) | Which tags match what was typed, and which one the arrow keys move to |
 | [`card-wall-keys.ts`](./views/card-wall-keys.ts) | [`card-wall-keys.test.ts`](./views/card-wall-keys.test.ts) | Which card the arrow keys move to, across columns |
+| [`attract-view-model.ts`](./views/attract-view-model.ts) | [`attract-view-model.test.ts`](./views/attract-view-model.test.ts) | Attract mode: which card plays its entry live, once it has stayed selected a second |
 
 The transition is the clearest example. It is a few hundred lines of
 phases, each advanced by `update(deltaMs)` and read by the transition view
@@ -144,6 +145,13 @@ entry's element sits out the page's own `updateView` and `refreshView`
 `followModel` uses `watch` to see the phase change, and starts or ends the
 entry's session then: the page, not the model, owns sessions, since they
 hold renderers.
+
+The page runs a second entry host too, for attract mode: a card that stays
+selected for a second plays its entry live over its photo. The wall's
+attract view model says which card (`onLiveWanted`); the page loads the
+entry and plays it in a host that takes no input (`playLive` in `main.ts`),
+ticked in the same loop; the card shows it, scaled and cropped as its
+photo. The model never knows: which card plays is presentation.
 
 ## 7. Measurements as Input
 

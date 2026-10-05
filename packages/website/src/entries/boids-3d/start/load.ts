@@ -69,6 +69,8 @@ export async function load(): Promise<ElementEntryStarter> {
                     destroyObject(scene);
                     destroyElement(panel);
                     renderer.dispose();
+                    // `dispose` keeps the WebGL context until it is collected; a browser allows only so many
+                    renderer.forceContextLoss();
                     canvas.remove();
                     element.classList.remove('boids-3d');
                 },

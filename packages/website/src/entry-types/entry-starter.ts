@@ -22,16 +22,20 @@ export type EntryStarter = PixiEntryStarter | ElementEntryStarter;
 export interface PixiEntryStarter {
     readonly kind: 'pixi';
     /**
-     * The play area, in the entry's own pixels. Getters, when it follows the
-     * viewport (`fitsViewport`).
+     * The play area, in the entry's own pixels. Getters, for an entry that
+     * fits itself to the area it is given (`fitTo`): until it is fitted, the
+     * play area it is designed around, as its metadata lists it.
      */
     readonly screenWidth: number;
     readonly screenHeight: number;
     /**
-     * Whether the play area follows the viewport: the host reads its size again,
-     * and calls the session's `resize`, when the viewport changes.
+     * For an entry whose layout follows the area it plays in: lays it out for
+     * an area of this size, in CSS pixels, and its play area follows. The host
+     * calls it as it prepares the entry, and as the area changes, then calls
+     * the session's `resize`. An entry without it plays at one size, scaled
+     * to fit.
      */
-    readonly fitsViewport?: boolean;
+    readonly fitTo?: (width: number, height: number) => void;
     /**
      * Whether it is drawn as pixel art: textures scaled by nearest neighbour,
      * no antialiasing, and positions rounded to whole pixels.
@@ -94,7 +98,7 @@ export interface EntrySession {
      * neither this nor `updateView`.
      */
     readonly update: (deltaMs: number) => void;
-    /** Lays the entry out again after the viewport changes. */
+    /** Lays the entry out again after its starter has been fitted to a new area (`fitTo`). */
     readonly resize?: () => void;
     /** Ends the session, and removes and destroys everything it made. */
     readonly destroy: () => void;

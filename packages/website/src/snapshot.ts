@@ -63,6 +63,8 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     const advanceMs = starter.thumbnailAdvanceMs ?? STEP_MS;
 
     if (starter.kind === 'pixi') {
+        // An entry that lays itself out is photographed at the play area its metadata lists
+        starter.fitTo?.(entry.screenWidth, entry.screenHeight);
         const isPixelArt = starter.pixelArt ?? false;
         TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
         const app = new Application();

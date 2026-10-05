@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import type { ArcadeEntry } from '../../entry-types';
+import { type ArcadeEntry, thumbnailCropOf } from '../../entry-types';
 import { tagLabel } from './labels';
 import {
     CARD_BORDER, CARD_COLOR_VALUES, cardLookFor, cardPhotoIn, cropStyleFor, liftScaleFor, type PhotoPose, POLAROID_BORDER, tapeFor,
@@ -25,6 +25,14 @@ export interface CardViewBindings {
     readonly isSelected: () => boolean;
     /** Whether the card is the wall's one stop for the Tab key. */
     readonly isTabStop: () => boolean;
+    /**
+     * The element playing the card's entry live (attract mode), drawn at its
+     * play size, for the card to show over its photo, scaled and cropped as
+     * the photo is; or undefined.
+     */
+    readonly live: () => HTMLElement | undefined;
+    /** Whether the live entry has drawn, so the card can show it in place of its photo. */
+    readonly isLiveShowing: () => boolean;
     /** Reported with where the card's photo is drawn as it is pressed, for the way into the entry to start from. */
     readonly onLaunchPressed?: (from: PhotoPose) => void;
     readonly onInfoPressed?: () => void;
@@ -46,7 +54,9 @@ export interface CardViewBindings {
  * anywhere else on it. Nothing on the card can be selected or dragged, and it
  * has no context menu, so a long press on a touch screen just holds it. One
  * card's link is a stop for the Tab key; the wall moves the selection, and
- * the info button is reached with `i`.
+ * the info button is reached with `i`. A card selected for a while may play
+ * its entry live over its photo (attract mode), out of reach of the pointer
+ * and the keys, which still act on the card.
  */
 export function CardView(bindings: CardViewBindings): Element {
     const { entry } = bindings;
@@ -54,7 +64,9 @@ export function CardView(bindings: CardViewBindings): Element {
     let link: HTMLAnchorElement | undefined;
     let polaroid: HTMLElement | undefined;
     let photo: HTMLElement | undefined;
+    let liveLayer: HTMLElement | undefined;
     const tape: HTMLElement[] = [];
+    const crop = thumbnailCropOf(entry);
 
     // What was last written, so each frame writes only what changed
     let drawnX = NaN;
@@ -64,6 +76,8 @@ export function CardView(bindings: CardViewBindings): Element {
     let drawnLifted = false;
     let drawnSelected = false;
     let drawnTabStop: boolean | undefined;
+    let drawnLive: HTMLElement | undefined;
+    let drawnLiveShowing = false;
 
     const tags = [
         tagLabel({ group: 'kind', value: entry.tags.kind }),
@@ -85,6 +99,7 @@ export function CardView(bindings: CardViewBindings): Element {
                     <div class="card-polaroid" style={`--tilt: ${look.tilt.toFixed(2)}deg`} ref={(e) => { polaroid = e; }}>
                         <div class="card-photo" ref={(e) => { photo = e; }}>
                             <img alt="" style={cropStyleFor(entry)} ref={loadLazily} />
+                            <div class="card-live" style={cropStyleFor(entry)} ref={keepLiveLayer} />
                         </div>
                     </div>
                     <span class="card-tape" ref={(e) => { tape.push(e); }} />
@@ -144,6 +159,23 @@ export function CardView(bindings: CardViewBindings): Element {
             drawnTabStop = isTabStop;
             link.tabIndex = isTabStop ? 0 : -1;
         }
+        showLive();
+    }
+
+    /** Puts the live entry over the photo, or takes it away, and shows it once it has drawn. */
+    function showLive(): void {
+        if (liveLayer === undefined) return;
+        const live = bindings.live();
+        if (live !== drawnLive) {
+            drawnLive = live;
+            if (live === undefined) liveLayer.replaceChildren();
+            else liveLayer.replaceChildren(live);
+        }
+        const isShowing = live !== undefined && bindings.isLiveShowing();
+        if (isShowing !== drawnLiveShowing) {
+            drawnLiveShowing = isShowing;
+            liveLayer.classList.toggle('is-showing', isShowing);
+        }
     }
 
     /**
@@ -161,12 +193,20 @@ export function CardView(bindings: CardViewBindings): Element {
         polaroid.style.setProperty('--lift', liftScaleFor(fitted.polaroid, side).toFixed(4));
         photo.style.width = `${fitted.photo.width}px`;
         photo.style.height = `${fitted.photo.height}px`;
+        // The live entry is drawn at its play size: this scales it to the photo, as the picture is
+        photo.style.setProperty('--live-scale', (fitted.photo.width / crop.width).toFixed(5));
         const pieces = tapeFor(fitted.polaroid, look);
         for (let i = 0; i < tape.length; i++) {
             tape[i].style.left = `${pieces[i].x}px`;
             tape[i].style.top = `${pieces[i].y}px`;
             tape[i].style.transform = `translate(-50%, -50%) rotate(${pieces[i].angle.toFixed(2)}deg)`;
         }
+    }
+
+    /** The live entry only plays: nothing in it takes the pointer, the focus or keys. */
+    function keepLiveLayer(element: HTMLElement): void {
+        liveLayer = element;
+        element.inert = true;
     }
 
     function keepLink(element: HTMLAnchorElement): void {

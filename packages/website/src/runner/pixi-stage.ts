@@ -39,6 +39,8 @@ export interface PixiStageOptions {
     readonly isPixelArt: boolean;
     /** Whether to draw touch controls for entries that take input. */
     readonly isTouch: boolean;
+    /** Whether the entry takes input at all, from the keyboard or touch controls. */
+    readonly takesInput: boolean;
     /** The session running, which the host owns. */
     readonly session: () => EntrySession | undefined;
     readonly isPaused: () => boolean;
@@ -49,7 +51,7 @@ export interface PixiStageOptions {
 // ---------------------------------------------------------------------------
 
 export async function createPixiStage(options: PixiStageOptions): Promise<PixiStage> {
-    const { element, isPixelArt, isTouch } = options;
+    const { element, isPixelArt, isTouch, takesInput } = options;
 
     const app = new Application();
     await app.init({
@@ -85,7 +87,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     setUpdate(entryContainer, () => (options.isPaused() ? SKIP_DESCENDANTS : undefined));
     app.stage.addChild(entryContainer);
 
-    if (isTouch) {
+    if (takesInput && isTouch) {
         const touchLayer = new Container();
         touchLayer.label = 'touch-controls';
         setRefresh(touchLayer, () => {
@@ -114,13 +116,15 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         app.stage.addChild(touchLayer);
     }
 
-    app.stage.addChild(KeyboardInputView({
-        onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
-        onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
-        onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),
-        onSecondaryButtonChanged: (pressed) => inputConfig()?.onSecondaryButtonChanged?.(pressed),
-        onRestartButtonChanged: (pressed) => inputConfig()?.onRestartButtonChanged?.(pressed),
-    }));
+    if (takesInput) {
+        app.stage.addChild(KeyboardInputView({
+            onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
+            onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
+            onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),
+            onSecondaryButtonChanged: (pressed) => inputConfig()?.onSecondaryButtonChanged?.(pressed),
+            onRestartButtonChanged: (pressed) => inputConfig()?.onRestartButtonChanged?.(pressed),
+        }));
+    }
 
     // Each step of the ticker runs the MVT order for the stage: the entry's
     // models, then the stage's update and refresh. The application renders
@@ -198,7 +202,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             screenWidth: starter.screenWidth,
             screenHeight: starter.screenHeight,
             integerScale: starter.integerScale,
-            hasTouchControls: isTouch && config !== undefined,
+            hasTouchControls: takesInput && isTouch && config !== undefined,
         });
         const dpr = window.devicePixelRatio || 1;
         app.renderer.resize(area.stageWidth, area.stageHeight, area.scale * dpr);

@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import type { ArcadeEntry } from '../../entry-types';
+import { createAttractViewModel } from './attract-view-model';
 import type { PhotoPose } from './card-photo';
 import { cardIn, CardView, isCardLink, isOnInfoButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
 import { movedPosition, wallMoveFor } from './card-wall-keys';
@@ -27,6 +28,19 @@ export interface CardWallViewBindings {
     readonly isActive: () => boolean;
     /** Whether the visitor has asked for less motion: a card moved to is then scrolled to at once. */
     readonly isMotionReduced: () => boolean;
+    /**
+     * Whether a card selected for a while may play its entry live (attract
+     * mode) now: not on a touch screen, nor for less motion, and only while
+     * the wall is active.
+     */
+    readonly canPlayLive: () => boolean;
+    /** The card whose entry the page is playing live, or -1, and the element it plays in. */
+    readonly liveIndex: () => number;
+    readonly liveElement: HTMLElement | undefined;
+    /** Whether the live entry has drawn, so its card can show it. */
+    readonly isLiveShowing: () => boolean;
+    /** Reported with the card whose entry should play live, or -1 for none, as it changes. */
+    readonly onLiveWanted?: (index: number) => void;
     /** Reported with the card pressed, and where its photo is drawn, for the way into its entry to start from. */
     readonly onLaunchPressed?: (index: number, from: PhotoPose) => void;
     readonly onInfoPressed?: (index: number) => void;
@@ -53,6 +67,11 @@ export interface CardWallViewBindings {
  * its info panel. The selection is this view's presentation state. When an
  * entry, an info panel or a transition takes over, the wall lets go of the
  * focus, and takes it back after.
+ *
+ * A card that stays selected for a second plays its entry live over its
+ * photo, where that is allowed (attract mode). The wall says which card,
+ * through an attract view model; the page plays the entry, and the card
+ * shows it.
  */
 export function CardWallView(bindings: CardWallViewBindings): Element {
     const { entries, layout } = bindings;
@@ -67,6 +86,8 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         isLifted: () => bindings.liftedIndex() === index,
         isSelected: () => selected === index && tabStop === index,
         isTabStop: () => tabStop === index,
+        live: () => (bindings.liveIndex() === index ? bindings.liveElement : undefined),
+        isLiveShowing: bindings.isLiveShowing,
         onLaunchPressed: (from) => bindings.onLaunchPressed?.(index, from),
         onInfoPressed: () => bindings.onInfoPressed?.(index),
     }));
@@ -82,6 +103,14 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     let hadFocus = false;
     /** Worked out once a frame, before the cards read it: the selected card if shown, or else the first shown. */
     let tabStop = -1;
+
+    // Attract mode: the selected card, once it has stayed selected a while,
+    // plays its entry live. The page plays it; the wall says which.
+    const attract = createAttractViewModel({
+        candidate: () => (bindings.canPlayLive() && selected >= 0 && selected === tabStop ? selected : -1),
+        delayMs: ATTRACT_DELAY_MS,
+    });
+    let wantedLive = -1;
 
     // Sizes are measured as layout settles, and reported to the layout as input
     const observer = new ResizeObserver((records) => {
@@ -100,7 +129,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
             class="card-wall"
             aria-label="Entries"
             ref={attach}
-            onUpdate={layout.update}
+            onUpdate={update}
             onRefresh={refresh}
             onKeyDown={onKeyDown}
             onClick={onClick}
@@ -109,6 +138,15 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
             {cards}
         </section>
     );
+
+    /** Moves the cards, and says which card's entry should play live as that changes. */
+    function update(deltaMs: number): void {
+        layout.update(deltaMs);
+        attract.update(deltaMs);
+        if (attract.index === wantedLive) return;
+        wantedLive = attract.index;
+        bindings.onLiveWanted?.(wantedLive);
+    }
 
     /** Sizes the wall, settles the Tab stop, and hands the focus over as the wall is left and returned to. */
     function refresh(wall: Element): void {
@@ -254,3 +292,10 @@ export function photoPoseIn(wall: Element, entryId: string): PhotoPose | undefin
     const card = cardIn(wall, entryId);
     return card === undefined ? undefined : photoPoseOf(card);
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How long a card stays selected before it plays its entry live. */
+const ATTRACT_DELAY_MS = 1000;
