@@ -13,6 +13,10 @@ import type { Rect } from './rect';
 export interface CardPhoto {
     readonly polaroid: Rect;
     readonly photo: Rect;
+    /** The card's scale, from its square (`cardScaleFor`): what every size on it is multiplied by. */
+    readonly scale: number;
+    /** The polaroid's white border round the photo, at that scale. */
+    readonly border: number;
 }
 
 /**
@@ -46,12 +50,21 @@ export interface TapePiece {
     readonly angle: number;
 }
 
-/** A card's border. Must match `.card`'s in `arcade.css`. */
+/**
+ * The side of the square a card is designed at: a card in the narrowest
+ * column of a wide wall (260 pixels, less its border). Every size on a card
+ * is given at this side, here and in `arcade.css` (its bands, title, tags and
+ * info button, the polaroid's margin, border and tape, the etching), and a
+ * card of any other width is the same card scaled (`cardScaleFor`), so every
+ * card has one shape.
+ */
+export const CARD_DESIGN_SIDE = 258;
+/** A card's border, which does not scale. Must match `.card`'s in `arcade.css`. */
 export const CARD_BORDER = 1;
 /**
- * The bands above and below a card's square: its title above, its tags and
- * info button below. The same height, so the polaroid's centre is the card's.
- * Must match `.card-name` and `.card-foot` in `arcade.css`.
+ * The bands above and below a card's square, at the design side: its title
+ * above, its tags and info button below. The same height, so the polaroid's
+ * centre is the card's. Must match `.card-name` and `.card-foot` in `arcade.css`.
  */
 export const CARD_BAND_HEIGHT = 40;
 
@@ -68,9 +81,9 @@ export const CARD_COLOR_VALUES: Readonly<Record<CardColor, string>> = {
     orchid: '#efaaff',
 };
 
-/** Space kept clear around the polaroid, inside the square: room for its tilt, and its tape. */
+/** Space kept clear around the polaroid, inside the square, at the design side: room for its tilt, and its tape. */
 export const POLAROID_MARGIN = 24;
-/** The polaroid's white border, even all round. Must match `.card-polaroid`'s padding in `arcade.css`. */
+/** The polaroid's white border, even all round, at the design side. Must match `.card-polaroid`'s padding in `arcade.css`. */
 export const POLAROID_BORDER = 8;
 /** How far short of the card's sides the polaroid's longer side stops when it comes closer, on the selected card. */
 export const LIFT_INSET = 6;
@@ -78,13 +91,19 @@ export const LIFT_INSET = 6;
 export const MIN_TILT = 1.5;
 export const MAX_TILT = 4;
 
+/** How much larger, or smaller, than the design a card whose square is `side` wide is drawn. */
+export function cardScaleFor(side: number): number {
+    return side / CARD_DESIGN_SIDE;
+}
+
 /**
  * A card's height, border included, when its column is `columnWidth` wide:
- * every card is the same, a square as wide as the column between its title
- * and its foot.
+ * every card is the same shape, a square as wide as the column between its
+ * title and its foot, whose bands scale with it.
  */
 export function cardHeightFor(columnWidth: number): number {
-    return columnWidth + 2 * CARD_BAND_HEIGHT;
+    const side = columnWidth - 2 * CARD_BORDER;
+    return columnWidth + 2 * CARD_BAND_HEIGHT * cardScaleFor(side);
 }
 
 /**
@@ -94,12 +113,15 @@ export function cardHeightFor(columnWidth: number): number {
 export function cardPhotoIn(entry: ArcadeEntry, area: Rect): CardPhoto {
     const crop = thumbnailCropOf(entry);
     const aspect = crop.width / crop.height;
-    const room = area.width - 2 * POLAROID_MARGIN - 2 * POLAROID_BORDER;
-    const roomHeight = area.height - 2 * POLAROID_MARGIN - 2 * POLAROID_BORDER;
+    const scale = cardScaleFor(Math.min(area.width, area.height));
+    const margin = POLAROID_MARGIN * scale;
+    const border = POLAROID_BORDER * scale;
+    const room = area.width - 2 * margin - 2 * border;
+    const roomHeight = area.height - 2 * margin - 2 * border;
     const photoWidth = Math.max(0, Math.min(room, roomHeight * aspect));
     const photoHeight = photoWidth / aspect;
-    const polaroidWidth = photoWidth + 2 * POLAROID_BORDER;
-    const polaroidHeight = photoHeight + 2 * POLAROID_BORDER;
+    const polaroidWidth = photoWidth + 2 * border;
+    const polaroidHeight = photoHeight + 2 * border;
     const polaroid: Rect = {
         x: area.x + (area.width - polaroidWidth) / 2,
         y: area.y + (area.height - polaroidHeight) / 2,
@@ -108,7 +130,9 @@ export function cardPhotoIn(entry: ArcadeEntry, area: Rect): CardPhoto {
     };
     return {
         polaroid,
-        photo: { x: polaroid.x + POLAROID_BORDER, y: polaroid.y + POLAROID_BORDER, width: photoWidth, height: photoHeight },
+        photo: { x: polaroid.x + border, y: polaroid.y + border, width: photoWidth, height: photoHeight },
+        scale,
+        border,
     };
 }
 

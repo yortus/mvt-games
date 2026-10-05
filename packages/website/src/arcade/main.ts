@@ -13,7 +13,7 @@ import './arcade.css';
 // renderers, through the entry host), then the arcade's views. The page
 // starts and ends the entry's sessions as the model's phase changes, and keeps
 // the URL in step with the model: the search in the query, the entry
-// in the fragment. It also plays an entry live on its card (attract mode),
+// in the fragment. The arcade's views are in the page and in the site's nav. It also plays an entry live on its card (attract mode),
 // when the wall asks, in a second host that takes no input.
 
 // ---------------------------------------------------------------------------
@@ -65,6 +65,7 @@ root.append(ArcadeView({
     exitFrame: () => exitFrame,
     isMotionReduced: () => reducedMotion.matches,
     liveElement,
+    navTools: pageElement('site-nav-tools'),
     liveEntry: () => liveEntry,
     isLiveShowing: () => liveFrames >= LIVE_SHOWN_AFTER_FRAMES,
     onLiveWanted: playLive,
@@ -107,8 +108,9 @@ function frame(timeMs: number): void {
         liveHost.tick(timeMs, deltaMs);
         if (liveEntry !== undefined && liveElement?.isConnected === true) liveFrames++;
     }
-    updateView(root, deltaMs);
-    refreshView(root);
+    // The page's whole body: the arcade, and its magnifier in the site's nav
+    updateView(document.body, deltaMs);
+    refreshView(document.body);
 
     requestAnimationFrame(frame);
 }

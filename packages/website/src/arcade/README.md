@@ -127,11 +127,11 @@ about loading; each waits on the other through the bindings.
 [`main.ts`](./main.ts) runs the page's one loop, in the MVT order:
 
 ```ts
-model.update(deltaMs);        // the Arcade's model
-followModel();                // start or stop the entry's session as the phase changes
-host.tick(timeMs, deltaMs);   // the entry: its models, its views, its renderers
-updateView(root, deltaMs);    // the Arcade's views
-refreshView(root);
+model.update(deltaMs);                // the Arcade's model
+followModel();                        // start or stop the entry's session as the phase changes
+host.tick(timeMs, deltaMs);           // the entry: its models, its views, its renderers
+updateView(document.body, deltaMs);   // the Arcade's views, its magnifier in the site's nav among them
+refreshView(document.body);
 ```
 
 The entry host ([`../runner/entry-host.ts`](../runner/entry-host.ts)) runs
@@ -189,8 +189,8 @@ deliberate:
   are not events on any one element, and the JSX runtime has no attribute
   for `window`. The views
   that need them add a listener and remove it in `onDestroyed`
-  (`arcade-view.tsx`, `about-view.tsx`, `search-bar-view.tsx`,
-  `pause-menu-view.tsx`, and `wall-effect-view.ts` for `resize`).
+  (`arcade-view.tsx`, `about-view.tsx`, `pause-menu-view.tsx`, and
+  `wall-effect-view.ts` for `resize`).
 - **The transition writes to the runner's stage.** The screen powering on
   squashes the entry's own picture, which is in the stage element the entry
   host owns. `drawStage` ([`transition-view.tsx`](./views/transition-view.tsx))

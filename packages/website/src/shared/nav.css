@@ -14,6 +14,9 @@
     --site-nav-height: 48px;
 }
 
+/* Whatever the page scrolls into view (a focused box, a card arrowed to) stops below the nav, not under it */
+html { scroll-padding-top: var(--site-nav-height); }
+
 .site-nav {
     position: fixed;
     top: 0;
@@ -76,6 +79,13 @@
 
 .site-nav-spacer {
     flex: 1;
+}
+
+/* A page's own tools, beside the GitHub link, which its views fill */
+.site-nav-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .site-nav-github {

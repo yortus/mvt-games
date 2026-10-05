@@ -19,6 +19,16 @@ describe('CardWallLayout', () => {
         expect(wall.columnCount).toBe(MAX_COLUMNS);
     });
 
+    it('keeps the fewest columns allowed on a narrow wall, narrowing them to fit', () => {
+        const minColumns = 2;
+        const wall = layout({ count: 0, minColumnCount: minColumns });
+        const width = MIN_COLUMN_WIDTH;
+        wall.setWidth(width);
+        wall.update(0);
+        expect(wall.columnCount).toBe(minColumns);
+        expect(wall.columnWidth).toBe((width - (minColumns - 1) * GAP) / minColumns);
+    });
+
     it('places each card in the shortest column so far', () => {
         const heights = [300, 100, 100, 100];
         const wall = layout({ count: heights.length });
@@ -152,6 +162,7 @@ function layout(overrides: Partial<CardWallLayoutOptions> & { count: number }): 
     return createCardWallLayout({
         gap: GAP,
         minColumnWidth: MIN_COLUMN_WIDTH,
+        minColumnCount: 1,
         maxColumnCount: MAX_COLUMNS,
         shownCount: () => overrides.count,
         shownIndexAt: (p) => p,

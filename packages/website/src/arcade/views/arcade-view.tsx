@@ -7,6 +7,7 @@ import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';
 import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
+import { NavSearchView } from './nav-search-view';
 import { NO_RECT, type Rect } from './rect';
 import { RunnerView } from './runner-view';
 import { TransitionView } from './transition-view';
@@ -38,6 +39,12 @@ export interface ArcadeViewBindings {
     readonly isLiveShowing: () => boolean;
     /** Reported with the entry whose card wants to play it live, or undefined for none, as it changes. */
     readonly onLiveWanted?: (entry: ArcadeEntry | undefined) => void;
+    /**
+     * A place in the site's nav for the arcade's own tools, if the page has
+     * one: a magnifier there takes a visitor scrolled down the wall back to
+     * the search. The page ticks it with the rest of its views.
+     */
+    readonly navTools?: HTMLElement;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +59,8 @@ export interface ArcadeViewBindings {
  * entry's screen powers on; leaving it powers the screen off, and the
  * polaroid comes back as the cards develop. The transition and the wall's
  * layout are this view's presentation state, in view models it owns.
+ * Scrolled down the wall, past the head, a magnifier shows in the site's nav
+ * to go back to the search, as `/` does from anywhere on the wall.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -61,6 +70,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         count: entries.length,
         gap: CARD_GAP,
         minColumnWidth: MIN_COLUMN_WIDTH,
+        minColumnCount: MIN_COLUMN_COUNT,
         maxColumnCount: MAX_COLUMN_COUNT,
         shownCount: () => model.shownCount,
         shownIndexAt: model.shownIndexAt,
@@ -100,6 +110,22 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
+    const head = ArcadeHeadView({ model });
+    // Presentation state: whether any of the head shows below the site's nav
+    let isHeadInView = true;
+    const headObserver = new IntersectionObserver(
+        (records) => { isHeadInView = records[records.length - 1].isIntersecting; },
+        { rootMargin: `-${navHeight()}px 0px 0px 0px` },
+    );
+    headObserver.observe(head);
+    const navSearch = NavSearchView({
+        isShown: () => !isHeadInView && isWallActive(),
+        shownCount: () => model.shownCount,
+        totalCount: entries.length,
+        onPressed: goToSearch,
+    });
+    bindings.navTools?.append(navSearch);
+
     window.addEventListener('keydown', onKeyDown);
 
     return (
@@ -107,9 +133,9 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             class="arcade"
             onUpdate={update}
             onRefresh={lockScrollWhilePlaying}
-            onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}
+            onDestroyed={stopListening}
         >
-            <ArcadeHeadView model={model} isActive={isWallActive} />
+            {head}
             <div class="card-wall-frame">
                 {wall}
                 <p class="card-wall-empty" visible={() => model.shownCount === 0} text="Nothing matches this search." />
@@ -202,8 +228,32 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         document.documentElement.classList.toggle('is-playing', isPlaying);
     }
 
+    /** Scrolls back up to the head, and puts the caret in the search, which opens its tags. */
+    function goToSearch(): void {
+        window.scrollTo({ top: 0, behavior: bindings.isMotionReduced() ? 'auto' : 'smooth' });
+        head.querySelector<HTMLInputElement>('.search-input')?.focus({ preventScroll: true });
+    }
+
+    function stopListening(): void {
+        window.removeEventListener('keydown', onKeyDown);
+        headObserver.disconnect();
+        navSearch.remove();
+    }
+
     function onKeyDown(e: KeyboardEvent): void {
-        if (e.key !== 'Escape') return;
+        if (e.key === '/') jumpToSearch(e);
+        else if (e.key === 'Escape') stepBack(e);
+    }
+
+    /** `/` goes to the search, as the nav's magnifier does, from anywhere on the wall but a field. */
+    function jumpToSearch(e: KeyboardEvent): void {
+        if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target ?? undefined) || !isWallActive()) return;
+        e.preventDefault();
+        goToSearch();
+    }
+
+    /** Escape closes the info panel, pauses or resumes a game, or leaves the entry. */
+    function stepBack(e: KeyboardEvent): void {
         if (model.infoEntry !== undefined) model.closeInfo();
         else if (model.phase === 'playing' && model.activeEntry?.tags.kind === 'game') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();
@@ -258,4 +308,17 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
 const CARD_GAP = 16;
 const MIN_COLUMN_WIDTH = 260;
+/** Two columns even on a phone: the cards narrow to fit, rather than one filling the screen. */
+const MIN_COLUMN_COUNT = 2;
 const MAX_COLUMN_COUNT = 5;
+
+/** The height of the site's fixed nav, which covers the top of the page: the head is out of view once under it. */
+function navHeight(): number {
+    const height = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--site-nav-height'));
+    return Number.isNaN(height) ? 0 : height;
+}
+
+function isTyping(target: EventTarget | undefined): boolean {
+    return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
+        || (target instanceof HTMLElement && target.isContentEditable);
+}

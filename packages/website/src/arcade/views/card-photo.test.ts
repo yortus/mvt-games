@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { type ArcadeEntry, type ThumbnailCrop, CARD_COLORS } from '../../entry-types';
 import {
-    CARD_BORDER, cardLookFor, cardPhotoIn, cropStyleFor, frameForCrop, LIFT_INSET, liftScaleFor, MAX_TILT, MIN_TILT,
-    POLAROID_BORDER, POLAROID_MARGIN, tapeFor,
+    CARD_BAND_HEIGHT, CARD_BORDER, CARD_DESIGN_SIDE, cardHeightFor, cardLookFor, cardPhotoIn, cropStyleFor, frameForCrop,
+    LIFT_INSET, liftScaleFor, MAX_TILT, MIN_TILT, POLAROID_BORDER, POLAROID_MARGIN, tapeFor,
 } from './card-photo';
 
 describe('card photos', () => {
     it('fits a wide photo across the square, leaving space above and below', () => {
         const entry = entryOf('wide', 400, 200, undefined);
-        const side = 300;
+        const side = CARD_DESIGN_SIDE;
         const { polaroid, photo } = cardPhotoIn(entry, { x: 0, y: 0, width: side, height: side });
         const room = side - 2 * POLAROID_MARGIN - 2 * POLAROID_BORDER;
         expect(photo.width).toBe(room);
@@ -19,7 +19,7 @@ describe('card photos', () => {
 
     it('fits a tall photo down the square, leaving space either side', () => {
         const entry = entryOf('tall', 200, 400, undefined);
-        const side = 300;
+        const side = CARD_DESIGN_SIDE;
         const { polaroid, photo } = cardPhotoIn(entry, { x: 10, y: 20, width: side, height: side });
         const room = side - 2 * POLAROID_MARGIN - 2 * POLAROID_BORDER;
         expect(photo.height).toBe(room);
@@ -30,11 +30,33 @@ describe('card photos', () => {
 
     it('frames the photo evenly all round', () => {
         const entry = entryOf('even', 300, 200, undefined);
-        const { polaroid, photo } = cardPhotoIn(entry, { x: 0, y: 0, width: 300, height: 300 });
-        expect(photo.x - polaroid.x).toBe(POLAROID_BORDER);
-        expect(photo.y - polaroid.y).toBe(POLAROID_BORDER);
-        expect(polaroid.x + polaroid.width - (photo.x + photo.width)).toBeCloseTo(POLAROID_BORDER);
-        expect(polaroid.y + polaroid.height - (photo.y + photo.height)).toBeCloseTo(POLAROID_BORDER);
+        const side = CARD_DESIGN_SIDE;
+        const { polaroid, photo, border } = cardPhotoIn(entry, { x: 0, y: 0, width: side, height: side });
+        expect(border).toBe(POLAROID_BORDER);
+        expect(photo.x - polaroid.x).toBe(border);
+        expect(photo.y - polaroid.y).toBe(border);
+        expect(polaroid.x + polaroid.width - (photo.x + photo.width)).toBeCloseTo(border);
+        expect(polaroid.y + polaroid.height - (photo.y + photo.height)).toBeCloseTo(border);
+    });
+
+    it('scales the frame with the square: the space round the polaroid, and its border', () => {
+        const entry = entryOf('scaled', 300, 200, undefined);
+        for (const scale of [0.5, 1.5]) {
+            const side = CARD_DESIGN_SIDE * scale;
+            const fitted = cardPhotoIn(entry, { x: 0, y: 0, width: side, height: side });
+            expect(fitted.scale).toBe(scale);
+            expect(fitted.border).toBe(POLAROID_BORDER * scale);
+            expect(fitted.polaroid.x).toBe(POLAROID_MARGIN * scale);
+            expect(fitted.photo.x - fitted.polaroid.x).toBe(fitted.border);
+            expect(fitted.photo.width).toBeCloseTo(side - 2 * (POLAROID_MARGIN + POLAROID_BORDER) * scale);
+        }
+    });
+
+    it('keeps every card one shape, its bands scaling with its square', () => {
+        const innerAspect = (columnWidth: number): number => (cardHeightFor(columnWidth) - 2 * CARD_BORDER) / (columnWidth - 2 * CARD_BORDER);
+        expect(cardHeightFor(CARD_DESIGN_SIDE + 2 * CARD_BORDER)).toBe(CARD_DESIGN_SIDE + 2 * CARD_BORDER + 2 * CARD_BAND_HEIGHT);
+        expect(innerAspect(CARD_DESIGN_SIDE * 0.6)).toBeCloseTo(innerAspect(CARD_DESIGN_SIDE));
+        expect(innerAspect(CARD_DESIGN_SIDE * 1.5)).toBeCloseTo(innerAspect(CARD_DESIGN_SIDE));
     });
 
     it('fits the crop, not the whole play area', () => {

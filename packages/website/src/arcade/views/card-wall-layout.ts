@@ -11,7 +11,7 @@
  * place in the catalogue), whatever order they are shown in.
  */
 export interface CardWallLayout {
-    /** How many columns the wall has: as many as fit, up to the most allowed. */
+    /** How many columns the wall has: as many as fit, from the fewest allowed up to the most. */
     readonly columnCount: number;
     /** The width of every card, in CSS pixels. */
     readonly columnWidth: number;
@@ -42,6 +42,8 @@ export interface CardWallLayoutOptions {
     readonly gap: number;
     /** The narrowest a column may be; the wall has as many columns as fit. */
     readonly minColumnWidth: number;
+    /** The fewest columns the wall has, however narrow: below that, columns narrow past `minColumnWidth`. */
+    readonly minColumnCount: number;
     /** The most columns the wall has, however wide. */
     readonly maxColumnCount: number;
     /** How many cards are shown, and which, in order. */
@@ -58,7 +60,7 @@ export interface CardWallLayoutOptions {
 // ---------------------------------------------------------------------------
 
 export function createCardWallLayout(options: CardWallLayoutOptions): CardWallLayout {
-    const { count, gap, minColumnWidth, maxColumnCount } = options;
+    const { count, gap, minColumnWidth, minColumnCount, maxColumnCount } = options;
 
     let width = 0;
     let columnCount = 1;
@@ -145,7 +147,8 @@ export function createCardWallLayout(options: CardWallLayoutOptions): CardWallLa
 
     function layOut(): void {
         isLayoutStale = false;
-        columnCount = Math.max(1, Math.min(maxColumnCount, Math.floor((width + gap) / (minColumnWidth + gap))));
+        const fitting = Math.floor((width + gap) / (minColumnWidth + gap));
+        columnCount = Math.max(1, minColumnCount, Math.min(maxColumnCount, fitting));
         columnWidth = Math.max(0, (width - gap * (columnCount - 1)) / columnCount);
         // A new width moves every card at once, and a first measure corrects an
         // estimate: snap, rather than slide them all

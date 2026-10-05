@@ -11,8 +11,6 @@ import { WordmarkView } from './wordmark-view';
 export interface ArcadeHeadViewBindings {
     /** The arcade, whose search the head shows. */
     readonly model: ArcadeModel;
-    /** Whether the wall is what the visitor is looking at: only then does `/` jump to the search. */
-    readonly isActive: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,7 +34,6 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
         isChipOfferedAt: model.isChipOfferedAt,
         activeCount: () => model.activeChipCount,
         text: () => model.searchText,
-        isActive: bindings.isActive,
         onTextChanged: (text) => { model.searchText = text; },
         onChipChosen: model.chooseChipAt,
         onChipRemoved: model.removeChipAt,

@@ -20,8 +20,6 @@ export interface SearchBarViewBindings {
     readonly isChipOfferedAt: (index: number) => boolean;
     /** What has been typed beside the tags. */
     readonly text: () => string;
-    /** Whether the page's search is what the visitor is looking at: only then does `/` jump to the box. */
-    readonly isActive: () => boolean;
     /** Reported with the box's text as the visitor types. */
     readonly onTextChanged?: (text: string) => void;
     /** Reported with a chip's index as the visitor chooses its tag from the list. */
@@ -42,8 +40,7 @@ export interface SearchBarViewBindings {
  * narrow the search drop down beneath it, group by group with their counts,
  * and narrowed to those beginning with what is typed; a click, or Enter,
  * chooses one. The arrow keys move between them, Backspace in an empty box
- * removes the last tag, Escape closes the list, and `/` anywhere on the page
- * jumps to the box.
+ * removes the last tag, and Escape closes the list.
  */
 export function SearchBarView(bindings: SearchBarViewBindings): Element {
     const { chips } = bindings;
@@ -67,10 +64,9 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
     let shownHighlight = -1;
 
     let input: HTMLInputElement | undefined;
-    window.addEventListener('keydown', onPageKeyDown);
 
     return (
-        <div class="search" onRefresh={settle} onDestroyed={() => window.removeEventListener('keydown', onPageKeyDown)}>
+        <div class="search" onRefresh={settle}>
             <div class={() => (isFocused ? 'search-box has-focus' : 'search-box')} ref={keepFocusOnPress} onClick={focusFromBox}>
                 {/* One slot for each tag that could be chosen, filled in the order they were */}
                 {chips.map((_chip, position) => (
@@ -283,20 +279,4 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
             if (e.target !== input) e.preventDefault();
         });
     }
-
-    /** `/` jumps to the box, from anywhere on the page but a field, while the page's search is in view. */
-    function onPageKeyDown(e: KeyboardEvent): void {
-        if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target ?? undefined) || !bindings.isActive()) return;
-        e.preventDefault();
-        input?.focus();
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-function isTyping(target: EventTarget | undefined): boolean {
-    return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
-        || (target instanceof HTMLElement && target.isContentEditable);
 }

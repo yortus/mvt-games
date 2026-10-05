@@ -2,7 +2,7 @@
 import { type ArcadeEntry, thumbnailCropOf } from '../../entry-types';
 import { tagLabel } from './labels';
 import {
-    CARD_BORDER, CARD_COLOR_VALUES, cardLookFor, cardPhotoIn, cropStyleFor, liftScaleFor, type PhotoPose, POLAROID_BORDER, tapeFor,
+    CARD_BORDER, CARD_COLOR_VALUES, cardLookFor, cardPhotoIn, cropStyleFor, liftScaleFor, type PhotoPose, tapeFor,
 } from './card-photo';
 import { PixelTextView } from './pixel-text-view';
 
@@ -137,7 +137,7 @@ export function CardView(bindings: CardViewBindings): Element {
         if (width !== drawnWidth) {
             drawnWidth = width;
             style.width = `${width}px`;
-            fitToWidth(width - 2 * CARD_BORDER);
+            fitToWidth(style, width - 2 * CARD_BORDER);
         }
         const opacity = bindings.opacity();
         if (opacity !== drawnOpacity) {
@@ -181,11 +181,13 @@ export function CardView(bindings: CardViewBindings): Element {
     /**
      * Fits the card to its width, `side` inside its border: the polaroid and
      * its photo in the square, with the tape across its corners. Its title, in
-     * pixels, fits itself.
+     * pixels, fits itself. Everything else on the card the stylesheet sizes
+     * from `--card-scale`, so a card of any width is the design scaled.
      */
-    function fitToWidth(side: number): void {
+    function fitToWidth(cardStyle: CSSStyleDeclaration, side: number): void {
         if (polaroid === undefined || photo === undefined) return;
         const fitted = cardPhotoIn(entry, { x: 0, y: 0, width: side, height: side });
+        cardStyle.setProperty('--card-scale', String(fitted.scale));
         polaroid.style.left = `${fitted.polaroid.x}px`;
         polaroid.style.top = `${fitted.polaroid.y}px`;
         polaroid.style.width = `${fitted.polaroid.width}px`;
@@ -287,14 +289,16 @@ export function photoPoseOf(card: Element): PhotoPose | undefined {
 
 /** The photo's pose, read from the polaroid's transform as it stands. */
 function poseOf(polaroid: HTMLElement, photo: HTMLElement): PhotoPose {
-    const transform = getComputedStyle(polaroid).transform;
+    const { transform, paddingLeft } = getComputedStyle(polaroid);
     const matrix = new DOMMatrixReadOnly(transform === 'none' ? undefined : transform);
     const scale = Math.hypot(matrix.a, matrix.b);
+    // The border as the card fitted it, narrower on a narrow card
+    const border = parseFloat(paddingLeft);
     const tilt = Math.atan2(matrix.b, matrix.a) * 180 / Math.PI;
     const bounds = photo.getBoundingClientRect();
     const width = photo.offsetWidth * scale;
     const height = photo.offsetHeight * scale;
     const centreX = (bounds.left + bounds.right) / 2;
     const centreY = (bounds.top + bounds.bottom) / 2;
-    return { window: { x: centreX - width / 2, y: centreY - height / 2, width, height }, tilt, border: POLAROID_BORDER * scale };
+    return { window: { x: centreX - width / 2, y: centreY - height / 2, width, height }, tilt, border: border * scale };
 }
