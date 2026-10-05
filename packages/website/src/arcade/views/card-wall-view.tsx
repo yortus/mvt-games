@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import type { ArcadeEntry } from '../../entries';
+import type { ArcadeEntry } from '../../entry-types';
 import type { PhotoPose } from './card-photo';
 import { cardIn, CardView, isCardLink, isOnInfoButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
 import { movedPosition, wallMoveFor } from './card-wall-keys';

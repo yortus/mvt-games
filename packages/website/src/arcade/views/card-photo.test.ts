@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ArcadeEntry, type ThumbnailCrop, CARD_COLORS } from '../../entries';
+import { type ArcadeEntry, type ThumbnailCrop, CARD_COLORS } from '../../entry-types';
 import {
     CARD_BORDER, cardLookFor, cardPhotoIn, cropStyleFor, frameForCrop, LIFT_INSET, liftScaleFor, MAX_TILT, MIN_TILT,
     POLAROID_BORDER, POLAROID_MARGIN, tapeFor,

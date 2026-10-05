@@ -19,7 +19,7 @@ frame-consistent rendering.
 | Kwazy Cactii   | Match three or more cactii                       |
 | Neon Monsoon   | 1990s-style vertical bullet hell                 |
 
-Each game is a self-contained module under `packages/website/src/games/<name>/` with its own
+Each game is a self-contained module under `packages/website/src/entries/<name>/` with its own
 data, models, and views. A **Cabinet** manages game selection and delegates to
 the active game session.
 

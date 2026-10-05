@@ -19,7 +19,7 @@ import { join } from 'node:path';
 // Output
 // ---------------------------------------------------------------------------
 
-const OUT_DIR = join(import.meta.dirname, '..', 'src', 'games', 'kwazy-cactii', 'assets');
+const OUT_DIR = join(import.meta.dirname, '..', 'src', 'entries', 'kwazy-cactii', 'assets');
 mkdirSync(OUT_DIR, { recursive: true });
 
 const WIDTH = 200;

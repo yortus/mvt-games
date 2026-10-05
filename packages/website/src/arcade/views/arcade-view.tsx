@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { memoiseLast, watch } from '@mvtjs/utils';
-import type { ArcadeEntry, EntryStarter } from '../../entries';
+import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
 import { ArcadeHeadView } from './arcade-head-view';
 import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';

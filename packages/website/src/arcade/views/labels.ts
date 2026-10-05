@@ -1,4 +1,4 @@
-import type { EntryFacts } from '../../entries';
+import type { EntryFacts } from '../../entry-types';
 import type { TagChip, TagGroup } from '../models';
 
 // The words the arcade shows for its tags and their groups, and for the

@@ -787,9 +787,10 @@ and the site working.
     (`src/arcade/main.ts`) and the entry host, not `src/main.ts`, which
     step 9 deleted: `AGENTS.md`'s Ticker line,
     `packages/docs/ai-agents/skill-mvt-view.md` and
-    `packages/docs/building-with-mvt/the-game-loop.md` say otherwise. Update `packages/docs/reference/project-structure.md`, the games'
-    README ("Adding a game" becomes adding an entry, of either kind), and
-    the demos' README. Record what building the Arcade showed about the HTML
+    `packages/docs/building-with-mvt/the-game-loop.md` say otherwise. Update `packages/docs/reference/project-structure.md`, and
+    rewrite `website/src/entries/README.md`, the games' old README, which
+    still describes the cabinet's `GameEntry`: "Adding a game" becomes adding
+    an entry, of any kind, keeping its originality rules. Record what building the Arcade showed about the HTML
     JSX runtime (026). Archive task 026 as absorbed. Add backlog tasks for
     per-entry link previews (question 5) and HTML touch controls
     (question 7). Write a README for `website/src/arcade/`: the Arcade as
@@ -1296,6 +1297,46 @@ Step 9, on 2026-10-05:
   `about:blank` is white.
 - A loose end: the site has no favicon, so every page's first load asks
   for `favicon.ico` and gets a 404.
+
+### 11.17 Each entry starts from `start/`
+
+At the author's request (2026-10-05), what makes a directory an entry is
+in a directory of its own, `start/`, and named the same in every entry:
+
+- `start/entry.ts`: the metadata, as the Arcade lists it (was
+  `<id>-entry.ts`).
+- `start/load.ts`: the code, whose `load()` the entry's `load` imports on
+  launch (was `<id>-starter.ts`, with `load<Name>Starter()`).
+- `start/thumbnail.webp`, which `generate-thumbnails` writes there now.
+- `start/index.ts` exports the entry, and the entry directory's barrel
+  exports it from `./start`.
+
+The entry's own code (`data/`, `models/`, `views/`) is untouched.
+
+### 11.18 One directory of entries
+
+At the author's request (2026-10-05). A game and a demo differ only in
+their metadata (`tags.kind`, and the fields only games fill in, such as
+`instructions`), so they live together:
+
+- **`src/entries/`** holds every entry, one directory each
+  (`src/entries/crumb-chase/`), was `src/games/` and `src/demos/`. Beside
+  them, `catalogue.ts` (was `src/catalogue/`) imports each entry's
+  directory, and `entries/index.ts` exports `CATALOGUE` and `findEntry`.
+- **`src/entry-types/`** holds what an entry is: `ArcadeEntry`, the
+  starters, the tags and the facts (was `src/entries/`). The entries and
+  the catalogue import it; it imports neither, so nothing is circular.
+- **Every entry exports `entry`**, from `start/entry.ts` through both its
+  barrels. The catalogue names each as it imports it
+  (`import { entry as crumbChaseEntry } from './crumb-chase'`).
+- **The website exports** `./entries` (the catalogue), `./entry-types`, and
+  `./entries/falling-sand/models` and `/views` for the benchmarks.
+- **The tooling scans one directory**: `ENTRIES_DIR` in
+  `scripts/entry-facts.ts` (was `ENTRY_AREAS`), the spritesheet plugin and
+  the texture scripts. An art piece would be an entry like any other.
+- The games' README moved to `entries/README.md`, still to be rewritten
+  (step 10). The demos' README, seven lines about the deleted gallery, is
+  gone.
 
 ## 12. Open questions, resolved
 

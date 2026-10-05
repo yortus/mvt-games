@@ -5,7 +5,7 @@
  *
  * Starts the dev server and one headless Chrome, opens the snapshot page
  * (`snapshot.html`, `src/snapshot.ts`) once for each entry, and saves what it
- * shows as `thumbnail.webp` in the entry's directory: the whole play area, at
+ * shows as `start/thumbnail.webp` in the entry's directory: the whole play area, at
  * the size that makes the longer side of the entry's crop (`thumbnailCrop`,
  * the part its card shows) CROP_PIXELS long. The images are committed, like the textures:
  * rerun this when an entry changes how it looks, or its crop. Give ids to
@@ -66,7 +66,7 @@ try {
             quality: WEBP_QUALITY,
             clip: { ...rect, scale },
         });
-        const file = join(dir, 'thumbnail.webp');
+        const file = join(dir, 'start', 'thumbnail.webp');
         writeFileSync(file, Buffer.from(data, 'base64'));
         const size = `${Math.round(rect.width * scale)}x${Math.round(rect.height * scale)}`;
         console.log(`${id.padEnd(18)} ${size.padEnd(10)} -> ${relative(websiteDir, file)}`);

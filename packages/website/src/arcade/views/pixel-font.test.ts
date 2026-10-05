@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CATALOGUE } from '../../catalogue';
+import { CATALOGUE } from '../../entries';
 import { PIXEL_FONT, PIXEL_HEIGHT, pixelTextWidth } from './pixel-font';
 
 describe('the pixel font', () => {

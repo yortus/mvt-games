@@ -5,7 +5,7 @@
  * During **dev** the packed sheets are served via middleware.
  * During **build** they are emitted as assets in `generateBundle`.
  *
- * Texture asset source directories: `src/games/<name>/assets/*.png`
+ * Texture asset source directories: `src/entries/<name>/assets/*.png`
  * Output paths served/emitted: `/assets/<name>-textures.json` and
  * `/assets/<name>-textures.png` - referenced from game code via
  * `Assets.load('/assets/<name>-textures.json')`.
@@ -133,7 +133,7 @@ function nextPow2(v: number): number {
 }
 
 function discoverGameTextureDirs(root: string): { gameName: string; dir: string }[] {
-    const gamesDir = resolve(root, 'src', 'games');
+    const gamesDir = resolve(root, 'src', 'entries');
     const results: { gameName: string; dir: string }[] = [];
 
     let entries: string[];
@@ -164,7 +164,7 @@ function discoverGameTextureDirs(root: string): { gameName: string; dir: string 
 // ---------------------------------------------------------------------------
 
 export interface SpritesheetPluginOptions {
-    /** Directory containing `src/games/`. Defaults to Vite's root. */
+    /** Directory containing `src/entries/`. Defaults to Vite's root. */
     readonly projectRoot?: string;
 }
 

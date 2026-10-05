@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ArcadeEntry, EntryFacts, EntryStarter, EntryTags } from '../../entries';
+import type { ArcadeEntry, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
 import { createArcadeModel, type ArcadeModelOptions } from './arcade-model';
 
 describe('ArcadeModel', () => {

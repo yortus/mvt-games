@@ -1,4 +1,4 @@
-import { type ArcadeEntry, type EntryFacts, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS } from '../../entries';
+import { type ArcadeEntry, type EntryFacts, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS } from '../../entry-types';
 
 // ---------------------------------------------------------------------------
 // Interface

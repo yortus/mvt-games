@@ -59,7 +59,7 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 - **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
 - **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
 - **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `packages/website/src/games/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `packages/website/src/games/index.ts`, following its [originality rules](packages/website/src/games/README.md#originality). See [Adding a Game](packages/website/src/games/README.md).
+- To add a new game: create `packages/website/src/entries/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `packages/website/src/entries/index.ts`, following its [originality rules](packages/website/src/entries/README.md#originality). See [Adding a Game](packages/website/src/entries/README.md).
 
 ## Key Conventions
 
@@ -112,7 +112,7 @@ done. Proposals and tasks share one number sequence.
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/docs/building-with-mvt/performance/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/docs/building-with-mvt/simulating-the-world/models.md)
-7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles, character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/website/src/games/README.md#originality)
+7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles, character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/website/src/entries/README.md#originality)
 
 Full rules: [Architecture Rules](packages/docs/architecture/rules.md)
 

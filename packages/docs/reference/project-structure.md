@@ -268,11 +268,11 @@ Within the site, its shared views are imported as `#shared`, an alias that
 
 ## Game Module Structure
 
-Each game is a self-contained module under `packages/website/src/games/<name>/`. A
+Each game is a self-contained module under `packages/website/src/entries/<name>/`. A
 typical layout:
 
 ```
-packages/website/src/games/<name>/
+packages/website/src/entries/<name>/
 ├── index.ts              Barrel - re-exports createXxxEntry
 ├── <name>-entry.ts       GameEntry factory
 ├── data/
@@ -290,4 +290,4 @@ packages/website/src/games/<name>/
 ```
 
 For details on creating a new game module, see
-`packages/website/src/games/README.md` in the repository.
+`packages/website/src/entries/README.md` in the repository.

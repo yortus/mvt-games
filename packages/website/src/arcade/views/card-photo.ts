@@ -1,4 +1,4 @@
-import { type ArcadeEntry, type CardColor, CARD_COLORS, thumbnailCropOf } from '../../entries';
+import { type ArcadeEntry, type CardColor, CARD_COLORS, thumbnailCropOf } from '../../entry-types';
 import type { Rect } from './rect';
 
 // An entry's card shows its thumbnail as a photo in a polaroid, fitted inside

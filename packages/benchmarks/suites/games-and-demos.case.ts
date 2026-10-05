@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
-import { findEntry } from '@mvtjs/website/catalogue';
-import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/website/entries';
+import { findEntry } from '@mvtjs/website/entries';
+import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/website/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';

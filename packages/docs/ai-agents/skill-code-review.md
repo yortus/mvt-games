@@ -250,7 +250,7 @@ Games and demos may be inspired by classics, but must not copy them. Flag:
   than describing its genre.
 
 These block a merge: ask for original art, names or layouts. Reference: the
-Originality section of `packages/website/src/games/README.md`.
+Originality section of `packages/website/src/entries/README.md`.
 
 ---
 

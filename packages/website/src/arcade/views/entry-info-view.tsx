@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
 import { memoiseLast } from '@mvtjs/utils';
-import type { ArcadeEntry, EntryFacts } from '../../entries';
+import type { ArcadeEntry, EntryFacts } from '../../entry-types';
 import { TAG_GROUPS, tagValuesOf } from '../models';
 import { focusOnOpen } from './focus-on-open';
 import { GROUP_LABELS, sizeLabel, SOURCE_ROOT, tagLabel } from './labels';
@@ -106,7 +106,7 @@ function describeTags(entry: ArcadeEntry | undefined, factsFor: (id: string) => 
     return parts.join(' · ');
 }
 
-/** "1.3k lines, 20 files, in src/games/crumb-chase" */
+/** "1.3k lines, 20 files, in src/entries/crumb-chase" */
 function describeSize(facts: EntryFacts | undefined): string {
     if (facts === undefined) return '';
     return `${sizeLabel(facts)}, in ${facts.sourcePath.replace(WEBSITE_PREFIX, '')}`;

@@ -1,4 +1,4 @@
-import type { ArcadeEntry, EntryFacts, EntryStarter } from '../../entries';
+import type { ArcadeEntry, EntryFacts, EntryStarter } from '../../entry-types';
 import { type ArcadeQuery, parseArcadeQuery } from './arcade-query';
 import {
     type ActiveTags, chipsFor, matchesTags, matchesWords, noActiveTags, searchWordsOf, sortByName, type TagChip, tagValuesOf,

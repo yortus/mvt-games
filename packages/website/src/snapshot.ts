@@ -1,7 +1,7 @@
 import { Application, TextureSource } from 'pixi.js';
 import { refreshView, updateView, type View } from '@mvtjs/pixi';
-import { CATALOGUE, findEntry } from './catalogue';
-import { type ArcadeEntry, type EntrySession, thumbnailCropOf } from './entries';
+import { CATALOGUE, findEntry } from './entries';
+import { type ArcadeEntry, type EntrySession, thumbnailCropOf } from './entry-types';
 
 // The snapshot page (`snapshot.html`), for `scripts/generate-thumbnails.ts`
 // only: it is served by the dev server and left out of the build. Opened as

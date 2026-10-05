@@ -21,7 +21,7 @@
 | Universal MVT rules | [Architecture Rules](../architecture/rules.md) |
 | This repo's code style | [Style Guide](../reference/style-guide.md) |
 | Project layout and barrels | [Project Structure](../reference/project-structure.md) |
-| Adding a new game, and keeping it original | `packages/website/src/games/README.md` (its Originality section) |
+| Adding a new game, and keeping it original | `packages/website/src/entries/README.md` (its Originality section) |
 | All terms defined | [Glossary](../reference/glossary.md) |
 
 ## Skills Files

@@ -4,10 +4,10 @@
     "version": "0.0.0",
     "type": "module",
     "exports": {
-        "./catalogue": "./src/catalogue/index.ts",
         "./entries": "./src/entries/index.ts",
-        "./demos/falling-sand/models": "./src/demos/falling-sand/models/index.ts",
-        "./demos/falling-sand/views": "./src/demos/falling-sand/views/index.ts"
+        "./entry-types": "./src/entry-types/index.ts",
+        "./entries/falling-sand/models": "./src/entries/falling-sand/models/index.ts",
+        "./entries/falling-sand/views": "./src/entries/falling-sand/views/index.ts"
     },
     "imports": {
         "#shared": "./src/shared/index.ts"

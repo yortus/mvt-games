@@ -1,7 +1,7 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import { KeyboardInputView, TouchInputView } from '#shared';
-import type { EntryInputConfig, EntrySession, PixiEntryStarter } from '../entries';
+import type { EntryInputConfig, EntrySession, PixiEntryStarter } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 
 // ---------------------------------------------------------------------------

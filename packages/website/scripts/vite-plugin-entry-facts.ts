@@ -8,7 +8,7 @@
 
 import { resolve, sep } from 'node:path';
 import type { Plugin } from 'vite';
-import { ENTRY_AREAS, readEntryFacts } from './entry-facts';
+import { ENTRIES_DIR, readEntryFacts } from './entry-facts';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -17,7 +17,7 @@ import { ENTRY_AREAS, readEntryFacts } from './entry-facts';
 export function entryFactsPlugin(): Plugin {
     const srcDir = resolve(import.meta.dirname, '..', 'src');
     const repoDir = resolve(import.meta.dirname, '..', '..', '..');
-    const entryDirs = ENTRY_AREAS.map((area) => resolve(srcDir, area) + sep);
+    const entriesDir = resolve(srcDir, ENTRIES_DIR) + sep;
 
     return {
         name: 'entry-facts',
@@ -31,8 +31,7 @@ export function entryFactsPlugin(): Plugin {
         },
         configureServer(server) {
             server.watcher.on('all', (_event, path) => {
-                const resolved = resolve(path);
-                if (!entryDirs.some((dir) => resolved.startsWith(dir))) return;
+                if (!resolve(path).startsWith(entriesDir)) return;
                 const module = server.moduleGraph.getModuleById(RESOLVED_ID);
                 if (module !== undefined) server.moduleGraph.invalidateModule(module);
             });

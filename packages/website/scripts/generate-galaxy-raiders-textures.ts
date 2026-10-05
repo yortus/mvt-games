@@ -15,7 +15,7 @@ import { join } from 'node:path';
 // Output directory
 // ---------------------------------------------------------------------------
 
-const OUT_DIR = join(import.meta.dirname, '..', 'src', 'games', 'galaxy-raiders', 'assets');
+const OUT_DIR = join(import.meta.dirname, '..', 'src', 'entries', 'galaxy-raiders', 'assets');
 mkdirSync(OUT_DIR, { recursive: true });
 
 // ---------------------------------------------------------------------------

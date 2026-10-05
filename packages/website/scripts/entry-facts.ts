@@ -1,7 +1,7 @@
 /**
  * Facts about each entry measured from its source: its size and the renderers
- * it draws with. An entry is a directory under `src/games/`, `src/demos/` or
- * `src/art/`, named for the entry's id.
+ * it draws with. An entry is a directory under `src/entries/`, named for the
+ * entry's id.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -20,12 +20,12 @@ export interface EntryFacts {
     readonly files: number;
     /** The renderers its source imports, in a fixed order. */
     readonly renderers: readonly RendererKind[];
-    /** Its directory, from the repo's root, with forward slashes (`packages/website/src/games/crumb-chase`). */
+    /** Its directory, from the repo's root, with forward slashes (`packages/website/src/entries/crumb-chase`). */
     readonly sourcePath: string;
 }
 
-/** The directories under `src/` that hold entries. */
-export const ENTRY_AREAS = ['games', 'demos', 'art'] as const;
+/** The directory under `src/` that holds the entries, one directory each. */
+export const ENTRIES_DIR = 'entries';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -35,14 +35,10 @@ export const ENTRY_AREAS = ['games', 'demos', 'art'] as const;
 export function readEntryFacts(options: { srcDir: string; repoDir: string }): Record<string, EntryFacts> {
     const { srcDir, repoDir } = options;
     const facts: Record<string, EntryFacts> = {};
-    for (const area of ENTRY_AREAS) {
-        const areaDir = join(srcDir, area);
-        if (!isDirectory(areaDir)) continue;
-        for (const id of readdirSync(areaDir).sort()) {
-            const entryDir = join(areaDir, id);
-            if (!isDirectory(entryDir)) continue;
-            facts[id] = measure(entryDir, repoDir);
-        }
+    const entriesDir = join(srcDir, ENTRIES_DIR);
+    for (const id of readdirSync(entriesDir).sort()) {
+        const entryDir = join(entriesDir, id);
+        if (isDirectory(entryDir)) facts[id] = measure(entryDir, repoDir);
     }
     return facts;
 }
@@ -50,12 +46,9 @@ export function readEntryFacts(options: { srcDir: string; repoDir: string }): Re
 /** Every entry directory under `srcDir`, by id. */
 export function findEntryDirectories(srcDir: string): Record<string, string> {
     const dirs: Record<string, string> = {};
-    for (const area of ENTRY_AREAS) {
-        const areaDir = join(srcDir, area);
-        if (!isDirectory(areaDir)) continue;
-        for (const id of readdirSync(areaDir)) {
-            if (isDirectory(join(areaDir, id))) dirs[id] = join(areaDir, id);
-        }
+    const entriesDir = join(srcDir, ENTRIES_DIR);
+    for (const id of readdirSync(entriesDir)) {
+        if (isDirectory(join(entriesDir, id))) dirs[id] = join(entriesDir, id);
     }
     return dirs;
 }

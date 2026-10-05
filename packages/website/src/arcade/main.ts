@@ -1,8 +1,8 @@
 import { ENTRY_FACTS } from 'virtual:entry-facts';
 import { refreshView, updateView } from '@mvtjs/html';
 import { assert, watch } from '@mvtjs/utils';
-import { CATALOGUE, findEntry } from '../catalogue';
-import type { ArcadeEntry, EntryStarter } from '../entries';
+import { CATALOGUE, findEntry } from '../entries';
+import type { ArcadeEntry, EntryStarter } from '../entry-types';
 import { createEntryHost, isTouchDevice } from '../runner';
 import { createArcadeModel, formatArcadeQuery } from './models';
 import { ArcadeView } from './views';

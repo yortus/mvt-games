@@ -1,5 +1,5 @@
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
-import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter } from '../entries';
+import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 import type { PixiStage } from './pixi-stage';
 import './entry-host.css';

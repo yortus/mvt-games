@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import type { ArcadeEntry } from '../../entries';
+import type { ArcadeEntry } from '../../entry-types';
 import { tagLabel } from './labels';
 import {
     CARD_BORDER, CARD_COLOR_VALUES, cardLookFor, cardPhotoIn, cropStyleFor, liftScaleFor, type PhotoPose, POLAROID_BORDER, tapeFor,
