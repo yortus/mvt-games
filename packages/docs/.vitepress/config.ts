@@ -22,7 +22,7 @@ export default withMermaid(defineConfig({
     appearance: 'dark',
 
     // Inline __SITE_ROOT__ so the custom Layout can build cross-site links
-    // (Games, Playground) that bypass VitePress's SPA router.
+    // (Arcade, Playground) that bypass VitePress's SPA router.
     vite: {
         define: {
             __SITE_ROOT__: JSON.stringify(repoBase),
@@ -38,7 +38,7 @@ export default withMermaid(defineConfig({
     },
 
     themeConfig: {
-        // Cross-site nav (Games / Demos / Docs / Playground) is rendered by the custom
+        // Cross-site nav (Arcade / Docs / Playground) is rendered by the custom
         // Layout via the nav-bar-content-before slot so the links are plain
         // <a> tags not intercepted by VitePress's SPA router.
         nav: [],

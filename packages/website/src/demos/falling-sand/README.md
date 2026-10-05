@@ -10,7 +10,7 @@ model (a record per grain, a typed array per field, or a SolidJS store), one
 of two views of its grains (a sprite per grain, or a pixel per cell), and one
 of three tank sizes, up to 246,240 cells, all fixed for the demo's life and
 chosen in the page's URL
-(`/demos/?storage=arrays&view=pixels&tank=large#falling-sand`). A store is
+(`/?storage=arrays&view=pixels&tank=large#falling-sand`). A store is
 drawn by SolidJS versions of the views, which are pushed changes rather than
 polling; the others are polled, as MVT views are. The switches
 under the buttons show the running choice; pressing one reloads the page with

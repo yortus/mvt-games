@@ -5,7 +5,7 @@ import { assert } from '@mvtjs/utils';
  * Sizes and positions for the demo's views, in canvas pixels. The tank is
  * the same size on screen whatever its size in cells (`TANK_SIZES`, in
  * `model-constants.ts`); a tank of more cells draws each one smaller. The
- * canvas is a fixed size that the gallery scales to fit the window, so one
+ * canvas is a fixed size that the arcade scales to fit the window, so one
  * portrait layout serves phones and desktops alike.
  */
 

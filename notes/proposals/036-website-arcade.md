@@ -10,7 +10,7 @@
 > site-wide loading screen, just a progress bar held inside the zoom when
 > an entry takes longer to load than the zoom takes to play.
 
-**Status:** accepted, being implemented. Absorbs task
+**Status:** accepted, steps 1 to 9 implemented: the Arcade is the home page. Step 10 (the docs) remains. Absorbs task
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (the demos
 screen for every renderer), whose acceptance criteria all reappear here.
 The open questions are resolved (section 12). Progress is kept in section
@@ -23,11 +23,12 @@ the GPU (ANGLE, Direct3D 11), one browser launch per run (see section 3.1).
 
 **Related:**
 [026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (absorbed),
-[`packages/website/src/main.ts`](../../packages/website/src/main.ts) (the cabinet's host),
-[`packages/website/src/cabinet/`](../../packages/website/src/cabinet/),
-[`packages/website/src/demos/main.ts`](../../packages/website/src/demos/main.ts) (the demos gallery),
-[`game-entry.ts`](../../packages/website/src/games/game-entry.ts),
-[`demo-entry.ts`](../../packages/website/src/demos/demo-entry.ts),
+[`packages/website/src/arcade/`](../../packages/website/src/arcade/) (the Arcade),
+[`entries/`](../../packages/website/src/entries/),
+[`catalogue/`](../../packages/website/src/catalogue/) and
+[`runner/`](../../packages/website/src/runner/) (the entries and their host),
+which replace the cabinet (`src/main.ts`, `src/cabinet/`), the demos gallery
+(`src/demos/main.ts`), `game-entry.ts` and `demo-entry.ts`, all now deleted,
 [`packages/website/src/games/README.md`](../../packages/website/src/games/README.md) (adding a game,
 and the originality rules),
 [`@mvtjs/html`](../../packages/html/README.md) (the HTML JSX runtime),
@@ -333,6 +334,9 @@ plus a one-line script that keeps the fragment): `/games/#id` and
 `/demos/#id` to `/#id`, `/demos/boids-3d/` to `/#boids-3d`, and
 `/demos/fruit-machine/` to `/#fruit-machine`. Links to the site from outside
 keep working.
+
+*Changed in step 9:* no redirects. Nobody uses the old addresses yet, so the
+old pages were simply deleted (section 11.16).
 
 ### 5.3 Built the MVT way, in HTML JSX
 
@@ -773,13 +777,17 @@ and the site working.
    production build the Arcade's first load is 18 files, 34 KB gzipped, with
    no Pixi or three.js. Over HTTP/1.1, 18 files arrive in about three waves:
    step 9's measurement will show whether merging chunks is worth it.
-9. **Switch over.** The Arcade becomes `/`. The old pages become redirects
+9. ~~**Switch over.** The Arcade becomes `/`. The old pages become redirects
    (section 5.2). The cabinet (`website/src/cabinet/`), the demos gallery,
    the Pixi pause menu and the old landing page are deleted. Measure the cold
    load again (target: Arcade content under 1.2 s), and add the size budget
-   check (section 4.1).
+   check (section 4.1).~~ Done, without the redirects (section 11.16).
 10. **Docs.** `AGENTS.md`'s "Cabinet Architecture" becomes an "Arcade"
-    section. Update `packages/docs/reference/project-structure.md`, the games'
+    section. The host that drives the loop is now the Arcade's page
+    (`src/arcade/main.ts`) and the entry host, not `src/main.ts`, which
+    step 9 deleted: `AGENTS.md`'s Ticker line,
+    `packages/docs/ai-agents/skill-mvt-view.md` and
+    `packages/docs/building-with-mvt/the-game-loop.md` say otherwise. Update `packages/docs/reference/project-structure.md`, the games'
     README ("Adding a game" becomes adding an entry, of either kind), and
     the demos' README. Record what building the Arcade showed about the HTML
     JSX runtime (026). Archive task 026 as absorbed. Add backlog tasks for
@@ -1246,6 +1254,48 @@ Further changes at the author's request (2026-10-05):
   gone: graph paper across the whole card, 20 pixels square, each line a
   groove, its far side a shade darker than the card and its near side a
   shade lighter, lit from the top left.
+
+### 11.16 Switching over
+
+Step 9, on 2026-10-05:
+
+- **The Arcade is the home page**, `website/index.html`. Deleted: the old
+  landing page, the cabinet (`/games/`, with `src/main.ts` and
+  `src/cabinet/`), the demos gallery (`/demos/`, `src/demos/main.ts`), the
+  pages of their own for Boids in 3D and the Fruit Machine (their
+  `main.ts`, and the runner's `runEntryPage`), and the Pixi pause menu.
+- **No redirects**, at the author's request: nobody uses the old addresses
+  yet, so section 5.2's stubs were not written.
+- **The nav is Arcade, Docs and Playground**, on every page and in the
+  docs' cross-site nav, not the brand link alone (section 5.2). The docs
+  site has no brand link back to the site, so it needs an Arcade link, and
+  the site's pages match it.
+- **The page is dark from its first frame**: an inline style in its head,
+  before the stylesheets arrive.
+- **The size budget** is `packages/checks/scripts/home-page-budget.ts`. It
+  builds the website in memory, with its own Vite config, and walks the home
+  page's chunks from its entry through their static imports. It fails if
+  any of them holds Pixi or three.js (or `@mvtjs/pixi` or `@mvtjs/three`),
+  or if their JavaScript is over 40 KB gzipped. It is 33.7 KB, in four
+  chunks. `build:website`, which deploys run, and `build` run it after
+  building. A static import of Pixi in the Arcade fails it: 100 KB, with
+  Pixi in five chunks.
+- **The cold load, measured** on a local production build (`vite
+  preview`), throttled to 150 ms of latency and about 1.1 MB/s: first paint
+  (FCP, the title and the cards) 0.39 s, largest paint (LCP, a thumbnail)
+  0.92 s, the last request 1.03 s. Three waves, as section 4.1 expected:
+  the HTML; six JavaScript and CSS files; the 13 thumbnails. Well under the
+  1.2 s target. The deployed site is still to be measured, once it is
+  deployed.
+- **`measure-load` reports FCP and LCP now**, and lets the page settle
+  before it reads its timings, so the last request counts the lazy
+  thumbnails. Its screenshot "content" time came out at about 0.17 s, too
+  early: taking a screenshot paints a page before its stylesheets arrive,
+  which a browser left alone does not, and the page's unstyled nav button
+  counted as content. Each run also starts from a black page, as
+  `about:blank` is white.
+- A loose end: the site has no favicon, so every page's first load asks
+  for `favicon.ico` and gets a 404.
 
 ## 12. Open questions, resolved
 

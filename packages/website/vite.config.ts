@@ -10,13 +10,13 @@ const SITE_ROOT = __dirname;
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-/** Redirect `/playground`, `/games`, `/demos` and `/arcade` to their trailing-slash equivalents so Vite serves the index.html. */
+/** Redirect `/playground` to `/playground/`, so Vite serves its index.html. */
 function trailingSlashPlugin(): Plugin {
     return {
         name: 'trailing-slash-rewrite',
         configureServer(server) {
             server.middlewares.use((req, res, next) => {
-                if (req.url === '/playground' || req.url === '/games' || req.url === '/demos' || req.url === '/arcade') {
+                if (req.url === '/playground') {
                     res.writeHead(302, { 'Location': req.url + '/' });
                     res.end();
                     return;
@@ -72,13 +72,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 'main': resolve(SITE_ROOT, 'index.html'),
-                'arcade': resolve(SITE_ROOT, 'arcade/index.html'),
-                'games': resolve(SITE_ROOT, 'games/index.html'),
                 'playground': resolve(SITE_ROOT, 'playground/index.html'),
                 'playground-sandbox': resolve(SITE_ROOT, 'playground/sandbox.html'),
-                'demos': resolve(SITE_ROOT, 'demos/index.html'),
-                'demos-boids-3d': resolve(SITE_ROOT, 'demos/boids-3d/index.html'),
-                'demos-fruit-machine': resolve(SITE_ROOT, 'demos/fruit-machine/index.html'),
             },
         },
     },

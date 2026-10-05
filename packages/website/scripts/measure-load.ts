@@ -1,7 +1,8 @@
 /**
  * Times a page loading uncached, in headless Chrome: when its DOM was ready,
- * when its last request finished, and when content first showed below the
- * site's nav bar.
+ * when the browser first painted content (FCP) and its largest piece of
+ * content (LCP), when its last request finished, and when content first
+ * showed below the site's nav bar in a screenshot.
  *
  * Usage:  npm run measure-load -- <url> [--runs=2] [--throttle] [--waterfall]
  *
@@ -12,6 +13,10 @@
  *
  * "Content" is the first screenshot, taken every ~150 ms, with more than 0.3%
  * of its pixels bright, so a dark page with nothing drawn yet does not count.
+ * Taking a screenshot can paint a page before its stylesheets arrive, which a
+ * browser left alone would not, so trust FCP and LCP over it. Each run waits
+ * for the page to settle before reading its timings, so the last request
+ * includes what it loads lazily, such as images.
  * Each launch of headless Chrome can cost a failed Windows logon (see
  * `headless-chrome.ts`): measure a handful of runs, not loops of them.
  */
@@ -31,6 +36,8 @@ const NAV_HEIGHT = 60;
 const SAMPLE_FOR_MS = 12000;
 const BRIGHT_LUMINANCE = 60;
 const CONTENT_FRACTION = 0.003;
+/** How long a page is left to settle after it loads, before its timings are read. */
+const SETTLE_MS = 2000;
 
 const browser = await launchHeadlessChrome();
 try {
@@ -42,7 +49,8 @@ try {
         : { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
 
     for (let run = 1; run <= runs; run++) {
-        await browser.navigate('about:blank');
+        // From a black page, not about:blank, which is white and would count as content
+        await browser.navigate('data:text/html,<body style="background:%23000">');
         const startMs = Date.now();
         await browser.send('Page.navigate', { url });
         let contentMs: number | undefined;
@@ -50,17 +58,28 @@ try {
             const elapsedMs = Date.now() - startMs;
             if (await brightFraction() > CONTENT_FRACTION) contentMs = elapsedMs;
         }
-        const timing = await browser.evaluate<{ domReady: number; lastRequest: number; requests: [string, number, number][] }>(`(() => {
+        const timing = await browser.evaluate<Timing>(`(async () => {
+            if (document.readyState !== 'complete') await new Promise((done) => addEventListener('load', done, { once: true }));
+            await new Promise((done) => setTimeout(done, ${SETTLE_MS}));
+            const lcp = await new Promise((done) => {
+                new PerformanceObserver((list) => done(list.getEntries().at(-1)?.startTime ?? 0))
+                    .observe({ type: 'largest-contentful-paint', buffered: true });
+                setTimeout(() => done(0), 500);
+            });
             const nav = performance.getEntriesByType('navigation')[0];
+            const fcp = performance.getEntriesByName('first-contentful-paint')[0];
             const res = performance.getEntriesByType('resource');
             return {
                 domReady: Math.round(nav ? nav.domContentLoadedEventEnd : 0),
+                fcp: Math.round(fcp ? fcp.startTime : 0),
+                lcp: Math.round(lcp),
                 lastRequest: Math.round(res.reduce((m, r) => Math.max(m, r.responseEnd), 0)),
                 requests: res.map((r) => [r.name.split('/').pop(), Math.round(r.startTime), Math.round(r.responseEnd)]),
             };
         })()`);
         const content = contentMs === undefined ? `none in ${SAMPLE_FOR_MS} ms` : `${contentMs} ms`;
-        console.log(`Run ${run}: DOM ready ${timing.domReady} ms, last request ${timing.lastRequest} ms, content ${content}`);
+        console.log(`Run ${run}: DOM ready ${timing.domReady} ms, FCP ${timing.fcp} ms, LCP ${timing.lcp} ms, `
+            + `last request ${timing.lastRequest} ms (${timing.requests.length} requests), screenshot content ${content}`);
         if (waterfall) {
             for (const [name, start, end] of timing.requests) {
                 console.log(`    ${String(start).padStart(6)} ${String(end).padStart(6)}  ${name}`);
@@ -70,6 +89,14 @@ try {
 }
 finally {
     await browser.close();
+}
+
+interface Timing {
+    readonly domReady: number;
+    readonly fcp: number;
+    readonly lcp: number;
+    readonly lastRequest: number;
+    readonly requests: readonly (readonly [string, number, number])[];
 }
 
 /** The fraction of the page below the nav bar that is bright, from a quarter-size screenshot. */

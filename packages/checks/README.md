@@ -35,6 +35,7 @@ package depends on each package it checks, and nothing depends on it.
 | File | Keeps |
 | --- | --- |
 | [renderer-tick-api.test.ts](./renderer-tick-api.test.ts) | Every renderer package re-exports the same tick API names from `@mvtjs/utils`, as the base's own values |
+| [scripts/home-page-budget.ts](./scripts/home-page-budget.ts) | The website's home page, the Arcade, loads no renderer before its first paint (no Pixi, no three.js), and its JavaScript stays under a budget, gzipped. Builds the website in memory, so `npm run build:website` runs it after building, rather than `npm test`. Alone: `npm run check:home-page-budget` |
 | [scripts/view-type-registration.ts](./scripts/view-type-registration.ts) | Every entry point a renderer package publishes brings the renderer's view type into `View`, in its built declaration files. Checks `dist/`, so `npm run build:packages` runs it after building, rather than `npm test`. Alone, once built: `npm run check:view-type-registration` |
 
 ## Adding a check

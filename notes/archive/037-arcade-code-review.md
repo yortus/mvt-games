@@ -15,9 +15,9 @@ and its many rounds of layout and transition feedback: the Arcade
 entry host (`runner/`), and the build scripts (`scripts/`). The old cabinet
 and demos pages were only adapted to the new entries, and go in 036's step
 9, so they were not reviewed. Reviewed against the
-[code review skill](../../../packages/docs/ai-agents/skill-code-review.md),
-the [architecture rules](../../../packages/docs/architecture/rules.md) and the
-[style guide](../../../packages/docs/reference/style-guide.md).
+[code review skill](../../packages/docs/ai-agents/skill-code-review.md),
+the [architecture rules](../../packages/docs/architecture/rules.md) and the
+[style guide](../../packages/docs/reference/style-guide.md).
 
 ### Summary
 
