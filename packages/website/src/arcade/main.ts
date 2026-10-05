@@ -83,7 +83,8 @@ const watcher = watch({
 });
 watcher.poll();
 
-// A link to an entry (`#crumb-chase`) launches it; going back or forward in history follows
+// A link to an entry (`#crumb-chase`) launches it; going back or forward in history follows,
+// so Back from an entry returns to the wall
 launchFromFragment();
 window.addEventListener('hashchange', launchFromFragment);
 
@@ -127,7 +128,9 @@ function followModel(): void {
     }
     if (restarts.changed) host.restart();
     host.isPaused = model.isPaused;
-    if (phase.changed || query.changed) writeUrl();
+    if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
+    else if (phase.changed && phase.value === 'browsing') writeUrl('leave');
+    else if (phase.changed || query.changed) writeUrl('replace');
 }
 
 /**
@@ -176,10 +179,32 @@ function pageElement(id: string): HTMLElement {
     return element;
 }
 
-function writeUrl(): void {
-    const search = formatArcadeQuery(location.search, model.query, model.chips);
+/** Marks the history step an entry's URL was pushed on, so leaving it knows to step back. */
+const ENTRY_STEP = 'arcade-entry';
+
+/**
+ * Writes the URL. Going into an entry adds a step to the browser's history,
+ * with the wall beneath it, so Back (a phone's back button, say) returns to
+ * the wall rather than leaving the arcade, even from a link straight to the
+ * entry. Leaving the entry some other way (its exit, or a failed load) takes
+ * that step back off. Everything else rewrites the step the page is on.
+ */
+function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
+    const wallUrl = location.pathname + formatArcadeQuery(location.search, model.query, model.chips);
     const entry = model.phase === 'browsing' ? undefined : model.activeEntry;
-    history.replaceState(undefined, '', location.pathname + search + (entry === undefined ? '' : `#${entry.id}`));
+    const isEntryStep = history.state === ENTRY_STEP;
+    if (step === 'enter' && entry !== undefined && !isEntryStep) {
+        history.replaceState(undefined, '', wallUrl);
+        history.pushState(ENTRY_STEP, '', `${wallUrl}#${entry.id}`);
+    }
+    else if (step === 'leave' && isEntryStep) {
+        // The hashchange this brings finds the arcade already browsing
+        history.back();
+    }
+    else {
+        // An entry's step stays one through a reload, or Forward back to it
+        history.replaceState(isEntryStep ? ENTRY_STEP : undefined, '', entry === undefined ? wallUrl : `${wallUrl}#${entry.id}`);
+    }
 }
 
 function launchFromFragment(): void {
@@ -189,7 +214,7 @@ function launchFromFragment(): void {
         return;
     }
     if (findEntry(id) === undefined) {
-        writeUrl();
+        writeUrl('replace');
         return;
     }
     if (model.phase === 'browsing') model.launch(id);

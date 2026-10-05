@@ -52,7 +52,8 @@ Which state belongs to the model, and which to the views?
   the phase (`'browsing' | 'loading' | 'ready' | 'playing'`), the entry
   launched, and whether it is paused. These are what the visitor asked for.
   The URL is a projection of them: `main.ts` writes the query and the
-  fragment from the model (`writeUrl`), and reads them back on load.
+  fragment from the model (`writeUrl`), and reads them back on load. Going
+  into an entry adds a history step, so Back returns to the wall.
 - **In the views:** which card is selected (`selected` in
   [`card-wall-view.tsx`](./views/card-wall-view.tsx)), where each card is
   and where it is sliding to (the layout), and every frame of the way in and
