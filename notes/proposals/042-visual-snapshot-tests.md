@@ -15,27 +15,33 @@
 > from the renderer, hashed in the page and compared with a hash the
 > reference file carries; the slow work (PNG files, diffs) happens only
 > when a picture has changed. **Consistency:** the same code gives the
-> same pictures on every machine, CI included. Every machine draws in one
-> pinned environment, a Linux container running Playwright's browser
-> server, with software WebGL, pinned fonts and locale. A fingerprint of
-> that environment is committed, and checked before anything is compared.
-> Runs on Vitest's browser mode.
+> same pictures on every machine, CI included, with nothing to install
+> beyond `npm ci`. Everything that differs between machines is pinned
+> inside the browser itself: one Chromium build, fetched by Playwright on
+> first use; software WebGL and software 2D drawing; and test fonts in a
+> format Chrome draws with its own font engine on every operating system,
+> standing in for every font the views name. A fingerprint of that
+> environment is committed and checked before anything is compared. Runs
+> on Vitest's browser mode. No Docker, no VM, no licences.
 
 **Status:** proposed. Nothing is built. Both headline goals rest on
-numbers that can only be measured: how long a picture takes on the fast
-path, and whether the container gives identical pixels on this machine and
-on a GitHub runner. Step 1 is a spike that measures both, at scale, and
-records the results here before anything else is built. Docker is not
-installed on this machine (nor WSL), and the design needs it (section
-5.3, open question 1).
+things that can only be measured: how long a picture takes on the fast
+path, and whether the pinned browser gives identical pixels on this
+machine (Windows) and on GitHub's Linux and Windows runners. Text is the
+hard part, and section 5.4 sets out a ladder of ways to pin it, tried in
+order. Step 1 is a spike that measures all of it and records the results
+here before anything else is built.
 
-**Written:** 2026-10-05, revised 2026-10-06 to put speed and consistency
-first. Against branch `036` at `4c3fd85`. Draws on the workshop's version
-of the same idea (`mvt-workshop`, Lab 02, Experiment 2.1,
+**Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
+first, then again the same day to drop the Docker container for pinning
+inside the browser, so that setup is `npm ci` and nothing else. Against
+branch `036` at `4c3fd85`. Draws on the workshop's version of the same
+idea (`mvt-workshop`, Lab 02, Experiment 2.1,
 `src/labs/lab-02-testable-models/lab-02-experiments.mdx`), and its
 solution on the workshop's `solutions-and-extras` branch at `604535d`.
-Vitest's and Playwright's features are as their documentation described
-them on these dates (Vitest 5, the repo has 5.0.1; Playwright 1.63).
+Vitest's, Playwright's and Chrome's behaviour is as their documentation
+and announcements described it on these dates (Vitest 5, the repo has
+5.0.1; Playwright 1.63; Chrome's Fontations rollout as of Chrome 133).
 Nothing was measured for this proposal; every timing in it is an
 estimate, and says so.
 
@@ -64,14 +70,16 @@ eye because headless Chrome drew the canvas blank),
 | 4 | **One page for the whole run** (`isolate: false`): modules load once, one WebGL context, shaders compile once, textures load once | [4.3](#43-one-page-one-renderer) |
 | 5 | **No screenshots on the fast path.** Pixi and three.js pictures are read from the renderer (`readPixels`), hashed in the page, and compared with the hash stored in the reference PNG. No PNG is encoded, decoded or sent anywhere unless the hashes differ | [4.4](#44-pixels-from-the-renderer-hashes-not-images) |
 | 6 | HTML views need a real screenshot: a slower path, in a project of their own that isolates each file, since their stylesheets would otherwise leak | [4.5](#45-html-the-slow-path-kept-small) |
-| 7 | **One reference environment:** a Linux container (Playwright's image, pinned by digest) running Playwright's browser server. Every machine and CI connects to it; the tests and Vite stay on the host. Software WebGL, pinned fonts, locale, time zone and scale | [5.3](#53-one-reference-environment-a-pinned-container) |
-| 8 | A committed **fingerprint** of that environment (browser, WebGL renderer, and the hashes of a calibration set of pictures), checked before any comparison. Elsewhere, the tests refuse to compare or update, and say why | [5.4](#54-a-fingerprint-checked-first) |
-| 9 | **Exact first, tolerance second.** A pass is an identical hash. Only on a mismatch is the picture compared with a small tolerance, and a pass within tolerance is reported, not hidden | [5.5](#55-exact-first-tolerance-second) |
-| 10 | References are PNGs written by our own encoder (byte-identical for identical pixels, on any machine), carrying their pixel hash in a text chunk, with no platform in their names: there is one platform | [5.6](#56-reference-files-the-same-bytes-from-any-machine) |
-| 11 | Run by Vitest's browser mode, with the Playwright provider connecting to the container. A `visual` project apart from `unit`; `npm test` stays browser-free unless step 1 shows visual runs are fast enough to join it | [6](#6-running-them) |
-| 12 | CI runs the visual tests on every push, in the same container, against the same references | [9](#9-ci) |
-| 13 | Whole entries get a visual test each, from the code the thumbnail page already uses to start and advance them | [10](#10-whole-entries-for-free) |
-| 14 | The existing scene-graph view tests stay. They test behaviour, not looks | [11](#11-what-stays-and-what-changes) |
+| 7 | **One environment, pinned inside the browser.** Playwright's Chromium (its build fixed by the lockfile, fetched on first use), software WebGL (SwiftShader) and software 2D drawing, locale, time zone and scale. Nothing to install beyond `npm ci` | [5.3](#53-one-environment-pinned-inside-the-browser) |
+| 8 | **Text is pinned by test fonts** that Chrome draws with its own engine (Fontations and Skia) on every operating system, standing in for every family the views name. Fallbacks, in order: test fonts in another such format; glyphs drawn as paths for canvas text; Windows as the one reference system | [5.4](#54-text-the-hard-part) |
+| 9 | A committed **fingerprint** (browser build, WebGL renderer, and the hashes of a calibration set of pictures), checked before any comparison. Where it does not match, the tests refuse to compare or update, and say why | [5.5](#55-a-fingerprint-checked-first) |
+| 10 | **Exact first, tolerance second.** A pass is an identical hash. Only on a mismatch is the picture compared with a small tolerance, and a pass within tolerance is reported, not hidden | [5.6](#56-exact-first-tolerance-second) |
+| 11 | References are PNGs written by our own encoder (byte-identical for identical pixels, on any machine), carrying their pixel hash in a text chunk, with no platform in their names: there is one environment | [5.7](#57-reference-files-the-same-bytes-from-any-machine) |
+| 12 | Containers and VMs (Docker, Podman, Rancher Desktop, WSL) would pin more, but each needs an install, and WSL, on Windows. Kept only as a last resort | [5.8](#58-containers-vms-and-the-other-alternatives) |
+| 13 | Run by Vitest's browser mode with the Playwright provider. A `visual` project apart from `unit`; `npm test` stays browser-free unless step 1 shows visual runs are fast enough to join it | [6](#6-running-them) |
+| 14 | CI runs the visual tests on every push, on Ubuntu, against the same references | [9](#9-ci) |
+| 15 | Whole entries get a visual test each, from the code the thumbnail page already uses to start and advance them | [10](#10-whole-entries-for-free) |
+| 16 | The existing scene-graph view tests stay. They test behaviour, not looks | [11](#11-what-stays-and-what-changes) |
 
 ## 1. Background
 
@@ -108,7 +116,7 @@ is the view, in this state. Everything else (finding the tests, drawing,
 capturing, comparing, reporting, accepting) belongs to the test system,
 written once.
 
-Two properties decide whether such a suite gets used or quietly
+Three properties decide whether such a suite gets used or quietly
 abandoned:
 
 - **Speed.** The unit suite runs over 1500 tests in about 15 seconds,
@@ -117,16 +125,20 @@ abandoned:
   suite before committing. The goal is a cost per picture close enough to
   a unit test's that adding one is not a decision.
 - **Consistency.** A picture must depend on the code and nothing else: not
-  the machine, its GPU, its fonts, its locale, or the browser that
-  happened to update itself last night. A suite whose references only
+  the machine, its operating system, GPU, fonts or locale, or the browser
+  that happened to update itself last night. A suite whose references only
   match on one machine fails everywhere else, and a failure people learn to
   ignore is worse than no test.
+- **No setup.** Clone, `npm ci`, run. No Docker, no VM, no system fonts
+  to install, nothing with a licence to check. A step a contributor (or
+  a fresh CI runner, or an agent's new worktree) has to remember is a
+  step that gets skipped.
 
-The architecture makes a good start on both. A view is a function of its
-bindings. Its presentation state starts valid at construction and advances
-only through `update(deltaMs)`. Models advance only through
-`update(deltaMs)`, never on the wall clock. So a posed view is
-deterministic by construction, and needs no waiting: the same bindings
+The architecture makes a good start on the first two. A view is a
+function of its bindings. Its presentation state starts valid at
+construction and advances only through `update(deltaMs)`. Models advance
+only through `update(deltaMs)`, never on the wall clock. So a posed view
+is deterministic by construction, and needs no waiting: the same bindings
 and the same steps give the same frame, the moment `refreshView` returns.
 What remains is the browser, and how much work is done per picture.
 
@@ -176,6 +188,8 @@ What to keep:
   and the WebGL context is made once. Section 4.3 keeps it.
 - **The tight tolerance**, and the reason for it.
 - **Committed references, `test:visual` and `test:visual:update`.**
+- **Playwright's own Chromium**, installed by Playwright rather than the
+  machine's Chrome. Section 5.3 builds on it.
 
 What to change, and why:
 
@@ -193,8 +207,9 @@ What to change, and why:
   the page, so each pose is a real test: named, filterable, watchable,
   reported on its own.
 - **References from whichever machine ran last.** The workshop's file
-  names carry `-chromium`, but the pictures depend on the machine's fonts
-  and GPU too. Section 5 makes one environment the only one.
+  names carry `-chromium`, but the pictures depend on the machine's fonts,
+  GPU and operating system too. Section 5 makes them depend on none of
+  those.
 - **Centring on a fixed canvas.** This repo's views are drawn from their
   top-left, at sizes from a 20 pixel HUD line to a 960 by 540 machine. The
   picture fits the view's bounds unless the test gives a size (section 6.5).
@@ -400,7 +415,7 @@ the options match at compile time. A three.js pose without a camera does
 not compile.
 
 There is no per-test tolerance option. A test that needs one is a test
-whose picture is not deterministic, and section 5.5 handles the
+whose picture is not deterministic, and section 5.6 handles the
 environment-wide case; a single view that cannot be drawn the same way
 twice is a finding to fix or to record, not to paper over.
 
@@ -408,10 +423,11 @@ The browser-side code lives in the website, at
 `packages/website/src/testing/`, imported as `#testing` (a second entry in
 the package's `imports`, beside `#shared`). It is kept out of `#shared`
 because it imports Vitest, which must never reach the site's bundle. The
-Node-side code (the browser commands, the PNG encoder, the container
-script) lives in `packages/website/scripts/visual/`, beside the other
-build-time tools. Only the website has views to photograph today; open
-question 4 asks whether it should become a package.
+Node-side code (the browser commands, the PNG encoder, the Vite plugin
+that maps font names, section 5.4) lives in
+`packages/website/scripts/visual/`, beside the other build-time tools.
+Only the website has views to photograph today; open question 3 asks
+whether it should become a package.
 
 ## 4. Speed
 
@@ -424,7 +440,7 @@ a few times it is, and that is the target:
 
 | Measure | Target |
 | --- | --- |
-| Start-up, once per run: connect to the browser, load the page and its modules, make the renderer, compile shaders | 3 s |
+| Start-up, once per run: launch the browser, load the page and its modules and fonts, make the renderer, compile shaders | 3 s |
 | A Pixi or three.js picture, median | 5 ms |
 | The same, 95th percentile (whole screens, big textures) | 25 ms |
 | An HTML picture, median | 30 ms |
@@ -438,6 +454,9 @@ generated suite of 1000 pictures of real views, and if a target is missed,
 says where the time went. Every run then prints the same figures (start-up,
 median and 95th percentile per kind, the ten slowest tests), so a slow
 test is noticed when it is added, not a year later.
+
+The first run on a machine also downloads Playwright's Chromium (section
+5.3), once, into a cache every checkout shares. That is not counted.
 
 ### 4.2 Where the time goes, done the obvious way
 
@@ -475,8 +494,8 @@ reported example went from 7 s to 600 ms. Here it means:
   is slow enough to matter if it happened per file.
 - **Textures load once.** Each entry's texture registry keeps what it
   loaded, so `textures.load()` in a pose costs a check after the first.
-- **Fonts settle once.** `document.fonts.ready` is awaited once, before
-  the first picture.
+- **Fonts load once.** The test fonts (section 5.4) load before the first
+  picture.
 
 Shared state is the price, and section 5.1 lists what the harness resets
 before every test so that order cannot change a picture. A periodic run
@@ -499,7 +518,7 @@ The harness:
    which runs at native speed (a 960 by 540 picture is about 2 MB, a
    millisecond or two). The width and height go into the hash too.
 4. Compares the hash with the reference's. The references' hashes reach
-   the page once per run, as one small table (section 5.6); a passing
+   the page once per run, as one small table (section 5.7); a passing
    test makes no call to Node at all.
 
 Only when the hashes differ, or there is no reference, does the picture
@@ -581,74 +600,150 @@ pixels:
 
 | Source | How it differs | Effect on pictures |
 | --- | --- | --- |
-| **Text rasterisation** | Chrome draws glyphs with DirectWrite on Windows, FreeType on Linux, Core Text on macOS | Every glyph's antialiasing differs, even with the same font file. This alone rules out sharing references across operating systems |
+| **Text rasterisation** | For the fonts a system has installed, Chrome draws glyphs with DirectWrite on Windows, FreeType (moving to Fontations) on Linux, Core Text on macOS | Every glyph's antialiasing differs, even with the same font file |
 | **Installed fonts** | `monospace` is Consolas on Windows, DejaVu Sans Mono or Liberation Mono on Linux; Segoe UI exists only on Windows | Different letters, widths, wrapping, bounds |
 | **GPU and driver** | A different GPU, or the same one with another driver, rounds and antialiases differently | Edges, gradients, MSAA |
+| **2D canvas drawing** | Chrome draws canvas 2D on the GPU where it can | The same as above, for Pixi's text, which is drawn on a 2D canvas first |
 | **Browser version** | The installed Chrome updates itself | Anything, at any time, with no commit to blame |
 | **Locale and time zone** | Number and date formatting (`toLocaleString`) follow the machine | Text content itself |
 | **Device scale** | High-DPI screens | Picture size |
 | **Colour management** | Display profiles | Screenshots' colours (not `readPixels`) |
-| **CPU** | Software WebGL compiles shaders for the CPU it runs on | Possibly nothing; unknown until measured (section 5.5) |
+| **CPU** | Software drawing (SwiftShader, Skia) generates or picks code for the CPU it runs on | Possibly nothing on x64 machines; unknown until measured (section 5.6) |
 
 The usual answer, one set of references per platform, is the worst of
 both: every visual change needs updating on every platform, and the set
 for the platform you are not on cannot be updated at all. Ruled out
-(see Settled).
+(see Settled). The other usual answer, a container everyone draws in,
+needs Docker or a VM (section 5.8). This proposal pins each row of the
+table inside the browser instead.
 
-### 5.3 One reference environment: a pinned container
+### 5.3 One environment, pinned inside the browser
 
-Instead, there is one environment, and every machine uses it:
+Each row of section 5.2, and what pins it, with nothing installed beyond
+`npm ci`:
 
-- **A Linux container**, built from Playwright's own image
-  (`mcr.microsoft.com/playwright:v<version>-noble`), pinned by digest,
-  with a `Dockerfile` of a few lines in `scripts/visual/`. It runs
-  Playwright's browser server (`playwright run-server`), and nothing else.
-  Fonts, the browser build, the operating system's libraries: all fixed by
-  the digest.
-- **The tests stay on the host.** Vitest and Vite run where they run now.
-  The Playwright provider's `connectOptions` connect to the container's
-  browser over a websocket, and Playwright's `exposeNetwork: '<loopback>'`
-  lets that browser reach the host's Vite server as `localhost`, through
-  the same connection. Nothing needs mounting into the container, and the
-  repo's files are never read across the Windows-Linux boundary, which
-  would be slow.
-- **Software WebGL, explicitly.** The launch arguments select ANGLE on
-  SwiftShader. The container has no GPU, so this is also what it would do
-  anyway; saying so means a GPU-equipped CI runner cannot change it.
-- **The rest pinned in the browser context:** locale `en-US`, time zone
-  `UTC`, device scale 1, colour profile sRGB, scrollbars hidden.
-- **Long-lived.** `npm run test:visual` starts the container if it is not
-  running, and leaves it running: a second run, or watch mode, connects in
-  a fraction of a second. `npm run visual:stop` stops it.
-- **The same in CI** (section 9): GitHub's Ubuntu runners have Docker, and
-  run the same image.
+- **Browser version: Playwright's Chromium.** Playwright pins one
+  Chromium build per Playwright version, and the lockfile pins
+  Playwright, so the browser changes only in a commit that changes the
+  lockfile. It is the same Chromium revision on Windows, Linux and macOS.
+  `npm run test:visual` checks that it is installed and, the first time,
+  has Playwright download it (its headless shell, about 100 MB) into
+  Playwright's cache in the user's profile, which every checkout and
+  worktree then shares. `npm ci` itself downloads nothing, so CI jobs and
+  checkouts that never run visual tests do not pay for it.
+- **GPU: none.** The launch arguments select ANGLE on SwiftShader, the
+  CPU implementation of WebGL that ships inside Chromium, the same code on
+  every operating system. A machine's GPU and driver no longer take part.
+  SwiftShader is also what makes the canvas draw at all in a headless
+  browser without a GPU, the cause of 018's blank canvas.
+- **2D canvas: on the CPU.** Accelerated 2D canvas is turned off, so
+  Pixi's text, drawn on a 2D canvas before it becomes a texture, is drawn
+  by Skia's software rasteriser: again the same code everywhere.
+- **Fonts and text: test fonts.** The hard part, with a section of its
+  own (5.4).
+- **Locale, time zone, scale, colour:** set in the browser context:
+  locale `en-US`, time zone `UTC`, device scale 1, colour profile sRGB,
+  scrollbars hidden.
+- **CPU:** cannot be pinned, only measured (section 5.6).
 
-Two facts about this machine follow. **It needs Docker**, which needs WSL
-2 on Windows, and neither is installed. That is a one-time install per
-machine (Docker Desktop, or Podman), and open question 1. And **the
-failed-logon problem disappears**: the browser runs as a Linux user in a
-container, and never touches Windows' logon (section 8).
+The browser is a native process, launched by Playwright on whatever
+machine runs the tests. On Windows that brings back the failed-logon
+problem, which section 8 deals with.
 
-The pictures will not look exactly as a visitor on Windows sees the site:
-a Segoe UI label will be drawn in the container's fallback sans. That is
-fine. A visual test answers "has this changed?", not "is this what a
-visitor sees?", and the container answers it the same way everywhere. If
-the stand-in fonts ever make reviewing diffs confusing, the image can add
-the fonts the site names (where their licences allow) or the site can
-serve its own; either is a change to the image, made once.
+### 5.4 Text, the hard part
 
-**CPU architecture** is the one thing the image cannot pin. Playwright's
-images are built for x64 and arm64, and SwiftShader generates code for the
-CPU it runs on. Every machine in sight today is x64 (this one, and GitHub's
-standard runners). An arm64 machine (an Apple Silicon Mac) would run the
-x64 image under emulation, slower but the same, rather than the arm64 one.
+Pinning the browser build and turning off the GPU leaves text: the fonts
+a machine has, and the system's own glyph rasteriser. Fonts can be
+supplied. The rasteriser is the difficulty: for an ordinary font, Chrome
+on Windows hands glyphs to DirectWrite, whose antialiasing differs from
+Linux's, even for the same font file.
 
-### 5.4 A fingerprint, checked first
+But not for every font. Chrome has been moving its font handling to
+**Fontations**, its own font engine in Rust, drawing through Skia. Since
+Chrome 133 it handles every web font on Linux, and on Windows and macOS
+it handles the formats the system does not support, among them **CFF2**
+(variable fonts with PostScript outlines) and **COLRv1** (vector colour
+fonts). A web font in one of those formats is therefore drawn by the
+same code, Fontations and Skia, on every operating system. That is the
+opening this design uses.
+
+**The test fonts.** Two variable fonts from Adobe, released under the
+SIL Open Font License, and already in CFF2: **Source Sans 3** and
+**Source Code Pro**. Variable, so every weight the views ask for (bold,
+800, 900) is one file. Committed under `src/testing/fonts/`, like the
+textures. No licence question, no install.
+
+**Standing in for every family the views name.** The views ask for
+`monospace` (39 times), the fruit machine's
+`"Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif`, the site's
+`-apple-system, BlinkMacSystemFont, 'Segoe UI', ...`, a `ui-monospace`
+stack and a `Georgia, serif` one. Three mechanisms make all of them land
+on the test fonts:
+
+- **Named families are shadowed.** An `@font-face` rule for `"Segoe UI"`
+  (and `Helvetica`, `Arial`, `Georgia`, `Consolas` and the rest) wins
+  over an installed font of the same name. The harness declares one for
+  every name the views use, pointing at the test fonts.
+- **Generic families are rewritten.** `monospace`, `sans-serif`, `serif`,
+  `system-ui`, `ui-monospace` and `-apple-system` cannot be shadowed. In
+  CSS, a small Vite plugin, used only by the visual projects, rewrites them
+  in `font-family` declarations to the test families. On a 2D canvas
+  (Pixi's text), the harness wraps the `font` setter of
+  `CanvasRenderingContext2D` to do the same to the font string Pixi sets.
+  That is a rewrite of a name, not of how text is drawn.
+- **Nothing escapes unnoticed.** Any family name the canvas wrapper does
+  not know fails the test that used it ("font 'Comic Sans MS' is not
+  pinned: add it to the test fonts' names"). For HTML pictures, the
+  calibration (section 5.5) and a weekly check ask Chrome, through the
+  DevTools protocol (`CSS.getPlatformFontsForNode`), which fonts it really
+  used, and fail on any that is not a test font.
+
+The pictures will not look exactly as a visitor sees the site: a Segoe UI
+label is drawn in Source Sans. That is fine. A visual test answers "has
+this changed?", not "is this what a visitor sees?", and it answers the same
+way on every machine.
+
+**The ladder.** Whether CFF2 test fonts give identical text on Windows and
+Linux is the claim step 1 most needs to check, because one detail could
+spoil it: Skia's text gamma and contrast, applied to glyph coverage, are
+set per platform in Chrome's build. If the CFF2 fonts still differ, the
+next rung is tried, and so on:
+
+1. **CFF2 test fonts**, as above. Text behaves exactly like text:
+   colours, gradients, outlines and shadows all apply as they do now.
+2. **The same fonts in COLRv1.** A vector colour font whose glyphs are
+   one layer each, painted in the current text colour. Chrome draws such
+   glyphs as filled paths through Skia, not as glyph masks, so no text
+   gamma applies. Made from the same OFL fonts by a small generator script
+   (adding the `COLR` and `CPAL` tables), its output committed. The cost:
+   colour glyphs ignore some text styling (a canvas `strokeText` outline,
+   a gradient fill, `background-clip: text`), so a view using those would
+   show it.
+3. **Canvas text drawn as paths.** For Pixi's text only: the harness's
+   canvas wrapper draws each glyph's outline, read from the test font,
+   with `fill` and `stroke` on a `Path2D`, and answers `measureText` from
+   the font's own metrics. Skia's path filling, on the CPU, is the same
+   everywhere. DOM text is not covered.
+4. **One reference system: Windows.** If DOM text still differs between
+   Windows and Linux, the references are made on Windows (where the
+   machines that write them are), and CI runs the visual tests on
+   GitHub's `windows-latest` runners. The test fonts still pin which font
+   is used, and the calibration (section 5.5) catches a Windows update that
+   changes how it is drawn. Linux and macOS machines could then run the
+   tests only for pictures without DOM text, or not at all (open question
+   1).
+
+Rungs 1 and 2 cover canvas and DOM text alike; rung 3 covers canvas text
+only, which is most of the views' text (39 of the font declarations found
+are Pixi text styles asking for `monospace`). Rung 4 always works, at the cost of tying the references to
+one operating system.
+
+### 5.5 A fingerprint, checked first
 
 The worst failure of a visual suite is three hundred red tests caused by
-one thing nobody can see: a different browser, a missing font. So before
-comparing anything, the run checks that it is in the reference
-environment.
+one thing nobody can see: a different browser, a font that was not
+pinned. So before comparing anything, the run checks that it is in the
+reference environment.
 
 A committed file, `packages/website/visual-environment.json`, holds the
 reference environment's fingerprint:
@@ -657,38 +752,40 @@ reference environment's fingerprint:
   ANGLE and SwiftShader, and their versions);
 - the locale, time zone and device scale;
 - the hashes of a **calibration set**: a dozen tiny pictures, each
-  exercising one way a picture can differ. Text in each font family the
-  views use, in canvas text (Pixi) and in the DOM. An antialiased circle,
-  with and without MSAA. A gradient. A blur filter. A texture sampled
-  linearly and nearest. A lit, shaded three.js sphere.
+  exercising one way a picture can differ. Each test font, at several
+  sizes and weights, in canvas text (Pixi) and in the DOM. An antialiased
+  circle, with and without MSAA. A gradient. A blur filter. A texture
+  sampled linearly and nearest. A lit, shaded three.js sphere.
 
 At the start of a run, each worker draws the calibration set and compares
-it, and the rest, with the committed fingerprint. If anything differs, the
-run stops before the first test, and says what differed: "the monospace
-calibration picture differs: this is not the reference environment (is
-the container running? `npm run test:visual` starts it)". One clear
-error, not three hundred.
+it with the committed fingerprint. If anything differs, the run stops
+before the first test, and says what differed: "the DOM text calibration
+picture differs from the reference: text is not drawn the same way on
+this machine". One clear error, not three hundred.
 
 The same check guards updating: `test:visual:update` refuses to write
-references outside the reference environment, so a wrong picture cannot
-be accepted by accident. Upgrading the environment (a new Playwright, a
-new image) is deliberate: `test:visual:update --environment` rewrites the
-fingerprint, and the same commit carries every reference the upgrade
+references when the fingerprint does not match, so a wrong picture cannot
+be accepted by accident. Upgrading the environment (a new Playwright, so a
+new Chromium) is deliberate: `test:visual:update --environment` rewrites
+the fingerprint, and the same commit carries every reference the upgrade
 changed, each reviewable.
 
-### 5.5 Exact first, tolerance second
+### 5.6 Exact first, tolerance second
 
 With one environment, the expected result is identical pixels, and a pass
 is an identical hash. That is also what keeps passing tests fast (section
 4.4).
 
-There is one gap no pinning closes: whether SwiftShader gives
-bit-identical results on different x64 CPUs (this machine's, and a GitHub
-runner's). It should, and step 1 measures it, but if it does not, the
-answer is not to give up exactness everywhere. On a hash mismatch, the
-picture goes to Node, which compares it with the reference using
-pixelmatch with a small tolerance (its default per-pixel colour threshold,
-and a handful of mismatched pixels at most). Then:
+There is one gap no pinning closes: whether software drawing gives
+bit-identical results on different CPUs. SwiftShader generates its code
+for the CPU it runs on, and Skia picks among code paths by the CPU's
+features. On x64 machines it should make no difference, and step 1
+measures it (this machine against GitHub's runners); on an arm64 machine
+(an Apple Silicon Mac) small differences would not be surprising. If it
+does differ, the answer is not to give up exactness everywhere. On a hash
+mismatch, the picture goes to Node, which compares it with the reference
+using pixelmatch with a small tolerance (its default per-pixel colour
+threshold, and a handful of mismatched pixels at most). Then:
 
 - **Within tolerance:** the test passes, and the run's summary counts it
   ("12 pictures matched within tolerance, not exactly"). A count that
@@ -699,9 +796,11 @@ and a handful of mismatched pixels at most). Then:
 The tolerance is fixed and small, for the workshop's reason: a loose one
 hides real regressions (2% of mismatched pixels missed a text colour
 change). A real change to a view changes hundreds of pixels, not a
-handful.
+handful. The fingerprint uses the same rule, so a machine whose
+calibration pictures differ only within tolerance is let through, and
+counted.
 
-### 5.6 Reference files: the same bytes from any machine
+### 5.7 Reference files: the same bytes from any machine
 
 References are PNGs, because people review them, and VS Code's source
 control view shows a PNG's old and new versions side by side. Three
@@ -719,8 +818,79 @@ choices make them consistent too:
   run (section 9) decodes every reference and checks that its pixels still
   match its hash, so a hand-edited PNG cannot pass unnoticed.
 - **No platform in the name.** `SpinButtonView-spin.png`, not
-  `...-chromium-win32.png`. There is one platform; a name that suggests
+  `...-chromium-win32.png`. There is one environment; a name that suggests
   otherwise invites a second set.
+
+### 5.8 Containers, VMs and the other alternatives
+
+Every option that was considered for pinning the environment, against the
+three properties of section 1.2:
+
+| Option | Beyond `npm ci` | Licence | Consistency | Speed |
+| --- | --- | --- | --- | --- |
+| **Pinned inside the browser** (recommended) | Nothing; Chromium is fetched on first run | Apache 2.0 (Playwright, SwiftShader), BSD (Chromium), OFL (fonts) | Everything but text by construction; text by section 5.4's ladder | Best: a native browser, nothing in between |
+| Docker Desktop, a Linux container running Playwright's browser server | Docker Desktop, and WSL 2 on Windows | Paid for larger organisations (250 or more staff, or over US$10 million revenue); free for personal use | The most complete: the operating system, fonts and libraries pinned by an image digest | Tests tunnel the page's requests to the container; slower start |
+| Podman, or Rancher Desktop, with the same container | The tool, and WSL 2 on Windows | Apache 2.0, free | As Docker | As Docker |
+| WSL 2 itself, with Playwright's Linux browser | WSL 2 and a distribution | Free | Linux's fonts, but only as pinned as the distribution's packages | Good |
+| A remote browser (a server, or a cloud workspace) | An account, a running server | Costs money | As a container | Network latency on every request |
+| References made and checked only in CI | Nothing | Free | Complete | No local check at all: every visual change round-trips through CI |
+
+Containers pin more than this proposal can (the whole operating system,
+with no ladder of rungs to climb for text), and for a team on mixed
+machines they would be the conventional answer. Here they fail the third
+property: every one needs an install, and on Windows each also needs WSL
+2, which this machine does not have. They stay the last resort: if step
+1 finds that text cannot be pinned inside the browser, and rung 4 of the
+ladder (Windows as the one reference system) proves unworkable too, a
+container (Podman, to avoid the licence question) is where this goes
+next.
+
+### 5.9 Will it last?
+
+Pinning inside the browser leans on Chrome's internals, so it is fair to
+ask what could undo it later. Checked against Chromium's source
+(`third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc`,
+`main`, 2026-10-06):
+
+- **The font routing does not depend on the operating system.** A web
+  font is matched against an ordered list of rules. CFF2 (and COLRv1, CBDT
+  and avar2) go to `MakeFontationsFallbackPreferred`, which always makes a
+  Fontations typeface: no platform `#if`, no runtime check, no feature
+  flag. The CFF2 rule comes before the general variable-font rule, which is
+  the one that does ask the system (on Windows, `MakeVariationsTypeface`
+  hands a variable TrueType font to DirectWrite if
+  `DWriteVersionSupportsVariations()`). So Windows or macOS gaining support
+  for CFF2 changes nothing: Chrome does not ask them. A variable TrueType
+  test font, by contrast, would be drawn by DirectWrite on Windows, which
+  is why the test fonts must be CFF2.
+- **Nothing on the machine can change it.** Fontations, Skia, SwiftShader
+  and the routing rules are all inside Playwright's Chromium, and that is
+  pinned by the lockfile. An operating system update cannot change how a
+  test font or a WebGL picture is drawn. Only upgrading Playwright can, and
+  that is a commit.
+- **An upgrade is checked where it would show.** A commit that changes
+  Playwright's version runs the visual tests on both Ubuntu and Windows
+  (section 9). If a new Chromium changed the routing or the rasterisation,
+  the calibration pictures disagree between the two, and the upgrade stops
+  there, before any reference is rewritten. The fix is then to climb
+  section 5.4's ladder, or to stay on the older Playwright while deciding.
+- **The direction of travel helps.** Chrome moved to Fontations for memory
+  safety, and has said it will extend it (to system fonts, starting with
+  Linux and ChromeOS). Handing untrusted web fonts back to the system's
+  parser would undo that. If Chrome ever uses Fontations for all web fonts
+  on Windows and macOS, as it already does on Linux, the CFF2 requirement
+  falls away and any test font would do.
+- **The larger long-term risk is SwiftShader, not fonts.** Since Chrome
+  137, Chrome no longer falls back to SwiftShader for WebGL automatically;
+  it takes `--enable-unsafe-swiftshader`. Chrome keeps it for testing and
+  headless use, and ANGLE's own tests depend on it, but if it were ever
+  removed, there would be no software WebGL common to every system
+  (Windows has WARP and Linux has llvmpipe, which differ). Pictures would
+  then have to be made on one system (rung 4's answer, applied to WebGL),
+  or in a container.
+- **Rung 3 depends on no font engine at all.** Drawing canvas glyphs as
+  paths from the font file goes through Skia's path filling only, so it
+  survives any change to how Chrome handles fonts.
 
 ## 6. Running them
 
@@ -732,7 +902,7 @@ choices make them consistent too:
 | Where the test runs | In the page: a pose is ordinary code | In Node, driving a page that holds the poses | In Node, driving a page |
 | One pose, one test | Yes: named, filterable (`-t`), watchable | No: one test loops over every pose | Ours to build |
 | One page for every file | `isolate: false` | Yes, by design | Yes |
-| Remote browser in a container | `connectOptions`, passed to Playwright's `connect` | Yes | No: CDP to a local Chrome |
+| Pinned browser | Playwright's Chromium | Playwright's Chromium | The installed Chrome, which updates itself |
 | Comparison, update, report | Ours (section 4.4), on Vitest's commands and reporters | Built in, screenshot-based | Ours |
 | Runners in the repo | One (Vitest, as now) | Two | One, plus a script |
 
@@ -746,8 +916,8 @@ sections 4 and 5 set out to avoid.
 
 Our own runner, on `headless-chrome.ts`, is the fallback if step 1 finds
 Vitest's per-test overhead in browser mode too high to meet the budget.
-The workshop's one-page design is close to the fast path already; the
-difference would be reading pixels instead of screenshots.
+It would have to drive Playwright's Chromium rather than the installed
+Chrome, for section 5.3's sake.
 
 ### 6.2 Projects, and the commands
 
@@ -755,28 +925,25 @@ The root `vitest.config.ts` becomes three projects:
 
 - **`unit`**: everything that runs now, in Node, unchanged.
 - **`visual`**: `**/*.visual.tsx` except `*.html.visual.tsx`, in browser
-  mode, `isolate: false`, connected to the container.
+  mode, `isolate: false`.
 - **`visual-html`**: `**/*.html.visual.tsx`, the same but isolated per
   file.
 
 Both visual projects use the website's Vite config, merged, so the
 spritesheet and entry facts plugins serve what the views load, and
 `@mvtjs/source` resolves the libraries to their source as everywhere
-else. The suffix `.visual.tsx` (not `.visual.test.tsx`) keeps the files
-out of the `unit` project's default include.
+else; they add the font-name plugin (section 5.4). The suffix
+`.visual.tsx` (not `.visual.test.tsx`) keeps the files out of the `unit`
+project's default include.
 
 | Command | Runs |
 | --- | --- |
-| `npm test` | `vitest run --project unit`: as now, no browser, no Docker |
-| `npm run test:visual` | Starts the container if needed, checks the fingerprint, runs both visual projects |
+| `npm test` | `vitest run --project unit`: as now, no browser |
+| `npm run test:visual` | Installs Playwright's Chromium if missing, checks the fingerprint, runs both visual projects |
 | `npm run test:visual:update` | The same, writing a reference for every picture that changed or is new, and none for the rest |
 | `npm run test:visual -- -t SpinButton` | One group, as with any Vitest run |
-| `npm run visual:stop` | Stops the container |
 
-Whether `npm test` should include the visual projects is open question 3.
-If step 1 meets the budget, a visual run adds a few seconds, and the case
-for one command is strong. The cost is that `npm test` would then need
-Docker running.
+Whether `npm test` should include the visual projects is open question 2.
 
 ### 6.3 What `visualTest` does
 
@@ -803,7 +970,7 @@ Vitest's browser commands are functions that run in Node and are called
 from the page. The harness needs four:
 
 - `visualReferences()`: once per worker, the table of reference names and
-  hashes, read from the files' text chunks (section 5.6), and the
+  hashes, read from the files' text chunks (section 5.7), and the
   fingerprint.
 - `visualMismatch(name, pixels)`: decodes the reference, compares within
   tolerance, writes the actual picture and a diff to `.vitest/visual/`,
@@ -886,33 +1053,52 @@ benchmark suite that made a new profile per case locked the user out of
 the machine on 2026-10-02 (fixed in `e433c90`); `headless-chrome.ts` now
 keeps one profile for every launch.
 
-The container removes the problem: its browser is a Linux process, and
-never consults Windows. Nothing in this design launches a browser on
-Windows.
+Playwright's default launch makes a new profile in a temporary directory
+each time, which would be a failed logon per run, and per restart in watch
+mode. Vitest's Playwright provider has a `persistentContext` option
+(Vitest 4.1 and later), which keeps the profile between runs, by default
+in `node_modules/.cache/vitest-playwright-user-data`. The visual projects
+turn it on. A checkout's first visual run is then one failed logon, and
+later runs none.
 
-If open question 1 is answered "no Docker" for some machine, and a
-native browser is used there after all, Vitest's Playwright provider has
-`persistentContext` (Vitest 4.1 and later), which keeps one profile in
-`node_modules/.cache/`; one failed logon per checkout, then none. Such a
-machine is not the reference environment, so its runs could not compare
-with the committed references (section 5.4); see open question 2.
+What step 1 checks, once, carefully (counting failed logons, event 4625 in
+the Security log, before and after two runs):
+
+- **Whether Playwright's headless shell makes the logon attempt at all.**
+  It is built from the same Chromium, but without most of the browser
+  around it, password manager included. Assume it does until shown
+  otherwise.
+- **Whether a reused profile is enough**, as it is for Chrome.
+- **Whether `persistentContext` combines with the context options**
+  (scale, locale, time zone) and with several workers.
+
+Agents follow the benchmarks' rule: never run visual tests in a loop, and
+keep to a handful of runs per half hour. A new worktree has its own
+`node_modules/`, so its first run costs one logon.
 
 ## 9. CI
 
 The deploy workflows run `npm test` on `ubuntu-latest`, unaffected.
 
-A visual job runs `npm run test:visual` on every push, with the same
-image, started by the same script. GitHub's Ubuntu runners have Docker,
-and are x64. If step 1's estimate holds, the job costs well under a
-minute beyond `npm ci` and pulling the image (cacheable).
+A visual job runs `npm run test:visual` on every push, on
+`ubuntu-latest`, after the same `npm ci`. Playwright's browser cache is
+kept between runs with the cache action, keyed on Playwright's version.
+If step 1's estimates hold, the job costs well under a minute beyond
+`npm ci`. If section 5.4's ladder ends at rung 4, the job runs on
+`windows-latest` instead.
 
-A weekly scheduled job runs the suite in shuffled order, and decodes
-every reference to check that its pixels match its stored hash (sections
-4.3 and 5.6).
+A commit that changes Playwright's version (so Chromium's) also runs the
+visual job on `windows-latest`, beside Ubuntu, so an upgrade that draws
+differently on one system is caught before it is accepted (section 5.9).
+
+A weekly scheduled job runs the suite in shuffled order, checks which
+fonts Chrome really used for every HTML picture, and decodes every
+reference to check that its pixels match its stored hash (sections 4.3,
+5.4 and 5.7).
 
 Consistency between this machine and CI is the claim most worth testing
 before relying on it, and step 1 tests it directly: the same spike suite,
-run in the container here and on a GitHub runner, must give identical
+run here and on GitHub's Ubuntu and Windows runners, must give identical
 hashes.
 
 ## 10. Whole entries, for free
@@ -952,40 +1138,35 @@ anyway.
 **The docs become true.** `testing.md` already says the project uses
 Playwright for visual tests; it gains how. `testing-views.md` replaces its
 `/test-harness?view=...` example with `visualTest` and `advanceTime`,
-and gains the two problems this proposal is built around, since they are
-what a reader adopting MVT elsewhere most needs to hear. The view skill
-(`skill-mvt-view.md`) asks for a `.visual.tsx` beside a new view, with a
-picture per state its bindings can show. AGENTS.md's command table gains
-the commands, and the project structure page gains `__screenshots__/`,
-`src/testing/` and `scripts/visual/`.
+and gains the problems this proposal is built around (speed, and
+consistency without a container), since they are what a reader adopting
+MVT elsewhere most needs to hear. The view skill (`skill-mvt-view.md`)
+asks for a `.visual.tsx` beside a new view, with a picture per state its
+bindings can show. AGENTS.md's command table gains the commands, and the
+project structure page gains `__screenshots__/`, `src/testing/` and
+`scripts/visual/`.
 
 ## 12. Open questions
 
-1. **Docker on every development machine?** Consistency, as designed,
-   needs it (section 5.3), and this machine has neither Docker nor WSL. The
-   install is one-time, and Docker Desktop is free for personal use;
-   Podman is an alternative without a licence question. Recommendation:
-   yes. Without it, references can only be made and checked in CI.
-2. **A local mode without the container?** For a machine without Docker,
-   a mode that draws in a native browser and compares only with that
-   machine's own earlier run (kept under `node_modules/.cache/`, never
-   committed) would still answer "did my refactor change anything?". It
-   adds a second way to run, and a second set of pictures to explain.
-   Recommendation: not unless question 1 is answered no somewhere.
-3. **Visual tests in `npm test`?** Recommendation: decide after step 1. If
-   the budget holds, yes, with `npm test` starting the container like
-   `test:visual` does.
-4. **A package?** `visualTest` and `advanceTime` are not specific to the
+1. **If the ladder ends at Windows, what about other systems?** Rung 4
+   (section 5.4) ties references to Windows. A Linux or macOS machine
+   could then still run every picture without DOM text (the calibration
+   says which kinds match), or none. Recommendation: decide only if step 1
+   lands there.
+2. **Visual tests in `npm test`?** With no container to start, the only
+   costs are the run's few seconds and the one-time browser download.
+   Recommendation: decide after step 1. If the budget holds, yes.
+3. **A package?** `visualTest` and `advanceTime` are not specific to the
    website, and `advanceTime` is not specific to visual tests. A private
    `@mvtjs/testing` would serve the benchmarks or a future package's own
-   views; a published one would serve users of the libraries.
-   Recommendation: start in the website, and move it when a second
-   package needs it.
-5. **What if SwiftShader draws something wrongly?** If a view uses a
+   views; a published one would serve users of the libraries, and the
+   pinning of section 5 would be most of its value. Recommendation: start
+   in the website, and move it when a second package needs it.
+4. **What if SwiftShader draws something wrongly?** If a view uses a
    feature software WebGL gets wrong, its pictures would be consistently
    wrong, which still catches changes, but would confuse a reviewer.
    Decide when it happens, if it does.
-6. **Resolution 1 or 2 by default?** 1 keeps pictures small and fast, and
+5. **Resolution 1 or 2 by default?** 1 keeps pictures small and fast, and
    is what pixel art wants. Smooth views lose detail at 1 that a
    regression could hide in. Recommendation: 1, with `resolution: 2` for
    the views that need it.
@@ -993,12 +1174,17 @@ the commands, and the project structure page gains `__screenshots__/`,
 ## 13. Implementation steps
 
 1. **Spike, and measure.** Before building anything to keep:
-   - **Consistency.** Install Docker (question 1). Build the image; run
-     the browser server; connect Vitest with `exposeNetwork`. Draw the
-     calibration set and a few real views: confirm the canvas is not
-     blank, and record the WebGL renderer string. Run ten times: identical
-     hashes, or how much noise. Run the same on a GitHub `ubuntu-latest`
-     runner: identical hashes to this machine's, or how much noise.
+   - **The browser.** Add `@vitest/browser-playwright` and `playwright`;
+     launch Playwright's Chromium headless shell with SwiftShader and
+     software 2D canvas, with `persistentContext`. Confirm the canvas is
+     not blank, and record the WebGL renderer string. Count failed logons
+     before and after two runs (section 8).
+   - **Consistency.** Draw the calibration set and a few real views, with
+     the test fonts (rung 1). Run ten times here: identical hashes, or how
+     much noise. Run the same on GitHub's `ubuntu-latest` and
+     `windows-latest` runners: identical to this machine's, or how much
+     noise, and in which calibration pictures. If text differs, climb the
+     ladder (section 5.4) one rung at a time and record each result.
    - **Speed.** A throwaway generated suite of 1000 pictures from real
      views (every spin button mode, every reel position, every entry's
      HUD at several values, a few whole screens), in 100 files. With
@@ -1011,10 +1197,12 @@ the commands, and the project structure page gains `__screenshots__/`,
      where the time goes before moving on; if Vitest's own per-test
      overhead is the cause, reconsider section 6.1's fallback.
 2. **The harness.** `#testing` with `visualTest` (Pixi first, then HTML)
-   and `advanceTime`; the setup file and its resets; the PNG encoder and
-   its hash chunk; the browser commands; the fingerprint and the
-   calibration set; the three projects; the npm scripts and the container
-   script; `.vitest/` in `.gitignore`. The run's timing summary.
+   and `advanceTime`; the setup file and its resets; the test fonts, their
+   `@font-face` names, the font-name Vite plugin and the canvas wrapper;
+   the PNG encoder and its hash chunk; the browser commands; the
+   fingerprint and the calibration set; the three projects; the npm
+   scripts, with the browser installed on first run; `.vitest/` in
+   `.gitignore`. The run's timing summary.
 3. **First tests.** The fruit machine's Pixi leaf views (spin button, win
    banner counting, reel window), one pixel-art game screen, and one HTML
    view (the Arcade's card, or the fruit machine's control panel). Make a
@@ -1036,20 +1224,20 @@ the commands, and the project structure page gains `__screenshots__/`,
 
 Do not reopen without new information.
 
+- **Nothing to install beyond `npm ci`.** A requirement, from the user
+  (2026-10-06): no Docker, no VM, nothing with a licence to check. It is
+  why section 5 pins the environment inside the browser, and why
+  containers are the last resort (section 5.8), not the design.
 - **One set of references per platform.** Every visual change would need
   updating on every platform, and the set for a platform you are not on
-  cannot be updated at all. One reference environment instead (section
-  5.3).
-- **Native browsers made consistent by shims.** Pinning software WebGL in
-  a native Chromium, and drawing canvas text from bundled fonts through
-  a patched `fillText`, could make Pixi pictures match across operating
-  systems. It cannot do the same for DOM text, which every HTML view has,
-  and it would test a patched browser. The container pins everything
-  without patching anything.
+  cannot be updated at all. One environment instead.
 - **Tolerance as the answer to inconsistency.** A tolerance loose enough to
   absorb another operating system's text rendering is loose enough to miss
   a real change to text (the workshop's finding). Tolerance is only the
-  second check, small and counted (section 5.5).
+  second check, small and counted (section 5.6).
+- **The machine's own Chrome.** It updates itself, so references would
+  change with no commit to blame. Playwright's Chromium, pinned by the
+  lockfile, instead.
 - **Screenshots for WebGL views.** Slower (section 4.2), and subject to
   the compositor and colour management. Pixels are read from the renderer.
 - **Snapshots of the scene graph, not of pixels.** 022 built a plain-object
