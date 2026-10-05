@@ -88,10 +88,9 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
-| 036 | [The website, and one Arcade for every entry](./proposals/036-website-arcade.md) | Accepted, steps 1-11 implemented: the Arcade is the home page, the cabinet, the demos gallery and their pages are gone, the docs describe the Arcade and its entries, and attract mode plays a selected card's entry live (step 11, awaiting review). `site/` becomes `packages/website/`, and `docs/`, `benchmarks/` and `checks/` follow. The cabinet and the demos gallery become one Arcade, the home page, written in HTML JSX: cards in several columns for every entry on any renderer (lazy `pixi` and `element` entries), one search box for names and tags, committed thumbnails, the cabinet's zoom kept. Measured the 5 s first load as serial round trips on a cold CDN edge (thumbnails cost 97 ms of CPU): no loading screen, just a progress bar held in the zoom when loading outlasts it. Also found HTTPS broken on yortus.com. Absorbs task 026 |
 | 042 | [Visual snapshot tests for views](./proposals/042-visual-snapshot-tests.md) | Proposed; nothing built, step 1 is a measuring spike. A view's visual test is one `visualTest(name, pose)` call in a `*.visual.tsx` beside it: the pose builds the view (advancing time with `advanceTime` if it has presentation state) and returns it; Vitest's browser mode (Playwright's Chromium, `toMatchScreenshot`) draws, captures and compares it with a committed reference. A `visual` project apart from `unit`, so `npm test` stays browser-free; one persistent browser profile, so runs cost no failed Windows logon; seeded `Math.random` and software WebGL for the same pixels every run. Local only at first. Draws on the workshop's Lab 02 experiment |
 
-**How they relate.** All ten can be read on their own. 022 is the
+**How they relate.** All nine can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
 012's method caching in its generic scene-pass core. 008 concerns
 the `watch()` helper (now in `@mvtjs/utils`), and now also whether `memoiseLast`
@@ -107,8 +106,8 @@ archived: guarding against two copies of the scene passes in one program,
 and a shared `SKIP_DESCENDANTS` symbol. 031, now archived, renamed the tick
 API that 027 named, before 011's first publish. 034 adds a game that
 follows the games' originality rules, and tests 013's inherent cost in a
-shipping game. 035 adds a demo that follows the same rules. 036 absorbs
-task 026, and would list 034 and 035 in its Arcade. 042 would reuse 036's
+shipping game. 035 adds a demo that follows the same rules, and would be an
+entry in the Arcade that 036, now archived, built. 042 would reuse 036's
 thumbnail code to give every entry a visual test, and makes true what 015's
 testing docs already describe.
 
@@ -155,6 +154,7 @@ testing docs already describe.
 | 030 | [A Self-Describing Perfmon Panel](archive/030-self-describing-perfmon.md) | 2026-10-02 |
 | 031 | [Proposal: the tick API in MVT's own words](archive/031-tick-api-in-mvt-terms.md) (`updateView` / `refreshView` and `setUpdate` / `setRefresh`, one set for every renderer; `tickCounter`; `PerformanceMetrics`; "scene pass" retired) | 2026-10-03 |
 | 033 | [Fruit Machine Demo](archive/033-fruit-machine-demo/task.md) (one model, four views: Pixi, three.js, an HTML panel and a terminal) | 2026-10-03 |
+| 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/website/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
 
 ## Elsewhere

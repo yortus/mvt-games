@@ -33,7 +33,7 @@ and [Testing](../../packages/docs/building-with-mvt/iterating-with-confidence/te
 and [`packages/website/src/snapshot.ts`](../../packages/website/src/snapshot.ts)
 (the thumbnail pipeline, which already starts entries headless and
 photographs them),
-[036 section 9](./036-website-arcade.md#9-thumbnails) (thumbnails),
+[036 section 9](../archive/036-website-arcade.md#9-thumbnails) (thumbnails),
 [022 section 11.1](./022-renderer-agnostic-jsx.md#111-a-plain-object-jsx-target-for-tests-recommended-first) (a plain-object JSX target
 that offered tree snapshots, deleted unused),
 [018](../archive/018-one-view-convention.md) (whose views were checked by

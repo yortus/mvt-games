@@ -9,7 +9,7 @@
 ## Description
 
 The Arcade (`packages/website/src/arcade/`, proposal
-[036](../../proposals/036-website-arcade.md)) is the first real application
+[036](../../archive/036-website-arcade.md)) is the first real application
 screen built with `@mvtjs/html`'s JSX runtime: a search box with tokens and
 suggestions, a card wall that reflows, dialogs, a pause menu, and a
 transition that moves elements every frame. What it showed about the

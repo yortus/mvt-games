@@ -19,7 +19,7 @@ carries the entry's own tags and its thumbnail as `og:image`, and sends the
 visitor on to `/#<id>` (a `<meta http-equiv="refresh">`, with a script that
 does it at once). Share links to it in place of the fragment.
 
-Decided in proposal [036](../../proposals/036-website-arcade.md) (section
+Decided in proposal [036](../../archive/036-website-arcade.md) (section
 12, question 5): link previews come later, and entries stay on fragments
 until then.
 

@@ -10,8 +10,8 @@
 > site-wide loading screen, just a progress bar held inside the zoom when
 > an entry takes longer to load than the zoom takes to play.
 
-**Status:** accepted, steps 1 to 11 implemented: the Arcade is the home page, the docs describe it, and attract mode plays a selected card's entry live (step 11, awaiting review). Absorbed task
-[026](../archive/026-demos-screen-for-every-renderer.md) (the demos
+**Status:** implemented, all eleven steps, and archived 2026-10-05: the Arcade is the home page, the docs describe it, and attract mode plays a selected card's entry live. Loose ends are tasks 038-041. Absorbed task
+[026](./026-demos-screen-for-every-renderer.md) (the demos
 screen for every renderer), whose acceptance criteria all reappear here.
 The open questions are resolved (section 12). Progress is kept in section
 11's steps.
@@ -22,18 +22,18 @@ measured on the deployed site (`http://yortus.com/mvt-games/`, built from
 the GPU (ANGLE, Direct3D 11), one browser launch per run (see section 3.1).
 
 **Related:**
-[026](../archive/026-demos-screen-for-every-renderer.md) (absorbed),
+[026](./026-demos-screen-for-every-renderer.md) (absorbed),
 [`packages/website/src/arcade/`](../../packages/website/src/arcade/) (the Arcade),
-[`entries/`](../../packages/website/src/entries/),
-[`catalogue/`](../../packages/website/src/catalogue/) and
-[`runner/`](../../packages/website/src/runner/) (the entries and their host),
+[`entries/`](../../packages/website/src/entries/) (the entries and the catalogue),
+[`entry-types/`](../../packages/website/src/entry-types/) and
+[`runner/`](../../packages/website/src/runner/) (what an entry is, and its host),
 which replace the cabinet (`src/main.ts`, `src/cabinet/`), the demos gallery
 (`src/demos/main.ts`), `game-entry.ts` and `demo-entry.ts`, all now deleted,
-[`packages/website/src/games/README.md`](../../packages/website/src/games/README.md) (adding a game,
-and the originality rules),
+[`packages/website/src/entries/README.md`](../../packages/website/src/entries/README.md) (adding an
+entry, and the originality rules),
 [`@mvtjs/html`](../../packages/html/README.md) (the HTML JSX runtime),
-[034](./034-neon-monsoon-bullet-hell.md) and
-[035](./035-demoscene-demo.md) (the next two entries).
+[034](../proposals/034-neon-monsoon-bullet-hell.md) and
+[035](../proposals/035-demoscene-demo.md) (the next two entries).
 
 ## Summary
 

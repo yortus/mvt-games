@@ -21,7 +21,7 @@ Move the touch controls to an HTML view, in `@mvtjs/html`'s JSX, laid over
 the play area by the host for an entry of either kind. The keyboard input
 (`KeyboardInputView`) has no picture, and could move with them.
 
-Decided in proposal [036](../../proposals/036-website-arcade.md) (section
+Decided in proposal [036](../../archive/036-website-arcade.md) (section
 12, question 7): touch controls stay a Pixi view until an `element` entry
 needs them.
 
