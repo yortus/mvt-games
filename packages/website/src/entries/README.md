@@ -1,29 +1,37 @@
-# Adding a Game
+# Adding an Entry
 
-> Step-by-step guide to creating a new game module and registering it with
-> the cabinet. Covers directory structure, GameEntry/GameSession interfaces,
-> models, views, and the registration process.
+> Step-by-step guide to adding a game or a demo to the Arcade. Covers the
+> directory layout, the `start/` directory every entry has, models, views,
+> the two kinds of starter, the catalogue and the thumbnail.
 
 See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 ## Overview
 
-Each game in this project is a self-contained module under `packages/website/src/games/<name>/`.
-The cabinet manages game selection and delegates to the active game session
-each frame. To add a new game, you need:
+Everything the Arcade lists is an **entry**: a game, a demo, or one day an
+art piece. Each is a self-contained module under
+`packages/website/src/entries/<id>/`, named for its id. Games and demos are
+built the same way; the difference is in their metadata, such as their
+`kind` tag and a game's instructions. To add one, you need:
 
-1. A directory structure with data, models, and views.
-2. A `GameEntry` factory that describes your game to the cabinet.
-3. A registration in `packages/website/src/games/index.ts`.
+1. A directory with data, models, and views.
+2. A `start/` directory: `entry.ts`, what the Arcade lists, and `load.ts`,
+   the code it imports when the entry is launched.
+3. A line in `catalogue.ts`.
+4. A thumbnail.
+
+The Arcade lists every entry without loading any entry's code, so the first
+paint of the page stays small. The code, and the renderer it draws with,
+load only when someone launches the entry.
 
 ## Originality
 
-A game here can be inspired by a classic, but must not copy it. Ideas,
+An entry here can be inspired by a classic, but must not copy it. Ideas,
 genres and mechanics are free to use; titles, character names and designs,
 artwork, music and specific level layouts are not.
 
 - **Art** is drawn from scratch, in a generator script in `packages/website/scripts/`
-  (`generate-<name>-textures.ts`) or in the game's views, so where it came
+  (`generate-<name>-textures.ts`) or in the entry's views, so where it came
   from is in the repo. Never use sprites ripped from another game, and do not
   trace or closely follow someone else's artwork, even reworked.
 - **Characters** are your own designs, named for what they are.
@@ -33,49 +41,22 @@ artwork, music and specific level layouts are not.
 - **In prose**, describe a game by its genre ("a maze chase", "inspired by
   golden-age arcade games"), not as a clone of a named game.
 
-## The `GameEntry` and `GameSession` Interfaces
-
-Every game implements two interfaces defined in `packages/website/src/games/game-entry.ts`:
-
-**`GameEntry`** - a descriptor for a game that can be registered in the
-cabinet:
-
-```ts
-interface GameEntry {
-    readonly id: string;              // unique identifier (e.g. 'breakout')
-    readonly name: string;            // display name (e.g. 'Breakout')
-    readonly screenWidth: number;     // desired canvas width in pixels
-    readonly screenHeight: number;    // desired canvas height in pixels
-    readonly thumbnailAdvanceMs?: number;  // ms to advance for thumbnail
-    load?: () => Promise<void>;           // optional asset loading
-    start: (stage: Container) => GameSession;
-}
-```
-
-**`GameSession`** - a running game instance:
-
-```ts
-interface GameSession {
-    update: (deltaMs: number) => void;    // advance game state
-    destroy: () => void;                  // tear down and clean up
-}
-```
-
-The cabinet calls `entry.start(stage)` to launch the game, then calls
-`session.update(deltaMs)` each frame. When the game exits,
-`session.destroy()` cleans up.
-
 ## Directory Structure
 
-Create a new directory under `packages/website/src/games/`:
+Create a new directory under `packages/website/src/entries/`, named for the
+entry's id:
 
 ```
-packages/website/src/games/breakout/
-├── index.ts              Barrel - re-exports createBreakoutEntry
-├── breakout-entry.ts     GameEntry factory
+packages/website/src/entries/breakout/
+├── index.ts              Barrel - export { entry } from './start'
+├── start/
+│   ├── index.ts          Barrel - export { entry } from './entry'
+│   ├── entry.ts          `entry`: what the Arcade lists, and `load`
+│   ├── load.ts           `load()`: loads the assets, returns how to start the entry
+│   └── thumbnail.webp    Its card's picture (Step 6)
 ├── data/
-│   ├── index.ts          Barrel - re-exports shared game constants
-│   └── constants.ts      Shared game constants (used by both models and views)
+│   ├── index.ts          Barrel - re-exports shared constants
+│   └── constants.ts      Shared constants (used by both models and views)
 ├── models/
 │   ├── index.ts          Barrel - re-exports all models, types, and model constants
 │   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
@@ -92,7 +73,9 @@ packages/website/src/games/breakout/
     └── brick-view.ts      Brick renderer
 ```
 
-A view whose body is written in JSX is a `.tsx` file instead; see Step 3.
+`start/` is the same in every entry. Everything else is the entry's own: a
+small demo may have only `models/` and `views/`. A view whose body is
+written in JSX is a `.tsx` file instead; see Step 3.
 
 Note: The `data/` directory is a practical organisational choice, not an MVT
 architectural layer.
@@ -279,21 +262,31 @@ export function GameView(bindings: GameViewBindings): Container {
 `width: number`, so the paddle view reads it once, at construction, and does
 not support it changing.
 
-## Step 4: Create the Entry Point
+## Step 4: Write the Starter (`start/load.ts`)
 
-The entry point factory creates the `GameEntry` descriptor:
+`load()` loads the entry's assets and returns a **starter**: how to start the
+entry, and how the host should run it. Its types are in
+[`entry-types/`](../entry-types/entry-starter.ts). An entry drawn with Pixi
+returns a `pixi` starter, and draws on a stage the host owns:
 
 ```ts
-import type { GameEntry, GameSession } from '../game-entry';
+import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { createGameModel } from '../models';
+import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
+import { textures } from '../data';
 
-function createBreakoutEntry(): GameEntry {
+/** Loads Breakout's textures, and returns how to start it. */
+export async function load(): Promise<PixiEntryStarter> {
+    await textures.load();
+
     return {
-        id: 'breakout',
-        name: 'Breakout',
-        screenWidth: ARENA_WIDTH * SCALE,
-        screenHeight: ARENA_HEIGHT * SCALE,
+        kind: 'pixi',
+        pixelArt: true,
+        integerScale: true,
+        screenWidth: SCREEN_WIDTH,
+        screenHeight: SCREEN_HEIGHT,
 
-        start(stage: Container): GameSession {
+        start({ stage }): EntrySession {
             const gameModel = createGameModel({ /* options */ });
             const gameView = GameView({ model: gameModel });
             stage.addChild(gameView);
@@ -307,60 +300,131 @@ function createBreakoutEntry(): GameEntry {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                inputConfig: {
+                    showDpad: true,
+                    onXDirectionChanged: (dir) => { gameModel.paddle.direction = dir; },
+                },
             };
         },
     };
 }
 ```
 
-The `start()` method creates the model and view, mounts the view, and returns
-a session. The session's `update()` advances the model and nothing else. The
-host updates and refreshes the whole stage once per frame, after the models,
-with `updateView(app.stage, deltaMs)`, which calls every view's update method
-(for views with presentation state), then `refreshView(app.stage)`, which
-calls every refresh method. So the session never updates or refreshes its own
-views. Pausing is the host's call too: while paused, it stops calling
-`update()` and leaves the game's view out of `updateView`, so a game needs no
-pause logic of its own. The `destroy()`
-method removes the view and cleans up.
+`start()` creates the model and view, mounts the view, and returns a
+**session**. The session's `update()` advances the model and nothing else.
+The host updates and refreshes the whole stage once per frame, after the
+models, with `updateView(app.stage, deltaMs)`, which calls every view's
+update method (for views with presentation state), then
+`refreshView(app.stage)`, which calls every refresh method. So the session
+never updates or refreshes its own views. Pausing is the host's call too:
+while paused, it stops calling `update()` and leaves the entry's view out of
+`updateView`, so an entry needs no pause logic of its own. `destroy()`
+removes the view and cleans up.
 
-If your game needs to load assets (sprite sheets, textures), implement the
-optional `load()` method:
+A game gives an `inputConfig`: the controls it takes. The host turns the
+keyboard, and touch controls on a touch screen, into the calls it lists.
+The starter's other options say how the host should show the entry:
+`pixelArt` (nearest-neighbour textures, no antialiasing), `integerScale`
+(scale by whole numbers only, for crisp pixels), `fitsViewport` (a play area
+that follows the window), and `thumbnailAdvanceMs` (how far to run the entry
+before taking its thumbnail).
 
-```ts
-async load(): Promise<void> {
-    await Assets.load(spritesheet);
-}
-```
+### Entries with their own renderers
 
-## Step 5: Register with the Cabinet
+An entry that draws with three.js, the DOM, or several renderers at once
+returns an `element` starter instead. Its `start({ element })` builds the
+entry inside an element the host gives it, and returns a session with two
+more members: `views`, the roots of its views of every renderer, and
+`render()`, which draws a frame. The host still runs each frame in the MVT
+order: the session's `update`, then `updateView` and `refreshView` over its
+`views`, then `render`. See [Boids in 3D](./boids-3d/start/load.ts) for a
+small one, and the [Fruit Machine](./fruit-machine/start/load.ts) for one
+model with views on three renderers.
 
-Export the entry factory from your module's barrel file:
+## Step 5: Describe the Entry (`start/entry.ts`)
 
-```ts
-// packages/website/src/games/breakout/index.ts
-export { createBreakoutEntry } from './breakout-entry';
-```
-
-Add the export to the games registry:
-
-```ts
-// packages/website/src/games/index.ts
-export { createBreakoutEntry } from './breakout';
-```
-
-Then add the entry to the cabinet's game list in the bootstrap code (typically
-`packages/website/src/main.ts` or wherever the cabinet is constructed):
+`entry.ts` is what the Arcade shows without running anything: the card, the
+search, and the info panel. It imports the starter only when the entry is
+launched:
 
 ```ts
-const cabinet = createCabinetModel({
-    games: [
-        createBurrowBustEntry(),
-        createBreakoutEntry(),  // new game
-        // ...
-    ],
-});
+import type { ArcadeEntry } from '../../../entry-types';
+import thumbnail from './thumbnail.webp';
+
+/** Breakout, as the arcade lists it. Its code loads on launch, from `load.ts`. */
+export const entry: ArcadeEntry = {
+    id: 'breakout',
+    name: 'Breakout',
+    summary: 'Knock out every brick with a ball and a paddle.',
+    description: [
+        'A bat-and-ball game. ...',
+        'What it shows about MVT, for the info panel. ...',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1970s', genres: ['action'] },
+    screenWidth: 300,
+    screenHeight: 400,
+    thumbnail,
+    cardColor: 'sky',
+    instructions: 'Left and Right move the paddle.',
+    load: async () => (await import('./load')).load(),
+};
 ```
+
+- **`id`** is the directory's name, and the entry's address: `/#breakout`
+  launches it.
+- **`tags`** are what the search filters by: its `kind` (`game`, `demo` or
+  `art`), an `era` if it is in the style of one, and the `genres` that say
+  what it is. The values are listed in
+  [`arcade-entry.ts`](../entry-types/arcade-entry.ts).
+- **`screenWidth`** and **`screenHeight`** are the play area, in the entry's
+  own pixels: the same numbers its views use, written out, since importing
+  them would bring the views, and their renderer, into the Arcade's first
+  load. In development, the Arcade checks they match the starter's.
+- A game gives **`instructions`**, for the info panel and the pause menu. A
+  demo gives **`techniques`**, the patterns it shows.
+- **`thumbnailCrop`** picks the part of the play area the card shows, and
+  **`cardColor`** the card's colour, from the Arcade's palette. Both are
+  optional.
+
+The entry's size in lines and files, and the renderers it draws with, are
+measured from its source when the site builds. Nobody writes them down.
+
+Then export it through both barrels, `start/index.ts` and the entry's own
+`index.ts`:
+
+```ts
+// start/index.ts
+export { entry } from './entry';
+
+// index.ts
+export { entry } from './start';
+```
+
+## Step 6: List It, and Take Its Thumbnail
+
+Add the entry to [`catalogue.ts`](./catalogue.ts), naming it as you import
+it:
+
+```ts
+import { entry as breakoutEntry } from './breakout';
+
+export const CATALOGUE: readonly ArcadeEntry[] = [
+    // ...
+    breakoutEntry,
+];
+```
+
+The thumbnail is a picture of the entry running, taken by a script and
+committed. Every page that lists the catalogue imports every entry's
+thumbnail, so copy another entry's `thumbnail.webp` into `start/` as a
+placeholder first, then take the real one:
+
+```bash
+npm run generate-thumbnails -- breakout
+```
+
+It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
+`start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
 ## Checklist
 
@@ -370,8 +434,11 @@ const cabinet = createCabinetModel({
 - Views are `XxxView(bindings)` functions; leaf views take query and relay
   bindings, the top-level view takes `{ model }`
 - Views convert domain units to presentation units (pixels)
-- Entry point implements `GameEntry` with `start()` returning `GameSession`
+- `start/load.ts` returns a starter whose session's `update` advances only
+  the models
+- `start/entry.ts` exports `entry`, with its screen size matching the
+  starter's
 - Barrel files export public API at each level
-- Game is registered in `packages/website/src/games/index.ts`
+- The entry is listed in `catalogue.ts`, and has its own thumbnail
 - Model tests exist and pass
-- The title, characters, art and levels are the game's own (see [Originality](#originality))
+- The title, characters, art and levels are the entry's own (see [Originality](#originality))

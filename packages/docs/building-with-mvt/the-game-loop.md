@@ -155,10 +155,10 @@ setRefresh(view, () => { view.alpha = flash.alpha; });     // read state, write 
 | `setUpdate(view, fn)` | a view's `update(deltaMs)`: advance cosmetic presentation state | only views that have presentation state |
 | `setRefresh(view, fn)` | a view's `refresh()`: read state, write presentation output | every view that shows state |
 
-Each frame, the host does this:
+Each frame, the host does this for the game it is running:
 
 ```ts
-cabinet.update(deltaMs);            // 1. the models advance
+session.update(deltaMs);            // 1. the models advance
 updateView(app.stage, deltaMs);     // 2. every update method in the stage, parents first
 refreshView(app.stage);             // 3. every refresh method in the stage, parents first
 // 4. Pixi renders
@@ -170,12 +170,13 @@ refreshView(app.stage);             // 3. every refresh method in the stage, par
   by setting its methods; its parents do not need to know it exists or pass
   anything on.
 - **Sessions advance only their models.** A game session's `update()` runs its
-  model and nothing else. The host (`packages/website/src/main.ts`) updates and refreshes
-  the whole stage once per frame, after the models.
+  model and nothing else. The host (the entry host in
+  `packages/website/src/runner/`, driven by the Arcade's page) updates and
+  refreshes the whole stage once per frame, after the models.
 - **Pausing is the host's call.** While paused, the host stops advancing the
   models, and its game container sits out `updateView`. It is still
-  refreshed, so the pause menu shows over the frozen game. No game knows about
-  pause.
+  refreshed, so the game shows, frozen, under the pause menu. No game knows
+  about pause.
 - **Skipping a subtree.** Either method may return `SKIP_DESCENDANTS` to skip
   its container's descendants for that call, for example a hidden panel whose
   contents need not refresh. Visibility alone skips nothing.

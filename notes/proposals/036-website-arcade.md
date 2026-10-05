@@ -10,8 +10,8 @@
 > site-wide loading screen, just a progress bar held inside the zoom when
 > an entry takes longer to load than the zoom takes to play.
 
-**Status:** accepted, steps 1 to 9 implemented: the Arcade is the home page. Step 10 (the docs) remains. Absorbs task
-[026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (the demos
+**Status:** accepted, steps 1 to 10 implemented: the Arcade is the home page, and the docs describe it. Step 11 (attract mode, optional) remains. Absorbed task
+[026](../archive/026-demos-screen-for-every-renderer.md) (the demos
 screen for every renderer), whose acceptance criteria all reappear here.
 The open questions are resolved (section 12). Progress is kept in section
 11's steps.
@@ -22,7 +22,7 @@ measured on the deployed site (`http://yortus.com/mvt-games/`, built from
 the GPU (ANGLE, Direct3D 11), one browser launch per run (see section 3.1).
 
 **Related:**
-[026](../tasks/backlog/026-demos-screen-for-every-renderer.md) (absorbed),
+[026](../archive/026-demos-screen-for-every-renderer.md) (absorbed),
 [`packages/website/src/arcade/`](../../packages/website/src/arcade/) (the Arcade),
 [`entries/`](../../packages/website/src/entries/),
 [`catalogue/`](../../packages/website/src/catalogue/) and
@@ -782,7 +782,7 @@ and the site working.
    the Pixi pause menu and the old landing page are deleted. Measure the cold
    load again (target: Arcade content under 1.2 s), and add the size budget
    check (section 4.1).~~ Done, without the redirects (section 11.16).
-10. **Docs.** `AGENTS.md`'s "Cabinet Architecture" becomes an "Arcade"
+10. **Docs.** *Done (section 11.19).* `AGENTS.md`'s "Cabinet Architecture" becomes an "Arcade"
     section. The host that drives the loop is now the Arcade's page
     (`src/arcade/main.ts`) and the entry host, not `src/main.ts`, which
     step 9 deleted: `AGENTS.md`'s Ticker line,
@@ -1337,6 +1337,27 @@ their metadata (`tags.kind`, and the fields only games fill in, such as
 - The games' README moved to `entries/README.md`, still to be rewritten
   (step 10). The demos' README, seven lines about the deleted gallery, is
   gone.
+
+### 11.19 The docs
+
+Step 10, on 2026-10-05:
+
+- **`AGENTS.md`** has "The Arcade and Its Entries" in place of "Cabinet
+  Architecture", the website's tree as it is now, and a Ticker line that
+  names the Arcade's page and the entry host as what drives the loop. The
+  root `README.md`, `packages/docs/reference/project-structure.md` (now with
+  an "Entry Structure" section), `the-game-loop.md` and `skill-mvt-view.md`
+  follow.
+- **`entries/README.md` is "Adding an Entry"**: the `start/` directory, the
+  two kinds of starter, `entry.ts`, the catalogue and the thumbnail, with
+  the originality rules and the guide to models and views kept.
+- **`arcade/README.md`** is the guided path through what the Arcade shows
+  about MVT (seven lessons, each pointing at its code), and the three places
+  it bends the rules, and why.
+- **New backlog tasks:** 038 (what the Arcade showed about the HTML JSX
+  runtime, from section 11.1 and the later rounds), 039 (link previews,
+  question 5), 040 (touch controls in HTML, question 7), and 041 (docs for
+  the questions the Arcade raised). Task 026 is archived, absorbed.
 
 ## 12. Open questions, resolved
 

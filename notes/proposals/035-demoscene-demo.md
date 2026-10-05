@@ -28,7 +28,7 @@ estimates to be checked in step 1.
 [Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md) -
 [Originality](../../packages/website/src/games/README.md#originality) (the rules this demo follows from day one) -
 [033](../tasks/backlog/033-fruit-machine-demo/task.md) (the other demo in the pipeline) -
-[026](../tasks/backlog/026-demos-screen-for-every-renderer.md)
+[026](../archive/026-demos-screen-for-every-renderer.md)
 
 ---
 

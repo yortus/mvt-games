@@ -335,10 +335,10 @@ setUpdate(view, update);     // only for views with presentation state
 - The host updates and refreshes the stage each frame, after the models:
   `model.update(deltaMs)`, then `updateView(app.stage, deltaMs)`, which calls
   every update method in the stage, then `refreshView(app.stage)`, which calls
-  every refresh method. Game sessions advance only their models;
-  `packages/website/src/main.ts` updates and refreshes the stage once per frame, and pauses
-  by leaving the game container out of `updateView`. Games know nothing about
-  pause.
+  every refresh method. Game sessions advance only their models; the entry
+  host (`packages/website/src/runner/`) updates and refreshes the stage once
+  per frame, and pauses by leaving the entry's container out of `updateView`.
+  Games know nothing about pause.
 - **Never forward `update()` or `refresh()` to child views.** `updateView` and
   `refreshView` walk the whole tree, parents before children, and find every
   update and refresh method themselves. A view is an ordinary `Container`;

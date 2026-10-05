@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**038**.
+**042**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -88,7 +88,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
-| 036 | [The website, and one Arcade for every entry](./proposals/036-website-arcade.md) | Accepted, steps 1-9 implemented: the Arcade is the home page, and the cabinet, the demos gallery and their pages are gone; the docs (step 10) remain. `site/` becomes `packages/website/`, and `docs/`, `benchmarks/` and `checks/` follow. The cabinet and the demos gallery become one Arcade, the home page, written in HTML JSX: cards in several columns for every entry on any renderer (lazy `pixi` and `element` entries), one search box for names and tags, committed thumbnails, the cabinet's zoom kept. Measured the 5 s first load as serial round trips on a cold CDN edge (thumbnails cost 97 ms of CPU): no loading screen, just a progress bar held in the zoom when loading outlasts it. Also found HTTPS broken on yortus.com. Absorbs task 026 |
+| 036 | [The website, and one Arcade for every entry](./proposals/036-website-arcade.md) | Accepted, steps 1-10 implemented: the Arcade is the home page, the cabinet, the demos gallery and their pages are gone, and the docs describe the Arcade and its entries; the optional attract mode (step 11) remains. `site/` becomes `packages/website/`, and `docs/`, `benchmarks/` and `checks/` follow. The cabinet and the demos gallery become one Arcade, the home page, written in HTML JSX: cards in several columns for every entry on any renderer (lazy `pixi` and `element` entries), one search box for names and tags, committed thumbnails, the cabinet's zoom kept. Measured the 5 s first load as serial round trips on a cold CDN edge (thumbnails cost 97 ms of CPU): no loading screen, just a progress bar held in the zoom when loading outlasts it. Also found HTTPS broken on yortus.com. Absorbs task 026 |
 
 **How they relate.** All nine can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -121,7 +121,10 @@ task 026, and would list 034 and 035 in its Arcade.
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
 | 017 | [Miscellaneous Loose Ends](tasks/backlog/017-misc-loose-ends.md) | medium | 2026-09-26 |
-| 026 | [Demos Screen for Every Renderer](tasks/backlog/026-demos-screen-for-every-renderer.md) | medium | 2026-09-30 |
+| 038 | [HTML JSX Runtime: Findings from the Arcade](tasks/backlog/038-html-jsx-findings-from-the-arcade.md) | medium | 2026-10-05 |
+| 039 | [Link Previews for Each Entry](tasks/backlog/039-entry-link-previews.md) | low | 2026-10-05 |
+| 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
+| 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 
 ## Archive
 
@@ -142,6 +145,7 @@ task 026, and would list 034 and 035 in its Arcade.
 | 021 | [JSX and Teardown Quick Wins](archive/021-jsx-and-teardown-quick-wins.md) | 2026-09-28 |
 | 024 | [Merge 022's Changes in Reviewed Steps](archive/024-merge-022-in-steps.md) | 2026-09-30 |
 | 025 | [Keep the JSX Precompiler, or Ship Two Builds?](archive/025-precompiler-or-two-builds.md) (decided: neither; one eval-free runtime) | 2026-10-01 |
+| 026 | [Demos Screen for Every Renderer](archive/026-demos-screen-for-every-renderer.md) (absorbed by 036's Arcade) | 2026-10-05 |
 | 027 | [Proposal: aligning the scene methods with MVT's `update` and `refresh`](archive/027-mvt-method-names.md) (decided: no methods on nodes; the tick API, `setTickMethods` / `tickScene`) | 2026-10-02 |
 | 028 | [Move to the Tick API (`tickScene` / `setTickMethods`)](archive/028-tick-api-migration.md) | 2026-10-02 |
 | 029 | [Rename `onTick` to `setTickMethods`](archive/029-rename-ontick-to-settickmethods.md) (returns `void`) | 2026-10-02 |

@@ -24,7 +24,7 @@ packages/
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): this documentation (VitePress)
-└── website/             @mvtjs/website (private): the games, demos and playground, one Vite site of several pages
+└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite)
 notes/                   Proposals and tasks
 ```
 
@@ -32,17 +32,17 @@ Each package's source is in its own `src/`. The site's is laid out by area:
 
 ```
 packages/website/src/
-├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
-├── cabinet/             Cabinet model & view (game selection)
-├── games/               Game registry + per-game modules
-│   ├── game-entry.ts    GameEntry & GameSession interfaces
-│   └── <name>/          Self-contained game module
+├── arcade/              The Arcade, the home page, in HTML JSX: model, views, and the page's loop (main.ts)
+├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
+│   └── <id>/            Self-contained entry
+│       ├── start/       How the Arcade lists the entry, and loads it
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
-│       └── views/       Rendering and user-input handling
-├── demos/               Demo registry + per-demo modules
+│       └── views/       Presentation and user-input handling
+├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
+├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          The in-browser editor and the sandbox it runs code in
-└── shared/              The site's shared views (overlay, input, pause menu, perfmon), imported as `#shared`
+└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
 Every directory under a package's `src/` is a **module** with a specific
@@ -163,7 +163,7 @@ export type { TimerModel } from './timer-model';
 
 ```ts
 // index.ts - ❌ wrong: barrel contains a declaration
-export function createFooEntry(): FooEntry {
+export function createScoreModel(): ScoreModel {
     /* ... */
 }
 export { createHelperModel } from './helper-model';
@@ -172,13 +172,13 @@ export { createHelperModel } from './helper-model';
 Move declarations into their own file and re-export them:
 
 ```ts
-// foo-entry.ts          ← declaration lives here
-export function createFooEntry(): FooEntry {
+// score-model.ts        ← declaration lives here
+export function createScoreModel(): ScoreModel {
     /* ... */
 }
 
 // index.ts              ← barrel re-exports it
-export { createFooEntry } from './foo-entry';
+export { createScoreModel } from './score-model';
 ```
 
 **Why no declarations in barrels?**
@@ -266,15 +266,19 @@ The rules above apply inside each package. Between packages:
 Within the site, its shared views are imported as `#shared`, an alias that
 `packages/website/package.json` defines.
 
-## Game Module Structure
+## Entry Structure
 
-Each game is a self-contained module under `packages/website/src/entries/<name>/`. A
-typical layout:
+Each game and demo is an **entry**: a self-contained module under
+`packages/website/src/entries/<id>/`, named for its id. A typical layout:
 
 ```
-packages/website/src/entries/<name>/
-├── index.ts              Barrel - re-exports createXxxEntry
-├── <name>-entry.ts       GameEntry factory
+packages/website/src/entries/<id>/
+├── index.ts              Barrel - re-exports the entry
+├── start/
+│   ├── index.ts          Barrel - re-exports `entry` from entry.ts
+│   ├── entry.ts          `entry`: what the Arcade lists (name, tags, thumbnail...) and `load`
+│   ├── load.ts           `load()`: the entry's code, imported only when it is launched
+│   └── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
 ├── data/
 │   ├── index.ts          Barrel - re-exports shared game constants
 │   └── constants.ts      Shared game constants (used by both models and views)
@@ -289,5 +293,9 @@ packages/website/src/entries/<name>/
     └── game-view.ts       Top-level view - wires all child views (.tsx if its body is JSX)
 ```
 
-For details on creating a new game module, see
+`start/` is the same in every entry, so the Arcade, the thumbnail script and
+the benchmarks find each one the same way. Everything else is the entry's
+own: a small demo may have only `models/` and `views/`.
+
+For details on creating a new entry, see
 `packages/website/src/entries/README.md` in the repository.

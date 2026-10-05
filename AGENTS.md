@@ -8,7 +8,7 @@
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each game session's `update(deltaMs)` advances only its models, then the host (`packages/website/src/main.ts`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: its game container sits out `updateView`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/website/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/website/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](packages/docs/architecture/index.md) -
@@ -29,23 +29,23 @@ packages/
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): the documentation (VitePress)
-└── website/             @mvtjs/website (private): the games, demos and playground (Vite): pages, src/, scripts/ (textures, spritesheet plugin)
+└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin)
 notes/                   Proposals and tasks
 ```
 
 ```
 packages/website/src/
-├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
-├── cabinet/             Cabinet (game-selection) model & view
-├── games/               Game registry + per-game modules
-│   ├── game-entry.ts    GameEntry & GameSession interfaces
-│   └── <name>/          Self-contained game module
+├── arcade/              The Arcade, the home page, in HTML JSX: model, views, and the page's loop (main.ts)
+├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
+│   └── <id>/            Self-contained entry
+│       ├── start/       entry.ts (what the Arcade lists), load.ts (the code, imported on launch), thumbnail.webp
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
-│       └── views/       Pixi.js rendering
-├── demos/               Demo registry + per-demo modules
+│       └── views/       Presentation (Pixi, three.js or HTML)
+├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
+├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
-└── shared/              The site's shared views (overlay, input, pause menu, perfmon), imported as `#shared`
+└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
@@ -53,13 +53,13 @@ Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
 
 Full reference: [Project Structure](packages/docs/reference/project-structure.md)
 
-## Cabinet Architecture
+## The Arcade and Its Entries
 
-- **GameEntry** - descriptor for a game registered in the cabinet: `{ id, name, screenWidth, screenHeight, start(stage) -> GameSession }`
-- **GameSession** - a running game instance: `{ update(deltaMs), destroy() }`
-- **CabinetModel** - owns menu state, selected game, active session; delegates `update()` to the active session
-- **CabinetView** - renders a menu in `'menu'` phase; hides menu and defers to the game's own container in `'playing'` phase
-- To add a new game: create `packages/website/src/entries/<name>/` with its own data/models/views, export a `createXxxEntry(): GameEntry` factory, register it in `packages/website/src/entries/index.ts`, following its [originality rules](packages/website/src/entries/README.md#originality). See [Adding a Game](packages/website/src/entries/README.md).
+- **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, description, tags, screenWidth, screenHeight, thumbnail, load }`. Metadata only, so listing every entry loads no entry's code; `load()` imports `start/load.ts`
+- **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games
+- **CATALOGUE** - every entry, in `packages/website/src/entries/catalogue.ts`
+- **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
+- To add a game or demo: create `packages/website/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/website/src/entries/README.md#originality). See [Adding an Entry](packages/website/src/entries/README.md)
 
 ## Key Conventions
 
