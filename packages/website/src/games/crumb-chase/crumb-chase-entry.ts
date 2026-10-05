@@ -1,64 +1,26 @@
-import type { Container } from 'pixi.js';
-import { assert } from '@mvtjs/utils';
-import type { GameEntry, GameSession } from '../game-entry';
-import { createGameModel } from './models';
-import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import {
-    MAZE_DATA,
-    MOUSE_SPAWN,
-    CAT_SPAWNS,
-    PEN_EXIT,
-    textures,
-} from './data';
+import type { ArcadeEntry } from '../../entries';
+import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Entry
 // ---------------------------------------------------------------------------
 
-export function createCrumbChaseEntry(): GameEntry {
-    let loaded = false;
-
-    return {
-        id: 'crumb-chase',
-        name: 'Crumb Chase',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        integerScale: true,
-
-        async load(): Promise<void> {
-            await textures.load();
-            loaded = true;
-        },
-
-        start(stage: Container): GameSession {
-            assert(loaded, 'crumb-chase: load() must be called before start()');
-
-            const gameModel = createGameModel({
-                grid: MAZE_DATA,
-                mouseSpawn: MOUSE_SPAWN,
-                catSpawns: CAT_SPAWNS,
-                penExit: PEN_EXIT,
-            });
-
-            const gameView = GameView({ model: gameModel });
-            stage.addChild(gameView);
-
-            return {
-                // The host ticks the view with the rest of the stage
-                update(deltaMs: number): void {
-                    gameModel.update(deltaMs);
-                },
-                destroy(): void {
-                    stage.removeChild(gameView);
-                    gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
-                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
-                },
-            };
-        },
-    };
-}
+/** Crumb Chase, as the arcade lists it. Its code loads on launch, from `crumb-chase-starter.ts`. */
+export const crumbChaseEntry: ArcadeEntry = {
+    id: 'crumb-chase',
+    name: 'Crumb Chase',
+    summary: 'Eat every crumb in the maze before the cats from the pen catch you.',
+    description: [
+        'A maze chase. You are a mouse clearing a maze of crumbs; cats leave their pen one by one and hunt '
+        + 'you through the corridors.',
+        'The first game in the repo, and a small one: a good place to start reading. Movement is tile to tile '
+        + 'in fractional rows and columns, which the views scale to pixels.',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1980s', genres: ['maze'] },
+    screenWidth: 560,
+    screenHeight: 470,
+    thumbnail,
+    // The colour of its crumbs
+    cardColor: 'lemon',
+    load: async () => (await import('./crumb-chase-starter')).loadCrumbChaseStarter(),
+};

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
+import { entryFactsPlugin } from './scripts/vite-plugin-entry-facts';
 import { spritesheetPlugin } from './scripts/vite-plugin-spritesheet';
 
 const VITEPRESS_DEV_PORT = 5200;
@@ -9,13 +10,13 @@ const SITE_ROOT = __dirname;
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-/** Redirect `/playground` and `/games` to their trailing-slash equivalents so Vite serves the index.html. */
+/** Redirect `/playground`, `/games`, `/demos` and `/arcade` to their trailing-slash equivalents so Vite serves the index.html. */
 function trailingSlashPlugin(): Plugin {
     return {
         name: 'trailing-slash-rewrite',
         configureServer(server) {
             server.middlewares.use((req, res, next) => {
-                if (req.url === '/playground' || req.url === '/games' || req.url === '/demos') {
+                if (req.url === '/playground' || req.url === '/games' || req.url === '/demos' || req.url === '/arcade') {
                     res.writeHead(302, { 'Location': req.url + '/' });
                     res.end();
                     return;
@@ -34,6 +35,7 @@ export default defineConfig({
     publicDir: false,
     plugins: [
         spritesheetPlugin(),
+        entryFactsPlugin(),
         trailingSlashPlugin(),
     ],
     resolve: {
@@ -70,6 +72,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 'main': resolve(SITE_ROOT, 'index.html'),
+                'arcade': resolve(SITE_ROOT, 'arcade/index.html'),
                 'games': resolve(SITE_ROOT, 'games/index.html'),
                 'playground': resolve(SITE_ROOT, 'playground/index.html'),
                 'playground-sandbox': resolve(SITE_ROOT, 'playground/sandbox.html'),

@@ -1,18 +1,19 @@
 import { Application, Container, RenderTexture } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { DemoEntry, DemoSession } from './demo-entry';
-import { createBoidsEntry } from './boids';
-import { createFallingSandEntry } from './falling-sand';
-import { createReorderingListsEntry } from './reordering-lists';
+import type { ArcadeEntry, EntrySession, PixiEntryStarter } from '../entries';
+import { boidsEntry } from './boids';
+import { fallingSandEntry } from './falling-sand';
+import { reorderingListsEntry } from './reordering-lists';
 
 // ---------------------------------------------------------------------------
 // Demo registry
 // ---------------------------------------------------------------------------
 
-const demos: DemoEntry[] = [
-    createBoidsEntry(),
-    createFallingSandEntry(),
-    createReorderingListsEntry(),
+/** The demos drawn with Pixi, the only ones this gallery can run. */
+const demos: readonly ArcadeEntry[] = [
+    boidsEntry,
+    fallingSandEntry,
+    reorderingListsEntry,
 ];
 
 // ---------------------------------------------------------------------------
@@ -34,7 +35,7 @@ const infoSourceEl = document.getElementById('info-source-container')!;
 // ---------------------------------------------------------------------------
 
 let activeApp: Application | undefined;
-let activeSession: DemoSession | undefined;
+let activeSession: EntrySession | undefined;
 let escapeHandler: ((e: KeyboardEvent) => void) | undefined;
 let resizeHandler: (() => void) | undefined;
 
@@ -115,12 +116,12 @@ async function generateThumbnails(): Promise<void> {
     for (let i = 0; i < demos.length; i++) {
         const entry = demos[i];
         try {
-            await entry.load?.();
+            const starter = await loadPixiStarter(entry);
 
             const tempStage = new Container();
-            const session = entry.start(tempStage);
+            const session = starter.start({ stage: tempStage });
 
-            const totalMs = entry.thumbnailAdvanceMs ?? TICK_MS;
+            const totalMs = starter.thumbnailAdvanceMs ?? TICK_MS;
             let remaining = totalMs;
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;
@@ -131,8 +132,8 @@ async function generateThumbnails(): Promise<void> {
             refreshView(tempStage);
 
             const renderTexture = RenderTexture.create({
-                width: entry.screenWidth,
-                height: entry.screenHeight,
+                width: starter.screenWidth,
+                height: starter.screenHeight,
             });
             thumbApp.renderer.render({ container: tempStage, target: renderTexture });
 
@@ -165,6 +166,7 @@ function setUrlFragment(demoId: string | undefined): void {
 
 async function launchDemo(index: number): Promise<void> {
     const entry = demos[index];
+    const starter = await loadPixiStarter(entry);
 
     setUrlFragment(entry.id);
     galleryEl.style.display = 'none';
@@ -172,14 +174,14 @@ async function launchDemo(index: number): Promise<void> {
 
     const app = new Application();
     await app.init({
-        width: entry.screenWidth,
-        height: entry.screenHeight,
+        width: starter.screenWidth,
+        height: starter.screenHeight,
         background: 0x1a1a2e,
         antialias: true,
     });
     app.canvas.style.touchAction = 'none';
     runnerEl.appendChild(app.canvas);
-    fitCanvas(app, entry);
+    fitCanvas(app, starter);
 
     // Back button
     const backBtn = document.createElement('button');
@@ -189,8 +191,7 @@ async function launchDemo(index: number): Promise<void> {
     backBtn.addEventListener('click', exitDemo);
     runnerEl.appendChild(backBtn);
 
-    await entry.load?.();
-    const session = entry.start(app.stage, { renderer: app.renderer, ticker: app.ticker });
+    const session = starter.start({ stage: app.stage, host: { renderer: app.renderer, ticker: app.ticker } });
 
     // Each frame ticks the demo's models, then the whole stage.
     app.ticker.add((ticker) => {
@@ -207,7 +208,7 @@ async function launchDemo(index: number): Promise<void> {
     resizeHandler = () => {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            fitCanvas(app, entry);
+            fitCanvas(app, starter);
             session.resize?.();
         }, 150);
     };
@@ -228,9 +229,9 @@ async function launchDemo(index: number): Promise<void> {
  * of 1 and letting the browser scale the canvas blurs everything, text most
  * visibly, on any screen whose device pixel ratio is not 1.
  */
-function fitCanvas(app: Application, entry: DemoEntry): void {
-    const width = entry.screenWidth;
-    const height = entry.screenHeight;
+function fitCanvas(app: Application, starter: PixiEntryStarter): void {
+    const width = starter.screenWidth;
+    const height = starter.screenHeight;
     const scale = Math.min(
         1,
         (runnerEl.clientWidth - CANVAS_MARGIN_PX * 2) / width,
@@ -288,22 +289,20 @@ function showInfo(index: number): void {
     infoDescEl.textContent = entry.description;
 
     infoTechniquesEl.innerHTML = '';
-    for (let i = 0; i < entry.techniques.length; i++) {
+    const techniques = entry.techniques ?? [];
+    for (let i = 0; i < techniques.length; i++) {
         const li = document.createElement('li');
-        li.textContent = entry.techniques[i];
+        li.textContent = techniques[i];
         infoTechniquesEl.appendChild(li);
     }
 
-    infoSourceEl.innerHTML = '';
-    if (entry.sourceUrl) {
-        const link = document.createElement('a');
-        link.className = 'source-link';
-        link.href = entry.sourceUrl;
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.textContent = 'View Source';
-        infoSourceEl.appendChild(link);
-    }
+    const link = document.createElement('a');
+    link.className = 'source-link';
+    link.href = `https://github.com/yortus/mvt-games/tree/main/packages/website/src/demos/${entry.id}`;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'View Source';
+    infoSourceEl.replaceChildren(link);
 
     modalEl.classList.add('active');
 }
@@ -340,4 +339,11 @@ if (autoLaunchIndex >= 0) {
 else {
     if (initialHash) setUrlFragment(undefined);
     ensureThumbnails();
+}
+
+/** Loads a demo, which this gallery can run only if it is drawn with Pixi. */
+async function loadPixiStarter(entry: ArcadeEntry): Promise<PixiEntryStarter> {
+    const starter = await entry.load();
+    if (starter.kind !== 'pixi') throw new Error(`${entry.id} is not drawn with Pixi`);
+    return starter;
 }

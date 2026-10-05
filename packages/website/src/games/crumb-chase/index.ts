@@ -1,1 +1,1 @@
-export { createCrumbChaseEntry } from './crumb-chase-entry';
+export { crumbChaseEntry } from './crumb-chase-entry';

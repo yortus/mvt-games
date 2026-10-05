@@ -1,1 +1,1 @@
-export { createNeonMonsoonEntry } from './neon-monsoon-entry';
+export { neonMonsoonEntry } from './neon-monsoon-entry';

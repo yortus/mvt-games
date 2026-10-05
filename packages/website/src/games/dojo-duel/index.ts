@@ -1,1 +1,1 @@
-export { createDojoDuelEntry } from './dojo-duel-entry';
+export { dojoDuelEntry } from './dojo-duel-entry';

@@ -1,9 +1,8 @@
-export type { GameEntry, GameInputConfig, GameSession } from './game-entry';
-export { createAstrovoidEntry } from './astrovoid';
-export { createBurrowBustEntry } from './burrow-bust';
-export { createCrumbChaseEntry } from './crumb-chase';
-export { createDojoDuelEntry } from './dojo-duel';
-export { createFuelRunEntry } from './fuel-run';
-export { createGalaxyRaidersEntry } from './galaxy-raiders';
-export { createKwazyCactiiEntry } from './kwazy-cactii';
-export { createNeonMonsoonEntry } from './neon-monsoon';
+export { astrovoidEntry } from './astrovoid';
+export { burrowBustEntry } from './burrow-bust';
+export { crumbChaseEntry } from './crumb-chase';
+export { dojoDuelEntry } from './dojo-duel';
+export { fuelRunEntry } from './fuel-run';
+export { galaxyRaidersEntry } from './galaxy-raiders';
+export { kwazyCactiiEntry } from './kwazy-cactii';
+export { neonMonsoonEntry } from './neon-monsoon';

@@ -1,58 +1,24 @@
-import type { Container } from 'pixi.js';
-import { assert } from '@mvtjs/utils';
-import type { GameEntry, GameSession } from '../game-entry';
-import { createGameModel } from './models';
-import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import { WAVES, textures } from './data';
+import type { ArcadeEntry } from '../../entries';
+import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Entry
 // ---------------------------------------------------------------------------
 
-export function createGalaxyRaidersEntry(): GameEntry {
-    let loaded = false;
-
-    return {
-        id: 'galaxy-raiders',
-        name: 'Galaxy Raiders',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        integerScale: true,
-        thumbnailAdvanceMs: 2000,
-
-        async load(): Promise<void> {
-            await textures.load();
-            loaded = true;
-        },
-
-        start(stage: Container): GameSession {
-            assert(loaded, 'galaxy-raiders: load() must be called before start()');
-
-            const gameModel = createGameModel({
-                waves: WAVES,
-            });
-
-            const gameView = GameView({ model: gameModel });
-            stage.addChild(gameView);
-
-            return {
-                // The host ticks the view with the rest of the stage
-                update(deltaMs: number): void {
-                    gameModel.update(deltaMs);
-                },
-                destroy(): void {
-                    stage.removeChild(gameView);
-                    gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Fire',
-                    onXDirectionChanged: (dir) => { gameModel.playerInput.direction = dir; },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
-                },
-            };
-        },
-    };
-}
+/** Galaxy Raiders, as the arcade lists it. Its code loads on launch, from `galaxy-raiders-starter.ts`. */
+export const galaxyRaidersEntry: ArcadeEntry = {
+    id: 'galaxy-raiders',
+    name: 'Galaxy Raiders',
+    summary: 'Hold off waves of raiders that break formation to dive at your ship.',
+    description: [
+        'A fixed shooter. Raiders fly in to form ranks above you, then peel off in curving dives, firing as they come.',
+        'Each wave is data, and each raider a small model with its own phase: flying in, in formation, or diving.',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1970s', genres: ['shooter'] },
+    screenWidth: 280,
+    screenHeight: 390,
+    thumbnail,
+    // The colour of its raiders
+    cardColor: 'lavender',
+    load: async () => (await import('./galaxy-raiders-starter')).loadGalaxyRaidersStarter(),
+};

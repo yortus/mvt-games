@@ -1,1 +1,1 @@
-export { createKwazyCactiiEntry } from './kwazy-cactii-entry';
+export { kwazyCactiiEntry } from './kwazy-cactii-entry';

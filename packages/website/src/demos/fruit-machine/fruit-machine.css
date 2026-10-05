@@ -1,0 +1,197 @@
+/*
+ * The fruit machine: four quadrants in a grid, each a renderer's view of the one
+ * model. Scoped to the element the entry mounts into.
+ */
+.fruit-machine {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: var(--site-font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
+
+    /* --- The quadrants ------------------------------------------------------ */
+    .quadrant {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #161b22;
+    }
+    .quadrant-label {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 1;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(13, 17, 23, 0.8);
+        border: 1px solid #30363d;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: #8b949e;
+        pointer-events: none;
+    }
+    .quadrant-label b { color: #e6edf3; font-weight: 600; }
+    .quadrant-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .quadrant-canvas { display: block; touch-action: none; }
+    .quadrant-fill { width: 100%; height: 100%; }
+    [data-quadrant="pixi"] .quadrant-body { background: #2a1766; }
+    [data-quadrant="panel"] .quadrant-body,
+    [data-quadrant="terminal"] .quadrant-body { align-items: stretch; justify-content: stretch; }
+
+    /* --- The control panel ------------------------------------------------- */
+    .panel {
+        flex: 1;
+        overflow: auto;
+        /* Space kept for the scrollbar, so the layout doesn't shift when it appears */
+        scrollbar-gutter: stable;
+        padding: 36px 14px 14px;
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .panel-meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .meter {
+        padding: 6px 8px;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        background: #0d1117;
+    }
+    .meter-label { display: block; color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .meter-value { display: block; color: #e6edf3; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .panel-status, .panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .phase {
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        background: #21262d;
+        color: #e6edf3;
+    }
+    .phase-spinning { background: #1f6feb; }
+    .phase-celebrating { background: #bf8700; }
+    .phase-game-over { background: #da3633; }
+    .flag {
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid #30363d;
+        color: #6e7681;
+        font-size: 11px;
+    }
+    .flag.on { color: #0d1117; background: #3fb950; border-color: #3fb950; }
+    .panel-actions button {
+        padding: 6px 18px;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        color: #ffffff;
+    }
+    .panel-spin { background: #238636; }
+    .panel-stop { background: #da3633; }
+    .panel-actions button:disabled { background: #21262d; color: #6e7681; cursor: default; }
+    .panel-game-over { color: #ff7b72; font-weight: 600; }
+    .panel-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+    .reels-table, .paytable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .reels-table th, .paytable th { text-align: left; color: #8b949e; font-weight: 500; padding: 2px 4px; border-bottom: 1px solid #30363d; }
+    .reels-table td, .paytable td { padding: 2px 4px; border-bottom: 1px solid #21262d; }
+    .reels-table .number, .paytable .number { text-align: right; }
+    .reels-table progress { width: 100%; height: 8px; accent-color: #d29922; }
+    .reel-spinning td:nth-child(2) { color: #58a6ff; }
+    .reel-settling td:nth-child(2) { color: #d29922; }
+    .window-grid { display: grid; gap: 3px; }
+    .window-grid .cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: #0d1117;
+        border: 1px solid #21262d;
+        outline: 2px solid transparent;
+    }
+    .window-grid .cell img { width: 84%; height: 84%; }
+    .window-grid .cell.lit { outline-color: #ffd23f; box-shadow: 0 0 0 3px rgba(255, 210, 63, 0.35); }
+    .wins h3 { display: flex; justify-content: space-between; font-size: 12px; color: #e6edf3; margin-bottom: 4px; }
+    .wins-total { color: #ffd23f; }
+    .wins-list { list-style: none; max-height: 140px; overflow: auto; scrollbar-gutter: stable; }
+    .win {
+        display: grid;
+        grid-template-columns: 20px 1fr 28px 70px 48px;
+        align-items: center;
+        gap: 6px;
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-variant-numeric: tabular-nums;
+    }
+    .win img { width: 18px; height: 18px; }
+    .win.current { background: rgba(255, 210, 63, 0.18); color: #ffd23f; }
+    .win-payout { text-align: right; }
+    .panel details summary { cursor: pointer; color: #8b949e; }
+    .panel-peek p { padding: 4px 0 0 14px; color: #d29922; }
+    .paytable td img { width: 16px; height: 16px; vertical-align: middle; margin-right: 6px; }
+    .paytable td.paytable-note { color: #8b949e; border-bottom: none; padding-top: 6px; }
+
+    /* --- The terminal ------------------------------------------------------ */
+    .terminal {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        background: #0a0e12;
+        color: #9fef9f;
+        font-family: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+        font-size: 12.5px;
+        line-height: 1.35;
+        cursor: text;
+    }
+    .terminal-screen { flex: 1; overflow: auto; scrollbar-gutter: stable; padding: 36px 14px 14px; }
+    .terminal pre { font: inherit; white-space: pre-wrap; }
+    .terminal-live { color: #ffe45c; margin-top: 4px; }
+    .terminal-prompt { display: flex; gap: 8px; margin-top: 4px; }
+    .terminal-caret { color: #58a6ff; min-width: 1ch; }
+    .terminal-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: inherit;
+        font: inherit;
+        caret-color: #9fef9f;
+    }
+    .terminal-input::placeholder { color: #3d5a3d; }
+
+    /* On a narrow screen the quadrants stack, each as tall as it needs, and the element scrolls */
+    @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+        overflow: auto;
+        /* Stacked in a different order from the grid's reading order */
+        [data-quadrant="pixi"] { order: 1; }
+        [data-quadrant="panel"] { order: 2; }
+        [data-quadrant="three"] { order: 3; }
+        [data-quadrant="terminal"] { order: 4; }
+        [data-quadrant="pixi"] .quadrant-body { flex: none; aspect-ratio: 16 / 9; }
+        [data-quadrant="three"] .quadrant-body { flex: none; height: 75vw; max-height: 70vh; }
+        [data-quadrant="terminal"] .quadrant-body { flex: none; height: 60vh; }
+        .quadrant-label { position: static; align-self: flex-start; margin: 8px; }
+        .panel, .terminal-screen { padding-top: 4px; }
+    }
+}

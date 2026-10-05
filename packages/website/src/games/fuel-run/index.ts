@@ -1,1 +1,1 @@
-export { createFuelRunEntry } from './fuel-run-entry';
+export { fuelRunEntry } from './fuel-run-entry';

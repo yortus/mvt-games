@@ -1,1 +1,1 @@
-export { createGalaxyRaidersEntry } from './galaxy-raiders-entry';
+export { galaxyRaidersEntry } from './galaxy-raiders-entry';

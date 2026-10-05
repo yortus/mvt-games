@@ -1,79 +1,25 @@
-import type { Container } from 'pixi.js';
-import { assert } from '@mvtjs/utils';
-import type { GameEntry, GameSession } from '../game-entry';
-import { createGameModel } from './models';
-import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import { FIELD_ROWS, FIELD_COLS, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from './data';
+import type { ArcadeEntry } from '../../entries';
+import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Entry
 // ---------------------------------------------------------------------------
 
-export function createBurrowBustEntry(): GameEntry {
-    let loaded = false;
-
-    return {
-        id: 'burrow-bust',
-        name: 'Burrow Bust',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        integerScale: true,
-
-        async load(): Promise<void> {
-            await textures.load();
-            loaded = true;
-        },
-
-        start(stage: Container): GameSession {
-            assert(loaded, 'burrow-bust: load() must be called before start()');
-
-            const gameModel = createGameModel({
-                levels: LEVELS,
-                fieldCols: FIELD_COLS,
-                fieldRows: FIELD_ROWS,
-                baseLayout: BASE_FIELD,
-                diggerSpawn: DIGGER_SPAWN,
-            });
-
-            const gameView = GameView({ model: gameModel });
-            stage.addChild(gameView);
-
-            let lastXDir: 'left' | 'none' | 'right' = 'none';
-            let lastYDir: 'up' | 'none' | 'down' = 'none';
-
-            return {
-                // The host ticks the view with the rest of the stage
-                update(deltaMs: number): void {
-                    gameModel.update(deltaMs);
-                },
-                destroy(): void {
-                    stage.removeChild(gameView);
-                    gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Pump',
-                    onXDirectionChanged: (dir) => {
-                        lastXDir = dir;
-                        if (dir === 'left') gameModel.playerInput.direction = 'left';
-                        else if (dir === 'right') gameModel.playerInput.direction = 'right';
-                        else if (lastYDir === 'up') gameModel.playerInput.direction = 'up';
-                        else if (lastYDir === 'down') gameModel.playerInput.direction = 'down';
-                        else gameModel.playerInput.direction = 'none';
-                    },
-                    onYDirectionChanged: (dir) => {
-                        lastYDir = dir;
-                        if (dir === 'up') gameModel.playerInput.direction = 'up';
-                        else if (dir === 'down') gameModel.playerInput.direction = 'down';
-                        else if (lastXDir === 'left') gameModel.playerInput.direction = 'left';
-                        else if (lastXDir === 'right') gameModel.playerInput.direction = 'right';
-                        else gameModel.playerInput.direction = 'none';
-                    },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.pumpPressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
-                },
-            };
-        },
-    };
-}
+/** Burrow Bust, as the arcade lists it. Its code loads on launch, from `burrow-bust-starter.ts`. */
+export const burrowBustEntry: ArcadeEntry = {
+    id: 'burrow-bust',
+    name: 'Burrow Bust',
+    summary: 'Dig tunnels through the earth, and pump up the creatures that chase you along them.',
+    description: [
+        'A digging game. Your digger carves tunnels as it moves, creatures follow it through them, and a pump '
+        + 'stops them in their tracks. Loosen a rock from below and it falls on whatever is underneath.',
+        'The field is a grid model that the digger changes as it goes, and every view reads it in rows and columns.',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1980s', genres: ['maze', 'action'] },
+    screenWidth: 280,
+    screenHeight: 390,
+    thumbnail,
+    // The colour of its earth
+    cardColor: 'peach',
+    load: async () => (await import('./burrow-bust-starter')).loadBurrowBustStarter(),
+};

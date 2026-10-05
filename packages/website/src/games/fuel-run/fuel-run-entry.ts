@@ -1,62 +1,25 @@
-import type { Container } from 'pixi.js';
-import { assert } from '@mvtjs/utils';
-import type { GameEntry, GameSession } from '../game-entry';
-import { createGameModel } from './models';
-import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import { SECTIONS, textures } from './data';
+import type { ArcadeEntry } from '../../entries';
+import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Entry
 // ---------------------------------------------------------------------------
 
-export function createFuelRunEntry(): GameEntry {
-    let loaded = false;
-
-    return {
-        id: 'fuel-run',
-        name: 'Fuel Run',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        integerScale: true,
-        thumbnailAdvanceMs: 1000,
-
-        async load(): Promise<void> {
-            await textures.load();
-            loaded = true;
-        },
-
-        start(stage: Container): GameSession {
-            assert(loaded, 'fuel-run: load() must be called before start()');
-
-            const gameModel = createGameModel({
-                sections: SECTIONS,
-            });
-
-            const gameView = GameView({ model: gameModel });
-            stage.addChild(gameView);
-
-            return {
-                // The host ticks the view with the rest of the stage
-                update(deltaMs: number): void {
-                    gameModel.update(deltaMs);
-                },
-                destroy(): void {
-                    stage.removeChild(gameView);
-                    gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    showSecondary: true,
-                    primaryLabel: 'Fire',
-                    secondaryLabel: 'Bomb',
-                    onXDirectionChanged: (dir) => { gameModel.playerInput.xDirection = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.playerInput.yDirection = dir; },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
-                    onSecondaryButtonChanged: (pressed) => { gameModel.playerInput.bombPressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
-                },
-            };
-        },
-    };
-}
+/** Fuel Run, as the arcade lists it. Its code loads on launch, from `fuel-run-starter.ts`. */
+export const fuelRunEntry: ArcadeEntry = {
+    id: 'fuel-run',
+    name: 'Fuel Run',
+    summary: 'Fly low over scrolling terrain, bombing fuel tanks to keep flying, while rockets and saucers rise to meet you.',
+    description: [
+        'A side-scrolling shooter. Your ship burns fuel as it flies; bomb the tanks on the ground to refill '
+        + 'it, and shoot or dodge the rockets and saucers that launch at you.',
+        'The largest of the games, with a model for every kind of thing in the world, tested on its own.',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1980s', genres: ['shooter', 'scrolling'] },
+    screenWidth: 448,
+    screenHeight: 248,
+    thumbnail,
+    // The colour of its hills
+    cardColor: 'mint',
+    load: async () => (await import('./fuel-run-starter')).loadFuelRunStarter(),
+};

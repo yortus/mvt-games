@@ -1,4 +1,5 @@
-export type { DemoEntry, DemoHost, DemoSession } from './demo-entry';
-export { createBoidsEntry } from './boids';
-export { createFallingSandEntry } from './falling-sand';
-export { createReorderingListsEntry } from './reordering-lists';
+export { boidsEntry } from './boids';
+export { boids3dEntry } from './boids-3d';
+export { fallingSandEntry } from './falling-sand';
+export { fruitMachineEntry } from './fruit-machine';
+export { reorderingListsEntry } from './reordering-lists';

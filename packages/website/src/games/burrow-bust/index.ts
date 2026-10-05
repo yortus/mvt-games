@@ -1,1 +1,1 @@
-export { createBurrowBustEntry } from './burrow-bust-entry';
+export { burrowBustEntry } from './burrow-bust-entry';

@@ -1,0 +1,126 @@
+import { Application, TextureSource } from 'pixi.js';
+import { refreshView, updateView, type View } from '@mvtjs/pixi';
+import { CATALOGUE, findEntry } from './catalogue';
+import { type ArcadeEntry, type EntrySession, thumbnailCropOf } from './entries';
+
+// The snapshot page (`snapshot.html`), for `scripts/generate-thumbnails.ts`
+// only: it is served by the dev server and left out of the build. Opened as
+// `snapshot.html?entry=<id>`, it starts that entry at its play size, advances
+// it as long as the entry asks (`thumbnailAdvanceMs`) in frame-sized steps,
+// updating its models and views and playing any controls it asks for
+// (`thumbnailInput`), then refreshes and draws once. It then
+// resolves `window.snapshot` with the rectangle to capture. Opened without an
+// entry, it resolves it with every entry's id, play area and thumbnail crop,
+// so the script can size the viewport to each (an entry whose play area
+// follows the viewport then lays itself out as designed) and capture the
+// picture sharp enough for its crop to fill a card.
+//
+// The steps are small because models with phases or timelines are not
+// leap-safe: one giant step would skip what happens between.
+
+/** What the page resolves `window.snapshot` with. */
+interface SnapshotResult {
+    readonly entries?: readonly {
+        readonly id: string;
+        readonly width: number;
+        readonly height: number;
+        readonly cropWidth: number;
+        readonly cropHeight: number;
+    }[];
+    readonly rect?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
+}
+
+Object.assign(window, { snapshot: snapshot() });
+
+async function snapshot(): Promise<SnapshotResult> {
+    const id = new URLSearchParams(location.search).get('entry');
+    if (id === null) {
+        return {
+            entries: CATALOGUE.map((entry) => ({
+                id: entry.id,
+                width: entry.screenWidth,
+                height: entry.screenHeight,
+                cropWidth: thumbnailCropOf(entry).width,
+                cropHeight: thumbnailCropOf(entry).height,
+            })),
+        };
+    }
+    const entry = findEntry(id);
+    if (entry === undefined) throw new Error(`No entry '${id}'`);
+
+    const root = document.getElementById('snapshot');
+    if (root === null) throw new Error('The page has no #snapshot element');
+    await start(entry, root);
+    // Let the frame drawn reach the screen
+    await nextFrame();
+    await nextFrame();
+    const bounds = root.getBoundingClientRect();
+    return { rect: { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height } };
+}
+
+async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
+    const starter = await entry.load();
+    const advanceMs = starter.thumbnailAdvanceMs ?? STEP_MS;
+
+    if (starter.kind === 'pixi') {
+        const isPixelArt = starter.pixelArt ?? false;
+        TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
+        const app = new Application();
+        await app.init({
+            width: starter.screenWidth,
+            height: starter.screenHeight,
+            // Drawn sharp enough for a thumbnail larger than the play area; pixel art is enlarged as pixels instead
+            resolution: isPixelArt ? 1 : 2,
+            antialias: !isPixelArt,
+            roundPixels: isPixelArt,
+            background: 0x000000,
+            autoStart: false,
+        });
+        app.canvas.style.width = `${starter.screenWidth}px`;
+        app.canvas.style.height = `${starter.screenHeight}px`;
+        root.style.width = app.canvas.style.width;
+        root.style.height = app.canvas.style.height;
+        if (isPixelArt) app.canvas.style.imageRendering = 'pixelated';
+        root.append(app.canvas);
+        // Headless: no host, as when the entry is measured or thumbnailed
+        const session = starter.start({ stage: app.stage });
+        advance(session, [app.stage], advanceMs, starter.thumbnailInput);
+        app.render();
+        return;
+    }
+
+    root.style.width = `${entry.screenWidth}px`;
+    root.style.height = `${entry.screenHeight}px`;
+    const session = starter.start({ element: root });
+    // Give the entry time to size itself, and to make renderers that start asynchronously
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    advance(session, session.views, advanceMs);
+    session.render();
+}
+
+function advance(
+    session: EntrySession,
+    views: readonly View[],
+    totalMs: number,
+    input?: (session: EntrySession, elapsedMs: number) => void,
+): void {
+    let remaining = totalMs;
+    while (remaining > 0) {
+        const step = Math.min(STEP_MS, remaining);
+        input?.(session, totalMs - remaining);
+        session.update(step);
+        for (let i = 0; i < views.length; i++) updateView(views[i], step);
+        remaining -= step;
+    }
+    for (let i = 0; i < views.length; i++) refreshView(views[i]);
+}
+
+function nextFrame(): Promise<number> {
+    return new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
+/** One frame at 60 frames a second, rounded down. */
+const STEP_MS = 16;
+
+/** How long an element entry is given to lay itself out and make its renderers. */
+const SETTLE_MS = 500;

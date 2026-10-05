@@ -4,9 +4,10 @@
     "version": "0.0.0",
     "type": "module",
     "exports": {
-        "./games": "./src/games/index.ts",
-        "./demos": "./src/demos/index.ts",
-        "./demos/falling-sand": "./src/demos/falling-sand/index.ts"
+        "./catalogue": "./src/catalogue/index.ts",
+        "./entries": "./src/entries/index.ts",
+        "./demos/falling-sand/models": "./src/demos/falling-sand/models/index.ts",
+        "./demos/falling-sand/views": "./src/demos/falling-sand/views/index.ts"
     },
     "imports": {
         "#shared": "./src/shared/index.ts"
@@ -15,7 +16,9 @@
         "dev": "vite --host",
         "build": "vite build",
         "preview": "vite preview",
-        "generate-textures": "tsx scripts/generate-textures.ts"
+        "generate-textures": "tsx scripts/generate-textures.ts",
+        "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
+        "measure-load": "tsx scripts/measure-load.ts"
     },
     "dependencies": {
         "@codemirror/commands": "^6.11.1",

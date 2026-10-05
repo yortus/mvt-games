@@ -1,5 +1,6 @@
 import type { Container } from 'pixi.js';
-import type { GameEntry, GameSession } from '../games';
+import { assert } from '@mvtjs/utils';
+import type { ArcadeEntry, EntrySession, PixiEntryStarter } from '../entries';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -9,9 +10,11 @@ export type CabinetPhase = 'menu' | 'playing';
 
 export interface CabinetModel {
     readonly phase: CabinetPhase;
-    readonly games: readonly GameEntry[];
+    readonly games: readonly ArcadeEntry[];
     readonly selectedIndex: number;
-    readonly activeSession: GameSession | undefined;
+    /** The selected game, loaded: set once it launches. */
+    readonly activeStarter: PixiEntryStarter | undefined;
+    readonly activeSession: EntrySession | undefined;
     selectByDelta: (delta: number) => void;
     launchSelected: (stage: Container) => Promise<void>;
     restartSession: (stage: Container) => void;
@@ -24,7 +27,8 @@ export interface CabinetModel {
 // ---------------------------------------------------------------------------
 
 export interface CabinetModelOptions {
-    games: GameEntry[];
+    /** The games, each drawn with Pixi. */
+    games: readonly ArcadeEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -36,7 +40,8 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
 
     let phase: CabinetPhase = 'menu';
     let selectedIndex = 0;
-    let activeSession: GameSession | undefined;
+    let activeStarter: PixiEntryStarter | undefined;
+    let activeSession: EntrySession | undefined;
 
     const model: CabinetModel = {
         get phase() {
@@ -47,6 +52,9 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
         },
         get selectedIndex() {
             return selectedIndex;
+        },
+        get activeStarter() {
+            return activeStarter;
         },
         get activeSession() {
             return activeSession;
@@ -60,22 +68,24 @@ export function createCabinetModel(options: CabinetModelOptions): CabinetModel {
         async launchSelected(stage: Container): Promise<void> {
             if (phase !== 'menu' || games.length === 0) return;
             const entry = games[selectedIndex];
-            await entry.load?.();
-            activeSession = entry.start(stage);
+            const starter = await entry.load();
+            assert(starter.kind === 'pixi', () => `cabinet: ${entry.id} is not drawn with Pixi`);
+            activeStarter = starter;
+            activeSession = starter.start({ stage });
             phase = 'playing';
         },
 
         restartSession(stage: Container): void {
-            if (phase !== 'playing' || !activeSession) return;
+            if (phase !== 'playing' || !activeSession || !activeStarter) return;
             activeSession.destroy();
-            const entry = games[selectedIndex];
-            activeSession = entry.start(stage);
+            activeSession = activeStarter.start({ stage });
         },
 
         exitToMenu(): void {
             if (phase !== 'playing' || !activeSession) return;
             activeSession.destroy();
             activeSession = undefined;
+            activeStarter = undefined;
             phase = 'menu';
         },
 

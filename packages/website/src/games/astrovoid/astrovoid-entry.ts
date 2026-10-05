@@ -1,49 +1,23 @@
-import type { Container } from 'pixi.js';
-import type { GameEntry, GameSession } from '../game-entry';
-import { createGameModel } from './models';
-import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from './views';
-import { ARENA_WIDTH, ARENA_HEIGHT } from './data';
+import type { ArcadeEntry } from '../../entries';
+import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
-// Factory
+// Entry
 // ---------------------------------------------------------------------------
 
-export function createAstrovoidEntry(): GameEntry {
-    return {
-        id: 'astrovoid',
-        name: 'Astrovoid',
-        screenWidth: SCREEN_WIDTH,
-        screenHeight: SCREEN_HEIGHT,
-        integerScale: true,
-
-        start(stage: Container): GameSession {
-            const gameModel = createGameModel({
-                arenaWidth: ARENA_WIDTH,
-                arenaHeight: ARENA_HEIGHT,
-            });
-
-            const gameView = GameView({ model: gameModel });
-            stage.addChild(gameView);
-
-            return {
-                // The host ticks the view with the rest of the stage
-                update(deltaMs: number): void {
-                    gameModel.update(deltaMs);
-                },
-                destroy(): void {
-                    stage.removeChild(gameView);
-                    gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Fire',
-                    onXDirectionChanged: (dir) => { gameModel.playerInput.rotationDirection = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.playerInput.thrustPressed = dir === 'up'; },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
-                },
-            };
-        },
-    };
-}
+/** Astrovoid, as the arcade lists it. Its code loads on launch, from `astrovoid-starter.ts`. */
+export const astrovoidEntry: ArcadeEntry = {
+    id: 'astrovoid',
+    name: 'Astrovoid',
+    summary: 'Rotate, thrust and fire to break drifting rocks into ever smaller pieces, in an arena that wraps at its edges.',
+    description: [
+        'A vector-style space shooter. Your ship turns, thrusts and fires; each rock you hit splits into '
+        + 'smaller, faster ones, and anything that leaves one edge of the arena comes back at the other.',
+        'Every ship, rock and bullet is a model in world units, and the views turn those into pixels.',
+    ].join('\n\n'),
+    tags: { kind: 'game', era: '1970s', genres: ['shooter'] },
+    screenWidth: 400,
+    screenHeight: 430,
+    thumbnail,
+    load: async () => (await import('./astrovoid-starter')).loadAstrovoidStarter(),
+};

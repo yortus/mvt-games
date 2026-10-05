@@ -1,1 +1,1 @@
-export { createReorderingListsEntry } from './reordering-lists-entry';
+export { reorderingListsEntry } from './reordering-lists-entry';

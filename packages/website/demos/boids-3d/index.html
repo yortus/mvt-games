@@ -14,49 +14,18 @@
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
                 overflow: hidden;
             }
-            #scene {
-                position: fixed;
-                top: var(--site-nav-height, 48px);
-                left: 0;
-                width: 100vw;
-                height: calc(100vh - var(--site-nav-height, 48px));
-                display: block;
-            }
+            /* The site nav is fixed over the top of the page */
+            body { display: flex; flex-direction: column; padding-top: var(--site-nav-height, 48px); }
             .caption {
-                position: fixed;
-                left: 16px;
-                bottom: 16px;
-                max-width: 420px;
-                padding: 12px 14px;
-                background: rgba(13, 17, 23, 0.85);
-                border: 1px solid #30363d;
-                border-radius: 8px;
-                font-size: 14px;
-                line-height: 1.5;
-            }
-            .caption h1 { font-size: 16px; color: #e6edf3; margin-bottom: 4px; }
-            .caption a { color: #58a6ff; }
-            .flock-panel {
-                position: fixed;
-                top: calc(var(--site-nav-height, 48px) + 16px);
-                right: 16px;
-                width: 260px;
-                padding: 12px 14px;
-                background: rgba(13, 17, 23, 0.85);
-                border: 1px solid #30363d;
-                border-radius: 8px;
+                padding: 8px 16px;
                 font-size: 13px;
+                line-height: 1.5;
+                border-bottom: 1px solid #21262d;
             }
-            .flock-panel h2 { font-size: 14px; color: #e6edf3; margin-bottom: 8px; }
-            .flock-panel .range {
-                display: grid;
-                grid-template-columns: 80px 1fr 36px;
-                align-items: center;
-                gap: 8px;
-                margin-top: 6px;
-            }
-            .flock-panel input { width: 100%; accent-color: #58a6ff; }
-            .flock-panel .range-value { text-align: right; font-variant-numeric: tabular-nums; }
+            .caption strong { color: #e6edf3; }
+            .caption a { color: #58a6ff; }
+            /* The entry fills the rest of the page */
+            #entry { position: relative; flex: 1; min-height: 0; }
         </style>
     </head>
     <body>
@@ -75,17 +44,13 @@
         </nav>
         <script>document.querySelector('.site-nav-toggle')?.addEventListener('click',function(){var n=this.closest('.site-nav');n.classList.toggle('site-nav--open');this.setAttribute('aria-expanded',n.classList.contains('site-nav--open'))});</script>
 
-        <canvas id="scene"></canvas>
+        <p class="caption">
+            <strong>Boids in 3D:</strong> the <a href="../">boids demo</a>'s flock model, unchanged, drawn with three.js
+            through the same JSX runtime as the Pixi games. The settings panel is HTML, through that runtime too,
+            following the same model. Click the ground to add boids, or a boid to take some away.
+        </p>
 
-        <div class="caption">
-            <h1>Boids in 3D</h1>
-            <p>
-                The <a href="../">boids demo</a>'s flock model, unchanged, drawn with three.js
-                through the same JSX runtime as the Pixi games. The settings panel is HTML,
-                through that runtime too, following the same model. Click the ground to add
-                boids, or a boid to take some away.
-            </p>
-        </div>
+        <main id="entry"></main>
 
         <script type="module" src="/src/demos/boids-3d/main.ts"></script>
     </body>

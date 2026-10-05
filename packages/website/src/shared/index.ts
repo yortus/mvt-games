@@ -1,4 +1,4 @@
-export { isTouchDevice } from './is-touch-device';
+export { isTouchDevice } from '../runner';
 export { KeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
 export { OverlayView, type OverlayViewBindings } from './overlay-view';
 export { PauseMenuView, type PauseMenuViewBindings } from './pause-menu-view';

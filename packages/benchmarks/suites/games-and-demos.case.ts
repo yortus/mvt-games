@@ -1,20 +1,6 @@
 import { Container } from 'pixi.js';
-import {
-    createAstrovoidEntry,
-    createBurrowBustEntry,
-    createCrumbChaseEntry,
-    createDojoDuelEntry,
-    createFuelRunEntry,
-    createGalaxyRaidersEntry,
-    createKwazyCactiiEntry,
-    createNeonMonsoonEntry,
-    type GameInputConfig,
-} from '@mvtjs/website/games';
-import {
-    createBoidsEntry,
-    createFallingSandEntry,
-    createReorderingListsEntry,
-} from '@mvtjs/website/demos';
+import { findEntry } from '@mvtjs/website/catalogue';
+import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/website/entries';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
@@ -25,8 +11,7 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // before anyone touches them. Textures and text measurement are stubbed (see
 // the driver and `stubTextMeasurement`), and nothing is rendered, so this is
 // each one's own frame work: the session's update, which advances its models,
-// then a tick of the stage, as `packages/website/src/main.ts` and
-// `packages/website/src/demos/main.ts` run them.
+// then a tick of the stage, as the website's entry host runs them.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
 //   after a 10-second warm-up, split into the models, `updateView` and
@@ -48,11 +33,9 @@ stubTextMeasurement();
 
 const params = readParams();
 const measure = String(params.measure);
-const entry = createEntry(String(params.entry));
-
-await entry.load?.();
+const starter = await loadPixiStarter(String(params.entry));
 const stage = new Container();
-const session = entry.start(stage);
+const session = starter.start({ stage });
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
@@ -103,31 +86,13 @@ else {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** What this file needs from a game's or a demo's entry. */
-interface RunnableEntry {
-    load?: () => Promise<void>;
-    start: (stage: Container) => RunnableSession;
-}
-
-/** What this file needs from a running game or demo. Only games have `inputConfig`. */
-interface RunnableSession {
-    update: (deltaMs: number) => void;
-    readonly inputConfig?: GameInputConfig;
-}
-
-function createEntry(id: string): RunnableEntry {
-    if (id === 'astrovoid') return createAstrovoidEntry();
-    if (id === 'burrow-bust') return createBurrowBustEntry();
-    if (id === 'crumb-chase') return createCrumbChaseEntry();
-    if (id === 'dojo-duel') return createDojoDuelEntry();
-    if (id === 'fuel-run') return createFuelRunEntry();
-    if (id === 'galaxy-raiders') return createGalaxyRaidersEntry();
-    if (id === 'kwazy-cactii') return createKwazyCactiiEntry();
-    if (id === 'neon-monsoon') return createNeonMonsoonEntry();
-    if (id === 'boids') return createBoidsEntry();
-    if (id === 'falling-sand') return createFallingSandEntry();
-    if (id === 'reordering-lists') return createReorderingListsEntry();
-    throw new Error(`unknown game or demo: ${id}`);
+/** Loads a game or demo by id, as the website would launch it. Only entries drawn with Pixi run headless here. */
+async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
+    const entry = findEntry(id);
+    if (entry === undefined) throw new Error(`unknown game or demo: ${id}`);
+    const starter = await entry.load();
+    if (starter.kind !== 'pixi') throw new Error(`${id} is not drawn with Pixi, so it cannot run headless`);
+    return starter;
 }
 
 /**
@@ -137,7 +102,7 @@ function createEntry(id: string): RunnableEntry {
  * every second and every 1.5 seconds. Only changes are sent, as real input
  * would be. Demos have no `inputConfig`, so they get none.
  */
-function createInputScript(config: GameInputConfig | undefined): (frame: number) => void {
+function createInputScript(config: EntryInputConfig | undefined): (frame: number) => void {
     return (f) => {
         if (config === undefined) return;
         if (f % 30 === 0) config.onXDirectionChanged?.(X_PATTERN[(f / 30) % X_PATTERN.length]);

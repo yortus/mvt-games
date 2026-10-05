@@ -1,1 +1,1 @@
-export { createAstrovoidEntry } from './astrovoid-entry';
+export { astrovoidEntry } from './astrovoid-entry';

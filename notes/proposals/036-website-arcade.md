@@ -574,10 +574,8 @@ and say so in the info panel.
 
 Cards of one width in as many columns as fit (about 280-340 px each, one
 column on a phone). Each card goes in the shortest column so far, in
-catalogue order. Card heights differ because entries do: the maze games
-are close to square, and Dojo Duel and the Fruit Machine are wide. The
-thumbnail keeps the entry's aspect ratio, which gives the wall its
-uneven pinboard look without any art direction.
+catalogue order. Every card is the same size (section 11.3), so the
+columns stay even.
 
 The layout is a **view model**, `createCardWallLayout()`, owned by the
 Arcade view. Given the column width, the gap and each card's height, it
@@ -741,23 +739,40 @@ and the site working.
     Done.
 3c. ~~**Move** `checks/` to `packages/checks/`, as `@mvtjs/checks`. A commit of its own.~~
     Done.
-4. **Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
+4. ~~**Entries.** `ArcadeEntry`, the two starters, `EntrySession`, the tags
    and `Genre` in `website/src/entries/`. Convert the seven games and three
    Pixi demos to `pixi` entries with lazy `load()`. The cabinet and the demos
    gallery are adapted to read the new list, and keep working.
-   The benchmarks follow.
-5. **`element` entries.** Boids in 3D and the Fruit Machine, driven by a
-   host's loop. Their own pages keep working for now, on a small shared host.
-6. **Facts and thumbnails.** The `virtual:entry-facts` plugin
+   The benchmarks follow.~~ Done, for eight games (034's Neon Monsoon had
+   landed). Each entry directory has `<id>-entry.ts` (metadata) and
+   `<id>-starter.ts` (the code, imported by `load()`), and its barrel exports
+   only the entry. The list is `CATALOGUE` in `website/src/catalogue/`. See
+   section 11.1 for where this differs from sections 6 and 7.
+5. ~~**`element` entries.** Boids in 3D and the Fruit Machine, driven by a
+   host's loop. Their own pages keep working for now, on a small shared host.~~
+   Done. The host is `createEntryHost` in `website/src/runner/`; the two
+   pages run on `runEntryPage`. Each entry's page CSS moved to a stylesheet
+   its starter imports, scoped to its element.
+6. ~~**Facts and thumbnails.** The `virtual:entry-facts` plugin
    (section 7.2), the thumbnail script and the snapshot page (section 9),
    with the committed images. Add the load-time script of section 3 to
-   `website/scripts/` too, so step 9 can measure.
-7. **The Arcade.** Model, card wall (the layout view model and its
+   `website/scripts/` too, so step 9 can measure.~~ Done:
+   `npm run generate-thumbnails` (13 images, 280 KB in all) and
+   `npm run measure-load -- <url>`, sharing `scripts/headless-chrome.ts`,
+   which reuses one profile in `node_modules/.cache/`.
+7. ~~**The Arcade.** Model, card wall (the layout view model and its
    tests), cards, filter bar with query-string state, info panel, in HTML
-   JSX, at a temporary path (`/arcade/`), beside the old pages.
-8. **The runner.** One loop (section 10.1), the zoom with its hold and
+   JSX, at a temporary path (`/arcade/`), beside the old pages.~~ Done, in
+   `website/src/arcade/`, with the sort control (section 12, question 4).
+8. ~~**The runner.** One loop (section 10.1), the zoom with its hold and
    hand-over, the HTML pause menu and chrome, touch controls for `pixi`
-   entries, deep links.
+   entries, deep links.~~ Done. Checked in headless Chrome at 1280x800 and on
+   a 390x844 touch screen: filters, sorts, the info panel, zooming in and
+   out, pause, a Pixi game, a Pixi demo with performance metrics, the Fruit
+   Machine, deep links with a filtered query, and the old pages. In a
+   production build the Arcade's first load is 18 files, 34 KB gzipped, with
+   no Pixi or three.js. Over HTTP/1.1, 18 files arrive in about three waves:
+   step 9's measurement will show whether merging chunks is worth it.
 9. **Switch over.** The Arcade becomes `/`. The old pages become redirects
    (section 5.2). The cabinet (`website/src/cabinet/`), the demos gallery,
    the Pixi pause menu and the old landing page are deleted. Measure the cold
@@ -769,11 +784,468 @@ and the site working.
     the demos' README. Record what building the Arcade showed about the HTML
     JSX runtime (026). Archive task 026 as absorbed. Add backlog tasks for
     per-entry link previews (question 5) and HTML touch controls
-    (question 7).
+    (question 7). Write a README for `website/src/arcade/`: the Arcade as
+    an MVT application, not a game. It is a guided path through the
+    lessons it holds, each pointing at the few lines that show it:
+    - a model whose `update` has nothing to do
+    - domain state (the search, the tags chosen, the phase) against
+      presentation state (the selection, the transition)
+    - async loading made safe with a launch counter
+    - view models with tests of their own (the layout, the transition, the
+      search suggestions, the wall's keys)
+    - the transition telling the model when to start playing
+    - entries of three renderers hosted in one loop
+    - measurements from the page as input to a view model
+
+    It also names the places that bend the rules, and why: reading a drawn
+    pose back from the page, views with their own `window` listeners, and
+    the transition writing to the runner's stage. The questions it raises
+    and the docs don't answer yet (reading layout back, hand-offs between a
+    view model and the model, reduced motion, the URL as a projection of
+    the model) become docs tasks of their own.
 11. *(Later, optional)* **Attract mode:** a card that is hovered for a
     second starts its entry live in the card, muted and non-interactive,
     one at a time, so only one extra WebGL context is ever live. A fitting
     touch for an arcade, but not needed for anything above.
+
+### 11.1 Notes from steps 4 to 8
+
+Where the build differs from the design above, and why.
+
+- **No load progress.** `load()` takes no `onProgress` (section 4.3): every
+  entry's assets are one small spritesheet at most, which reports nothing
+  useful, so the waiting bar is always indeterminate.
+- **More on the starter.** `integerScale` and `thumbnailAdvanceMs` live on
+  the Pixi starter, not the metadata, since only running code needs them.
+  It also has `pixelArt` (nearest-neighbour textures, no antialiasing,
+  whole-pixel positions: what the cabinet set for every game) and
+  `fitsViewport` (Boids, whose layout follows the window). A Pixi
+  application's antialiasing is fixed when it is made, so the host keeps one
+  and makes a new one only when the next entry's `pixelArt` differs.
+- **Metadata sizes are written out.** An entry's `screenWidth` and
+  `screenHeight` are numbers in its metadata, since the views that define
+  them would bring Pixi with them. In development, the Arcade asserts that
+  they match the starter's.
+- **The list is `catalogue/`**, apart from the types in `entries/`, so the
+  two do not import each other. The benchmarks import
+  `@mvtjs/website/catalogue` and `/entries`, and the falling-sand demo's
+  `models` and `views` barrels by subpath.
+- **One loop, Pixi included.** The host's Pixi application is not started:
+  the page's loop steps its ticker (`ticker.update(time)`), so listeners on
+  it, such as `createPerformanceMetrics`, still run each frame, in order.
+- **The zoom aims at the play area as it will be.** `playRectFor` is
+  followed through the zoom, since loading can change it (a starter's
+  integer scaling, a game's touch controls).
+- **`isTouchDevice` moved** to the runner, and `#shared` re-exports it:
+  importing `#shared` would bring Pixi into the Arcade's first chunk.
+
+What building the Arcade showed about the HTML JSX runtime (026's last
+criterion), for step 10 to file in its design notes:
+
+- **Changing styles.** Cards and the zoom move every frame, and `style` is
+  fixed, so each uses an `onRefresh` step with its own change checks. An
+  attribute per style property, or for CSS custom properties, would remove
+  that boilerplate.
+- **A hidden element's `onRefresh` does not run.** Focus-on-open logic
+  never saw its dialog close, until it moved to an always-visible wrapper.
+  Worth a sentence in the docs.
+- **`memoiseLast` takes primitives only**, so values derived per entry are
+  keyed by its id.
+- **`<img>` has no `loading` attribute**, and `loading` must be set before
+  `src`, which starts a load: lazy images need a `ref`.
+- **Elements made outside JSX can be children** (the host's stage element),
+  which made the runner simple.
+
+A loose end: two games name sprites alike, so loading both in one page logs
+Pixi's "[Cache] already has key" warnings. The cabinet already did, loading
+every game for its thumbnails; in the Arcade it happens only after playing
+both.
+
+### 11.2 Square pictures
+
+Changed after step 8, at the author's request (2026-10-04): every card's
+picture is the same square, not the entry's own shape.
+
+- **Each entry names its square.** `thumbnailCrop: { x, y, size }`, in the
+  entry's own pixels, is the part of the play area its card shows: its most
+  telling part. Without one, the largest square, centred
+  (`thumbnailCropOf`). A catalogue test holds each inside its play area.
+- **The thumbnail is still the whole play area.** The card places it, by
+  percentages, so the crop fills the square. That keeps the zoom continuous:
+  the zoom's view model moves a window and the picture behind it apart,
+  from the card's square on the crop to the whole play area, so the window
+  opens out as it grows.
+- **Thumbnails are as sharp as their crops need.** The generator captures
+  each at the scale that makes its crop 600 pixels across (twice a card's
+  width), so an entry with a small crop has a large image: 331 KB for all
+  thirteen.
+- **An entry can play itself for its picture.** A Pixi starter's
+  `thumbnailInput` is called before each step of the thumbnail's advance,
+  to press its controls: Galaxy Raiders fires twice, so its picture has two
+  shots on their way up.
+- **Crops chosen:** Galaxy Raiders' ship shooting up at the ranks, Burrow
+  Bust's surface and top tunnels, Fuel Run's ship, saucers and fuel tanks
+  (with its thumbnail now taken after the section banner fades), Neon
+  Monsoon's ship among the kites, Falling Sand's tank, Reordering Lists' two
+  rows, Boids' arena, and the Fruit Machine's Pixi reels. The rest are
+  centred.
+
+### 11.3 Identical cards, in polaroids
+
+Changed again at the author's request (2026-10-04), replacing 11.2's square
+crops:
+
+- **Every card is the same size**: a square, then one line of title with the
+  info button beside it, then one line of tags. The summary, the size and
+  the renderers left the card; the info panel, which already had the
+  description, every tag (renderers among them), the size, the techniques
+  and how to play, now opens with the summary too.
+- **Each entry picks its photo's shape again.** `thumbnailCrop` is any
+  rectangle, `{ x, y, width, height }`, and defaults to the whole play area.
+  Only Falling Sand (its tank) and Boids (its arena) crop, to leave out
+  their control panels. Galaxy Raiders keeps its two shots, now on the
+  whole screen.
+- **The photo is a polaroid**, fitted inside the square (so a wide photo
+  leaves space above and below, a tall one either side). `cardPhotoIn`
+  places it, for the card and for the zoom, which still starts on the photo
+  and opens out to the whole play area. Section 11.4 says how it lies.
+- **Thumbnails are captured** at the scale that makes the longer side of the
+  crop 600 pixels: 211 KB for all thirteen.
+- **The thumbnail script waits for the right page.** A late load event from
+  the page before (the Fruit Machine's) once let a snapshot be read from the
+  wrong page; `navigate` now waits until the page showing is the one asked
+  for, and loaded.
+
+### 11.4 Tilted and taped
+
+Further changes at the author's request (2026-10-04):
+
+- **The polaroid's border is even all round** (8 pixels).
+- **Each polaroid lies at its own tilt**, from 1.5 to 4 degrees either way,
+  and is **taped down across two of its corners** with strips of clear tape
+  with torn ends. Both come from a hash of the entry's id (`cardLookFor`),
+  so they are the same on every visit.
+- **A slight drop shadow** gives the print some thickness.
+- **Under the pointer, with the keyboard's focus, or held**, the polaroid
+  straightens and grows a little. The tape is not part of it, but laid
+  beside it where the tilted corners rest (`tapeFor`), so it stays behind.
+- **The zoom turns as it grows.** The card reads where its photo is, and its
+  tilt and scale, from the polaroid's transform as it stands when clicked,
+  and the zoom's view model straightens the tilt as the window opens out,
+  turning it back on the way to the card.
+- **The Fruit Machine's photo is square**: its Pixi machine's reels.
+
+### 11.5 The card, rearranged
+
+Further changes at the author's request (2026-10-04):
+
+- **The polaroid is at the card's centre.** The title is a band across the
+  top, centred and in capitals; the tags (left) and the info button (right)
+  are a band across the foot, the same height (`CARD_BAND_HEIGHT`), with the
+  square between them.
+- **The tape lies over the polaroid at rest**, and the polaroid rises above
+  it when it straightens under the pointer, as if lifted off it.
+- **The shadow falls down and to the right**, darker, as from a light above:
+  the last one was black on a near-black card, and could not be seen.
+- **The photo cannot be dragged, and has no context menu**, so a long press
+  on a touch screen just holds it. A middle click still opens the entry in
+  a new tab.
+
+### 11.6 Titles to fit, and tape that holds
+
+Further changes at the author's request (2026-10-04):
+
+- **Titles are twice the size**, 30 pixels, or the largest size that keeps
+  them on one line. The card measures its title once, with a canvas in the
+  title's font (`TITLE_FONT`, which `.card-name` must match), and sizes it
+  as the card's width changes (`titleSizeFor`), so nothing reads the page's
+  layout during the frame.
+- **The tape now visibly lies over the print.** It always stacked in front,
+  but its film was too near the border's white to see. The film is now
+  darker than the border and lighter than the card, with a firmer edge, so
+  it shows over both. (Moving the tape further onto the print was tried,
+  and undone: section 11.7.)
+
+### 11.7 Candy titles, and a closer look
+
+Further changes at the author's request (2026-10-04):
+
+- **The tape is back on the corners' tips**, just touching them, as before
+  11.6: further in, it covered too much of the print.
+- **Titles are denser**: letter spacing 0.02em, not 0.08em, which also lets
+  long titles keep a larger size.
+- **Each title has a candy colour**, from a palette of nine
+  (`TITLE_COLORS`, `TITLE_COLOR_VALUES`), light enough to read on the dark
+  card: picked from the entry's id unless the entry chooses one with
+  `titleColor`. Entries whose thumbnails have a clear main colour choose a
+  palette colour near it (the Fruit Machine's pink sign, Crumb Chase's
+  crumbs, Falling Sand's sand...); Reordering Lists and Astrovoid keep
+  their picked ones. Choosing the colour from the thumbnail automatically
+  would need the thumbnail script to analyse the image; not done.
+- **Nothing on a card can be selected, and it has no context menu**,
+  anywhere on it.
+- **The polaroid comes closer**: under the pointer it grows until its longer
+  side is just short of the card's width, 6 pixels inside each side
+  (`liftScaleFor`, `LIFT_INSET`), and the card rises above its neighbours
+  while it does. (Reaching just past the card's sides was tried first, and
+  was a little too much.)
+
+### 11.8 Candy cards
+
+Further changes at the author's request (2026-10-04):
+
+- **Each card is its candy colour**, and its title a deep shade of it: the
+  same hue, at OKLCH lightness 0.4 with its chroma raised (CSS relative
+  colour, plain dark where a browser lacks it). The view sets the colour as
+  `--candy` on the card. Swapping the dark card and candy title outright
+  was tried first; a shade of the card's own colour reads as well, and
+  looks of a piece with it. The field keeps its name, `titleColor`, while
+  the look is on trial: `cardColor` if it stays.
+- **The rest of the card suits a light ground**: a translucent dark border,
+  dark tag pills and info button with light text, and softer polaroid
+  shadows.
+- **The tape only just shows**: on the light cards its old film, edge and
+  shadow (made to show on the dark card) looked heavy. It is now a faint
+  frosted film with torn ends, a shade greyer than the white border and
+  lighter than the card, with no edge and no shadow; with no shadow to
+  keep from being clipped, the film is the tape element itself again.
+
+### 11.9 A search box for the head of the page
+
+Further changes at the author's request (2026-10-04). The head of the page
+was too big: the title, a paragraph of introduction, and a bar of every tag,
+group by group, with a sort control. It is now one line, the title and a
+search box (`SearchBarView`). This replaces the tag bar of section 7.2, and
+reverses questions 3 (in part) and 4 of section 12, and the settled point
+that Level is shown.
+
+- **No introduction.** The nav links the docs.
+- **No sort: the wall is always by name.** Each entry's `added` date, there
+  only for "newest first", is gone too, and the catalogue's order no longer
+  matters to the Arcade.
+- **No Level (Complexity)**: dropped from the tags, the cards and the code.
+  The measured size stays in the info panel.
+- **Fewer genres**: multi-view and bullet hell are not genres. The Fruit
+  Machine has none, and Neon Monsoon is a scrolling shooter.
+- **The tags live in the search box.** While it has focus, the tags drop
+  down beneath it, group by group with their counts; typing narrows them to
+  those with a word that begins with what is typed. Clicking one, or Enter
+  (on the first match, or the one the arrow keys moved to), puts it in the
+  box as a token with a button to remove it, and clears the words typed to
+  find it. Backspace in an empty box removes the last token, Escape closes
+  the list, and `/` anywhere on the page jumps to the box.
+- **What is typed searches too**: an entry shows if each word is in its name
+  or begins one of its tags (`sim` finds the simulations), so typing filters
+  the wall at once, before any tag is chosen.
+- **Every token narrows.** A tag bar's chips could fairly be alternatives
+  within a group; tokens in a search box read as "and", so an entry must now
+  have every tag chosen. The list offers only tags that would narrow what
+  the tokens let through: none that every such entry has (Pixi, among the
+  shooters), and none that no such entry has.
+- **The URL keeps the search**: the tags as before (`?genre=shooter`), and
+  the words as `q` (`?q=sand`).
+
+### 11.10 The keyboard, and smoother reflow
+
+Further changes at the author's request (2026-10-05):
+
+- **The introduction is back, behind an (i)** beside the title
+  (`AboutView`): the paragraph, the link to the docs, and the keys. It opens
+  beneath the button, and closes on Escape, a press anywhere else, or the
+  button.
+- **Cards slide back in.** Removing a tag made every card jump to its new
+  place, though adding one slid them. A hidden card measures 0 high; the
+  wall took that, so a card shown again, or one shown for the first time,
+  looked like a first measure, which snaps the wall to correct an estimate.
+  Now a 0 is ignored, a first measure snaps only when it is off its
+  estimate (every card is the same size, so it never is), and a card that
+  had faded out reappears in its new place, fading in, rather than sliding
+  from where it vanished.
+- **Tokens keep the order they were chosen in** (`activeChipAt`), so the
+  newest is always last, by the caret, where Backspace removes it. A URL
+  holds no order: its tags count as chosen in the chips' order.
+- **Titles are denser still**: letter spacing -0.02em.
+- **The keyboard** (`CardWallView`, `card-wall-keys.ts`): the wall is one
+  stop for Tab, its selected card (a roving `tabindex`; the info buttons
+  are out of the order). The arrows, or W, A, S and D, move the selection,
+  left and right through the order shown and up and down a column, scrolling
+  it into view clear of the nav; Enter or Space plays it, and `i` opens its
+  info panel. The selection is the wall's presentation state: the card last
+  moved to or focused, or the first shown if that one is not. The focus
+  rings the whole card. While an entry or an info panel is up, the wall
+  ignores keys and lets go of the focus, so a game's keys never move it; it
+  takes the focus back, without scrolling, on return.
+
+### 11.11 Slower arrivals, and searching descriptions
+
+Further changes at the author's request (2026-10-05):
+
+- **Cards arriving are seen to arrive.** Cards shown again when a tag was
+  removed did fade in, but within about 250 ms, most of it in the first
+  100, and while the cards sliding off their places were still there, so
+  they read as appearing at once. Now, on a reflow, an arriving card waits
+  120 ms for its place to clear, then fades in more slowly (`FADE_IN_MS`,
+  about 400 ms in all); a card leaving still fades fast (`FADE_OUT_MS`).
+- **Typing after removing a tag works.** Pressing a token's remove button
+  took the focus from the box, and the button then went with its token,
+  leaving the focus nowhere: typing did nothing. Presses on the box's
+  buttons now leave the focus in the box, and removing a token puts the
+  caret back in it. Search by name itself was never broken.
+- **Words search the descriptions too**: a word typed matches an entry if
+  it is in its name, begins a word of its summary, description or
+  techniques (`flock` finds both boids demos), or begins one of its tags.
+- **Titles' letter spacing is 0**, halfway between the two before.
+- **The About note's keys** read as keys, one to a line with what they do:
+  the arrows or WASD, each one key; Enter or Space; and `i` "Show more info
+  about the selected item".
+- **The scrollbar's space is kept** (`scrollbar-gutter: stable` on the
+  page). A search short enough to fit the window took the scrollbar away,
+  widening the wall, and a new width snaps every card to its place rather
+  than sliding it; an entry starting (the page stops scrolling) widened it
+  too. The wall is now the same width either way. Overlay scrollbars
+  (phones, macOS) never took space, and are unaffected.
+
+### 11.12 Selecting a card
+
+Further changes at the author's request (2026-10-05). A card's selection
+was the keyboard's alone, and the polaroid's zoom a CSS hover effect. Now
+one card at a time is selected, and the selection is what zooms it:
+
+- **Only the polaroid is the link.** The link takes no pointer events
+  except on its polaroid, so hit-testing follows the polaroid exactly as
+  drawn, tilted, or lifted and straight. A click anywhere else on the card,
+  the title, the foot, or the square around the polaroid (a corner of the
+  tilted polaroid's box included), selects the card and does not launch it.
+  The info button still opens the panel.
+- **Pointing at a polaroid, or holding it, selects its card**, as hovering
+  zoomed it before; the selection stays when the pointer leaves, until
+  another card is selected.
+- **The selected card is shown** by its straightened, closer polaroid and
+  an accent border; the keyboard's focus is always on the wall's selected
+  card, so the focus ring is gone. Pointing moves the selection but not the
+  focus (it must not take it from the search box), so the wall's keys,
+  Enter included, act on the selected card wherever on the wall the focus
+  is. A click selects and focuses the card, for the keys to go on from.
+- **The Tab stop** is the selected card, or the first shown when none is,
+  or the selected one is filtered out (which then shows no card selected).
+- **A second click deselects** (2026-10-05): a click outside the polaroid
+  of the selected card leaves no card selected.
+- **The selected card is ringed and glows in its own colour** (2026-10-05),
+  in place of the accent border: a dark gap, a ring in its candy colour,
+  and a soft glow of it, eased in and out.
+
+### 11.13 A new way in and out: burn, and a tube powering on
+
+At the author's request (2026-10-05). The zoom into an entry landed on the
+right place, but still jumped: the entry started blank and faded in, and
+started in another state than its thumbnail showed. Rather than fix those,
+the way in no longer shows the picture and the entry together.
+`TransitionViewModel` (`transition-view-model.ts`) replaces the zoom's view
+model, `TransitionView` its view, and `WallEffectView` draws on the wall.
+
+Two ways were tried, each with the burn below: the picture zooming to the
+play area and turning edge-on, the entry turning in behind it (a flip); and
+the picture receding, the entry's screen powering on like an old tube.
+The author chose the tube, without the zoom to the play area, and then
+with the polaroid floating to the centre instead (2026-10-05):
+
+- **In**: as every other card, and the chosen card's own title and foot,
+  burn away, nearest first, the chosen card's polaroid, white border and
+  all, floats from its card to the centre of where the entry will play,
+  its own size, straightening. The entry loads meanwhile, and a slow load
+  holds the polaroid there with its waiting bar. The page blacks out, the
+  polaroid recedes into the dark, and the entry is told to start
+  (`onHandOver`, the model's `startPlaying`). Once it is running, so has
+  drawn a frame, its screen powers on from that centre: a white-hot line
+  across the middle (a glow drawn over it, so it is white whatever the
+  picture's colours), opening out to the picture. Neither a blank first
+  frame nor a thumbnail out of step can show.
+- **Out**: the entry's last frame powers off, to a white-hot line and then
+  a dot, where it played (remembered at the hand-over: without the entry's
+  starter, the play area works out differently, by whole-number scaling).
+  The polaroid comes forward out of the dot and floats back onto its card,
+  and the cards develop around it, nearest first. An entry whose renderer
+  gives no last frame (three.js, HTML) powers off its thumbnail. Leaving
+  before the entry started floats the polaroid straight back.
+- **The page cannot scroll** until the way out has ended, as while the
+  entry plays: the polaroid and the developing cards are placed in the
+  window, and would part from the wall.
+- **The burn** is one WebGL fragment shader on a canvas over the wall: per
+  card, a front creeping from a corner, ragged with noise, painting the
+  page's background in behind an ember edge, with scorching ahead of it.
+  Developing goes from the background to a mottled blank, which clears to
+  the card. Without WebGL, the cards just fade.
+- The power-on is a CSS transform on the stage's element, so it works alike
+  for Pixi, three.js and HTML entries. The card's own polaroid hides while
+  the transition carries it.
+- **Less motion, for those who ask for it** (`prefers-reduced-motion`, the
+  visitor's system setting, read as each way in or out starts): the way in
+  fades the page to black round the polaroid, the polaroid, then up into
+  the entry, and the way out fades the last frame, then the page back with
+  the polaroid on its card, 250 ms each; nothing burns, floats or flashes.
+  The wall's cards jump to new places rather than slide (they still fade),
+  the polaroid lifts without animating, and the keyboard scrolls at once.
+  The entries themselves are left as they are: their motion is what the
+  visitor chose to see, which the setting does not ask to take away.
+- Still to tune: each card burns for 700 ms, spread over 250 ms; the
+  polaroid floats for 700 ms, recedes in 300 ms; the screen powers on in
+  500 ms.
+
+### 11.14 A marquee, a texture, and three fixes
+
+Further changes at the author's request (2026-10-05):
+
+- **The title is "MVT Arcade", as a marquee** (`WordmarkView`): heavy block
+  capitals, yellow, outlined in black and extruded in orange, like the
+  lettering on an old cabinet. No font: a small block letterface of the
+  arcade's own (`GLYPHS`, seven cells tall, strokes two thick), drawn as one
+  SVG of runs of cells, layered outline, depth, then faces. On a narrow
+  screen, where the search goes under it, the title stands centred.
+- **The cards have a halftone screen**, as on a printed arcade flyer: dots
+  a shade darker than the card, strongest at its foot, fading towards its
+  top.
+- **The way back lands on the polaroid as the card shows it.** The chosen
+  card stays selected, so its polaroid is lifted and straight, but the way
+  back aimed at its resting tilt, then jumped. Now the pose is read from the
+  card as drawn (`photoPoseOf`), as the way in reads it.
+- **The pause menu takes the keyboard again.** It never got the focus: its
+  focus step ran in the frame it opened, while it was still hidden, and a
+  hidden button takes no focus; it now tries each frame until it does. The
+  info panel had the same fault, now fixed the same way. The arrows, or W
+  and S, move through its choices, wrapping round, so from Resume, Up then
+  Enter leaves.
+- **The polaroid keeps its shadow** as the transition carries it: its drop
+  shadow now spreads as far as its white border, which had hidden it.
+- **The title stands centred whenever the search wraps under it**, measured
+  (a `ResizeObserver` on the header), rather than below a fixed width: where
+  it wraps depends on the title's width and the search's.
+- **Card textures on trial** (`?texture=`, for choosing one, then to go):
+  `dots` (the halftone, the default), `grid` (graph paper), `circuit` (a
+  circuit board's traces and pads, a tile drawn here) and `scanlines` (a
+  tube's). Each a shade darker than the card, fading towards its top.
+- **The cards' titles are in pixels** (`PixelTextView`): a plain pixel font
+  of the arcade's own (`PIXEL_FONT`, capitals and digits, five cells by
+  seven), set bold by doubling each stroke sideways, drawn as an SVG in the
+  title's colour. Seven cells of 4 pixels tall, it shrinks to fit a long
+  name across the card, so the title no longer measures its text in a
+  canvas (`titleSizeFor` and the title's font constants are gone).
+
+### 11.15 One font, and an etched grid
+
+Further changes at the author's request (2026-10-05):
+
+- **One pixel font for both letterings.** The marquee is now set in the
+  cards' font (`PIXEL_FONT`, now in `pixel-font.ts`), bold, then dressed as
+  before: outline, depth and a yellow face. Its own letterface (`GLYPHS`) is
+  gone. Setting the font bold fills in any gap one cell wide, which turned
+  `M` into an `H` and `G` into a `6`, so where a gap must show it is now two:
+  `M` and `W` are seven cells wide, with a two-cell V and a point at its
+  centre; `G`'s bar, `R`'s leg, `0` (four wide, no slash) and `Q` (an `O`
+  with a tail) are redrawn the same way.
+- **The cards' texture is an etched grid**, chosen from the trial, which is
+  gone: graph paper across the whole card, 20 pixels square, each line a
+  groove, its far side a shade darker than the card and its near side a
+  shade lighter, lit from the top left.
 
 ## 12. Open questions, resolved
 
@@ -789,10 +1261,11 @@ new information.
 3. **The Genre vocabulary is section 7.1's draft as written**, several
    genres to an entry where they apply: shooter, maze, action, fighting,
    scrolling, puzzle, simulation, 3D, multi-view, UI, bullet hell,
-   demoscene.
+   demoscene. (Multi-view and bullet hell were later dropped: 11.9.)
 4. **Curated order, with a sort control.** The wall shows the entry list's
    own order by default. A sort control offers name, era and newest first,
    so each entry declares the date it was `added` (section 7.1).
+   (Reversed: the wall is always by name, 11.9.)
 5. **Link previews come later.** Entries stay on fragments. Per-entry stub
    pages with `og:image` go into a backlog task.
 6. **Docs and Playground stay in the nav only.** The wall is for things you
@@ -812,7 +1285,7 @@ new information.
 - The Arcade is the home page (2026-10-04, by the author).
 - The name is Arcade (2026-10-04, by the author).
 - Level is picked by hand and size is measured, both shown (2026-10-04, by
-  the author).
+  the author). Level was later dropped, and only size is shown (11.9).
 - The first load is slow because of serial round trips, not CPU: thumbnail
   generation measured at 97 ms (section 3). Do not reopen without new
   information.

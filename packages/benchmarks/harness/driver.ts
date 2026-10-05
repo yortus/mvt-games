@@ -205,6 +205,8 @@ async function bundleEntry(entry: string, outDir: string, isBrowser: boolean): P
         logLevel: 'warning',
         // The @mvtjs packages resolve to their source, as in the site
         conditions: ['@mvtjs/source'],
+        // The website's entries import thumbnails, and some import stylesheets, which nothing measured uses
+        loader: { '.webp': 'empty', '.css': 'empty' },
         // Measure what a production build runs: Vite would replace these
         define: { 'import.meta.env': '{"DEV":false,"PROD":true,"MODE":"production","BASE_URL":"/"}' },
         plugins: isBrowser ? [solidBrowserBuild, nodeProcessInBrowser] : [solidBrowserBuild, stubTextureRegistry],

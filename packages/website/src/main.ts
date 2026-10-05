@@ -1,18 +1,8 @@
 import { Application, Container, RenderTexture, TextureSource, type Texture } from 'pixi.js';
 import { CabinetView, createCabinetModel, type CabinetViewBindings } from './cabinet';
 import { isTouchDevice, KeyboardInputView, PauseMenuView, TouchInputView } from '#shared';
-import {
-    createAstrovoidEntry,
-    createBurrowBustEntry,
-    createCrumbChaseEntry,
-    createDojoDuelEntry,
-    createFuelRunEntry,
-    createGalaxyRaidersEntry,
-    createKwazyCactiiEntry,
-    createNeonMonsoonEntry,
-    type GameEntry,
-    type GameSession,
-} from './games';
+import { CATALOGUE } from './catalogue';
+import type { ArcadeEntry, EntrySession } from './entries';
 import { refreshView, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
@@ -82,16 +72,7 @@ async function main(): Promise<void> {
     }, { passive: false });
 
     // ---- Game registry -----------------------------------------------------
-    const games = [
-        createAstrovoidEntry(),
-        createBurrowBustEntry(),
-        createCrumbChaseEntry(),
-        createDojoDuelEntry(),
-        createFuelRunEntry(),
-        createGalaxyRaidersEntry(),
-        createKwazyCactiiEntry(),
-        createNeonMonsoonEntry(),
-    ];
+    const games = CATALOGUE.filter((entry) => entry.tags.kind === 'game');
 
     // ---- Cabinet model (must be created before view) -----------------------
     const cabinet = createCabinetModel({ games });
@@ -101,8 +82,8 @@ async function main(): Promise<void> {
 
     // ---- Game state --------------------------------------------------------
     let isCabinetScreen = true;
-    let currentEntry: GameEntry | undefined;
-    let currentSession: GameSession | undefined;
+    let currentEntry: ArcadeEntry | undefined;
+    let currentSession: EntrySession | undefined;
     let paused = false;
     let currentScale = 1;
     let currentCanvasW = CABINET_WIDTH;
@@ -290,7 +271,7 @@ async function main(): Promise<void> {
             // even when the 0.3 minimum would push it larger than available.
             const effectiveScale = isTouchDevice()
                 ? Math.min(maxFitScale, Math.max(0.3, scale))
-                : currentEntry.integerScale
+                : cabinet.activeStarter?.integerScale
                     ? (scale < 1 ? scale : Math.max(1, Math.floor(scale)))
                     : scale;
 
@@ -523,22 +504,23 @@ async function main(): Promise<void> {
  * depend on inter-tick transitions - see the MVT guide § "update(deltaMs)
  * Contract" for details.
  */
-async function generateThumbnails(games: GameEntry[], app: Application): Promise<(Texture | undefined)[]> {
+async function generateThumbnails(games: readonly ArcadeEntry[], app: Application): Promise<(Texture | undefined)[]> {
     const TICK_MS = 16;
     const thumbnails: (Texture | undefined)[] = [];
     for (let i = 0; i < games.length; i++) {
         const entry = games[i];
         try {
-            await entry.load?.();
+            const starter = await entry.load();
+            if (starter.kind !== 'pixi') throw new Error(`${entry.id} is not drawn with Pixi`);
 
             const tempStage = new Container();
-            const session = entry.start(tempStage);
+            const session = starter.start({ stage: tempStage });
 
             // Simulate many small ticks so state machines and GSAP
             // timelines advance correctly across phase boundaries. Each
             // advances the models and the views' presentation state; one
             // `refreshView` at the end is all the snapshot needs.
-            const totalMs = entry.thumbnailAdvanceMs ?? TICK_MS;
+            const totalMs = starter.thumbnailAdvanceMs ?? TICK_MS;
             let remaining = totalMs;
             while (remaining > 0) {
                 const step = remaining < TICK_MS ? remaining : TICK_MS;

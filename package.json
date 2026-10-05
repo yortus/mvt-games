@@ -31,6 +31,9 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "generate-textures": "npm run generate-textures -w @mvtjs/website",
+        "pregenerate-thumbnails": "npm run generate-refresh-copies",
+        "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/website --",
+        "measure-load": "npm run measure-load -w @mvtjs/website --",
         "generate-refresh-copies": "npm run generate-refresh-copies -w @mvtjs/utils"
     },
     "devDependencies": {

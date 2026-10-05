@@ -1,0 +1,12 @@
+/* The entry host's own elements, inside the element it is given, which must be positioned. */
+.entry-host-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+}
+
+.entry-host-element {
+    position: absolute;
+    inset: 0;
+}
