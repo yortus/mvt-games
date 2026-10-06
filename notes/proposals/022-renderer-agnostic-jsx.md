@@ -1670,7 +1670,7 @@ Each phase ends with `npm run lint`, `npm run build` and `npm test` passing.
    generated, fallback and hand-written arms, so the fallback's cost is on
    record and re-measured with the others.~~ Done, as an A/B against the old
    runtime rather than the saved results, with results in section 7.5.1. The
-   suite is `jsx-refresh`. Its results are not saved to `benchmarks/results/`
+   suite is `jsx-refresh`. Its results are not saved to `packages/benchmarks/results/`
    yet: `--save` refuses filtered runs, and a full save takes about an hour.
 7. ~~Update the pixi-jsx design notes and runtime header; add design notes for
    the base.~~ Done: the settled decisions moved to
@@ -1732,7 +1732,7 @@ Each phase ends with `npm run lint`, `npm run build` and `npm test` passing.
     `removeFromParent`, reparenting and `destroyObject`; the picker's run a
     real raycaster against a stand-in canvas.
 13. ~~A small demo on an existing model, to see it working.~~ Done: "Boids in
-    3D", at `site/demos/boids-3d/`, linked from the demos gallery. The boids
+    3D", at `packages/website/demos/boids-3d/`, linked from the demos gallery. The boids
     demo's flock model, unchanged, drawn with `<List>` over cone meshes;
     clicking the ground adds boids, through the picker, and clicking a boid
     removes some. Its view is tested in Node (placement, following the flock,

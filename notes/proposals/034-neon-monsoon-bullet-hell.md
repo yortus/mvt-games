@@ -22,19 +22,19 @@ build: 6.1 and 6.2 were measured against the real field and view.
 in the working tree. Read for it: Galaxy Raiders' and Fuel Run's models, views,
 entries and texture generators, the falling-sand demo's grain grid and its
 fixed-step `DemoModel`, the boids view, the shared keyboard and touch input,
-[game-entry.ts](../../site/src/games/game-entry.ts), the
-[hot-paths guide](../../docs/building-with-mvt/performance/hot-paths.md) and
+[game-entry.ts](../../packages/website/src/games/game-entry.ts), the
+[hot-paths guide](../../packages/docs/building-with-mvt/performance/hot-paths.md) and
 [013](./013-mvt-performance-ceiling.md). Every timing below is an estimate or
 a target; nothing has been measured yet ([section 6](#6-performance-what-to-measure)).
 
 **Related:**
-[Adding a Game](../../site/src/games/README.md) -
-[galaxy-raiders/](../../site/src/games/galaxy-raiders/) -
-[fuel-run/](../../site/src/games/fuel-run/) -
-[grain-grid.ts](../../site/src/demos/falling-sand/models/grain-grid/grain-grid.ts) -
-[Originality](../../site/src/games/README.md#originality) (the rules this game follows) -
+[Adding a Game](../../packages/website/src/games/README.md) -
+[galaxy-raiders/](../../packages/website/src/games/galaxy-raiders/) -
+[fuel-run/](../../packages/website/src/games/fuel-run/) -
+[grain-grid.ts](../../packages/website/src/demos/falling-sand/models/grain-grid/grain-grid.ts) -
+[Originality](../../packages/website/src/games/README.md#originality) (the rules this game follows) -
 [013](./013-mvt-performance-ceiling.md) -
-[Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md)
+[Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)
 
 ## Summary
 
@@ -61,7 +61,7 @@ a target; nothing has been measured yet ([section 6](#6-performance-what-to-meas
   hitbox a few pixels wide, and scoring that rewards risk.
 - **A different scale.** Every game so far keeps its entities in the tens.
   Galaxy Raiders allows 2 player bullets and 8 enemy bullets
-  ([model-constants.ts](../../site/src/games/galaxy-raiders/models/model-constants.ts)).
+  ([model-constants.ts](../../packages/website/src/games/galaxy-raiders/models/model-constants.ts)).
   A bullet hell routinely shows 500 to 1000 bullets, and a cancel at the end
   of a boss phase turns them all into score gems at once. Only the demos
   (boids, falling sand) go beyond a few hundred, and they are demos.
@@ -117,7 +117,7 @@ play area.
 
 The shared keyboard view already maps Shift to the secondary button and
 Space to the primary, and Shift is the genre's usual focus key, so the game
-needs no change to [site/src/shared/](../../site/src/shared/). The cost is
+needs no change to [packages/website/src/shared/](../../packages/website/src/shared/). The cost is
 auto-fire: there is no third button for shooting. Most later ports and touch
 versions of these games auto-fire too, and it suits touch. See open question 2.
 
@@ -213,7 +213,7 @@ the loop number. Two loops is the end of v1.
 
 ## 3. Staying Original
 
-This game follows the games' [originality rules](../../site/src/games/README.md#originality):
+This game follows the games' [originality rules](../../packages/website/src/games/README.md#originality):
 **ideas and mechanics are free; titles, character designs, artwork and
 specific level layouts are not.**
 
@@ -231,11 +231,11 @@ the parameters in [4.4](#44-patterns-as-data), not copied by eye); music and
 sound effects. "Bullet hell" and "danmaku" are genre names and fine in prose.
 
 **Art provenance.** Every sprite is a character grid in a new
-`site/scripts/generate-neon-monsoon-textures.ts`, like the other games'
+`packages/website/scripts/generate-neon-monsoon-textures.ts`, like the other games'
 generators, so where the art came from is in the repo.
 
 **Title.** "Neon Monsoon" is a placeholder. Search it as the
-[originality rules](../../site/src/games/README.md#originality) describe
+[originality rules](../../packages/website/src/games/README.md#originality) describe
 before adopting it.
 
 ## 4. Models
@@ -243,7 +243,7 @@ before adopting it.
 ### 4.1 Module layout
 
 ```
-site/src/games/neon-monsoon/
+packages/website/src/games/neon-monsoon/
 ├── neon-monsoon-entry.ts
 ├── data/                  constants, stage-data, pattern-data, textures
 ├── models/
@@ -497,7 +497,7 @@ the art and the views:
 
 ### 5.6 Textures
 
-A character-grid generator, `site/scripts/generate-neon-monsoon-textures.ts`,
+A character-grid generator, `packages/website/scripts/generate-neon-monsoon-textures.ts`,
 loaded through `createTextureRegistry` as the other games do. Bullet
 shapes: pellets (8 x 8), orbs (14 x 14), needles (12 x 5, drawn along their
 angle) and rain (12 x 3), in red, orange, amber and gold.
@@ -565,7 +565,7 @@ Record the numbers in this section whichever way it goes.
 
 ### 7.2 Benchmarks
 
-Add `neon-monsoon` to `benchmarks/suites/games-and-demos.ts`, driven by a
+Add `neon-monsoon` to `packages/benchmarks/suites/games-and-demos.ts`, driven by a
 recorded-input replay that reaches the boss's Downpour phase (seeded, so the
 same every run), timing the densest stretch. If 6.1 and 6.2 come out close,
 add a bullet-count sweep in the style of `falling-sand-scaling` using a
@@ -606,7 +606,7 @@ Do not reopen without new information.
    mostly data and art once the first works.
 7. **Write up the bullet field in the docs?** If 6.2 settles cleanly, the
    field and its bindings make a good example for
-   [Presenting Collections](../../docs/building-with-mvt/presenting-the-world/collections.md)
+   [Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)
    or the hot-paths guide. Decide once the numbers are in.
 
 ## 10. Implementation Steps
@@ -625,8 +625,8 @@ Run `npm run lint`, `npm test` and `npm run build` after each step.
 **Phase 1: the core loop.**
 
 3. ~~Module skeleton, entry with `inputConfig`, registration in
-   [games/index.ts](../../site/src/games/index.ts) and
-   [main.ts](../../site/src/main.ts).~~ Done.
+   [games/index.ts](../../packages/website/src/games/index.ts) and
+   [main.ts](../../packages/website/src/main.ts).~~ Done.
 4. ~~Fixed step, seeded random numbers, ship with focus and shots, collisions
    with hitbox and graze, lives, game over, a minimal HUD. Placeholder
    graphics.~~ Done.
@@ -671,9 +671,9 @@ Run `npm run lint`, `npm test` and `npm run build` after each step.
 
 ### 11.1 Where it is
 
-[site/src/games/neon-monsoon/](../../site/src/games/neon-monsoon/), with its
+[packages/website/src/games/neon-monsoon/](../../packages/website/src/games/neon-monsoon/), with its
 texture generator in
-[site/scripts/generate-neon-monsoon-textures.ts](../../site/scripts/generate-neon-monsoon-textures.ts).
+[packages/website/scripts/generate-neon-monsoon-textures.ts](../../packages/website/scripts/generate-neon-monsoon-textures.ts).
 Everything in sections 2 to 5 was built as designed, apart from the changes
 below.
 

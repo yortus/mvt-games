@@ -15,9 +15,9 @@ walk; see 2.4. Sections 3-5 are still proposed. Measured 2026-09-25; written
 
 **Related:** [`src/mvt-utils/scene-passes.ts`](../../packages/utils/src/scene-passes.ts)
 (the walk, since 022 phase 2),
-[`benchmarks/`](../../benchmarks/README.md),
-[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
-[Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md),
+[`packages/benchmarks/`](../../packages/benchmarks/README.md),
+[Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md),
+[Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md),
 [`src/pixi-mvt/frame-stats.ts`](../../packages/pixi/src/frame-stats.ts),
 [010 - Performance docs proposal](../archive/010-performance-docs-proposal.md).
 
@@ -41,7 +41,7 @@ Unless a section says otherwise:
 
 - **Refresh cost** was measured with the harness's `timeFrames`, one variant
   per process, bundled with esbuild exactly as the benchmark driver does (see
-  [Benchmarking Methods](../../docs/building-with-mvt/performance/benchmarking-methods.md)).
+  [Benchmarking Methods](../../packages/docs/building-with-mvt/performance/benchmarking-methods.md)).
   Figures are nanoseconds per item, median of 3 to 12 processes, on an Intel
   Core Ultra 9 185H.
 - **GPU timings** were taken in Chrome with WebGL timer queries
@@ -203,7 +203,7 @@ benchmark scene goes from 9 to 15.
    (8 was enough to make the loop generic). Report it next to the uniform
    figures.
 2. In the "Scaling" section of
-   [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
+   [Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md),
    say that the uniform figures are a best case, and that a scene of mixed
    container types costs about twice as much per container until section 2
    lands.
@@ -247,12 +247,12 @@ worse than none.
 The benchmarks render nothing, so this does not show up in any table. Document
 it in two places:
 
-1. [Hot Paths](../../docs/building-with-mvt/performance/hot-paths.md), in the
+1. [Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md), in the
    "Text updates in `refresh()`" example: a text change costs more than its
    own redraw, because it rebuilds its render group. Keep a large, stable
    part of the scene in its own render group, apart from text and graphics
    that change often.
-2. [Performance Measurements](../../docs/building-with-mvt/performance/measurements.md),
+2. [Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md),
    "What Is Not Measured": rendering is excluded, and this is an example of a
    rendering cost larger than anything the tables measure.
 

@@ -7,7 +7,7 @@ const ROOT = __dirname;
 /** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-// One test run over every workspace: the packages, the site and the checks.
+// One test run over every workspace in packages/, the website and the checks included.
 export default defineConfig({
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],

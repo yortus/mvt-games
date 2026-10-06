@@ -1,0 +1,45 @@
+/*
+ * The flock in 3D: the scene fills the element, with the settings panel over
+ * its top right corner. The element is positioned by its host.
+ */
+.boids-3d {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d1117;
+
+    & > canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+    }
+
+    .flock-panel {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 260px;
+        max-width: calc(100% - 32px);
+        padding: 12px 14px;
+        background: rgba(13, 17, 23, 0.85);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        color: #c9d1d9;
+        font-family: var(--site-font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
+        font-size: 13px;
+    }
+
+    .flock-panel h2 { font-size: 14px; color: #e6edf3; margin-bottom: 8px; }
+
+    .flock-panel .range {
+        display: grid;
+        grid-template-columns: 80px 1fr 36px;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    .flock-panel input { width: 100%; accent-color: #58a6ff; }
+    .flock-panel .range-value { text-align: right; font-variant-numeric: tabular-nums; }
+}

@@ -1,0 +1,19 @@
+{
+    "name": "@mvtjs/checks",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "check:home-page-budget": "node scripts/home-page-budget.ts",
+        "check:view-type-registration": "node scripts/view-type-registration.ts"
+    },
+    "devDependencies": {
+        "@mvtjs/html": "^0.2.0",
+        "@mvtjs/pixi": "^0.2.0",
+        "@mvtjs/three": "^0.2.0",
+        "@mvtjs/utils": "^0.2.0",
+        "typescript": "~5.9.3",
+        "vite": "^8.3.2",
+        "vitest": "^5.0.1"
+    }
+}

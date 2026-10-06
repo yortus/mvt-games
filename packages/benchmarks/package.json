@@ -1,0 +1,17 @@
+{
+    "name": "@mvtjs/benchmarks",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "dependencies": {
+        "@mvtjs/html": "^0.2.0",
+        "@mvtjs/pixi": "^0.2.0",
+        "@mvtjs/three": "^0.2.0",
+        "@mvtjs/utils": "^0.2.0",
+        "@mvtjs/website": "*",
+        "esbuild": "^0.27.3",
+        "pixi.js": "^8.16.0",
+        "solid-js": "^1.9.11",
+        "three": "^0.186.1"
+    }
+}

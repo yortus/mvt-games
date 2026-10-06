@@ -9,10 +9,10 @@
 **Status:** analysis. An estimate, not a measurement, except where marked.
 Written 2026-09-26.
 
-**Related:** [MVT Architecture](../../docs/architecture/index.md),
-[Architecture Rules](../../docs/architecture/rules.md),
+**Related:** [MVT Architecture](../../packages/docs/architecture/index.md),
+[Architecture Rules](../../packages/docs/architecture/rules.md),
 [012 - Performance findings from the falling-sand demo](./012-falling-sand-performance-findings.md),
-[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md).
+[Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md).
 
 ---
 
@@ -56,8 +56,8 @@ measurements that would test the most important ones.
 
 ## 3. What the architecture requires, and what it does not
 
-From [Architecture Rules](../../docs/architecture/rules.md) and
-[Views](../../docs/architecture/views.md):
+From [Architecture Rules](../../packages/docs/architecture/rules.md) and
+[Views](../../packages/docs/architecture/views.md):
 
 | MVT requires | Performance consequence |
 | --- | --- |
@@ -144,7 +144,7 @@ change-driven updates: pay only for what changed, plus a notification cost per
 change. This repo's benchmarks measured that trade in TypeScript: signals win
 when fewer than about 4-10% of containers change per frame, and cost 7-13
 times as much when everything changes (see
-[Performance Measurements](../../docs/building-with-mvt/performance/measurements.md)).
+[Performance Measurements](../../packages/docs/building-with-mvt/performance/measurements.md)).
 With flat data the polling side gets much cheaper, about 1 ns per item, while a
 change notification still costs several nanoseconds or more, so the point where
 change-driven updates win moves lower still.

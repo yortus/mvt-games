@@ -1,0 +1,743 @@
+/*
+ * The arcade's page. Colours and fonts come from the site's nav styles
+ * (`--site-*`, in `shared/nav.css`). Stacking, bottom to top: the page and its
+ * wall; the canvas that burns and develops the cards (30); the nav (9999);
+ * the stage an entry plays on (10000); the transition's backdrop and picture
+ * (10001); the runner's bar (10002); its pause menu (10003).
+ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Views hide elements with `hidden`, which a rule setting `display` would otherwise override */
+[hidden] { display: none !important; }
+
+html, body {
+    background: var(--site-bg, #0d1117);
+    color: var(--site-text, #c9d1d9);
+    font-family: var(--site-font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
+}
+
+/* While an entry plays, or an info panel is open, the page under it keeps its place */
+html.is-scroll-locked { overflow: hidden; }
+
+/*
+ * The scrollbar's space is kept whether the page scrolls or not: a search
+ * that shortens the wall, or an entry starting, would otherwise widen the
+ * page, and every card would jump to its new place rather than slide.
+ */
+html { scrollbar-gutter: stable; }
+
+a { color: var(--site-accent, #58a6ff); }
+
+button { font: inherit; color: inherit; }
+
+:focus-visible { outline: 2px solid var(--site-accent, #58a6ff); outline-offset: 2px; }
+
+/* --- The page ------------------------------------------------------------- */
+
+/* For a visitor who has asked for less motion, nothing on the page animates its way between states */
+@media (prefers-reduced-motion: reduce) {
+    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search { transition: none; }
+}
+
+.arcade {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: calc(var(--site-nav-height, 48px) + 20px) 16px 64px;
+}
+
+/*
+ * One line: the title, and the search. On a narrow screen the search goes
+ * under the title. Lined up at the top, so the title stays put as the search
+ * grows: with its tags wrapping, or its list open.
+ */
+.arcade-head {
+    position: relative;
+    /* Above the wall's lifted polaroids, so the about note drops over them */
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px 24px;
+    /* The name's height, which the search box lines up with */
+    --wordmark-height: 44px;
+}
+.arcade-title { position: relative; display: flex; align-items: center; gap: 14px; }
+/* The name, as a marquee: drawn by the view, scaled by its height */
+.arcade-name { line-height: 0; }
+.arcade-name .wordmark { display: block; height: var(--wordmark-height); width: auto; max-width: calc(100vw - 80px); }
+/*
+ * When the search wraps under the title (the view measures it), the title
+ * stands centred over it, and the search takes the whole line
+ */
+.arcade-head.is-stacked .arcade-title { margin-inline: auto; }
+.arcade-head.is-stacked .search { max-width: none; margin-left: 0; }
+/* Beside the title, the box (40px tall) is centred on the name */
+.arcade-head:not(.is-stacked) .search { margin-top: calc((var(--wordmark-height) - 40px) / 2); }
+@media (max-width: 640px) {
+    .arcade-head { --wordmark-height: 38px; }
+}
+
+/*
+ * The magnifier in the site's nav, shown once the head is scrolled away,
+ * styled as the nav's GitHub link. A dot on it marks a search that narrows the wall.
+ */
+.nav-search {
+    position: relative;
+    display: inline-flex;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--site-text-muted, #8b949e);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s, color 0.15s, background 0.15s;
+}
+.nav-search.is-shown { opacity: 1; visibility: visible; }
+.nav-search:hover { color: var(--site-text, #c9d1d9); background: rgba(255, 255, 255, 0.05); }
+.nav-search::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+.nav-search.is-narrowed::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--site-accent, #58a6ff);
+}
+
+/* The (i) by the title, and the note it opens beneath it */
+.about-button {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid #30363d;
+    background: #21262d;
+    color: #e6edf3;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 700;
+    cursor: pointer;
+}
+.about-button:hover, .about-button[aria-expanded="true"] { border-color: var(--site-accent, #58a6ff); }
+/* Over the search too, which it drops onto when the search wraps under the title */
+.about-note {
+    position: absolute;
+    z-index: 1;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(440px, calc(100vw - 32px));
+    padding: 16px;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    background: #161b22;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    font-size: 14px;
+    line-height: 1.5;
+}
+/* Under a centred title, centred too, so it keeps clear of the screen's edges */
+.arcade-head.is-stacked .about-note { left: 50%; transform: translateX(-50%); }
+.about-note p { color: var(--site-text, #c9d1d9); }
+.about-docs { display: inline-block; margin-top: 8px; }
+.about-keys {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #21262d;
+    list-style: none;
+    color: var(--site-text-muted, #8b949e);
+}
+.about-keys li { display: contents; }
+.about-key { display: flex; align-items: center; gap: 6px; }
+.about-or { font-size: 12px; }
+.about-keys kbd {
+    min-width: 22px;
+    padding: 1px 6px;
+    border: 1px solid #30363d;
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: #0d1117;
+    color: #e6edf3;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-variant-emoji: text;
+    text-align: center;
+}
+.about-note .about-credits {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #21262d;
+    font-size: 12px;
+    color: var(--site-text-muted, #8b949e);
+}
+
+/* --- The search ----------------------------------------------------------- */
+
+.search { position: relative; flex: 1 1 320px; max-width: 560px; margin-left: auto; }
+@media (max-width: 640px) {
+    .search { flex-basis: 100%; max-width: none; }
+}
+
+/* The box: a magnifying glass, the tags chosen, the words typed, and a button to clear them */
+.search-box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 5px 8px 5px 38px;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    background: #161b22 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") no-repeat 14px 50%;
+    cursor: text;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-box.has-focus { border-color: var(--site-accent, #58a6ff); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2); }
+
+.search-input {
+    flex: 1 1 120px;
+    min-width: 0;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    color: #e6edf3;
+    font: inherit;
+    font-size: 15px;
+}
+/* The box shows the focus */
+.search-input:focus-visible { outline: none; }
+.search-input::placeholder { color: var(--site-text-muted, #8b949e); }
+
+.search-token {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 3px 2px 10px;
+    border-radius: 999px;
+    background: #1f6feb;
+    color: #fff;
+    font-size: 13px;
+    cursor: default;
+}
+.search-token-remove, .search-clear {
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    line-height: 1;
+    cursor: pointer;
+}
+.search-token-remove { width: 20px; height: 20px; font-size: 15px; }
+.search-token-remove:hover { background: rgba(255, 255, 255, 0.22); }
+.search-clear { width: 28px; height: 28px; margin-left: auto; font-size: 20px; color: var(--site-text-muted, #8b949e); }
+.search-clear:hover { color: #e6edf3; background: #21262d; }
+
+/*
+ * The tags to choose from, opened under the box while it has focus. In the
+ * page's flow, so the wall moves down for them rather than hiding under them,
+ * and unfolding, its one row growing from nothing to its own height, so the
+ * wall glides there. Folded, it hides once the fold has finished; not with
+ * `hidden`, which would cut the fold short.
+ */
+.search-tags-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease-out, visibility 0s 0.25s;
+}
+.search-tags-reveal.is-open {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.25s ease-out;
+}
+.search-tags-clip { min-height: 0; overflow: hidden; }
+.search-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+    margin-top: 6px;
+    padding: 12px;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    background: #161b22;
+}
+/* Each group's label, with its tags beside it, wrapping under one another */
+.search-group { display: flex; align-items: baseline; gap: 6px; }
+.search-group-tags { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.search-group-label {
+    flex: none;
+    width: 76px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--site-text-muted, #8b949e);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.chip:hover, .chip.is-highlighted { border-color: var(--site-accent, #58a6ff); background: rgba(56, 139, 253, 0.15); }
+.chip-count { font-size: 11px; color: var(--site-text-muted, #8b949e); font-variant-numeric: tabular-nums; }
+
+/* --- The wall ------------------------------------------------------------- */
+
+.card-wall-frame { position: relative; margin-top: 20px; }
+.card-wall { position: relative; }
+.card-wall-empty { padding: 48px 0; text-align: center; color: var(--site-text-muted, #8b949e); }
+
+/*
+ * Each card is its own candy colour (`--candy`, set by the view), with its
+ * title in a deep shade of it. Nothing on it can be selected, or called out on
+ * a long press.
+ */
+.card {
+    /* Moved to with the keyboard, a card scrolls clear of the nav */
+    scroll-margin: calc(var(--site-nav-height, 48px) + 16px) 0 16px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    border-radius: calc(12px * var(--card-scale, 1));
+    /*
+     * Graph paper, as a level was planned on, etched into the card: each line
+     * a groove, its far side a shade darker than the card and its near side
+     * catching the light from the top left.
+     *
+     * Every size on a card is given for a card in the narrowest column of a
+     * wide wall (`CARD_DESIGN_SIDE`), and multiplied by `--card-scale`, set by
+     * the card: a card of any width is the same card, scaled.
+     */
+    --etch-shadow: color-mix(in srgb, var(--candy, #161b22) 87%, #3a1d00);
+    --etch-light: color-mix(in srgb, var(--candy, #161b22) 75%, #fff);
+    --etch-cell: calc(20px * var(--card-scale, 1));
+    --etch-side: calc(2px * var(--card-scale, 1));
+    background:
+        linear-gradient(to right, var(--etch-shadow) var(--etch-side), var(--etch-light) var(--etch-side) calc(2 * var(--etch-side)), transparent calc(2 * var(--etch-side)))
+            calc(-1 * var(--etch-side)) calc(-1 * var(--etch-side)) / var(--etch-cell) var(--etch-cell),
+        linear-gradient(to bottom, var(--etch-shadow) var(--etch-side), var(--etch-light) var(--etch-side) calc(2 * var(--etch-side)), transparent calc(2 * var(--etch-side)))
+            calc(-1 * var(--etch-side)) calc(-1 * var(--etch-side)) / var(--etch-cell) var(--etch-cell),
+        var(--candy, #161b22);
+    user-select: none;
+    -webkit-touch-callout: none;
+    transition: box-shadow 0.25s ease-out;
+}
+
+/*
+ * The selected card, raised above its neighbours while its polaroid comes
+ * closer, and ringed in its own colour: a dark gap, the ring, and a glow.
+ */
+.card.is-selected {
+    z-index: 1;
+    box-shadow:
+        0 0 0 2px var(--site-bg, #0d1117),
+        0 0 0 4px var(--candy, #58a6ff),
+        0 0 22px 5px color-mix(in srgb, var(--candy, #58a6ff) 60%, transparent);
+}
+
+/*
+ * Every card's title is one centred line across the top, in pixel capitals
+ * (the view's `PixelTextView`): seven cells of 4 pixels tall, or smaller if
+ * that would not fit across. Its height must match `CARD_BAND_HEIGHT`.
+ */
+.card-name {
+    height: calc(40px * var(--card-scale, 1));
+    padding: 0 calc(14px * var(--card-scale, 1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* A deep shade of the card's own colour: its hue, darker and richer (plain dark where relative colours are unknown) */
+    color: #161b22;
+    color: oklch(from var(--candy) 0.4 calc(c * 1.6) h);
+}
+/* A little below the band's centre, closer to the polaroid under it */
+.card-name .pixel-text { display: block; position: relative; top: calc(4px * var(--card-scale, 1)); height: calc(28px * var(--card-scale, 1)); width: auto; max-width: 100%; }
+
+/*
+ * The photo is a link that cannot be dragged. Only its polaroid takes the
+ * pointer, tilted or lifted as it is drawn: a press anywhere else on the
+ * card falls through to the card, which the wall selects.
+ */
+.card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+.card-link img { -webkit-user-drag: none; }
+/* The keyboard's focus is always on the selected card, which shows it: no ring as well */
+.card-link:focus-visible { outline: none; }
+
+/*
+ * The square at the centre of every card, and the polaroid fitted inside it,
+ * which the view sizes and places: white, tilted by its own angle (`--tilt`),
+ * lying under its tape and casting a shadow down and to the right, as from a
+ * light above. On the selected card it straightens, comes closer and rises
+ * above its tape. The padding must match `POLAROID_BORDER` in `card-photo.ts`.
+ */
+.card-picture { position: relative; aspect-ratio: 1; }
+.card-polaroid {
+    position: absolute;
+    z-index: 1;
+    /* Its white border: `POLAROID_BORDER`, scaled with the card */
+    padding: calc(8px * var(--card-scale, 1));
+    border-radius: 2px;
+    background: #f4f1ea;
+    box-shadow: 1px 2px 1px rgba(0, 0, 0, 0.35), 4px 7px 12px rgba(0, 0, 0, 0.4);
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+    pointer-events: auto;
+    cursor: pointer;
+}
+.card.is-selected .card-polaroid {
+    z-index: 3;
+    /* Until its longer side is just short of the card's width (`--lift`, from `liftScaleFor`) */
+    transform: rotate(0deg) scale(var(--lift, 1.06));
+    box-shadow: 2px 4px 3px rgba(0, 0, 0, 0.3), 8px 16px 26px rgba(0, 0, 0, 0.5);
+}
+/*
+ * Clear tape across two corners, placed and turned by the view: over the
+ * polaroid at rest, left behind when it lifts. Only just visible: a faint
+ * frosted film with torn ends, a shade greyer than the white border and
+ * lighter than the card, and no shadow.
+ */
+.card-tape {
+    position: absolute;
+    z-index: 2;
+    width: calc(52px * var(--card-scale, 1));
+    height: calc(16px * var(--card-scale, 1));
+    background: linear-gradient(
+        rgba(214, 210, 196, 0.32),
+        rgba(250, 249, 244, 0.38) 45%,
+        rgba(210, 206, 192, 0.32)
+    );
+    clip-path: polygon(0 12%, 4% 0, 96% 8%, 100% 0, 98% 52%, 100% 100%, 3% 90%, 1% 55%);
+    pointer-events: none;
+}
+/* A window on the thumbnail, placed by the view to show the entry's crop */
+.card-photo { position: relative; overflow: hidden; background: #000; }
+.card-photo img { position: absolute; display: block; max-width: none; }
+/*
+ * Attract mode: the entry playing live over the photo, cropped as the photo
+ * is, faded in once it has drawn. It is drawn at its play size and scaled to
+ * the photo (`--live-scale`, set by the card), so it looks as its thumbnail
+ * does. It takes no pointer: a press goes to the card under it.
+ */
+.card-live { position: absolute; overflow: hidden; opacity: 0; transition: opacity 0.4s ease-out; pointer-events: none; }
+.card-live.is-showing { opacity: 1; }
+.card-live-stage { position: absolute; top: 0; left: 0; transform: scale(var(--live-scale, 1)); transform-origin: 0 0; }
+/* The polaroid leaves the card while the way into its entry, and back, carries it */
+.card.is-lifted .card-polaroid { visibility: hidden; }
+
+/* Every card's foot is one line: its tags at the left, its info button at the right. Its height must match `CARD_BAND_HEIGHT`. */
+.card-foot {
+    height: calc(40px * var(--card-scale, 1));
+    padding: 0 calc(10px * var(--card-scale, 1)) 0 calc(14px * var(--card-scale, 1));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(8px * var(--card-scale, 1));
+}
+.card-tags { display: flex; gap: calc(4px * var(--card-scale, 1)); min-width: 0; overflow: hidden; list-style: none; }
+.card-tags li {
+    flex: none;
+    padding: calc(2px * var(--card-scale, 1)) calc(8px * var(--card-scale, 1));
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    background: rgba(13, 17, 23, 0.85);
+    color: #e6edf3;
+    font-size: calc(11px * var(--card-scale, 1));
+}
+
+.card-info {
+    flex: none;
+    width: calc(26px * var(--card-scale, 1));
+    height: calc(26px * var(--card-scale, 1));
+    font-size: calc(16px * var(--card-scale, 1));
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    background: rgba(13, 17, 23, 0.85);
+    color: #e6edf3;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 700;
+    cursor: pointer;
+}
+.card-info:hover { border-color: var(--site-accent, #58a6ff); }
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 300;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100% - 32px);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #da3633;
+    background: #161b22;
+    font-size: 14px;
+}
+.toast button { border: none; background: none; font-size: 18px; cursor: pointer; }
+
+/* --- An entry's info panel ------------------------------------------------ */
+
+.info-layer, .pause-layer { display: contents; }
+
+/* Under the site's nav, so the panel is centred in the space below it, and never reaches up under it */
+.info-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(var(--site-nav-height, 48px) + 16px) 16px 16px;
+    background: rgba(0, 0, 0, 0.7);
+}
+.info-panel {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    max-height: 100%;
+    overflow-y: auto;
+    /* Scrolled to its end, it does not scroll the page on */
+    overscroll-behavior: contain;
+    padding: 26px 28px;
+    border-radius: 12px;
+    border: 1px solid #30363d;
+    background: #161b22;
+}
+.info-panel h2 { font-size: 22px; color: #e6edf3; padding-right: 32px; }
+.info-panel h3 {
+    margin-bottom: 6px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--site-text-muted, #8b949e);
+}
+.info-tags { margin-top: 6px; font-size: 12px; color: var(--site-text-muted, #8b949e); }
+/* The credit sits close under the tags; the summary stands clear of both */
+.info-inspired { margin-top: 6px; font-size: 13px; font-style: italic; color: var(--site-text-muted, #8b949e); }
+.info-summary { margin: 14px 0 12px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
+.info-description { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
+.info-section { margin: 16px 0; }
+.info-instructions {
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: #0d1117;
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+.info-techniques { padding-left: 18px; font-size: 14px; line-height: 1.6; }
+.info-size { margin: 16px 0; font-size: 12px; color: #6e7681; }
+.info-actions { display: flex; align-items: center; gap: 12px; }
+.info-play {
+    padding: 8px 22px;
+    border-radius: 6px;
+    border: 1px solid #2ea043;
+    background: #238636;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+.info-play:hover { background: #2ea043; }
+.info-source { font-size: 14px; }
+.info-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 20px;
+    color: var(--site-text-muted, #8b949e);
+    cursor: pointer;
+}
+.info-close:hover { background: rgba(255, 255, 255, 0.08); color: #e6edf3; }
+
+/* --- The runner ----------------------------------------------------------- */
+
+/* Its parts are fixed one by one, so the transition can sit between the stage and the bar */
+.runner { display: contents; }
+
+.runner-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10002;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
+    visibility: hidden;
+}
+.runner.is-open .runner-bar { visibility: visible; }
+.runner-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: #e6edf3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runner-bar button {
+    width: 36px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #21262d;
+    font-size: 16px;
+    cursor: pointer;
+}
+.runner-bar button:hover:not(:disabled) { border-color: var(--site-accent, #58a6ff); }
+.runner-bar button:disabled { opacity: 0.4; cursor: default; }
+
+/* Laid out even while hidden, so the transition knows where an entry will play */
+.runner-frame {
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    visibility: hidden;
+    pointer-events: none;
+}
+.runner.is-playing .runner-frame { visibility: visible; pointer-events: auto; background: #000; }
+.runner-stage { position: absolute; inset: 0; overflow: hidden; }
+
+.pause-menu {
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.6);
+}
+.pause-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    padding: 22px;
+    border-radius: 12px;
+    border: 1px solid #30363d;
+    background: #161b22;
+}
+.pause-panel h2 { text-align: center; font-size: 20px; color: #e6edf3; margin-bottom: 4px; }
+.pause-panel button {
+    padding: 9px 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #21262d;
+    font-size: 15px;
+    cursor: pointer;
+}
+.pause-panel button:hover { border-color: var(--site-accent, #58a6ff); }
+.pause-panel .pause-resume { background: #238636; border-color: #2ea043; color: #fff; font-weight: 600; }
+.pause-how-to summary { cursor: pointer; padding: 6px 0; color: var(--site-text-muted, #8b949e); }
+.pause-how-to pre { padding: 10px; border-radius: 6px; background: #0d1117; font-size: 12px; white-space: pre-wrap; }
+
+.runner-rotate-hint {
+    position: fixed;
+    left: 50%;
+    bottom: 16px;
+    z-index: 10002;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+    background: rgba(22, 27, 34, 0.94);
+    font-size: 13px;
+}
+.runner-rotate-hint button { border: none; background: none; font-size: 18px; cursor: pointer; }
+@media (orientation: portrait) and (pointer: coarse) {
+    .runner-rotate-hint:not([hidden]) { display: flex; }
+}
+
+/* --- The way in and out -------------------------------------------------- */
+
+/* Over the cards, burning or developing them: under the nav, which hides what scrolls under it */
+.wall-effect {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30;
+    pointer-events: none;
+}
+
+.transition-layer { display: contents; }
+
+.transition { position: fixed; inset: 0; z-index: 10001; }
+.transition-backdrop { position: absolute; inset: 0; background: #000; }
+.transition-picture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+/* The whole picture, behind the window, which the view places */
+.transition-image { position: absolute; top: 0; left: 0; }
+.transition-image img, .transition-frame canvas { display: block; width: 100%; height: 100%; }
+.transition-frame { position: absolute; inset: 0; }
+.transition-picture.is-pixel-art img, .transition-picture.is-pixel-art .transition-frame canvas { image-rendering: pixelated; }
+/* A tube's white-hot line, as the entry's screen powers on or off */
+.transition-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.95), 0 0 26px 9px rgba(170, 210, 255, 0.55);
+    opacity: 0;
+    pointer-events: none;
+}
+.transition-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent 0%, var(--site-accent, #58a6ff) 50%, transparent 100%) 0 0 / 50% 100% repeat-x;
+}

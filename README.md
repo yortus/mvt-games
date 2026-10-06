@@ -6,7 +6,11 @@ is hard to test, debug, or extend. This project rebuilds them with
 presentation, giving you deterministic models, stateless views, and
 frame-consistent rendering.
 
-## Games
+## The Arcade
+
+The site's home page is the **Arcade**: every game and demo as a card, to
+search by name, tag or description, and to play in the page. It is built with
+MVT too, in HTML.
 
 | Game           | Description                                      |
 | -------------- | ------------------------------------------------ |
@@ -19,9 +23,17 @@ frame-consistent rendering.
 | Kwazy Cactii   | Match three or more cactii                       |
 | Neon Monsoon   | 1990s-style vertical bullet hell                 |
 
-Each game is a self-contained module under `site/src/games/<name>/` with its own
-data, models, and views. A **Cabinet** manages game selection and delegates to
-the active game session.
+| Demo             | Description                                                       |
+| ---------------- | ----------------------------------------------------------------- |
+| Boids            | A flock from three simple rules, every parameter on a slider      |
+| Boids in 3D      | The same flock model, drawn with three.js, with an HTML panel     |
+| Falling Sand     | Sand and water in a tank: a stress test of the game loop          |
+| Fruit Machine    | One model, four views: Pixi, three.js, an HTML panel, a terminal  |
+| Reordering Lists | Rows of cards sliding into place as a script reorders them        |
+
+Each game and demo is an **entry**: a self-contained module under
+`packages/website/src/entries/<id>/` with its own data, models, and views, and
+a `start/` directory that tells the Arcade how to list it and load it.
 
 ## Tech Stack
 
@@ -54,7 +66,7 @@ npm run dev
 ## Documentation
 
 Learn the architecture, conventions, and patterns:
-**[Read the docs](docs/index.md)**
+**[Read the docs](packages/docs/index.md)**
 
 **AI agents:** see [AGENTS.md](AGENTS.md) for compressed orientation.
 
@@ -64,11 +76,9 @@ An npm workspace: the libraries, published under the `@mvtjs` npm scope,
 and private packages for everything else.
 
 ```
-packages/     The libraries: @mvtjs/utils, @mvtjs/pixi, @mvtjs/three, @mvtjs/html
-site/         The games, demos and playground (Vite)
-docs/         Documentation (VitePress)
-benchmarks/   Performance benchmarks (npm run bench)
-checks/       Tests that the packages still fit together as decided
+packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
+              @mvtjs/three, @mvtjs/html), and the private ones: the website,
+              the docs, the benchmarks, the checks and the lint rules
 notes/        Proposals, tasks, and the archive of finished work
 ```
 
@@ -78,14 +88,18 @@ packages/
 ├── pixi/                The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
-└── eslint-plugin/       This repo's lint rules (private for now)
+├── eslint-plugin/       This repo's lint rules (private for now)
+├── benchmarks/          Performance benchmarks (private; npm run bench)
+├── checks/              Tests that the packages still fit together as decided (private)
+├── docs/                The documentation (VitePress, private)
+└── website/             The Arcade, its games and demos, and the playground (private)
 
-site/src/
-├── main.ts              Bootstrap: init Pixi app, create cabinet, start ticker
-├── cabinet/             Cabinet model & view (game selection)
-├── games/               Game registry + per-game modules
-│   └── <name>/          Self-contained game (data/, models/, views/)
-├── demos/               Demo registry + per-demo modules
+packages/website/src/
+├── arcade/              The Arcade, the home page (HTML JSX)
+├── entries/             Every game and demo, one directory each, and the catalogue
+│   └── <id>/            Self-contained entry (start/, data/, models/, views/)
+├── entry-types/         What an entry is, and how it starts
+├── runner/              The entry host: runs one entry of any renderer
 ├── playground/          In-browser editor and sandbox
-└── shared/              The site's shared views (overlay, input, pause menu, perfmon)
+└── shared/              The site's shared views (overlay, input, perfmon)
 ```

@@ -8,8 +8,8 @@
         { "path": "./packages/three" },
         { "path": "./packages/html" },
         { "path": "./packages/eslint-plugin" },
-        { "path": "./site" },
-        { "path": "./benchmarks" },
-        { "path": "./checks" }
+        { "path": "./packages/website" },
+        { "path": "./packages/benchmarks" },
+        { "path": "./packages/checks" }
     ]
 }

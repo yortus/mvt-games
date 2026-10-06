@@ -441,8 +441,8 @@ published from it was an artifact, and all of them have been deleted.
 
 The benchmark driver spawns one child process **per arm**, each running exactly
 one implementation against one scenario. The scenes are now the `refresh-view`
-suite in [benchmarks/](../../../benchmarks/README.md)
-(`benchmarks/suites/refresh-view.case.ts`), run with
+suite in [packages/benchmarks/](../../benchmarks/README.md)
+(`packages/benchmarks/suites/refresh-view.case.ts`), run with
 `npm run bench -- refresh-view`; they were first written as
 `src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`, before
 the libraries became packages. Results
@@ -531,7 +531,7 @@ Recorded so they are not re-derived. All checked against `node_modules`.
   order carries no guarantee. This matters: Pixi calls `sortChildren` itself
   during rendering whenever `sortableChildren` is set.
 - `runOnRender` is called unconditionally and is **never gated on visibility**.
-  The workaround at [pause-menu-view.ts:33](../../../site/src/shared/pause-menu-view.ts#L33)
+  The workaround at [pause-menu-view.ts:33](../../website/src/shared/pause-menu-view.ts#L33)
   ("outer stays visible so onRender fires") was never needed.
 - `cacheAsTexture` suppresses `onRender` for nested groups: `_updateRenderGroups`
   returns early when a cached group's texture is current.
