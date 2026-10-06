@@ -55,8 +55,11 @@ export interface ArcadeEntry {
 
 /** A game an entry is inspired by: its title, who made it, and the year it came out. */
 export interface Inspiration {
+    /** Its title, as it was released (`'Pac-Man'`). */
     readonly title: string;
+    /** The company that made or released it (`'Namco'`). */
     readonly maker: string;
+    /** The year of its first release, on whatever machine that was. */
     readonly year: number;
 }
 

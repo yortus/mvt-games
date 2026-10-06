@@ -10,7 +10,7 @@ export interface AboutViewBindings {
     /** Whether the note is open. */
     readonly isOpen: () => boolean;
     /** Reported as the visitor presses the (i), to open or close the note. */
-    readonly onButtonPressed?: () => void;
+    readonly onAboutPressed?: () => void;
     /** Reported as the visitor presses Escape, or anywhere else, while the note is open. */
     readonly onDismissed?: () => void;
 }
@@ -39,7 +39,7 @@ export function AboutView(bindings: AboutViewBindings): Element {
                 aria-expanded={bindings.isOpen}
                 aria-controls="about-note"
                 text="i"
-                onClick={() => bindings.onButtonPressed?.()}
+                onClick={() => bindings.onAboutPressed?.()}
             />
             <div class="about-note" id="about-note" role="note" visible={bindings.isOpen}>
                 <p text="Games, demos and art, each built with Model-View-Ticker (MVT), an architecture for games and interactive apps. Pick one to play it, or open its info panel to learn more." />

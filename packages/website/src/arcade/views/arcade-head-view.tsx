@@ -56,11 +56,16 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
                 <AboutView
                     docsHref="./docs/"
                     isOpen={() => model.isAboutOpen}
-                    onButtonPressed={() => { model.isAboutOpen = !model.isAboutOpen; }}
-                    onDismissed={() => { model.isAboutOpen = false; }}
+                    onAboutPressed={toggleAbout}
+                    onDismissed={model.closeAbout}
                 />
             </div>
             {search}
         </header>
     );
+
+    function toggleAbout(): void {
+        if (model.isAboutOpen) model.closeAbout();
+        else model.openAbout();
+    }
 }

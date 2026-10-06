@@ -1,4 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
+import { destroyElement } from '@mvtjs/html';
 import { memoiseLast, watch } from '@mvtjs/utils';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
@@ -60,9 +61,7 @@ export interface ArcadeViewBindings {
  * polaroid comes back as the cards develop. The transition and the wall's
  * layout are this view's presentation state, in view models it owns.
  * Scrolled down the wall, past the head, a magnifier shows in the site's nav
- * to go back to the search, as `/` does from anywhere on the wall. As the
- * head grows or shrinks (the search's list opening, say), the wall glides to
- * its new place rather than jumping there.
+ * to go back to the search, as `/` does from anywhere on the wall.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -92,11 +91,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
     let launchedFrom: PicturePose | undefined;
-    // Presentation state: where the wall's frame was last laid out in the
-    // page, and how far from there it is drawn, easing to nothing
-    let frameTop: number | undefined;
-    let frameShift = 0;
-    let drawnFrameShift = 0;
     let isScrollLockDrawn = false;
 
     const wall = CardWallView({
@@ -118,15 +112,9 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
     const head = ArcadeHeadView({ model });
-    // Presentation state: whether any of the head shows below the site's nav
-    let isHeadInView = true;
-    const headObserver = new IntersectionObserver(
-        (records) => { isHeadInView = records[records.length - 1].isIntersecting; },
-        { rootMargin: `-${navHeight()}px 0px 0px 0px` },
-    );
-    headObserver.observe(head);
     const navSearch = NavSearchView({
-        isShown: () => !isHeadInView && isWallActive(),
+        search: head,
+        isActive: isWallActive,
         shownCount: () => model.shownCount,
         totalCount: entries.length,
         onPressed: goToSearch,
@@ -143,7 +131,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             onDestroyed={stopListening}
         >
             {head}
-            <div class="card-wall-frame" onRefresh={drawFrameShift}>
+            <div class="card-wall-frame">
                 {wall}
                 <p class="card-wall-empty" visible={() => model.shownCount === 0} text="Nothing matches this search." />
             </div>
@@ -203,30 +191,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             }
         }
         transition.update(deltaMs);
-        easeFrame(deltaMs);
-    }
-
-    /** Eases the wall from where it was drawn towards its place in the page, as the cards ease to theirs. */
-    function easeFrame(deltaMs: number): void {
-        frameShift = bindings.isMotionReduced() ? 0 : frameShift * Math.exp(-deltaMs / FRAME_EASE_MS);
-        if (Math.abs(frameShift) < FRAME_LANDED_PX) frameShift = 0;
-    }
-
-    /**
-     * Draws the wall where it was, as the head above it changes height, for
-     * it to ease from. The head draws its changes (the search's list opening
-     * or closing) in its own refresh, which runs before this one, the frame
-     * coming after the head: measured here, the move is caught before it is
-     * ever painted. Measured in the update, it would be a tick late, and the
-     * wall would show at its new place for a frame, then jump back to ease.
-     */
-    function drawFrameShift(element: HTMLElement): void {
-        const top = element.offsetTop;
-        if (frameTop !== undefined && top !== frameTop && !bindings.isMotionReduced()) frameShift += frameTop - top;
-        frameTop = top;
-        if (frameShift === drawnFrameShift) return;
-        drawnFrameShift = frameShift;
-        element.style.transform = frameShift === 0 ? '' : `translateY(${frameShift}px)`;
     }
 
     /**
@@ -268,8 +232,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     function stopListening(): void {
         window.removeEventListener('keydown', onKeyDown);
-        headObserver.disconnect();
-        navSearch.remove();
+        // In the site's nav, outside this view: destroyed with it, which takes it out of the nav
+        destroyElement(navSearch);
     }
 
     function onKeyDown(e: KeyboardEvent): void {
@@ -343,16 +307,6 @@ const MIN_COLUMN_WIDTH = 260;
 /** Two columns even on a phone: the cards narrow to fit, rather than one filling the screen. */
 const MIN_COLUMN_COUNT = 2;
 const MAX_COLUMN_COUNT = 5;
-/** How quickly the wall eases to a new place under the head: as quickly as its cards ease to theirs. */
-const FRAME_EASE_MS = 90;
-/** Closer than this to its place, the wall is there. */
-const FRAME_LANDED_PX = 0.5;
-
-/** The height of the site's fixed nav, which covers the top of the page: the head is out of view once under it. */
-function navHeight(): number {
-    const height = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--site-nav-height'));
-    return Number.isNaN(height) ? 0 : height;
-}
 
 function isTyping(target: EventTarget | undefined): boolean {
     return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement

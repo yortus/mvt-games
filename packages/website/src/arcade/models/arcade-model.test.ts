@@ -230,7 +230,7 @@ describe('ArcadeModel', () => {
             model.launch('sim-demo');
             expect(model.infoEntry).toBeUndefined();
             model.exit();
-            model.isAboutOpen = true;
+            model.openAbout();
             model.launch('sim-demo');
             expect(model.isAboutOpen).toBe(false);
         });
@@ -239,20 +239,34 @@ describe('ArcadeModel', () => {
     describe('the info panels', () => {
         it('opens one at a time: an entry\'s, or the arcade\'s', () => {
             const model = createArcadeModel(options());
-            model.isAboutOpen = true;
+            model.openAbout();
             model.openInfo('sim-demo');
             expect(model.isAboutOpen).toBe(false);
             expect(model.infoEntry?.id).toBe('sim-demo');
-            model.isAboutOpen = true;
+            model.openAbout();
             expect(model.infoEntry).toBeUndefined();
         });
 
         it('opens no panel for an entry it does not list', () => {
             const model = createArcadeModel(options());
-            model.isAboutOpen = true;
+            model.openAbout();
             model.openInfo('no-such-entry');
             expect(model.infoEntry).toBeUndefined();
             expect(model.isAboutOpen).toBe(true);
+        });
+
+        it('closes only the kind of panel asked', () => {
+            const model = createArcadeModel(options());
+            model.openAbout();
+            model.closeInfo();
+            expect(model.isAboutOpen).toBe(true);
+            model.closeAbout();
+            expect(model.isAboutOpen).toBe(false);
+            model.openInfo('sim-demo');
+            model.closeAbout();
+            expect(model.infoEntry?.id).toBe('sim-demo');
+            model.closeInfo();
+            expect(model.infoEntry).toBeUndefined();
         });
     });
 });

@@ -36,11 +36,13 @@ export interface SearchBarViewBindings {
 /**
  * One search box for names and tags. The tags chosen sit in the box in the
  * order they were chosen, the last nearest the caret, each with a button to
- * remove it. While the box has focus, the tags that would
- * narrow the search drop down beneath it, group by group with their counts,
- * and narrowed to those beginning with what is typed; a click, or Enter,
- * chooses one. The arrow keys move between them, Backspace in an empty box
- * removes the last tag, Escape closes the list, and `/` leaves the box.
+ * remove it. While the box has focus, the tags that would narrow the search
+ * drop down beneath it, group by group with their counts, and narrowed to
+ * those beginning with what is typed; a click, or Enter, chooses one. The
+ * list unfolds as it opens and folds as it closes, so the page under it
+ * moves rather than jumps. The arrow keys move between the tags, Backspace
+ * in an empty box removes the last one, Escape closes the list, and `/`
+ * leaves the box.
  */
 export function SearchBarView(bindings: SearchBarViewBindings): Element {
     const { chips } = bindings;
@@ -111,36 +113,40 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
                     onClick={clear}
                 />
             </div>
-            <div
-                class="search-tags"
-                id="search-tags"
-                role="listbox"
-                aria-label="Tags"
-                visible={() => isListOpen}
-                ref={keepFocusOnPress}
-            >
-                {groups.map((group, g) => (
-                    <div class="search-group" role="group" aria-label={GROUP_LABELS[group]} visible={() => hasSuggestionIn[g]}>
-                        <span class="search-group-label" text={GROUP_LABELS[group]} />
-                        <div class="search-group-tags">
-                            {chips.map((chip, index) => (chip.group !== group
-                                ? undefined
-                                : (
-                                        <div
-                                            class={() => (index === shownHighlight ? 'chip is-highlighted' : 'chip')}
-                                            id={optionIds[index]}
-                                            role="option"
-                                            aria-selected={() => index === shownHighlight}
-                                            visible={() => isSuggestedAt[index]}
-                                            onClick={() => choose(index)}
-                                        >
-                                            <span class="chip-label" text={labels[index]} />
-                                            <span class="chip-count" text={() => countTexts[index](bindings.chipCountAt(index))} />
-                                        </div>
-                                    )))}
-                        </div>
+            {/* The list unfolds and folds (in the stylesheet), so the page under it moves with it */}
+            <div class={() => (isListOpen ? 'search-tags-reveal is-open' : 'search-tags-reveal')}>
+                <div class="search-tags-clip">
+                    <div
+                        class="search-tags"
+                        id="search-tags"
+                        role="listbox"
+                        aria-label="Tags"
+                        ref={keepFocusOnPress}
+                    >
+                        {groups.map((group, g) => (
+                            <div class="search-group" role="group" aria-label={GROUP_LABELS[group]} visible={() => hasSuggestionIn[g]}>
+                                <span class="search-group-label" text={GROUP_LABELS[group]} />
+                                <div class="search-group-tags">
+                                    {chips.map((chip, index) => (chip.group !== group
+                                        ? undefined
+                                        : (
+                                                <div
+                                                    class={() => (index === shownHighlight ? 'chip is-highlighted' : 'chip')}
+                                                    id={optionIds[index]}
+                                                    role="option"
+                                                    aria-selected={() => index === shownHighlight}
+                                                    visible={() => isSuggestedAt[index]}
+                                                    onClick={() => choose(index)}
+                                                >
+                                                    <span class="chip-label" text={labels[index]} />
+                                                    <span class="chip-count" text={() => countTexts[index](bindings.chipCountAt(index))} />
+                                                </div>
+                                            )))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );

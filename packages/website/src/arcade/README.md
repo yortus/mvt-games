@@ -50,10 +50,13 @@ Which state belongs to the model, and which to the views?
 
 - **In the model:** the search text, the tags chosen (in the order chosen),
   the phase (`'browsing' | 'loading' | 'ready' | 'playing'`), the entry
-  launched, and whether it is paused. These are what the visitor asked for.
+  launched, whether it is paused, and which info panel is open (an entry's,
+  or the arcade's own; one at a time). These are what the visitor asked for.
   The URL is a projection of them: `main.ts` writes the query and the
   fragment from the model (`writeUrl`), and reads them back on load. Going
-  into an entry adds a history step, so Back returns to the wall.
+  into an entry adds a history step, so Back returns to the wall, and so does
+  opening an info panel (`writePanelStep`), so Back closes it, as a phone's
+  back button is expected to.
 - **In the views:** which card is selected (`selected` in
   [`card-wall-view.tsx`](./views/card-wall-view.tsx)), where each card is
   and where it is sliding to (the layout), and every frame of the way in and

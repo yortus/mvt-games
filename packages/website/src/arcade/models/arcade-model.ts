@@ -85,15 +85,20 @@ export interface ArcadeModel {
     readonly dismissLoadFailure: () => void;
 
     // --- The info panels ----------------------------------------------------
+    // One at a time: an entry's, or the arcade's own, about the arcade.
 
     /** The entry whose info panel is open. */
     readonly infoEntry: ArcadeEntry | undefined;
-    /** Opens the info panel of the entry with `id`, closing the arcade's. */
+    /** Opens the info panel of the entry with `id`, in place of any panel open; does nothing for an entry not listed. */
     readonly openInfo: (id: string) => void;
-    /** Closes the info panel. */
+    /** Closes the entry's info panel, if one is open. */
     readonly closeInfo: () => void;
-    /** Whether the arcade's own info panel, about the arcade, is open. Opening it closes an entry's. */
-    isAboutOpen: boolean;
+    /** Whether the arcade's own info panel is open. */
+    readonly isAboutOpen: boolean;
+    /** Opens the arcade's own info panel, in place of any panel open. */
+    readonly openAbout: () => void;
+    /** Closes the arcade's own info panel, if it is open. */
+    readonly closeAbout: () => void;
 
     /** Nothing in the arcade moves with time: its entries' sessions are the page's. */
     readonly update: (deltaMs: number) => void;
@@ -153,8 +158,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let restartCount = 0;
     /** Counts launches, so a load that finishes after the visitor has left is ignored. */
     let launchCount = 0;
-    let infoEntry: ArcadeEntry | undefined;
-    let isAboutOpen = false;
+    /** The info panel open, if any: an entry's, or the arcade's own. */
+    let panel: ArcadeEntry | 'about' | undefined;
 
     const model: ArcadeModel = {
         entries,
@@ -231,8 +236,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             activeEntry = entry;
             starter = undefined;
             loadFailure = undefined;
-            infoEntry = undefined;
-            isAboutOpen = false;
+            panel = undefined;
             phase = 'loading';
             const launch = ++launchCount;
             loadEntry(entry).then(
@@ -271,21 +275,22 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
 
         get infoEntry() {
-            return infoEntry;
+            return panel === 'about' ? undefined : panel;
         },
         openInfo(id) {
-            infoEntry = entries.find((e) => e.id === id);
-            if (infoEntry !== undefined) isAboutOpen = false;
+            panel = entries.find((e) => e.id === id) ?? panel;
         },
         closeInfo() {
-            infoEntry = undefined;
+            if (panel !== 'about') panel = undefined;
         },
         get isAboutOpen() {
-            return isAboutOpen;
+            return panel === 'about';
         },
-        set isAboutOpen(value) {
-            isAboutOpen = value;
-            if (value) infoEntry = undefined;
+        openAbout() {
+            panel = 'about';
+        },
+        closeAbout() {
+            if (panel === 'about') panel = undefined;
         },
 
         update(_deltaMs) {

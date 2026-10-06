@@ -37,7 +37,7 @@ button { font: inherit; color: inherit; }
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .chip, .nav-search { transition: none; }
+    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search { transition: none; }
 }
 
 .arcade {
@@ -59,21 +59,23 @@ button { font: inherit; color: inherit; }
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 12px 24px;
+    /* The name's height, which the search box lines up with */
+    --wordmark-height: 44px;
 }
 .arcade-title { position: relative; display: flex; align-items: center; gap: 14px; }
 /* The name, as a marquee: drawn by the view, scaled by its height */
 .arcade-name { line-height: 0; }
-.arcade-name .wordmark { display: block; height: 44px; width: auto; max-width: calc(100vw - 80px); }
+.arcade-name .wordmark { display: block; height: var(--wordmark-height); width: auto; max-width: calc(100vw - 80px); }
 /*
  * When the search wraps under the title (the view measures it), the title
  * stands centred over it, and the search takes the whole line
  */
 .arcade-head.is-stacked .arcade-title { margin-inline: auto; }
 .arcade-head.is-stacked .search { max-width: none; margin-left: 0; }
-/* Beside the title, the box (40px) is centred on the name (44px) */
-.arcade-head:not(.is-stacked) .search { margin-top: 2px; }
+/* Beside the title, the box (40px tall) is centred on the name */
+.arcade-head:not(.is-stacked) .search { margin-top: calc((var(--wordmark-height) - 40px) / 2); }
 @media (max-width: 640px) {
-    .arcade-name .wordmark { height: 38px; }
+    .arcade-head { --wordmark-height: 38px; }
 }
 
 /*
@@ -158,13 +160,6 @@ button { font: inherit; color: inherit; }
     color: var(--site-text-muted, #8b949e);
 }
 .about-keys li { display: contents; }
-.about-credits {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px solid #21262d;
-    font-size: 12px;
-}
-.about-note .about-credits { color: var(--site-text-muted, #8b949e); }
 .about-key { display: flex; align-items: center; gap: 6px; }
 .about-or { font-size: 12px; }
 .about-keys kbd {
@@ -178,6 +173,13 @@ button { font: inherit; color: inherit; }
     font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
     font-variant-emoji: text;
     text-align: center;
+}
+.about-note .about-credits {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #21262d;
+    font-size: 12px;
+    color: var(--site-text-muted, #8b949e);
 }
 
 /* --- The search ----------------------------------------------------------- */
@@ -244,8 +246,23 @@ button { font: inherit; color: inherit; }
 
 /*
  * The tags to choose from, opened under the box while it has focus. In the
- * page's flow, so the wall moves down for them rather than hiding under them.
+ * page's flow, so the wall moves down for them rather than hiding under them,
+ * and unfolding, its one row growing from nothing to its own height, so the
+ * wall glides there. Folded, it hides once the fold has finished; not with
+ * `hidden`, which would cut the fold short.
  */
+.search-tags-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease-out, visibility 0s 0.25s;
+}
+.search-tags-reveal.is-open {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.25s ease-out;
+}
+.search-tags-clip { min-height: 0; overflow: hidden; }
 .search-tags {
     display: flex;
     flex-direction: column;
@@ -526,9 +543,10 @@ button { font: inherit; color: inherit; }
     text-transform: uppercase;
     color: var(--site-text-muted, #8b949e);
 }
-.info-tags { margin: 6px 0 14px; font-size: 12px; color: var(--site-text-muted, #8b949e); }
-.info-inspired { margin: -8px 0 14px; font-size: 13px; font-style: italic; color: var(--site-text-muted, #8b949e); }
-.info-summary { margin-bottom: 12px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
+.info-tags { margin-top: 6px; font-size: 12px; color: var(--site-text-muted, #8b949e); }
+/* The credit sits close under the tags; the summary stands clear of both */
+.info-inspired { margin-top: 6px; font-size: 13px; font-style: italic; color: var(--site-text-muted, #8b949e); }
+.info-summary { margin: 14px 0 12px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
 .info-description { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
 .info-section { margin: 16px 0; }
 .info-instructions {
