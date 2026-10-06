@@ -2,7 +2,7 @@
 
 exports[`paintShow > draws the same frames as before 1`] = `
 {
-  "boot": "5347a8c9",
+  "boot": "f6e75329",
   "credits": "ff3ab8b9",
   "intro": "4c4e1ead",
   "logo": "c7972a7d",

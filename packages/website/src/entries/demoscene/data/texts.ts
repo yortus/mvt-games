@@ -23,7 +23,7 @@ export const BOOT_FOUND = 'FOUND MEGADEMO';
 export const BOOT_LOADING = 'LOADING';
 
 /** The keys, on the boot screen's bottom line. */
-export const BOOT_KEYS = 'SPACE PAUSES   < > CURSOR KEYS SKIP';
+export const BOOT_KEYS = '< > CURSOR KEYS SKIP BETWEEN PARTS';
 
 /** The intro's captions, one after another. */
 export const INTRO_CAPTIONS: readonly string[] = ['MVT PRESENTS', 'A MEGADEMO'];

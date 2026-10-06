@@ -55,17 +55,6 @@ describe('ShowModel', () => {
         expect(step).toBeGreaterThan(5000);
     });
 
-    it('stands still while paused', () => {
-        const show = createShowModel({ startMs: 5000 });
-        show.togglePause();
-        show.update(1000);
-        expect(show.timeMs).toBe(5000);
-        expect(show.isPaused).toBe(true);
-        show.togglePause();
-        show.update(1000);
-        expect(show.timeMs).toBe(6000);
-    });
-
     it('skips forward and back by parts, round the loop', () => {
         const show = createShowModel({ startMs: 1000 });
         show.skipParts(1);

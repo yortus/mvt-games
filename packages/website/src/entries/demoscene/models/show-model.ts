@@ -40,8 +40,6 @@ export interface ShowModel {
     /** The whole screen's brightness: 0 (black) at every change of part, 1 between. */
     readonly brightness: number;
 
-    readonly isPaused: boolean;
-
     readonly boot: BootModel;
     readonly intro: IntroModel;
     readonly logo: LogoPartModel;
@@ -54,7 +52,6 @@ export interface ShowModel {
     seek: (timeMs: number) => void;
     /** Jumps to the start of the part `count` parts on (or back, if negative), wrapping round the show. */
     skipParts: (count: number) => void;
-    togglePause: () => void;
     update: (deltaMs: number) => void;
 }
 
@@ -91,7 +88,6 @@ export function createShowModel(options: ShowModelOptions = {}): ShowModel {
 
     let timeMs = 0;
     let partIndex = 0;
-    let isPaused = false;
     seek(options.startMs ?? 0);
 
     const model: ShowModel = {
@@ -110,7 +106,6 @@ export function createShowModel(options: ShowModelOptions = {}): ShowModel {
         get brightness() {
             return fadeInOut(timeMs - partStartsMs[partIndex], partDurationsMs[partIndex], FADE_MS);
         },
-        get isPaused() { return isPaused; },
 
         boot: createBootModel({ elapsedMs: () => elapsedIn(bootIndex) }),
         intro: createIntroModel({ elapsedMs: () => elapsedIn(introIndex) }),
@@ -129,11 +124,8 @@ export function createShowModel(options: ShowModelOptions = {}): ShowModel {
             const index = wrap(partIndex + count, SHOW_SCRIPT.length);
             seek(partStartsMs[index]);
         },
-        togglePause() {
-            isPaused = !isPaused;
-        },
         update(deltaMs) {
-            if (!isPaused) seek(timeMs + deltaMs);
+            seek(timeMs + deltaMs);
         },
     };
 

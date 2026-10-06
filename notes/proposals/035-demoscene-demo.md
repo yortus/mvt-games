@@ -12,26 +12,29 @@
 > state at all, which makes pause, seek and thumbnails free.
 
 **Status:** implemented, steps 1-6, on the `demoscene-demo` branch (2026-10-03):
-[`site/src/demos/demoscene/`](../../site/src/demos/demoscene/README.md), in the
-gallery and the `games-and-demos` benchmark suite. Not done: music and the
+[`packages/website/src/entries/demoscene/`](../../packages/website/src/entries/demoscene/README.md),
+in the Arcade and the `games-and-demos` benchmark suite, to which it was ported
+when the branch merged `main` (2026-10-06): an `art` entry, pause left to the
+host (the model's own pause removed), and left and right skipping parts through
+the session's `inputConfig`. Not done: music and the
 stretch effects (step 7), and a look in a real browser, which the GPU glow
 filter has not had. Section 12 records where the build differs from the
 design below.
 
 **Written:** 2026-10-03, against `vnext` at `dd3ec54`. Checked against the demo
-registry ([`demo-entry.ts`](../../packages/website/src/demos/demo-entry.ts),
-[`main.ts`](../../packages/website/src/demos/main.ts)), the falling-sand pixel view, which
+registry (`demo-entry.ts` and `main.ts`, since replaced by the Arcade's
+[`entry-types`](../../packages/website/src/entry-types/index.ts)), the falling-sand pixel view, which
 this design copies for its texture upload, and the animation pages of the docs.
 The performance figures in section 9 were estimates; the measured ones are in
 section 12.
 
 **Related:**
-[`grain-pixels-view.ts`](../../packages/website/src/demos/falling-sand/views/grain-pixels-view.ts) -
+[`grain-pixels-view.ts`](../../packages/website/src/entries/falling-sand/views/grain-pixels-view.ts) -
 [Complex Sequences](../../packages/docs/building-with-mvt/animating-transitions/complex-sequences.md) -
 [Open-Ended Phases](../../packages/docs/building-with-mvt/animating-transitions/open-ended-phases.md) -
 [Presentation State](../../packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md) -
 [Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md) -
-[Originality](../../packages/website/src/games/README.md#originality) (the rules this demo follows from day one) -
+[Originality](../../packages/website/src/entries/README.md#originality) (the rules this demo follows from day one) -
 [033](../tasks/backlog/033-fruit-machine-demo/task.md) (the other demo in the pipeline) -
 [026](../archive/026-demos-screen-for-every-renderer.md)
 
@@ -215,7 +218,7 @@ for a claim about the hardware.
 
 ## 4. The Model
 
-All under `packages/website/src/demos/demoscene/models/`, in domain units: milliseconds,
+All under `packages/website/src/entries/demoscene/models/`, in domain units: milliseconds,
 beats, turns, character cells and 3D object space. Nothing in the model knows
 about pixels, raster lines or the chip.
 
@@ -329,7 +332,7 @@ alone. A show has no input, so it can be.
 
 ## 5. The View
 
-All under `packages/website/src/demos/demoscene/views/`.
+All under `packages/website/src/entries/demoscene/views/`.
 
 ### 5.1 One view and painters, not a view per effect
 
@@ -376,7 +379,7 @@ the CRT filter should hide that, or the demo should snap to whole multiples.
 ## 6. Files
 
 ```
-packages/website/src/demos/demoscene/
+packages/website/src/entries/demoscene/
 ├── README.md               What to look for, the effects, where the chip cheats
 ├── demoscene-entry.ts      createDemosceneEntry(): DemoEntry
 ├── index.ts
@@ -397,7 +400,7 @@ they can be edited in a text editor and reviewed in a diff.
 ## 7. Originality
 
 This demo follows the games'
-[originality rules](../../packages/website/src/games/README.md#originality) from the
+[originality rules](../../packages/website/src/entries/README.md#originality) from the
 start: ideas and techniques are free; titles, artwork, character designs and
 music are not.
 
@@ -531,7 +534,7 @@ reopened.
   set, and the bitmap has no such limit. The screen is split by mode line by
   line: bitmap for the logo's rows, text below. The logo is still built from
   text art: a coarse mask of the three letters, scaled, slanted and bevelled
-  in [`data/logo.ts`](../../site/src/demos/demoscene/data/logo.ts).
+  in [`data/logo.ts`](../../packages/website/src/entries/demoscene/data/logo.ts).
 - **The plasma is a multicolour bitmap at 80 x 50 blocks**, four to a cell,
   rather than colour memory and dither characters: each cell has three
   colours of its own, so it can show the three nearest steps of the colour

@@ -1,8 +1,8 @@
 # MVT Megademo
 
 A looping, 2 minute 40 second show in the style of a 1980s C64 demo, cut to
-125 beats a minute. Nothing to play: sit back, or press Space to pause and
-the left and right cursor keys to skip between parts. Add `?crt=off` to the
+125 beats a minute. Nothing to play: sit back, or press the left and right
+cursor keys to skip between parts. Add `?crt=off` to the
 page's address for crisp square pixels, or `?debug` for the raster-time bars
 described below.
 
@@ -25,7 +25,7 @@ height to each ball's place, is computed from the show's clock alone
 Randomness, where a part wants any, comes from a stateless hash of an index,
 not a generator. So `seek` is as good as playing to the same time and costs
 nothing, which is what makes skipping between parts trivial, and lets the
-gallery's thumbnail start 17 bars in without simulating them. A test plays
+Arcade's thumbnail start 17 bars in without simulating them. A test plays
 the whole show in uneven steps and checks that seeking agrees at every point.
 
 **A view with no state.** [`ScreenView`](./views/screen-view.ts) has no update
@@ -120,4 +120,4 @@ music do. The font, the logo and the sprite shapes are drawn for this demo
 ([`data/`](./data/)), as text art or computed. The boot screen uses the
 familiar colours and its own words. There is no music yet; if there is ever
 a tune, it will be an original one. See
-[proposal 035](../../../../notes/proposals/035-demoscene-demo.md).
+[proposal 035](../../../../../notes/proposals/035-demoscene-demo.md).

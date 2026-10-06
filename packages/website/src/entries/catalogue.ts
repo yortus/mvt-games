@@ -4,6 +4,7 @@ import { entry as boidsEntry } from './boids';
 import { entry as boids3dEntry } from './boids-3d';
 import { entry as burrowBustEntry } from './burrow-bust';
 import { entry as crumbChaseEntry } from './crumb-chase';
+import { entry as demosceneEntry } from './demoscene';
 import { entry as dojoDuelEntry } from './dojo-duel';
 import { entry as fallingSandEntry } from './falling-sand';
 import { entry as fruitMachineEntry } from './fruit-machine';
@@ -35,6 +36,7 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     reorderingListsEntry,
     fuelRunEntry,
     astrovoidEntry,
+    demosceneEntry,
 ];
 
 /** The entry with `id`, if there is one. */

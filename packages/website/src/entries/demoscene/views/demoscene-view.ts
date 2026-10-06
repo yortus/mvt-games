@@ -1,5 +1,4 @@
 import { Container } from 'pixi.js';
-import { KeyboardInputView } from '#shared';
 import type { ShowModel } from '../models';
 import { ScreenView } from './screen-view';
 
@@ -13,29 +12,17 @@ export interface DemosceneViewBindings {
     hasCrt: boolean;
     /** Raster-time and sprite bars in the borders. Read once. */
     isDebug: boolean;
-    /** Whether the keyboard controls the show: Space pauses, left and right skip parts. Read once. */
-    hasKeys: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
-/** The demo: the screen, and the keys that pause the show and skip through it. */
+/** The demo: the screen. The host's keys reach the show through the session's input config. */
 export function DemosceneView(bindings: DemosceneViewBindings): Container {
-    const { model, hasCrt, isDebug, hasKeys } = bindings;
+    const { model, hasCrt, isDebug } = bindings;
     const view = new Container();
     view.label = 'demoscene';
     view.addChild(ScreenView({ model, hasScanlines: hasCrt, hasGlow: hasCrt, isDebug }));
-    if (hasKeys) {
-        view.addChild(KeyboardInputView({
-            onPrimaryButtonChanged: (isPressed) => {
-                if (isPressed) model.togglePause();
-            },
-            onXDirectionChanged: (direction) => {
-                if (direction !== 'none') model.skipParts(direction === 'left' ? -1 : 1);
-            },
-        }));
-    }
     return view;
 }
