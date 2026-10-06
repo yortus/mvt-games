@@ -53,7 +53,12 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
         >
             <div class="arcade-title" ref={(e) => { title = e; }}>
                 <h1 class="arcade-name">{WordmarkView({ text: 'MVT ARCADE', label: 'MVT Arcade' })}</h1>
-                <AboutView docsHref="./docs/" />
+                <AboutView
+                    docsHref="./docs/"
+                    isOpen={() => model.isAboutOpen}
+                    onButtonPressed={() => { model.isAboutOpen = !model.isAboutOpen; }}
+                    onDismissed={() => { model.isAboutOpen = false; }}
+                />
             </div>
             {search}
         </header>

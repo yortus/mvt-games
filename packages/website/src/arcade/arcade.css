@@ -17,8 +17,8 @@ html, body {
     font-family: var(--site-font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
 }
 
-/* While an entry plays, the page under it keeps its place */
-html.is-playing { overflow: hidden; }
+/* While an entry plays, or an info panel is open, the page under it keeps its place */
+html.is-scroll-locked { overflow: hidden; }
 
 /*
  * The scrollbar's space is kept whether the page scrolls or not: a search
@@ -46,14 +46,18 @@ button { font: inherit; color: inherit; }
     padding: calc(var(--site-nav-height, 48px) + 20px) 16px 64px;
 }
 
-/* One line: the title, and the search. On a narrow screen the search goes under the title. */
+/*
+ * One line: the title, and the search. On a narrow screen the search goes
+ * under the title. Lined up at the top, so the title stays put as the search
+ * grows: with its tags wrapping, or its list open.
+ */
 .arcade-head {
     position: relative;
-    /* Above the wall's lifted polaroids, so the search's list drops over them */
+    /* Above the wall's lifted polaroids, so the about note drops over them */
     z-index: 20;
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px 24px;
 }
 .arcade-title { position: relative; display: flex; align-items: center; gap: 14px; }
@@ -66,6 +70,8 @@ button { font: inherit; color: inherit; }
  */
 .arcade-head.is-stacked .arcade-title { margin-inline: auto; }
 .arcade-head.is-stacked .search { max-width: none; margin-left: 0; }
+/* Beside the title, the box (40px) is centred on the name (44px) */
+.arcade-head:not(.is-stacked) .search { margin-top: 2px; }
 @media (max-width: 640px) {
     .arcade-name .wordmark { height: 38px; }
 }
@@ -122,8 +128,10 @@ button { font: inherit; color: inherit; }
     cursor: pointer;
 }
 .about-button:hover, .about-button[aria-expanded="true"] { border-color: var(--site-accent, #58a6ff); }
+/* Over the search too, which it drops onto when the search wraps under the title */
 .about-note {
     position: absolute;
+    z-index: 1;
     top: calc(100% + 10px);
     left: 0;
     width: min(440px, calc(100vw - 32px));
@@ -135,6 +143,8 @@ button { font: inherit; color: inherit; }
     font-size: 14px;
     line-height: 1.5;
 }
+/* Under a centred title, centred too, so it keeps clear of the screen's edges */
+.arcade-head.is-stacked .about-note { left: 50%; transform: translateX(-50%); }
 .about-note p { color: var(--site-text, #c9d1d9); }
 .about-docs { display: inline-block; margin-top: 8px; }
 .about-keys {
@@ -148,6 +158,13 @@ button { font: inherit; color: inherit; }
     color: var(--site-text-muted, #8b949e);
 }
 .about-keys li { display: contents; }
+.about-credits {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #21262d;
+    font-size: 12px;
+}
+.about-note .about-credits { color: var(--site-text-muted, #8b949e); }
 .about-key { display: flex; align-items: center; gap: 6px; }
 .about-or { font-size: 12px; }
 .about-keys kbd {
@@ -225,22 +242,21 @@ button { font: inherit; color: inherit; }
 .search-clear { width: 28px; height: 28px; margin-left: auto; font-size: 20px; color: var(--site-text-muted, #8b949e); }
 .search-clear:hover { color: #e6edf3; background: #21262d; }
 
-/* The tags to choose from, dropped down under the box while it has focus */
+/*
+ * The tags to choose from, opened under the box while it has focus. In the
+ * page's flow, so the wall moves down for them rather than hiding under them.
+ */
 .search-tags {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
     max-height: min(60vh, 420px);
     overflow-y: auto;
+    margin-top: 6px;
     padding: 12px;
     border: 1px solid #30363d;
     border-radius: 12px;
     background: #161b22;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 /* Each group's label, with its tags beside it, wrapping under one another */
 .search-group { display: flex; align-items: baseline; gap: 6px; }
@@ -478,6 +494,7 @@ button { font: inherit; color: inherit; }
 
 .info-layer, .pause-layer { display: contents; }
 
+/* Under the site's nav, so the panel is centred in the space below it, and never reaches up under it */
 .info-backdrop {
     position: fixed;
     inset: 0;
@@ -485,15 +502,17 @@ button { font: inherit; color: inherit; }
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px 16px;
+    padding: calc(var(--site-nav-height, 48px) + 16px) 16px 16px;
     background: rgba(0, 0, 0, 0.7);
 }
 .info-panel {
     position: relative;
     width: 100%;
     max-width: 580px;
-    max-height: 85vh;
+    max-height: 100%;
     overflow-y: auto;
+    /* Scrolled to its end, it does not scroll the page on */
+    overscroll-behavior: contain;
     padding: 26px 28px;
     border-radius: 12px;
     border: 1px solid #30363d;
@@ -508,6 +527,7 @@ button { font: inherit; color: inherit; }
     color: var(--site-text-muted, #8b949e);
 }
 .info-tags { margin: 6px 0 14px; font-size: 12px; color: var(--site-text-muted, #8b949e); }
+.info-inspired { margin: -8px 0 14px; font-size: 13px; font-style: italic; color: var(--site-text-muted, #8b949e); }
 .info-summary { margin-bottom: 12px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
 .info-description { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
 .info-section { margin: 16px 0; }

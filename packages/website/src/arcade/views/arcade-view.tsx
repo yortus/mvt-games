@@ -60,7 +60,9 @@ export interface ArcadeViewBindings {
  * polaroid comes back as the cards develop. The transition and the wall's
  * layout are this view's presentation state, in view models it owns.
  * Scrolled down the wall, past the head, a magnifier shows in the site's nav
- * to go back to the search, as `/` does from anywhere on the wall.
+ * to go back to the search, as `/` does from anywhere on the wall. As the
+ * head grows or shrinks (the search's list opening, say), the wall glides to
+ * its new place rather than jumping there.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -90,7 +92,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
     let launchedFrom: PicturePose | undefined;
-    let isPlayingDrawn = false;
+    // Presentation state: where the wall's frame was last laid out in the
+    // page, and how far from there it is drawn, easing to nothing
+    let frameTop: number | undefined;
+    let frameShift = 0;
+    let drawnFrameShift = 0;
+    let isScrollLockDrawn = false;
 
     const wall = CardWallView({
         entries,
@@ -132,11 +139,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         <div
             class="arcade"
             onUpdate={update}
-            onRefresh={lockScrollWhilePlaying}
+            onRefresh={lockScroll}
             onDestroyed={stopListening}
         >
             {head}
-            <div class="card-wall-frame">
+            <div class="card-wall-frame" onRefresh={drawFrameShift}>
                 {wall}
                 <p class="card-wall-empty" visible={() => model.shownCount === 0} text="Nothing matches this search." />
             </div>
@@ -196,6 +203,30 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             }
         }
         transition.update(deltaMs);
+        easeFrame(deltaMs);
+    }
+
+    /** Eases the wall from where it was drawn towards its place in the page, as the cards ease to theirs. */
+    function easeFrame(deltaMs: number): void {
+        frameShift = bindings.isMotionReduced() ? 0 : frameShift * Math.exp(-deltaMs / FRAME_EASE_MS);
+        if (Math.abs(frameShift) < FRAME_LANDED_PX) frameShift = 0;
+    }
+
+    /**
+     * Draws the wall where it was, as the head above it changes height, for
+     * it to ease from. The head draws its changes (the search's list opening
+     * or closing) in its own refresh, which runs before this one, the frame
+     * coming after the head: measured here, the move is caught before it is
+     * ever painted. Measured in the update, it would be a tick late, and the
+     * wall would show at its new place for a frame, then jump back to ease.
+     */
+    function drawFrameShift(element: HTMLElement): void {
+        const top = element.offsetTop;
+        if (frameTop !== undefined && top !== frameTop && !bindings.isMotionReduced()) frameShift += frameTop - top;
+        frameTop = top;
+        if (frameShift === drawnFrameShift) return;
+        drawnFrameShift = frameShift;
+        element.style.transform = frameShift === 0 ? '' : `translateY(${frameShift}px)`;
     }
 
     /**
@@ -219,13 +250,14 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     /**
      * While an entry plays, and until the way back has ended, the page under
      * it stays put: it keeps its place for the way back, and the polaroid and
-     * the cards developing stay where the transition put them.
+     * the cards developing stay where the transition put them. Under an info
+     * panel too, which scrolls on its own, the wall stays where it was.
      */
-    function lockScrollWhilePlaying(): void {
-        const isPlaying = model.phase !== 'browsing' || transition.phase !== 'idle';
-        if (isPlaying === isPlayingDrawn) return;
-        isPlayingDrawn = isPlaying;
-        document.documentElement.classList.toggle('is-playing', isPlaying);
+    function lockScroll(): void {
+        const isLocked = model.phase !== 'browsing' || transition.phase !== 'idle' || model.infoEntry !== undefined;
+        if (isLocked === isScrollLockDrawn) return;
+        isScrollLockDrawn = isLocked;
+        document.documentElement.classList.toggle('is-scroll-locked', isLocked);
     }
 
     /** Scrolls back up to the head, and puts the caret in the search, which opens its tags. */
@@ -311,6 +343,10 @@ const MIN_COLUMN_WIDTH = 260;
 /** Two columns even on a phone: the cards narrow to fit, rather than one filling the screen. */
 const MIN_COLUMN_COUNT = 2;
 const MAX_COLUMN_COUNT = 5;
+/** How quickly the wall eases to a new place under the head: as quickly as its cards ease to theirs. */
+const FRAME_EASE_MS = 90;
+/** Closer than this to its place, the wall is there. */
+const FRAME_LANDED_PX = 0.5;
 
 /** The height of the site's fixed nav, which covers the top of the page: the head is out of view once under it. */
 function navHeight(): number {

@@ -19,6 +19,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1980s', genres: ['fighting'] },
     screenWidth: 384,
     screenHeight: 270,
+    inspiredBy: { title: 'International Karate', maker: 'System 3', year: 1985 },
     thumbnail,
     // The colour of its wooden floor
     cardColor: 'apricot',

@@ -44,8 +44,8 @@ export interface ArcadeModel {
     readonly removeChipAt: (index: number) => void;
     /**
      * What has been typed beside the tags. An entry shows only if each of its
-     * words is in the entry's name, begins a word of its summary, description
-     * or techniques, or begins one of its tags.
+     * words is in the entry's name, begins a word of its summary, description,
+     * techniques or the title it is inspired by, or begins one of its tags.
      */
     searchText: string;
     /** Clears the tags and the words. */
@@ -84,14 +84,16 @@ export interface ArcadeModel {
     /** Forgets the last launch's failure. */
     readonly dismissLoadFailure: () => void;
 
-    // --- The info panel -----------------------------------------------------
+    // --- The info panels ----------------------------------------------------
 
     /** The entry whose info panel is open. */
     readonly infoEntry: ArcadeEntry | undefined;
-    /** Opens the info panel of the entry with `id`. */
+    /** Opens the info panel of the entry with `id`, closing the arcade's. */
     readonly openInfo: (id: string) => void;
     /** Closes the info panel. */
     readonly closeInfo: () => void;
+    /** Whether the arcade's own info panel, about the arcade, is open. Opening it closes an entry's. */
+    isAboutOpen: boolean;
 
     /** Nothing in the arcade moves with time: its entries' sessions are the page's. */
     readonly update: (deltaMs: number) => void;
@@ -152,6 +154,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     /** Counts launches, so a load that finishes after the visitor has left is ignored. */
     let launchCount = 0;
     let infoEntry: ArcadeEntry | undefined;
+    let isAboutOpen = false;
 
     const model: ArcadeModel = {
         entries,
@@ -229,6 +232,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             starter = undefined;
             loadFailure = undefined;
             infoEntry = undefined;
+            isAboutOpen = false;
             phase = 'loading';
             const launch = ++launchCount;
             loadEntry(entry).then(
@@ -271,9 +275,17 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         openInfo(id) {
             infoEntry = entries.find((e) => e.id === id);
+            if (infoEntry !== undefined) isAboutOpen = false;
         },
         closeInfo() {
             infoEntry = undefined;
+        },
+        get isAboutOpen() {
+            return isAboutOpen;
+        },
+        set isAboutOpen(value) {
+            isAboutOpen = value;
+            if (value) infoEntry = undefined;
         },
 
         update(_deltaMs) {

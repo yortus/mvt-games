@@ -13,7 +13,8 @@ import './arcade.css';
 // renderers, through the entry host), then the arcade's views. The page
 // starts and ends the entry's sessions as the model's phase changes, and keeps
 // the URL in step with the model: the search in the query, the entry
-// in the fragment. The arcade's views are in the page and in the site's nav. It also plays an entry live on its card (attract mode),
+// in the fragment, and an info panel open (an entry's, or the arcade's) in a
+// history step of its own. The arcade's views are in the page and in the site's nav. It also plays an entry live on its card (attract mode),
 // when the wall asks, in a second host that takes no input.
 
 // ---------------------------------------------------------------------------
@@ -77,17 +78,29 @@ root.append(ArcadeView({
     }),
 }));
 
+// Declared before the page follows the URL below, which reads them
+/** Marks the history step an entry's URL was pushed on, so leaving it knows to step back. */
+const ENTRY_STEP = 'arcade-entry';
+/** Begins the mark of the history step an entry's info panel was opened on, which ends with the entry's id. */
+const INFO_STEP = 'arcade-info:';
+/** Marks the history step the arcade's own info panel was opened on. */
+const ABOUT_STEP = 'arcade-about';
+
 const watcher = watch({
     phase: () => model.phase,
     restarts: () => model.restartCount,
     query: () => model.queryRevision,
+    panel: panelStep,
 });
+// An info panel's step, reloaded, opens its panel again
+followPanelStep();
 watcher.poll();
 
 // A link to an entry (`#crumb-chase`) launches it; going back or forward in history follows,
-// so Back from an entry returns to the wall
+// so Back from an entry returns to the wall, and Back from an info panel closes it
 launchFromFragment();
 window.addEventListener('hashchange', launchFromFragment);
+window.addEventListener('popstate', followPanelStep);
 
 // ---------------------------------------------------------------------------
 // The loop
@@ -117,7 +130,7 @@ function frame(timeMs: number): void {
 
 /** Starts and ends the entry's sessions as the model's phase changes, and writes the URL. */
 function followModel(): void {
-    const { phase, restarts, query } = watcher.poll();
+    const { phase, restarts, query, panel } = watcher.poll();
     if (phase.changed) {
         if (phase.value === 'playing') {
             exitFrame = undefined;
@@ -132,6 +145,7 @@ function followModel(): void {
     host.isPaused = model.isPaused;
     if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
     else if (phase.changed && phase.value === 'browsing') writeUrl('leave');
+    else if (panel.changed) writeUrl('panel');
     else if (phase.changed || query.changed) writeUrl('replace');
 }
 
@@ -181,31 +195,72 @@ function pageElement(id: string): HTMLElement {
     return element;
 }
 
-/** Marks the history step an entry's URL was pushed on, so leaving it knows to step back. */
-const ENTRY_STEP = 'arcade-entry';
-
 /**
  * Writes the URL. Going into an entry adds a step to the browser's history,
  * with the wall beneath it, so Back (a phone's back button, say) returns to
  * the wall rather than leaving the arcade, even from a link straight to the
  * entry. Leaving the entry some other way (its exit, or a failed load) takes
- * that step back off. Everything else rewrites the step the page is on.
+ * that step back off. Opening an info panel adds a step at the same URL, so
+ * Back closes it, and closing it takes the step back off; one panel opening
+ * as another closes takes over its step. Playing an entry from its panel
+ * trades the panel's step for the entry's, so Back from the entry returns to
+ * the wall. Everything else rewrites the step the page is on.
  */
-function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
+function writeUrl(step: 'enter' | 'leave' | 'panel' | 'replace'): void {
     const wallUrl = location.pathname + formatArcadeQuery(location.search, model.query, model.chips);
     const entry = model.phase === 'browsing' ? undefined : model.activeEntry;
     const isEntryStep = history.state === ENTRY_STEP;
+    const isPanelStep = isPanelState(history.state);
+    const panel = panelStep();
     if (step === 'enter' && entry !== undefined && !isEntryStep) {
-        history.replaceState(undefined, '', wallUrl);
-        history.pushState(ENTRY_STEP, '', `${wallUrl}#${entry.id}`);
+        if (isPanelStep) {
+            history.replaceState(ENTRY_STEP, '', `${wallUrl}#${entry.id}`);
+        }
+        else {
+            history.replaceState(undefined, '', wallUrl);
+            history.pushState(ENTRY_STEP, '', `${wallUrl}#${entry.id}`);
+        }
     }
     else if (step === 'leave' && isEntryStep) {
         // The hashchange this brings finds the arcade already browsing
         history.back();
     }
+    else if (step === 'panel' && panel !== undefined && !isPanelStep) {
+        history.pushState(panel, '', wallUrl);
+    }
+    else if (step === 'panel' && panel === undefined && isPanelStep) {
+        // The popstate this brings finds the panel already closed
+        history.back();
+    }
     else {
-        // An entry's step stays one through a reload, or Forward back to it
-        history.replaceState(isEntryStep ? ENTRY_STEP : undefined, '', entry === undefined ? wallUrl : `${wallUrl}#${entry.id}`);
+        // An entry's or a panel's step stays one through a reload, or Forward back to it
+        const state = isEntryStep ? ENTRY_STEP : isPanelStep ? panel : undefined;
+        history.replaceState(state, '', entry === undefined ? wallUrl : `${wallUrl}#${entry.id}`);
+    }
+}
+
+/** The mark of the history step for the info panel open, if one is. */
+function panelStep(): string | undefined {
+    if (model.infoEntry !== undefined) return INFO_STEP + model.infoEntry.id;
+    return model.isAboutOpen ? ABOUT_STEP : undefined;
+}
+
+function isPanelState(state: unknown): state is string {
+    return state === ABOUT_STEP || (typeof state === 'string' && state.startsWith(INFO_STEP));
+}
+
+/** Opens or closes the info panels as the history step says: Back from a panel closes it, Forward opens it again. */
+function followPanelStep(): void {
+    const state: unknown = history.state;
+    if (state === ABOUT_STEP) {
+        model.isAboutOpen = true;
+    }
+    else if (isPanelState(state)) {
+        model.openInfo(state.slice(INFO_STEP.length));
+    }
+    else {
+        model.closeInfo();
+        model.isAboutOpen = false;
     }
 }
 

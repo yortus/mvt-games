@@ -19,6 +19,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1980s', genres: ['maze'] },
     screenWidth: 560,
     screenHeight: 470,
+    inspiredBy: { title: 'Pac-Man', maker: 'Namco', year: 1980 },
     thumbnail,
     // The colour of its crumbs
     cardColor: 'lemon',

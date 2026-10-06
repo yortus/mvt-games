@@ -18,6 +18,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1970s', genres: ['shooter'] },
     screenWidth: 400,
     screenHeight: 430,
+    inspiredBy: { title: 'Asteroids', maker: 'Atari', year: 1979 },
     thumbnail,
     load: async () => (await import('./load')).load(),
 };

@@ -70,9 +70,9 @@ export function searchWordsOf(text: string): string[] {
 
 /**
  * Whether `entry` matches every word of a search: each is somewhere in its
- * name, or begins a word of its summary, description or techniques
- * (`'flock'` finds flocking), or begins one of its tags (`'sim'` finds
- * simulations).
+ * name, or begins a word of its summary, description, techniques or the
+ * title it is inspired by (`'flock'` finds flocking), or begins one of its
+ * tags (`'sim'` finds simulations).
  */
 export function matchesWords(entry: ArcadeEntry, facts: EntryFacts | undefined, words: readonly string[]): boolean {
     if (words.length === 0) return true;
@@ -98,13 +98,13 @@ export function sortByName(indices: number[], entries: readonly ArcadeEntry[]): 
 
 const NONE: readonly string[] = [];
 
-/** Each entry's summary, description and techniques, as lower-case words: worked out once. */
+/** Each entry's summary, description, techniques and the title it is inspired by, as lower-case words: worked out once. */
 const proseWords = new WeakMap<ArcadeEntry, readonly string[]>();
 
 function proseWordsOf(entry: ArcadeEntry): readonly string[] {
     let words = proseWords.get(entry);
     if (words === undefined) {
-        const text = [entry.summary, entry.description, ...(entry.techniques ?? [])].join(' ').toLowerCase();
+        const text = [entry.summary, entry.description, ...(entry.techniques ?? []), entry.inspiredBy?.title ?? ''].join(' ').toLowerCase();
         words = text.split(/[^\p{L}\p{N}]+/u).filter((word) => word !== '');
         proseWords.set(entry, words);
     }

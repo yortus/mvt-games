@@ -7,6 +7,12 @@
 export interface AboutViewBindings {
     /** Where the docs are, from the arcade's page. */
     readonly docsHref: string;
+    /** Whether the note is open. */
+    readonly isOpen: () => boolean;
+    /** Reported as the visitor presses the (i), to open or close the note. */
+    readonly onButtonPressed?: () => void;
+    /** Reported as the visitor presses Escape, or anywhere else, while the note is open. */
+    readonly onDismissed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -15,12 +21,10 @@ export interface AboutViewBindings {
 
 /**
  * An (i) button by the arcade's title, and the note it opens beneath it: what
- * the arcade is, a link to the docs, and the keys. The note is open or closed
- * as the button says, closing too on Escape or a press anywhere else: this
- * view's own state, since nothing else cares.
+ * the arcade is, a link to the docs, the keys, and a word on the classics its
+ * games credit. Escape, or a press anywhere else, dismisses the note.
  */
 export function AboutView(bindings: AboutViewBindings): Element {
-    let isOpen = false;
     let root: HTMLElement | undefined;
     window.addEventListener('keydown', onPageKeyDown);
     window.addEventListener('pointerdown', onPagePointerDown);
@@ -32,13 +36,13 @@ export function AboutView(bindings: AboutViewBindings): Element {
                 class="about-button"
                 aria-label="About the arcade"
                 title="About"
-                aria-expanded={() => isOpen}
+                aria-expanded={bindings.isOpen}
                 aria-controls="about-note"
                 text="i"
-                onClick={() => { isOpen = !isOpen; }}
+                onClick={() => bindings.onButtonPressed?.()}
             />
-            <div class="about-note" id="about-note" role="note" visible={() => isOpen}>
-                <p text="Games, demos and art, each built with Model-View-Ticker (MVT), an architecture for games and interactive apps. Pick one to play it, or open its info to read how it is made." />
+            <div class="about-note" id="about-note" role="note" visible={bindings.isOpen}>
+                <p text="Games, demos and art, each built with Model-View-Ticker (MVT), an architecture for games and interactive apps. Pick one to play it, or open its info panel to learn more." />
                 <a class="about-docs" href={bindings.docsHref} text="Read the docs" />
                 <ul class="about-keys" aria-label="Keys">
                     {KEYS.map(([keys, what]) => (
@@ -57,18 +61,22 @@ export function AboutView(bindings: AboutViewBindings): Element {
                         </li>
                     ))}
                 </ul>
+                <p
+                    class="about-credits"
+                    text="Some games credit the classics that inspired them. Those classics' names are their owners' trademarks, and the arcade is not affiliated with them."
+                />
             </div>
         </div>
     );
 
     function onPageKeyDown(e: KeyboardEvent): void {
-        if (!isOpen || e.key !== 'Escape') return;
-        isOpen = false;
+        if (!bindings.isOpen() || e.key !== 'Escape') return;
+        bindings.onDismissed?.();
         e.preventDefault();
     }
 
     function onPagePointerDown(e: PointerEvent): void {
-        if (isOpen && root !== undefined && !(e.target instanceof Node && root.contains(e.target))) isOpen = false;
+        if (bindings.isOpen() && root !== undefined && !(e.target instanceof Node && root.contains(e.target))) bindings.onDismissed?.();
     }
 
     function stopListening(): void {
@@ -86,7 +94,7 @@ const ARROWS = ['\u2190', '\u2191', '\u2193', '\u2192'].map((arrow) => `${arrow}
 
 /** Each line: the keys that do it, any one of them, and what they do. */
 const KEYS: readonly (readonly [readonly string[], string])[] = [
-    [['/'], 'Search'],
+    [['/'], 'Search, or leave the search'],
     [[ARROWS, 'WASD'], 'Move between items'],
     [['Enter', 'Space'], 'Play the selected item'],
     [['i'], 'Show more info about the selected item'],

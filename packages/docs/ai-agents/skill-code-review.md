@@ -244,7 +244,8 @@ Games and demos may be inspired by classics, but must not copy them. Flag:
   generator script in `packages/website/scripts/` produces and no view draws, especially
   sprite sheets, or anything traced from or closely following other artwork.
 - **Borrowed names:** a title, character name or enemy kind taken from an
-  existing game, in code, data, comments or docs.
+  existing game, in code, data, comments or docs. The one exception is the
+  credit in an entry's `inspiredBy`, which names the classic it is inspired by.
 - **Copied layouts:** mazes, levels or patterns transcribed from another game.
 - **Clone wording:** prose that calls a game a clone of a named game, rather
   than describing its genre.

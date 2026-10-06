@@ -1,5 +1,5 @@
 export {
-    type ArcadeEntry, type EntryKind, type EntryTags, type Era, type Genre, type RendererKind,
+    type ArcadeEntry, type EntryKind, type EntryTags, type Era, type Genre, type Inspiration, type RendererKind,
     type ThumbnailCrop, type CardColor, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS, thumbnailCropOf, CARD_COLORS,
 } from './arcade-entry';
 export type {

@@ -18,6 +18,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1980s', genres: ['maze', 'action'] },
     screenWidth: 280,
     screenHeight: 390,
+    inspiredBy: { title: 'Dig Dug', maker: 'Namco', year: 1982 },
     thumbnail,
     // The colour of its earth
     cardColor: 'peach',

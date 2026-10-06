@@ -19,7 +19,8 @@ export interface FocusOnOpenOptions {
  * panel opens and closes. The panel itself is still hidden as the step runs
  * in the frame it opens (its `visible` is written after its parent's step),
  * and a hidden element takes no focus, so the step tries again each frame
- * until the focus has gone where it should.
+ * until the focus has gone where it should. It focuses without scrolling, so
+ * a panel taller than the screen opens at its top, wherever the target is.
  */
 export function focusOnOpen(options: FocusOnOpenOptions): (root: Element) => void {
     let wasOpen = false;
@@ -32,7 +33,7 @@ export function focusOnOpen(options: FocusOnOpenOptions): (root: Element) => voi
         }
         if (!isPending) return;
         const target = options.target(root);
-        target?.focus();
+        target?.focus({ preventScroll: true });
         if (target !== undefined && document.activeElement === target) isPending = false;
     };
 }

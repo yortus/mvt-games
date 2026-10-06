@@ -18,6 +18,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1980s', genres: ['shooter', 'scrolling'] },
     screenWidth: 448,
     screenHeight: 248,
+    inspiredBy: { title: 'Scramble', maker: 'Konami', year: 1981 },
     thumbnail,
     // The colour of its hills
     cardColor: 'mint',

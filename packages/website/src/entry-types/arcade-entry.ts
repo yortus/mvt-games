@@ -30,6 +30,12 @@ export interface ArcadeEntry {
     readonly instructions?: string;
     /** The techniques and patterns the entry shows, for the info panel. */
     readonly techniques?: readonly string[];
+    /**
+     * The classic the entry is inspired by, if it is one game rather than a
+     * genre: credited in the info panel, and a place the search looks. The
+     * one place another game's title may appear.
+     */
+    readonly inspiredBy?: Inspiration;
     /** The thumbnail image's URL: a picture of the whole play area. */
     readonly thumbnail: string;
     /**
@@ -45,6 +51,13 @@ export interface ArcadeEntry {
     readonly cardColor?: CardColor;
     /** Imports the entry's code, and loads its assets. */
     readonly load: () => Promise<EntryStarter>;
+}
+
+/** A game an entry is inspired by: its title, who made it, and the year it came out. */
+export interface Inspiration {
+    readonly title: string;
+    readonly maker: string;
+    readonly year: number;
 }
 
 /** A rectangle of an entry's play area, in the entry's own pixels. */

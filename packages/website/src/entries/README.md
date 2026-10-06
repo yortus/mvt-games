@@ -40,6 +40,10 @@ artwork, music and specific level layouts are not.
   web, Steam, the app stores) and in the trademark registers (USPTO, TMview).
 - **In prose**, describe a game by its genre ("a maze chase", "inspired by
   golden-age arcade games"), not as a clone of a named game.
+- **Credit the classic** a game is inspired by, if it is one game rather
+  than a genre, in its entry's `inspiredBy`: the info panel shows "Inspired
+  by Pac-Man (Namco, 1980)". This is the one place another game's title
+  appears; the name, description and everything else stay the entry's own.
 
 ## Directory Structure
 
@@ -382,6 +386,9 @@ export const entry: ArcadeEntry = {
   load. In development, the Arcade checks they match the starter's.
 - A game gives **`instructions`**, for the info panel and the pause menu. A
   demo gives **`techniques`**, the patterns it shows.
+- **`inspiredBy`** credits the classic the entry is inspired by, if there is
+  one (`{ title, maker, year }`), as the [originality rules](#originality) ask.
+  The info panel shows it, and the search finds the entry by its title.
 - **`thumbnailCrop`** picks the part of the play area the card shows, and
   **`cardColor`** the card's colour, from the Arcade's palette. Both are
   optional.

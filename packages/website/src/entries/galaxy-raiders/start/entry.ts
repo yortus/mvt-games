@@ -17,6 +17,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'game', era: '1970s', genres: ['shooter'] },
     screenWidth: 280,
     screenHeight: 390,
+    inspiredBy: { title: 'Galaga', maker: 'Namco', year: 1981 },
     thumbnail,
     // The colour of its raiders
     cardColor: 'lavender',

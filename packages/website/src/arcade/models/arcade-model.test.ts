@@ -91,6 +91,12 @@ describe('ArcadeModel', () => {
             expect(shownIds(model)).toEqual([]);
         });
 
+        it('shows entries inspired by a game whose title has a word beginning with each word typed', () => {
+            const model = createArcadeModel(options());
+            model.searchText = 'grid run';
+            expect(shownIds(model)).toEqual(['maze-game']);
+        });
+
         it('applies the words and the tags together', () => {
             const model = createArcadeModel(options());
             choose(model, 'era', '1980s');
@@ -217,12 +223,36 @@ describe('ArcadeModel', () => {
             expect(model.phase).toBe('browsing');
         });
 
-        it('closes the info panel on launch', () => {
+        it('closes the info panels on launch', () => {
             const model = createArcadeModel(options());
             model.openInfo('sim-demo');
             expect(model.infoEntry?.id).toBe('sim-demo');
             model.launch('sim-demo');
             expect(model.infoEntry).toBeUndefined();
+            model.exit();
+            model.isAboutOpen = true;
+            model.launch('sim-demo');
+            expect(model.isAboutOpen).toBe(false);
+        });
+    });
+
+    describe('the info panels', () => {
+        it('opens one at a time: an entry\'s, or the arcade\'s', () => {
+            const model = createArcadeModel(options());
+            model.isAboutOpen = true;
+            model.openInfo('sim-demo');
+            expect(model.isAboutOpen).toBe(false);
+            expect(model.infoEntry?.id).toBe('sim-demo');
+            model.isAboutOpen = true;
+            expect(model.infoEntry).toBeUndefined();
+        });
+
+        it('opens no panel for an entry it does not list', () => {
+            const model = createArcadeModel(options());
+            model.isAboutOpen = true;
+            model.openInfo('no-such-entry');
+            expect(model.infoEntry).toBeUndefined();
+            expect(model.isAboutOpen).toBe(true);
         });
     });
 });
@@ -238,7 +268,10 @@ function notStarted(): never {
 }
 
 const ENTRIES: readonly ArcadeEntry[] = [
-    entry('maze-game', 'Maze Game', { kind: 'game', era: '1980s', genres: ['maze'] }),
+    {
+        ...entry('maze-game', 'Maze Game', { kind: 'game', era: '1980s', genres: ['maze'] }),
+        inspiredBy: { title: 'Grid Runner', maker: 'Someone', year: 1980 },
+    },
     { ...entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }), techniques: ['Object pooling'] },
     { ...entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }), description: 'Birds flocking, in 3D.' },
     { ...entry('old-shooter', 'Old Shooter', { kind: 'game', era: '1970s', genres: ['shooter'] }), summary: 'Rocks and asteroids.' },

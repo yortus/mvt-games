@@ -40,7 +40,7 @@ export interface SearchBarViewBindings {
  * narrow the search drop down beneath it, group by group with their counts,
  * and narrowed to those beginning with what is typed; a click, or Enter,
  * chooses one. The arrow keys move between them, Backspace in an empty box
- * removes the last tag, and Escape closes the list.
+ * removes the last tag, Escape closes the list, and `/` leaves the box.
  */
 export function SearchBarView(bindings: SearchBarViewBindings): Element {
     const { chips } = bindings;
@@ -214,6 +214,11 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
                 // Closes the list, then, pressed again, leaves the box
                 if (isListOpen) isDismissed = true;
                 else input?.blur();
+                break;
+            case '/':
+                // Leaves the box, as `/` came into it: nothing searched for has one
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                input?.blur();
                 break;
             case 'Backspace': {
                 const box = e.target as HTMLInputElement;
