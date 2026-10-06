@@ -35,8 +35,8 @@ export interface PixiMachineViewBindings {
  * The modern machine, in Pixi.js: layers from the backdrop up, each a view of
  * one thing. The reels land with a springy overshoot, eased here from the
  * model's linear settle; the lights, the juice and the counting win are this
- * view's own presentation state. One button spins, stops or skips, whichever
- * the model allows.
+ * view's own presentation state. One button spins or stops, whichever the
+ * model allows; during a celebration it spins, cutting the celebration short.
  */
 export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
     const { model, art } = bindings;
@@ -84,15 +84,21 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
         }
     }
 
-    /** The button does whichever the model allows: stopping comes first, since a spin can't start while one runs. */
+    /**
+     * The button does whichever the model allows: stopping comes first, since a
+     * spin can't start while one runs. A celebration can be stopped too, but a
+     * press then spins again, so the button says so.
+     */
     function buttonMode(): SpinButtonMode {
-        if (model.canStop) return model.phase === 'celebrating' ? 'skip' : 'stop';
+        if (model.phase === 'celebrating') return 'spin';
+        if (model.canStop) return 'stop';
         return model.canSpin ? 'spin' : 'disabled';
     }
 
+    /** Skipping a celebration spins again; stopping a spin leaves nothing to spin until the reels land. */
     function pressButton(): void {
         if (model.canStop) model.stop();
-        else if (model.canSpin) void model.spin();
+        if (model.canSpin) void model.spin();
     }
 
     function caption(): string {

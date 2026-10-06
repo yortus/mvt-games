@@ -51,10 +51,12 @@
         overflow: hidden;
     }
     .quadrant-canvas { display: block; touch-action: none; }
+    /* Dragging turns the cabinet only sideways, so an up or down swipe is left to scroll the stacked quadrants */
+    [data-quadrant="three"] .quadrant-canvas { touch-action: pan-y; }
     .quadrant-fill { width: 100%; height: 100%; }
     [data-quadrant="pixi"] .quadrant-body { background: #2a1766; }
     [data-quadrant="panel"] .quadrant-body,
-    [data-quadrant="terminal"] .quadrant-body { align-items: stretch; justify-content: stretch; }
+    [data-quadrant="terminal"] .quadrant-body { align-items: stretch; justify-content: stretch; container-type: inline-size; }
 
     /* --- The control panel ------------------------------------------------- */
     .panel {
@@ -110,6 +112,10 @@
     .panel-actions button:disabled { background: #21262d; color: #6e7681; cursor: default; }
     .panel-game-over { color: #ff7b72; font-weight: 600; }
     .panel-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+    /* Too narrow for the reels table beside the window: the window goes below it */
+    @container (max-width: 520px) {
+        .panel-columns { grid-template-columns: minmax(0, 1fr); }
+    }
     .reels-table, .paytable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     .reels-table th, .paytable th { text-align: left; color: #8b949e; font-weight: 500; padding: 2px 4px; border-bottom: 1px solid #30363d; }
     .reels-table td, .paytable td { padding: 2px 4px; border-bottom: 1px solid #21262d; }
@@ -158,7 +164,12 @@
         background: #0a0e12;
         color: #9fef9f;
         font-family: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
-        font-size: 12.5px;
+        /*
+         * Prose wraps, but the banner and the reels are drawn 46 characters wide: in a narrow
+         * quadrant the text shrinks until 48 fit, beside the padding and the scrollbar's gutter
+         * (a character is about 0.6em wide)
+         */
+        font-size: min(12.5px, (100cqi - 44px) / (48 * 0.6));
         line-height: 1.35;
         cursor: text;
     }
@@ -182,6 +193,8 @@
     @media (max-width: 900px) {
         grid-template-columns: 1fr;
         grid-template-rows: none;
+        /* As tall as their content: the quadrants' min-height of 0 would let auto rows shrink to fit the element */
+        grid-auto-rows: max-content;
         overflow: auto;
         /* Stacked in a different order from the grid's reading order */
         [data-quadrant="pixi"] { order: 1; }

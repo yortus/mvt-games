@@ -132,7 +132,7 @@ describe('terminal view model', () => {
 
             expect(terminal.transcript).toContain('> spin');
             expect(terminal.transcript).toContain(`Spin 1: bet ${BET}, balance ${formatCredits(STARTING_BALANCE - BET)}.`);
-            expect(terminal.transcript).toContain('┌────────┬');
+            expect(terminal.transcript).toContain('+--------+');
             expect(terminal.transcript).toContain('No win.');
         });
 
@@ -184,7 +184,7 @@ describe('terminal view model', () => {
 
             terminal.submit('spin');
             advance(100);
-            expect(terminal.liveText).toContain('┌────────┬');
+            expect(terminal.liveText).toContain('+--------+');
 
             advance(LANDED_MS);
             expect(terminal.liveText).toBe('');

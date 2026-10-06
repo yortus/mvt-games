@@ -7,7 +7,7 @@ import { FONT_FAMILY, WHITE } from './pixi-layout';
 // ---------------------------------------------------------------------------
 
 /** What pressing the button would do, or `'disabled'` when nothing. */
-export type SpinButtonMode = 'spin' | 'stop' | 'skip' | 'disabled';
+export type SpinButtonMode = 'spin' | 'stop' | 'disabled';
 
 export interface SpinButtonViewBindings {
     readonly mode: () => SpinButtonMode;
@@ -21,9 +21,9 @@ export interface SpinButtonViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * One round button that spins, stops a spin, or skips a celebration, its
- * colour and label saying which, and grey when there is nothing to do. It
- * sinks while held down: presentation state, from the pointer, not the model.
+ * One round button that spins or stops a spin, its colour and label saying
+ * which, and grey when there is nothing to do. It sinks while held down:
+ * presentation state, from the pointer, not the model.
  */
 export function SpinButtonView(bindings: SpinButtonViewBindings): Container {
     const { radius } = bindings;
@@ -61,7 +61,6 @@ const PRESS_DEPTH = 6;
 const STYLES: { readonly [M in SpinButtonMode]: { readonly face: string; readonly shade: string; readonly label: string } } = {
     spin: { face: '#2fd27a', shade: '#1f9e57', label: 'SPIN' },
     stop: { face: '#ff5468', shade: '#c4283d', label: 'STOP' },
-    skip: { face: '#ffb020', shade: '#c97f00', label: 'SKIP' },
     disabled: { face: '#6e6390', shade: '#4b4268', label: 'SPIN' },
 };
 

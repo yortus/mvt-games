@@ -18,7 +18,7 @@ describe('ascii art', () => {
 
         expect(lines).toHaveLength(5);
         expect(new Set(lines.map((line) => line.length)).size).toBe(1);
-        expect(lines[1]).toBe('│[CHERRY]│ CHERRY │ CHERRY │ CHERRY │ CHERRY │');
+        expect(lines[1]).toBe('|[CHERRY]| CHERRY | CHERRY | CHERRY | CHERRY |');
     });
 
     it('draws a banner whose lines all line up', () => {

@@ -33,7 +33,8 @@ export interface BanditViewBindings {
  * lamp on top. Its drums land with a heavy clunk, eased here from the same
  * linear settle the Pixi view eases into a bounce. It sways gently on its own,
  * and turns all the way round when dragged; both are this view's own
- * presentation state. Tapping the lever spins, or stops.
+ * presentation state. Tapping the lever spins, stops, or skips the
+ * celebration and spins again.
  */
 export function BanditView(bindings: BanditViewBindings): Object3D {
     const { model, art, dragSurface } = bindings;
@@ -88,10 +89,14 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
         </group>
     );
 
-    /** A tap: the picker sends no click at the end of a drag. */
+    /**
+     * A tap: the picker sends no click at the end of a drag. Skipping a
+     * celebration spins again; stopping a spin leaves nothing to spin until
+     * the reels land.
+     */
     function pullLever(): void {
         if (model.canStop) model.stop();
-        else if (model.canSpin) void model.spin();
+        if (model.canSpin) void model.spin();
     }
 
     /** Flashes through a celebration, glows steadily once the game is over, and is dark otherwise. */

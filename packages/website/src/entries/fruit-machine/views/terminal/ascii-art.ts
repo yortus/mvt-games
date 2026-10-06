@@ -19,33 +19,35 @@ export interface WindowBoxOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * The window as a box of six-letter labels, one column per reel:
+ * The window as a box of six-letter labels, one column per reel, in plain
+ * ASCII: box-drawing characters fall back, on some devices, to a font that
+ * draws them twice as wide as a letter.
  *
- *     ┌────────┬────────┬─ ...
- *     │ CHERRY │[*WILD*]│  ...
+ *     +--------+--------+- ...
+ *     | CHERRY |[*WILD*]|  ...
  */
 export function drawWindowBox(options: WindowBoxOptions): string {
     const { reelCount, rowCount, symbolAt, isLitAt } = options;
-    const lines = [edge('┌', '┬', '┐', reelCount)];
+    const lines = [edge(reelCount)];
     for (let row = 0; row < rowCount; row++) {
-        let line = '│';
+        let line = '|';
         for (let reel = 0; reel < reelCount; reel++) {
             const label = SYMBOL_LABELS[symbolAt(reel, row)];
-            line += (isLitAt(reel, row) ? `[${label}]` : ` ${label} `) + '│';
+            line += (isLitAt(reel, row) ? `[${label}]` : ` ${label} `) + '|';
         }
         lines.push(line);
     }
-    lines.push(edge('└', '┴', '┘', reelCount));
+    lines.push(edge(reelCount));
     return lines.join('\n');
 }
 
 /** The terminal's greeting. */
 export function drawBanner(): string {
     return [
-        '╔════════════════════════════════════════════╗',
-        '║   F R U I T   M A C H I N E     ~ 243 ~    ║',
-        '║   melon grapes cherry orange lemon berry   ║',
-        '╚════════════════════════════════════════════╝',
+        '+============================================+',
+        '|   F R U I T   M A C H I N E     ~ 243 ~    |',
+        '|   melon grapes cherry orange lemon berry   |',
+        '+============================================+',
     ].join('\n');
 }
 
@@ -65,11 +67,11 @@ export function drawPaytable(paytable: Paytable): string {
 // ---------------------------------------------------------------------------
 
 /** A cell is a six-letter label with a space or bracket either side. */
-const CELL = '────────';
+const CELL = '--------';
 
-function edge(left: string, middle: string, right: string, reelCount: number): string {
-    let line = left;
-    for (let reel = 0; reel < reelCount; reel++) line += CELL + (reel === reelCount - 1 ? right : middle);
+function edge(reelCount: number): string {
+    let line = '+';
+    for (let reel = 0; reel < reelCount; reel++) line += `${CELL}+`;
     return line;
 }
 

@@ -54,9 +54,6 @@ describe('SpinButtonView', () => {
 
         t.setMode('stop');
         expect(t.label()).toBe('STOP');
-
-        t.setMode('skip');
-        expect(t.label()).toBe('SKIP');
     });
 
     it('reports a press while enabled', () => {

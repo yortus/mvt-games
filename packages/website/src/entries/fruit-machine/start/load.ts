@@ -50,6 +50,8 @@ export async function load(): Promise<ElementEntryStarter> {
                         return;
                     }
                     pixi.canvas.classList.add('quadrant-canvas');
+                    // Pixi sets none, but the machine is only tapped: an up or down swipe is left to scroll the stacked quadrants
+                    pixi.canvas.style.touchAction = 'pan-y';
                     pixiHost.append(pixi.canvas);
                     isPixiReady = true;
                     fitPixi();
