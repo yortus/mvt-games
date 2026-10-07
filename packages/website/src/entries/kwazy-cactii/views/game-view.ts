@@ -28,17 +28,17 @@ export function GameView(bindings: GameViewBindings): Container {
     return view;
 
     function initialiseView(): void {
-        const board = game.board;
+        // Read game.board in each binding, not once here: a restart replaces the board
         const boardView = BoardView({
-            phase: () => board.phase,
-            cells: () => board.cells,
-            swapCell1: () => board.swapCell1,
-            swapCell2: () => board.swapCell2,
-            swapProgress: () => board.swapProgress,
-            settleProgress: () => board.settleProgress,
-            settleOriginRows: () => board.settleOriginRows,
-            matchedCells: () => board.matchedCells,
-            cascadeStep: () => board.cascadeStep,
+            phase: () => game.board.phase,
+            cells: () => game.board.cells,
+            swapCell1: () => game.board.swapCell1,
+            swapCell2: () => game.board.swapCell2,
+            swapProgress: () => game.board.swapProgress,
+            settleProgress: () => game.board.settleProgress,
+            settleOriginRows: () => game.board.settleOriginRows,
+            matchedCells: () => game.board.matchedCells,
+            cascadeStep: () => game.board.cascadeStep,
             onSwapRequested: (origin, target) => game.trySwap(origin, target),
         });
         view.addChild(boardView);
