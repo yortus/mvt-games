@@ -30,3 +30,4 @@ packages/utils/src/jsx/refresh-copies.ts
 *.njsproj
 *.sln
 *.sw?
+.vitest/
