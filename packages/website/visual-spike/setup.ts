@@ -2,7 +2,7 @@
 // since with isolation off every file shares this page.
 import { BatchableGraphics } from 'pixi.js';
 import { afterAll, beforeEach } from 'vitest';
-import { flushRecords, spikeConfig } from './harness';
+import { flushRecords, recordEnvironment, spikeConfig } from './harness';
 import sansUrl from './fonts/SourceSans3VF-Upright.otf?url';
 import monoUrl from './fonts/SourceCodeVF-Upright.otf?url';
 
@@ -50,6 +50,18 @@ g.__visualSpikeReady ??= (async () => {
         }
     }
     document.body.style.margin = '0';
+    // The environment, recorded once per run beside the pictures
+    const gl = document.createElement('canvas').getContext('webgl2');
+    const info = gl?.getExtension('WEBGL_debug_renderer_info');
+    await recordEnvironment({
+        userAgent: navigator.userAgent,
+        platform: (navigator as unknown as { userAgentData?: { platform: string } }).userAgentData?.platform,
+        cores: navigator.hardwareConcurrency,
+        webglRenderer: info ? gl?.getParameter(info.UNMASKED_RENDERER_WEBGL) : undefined,
+        locale: Intl.DateTimeFormat().resolvedOptions().locale,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        devicePixelRatio,
+    });
 })();
 
 await g.__visualSpikeReady;

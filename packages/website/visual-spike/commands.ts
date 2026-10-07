@@ -56,6 +56,7 @@ const visualRefs: BrowserCommand<[]> = () => ({
         /** Send every picture's pixels to Node (to time the slow path, or to collect every PNG). */
         sendAll: process.env.SPIKE_SEND_ALL === '1',
         textAsPaths: process.env.SPIKE_TEXT_AS_PATHS === '1',
+        cdpCapture: process.env.SPIKE_CDP !== '0',
         freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
         freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },
@@ -117,6 +118,25 @@ const visualDecodePng: BrowserCommand<[string]> = (_ctx, base64) => {
     return { width: png.width, height: png.height, hash: hashPixels(png.width, png.height, rgba), pixels: Buffer.from(rgba).toString('base64') };
 };
 
+interface CdpLike { send: (method: string, params?: Record<string, unknown>) => Promise<{ data: string }> }
+const cdpSessions = new Map<string, Promise<CdpLike>>();
+
+/** For HTML pictures, the fast way: Chrome's own screenshot of a rectangle, through the DevTools protocol. */
+const visualCapture: BrowserCommand<[{ x: number; y: number; width: number; height: number }]> = async (ctx, clip) => {
+    let cdp = cdpSessions.get(ctx.sessionId);
+    if (cdp === undefined) {
+        cdp = (ctx.provider as unknown as { getCDPSession: (id: string) => Promise<CdpLike> }).getCDPSession(ctx.sessionId);
+        cdpSessions.set(ctx.sessionId, cdp);
+    }
+    const t0 = performance.now();
+    const { data } = await (await cdp).send('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 1 }, optimizeForSpeed: true, captureBeyondViewport: false });
+    const t1 = performance.now();
+    const png = PNG.sync.read(Buffer.from(data, 'base64'));
+    const rgba = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
+    const hash = hashPixels(png.width, png.height, rgba);
+    return { width: png.width, height: png.height, hash, pixels: Buffer.from(rgba).toString('base64'), captureMs: t1 - t0, decodeMs: performance.now() - t1 };
+};
+
 /** Every picture's hash and timings, sent once per file. */
 const visualRecord: BrowserCommand<[Record<string, unknown>]> = (_ctx, entries) => {
     Object.assign(results, entries);
@@ -137,4 +157,4 @@ function sortKeys<T>(record: Record<string, T>): Record<string, T> {
     return Object.fromEntries(Object.entries(record).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
-export const spikeCommands = { visualRefs, visualMismatch, visualDecodePng, visualRecord };
+export const spikeCommands = { visualRefs, visualMismatch, visualDecodePng, visualRecord, visualCapture };

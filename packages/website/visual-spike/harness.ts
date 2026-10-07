@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean };
 }
 
 interface SpikeCommands {
@@ -20,6 +20,7 @@ interface SpikeCommands {
     visualMismatch: (p: { key: string; hash: string; width: number; height: number; pixels: string }) => Promise<MismatchVerdict>;
     visualDecodePng: (base64: string) => Promise<{ width: number; height: number; hash: string; pixels: string }>;
     visualRecord: (entries: Record<string, unknown>) => Promise<void>;
+    visualCapture: (clip: { x: number; y: number; width: number; height: number }) => Promise<{ width: number; height: number; hash: string; pixels: string; captureMs: number; decodeMs: number }>;
 }
 
 interface MismatchVerdict {
@@ -44,12 +45,17 @@ export function spikeConfig(): Promise<SpikeConfig> {
 // ---------------------------------------------------------------------------
 
 const pending: Record<string, unknown> = {};
+let pictureCount = 0;
 
 /** Sends this file's hashes and timings to Node; the setup file calls it after each file. */
 export async function flushRecords(): Promise<void> {
     const entries = { ...pending };
     for (const key of Object.keys(pending)) delete pending[key];
     if (Object.keys(entries).length > 0) await cmd.visualRecord(entries);
+}
+
+export async function recordEnvironment(env: Record<string, unknown>): Promise<void> {
+    await cmd.visualRecord({ _environment: env });
 }
 
 function keyOfCurrentTest(): string {
@@ -79,7 +85,10 @@ async function judge(key: string, hash: string, width: number, height: number, p
         verdict = await cmd.visualMismatch({ key, hash, width, height, pixels: toBase64(pixels()) });
         times.slowPath = performance.now() - t0;
     }
-    pending[key] = { hash, width, height, ms: roundAll(times), verdict: hash === expected ? 'same' : verdict?.verdict, changed: verdict?.changed, maxDelta: verdict?.maxDelta };
+    const gc = (globalThis as { gc?: () => void }).gc;
+    if (gc !== undefined && pictureCount++ % 100 === 0) gc();
+    const heapMb = Math.round(((performance as unknown as { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize ?? 0) / 1e5) / 10;
+    pending[key] = { hash, width, height, heapMb, at: Math.round(performance.now()), ms: roundAll(times), verdict: hash === expected ? 'same' : verdict?.verdict, changed: verdict?.changed, maxDelta: verdict?.maxDelta };
     if (config.mode === 'update' || hash === expected) return;
     if (verdict?.verdict === 'new') throw new Error(`new picture: ${key}`);
     if (verdict?.verdict === 'size') throw new Error(`picture size changed: ${verdict.detail}`);
@@ -236,12 +245,28 @@ export function visualHtmlTest(name: string, pose: () => HTMLElement | Promise<H
             host.append(element);
             document.body.append(host);
             await document.fonts.ready;
-            t = performance.now();
-            const base64 = await page.screenshot({ element: host, save: false });
-            times.screenshot = performance.now() - t;
-            t = performance.now();
-            const decoded = await cmd.visualDecodePng(base64);
-            times.decode = performance.now() - t;
+            let decoded: { width: number; height: number; hash: string; pixels: string };
+            if ((await spikeConfig()).flags.cdpCapture) {
+                const box = host.getBoundingClientRect();
+                const frame = (window.frameElement ?? undefined)?.getBoundingClientRect();
+                t = performance.now();
+                // Rounded outwards, as Playwright's element screenshots are
+                const left = Math.floor(box.left + (frame?.left ?? 0));
+                const top = Math.floor(box.top + (frame?.top ?? 0));
+                const captured = await cmd.visualCapture({ x: left, y: top, width: Math.ceil(box.right + (frame?.left ?? 0)) - left, height: Math.ceil(box.bottom + (frame?.top ?? 0)) - top });
+                times.screenshot = performance.now() - t;
+                times.cdpCapture = captured.captureMs;
+                times.decode = captured.decodeMs;
+                decoded = captured;
+            }
+            else {
+                t = performance.now();
+                const base64 = await page.screenshot({ element: host, save: false });
+                times.screenshot = performance.now() - t;
+                t = performance.now();
+                decoded = await cmd.visualDecodePng(base64);
+                times.decode = performance.now() - t;
+            }
             const bytes = Uint8Array.from(atob(decoded.pixels), (c) => c.charCodeAt(0));
             await judge(key, decoded.hash, decoded.width, decoded.height, () => bytes, times);
         }
