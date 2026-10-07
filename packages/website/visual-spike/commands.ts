@@ -58,6 +58,7 @@ const visualRefs: BrowserCommand<[]> = () => ({
         textAsPaths: process.env.SPIKE_TEXT_AS_PATHS === '1',
         cdpCapture: process.env.SPIKE_CDP !== '0',
         colr: process.env.SPIKE_COLR === '1',
+        htmlText: process.env.SPIKE_HTML_TEXT ?? 'native',
         freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
         freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },
@@ -94,10 +95,13 @@ const visualMismatch: BrowserCommand<[MismatchPayload]> = (_ctx, p) => {
     let changed = 0;
     let maxDelta = 0;
     let sumDelta = 0;
+    // Differing pixels where neither picture leans green: what a differ that ignores green text would see
+    let notGreen = 0;
     for (let i = 0; i < rgba.length; i += 4) {
         let d = 0;
         for (let c = 0; c < 4; c++) d = Math.max(d, Math.abs(rgba[i + c] - ref.data[i + c]));
         const g = (ref.data[i] + ref.data[i + 1] + ref.data[i + 2]) / 3;
+        if (d > 0 && !isGreenish(rgba, i) && !isGreenish(ref.data, i)) notGreen++;
         if (d > 0) {
             changed++;
             sumDelta += d;
@@ -109,8 +113,12 @@ const visualMismatch: BrowserCommand<[MismatchPayload]> = (_ctx, p) => {
         }
     }
     writeFileSync(join(OUT, fileFor(p.key).replace(/\.png$/, '.diff.png')), PNG.sync.write(diff));
-    return { verdict: 'differs', changed, maxDelta, meanDelta: changed ? sumDelta / changed : 0, total: p.width * p.height };
+    return { verdict: 'differs', changed, notGreen, maxDelta, meanDelta: changed ? sumDelta / changed : 0, total: p.width * p.height };
 };
+
+function isGreenish(data: Uint8Array | Buffer, i: number): boolean {
+    return data[i + 1] > data[i] + 30 && data[i + 1] > data[i + 2] + 30;
+}
 
 /** For HTML pictures: a screenshot's PNG, decoded and hashed by its pixels. */
 const visualDecodePng: BrowserCommand<[string]> = (_ctx, base64) => {

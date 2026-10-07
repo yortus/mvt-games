@@ -4,6 +4,7 @@ import { BatchableGraphics } from 'pixi.js';
 import { afterAll, beforeEach } from 'vitest';
 import { flushRecords, recordEnvironment, spikeConfig } from './harness';
 import { installTextPaths } from './text-paths';
+import { installHtmlText } from './html-text';
 import sansUrl from './fonts/SourceSans3VF-Upright.otf?url';
 import monoUrl from './fonts/SourceCodeVF-Upright.otf?url';
 import sansColrUrl from './fonts/SourceSans3VF-Colr.otf?url';
@@ -44,13 +45,15 @@ g.__visualSpikeReady ??= (async () => {
         await face.load();
         document.fonts.add(face);
     }));
+    // Blank or block text: every family, in CSS and on canvases, becomes one test font
+    const onlyFamily = await installHtmlText(flags.htmlText);
     if (!flags.noFontRewrite) {
         for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype]) {
             const font = Object.getOwnPropertyDescriptor(proto, 'font')!;
             Object.defineProperty(proto, 'font', {
                 configurable: true,
                 get: font.get,
-                set(this: CanvasRenderingContext2D, value: string) { font.set!.call(this, rewriteFont(value)); },
+                set(this: CanvasRenderingContext2D, value: string) { font.set!.call(this, onlyFamily === undefined ? rewriteFont(value) : value.replace(/(\d(?:\.\d+)?px(?:\/\S+)?)\s+.*$/, `$1 "${onlyFamily}"`)); },
             });
         }
     }
@@ -69,6 +72,7 @@ g.__visualSpikeReady ??= (async () => {
         devicePixelRatio,
         textAsPaths: flags.textAsPaths,
         colr: flags.colr,
+        htmlText: flags.htmlText,
     });
 })();
 

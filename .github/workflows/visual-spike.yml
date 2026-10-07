@@ -21,6 +21,9 @@ jobs:
             matrix:
                 os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm]
         runs-on: ${{ matrix.os }}
+        env:
+            # This round: the HTML study only
+            SPIKE_VARIANTS: h-native,h-blank,h-block,h-green
         defaults:
             run:
                 shell: bash

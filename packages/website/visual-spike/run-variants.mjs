@@ -14,6 +14,8 @@ const VARIANTS = [
     { name: 'colr', env: { SPIKE_COLR: '1' }, speed: false },
     { name: 'flags', env: { SPIKE_EXTRA_ARGS: FLAGS }, speed: false },
     { name: 'colrflags', env: { SPIKE_COLR: '1', SPIKE_EXTRA_ARGS: FLAGS }, speed: false },
+    // HTML: each file brings its own stylesheet, so each runs in a fresh page
+    ...['native', 'blank', 'block', 'green'].map((m) => ({ name: `h-${m}`, env: { SPIKE_HTML_TEXT: m, SPIKE_ISOLATE: '1' }, html: true })),
 ];
 const only = process.env.SPIKE_VARIANTS?.split(',');
 
@@ -23,13 +25,13 @@ if (!existsSync(join(import.meta.dirname, 'speed', 'generated'))) {
 
 for (const v of VARIANTS) {
     if (only && !only.includes(v.name)) continue;
-    const include = ['visual-spike/calibration.visual.tsx', 'visual-spike/entries.visual.tsx'];
+    const include = v.html ? ['visual-spike/html/*.visual.tsx'] : ['visual-spike/calibration.visual.tsx', 'visual-spike/entries.visual.tsx'];
     if (v.speed) include.push('visual-spike/speed/generated/*.visual.tsx');
     const env = {
         ...process.env,
         ...v.env,
         SPIKE_MODE: mode,
-        SPIKE_REFS: `__refs-v-${v.name}__`,
+        SPIKE_REFS: v.html ? `__refs-${v.name}__` : `__refs-v-${v.name}__`,
         SPIKE_LABEL: `${prefix}-${v.name}`,
         SPIKE_INCLUDE: include.join(','),
         VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true',

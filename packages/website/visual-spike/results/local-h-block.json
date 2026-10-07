@@ -1,0 +1,308 @@
+{
+ "_environment": {
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "platform": "Windows",
+  "cores": 14,
+  "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "locale": "en-US",
+  "timeZone": "UTC",
+  "devicePixelRatio": 1,
+  "textAsPaths": false,
+  "colr": false,
+  "htmlText": "block"
+ },
+ "html/arcade.visual.tsx > arcade > about note": {
+  "hash": "520x520:096d25c20fa24340a58927f6fc796d04",
+  "width": 520,
+  "height": 520,
+  "heapMb": 19.3,
+  "at": 664,
+  "ms": {
+   "pose": 0.5,
+   "screenshot": 56.5,
+   "cdpCapture": 44.85,
+   "decode": 4.79
+  },
+  "verdict": "same"
+ },
+ "html/arcade.visual.tsx > arcade > card": {
+  "hash": "300x340:ba08d11571f0807504f9646b60a55309",
+  "width": 300,
+  "height": 340,
+  "heapMb": 19.3,
+  "at": 319,
+  "ms": {
+   "pose": 7.7,
+   "screenshot": 59.8,
+   "cdpCapture": 53.12,
+   "decode": 3.26
+  },
+  "verdict": "same"
+ },
+ "html/arcade.visual.tsx > arcade > entry info": {
+  "hash": "720x640:96351dd14755c04839719f6280661575",
+  "width": 720,
+  "height": 640,
+  "heapMb": 19.3,
+  "at": 478,
+  "ms": {
+   "pose": 1.5,
+   "screenshot": 75.9,
+   "cdpCapture": 57.37,
+   "decode": 8.06
+  },
+  "verdict": "same"
+ },
+ "html/arcade.visual.tsx > arcade > pause menu": {
+  "hash": "480x400:522aca4e0bea40cca61acc900371a969",
+  "width": 480,
+  "height": 400,
+  "heapMb": 19.3,
+  "at": 563,
+  "ms": {
+   "pose": 0.8,
+   "screenshot": 53.9,
+   "cdpCapture": 45.04,
+   "decode": 3.67
+  },
+  "verdict": "same"
+ },
+ "html/boids.visual.tsx > boids 3d > settings panel": {
+  "hash": "320x420:73cdf1c0753965b642e0a27f49279e3a",
+  "width": 320,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 235,
+  "ms": {
+   "pose": 0.9,
+   "screenshot": 42.1,
+   "cdpCapture": 34.03,
+   "decode": 3.01
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > borders and outlines": {
+  "hash": "354x68:07ac797037f986a8a1c9cd64bb104990",
+  "width": 354,
+  "height": 68,
+  "heapMb": 19.3,
+  "at": 666,
+  "ms": {
+   "pose": 0,
+   "screenshot": 41,
+   "cdpCapture": 38.85,
+   "decode": 0.7
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > boxes and shadows": {
+  "hash": "334x76:09bb25a6694a6c1ac8f520ef193f8a67",
+  "width": 334,
+  "height": 76,
+  "heapMb": 19.3,
+  "at": 620,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 53.9,
+   "cdpCapture": 48.35,
+   "decode": 2
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > canvas element": {
+  "hash": "160x83:40fb1b1b49a57990c2c46637ac62f4f3",
+  "width": 160,
+  "height": 83,
+  "heapMb": 19.3,
+  "at": 998,
+  "ms": {
+   "pose": 0.3,
+   "screenshot": 46.7,
+   "cdpCapture": 44.84,
+   "decode": 0.53
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > controls without text": {
+  "hash": "536x64:1f5862d170b16606001b8163df922e18",
+  "width": 536,
+  "height": 64,
+  "heapMb": 19.3,
+  "at": 905,
+  "ms": {
+   "pose": 0.3,
+   "screenshot": 34.3,
+   "cdpCapture": 31.5,
+   "decode": 0.99
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > filters and blending": {
+  "hash": "428x88:defc1c3921b95054fed592721dc39d0f",
+  "width": 428,
+  "height": 88,
+  "heapMb": 19.3,
+  "at": 816,
+  "ms": {
+   "pose": 0,
+   "screenshot": 93,
+   "cdpCapture": 89.2,
+   "decode": 1.54
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > images": {
+  "hash": "290x72:d6d7c916c339fbf978043ccd06e225e0",
+  "width": 290,
+  "height": 72,
+  "heapMb": 19.3,
+  "at": 865,
+  "ms": {
+   "pose": 0.9,
+   "screenshot": 42.6,
+   "cdpCapture": 40.49,
+   "decode": 0.82
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > scrolling box": {
+  "hash": "218x98:9deeeef1d9ab362ae98a3b60795e0779",
+  "width": 218,
+  "height": 98,
+  "heapMb": 19.3,
+  "at": 948,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 38.1,
+   "cdpCapture": 36.07,
+   "decode": 0.73
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > no text > transforms": {
+  "hash": "352x80:9ae2d062f0b7496f881eeee73f9d9041",
+  "width": 352,
+  "height": 80,
+  "heapMb": 19.3,
+  "at": 716,
+  "ms": {
+   "pose": 0,
+   "screenshot": 45,
+   "cdpCapture": 42.45,
+   "decode": 0.87
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > text > controls with text": {
+  "hash": "536x80:2c7eed483d0799893fc799ecb658d8be",
+  "width": 536,
+  "height": 80,
+  "heapMb": 19.3,
+  "at": 1193,
+  "ms": {
+   "pose": 0.3,
+   "screenshot": 31.1,
+   "cdpCapture": 28.28,
+   "decode": 1.1
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > text > decorations and lists": {
+  "hash": "232x112:e731ab0788fbfc14c231d038fe20ce21",
+  "width": 232,
+  "height": 112,
+  "heapMb": 19.3,
+  "at": 1154,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 20.9,
+   "cdpCapture": 18.6,
+   "decode": 0.78
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > text > paragraph wrapping": {
+  "hash": "276x95:9efb12cf4c4a9f45323ac689f5d7f84e",
+  "width": 276,
+  "height": 95,
+  "heapMb": 19.3,
+  "at": 1050,
+  "ms": {
+   "pose": 0,
+   "screenshot": 46.9,
+   "cdpCapture": 44.11,
+   "decode": 0.84
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > text > symbols and emoji": {
+  "hash": "224x72:35776afd689abf9f77e69867104ef274",
+  "width": 224,
+  "height": 72,
+  "heapMb": 19.3,
+  "at": 1127,
+  "ms": {
+   "pose": 0,
+   "screenshot": 35.5,
+   "cdpCapture": 33.14,
+   "decode": 0.6
+  },
+  "verdict": "same"
+ },
+ "html/features.visual.tsx > text > weights and styles": {
+  "hash": "128x100:14e17fd4d3327aac856d5a82306ef7e7",
+  "width": 128,
+  "height": 100,
+  "heapMb": 19.3,
+  "at": 1088,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 35.7,
+   "cdpCapture": 34.06,
+   "decode": 0.48
+  },
+  "verdict": "same"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, mid-spin": {
+  "hash": "480x420:4efacdc8d4ab3a90e8561fe8e8a50f74",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 475,
+  "ms": {
+   "pose": 11.2,
+   "screenshot": 76.3,
+   "cdpCapture": 66.98,
+   "decode": 3.68
+  },
+  "verdict": "same"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, ready": {
+  "hash": "480x420:64ff07e7bf4452dabd8cc2ac4b0e2091",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 354,
+  "ms": {
+   "pose": 11.4,
+   "screenshot": 66.6,
+   "cdpCapture": 52.97,
+   "decode": 5.91
+  },
+  "verdict": "same"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > terminal, ready": {
+  "hash": "480x420:5d8f09435655228a273f2f08a9880bc0",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 574,
+  "ms": {
+   "pose": 1,
+   "screenshot": 68.7,
+   "cdpCapture": 56.53,
+   "decode": 3.93
+  },
+  "verdict": "same"
+ }
+}

@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean; readonly htmlText: 'native' | 'blank' | 'block' | 'green' };
 }
 
 interface SpikeCommands {
@@ -27,6 +27,7 @@ interface MismatchVerdict {
     readonly verdict: 'updated' | 'new' | 'size' | 'differs';
     readonly detail?: string;
     readonly changed?: number;
+    readonly notGreen?: number;
     readonly maxDelta?: number;
     readonly meanDelta?: number;
     readonly total?: number;
@@ -88,7 +89,7 @@ async function judge(key: string, hash: string, width: number, height: number, p
     const gc = (globalThis as { gc?: () => void }).gc;
     if (gc !== undefined && pictureCount++ % 100 === 0) gc();
     const heapMb = Math.round(((performance as unknown as { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize ?? 0) / 1e5) / 10;
-    pending[key] = { hash, width, height, heapMb, at: Math.round(performance.now()), ms: roundAll(times), verdict: hash === expected ? 'same' : verdict?.verdict, changed: verdict?.changed, maxDelta: verdict?.maxDelta };
+    pending[key] = { hash, width, height, heapMb, at: Math.round(performance.now()), ms: roundAll(times), verdict: hash === expected ? 'same' : verdict?.verdict, changed: verdict?.changed, notGreen: verdict?.notGreen, maxDelta: verdict?.maxDelta };
     if (config.mode === 'update' || hash === expected) return;
     if (verdict?.verdict === 'new') throw new Error(`new picture: ${key}`);
     if (verdict?.verdict === 'size') throw new Error(`picture size changed: ${verdict.detail}`);
@@ -254,6 +255,11 @@ export function visualHtmlTest(name: string, pose: () => HTMLElement | Promise<H
             host.append(element);
             document.body.append(host);
             await document.fonts.ready;
+            // Every image loaded and decoded, lazy ones included
+            await Promise.all([...host.querySelectorAll('img')].map((img) => {
+                img.loading = 'eager';
+                return img.decode().catch(() => undefined);
+            }));
             let decoded: { width: number; height: number; hash: string; pixels: string };
             if ((await spikeConfig()).flags.cdpCapture) {
                 const box = host.getBoundingClientRect();
