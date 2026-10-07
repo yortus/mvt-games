@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean; readonly htmlText: 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt' | 'green' };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean; readonly htmlText: 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt' | 'green'; readonly wholeControlSize: boolean };
 }
 
 interface SpikeCommands {

@@ -14,7 +14,7 @@ export type HtmlTextMode = 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt
 
 export const GREEN = '#00ff00';
 
-export async function installHtmlText(mode: HtmlTextMode): Promise<string | undefined> {
+export async function installHtmlText(mode: HtmlTextMode, wholeControlSize = false): Promise<string | undefined> {
     if (mode === 'native') return undefined;
     const style = document.createElement('style');
     if (mode === 'green') {
@@ -36,7 +36,10 @@ export async function installHtmlText(mode: HtmlTextMode): Promise<string | unde
     // VT Blank maps every code point, so nothing behind it reaches a system font
     const family = mode === 'block' ? '"VT Block"' : mode === 'blank' || mode === 'blanktt' ? '"VT Blank"' : '"VT Sans Blank", "VT Blank"';
     style.textContent = `*, *::before, *::after, ::placeholder, ::marker, input, button, select, textarea {
-        font-family: ${family} !important; font-synthesis: none !important; }`;
+        font-family: ${family} !important; font-synthesis: none !important; }`
+        // Form controls' default size is 13.33 px, at which Linux's fractional advances differ from the
+        // others'. :where() has no specificity, so this replaces only the browser's default.
+        + (wholeControlSize ? '\n:where(input, button, select, textarea) { font-size: 13px; }' : '');
     document.head.append(style);
     // Canvas text too: every font string's families become these
     return family;

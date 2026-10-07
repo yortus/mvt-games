@@ -18,6 +18,9 @@ const VARIANTS = [
     ...['native', 'blank', 'block', 'blankreal', 'blanktt', 'green'].map((m) => ({ name: `h-${m}`, env: { SPIKE_HTML_TEXT: m, SPIKE_ISOLATE: '1' }, html: true })),
     // TrueType blank text with hinting off: Linux keeps fractional advances, as Windows and macOS do
     { name: 'h-blanktt-nohint', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none' }, html: true },
+    // The same, with form controls' default size made whole; and again with software compositing
+    { name: 'h-final', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_CONTROL_SIZE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none' }, html: true },
+    { name: 'h-final-sw', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_CONTROL_SIZE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none --disable-gpu --disable-gpu-compositing' }, html: true },
 ];
 const only = process.env.SPIKE_VARIANTS?.split(',');
 

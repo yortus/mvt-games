@@ -59,6 +59,7 @@ const visualRefs: BrowserCommand<[]> = () => ({
         cdpCapture: process.env.SPIKE_CDP !== '0',
         colr: process.env.SPIKE_COLR === '1',
         htmlText: process.env.SPIKE_HTML_TEXT ?? 'native',
+        wholeControlSize: process.env.SPIKE_CONTROL_SIZE === '1',
         freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
         freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },

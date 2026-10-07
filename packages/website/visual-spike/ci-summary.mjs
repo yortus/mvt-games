@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const os = process.argv[2];
-const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-blankreal,h-blanktt,h-blanktt-nohint,h-green').split(',');
+const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-blankreal,h-blanktt,h-blanktt-nohint,h-final,h-final-sw,h-green').split(',');
 const load = (label) => {
     const file = join(import.meta.dirname, 'results', `${label}.json`);
     return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined;

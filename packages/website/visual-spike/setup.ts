@@ -46,7 +46,7 @@ g.__visualSpikeReady ??= (async () => {
         document.fonts.add(face);
     }));
     // Blank or block text: every family, in CSS and on canvases, becomes one test font
-    const onlyFamily = await installHtmlText(flags.htmlText);
+    const onlyFamily = await installHtmlText(flags.htmlText, flags.wholeControlSize);
     if (!flags.noFontRewrite) {
         for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype]) {
             const font = Object.getOwnPropertyDescriptor(proto, 'font')!;
