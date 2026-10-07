@@ -61,6 +61,7 @@ const visualRefs: BrowserCommand<[]> = () => ({
         htmlText: process.env.SPIKE_HTML_TEXT ?? 'native',
         wholeControlSize: process.env.SPIKE_CONTROL_SIZE === '1',
         pixelateRotated: process.env.SPIKE_PIXELATE_ROTATED === '1',
+        fieldWidth: process.env.SPIKE_FIELD_WIDTH === '1',
         freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
         freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },

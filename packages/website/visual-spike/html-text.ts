@@ -14,7 +14,7 @@ export type HtmlTextMode = 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt
 
 export const GREEN = '#00ff00';
 
-export async function installHtmlText(mode: HtmlTextMode, wholeControlSize = false): Promise<string | undefined> {
+export async function installHtmlText(mode: HtmlTextMode, wholeControlSize = false, fieldWidth = false): Promise<string | undefined> {
     if (mode === 'native') return undefined;
     const style = document.createElement('style');
     if (mode === 'green') {
@@ -39,7 +39,11 @@ export async function installHtmlText(mode: HtmlTextMode, wholeControlSize = fal
         font-family: ${family} !important; font-synthesis: none !important; }`
         // Form controls' default size is 13.33 px, at which Linux's fractional advances differ from the
         // others'. :where() has no specificity, so this replaces only the browser's default.
-        + (wholeControlSize ? '\n:where(input, button, select, textarea) { font-size: 13px; }' : '');
+        + (wholeControlSize ? '\n:where(input, button, select, textarea) { font-size: 13px; }' : '')
+        // A text field's default width comes from the font's average character width, which each
+        // system works out its own way. 20ch (the width of 20 zeros) lays out the same everywhere;
+        // :where() has no specificity, so a width the page sets still wins.
+        + (fieldWidth ? '\n:where(input:not([type]), input[type=text], input[type=search], input[type=number], input[type=email], input[type=password], input[type=url], input[type=tel]) { width: 20ch; }' : '');
     document.head.append(style);
     // Canvas text too: every font string's families become these
     return family;

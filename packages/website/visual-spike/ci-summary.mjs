@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const os = process.argv[2];
-const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-blankreal,h-blanktt,h-blanktt-nohint,h-final,h-final2,h-final-sw,h-green').split(',');
+const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-blankreal,h-blanktt,h-blanktt-nohint,h-final,h-final2,h-final3,h-final-sw,h-green').split(',');
 const load = (label) => {
     const file = join(import.meta.dirname, 'results', `${label}.json`);
     return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined;
@@ -37,6 +37,10 @@ for (const v of VARIANTS) {
         if (!same && (file.startsWith('calibration') || file.startsWith('html/'))) lines.push(`${group} > ${name}: ${x.verdict}${x.changed !== undefined ? ` ${x.changed}px (not green ${x.notGreen}) max ${x.maxDelta}` : ''}`);
         if (!same && file.startsWith('entries') && name.endsWith('thumbnail')) lines.push(`entry ${name}: ${x.verdict}${x.changed !== undefined ? ` ${x.changed}px` : ''}`);
     }
+    // Pictures that differ by at most 2 levels in any channel
+    const within2 = Object.entries(r).filter(([k, x]) => !k.startsWith('_') && (x.verdict === 'same' || (x.verdict === 'differs' && x.maxDelta <= 2))).length;
+    const pictures = Object.keys(r).filter((k) => !k.startsWith('_')).length;
+    lines.unshift(`within 2 levels per channel: ${within2}/${pictures}`);
     const counts = Object.entries(kinds).map(([k, [s, d]]) => `${k} ${s}/${s + d}`).join(', ');
     notice(`${v} (same/total)`, [counts, ...lines]);
 }
