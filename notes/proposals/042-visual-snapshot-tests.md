@@ -330,6 +330,45 @@ rotated images (26 levels), blur and backdrop filters (1), a wavy
 underline (1), the unstyled controls, and on macOS its transformed boxes
 (14).
 
+**Closing the gap** (two more rounds, 38 pictures: 8 more, one per form
+control):
+
+- Buttons (default, disabled, styled), selects and textareas match
+  everywhere. Only unstyled text fields differ, in width: their default
+  width comes from the font's average character width, which each system
+  works out its own way. A zero-specificity rule sets it to `20ch` (the
+  width of 20 zeros, which lays out the same everywhere); a width the
+  page sets still wins.
+- Rotated images sampled nearest-neighbour (`image-rendering: pixelated`,
+  set by the harness on images under a rotating transform, and only
+  those) cut arm64's difference from 26 levels to 2.
+- Software compositing, despite its 1-level noise on arm64, removes
+  macOS's 14-level transformed boxes.
+
+All of it together, TrueType blank text, `--font-render-hinting=none`,
+nearest-neighbour rotated images, software compositing
+(`--disable-gpu --disable-gpu-compositing`) and the text field width:
+
+| | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| Identical | 38/38 | 38/38 | 29/38 | 29/38 |
+| Within 2 levels per channel | 38/38 | 38/38 | **38/38** | **38/38** |
+
+macOS and arm64 Linux differ from Windows in the same 9 pictures by the
+same amounts: what is left is the CPU's rounding (rotated images 2
+levels, blur, a wavy underline and a few panel edges 1), not the
+operating system. **HTML pictures can be the same on all three systems
+without containers**, given blank text and a per-channel tolerance of 2
+on arm64. Pixi and three.js pictures, with text drawn as paths, already
+were (one picture 1 level off on arm64).
+
+The compromises, all confined to the visual tests: HTML text draws
+nothing and takes 0.6 em per character; rotated images are sampled
+nearest-neighbour; the compositor is software (as it effectively is
+headless already); unstyled text fields are 20 characters wide by
+`ch`, not by the font's average; and a tolerance of 2 levels, which a
+real change rarely stays within.
+
 ### What changes in the design
 
 1. Canvas text is drawn as paths (rung 3) in every visual run, not only as
