@@ -118,9 +118,37 @@ function wild(): string {
     }
     return '<defs><clipPath id="tile"><rect x="6" y="6" width="88" height="88" rx="18"/></clipPath></defs>'
         + `<g clip-path="url(#tile)">${stripes}</g>`
-        + `<text x="50" y="60" text-anchor="middle" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" `
-        + `font-size="26" font-weight="900" fill="${letter}" stroke="${outline}" stroke-width="6.5" stroke-linejoin="round" `
-        + 'paint-order="stroke">WILD</text>';
+        + `<path d="${wildLetters()}" fill="${letter}" fill-rule="evenodd" stroke="${outline}" stroke-width="6.5" `
+        + 'stroke-linejoin="round" paint-order="stroke"/>';
+}
+
+/**
+ * WILD as heavy block letters, drawn as outlines rather than text: an SVG
+ * drawn as an image cannot use the page's fonts, so text in it would come
+ * out in whatever fonts and rendering each system has. Centred on x = 50,
+ * from y = 40 to the baseline at y = 60, with strokes 5 units thick.
+ */
+function wildLetters(): string {
+    const top = 40;
+    const bottom = 60;
+    const gap = 2.5;
+    const widths = { w: 24, i: 5.5, l: 14, d: 16 };
+    let x = 50 - (widths.w + widths.i + widths.l + widths.d + gap * 3) / 2;
+    const at = (dx: number, y: number) => `${(x + dx).toFixed(2)} ${y}`;
+
+    // W: two V shapes, the middle stroke shared
+    const w = `M${at(0, top)} L${at(5.5, top)} L${at(7.5, 51)} L${at(9.75, top)} L${at(14.25, top)} L${at(16.5, 51)} `
+        + `L${at(18.5, top)} L${at(24, top)} L${at(19.5, bottom)} L${at(14, bottom)} L${at(12, 50)} L${at(10, bottom)} `
+        + `L${at(4.5, bottom)} Z`;
+    x += widths.w + gap;
+    const i = `M${at(0, top)} H${(x + 5.5).toFixed(2)} V${bottom} H${x.toFixed(2)} Z`;
+    x += widths.i + gap;
+    const l = `M${at(0, top)} H${(x + 5.5).toFixed(2)} V${bottom - 5} H${(x + 14).toFixed(2)} V${bottom} H${x.toFixed(2)} Z`;
+    x += widths.l + gap;
+    // D: a straight back and a round bowl, with its counter cut out (even-odd)
+    const d = `M${at(0, top)} H${(x + 7).toFixed(2)} A9 10 0 0 1 ${at(7, bottom)} H${x.toFixed(2)} Z `
+        + `M${at(5, top + 5)} H${(x + 7).toFixed(2)} A4 5 0 0 1 ${at(7, bottom - 5)} H${(x + 5).toFixed(2)} Z`;
+    return `${w} ${i} ${l} ${d}`;
 }
 
 /** A circle in its shade, with a smaller one in its colour up and to the left: a flat, two-tone ball. */

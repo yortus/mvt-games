@@ -31,6 +31,8 @@ export interface AsteroidModelOptions {
     readonly vy: number;
     readonly size: AsteroidSize;
     readonly radius: number;
+    /** Picks the asteroid's outline and spin. Each game numbers its asteroids from 1. */
+    readonly shapeSeed: number;
     readonly arenaWidth: number;
     readonly arenaHeight: number;
 }
@@ -40,13 +42,12 @@ export interface AsteroidModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createAsteroidModel(options: AsteroidModelOptions): AsteroidModel {
-    const { startX, startY, vx, vy, size, radius, arenaWidth, arenaHeight } = options;
+    const { startX, startY, vx, vy, size, radius, shapeSeed, arenaWidth, arenaHeight } = options;
 
     let x = startX;
     let y = startY;
     let angle = 0;
     let alive = true;
-    const shapeSeed = nextSeed++;
     // Deterministic rotation speed from seed
     const rotationSpeed = ((shapeSeed % 7) - 3) * 0.4;
 
@@ -95,9 +96,3 @@ export function createAsteroidModel(options: AsteroidModelOptions): AsteroidMode
 
     return model;
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-let nextSeed = 1;

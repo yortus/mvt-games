@@ -1,21 +1,17 @@
-// Spike probe: does a three.js picture (a second WebGL context) change the Pixi pictures drawn after it?
+// Spike probe: the wild symbol, large, sharp and blurred.
+import { Container, Sprite, Texture } from 'pixi.js';
 import { describe } from 'vitest';
-import { visualTest, visualThreeTest } from '../harness';
-import { speedPose } from '../speed/poses';
+import { loadSymbolArt } from '../../src/entries/fruit-machine/views/art';
+import { visualTest } from '../harness';
 
-const PROBES = [39, 0, 12, 30];
-const sphere = async () => {
-    const T = await import('three');
-    const scene = new T.Scene();
-    scene.add(new T.Mesh(new T.SphereGeometry(1, 32, 16), new T.MeshStandardMaterial({ color: 0xff4f8b })), new T.AmbientLight(0xffffff, 1));
-    const camera = new T.PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0, 0, 4);
-    return { scene, camera };
-};
-
-describe('three between', () => {
-    for (const i of PROBES) visualTest(`start: ${speedPose(i).name}`, speedPose(i).pose);
-    visualThreeTest('sphere', sphere, { width: 100, height: 100 });
-    for (const i of PROBES) visualTest(`after three: ${speedPose(i).name}`, speedPose(i).pose);
-    visualThreeTest('sphere again', sphere, { width: 100, height: 100 });
+describe('wild', () => {
+    visualTest('symbol', async () => {
+        const art = await loadSymbolArt({ size: 300 });
+        const root = new Container();
+        const sharp = new Sprite(Texture.from(art.canvasFor('wild')));
+        const blurred = new Sprite(Texture.from(art.blurredCanvasFor('wild')));
+        blurred.x = sharp.width + 10;
+        root.addChild(sharp, blurred);
+        return root;
+    });
 });
