@@ -55,6 +55,10 @@ export async function flushRecords(): Promise<void> {
     if (Object.keys(entries).length > 0) await cmd.visualRecord(entries);
 }
 
+export async function recordData(key: string, value: unknown): Promise<void> {
+    await cmd.visualRecord({ [key]: value });
+}
+
 export async function recordEnvironment(env: Record<string, unknown>): Promise<void> {
     await cmd.visualRecord({ _environment: env });
 }

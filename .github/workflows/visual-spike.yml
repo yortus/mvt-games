@@ -23,7 +23,7 @@ jobs:
         runs-on: ${{ matrix.os }}
         env:
             # This round: the HTML study only
-            SPIKE_VARIANTS: h-native,h-blank,h-block,h-green
+            SPIKE_VARIANTS: h-native,h-blank,h-blankreal
         defaults:
             run:
                 shell: bash

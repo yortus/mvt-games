@@ -53,7 +53,7 @@ g.__visualSpikeReady ??= (async () => {
             Object.defineProperty(proto, 'font', {
                 configurable: true,
                 get: font.get,
-                set(this: CanvasRenderingContext2D, value: string) { font.set!.call(this, onlyFamily === undefined ? rewriteFont(value) : value.replace(/(\d(?:\.\d+)?px(?:\/\S+)?)\s+.*$/, `$1 "${onlyFamily}"`)); },
+                set(this: CanvasRenderingContext2D, value: string) { font.set!.call(this, onlyFamily === undefined ? rewriteFont(value) : value.replace(/(\d(?:\.\d+)?px(?:\/\S+)?)\s+.*$/, `$1 ${onlyFamily}`)); },
             });
         }
     }

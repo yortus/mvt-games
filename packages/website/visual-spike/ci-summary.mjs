@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const os = process.argv[2];
-const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-green').split(',');
+const VARIANTS = (process.env.SPIKE_VARIANTS ?? 'native,paths,colr,flags,colrflags,h-native,h-blank,h-block,h-blankreal,h-green').split(',');
 const load = (label) => {
     const file = join(import.meta.dirname, 'results', `${label}.json`);
     return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined;
@@ -27,6 +27,7 @@ for (const v of VARIANTS) {
     const kinds = {};
     for (const [key, x] of Object.entries(r)) {
         if (key === '_environment') continue;
+        if (key === '_metrics') { lines.push('metrics: ' + Object.entries(x).map(([k, v]) => k + ' ' + v).join('; ')); continue; }
         const [file, group, name] = key.split(' > ');
         const kind = file.startsWith('html/') ? file.slice(5).replace('.visual.tsx', '') + (group === 'no text' ? ' (no text)' : '') : file.startsWith('calibration') ? `cal ${group}` : file.startsWith('entries') ? 'entries' : `speed ${name.split(' ')[0]}`;
         kinds[kind] ??= [0, 0];

@@ -15,7 +15,7 @@ const VARIANTS = [
     { name: 'flags', env: { SPIKE_EXTRA_ARGS: FLAGS }, speed: false },
     { name: 'colrflags', env: { SPIKE_COLR: '1', SPIKE_EXTRA_ARGS: FLAGS }, speed: false },
     // HTML: each file brings its own stylesheet, so each runs in a fresh page
-    ...['native', 'blank', 'block', 'green'].map((m) => ({ name: `h-${m}`, env: { SPIKE_HTML_TEXT: m, SPIKE_ISOLATE: '1' }, html: true })),
+    ...['native', 'blank', 'block', 'blankreal', 'green'].map((m) => ({ name: `h-${m}`, env: { SPIKE_HTML_TEXT: m, SPIKE_ISOLATE: '1' }, html: true })),
 ];
 const only = process.env.SPIKE_VARIANTS?.split(',');
 
