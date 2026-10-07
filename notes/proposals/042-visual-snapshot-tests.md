@@ -159,7 +159,81 @@ pictures changes nothing.
 
 ### Consistency across machines (section 5.2 to 5.4)
 
-TEXT_RESULTS
+Two CI rounds on four runners, every picture hashed and compared with the
+references made on this machine.
+
+**Everything but text is bit-identical everywhere.** Graphics with and
+without MSAA, gradients, blur filters, linear and nearest texture
+sampling, stencil masks, three.js lighting, whole pixel-art screens, and
+DOM boxes with gradients, rounded corners, shadows and rotation: the same
+hashes on Windows x64, Linux x64, Linux arm64 and macOS arm64. SwiftShader's
+two code generators (Subzero on x64, LLVM on arm64) agree. The CPU
+question of section 5.6 is answered: no difference for WebGL.
+
+**Windows to Windows is identical, text included**, in every variant:
+GitHub's `windows-latest` matched this machine on all 39 calibration and
+entry pictures and all 1000 speed pictures (bar the two Astrovoid
+pictures, finding 3 above).
+
+**Text, rung by rung (section 5.4):**
+
+| Rung | Canvas text (Pixi) on Linux and macOS | DOM text on Linux and macOS |
+| --- | --- | --- |
+| 1. CFF2 test fonts | Differs: antialiasing (max channel delta 51) and glyph positions (223); macOS lays text out narrower (a 1049-pixel line is 1042) | Differs |
+| 1a. The same, with `--font-render-hinting=none --disable-font-subpixel-positioning` | Worse: sizes differ on Linux too | Differs |
+| 2. COLRv1 test fonts (built by `fonts/build-colr.py`) | Differs; and colour glyphs ignore a gradient fill, as predicted | Differs |
+| 2a. COLRv1 with the flags | Differs | Differs |
+| **3. Canvas text drawn as paths** | **Identical** on Linux x64. On the two arm64 runners, identical except one picture (a drop shadow, 367 pixels off by 1 level of 255) | Not covered |
+
+Rung 3, as built in the spike (`text-paths.ts`, about 200 lines): the
+canvas's `fillText`, `strokeText` and `measureText` are replaced, for the
+test fonts only, by fontkit's layout of the same CFF2 files (at the weight
+asked for, with kerning) and `Path2D` fills. Fill styles, gradients,
+strokes, letter spacing and shadows work unchanged, since they apply to
+paths as to text. With it, all 22 entry screens and every fruit machine
+leaf view match across all four systems.
+
+**Two kinds of text no rung pins:**
+
+- **DOM text.** Nothing tried inside the browser makes it match. Rung 4
+  (Windows as the one reference system) is the answer for HTML pictures:
+  their project runs on Windows only, and in CI on `windows-latest`.
+- **Text inside an SVG drawn as an image.** The fruit machine's wild symbol
+  is an SVG with a `<text>` element in Arial Black; an SVG image cannot
+  use the page's fonts, so it is drawn with the system's. It made 73 reel
+  windows and all 40 paytables differ. The fix belongs in the art: draw the
+  word as outlines.
+
+The off-by-one shadow on arm64 is what section 5.6's tolerance is for: it
+would pass, counted, within tolerance.
+
+### What changes in the design
+
+1. Canvas text is drawn as paths (rung 3) in every visual run, not only as
+   a fallback. Test fonts stay CFF2 (fontkit reads them; nothing else needs
+   the format any more).
+2. HTML pictures are made and compared on Windows only (rung 4); the
+   `visual-html` project skips elsewhere with a message. Pixi and three.js
+   pictures run on any system.
+3. CI's visual job runs on `ubuntu-latest` for Pixi and three.js, and
+   `windows-latest` for HTML. Measured job times for 1000 pictures: about
+   29 s on Ubuntu, 36 s on Windows, beyond `npm ci` and the browser
+   download.
+4. No `persistentContext` (section 8): the headless shell makes no logon
+   attempt.
+5. HTML pictures are captured through the DevTools protocol, not
+   `page.screenshot`.
+6. The visual project pre-bundles every dependency (finding 1); the harness
+   patches Pixi's pool (finding 2) until Pixi fixes it; pictures are framed
+   by a holder and blank pictures fail (finding 4).
+7. Two repo changes before the suite can cover their views: Astrovoid's
+   asteroid seed moves into its model (finding 3), and the wild symbol's
+   word becomes outlines.
+8. One worker by default.
+
+Open question 2 (visual tests in `npm test`): a realistic suite of a few
+hundred pictures would add 4-6 s and a browser launch. Recommendation
+unchanged: decide after step 3, with real tests to time.
 
 ## Summary
 
@@ -1274,7 +1348,7 @@ project structure page gains `__screenshots__/`, `src/testing/` and
 
 ## 13. Implementation steps
 
-1. **Spike, and measure.** Before building anything to keep:
+1. ~~**Spike, and measure.**~~ Done 2026-10-07; see [Spike results](#spike-results). Before building anything to keep:
    - **The browser.** Add `@vitest/browser-playwright` and `playwright`;
      launch Playwright's Chromium headless shell with SwiftShader and
      software 2D canvas, with `persistentContext`. Confirm the canvas is
