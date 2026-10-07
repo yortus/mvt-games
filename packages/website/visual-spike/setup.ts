@@ -1,5 +1,6 @@
 // Spike: the setup file. Runs before every test file; one-time work is guarded,
 // since with isolation off every file shares this page.
+import { BatchableGraphics } from 'pixi.js';
 import { afterAll, beforeEach } from 'vitest';
 import { flushRecords, spikeConfig } from './harness';
 import sansUrl from './fonts/SourceSans3VF-Upright.otf?url';
@@ -23,6 +24,13 @@ interface SpikeGlobal { __visualSpikeReady?: Promise<void> }
 const g = globalThis as SpikeGlobal;
 
 g.__visualSpikeReady ??= (async () => {
+    // Pixi 8.21 bug: BatchableGraphics.reset() leaves roundPixels as it was, so a pooled batch
+    // from a rounded (pixel-art) graphic rounds the next graphics context built from the pool
+    const reset = BatchableGraphics.prototype.reset;
+    BatchableGraphics.prototype.reset = function (this: BatchableGraphics) {
+        reset.call(this);
+        this.roundPixels = 0;
+    };
     const faces: FontFace[] = [];
     for (const family of [TEST_SANS, ...SHADOWED_SANS]) faces.push(new FontFace(family, `url(${sansUrl})`, { weight: '200 900' }));
     for (const family of [TEST_MONO, ...SHADOWED_MONO]) faces.push(new FontFace(family, `url(${monoUrl})`, { weight: '200 900' }));

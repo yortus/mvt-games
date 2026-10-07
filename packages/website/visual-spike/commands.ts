@@ -17,7 +17,7 @@ import { PNG } from 'pngjs';
 import type { BrowserCommand } from 'vitest/node';
 
 const SPIKE = import.meta.dirname;
-const REFS = join(SPIKE, '__refs__');
+const REFS = join(SPIKE, process.env.SPIKE_REFS ?? '__refs__');
 const HASHES = join(REFS, 'hashes.json');
 const OUT = resolve(SPIKE, '..', '..', '..', '.vitest', 'visual');
 const RESULTS = join(SPIKE, 'results');
@@ -56,6 +56,8 @@ const visualRefs: BrowserCommand<[]> = () => ({
         /** Send every picture's pixels to Node (to time the slow path, or to collect every PNG). */
         sendAll: process.env.SPIKE_SEND_ALL === '1',
         textAsPaths: process.env.SPIKE_TEXT_AS_PATHS === '1',
+        freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
+        freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },
 });
 

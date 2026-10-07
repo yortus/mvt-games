@@ -1,0 +1,530 @@
+{
+ "calibration.visual.tsx > dom > CONTROL text unpinned": {
+  "hash": "568x426:71de9801154c8b7fcdd14a0cbf126150",
+  "width": 568,
+  "height": 426,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 79.6,
+   "decode": 11.7
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > boxes": {
+  "hash": "370x118:5baf72e581851574fe850c4de7097784",
+  "width": 370,
+  "height": 118,
+  "ms": {
+   "pose": 0.3,
+   "screenshot": 88.9,
+   "decode": 3
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text shadowed names": {
+  "hash": "568x426:3aeeda78b949dbf2fd1feb21adc04f49",
+  "width": 568,
+  "height": 426,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 90.8,
+   "decode": 12.3
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text test mono": {
+  "hash": "568x426:98d83efa9d2208267893c66494ff4708",
+  "width": 568,
+  "height": 426,
+  "ms": {
+   "pose": 0,
+   "screenshot": 95.4,
+   "decode": 12.7
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text test sans": {
+  "hash": "568x426:3aeeda78b949dbf2fd1feb21adc04f49",
+  "width": 568,
+  "height": 426,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 128.8,
+   "decode": 16.2
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > CONTROL text unpinned": {
+  "hash": "994x421:88cf6904b55318fb8dca13766e997c0d",
+  "width": 994,
+  "height": 421,
+  "ms": {
+   "app": 0,
+   "pose": 0,
+   "refresh": 0.1,
+   "bounds": 30.8,
+   "draw": 16.5,
+   "hash": 1.3
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > blur": {
+  "hash": "200x130:9839a4eddc9dd87f87bfea66ed382924",
+  "width": 200,
+  "height": 130,
+  "ms": {
+   "app": 0,
+   "pose": 0.8,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 65.2,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > circle aliased": {
+  "hash": "78x78:cbbb35dfd47262ef44d2e93ae4c4eaf4",
+  "width": 78,
+  "height": 78,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 1.2,
+   "hash": 0.2
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > circle msaa": {
+  "hash": "78x78:e8dd6a8f07c1bb3966b31b1d6a3b6a2f",
+  "width": 78,
+  "height": 78,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0,
+   "bounds": 0.4,
+   "draw": 39.7,
+   "hash": 0
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > gradients": {
+  "hash": "248x148:7aaeb026d06ea60d01ae48b632518b77",
+  "width": 248,
+  "height": 148,
+  "ms": {
+   "app": 0,
+   "pose": 1,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 3.3,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > text effects": {
+  "hash": "233x104:a9886a9ed1a42f2e83735699de93d1ae",
+  "width": 233,
+  "height": 104,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0.4,
+   "draw": 3.1,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > text generic names": {
+  "hash": "613x133:7ff0c8bdbe3a4343f5a98939628c026d",
+  "width": 613,
+  "height": 133,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 1.1,
+   "draw": 4.8,
+   "hash": 0.2
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > text test mono": {
+  "hash": "1328x424:be76e9dead55c68fd96fb3e3fba9fb9a",
+  "width": 1328,
+  "height": 424,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0.1,
+   "bounds": 3.8,
+   "draw": 24.6,
+   "hash": 1.7
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > text test sans": {
+  "hash": "1049x423:9c0f59ae90714d7653a34b996543f370",
+  "width": 1049,
+  "height": 423,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0,
+   "bounds": 3.5,
+   "draw": 21,
+   "hash": 1.2
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > texture linear": {
+  "hash": "120x120:92ca88903f678497708c47c9140b8a4a",
+  "width": 120,
+  "height": 120,
+  "ms": {
+   "app": 0,
+   "pose": 0.7,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 1.3,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > texture nearest": {
+  "hash": "120x120:7625a4c62a74a6dfbad061814d742d73",
+  "width": 120,
+  "height": 120,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 0.9,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > three > lit sphere": {
+  "hash": "160x120:1c4db0e9de5dcaa13a763d2cb6a016b7",
+  "width": 160,
+  "height": 120,
+  "ms": {
+   "pose": 2.9,
+   "draw": 73.3,
+   "hash": 0.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > astrovoid 2s": {
+  "hash": "400x430:79b1697aac4ba7fea4ce4a84f29a091a",
+  "width": 400,
+  "height": 430,
+  "ms": {
+   "app": 0,
+   "pose": 1.7,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 3.9,
+   "hash": 0.4
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > astrovoid thumbnail": {
+  "hash": "400x430:435296cfc2858d3aab8b92a61ecfd536",
+  "width": 400,
+  "height": 430,
+  "ms": {
+   "app": 0,
+   "pose": 23.8,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 4.9,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > boids 2s": {
+  "hash": "960x605:669bd3800320a830480303adc63532ac",
+  "width": 960,
+  "height": 605,
+  "ms": {
+   "app": 0,
+   "pose": 40,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 26,
+   "hash": 1.7
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > boids thumbnail": {
+  "hash": "960x605:669bd3800320a830480303adc63532ac",
+  "width": 960,
+  "height": 605,
+  "ms": {
+   "app": 0,
+   "pose": 59.9,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 71.9,
+   "hash": 1.6
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > burrow-bust 2s": {
+  "hash": "280x390:ed00d847ab1059bef3526e9a9c55a71e",
+  "width": 280,
+  "height": 390,
+  "ms": {
+   "app": 0,
+   "pose": 3.8,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 4.6,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > burrow-bust thumbnail": {
+  "hash": "280x390:ac1e6fb855df86efce71d8354b9f5432",
+  "width": 280,
+  "height": 390,
+  "ms": {
+   "app": 0,
+   "pose": 35.4,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 4.7,
+   "hash": 0.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > crumb-chase 2s": {
+  "hash": "560x470:7875a351faae2c2c58348b16bb669805",
+  "width": 560,
+  "height": 470,
+  "ms": {
+   "app": 0,
+   "pose": 3.2,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 14.2,
+   "hash": 0.9
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > crumb-chase thumbnail": {
+  "hash": "560x470:92e781bebc161f9f197fc5abcd52c015",
+  "width": 560,
+  "height": 470,
+  "ms": {
+   "app": 0,
+   "pose": 30,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 31.9,
+   "hash": 0.8
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > dojo-duel 2s": {
+  "hash": "384x270:d81031dbe32fe98f797ad3e9a2069326",
+  "width": 384,
+  "height": 270,
+  "ms": {
+   "app": 0,
+   "pose": 1.6,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 4.1,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > dojo-duel thumbnail": {
+  "hash": "384x270:d81031dbe32fe98f797ad3e9a2069326",
+  "width": 384,
+  "height": 270,
+  "ms": {
+   "app": 0,
+   "pose": 27.6,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 5.5,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > falling-sand 2s": {
+  "hash": "480x838:47bc9f5a0fd95d41fa2c0f56056c7093",
+  "width": 480,
+  "height": 838,
+  "ms": {
+   "app": 0,
+   "pose": 34.1,
+   "refresh": 0.4,
+   "bounds": 0,
+   "draw": 22.8,
+   "hash": 1.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > falling-sand thumbnail": {
+  "hash": "480x838:432f70e2bf30c9ca0956c10666add0bd",
+  "width": 480,
+  "height": 838,
+  "ms": {
+   "app": 9.3,
+   "pose": 70.1,
+   "refresh": 0.7,
+   "bounds": 0.2,
+   "draw": 64.6,
+   "hash": 1.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > fuel-run 2s": {
+  "hash": "448x248:abb7c289730bb252ed97ef2bc5107135",
+  "width": 448,
+  "height": 248,
+  "ms": {
+   "app": 0,
+   "pose": 1.9,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 5.7,
+   "hash": 0.4
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > fuel-run thumbnail": {
+  "hash": "448x248:1a27d4ac919e8905f8073249fdb713aa",
+  "width": 448,
+  "height": 248,
+  "ms": {
+   "app": 0,
+   "pose": 43.7,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 8.5,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > galaxy-raiders 2s": {
+  "hash": "280x390:2e8a576154077093538329ca08ac5ca1",
+  "width": 280,
+  "height": 390,
+  "ms": {
+   "app": 0,
+   "pose": 1.7,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 3.3,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > galaxy-raiders thumbnail": {
+  "hash": "280x390:5779396d22fdf3e4a2778fc28208aefb",
+  "width": 280,
+  "height": 390,
+  "ms": {
+   "app": 0,
+   "pose": 37.7,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 4.5,
+   "hash": 0.3
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > kwazy-cactii 2s": {
+  "hash": "1600x2180:20733fc6ffc341ec6dc8951f4087981d",
+  "width": 1600,
+  "height": 2180,
+  "ms": {
+   "app": 0,
+   "pose": 3.2,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 153.6,
+   "hash": 9.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > kwazy-cactii thumbnail": {
+  "hash": "1600x2180:20733fc6ffc341ec6dc8951f4087981d",
+  "width": 1600,
+  "height": 2180,
+  "ms": {
+   "app": 0,
+   "pose": 44.4,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 171.6,
+   "hash": 9.2
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > neon-monsoon 2s": {
+  "hash": "240x320:bfa1332dcf94ce9d080324022cfaf8d9",
+  "width": 240,
+  "height": 320,
+  "ms": {
+   "app": 0,
+   "pose": 7,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 8.5,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > neon-monsoon thumbnail": {
+  "hash": "240x320:86926756bb468590893b06dcf24242d0",
+  "width": 240,
+  "height": 320,
+  "ms": {
+   "app": 41.3,
+   "pose": 118.2,
+   "refresh": 0.1,
+   "bounds": 0.2,
+   "draw": 180.5,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > reordering-lists 2s": {
+  "hash": "600x420:03c696356b7d95ce6bd3e96d8e4cb773",
+  "width": 600,
+  "height": 420,
+  "ms": {
+   "app": 0,
+   "pose": 1.3,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 7.3,
+   "hash": 0.8
+  },
+  "verdict": "same"
+ },
+ "entries.visual.tsx > entries > reordering-lists thumbnail": {
+  "hash": "600x420:41daffd2df863e16de72bb3dfb0cb363",
+  "width": 600,
+  "height": 420,
+  "ms": {
+   "app": 0,
+   "pose": 16.5,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 10.6,
+   "hash": 0.8
+  },
+  "verdict": "same"
+ }
+}

@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean };
 }
 
 interface SpikeCommands {
@@ -102,29 +102,37 @@ export interface PixiPictureOptions {
     readonly background?: number;
     readonly pixelArt?: boolean;
     readonly resolution?: number;
+    /** Spike only: override MSAA and rounding separately. */
+    readonly msaa?: boolean;
+    readonly round?: boolean;
 }
 
 const MARGIN = 4;
 const DEFAULT_BACKGROUND = 0x202024;
 
-const apps = new Map<boolean, Promise<Application>>();
+let sharedApp: Promise<Application> | undefined;
+let resetEachPicture = false;
+export function setResetEachPicture(value: boolean): void { resetEachPicture = value; }
 const targets = new Map<string, RenderTexture>();
-const stage = new Container();
-const backdrop = new Graphics();
-const holder = new Container();
+let stage = new Container();
+let backdrop = new Graphics();
+let holder = new Container();
 stage.addChild(backdrop, holder);
 
+// One renderer for every picture. Two WebGL contexts in one page share SwiftShader, and drawing
+// with one after the other changes the antialiased edges the other draws next (measured in the spike).
+// MSAA is the render texture's (antialias), and rounding is set per picture, so one is enough.
 function appFor(pixelArt: boolean): Promise<Application> {
-    let app = apps.get(pixelArt);
-    if (app === undefined) {
-        app = (async () => {
-            const a = new Application();
-            await a.init({ width: 8, height: 8, antialias: !pixelArt, roundPixels: pixelArt, autoStart: false, preference: 'webgl', sharedTicker: false });
-            return a;
-        })();
-        apps.set(pixelArt, app);
-    }
-    return app;
+    sharedApp ??= (async () => {
+        const a = new Application();
+        await a.init({ width: 8, height: 8, antialias: false, autoStart: false, preference: 'webgl', sharedTicker: false });
+        return a;
+    })();
+    return sharedApp.then((a) => {
+        (a.renderer as unknown as { _roundPixels: number })._roundPixels = pixelArt ? 1 : 0;
+        if (resetEachPicture) a.renderer.resetState();
+        return a;
+    });
 }
 
 function targetFor(width: number, height: number, resolution: number, antialias: boolean): RenderTexture {
@@ -144,7 +152,15 @@ export function visualTest(name: string, pose: () => Container | Promise<Contain
         const resolution = options.resolution ?? 1;
         const times: Record<string, number> = {};
         let t = performance.now();
-        const app = await appFor(pixelArt);
+        const app = await appFor(options.round ?? pixelArt);
+        const { flags } = await spikeConfig();
+        if (flags.freshStage) {
+            stage.destroy({ children: true });
+            stage = new Container();
+            backdrop = new Graphics();
+            holder = new Container();
+            stage.addChild(backdrop, holder);
+        }
         TextureSource.defaultOptions.scaleMode = pixelArt ? 'nearest' : 'linear';
         times.app = performance.now() - t;
 
@@ -171,7 +187,7 @@ export function visualTest(name: string, pose: () => Container | Promise<Contain
             holder.position.set(-x0, -y0);
             holder.addChild(view);
             backdrop.clear().rect(0, 0, width, height).fill(options.background ?? DEFAULT_BACKGROUND);
-            const rt = targetFor(width, height, resolution, !pixelArt);
+            const rt = targetFor(width, height, resolution, options.msaa ?? !pixelArt);
             times.bounds = performance.now() - t;
 
             t = performance.now();
@@ -187,6 +203,10 @@ export function visualTest(name: string, pose: () => Container | Promise<Contain
         finally {
             holder.removeChildren();
             view.destroy({ children: true });
+            if (flags.freshTarget) {
+                for (const rt of targets.values()) rt.destroy(true);
+                targets.clear();
+            }
         }
     });
 }

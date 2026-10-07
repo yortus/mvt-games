@@ -1,0 +1,326 @@
+{
+ "probe/order.visual.tsx > repeat > A 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 40.7,
+   "pose": 13,
+   "refresh": 0.4,
+   "bounds": 0.8,
+   "draw": 157.6,
+   "hash": 0.8
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > A 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 37.4,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > A 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 22.2,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > B 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.5,
+   "refresh": 0.1,
+   "bounds": 0.2,
+   "draw": 21.5,
+   "hash": 0.6,
+   "slowPath": 30.5
+  },
+  "verdict": "updated"
+ },
+ "probe/order.visual.tsx > repeat > B 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 21.1,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > B 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0.1,
+   "pose": 0.2,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 22.3,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > C 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 21.2,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > C 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 20.9,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > C 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.5,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 21.8,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > D 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 21.6,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > D 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 20.7,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > D 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0.1,
+   "bounds": 0.7,
+   "draw": 21.3,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > E 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 21.3,
+   "hash": 0.6,
+   "slowPath": 18.8
+  },
+  "verdict": "updated"
+ },
+ "probe/order.visual.tsx > repeat > E 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 21.1,
+   "hash": 0.6
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > E 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0.1,
+   "bounds": 0.2,
+   "draw": 22.6,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > F 0": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 21.1,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > F 1": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 22.2,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > F 2": {
+  "hash": "592x360:f302b941541820d15a4850549f6fe9c5",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 22.3,
+   "hash": 0.4
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > reel: no msaa": {
+  "hash": "592x360:154c503e843004f4473a5afc485d2dff",
+  "width": 592,
+  "height": 360,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0.1,
+   "bounds": 0.1,
+   "draw": 74.8,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > spin: msaa, no round": {
+  "hash": "68x62:0c68d560573f8a8a6b402735d7931c2a",
+  "width": 68,
+  "height": 62,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 1.6,
+   "hash": 0
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > spin: msaa, round": {
+  "hash": "68x62:33ed79325edb3702c870502419375258",
+  "width": 68,
+  "height": 62,
+  "ms": {
+   "app": 0,
+   "pose": 0.3,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 1.4,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > spin: no msaa, no round": {
+  "hash": "68x62:bb46c976d3862f4c3019c80eb7797dc8",
+  "width": 68,
+  "height": 62,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 1.4,
+   "hash": 0
+  },
+  "verdict": "same"
+ },
+ "probe/order.visual.tsx > repeat > spin: no msaa, round": {
+  "hash": "68x62:a1ad50d80fb2bcbe07748417f7c8f41d",
+  "width": 68,
+  "height": 62,
+  "ms": {
+   "app": 0,
+   "pose": 0.9,
+   "refresh": 0.1,
+   "bounds": 1.5,
+   "draw": 20.2,
+   "hash": 0
+  },
+  "verdict": "same"
+ }
+}

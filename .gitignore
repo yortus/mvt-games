@@ -31,3 +31,6 @@ packages/utils/src/jsx/refresh-copies.ts
 *.sln
 *.sw?
 .vitest/
+packages/website/visual-spike/speed/generated/
+packages/website/visual-spike/__refs-speed__/
+packages/website/visual-spike/__refs-tmp__/
