@@ -94,6 +94,57 @@ describe('@mvtjs/html JSX', () => {
             expect(input.value).toBe('Ada');
         });
 
+        it('writes a focused slider, so a change the model makes elsewhere shows at once', () => {
+            const model = { volume: 5 };
+            const slider = <input type="range" min="0" max="10" valueAsNumber={() => model.volume} /> as HTMLInputElement;
+            document.body.append(slider);
+            refreshView(slider);
+
+            slider.focus();
+            model.volume = 0;
+            refreshView(slider);
+            expect(slider.valueAsNumber).toBe(model.volume);
+            slider.remove();
+        });
+
+        it('does not write a focused number field, as with a text field', () => {
+            const model = { count: 5 };
+            const field = <input type="number" valueAsNumber={() => model.count} /> as HTMLInputElement;
+            document.body.append(field);
+            refreshView(field);
+
+            field.focus();
+            field.valueAsNumber = 7;
+            refreshView(field);
+            expect(field.valueAsNumber).toBe(7);
+            field.remove();
+        });
+
+        it('keeps a focused slider where the user drags it, when it reports through onInput', () => {
+            const model = { volume: 5 };
+            const slider = (
+                <input
+                    type="range"
+                    min="0"
+                    max="10"
+                    valueAsNumber={() => model.volume}
+                    onInput={(event) => {
+                        model.volume = (event.target as HTMLInputElement).valueAsNumber;
+                    }}
+                />
+            ) as HTMLInputElement;
+            document.body.append(slider);
+            refreshView(slider);
+
+            slider.focus();
+            slider.valueAsNumber = 8;
+            slider.dispatchEvent(new Event('input'));
+            refreshView(slider);
+            expect(slider.valueAsNumber).toBe(8);
+            expect(model.volume).toBe(8);
+            slider.remove();
+        });
+
         it('reports what the user does through events', () => {
             const model = { name: 'Ada' };
             const input = (
