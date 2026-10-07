@@ -17,7 +17,8 @@ export interface MoveData {
     /** Points scored on hit. */
     readonly damage: number;
     /** Hitbox offset and size relative to fighter centre, in metres.
-     *  dx is in the fighter's forward direction (model flips for facing). */
+     *  dx is in the fighter's forward direction (model flips for facing). The front edge
+     *  (dx + w / 2) is where the drawn fist or foot reaches during the active frames. */
     readonly hitbox: { readonly dx: number; readonly dy: number; readonly w: number; readonly h: number };
     /** Lunge distance in metres. Positive = forward, negative = backward. */
     readonly lunge: number;
@@ -62,7 +63,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: FRAME_MS,
         hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.4, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -77,7 +78,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: FRAME_MS,
         hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.4, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -89,10 +90,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     'high-kick': {
         durationMs: 3 * FRAME_MS,
         frameSequence: [0, 5, 6],
-        hitboxActiveFromMs: FRAME_MS,
-        hitboxActiveToMs: 2 * FRAME_MS,
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.25, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -104,10 +105,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     'mid-kick': {
         durationMs: 3 * FRAME_MS,
         frameSequence: [0, 1, 2],
-        hitboxActiveFromMs: FRAME_MS,
-        hitboxActiveToMs: 2 * FRAME_MS,
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.4, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -119,10 +120,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     'low-kick': {
         durationMs: 3 * FRAME_MS,
         frameSequence: [0, 3, 4],
-        hitboxActiveFromMs: FRAME_MS,
-        hitboxActiveToMs: 2 * FRAME_MS,
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -137,7 +138,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: 2 * FRAME_MS,
         hitboxActiveToMs: 4 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.4, dy: 0.15, w: 0.4, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0.15, w: 0.4, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -152,7 +153,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: FRAME_MS,
         hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.3, dy: 0.3, w: 0.2, h: 0.3 },
+        hitbox: { dx: 0.4, dy: 0.3, w: 0.2, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -167,7 +168,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: FRAME_MS,
         hitboxActiveToMs: 2 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.3, dy: 0.3, w: 0.2, h: 0.3 },
+        hitbox: { dx: 0.4, dy: 0.3, w: 0.2, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -179,10 +180,10 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
     'back-low-kick': {
         durationMs: 3 * FRAME_MS,
         frameSequence: [0, 3, 4],
-        hitboxActiveFromMs: FRAME_MS,
-        hitboxActiveToMs: 2 * FRAME_MS,
+        hitboxActiveFromMs: 2 * FRAME_MS,
+        hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.5, dy: 0, w: 0.3, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0, w: 0.3, h: 0.3 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -197,7 +198,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: 2 * FRAME_MS,
         hitboxActiveToMs: 3 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.4, dy: 0, w: 0.4, h: 0.4 },
+        hitbox: { dx: 0.3, dy: 0, w: 0.4, h: 0.4 },
         lunge: 0.3,
         isBlockable: true,
         knockback: 0.5,
@@ -212,7 +213,7 @@ export const MOVE_DATA: Record<MoveKind, MoveData> = {
         hitboxActiveFromMs: 2 * FRAME_MS,
         hitboxActiveToMs: 5 * FRAME_MS,
         damage: 1,
-        hitbox: { dx: 0.4, dy: 0, w: 0.4, h: 0.3 },
+        hitbox: { dx: 0.35, dy: 0, w: 0.4, h: 0.3 },
         lunge: 1.0,
         isBlockable: false,
         knockback: 0.5,

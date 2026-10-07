@@ -13,8 +13,8 @@ export const ARENA_MIN_X = 0.5;
 /** Right boundary in metres (centre of rightmost fighter position). */
 export const ARENA_MAX_X = 9.5;
 
-/** Fighter hittable body width in metres. */
-export const FIGHTER_BODY_WIDTH = 0.5;
+/** Fighter hittable body width in metres: the torso and legs of the drawn figure in its guard, but not its raised fists. */
+export const FIGHTER_BODY_WIDTH = 0.4;
 
 /** Player starting position in metres. */
 export const FIGHTER_START_LEFT_X = 2.5;

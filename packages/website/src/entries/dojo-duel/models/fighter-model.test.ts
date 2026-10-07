@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createFighterModel, type FighterModel } from './fighter-model';
-import { type MoveKind, ARENA_MIN_X, ARENA_MAX_X } from '../data';
+import { type MoveKind, ARENA_MIN_X, ARENA_MAX_X, FIGHTER_BODY_WIDTH } from '../data';
 import { JUMP_DURATION_MS, HIT_REACTION_MS, BLOCK_REACTION_MS } from './model-constants';
 
 // ---------------------------------------------------------------------------
@@ -412,9 +412,9 @@ describe('FighterModel', () => {
         it('is centred on fighter position', () => {
             const f = makeFighter({ startX: 5.0 });
             const bb = f.bodyBox;
-            expect(bb.x).toBeCloseTo(5.0 - 0.5 / 2);
+            expect(bb.x).toBeCloseTo(5.0 - FIGHTER_BODY_WIDTH / 2);
             expect(bb.y).toBe(0);
-            expect(bb.w).toBe(0.5);
+            expect(bb.w).toBe(FIGHTER_BODY_WIDTH);
             expect(bb.h).toBe(1.5);
         });
     });
