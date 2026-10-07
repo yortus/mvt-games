@@ -20,6 +20,8 @@ const VARIANTS = [
     { name: 'h-blanktt-nohint', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none' }, html: true },
     // The same, with form controls' default size made whole; and again with software compositing
     { name: 'h-final', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_CONTROL_SIZE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none' }, html: true },
+    // TrueType blank text, hinting off, and rotated images sampled nearest-neighbour
+    { name: 'h-final2', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_PIXELATE_ROTATED: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none' }, html: true },
     { name: 'h-final-sw', env: { SPIKE_HTML_TEXT: 'blanktt', SPIKE_ISOLATE: '1', SPIKE_CONTROL_SIZE: '1', SPIKE_EXTRA_ARGS: '--font-render-hinting=none --disable-gpu --disable-gpu-compositing' }, html: true },
 ];
 const only = process.env.SPIKE_VARIANTS?.split(',');

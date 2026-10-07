@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean; readonly htmlText: 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt' | 'green'; readonly wholeControlSize: boolean };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean; readonly htmlText: 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt' | 'green'; readonly wholeControlSize: boolean; readonly pixelateRotated: boolean };
 }
 
 interface SpikeCommands {
@@ -259,6 +259,12 @@ export function visualHtmlTest(name: string, pose: () => HTMLElement | Promise<H
             host.append(element);
             document.body.append(host);
             await document.fonts.ready;
+            // Rotated images sample nearest-neighbour: smooth sampling under rotation differs on arm64
+            if ((await spikeConfig()).flags.pixelateRotated) {
+                for (const image of host.querySelectorAll('img')) {
+                    if (isRotated(image, host)) image.style.imageRendering = 'pixelated';
+                }
+            }
             // Every image loaded and decoded, lazy ones included
             await Promise.all([...host.querySelectorAll('img')].map((img) => {
                 img.loading = 'eager';
@@ -352,4 +358,15 @@ export function visualThreeTest(name: string, pose: () => { scene: Scene; camera
         times.hash = performance.now() - t;
         await judge(key, hash, options.width, options.height, () => pixels, times);
     });
+}
+
+/** Whether the element, or an ancestor up to the host, is turned by a transform (not just moved or scaled). */
+function isRotated(element: Element, host: Element): boolean {
+    for (let e: Element | null = element; e !== null && e !== host.parentElement; e = e.parentElement) {
+        const t = getComputedStyle(e).transform;
+        if (t === 'none') continue;
+        const m = new DOMMatrixReadOnly(t);
+        if (m.b !== 0 || m.c !== 0 || !m.is2D) return true;
+    }
+    return false;
 }
