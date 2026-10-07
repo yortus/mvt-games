@@ -207,6 +207,70 @@ leaf view match across all four systems.
 The off-by-one shadow on arm64 is what section 5.6's tolerance is for: it
 would pass, counted, within tolerance.
 
+### HTML without containers (study, 2026-10-08)
+
+Can HTML pictures match across systems if text is given up? Two CI rounds,
+21 HTML pictures: 13 of single features (8 without text: boxes, borders,
+transforms, filters, images, native form controls, a scrolling box, a
+canvas; 5 with text: wrapping, weights, symbols and emoji, decorations and
+lists, controls with labels), and 8 of real views (the Arcade's card, entry
+info, pause menu and about note; the 3D boids' panel; the fruit machine's
+control panel twice and its terminal). Each file isolated, with its own
+stylesheet. Five ways of treating text, each compared with Windows
+references:
+
+| Text | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| Native (as the page asks) | 20/21: symbols and emoji differ in size | 9/21 | 8/21 | 7/21 |
+| **Blank**: one empty glyph, 0.6 em wide, for every code point | **21/21** | **21/21** | 18/21, the rest within 14 levels of 255 | 10/21 |
+| Block: the same, drawn as bars | 21/21 | 9/21: bar edges antialiased differently | 8/21 | 7/21 |
+| Blank with real widths (the sans test font, outlines removed) | 21/21 | 15/21: buttons a pixel apart | 13/21 | 11/21 |
+| Green text, differ ignoring green | 20/21 | 9/21 | 8/21 | 6/21 |
+
+**Is it only text that differs?** Between Windows and Linux on x64, yes:
+all 8 pictures without text matched exactly, native checkboxes, radios,
+range sliders, progress bars, meters and scroll boxes included. On arm64
+(both systems), blur and backdrop filters differ by 1 level, and a
+rotated, scaled image (the Arcade card's photo) by up to 14: numeric
+differences in Skia's CPU code, which a per-channel tolerance of about 16
+levels would absorb (a count of mismatched pixels would not: the card has
+21,000 of them). macOS differs in more than text, though its form
+controls without labels matched: rotated and 3D-transformed boxes
+antialias differently (98 pixels, up to 14 levels), and the card's
+photo differs by up to 210 levels.
+
+**Why blank works and the others do not.** Text decides layout through
+its glyphs' advances. On Windows and Linux, Chrome rounds each advance of
+the blank font to a whole pixel (13 px text: 0.6 em is 7.8 px, laid out
+as 8), the same on both; macOS keeps fractions (7.802), so lines are
+different widths there. A real font's advances and kerning do not round
+the same way on Windows and Linux (a 22-letter line: 121.984 against
+122.000 pixels), enough to move a button's edge by a pixel. Bars are
+drawn by each system's glyph rasteriser, which antialiases their edges
+differently. Green text keeps the native fonts, so everything laid out
+around the text moves: the entry info panel still differs in 14,000
+pixels that are not green.
+
+**Native text is not stable even between Windows machines.** The symbols
+and emoji picture changed size between this machine and GitHub's Windows
+runner: characters the page's fonts lack (⛶, emoji) come from whatever
+fonts each machine has installed. The Arcade's runner view uses ⛶. With
+the blank font, which maps every code point, nothing reaches a system
+font, and the two agreed.
+
+**What blank text costs.** Pictures keep every box, border, background,
+image, control, bullet, underline and the layout itself, and lose the
+letters: a change to copy, text colour, weight, style or alignment is
+invisible, and text takes 0.6 em per character, so lines wrap and boxes
+size differently from the real page (an overflow that only real text
+causes would not show). Canvas text is unaffected: it keeps rung 3.
+
+**Conclusion.** Blank HTML text gives identical pictures on Windows and
+Linux x64, the systems of this machine, CI and Claude Code's cloud
+sessions; on arm64 Linux, identical within a small per-channel tolerance;
+not on macOS. It also makes the Windows-only route safer, since native
+HTML text differed between two Windows machines.
+
 ### What changes in the design
 
 1. Canvas text is drawn as paths (rung 3) in every visual run, not only as
