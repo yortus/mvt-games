@@ -1,0 +1,23 @@
+{
+ "html/arcade.visual.tsx > arcade > about note": "520x520:b0990575eb01b44d2cc72f3a50ef062e",
+ "html/arcade.visual.tsx > arcade > card": "300x340:6be25570c3b86217eddb555154de8986",
+ "html/arcade.visual.tsx > arcade > entry info": "720x640:b3ad5c29f99aa4710b17ccdf5dccab6b",
+ "html/arcade.visual.tsx > arcade > pause menu": "480x400:522aca4e0bea40cca61acc900371a969",
+ "html/boids.visual.tsx > boids 3d > settings panel": "320x420:3859a7b08fd92d0df3b20ae0a89c7c04",
+ "html/features.visual.tsx > no text > borders and outlines": "354x68:07ac797037f986a8a1c9cd64bb104990",
+ "html/features.visual.tsx > no text > boxes and shadows": "334x76:09bb25a6694a6c1ac8f520ef193f8a67",
+ "html/features.visual.tsx > no text > canvas element": "160x83:40fb1b1b49a57990c2c46637ac62f4f3",
+ "html/features.visual.tsx > no text > controls without text": "536x64:1f5862d170b16606001b8163df922e18",
+ "html/features.visual.tsx > no text > filters and blending": "428x88:defc1c3921b95054fed592721dc39d0f",
+ "html/features.visual.tsx > no text > images": "290x72:d6d7c916c339fbf978043ccd06e225e0",
+ "html/features.visual.tsx > no text > scrolling box": "218x98:9deeeef1d9ab362ae98a3b60795e0779",
+ "html/features.visual.tsx > no text > transforms": "352x80:9ae2d062f0b7496f881eeee73f9d9041",
+ "html/features.visual.tsx > text > controls with text": "536x80:ad8f192fb76a0a617e414270b4d52a49",
+ "html/features.visual.tsx > text > decorations and lists": "243x112:f675bbb9cfee1775f0393209fa97d27b",
+ "html/features.visual.tsx > text > paragraph wrapping": "276x114:c6f61e1a8963040fc481aa7a69c9fff1",
+ "html/features.visual.tsx > text > symbols and emoji": "235x72:8fe27c2a2f3892667e384bbeeb05b604",
+ "html/features.visual.tsx > text > weights and styles": "134x100:36bf620bfa6312d12a919dd28cb11a72",
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, mid-spin": "480x420:0c83323764fca4ffef5f99a29bdb020a",
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, ready": "480x420:3f167b51207bfd348012dce554776887",
+ "html/fruit-machine.visual.tsx > fruit machine > terminal, ready": "480x420:b381946ac09840fdb6ecdae58618f470"
+}
