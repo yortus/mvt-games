@@ -1,0 +1,349 @@
+{
+ "_advances": {
+  "blank": "10:132.000 11:145.203 12:158.406 13:171.609 14:184.813 15:198.000 16:211.203 18:237.609 24:316.813 13.5:178.203 17.3:228.234",
+  "degenerate": "10:132.000 11:145.203 12:158.406 13:171.609 14:184.813 15:198.000 16:211.203 18:237.609 24:316.813 13.5:178.203 17.3:228.234",
+  "far": "10:132.000 11:145.203 12:158.406 13:171.609 14:184.813 15:198.000 16:211.203 18:237.609 24:316.813 13.5:178.203 17.3:228.234",
+  "tt": "10:132.000 11:145.203 12:158.406 13:171.609 14:184.813 15:198.000 16:211.203 18:237.609 24:316.813 13.5:178.203 17.3:228.234",
+  "ttDegenerate": "10:132.000 11:145.203 12:158.406 13:171.609 14:184.813 15:198.000 16:211.203 18:237.609 24:316.813 13.5:178.203 17.3:228.234",
+  "exact": "10:132.000 11:145.200 12:158.400 13:171.600 14:184.800 15:198.000 16:211.200 18:237.600 24:316.800 13.5:178.200 17.3:228.360"
+ },
+ "_environment": {
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "platform": "Windows",
+  "cores": 14,
+  "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "locale": "en-US",
+  "timeZone": "UTC",
+  "devicePixelRatio": 1,
+  "textAsPaths": false,
+  "colr": false,
+  "htmlText": "blanktt"
+ },
+ "_metrics": {
+  "10px": "block 132.000x10.000 span 36.000x10.000 top 0.000",
+  "12px": "block 158.406x12.000 span 43.203x12.000 top 0.000",
+  "13px": "block 171.609x13.000 span 46.813x13.000 top 0.000",
+  "14px": "block 184.813x14.000 span 50.406x14.000 top 0.000",
+  "16px": "block 211.203x16.000 span 57.609x16.000 top 0.000",
+  "18px": "block 237.609x18.000 span 64.813x18.000 top 0.000",
+  "24px": "block 316.813x24.000 span 86.406x24.000 top 0.000",
+  "input": "182.000x20.000",
+  "button": "64.000x20.000",
+  "select": "102.000x18.000"
+ },
+ "html/arcade.visual.tsx > arcade > about note": {
+  "hash": "520x520:b0990575eb01b44d2cc72f3a50ef062e",
+  "width": 520,
+  "height": 520,
+  "heapMb": 19.3,
+  "at": 764,
+  "ms": {
+   "pose": 1.2,
+   "screenshot": 41.8,
+   "cdpCapture": 27.79,
+   "decode": 5.01,
+   "slowPath": 27.6
+  },
+  "verdict": "updated"
+ },
+ "html/arcade.visual.tsx > arcade > card": {
+  "hash": "300x340:6be25570c3b86217eddb555154de8986",
+  "width": 300,
+  "height": 340,
+  "heapMb": 19.3,
+  "at": 343,
+  "ms": {
+   "pose": 7.5,
+   "screenshot": 54.1,
+   "cdpCapture": 47.17,
+   "decode": 3.04,
+   "slowPath": 11.8
+  },
+  "verdict": "updated"
+ },
+ "html/arcade.visual.tsx > arcade > entry info": {
+  "hash": "720x640:b3ad5c29f99aa4710b17ccdf5dccab6b",
+  "width": 720,
+  "height": 640,
+  "heapMb": 19.3,
+  "at": 537,
+  "ms": {
+   "pose": 2.8,
+   "screenshot": 64.3,
+   "cdpCapture": 45.32,
+   "decode": 8.15,
+   "slowPath": 49
+  },
+  "verdict": "updated"
+ },
+ "html/arcade.visual.tsx > arcade > pause menu": {
+  "hash": "480x400:522aca4e0bea40cca61acc900371a969",
+  "width": 480,
+  "height": 400,
+  "heapMb": 19.3,
+  "at": 649,
+  "ms": {
+   "pose": 0.7,
+   "screenshot": 61.7,
+   "cdpCapture": 52.21,
+   "decode": 3.86,
+   "slowPath": 19.8
+  },
+  "verdict": "updated"
+ },
+ "html/boids.visual.tsx > boids 3d > settings panel": {
+  "hash": "320x420:3859a7b08fd92d0df3b20ae0a89c7c04",
+  "width": 320,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 256,
+  "ms": {
+   "pose": 0.8,
+   "screenshot": 31.8,
+   "cdpCapture": 24.39,
+   "decode": 2.7,
+   "slowPath": 18.3
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > borders and outlines": {
+  "hash": "354x68:07ac797037f986a8a1c9cd64bb104990",
+  "width": 354,
+  "height": 68,
+  "heapMb": 19.3,
+  "at": 726,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 54.3,
+   "cdpCapture": 51.27,
+   "decode": 1,
+   "slowPath": 5.3
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > boxes and shadows": {
+  "hash": "334x76:09bb25a6694a6c1ac8f520ef193f8a67",
+  "width": 334,
+  "height": 76,
+  "heapMb": 19.3,
+  "at": 661,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 52.7,
+   "cdpCapture": 46.88,
+   "decode": 2.55,
+   "slowPath": 20
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > canvas element": {
+  "hash": "160x83:40fb1b1b49a57990c2c46637ac62f4f3",
+  "width": 160,
+  "height": 83,
+  "heapMb": 19.3,
+  "at": 1073,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 39.2,
+   "cdpCapture": 37.55,
+   "decode": 0.47,
+   "slowPath": 2.5
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > controls without text": {
+  "hash": "536x64:1f5862d170b16606001b8163df922e18",
+  "width": 536,
+  "height": 64,
+  "heapMb": 19.3,
+  "at": 979,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 29.9,
+   "cdpCapture": 27.56,
+   "decode": 0.95,
+   "slowPath": 4
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > filters and blending": {
+  "hash": "428x88:defc1c3921b95054fed592721dc39d0f",
+  "width": 428,
+  "height": 88,
+  "heapMb": 19.3,
+  "at": 891,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 107.8,
+   "cdpCapture": 89.62,
+   "decode": 1.33,
+   "slowPath": 5.3
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > images": {
+  "hash": "290x72:d6d7c916c339fbf978043ccd06e225e0",
+  "width": 290,
+  "height": 72,
+  "heapMb": 19.3,
+  "at": 938,
+  "ms": {
+   "pose": 1,
+   "screenshot": 37.4,
+   "cdpCapture": 34.93,
+   "decode": 0.74,
+   "slowPath": 4
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > scrolling box": {
+  "hash": "218x98:9deeeef1d9ab362ae98a3b60795e0779",
+  "width": 218,
+  "height": 98,
+  "heapMb": 19.3,
+  "at": 1029,
+  "ms": {
+   "pose": 0,
+   "screenshot": 42.9,
+   "cdpCapture": 40.52,
+   "decode": 0.75,
+   "slowPath": 3.3
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > no text > transforms": {
+  "hash": "352x80:9ae2d062f0b7496f881eeee73f9d9041",
+  "width": 352,
+  "height": 80,
+  "heapMb": 19.3,
+  "at": 772,
+  "ms": {
+   "pose": 0,
+   "screenshot": 36.5,
+   "cdpCapture": 34.13,
+   "decode": 0.87,
+   "slowPath": 4.1
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > text > controls with text": {
+  "hash": "536x80:ad8f192fb76a0a617e414270b4d52a49",
+  "width": 536,
+  "height": 80,
+  "heapMb": 19.3,
+  "at": 1265,
+  "ms": {
+   "pose": 0.4,
+   "screenshot": 24.5,
+   "cdpCapture": 21.68,
+   "decode": 0.97,
+   "slowPath": 5.5
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > text > decorations and lists": {
+  "hash": "243x112:f675bbb9cfee1775f0393209fa97d27b",
+  "width": 243,
+  "height": 112,
+  "heapMb": 19.3,
+  "at": 1226,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 27,
+   "cdpCapture": 24.69,
+   "decode": 0.73,
+   "slowPath": 3.6
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > text > paragraph wrapping": {
+  "hash": "276x114:c6f61e1a8963040fc481aa7a69c9fff1",
+  "width": 276,
+  "height": 114,
+  "heapMb": 19.3,
+  "at": 1111,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 27.7,
+   "cdpCapture": 25.45,
+   "decode": 0.89,
+   "slowPath": 4.9
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > text > symbols and emoji": {
+  "hash": "235x72:8fe27c2a2f3892667e384bbeeb05b604",
+  "width": 235,
+  "height": 72,
+  "heapMb": 19.3,
+  "at": 1191,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 29.1,
+   "cdpCapture": 27.44,
+   "decode": 0.55,
+   "slowPath": 2.8
+  },
+  "verdict": "updated"
+ },
+ "html/features.visual.tsx > text > weights and styles": {
+  "hash": "134x100:36bf620bfa6312d12a919dd28cb11a72",
+  "width": 134,
+  "height": 100,
+  "heapMb": 19.3,
+  "at": 1155,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 38.7,
+   "cdpCapture": 36.83,
+   "decode": 0.51,
+   "slowPath": 2.4
+  },
+  "verdict": "updated"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, mid-spin": {
+  "hash": "480x420:0c83323764fca4ffef5f99a29bdb020a",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 517,
+  "ms": {
+   "pose": 10.1,
+   "screenshot": 93.9,
+   "cdpCapture": 59.31,
+   "decode": 4.82,
+   "slowPath": 20.8
+  },
+  "verdict": "updated"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > control panel, ready": {
+  "hash": "480x420:3f167b51207bfd348012dce554776887",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 361,
+  "ms": {
+   "pose": 9.2,
+   "screenshot": 49.7,
+   "cdpCapture": 39.43,
+   "decode": 4.06,
+   "slowPath": 19.4
+  },
+  "verdict": "updated"
+ },
+ "html/fruit-machine.visual.tsx > fruit machine > terminal, ready": {
+  "hash": "480x420:b381946ac09840fdb6ecdae58618f470",
+  "width": 480,
+  "height": 420,
+  "heapMb": 19.3,
+  "at": 629,
+  "ms": {
+   "pose": 0.8,
+   "screenshot": 60.3,
+   "cdpCapture": 45.49,
+   "decode": 7.47,
+   "slowPath": 20.8
+  },
+  "verdict": "updated"
+ }
+}

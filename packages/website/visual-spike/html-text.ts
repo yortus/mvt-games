@@ -3,12 +3,14 @@
 //   blank:  every family is VT Blank: text keeps a fixed layout and draws nothing
 //   block:  every family is VT Block: text keeps a fixed layout and draws as bars
 //   blankreal: VT Sans Blank (the sans test font, outlines removed: real widths and kerning), VT Blank behind it
+//   blanktt: as blank, but the font is TrueType (Windows lays it out with fractional advances, as macOS does)
 //   green:  native fonts, every text coloured pure green, for a differ that ignores green
 import blankUrl from './fonts/VTBlank.otf?url';
 import blockUrl from './fonts/VTBlock.otf?url';
 import sansBlankUrl from './fonts/VTSansBlank.otf?url';
+import blankTtUrl from './fonts/VTBlankTT.ttf?url';
 
-export type HtmlTextMode = 'native' | 'blank' | 'block' | 'blankreal' | 'green';
+export type HtmlTextMode = 'native' | 'blank' | 'block' | 'blankreal' | 'blanktt' | 'green';
 
 export const GREEN = '#00ff00';
 
@@ -24,6 +26,7 @@ export async function installHtmlText(mode: HtmlTextMode): Promise<string | unde
     }
     const faces = mode === 'block'
         ? [new FontFace('VT Block', `url(${blockUrl})`, { weight: '1 1000' })]
+        : mode === 'blanktt' ? [new FontFace('VT Blank', `url(${blankTtUrl})`, { weight: '1 1000' })]
         : [new FontFace('VT Blank', `url(${blankUrl})`, { weight: '1 1000' })];
     if (mode === 'blankreal') faces.push(new FontFace('VT Sans Blank', `url(${sansBlankUrl})`, { weight: '200 900' }));
     await Promise.all(faces.map(async (face) => {
@@ -31,7 +34,7 @@ export async function installHtmlText(mode: HtmlTextMode): Promise<string | unde
         document.fonts.add(face);
     }));
     // VT Blank maps every code point, so nothing behind it reaches a system font
-    const family = mode === 'block' ? '"VT Block"' : mode === 'blank' ? '"VT Blank"' : '"VT Sans Blank", "VT Blank"';
+    const family = mode === 'block' ? '"VT Block"' : mode === 'blank' || mode === 'blanktt' ? '"VT Blank"' : '"VT Sans Blank", "VT Blank"';
     style.textContent = `*, *::before, *::after, ::placeholder, ::marker, input, button, select, textarea {
         font-family: ${family} !important; font-synthesis: none !important; }`;
     document.head.append(style);
