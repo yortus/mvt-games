@@ -27,7 +27,7 @@ export default mergeConfig(site, defineConfig({
     // re-bundled: the page would then hold two copies of Pixi, whose objects
     // (Texture.WHITE) are not each other's. Bundle them all before the first test.
     optimizeDeps: {
-        include: ['pixi.js', 'three', 'three/addons/environments/RoomEnvironment.js', 'gsap'],
+        include: ['pixi.js', 'three', 'three/addons/environments/RoomEnvironment.js', 'gsap', 'fontkit'],
     },
     test: {
         include,

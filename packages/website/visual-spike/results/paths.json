@@ -1,0 +1,275 @@
+{
+ "_environment": {
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+  "platform": "Windows",
+  "cores": 14,
+  "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "locale": "en-US",
+  "timeZone": "UTC",
+  "devicePixelRatio": 1,
+  "textAsPaths": true
+ },
+ "calibration.visual.tsx > dom > CONTROL text unpinned": {
+  "hash": "568x426:71de9801154c8b7fcdd14a0cbf126150",
+  "width": 568,
+  "height": 426,
+  "heapMb": 18.2,
+  "at": 1539,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 38,
+   "cdpCapture": 22.5,
+   "decode": 6.65
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > boxes": {
+  "hash": "370x118:5baf72e581851574fe850c4de7097784",
+  "width": 370,
+  "height": 118,
+  "heapMb": 18.2,
+  "at": 1462,
+  "ms": {
+   "pose": 0.2,
+   "screenshot": 40.7,
+   "cdpCapture": 37.59,
+   "decode": 1.27
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text shadowed names": {
+  "hash": "568x426:3aeeda78b949dbf2fd1feb21adc04f49",
+  "width": 568,
+  "height": 426,
+  "heapMb": 18.2,
+  "at": 1414,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 81.1,
+   "cdpCapture": 50.76,
+   "decode": 7.7
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text test mono": {
+  "hash": "568x426:98d83efa9d2208267893c66494ff4708",
+  "width": 568,
+  "height": 426,
+  "heapMb": 18.2,
+  "at": 1293,
+  "ms": {
+   "pose": 0,
+   "screenshot": 62.3,
+   "cdpCapture": 49.16,
+   "decode": 5.66
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > dom > text test sans": {
+  "hash": "568x426:3aeeda78b949dbf2fd1feb21adc04f49",
+  "width": 568,
+  "height": 426,
+  "heapMb": 18.2,
+  "at": 1189,
+  "ms": {
+   "pose": 0.1,
+   "screenshot": 75.4,
+   "cdpCapture": 47.16,
+   "decode": 17.52
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > CONTROL text unpinned": {
+  "hash": "994x421:88cf6904b55318fb8dca13766e997c0d",
+  "width": 994,
+  "height": 421,
+  "heapMb": 18.2,
+  "at": 1070,
+  "ms": {
+   "app": 0,
+   "pose": 0.2,
+   "refresh": 0,
+   "bounds": 33.2,
+   "draw": 18.9,
+   "hash": 1.3
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > blur": {
+  "hash": "200x130:9839a4eddc9dd87f87bfea66ed382924",
+  "width": 200,
+  "height": 130,
+  "heapMb": 18.2,
+  "at": 776,
+  "ms": {
+   "app": 0.1,
+   "pose": 2,
+   "refresh": 0,
+   "bounds": 0,
+   "draw": 63.3,
+   "hash": 0.2
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > circle aliased": {
+  "hash": "78x78:cbbb35dfd47262ef44d2e93ae4c4eaf4",
+  "width": 78,
+  "height": 78,
+  "heapMb": 18.2,
+  "at": 703,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 32.8,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > circle msaa": {
+  "hash": "78x78:0d198de95f02c0b5669eae62ae8decc4",
+  "width": 78,
+  "height": 78,
+  "heapMb": 18.2,
+  "at": 669,
+  "ms": {
+   "app": 23.6,
+   "pose": 0.4,
+   "refresh": 0.1,
+   "bounds": 0.6,
+   "draw": 89.9,
+   "hash": 0.5
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > gradients": {
+  "hash": "248x148:7aaeb026d06ea60d01ae48b632518b77",
+  "width": 248,
+  "height": 148,
+  "heapMb": 18.2,
+  "at": 710,
+  "ms": {
+   "app": 0,
+   "pose": 1,
+   "refresh": 0,
+   "bounds": 0.2,
+   "draw": 5.2,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > text effects": {
+  "hash": "231x104:197b5d7ec6b30dc8d7216365105dce22",
+  "width": 231,
+  "height": 104,
+  "heapMb": 18.2,
+  "at": 1016,
+  "ms": {
+   "app": 0,
+   "pose": 0.5,
+   "refresh": 0,
+   "bounds": 0.6,
+   "draw": 3.7,
+   "hash": 0.1,
+   "slowPath": 4.7
+  },
+  "verdict": "updated"
+ },
+ "calibration.visual.tsx > pixi > text generic names": {
+  "hash": "602x133:255e19c60593e3076213cccc2f0ca589",
+  "width": 602,
+  "height": 133,
+  "heapMb": 18.2,
+  "at": 1006,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0,
+   "bounds": 6.4,
+   "draw": 9,
+   "hash": 0.4,
+   "slowPath": 9.1
+  },
+  "verdict": "updated"
+ },
+ "calibration.visual.tsx > pixi > text test mono": {
+  "hash": "1328x424:b49cbe1e148c6176428fc060745d9978",
+  "width": 1328,
+  "height": 424,
+  "heapMb": 18.2,
+  "at": 980,
+  "ms": {
+   "app": 0,
+   "pose": 0.4,
+   "refresh": 0,
+   "bounds": 9.3,
+   "draw": 28.9,
+   "hash": 1.8,
+   "slowPath": 46.9
+  },
+  "verdict": "updated"
+ },
+ "calibration.visual.tsx > pixi > text test sans": {
+  "hash": "1042x423:6574b2ddd9892668b952ad8ab5534b44",
+  "width": 1042,
+  "height": 423,
+  "heapMb": 18.2,
+  "at": 892,
+  "ms": {
+   "app": 0,
+   "pose": 0.6,
+   "refresh": 0,
+   "bounds": 33,
+   "draw": 31.8,
+   "hash": 1.5,
+   "slowPath": 41.5
+  },
+  "verdict": "updated"
+ },
+ "calibration.visual.tsx > pixi > texture linear": {
+  "hash": "120x120:92ca88903f678497708c47c9140b8a4a",
+  "width": 120,
+  "height": 120,
+  "heapMb": 18.2,
+  "at": 780,
+  "ms": {
+   "app": 0,
+   "pose": 0.9,
+   "refresh": 0,
+   "bounds": 0.1,
+   "draw": 2.1,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > pixi > texture nearest": {
+  "hash": "120x120:7625a4c62a74a6dfbad061814d742d73",
+  "width": 120,
+  "height": 120,
+  "heapMb": 18.2,
+  "at": 783,
+  "ms": {
+   "app": 0,
+   "pose": 0.1,
+   "refresh": 0.1,
+   "bounds": 0,
+   "draw": 1.8,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ },
+ "calibration.visual.tsx > three > lit sphere": {
+  "hash": "160x120:1c4db0e9de5dcaa13a763d2cb6a016b7",
+  "width": 160,
+  "height": 120,
+  "heapMb": 18.2,
+  "at": 1732,
+  "ms": {
+   "pose": 3.1,
+   "draw": 76.4,
+   "hash": 0.1
+  },
+  "verdict": "same"
+ }
+}

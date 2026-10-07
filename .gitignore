@@ -35,3 +35,6 @@ packages/website/visual-spike/speed/generated/
 packages/website/visual-spike/__refs-speed__/
 packages/website/visual-spike/__refs-tmp__/
 packages/website/visual-spike/speed/generated-baseline/
+packages/website/visual-spike/__refs-v-*__/*
+!packages/website/visual-spike/__refs-v-*__/calibration*
+!packages/website/visual-spike/__refs-v-*__/hashes.json

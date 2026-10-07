@@ -57,6 +57,7 @@ const visualRefs: BrowserCommand<[]> = () => ({
         sendAll: process.env.SPIKE_SEND_ALL === '1',
         textAsPaths: process.env.SPIKE_TEXT_AS_PATHS === '1',
         cdpCapture: process.env.SPIKE_CDP !== '0',
+        colr: process.env.SPIKE_COLR === '1',
         freshTarget: process.env.SPIKE_FRESH_TARGET === '1',
         freshStage: process.env.SPIKE_FRESH_STAGE === '1',
     },

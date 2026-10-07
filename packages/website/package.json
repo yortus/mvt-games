@@ -46,6 +46,7 @@
         "@types/pngjs": "^6.0.5",
         "@types/three": "^0.186.0",
         "@vitest/browser-playwright": "^5.0.1",
+        "fontkit": "^2.0.4",
         "glob": "^13.0.6",
         "playwright": "^1.63.0",
         "pngjs": "^7.0.0",

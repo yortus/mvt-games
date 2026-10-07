@@ -4,55 +4,37 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const os = process.argv[2];
+const VARIANTS = ['native', 'paths', 'colr', 'flags', 'colrflags'];
 const load = (label) => {
     const file = join(import.meta.dirname, 'results', `${label}.json`);
-    return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+    return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : undefined;
 };
-const notice = (title, lines) => {
-    const text = lines.join('%0A').slice(0, 3800);
-    console.log(`::notice title=${os} ${title}::${text}`);
-};
+const notice = (title, lines) => console.log(`::notice title=${os} ${title}::${lines.join('%0A').slice(0, 3800)}`);
 
-const cal = load(`ci-${os}-cal`);
-const speed = load(`ci-${os}-speed`);
-const localSpeed = load('speed-local');
-const env = cal._environment ?? speed._environment ?? {};
-notice('environment', [env.userAgent, env.platform, `cores ${env.cores}`, env.webglRenderer, `${env.locale} ${env.timeZone} dpr ${env.devicePixelRatio}`]);
-
-// Calibration and entries: compared against the references made on Windows
-const calLines = [];
-let calSame = 0;
-for (const [key, r] of Object.entries(cal)) {
-    if (key === '_environment') continue;
-    if (r.verdict === 'same') calSame++;
-    else calLines.push(`${r.verdict} ${key.replace('.visual.tsx', '')}${r.changed !== undefined ? ` (${r.changed}px, max ${r.maxDelta})` : ''}`);
-}
-notice('calibration+entries', [`${calSame} of ${Object.keys(cal).length - 1} identical to Windows refs`, ...calLines]);
-
-// Speed suite: hashes against this repo's Windows run
-let same = 0;
-let total = 0;
-const differ = {};
-const names = [];
-for (const [key, r] of Object.entries(speed)) {
-    if (key === '_environment') continue;
-    total++;
-    if (localSpeed[key]?.hash === r.hash) same++;
-    else {
-        const kind = key.split(' > ')[2].split(' ')[0];
-        differ[kind] = (differ[kind] ?? 0) + 1;
-        if (names.length < 40) names.push(key.split(' > ')[2]);
+let envShown = false;
+for (const v of VARIANTS) {
+    const r = load(`ci-${os}-${v}`);
+    if (r === undefined) {
+        notice(v, ['no results']);
+        continue;
     }
+    if (!envShown) {
+        const e = r._environment ?? {};
+        notice('environment', [e.userAgent, e.platform, `cores ${e.cores}`, e.webglRenderer]);
+        envShown = true;
+    }
+    const lines = [];
+    const kinds = {};
+    for (const [key, x] of Object.entries(r)) {
+        if (key === '_environment') continue;
+        const [file, group, name] = key.split(' > ');
+        const kind = file.startsWith('calibration') ? `cal ${group}` : file.startsWith('entries') ? 'entries' : `speed ${name.split(' ')[0]}`;
+        kinds[kind] ??= [0, 0];
+        const same = x.verdict === 'same';
+        kinds[kind][same ? 0 : 1]++;
+        if (!same && file.startsWith('calibration')) lines.push(`${group} > ${name}: ${x.verdict}${x.changed !== undefined ? ` ${x.changed}px max ${x.maxDelta}` : ''}`);
+        if (!same && file.startsWith('entries') && name.endsWith('thumbnail')) lines.push(`entry ${name}: ${x.verdict}${x.changed !== undefined ? ` ${x.changed}px` : ''}`);
+    }
+    const counts = Object.entries(kinds).map(([k, [s, d]]) => `${k} ${s}/${s + d}`).join(', ');
+    notice(`${v} (same/total)`, [counts, ...lines]);
 }
-notice('speed hashes', [`${same} of ${total} identical to Windows`, JSON.stringify(differ), ...names]);
-
-// Timing
-const rows = Object.entries(speed).filter(([k]) => k !== '_environment').map(([, r]) => r);
-const totals = rows.map((r) => Object.entries(r.ms).filter(([k]) => k !== 'slowPath').reduce((s, [, v]) => s + v, 0)).sort((a, b) => a - b);
-const pct = (p) => totals[Math.min(totals.length - 1, Math.floor(p * totals.length))]?.toFixed(2);
-const ats = rows.map((r) => r.at).sort((a, b) => a - b);
-notice('timing', [
-    `fast-path per picture (no slow path): median ${pct(0.5)} ms, p95 ${pct(0.95)} ms`,
-    `first picture at ${ats[0]} ms page time, last at ${ats[ats.length - 1]} ms`,
-    `wall: ${process.env.SPEED_WALL ?? '?'}`,
-]);

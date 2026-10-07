@@ -3,8 +3,11 @@
 import { BatchableGraphics } from 'pixi.js';
 import { afterAll, beforeEach } from 'vitest';
 import { flushRecords, recordEnvironment, spikeConfig } from './harness';
+import { installTextPaths } from './text-paths';
 import sansUrl from './fonts/SourceSans3VF-Upright.otf?url';
 import monoUrl from './fonts/SourceCodeVF-Upright.otf?url';
+import sansColrUrl from './fonts/SourceSans3VF-Colr.otf?url';
+import monoColrUrl from './fonts/SourceCodeVF-Colr.otf?url';
 
 export const TEST_SANS = 'VT Sans';
 export const TEST_MONO = 'VT Mono';
@@ -31,14 +34,16 @@ g.__visualSpikeReady ??= (async () => {
         reset.call(this);
         this.roundPixels = 0;
     };
+    const { flags } = await spikeConfig();
+    const sansFace = flags.colr ? sansColrUrl : sansUrl;
+    const monoFace = flags.colr ? monoColrUrl : monoUrl;
     const faces: FontFace[] = [];
-    for (const family of [TEST_SANS, ...SHADOWED_SANS]) faces.push(new FontFace(family, `url(${sansUrl})`, { weight: '200 900' }));
-    for (const family of [TEST_MONO, ...SHADOWED_MONO]) faces.push(new FontFace(family, `url(${monoUrl})`, { weight: '200 900' }));
+    for (const family of [TEST_SANS, ...SHADOWED_SANS]) faces.push(new FontFace(family, `url(${sansFace})`, { weight: '200 900' }));
+    for (const family of [TEST_MONO, ...SHADOWED_MONO]) faces.push(new FontFace(family, `url(${monoFace})`, { weight: '200 900' }));
     await Promise.all(faces.map(async (face) => {
         await face.load();
         document.fonts.add(face);
     }));
-    const { flags } = await spikeConfig();
     if (!flags.noFontRewrite) {
         for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype]) {
             const font = Object.getOwnPropertyDescriptor(proto, 'font')!;
@@ -49,6 +54,7 @@ g.__visualSpikeReady ??= (async () => {
             });
         }
     }
+    if (flags.textAsPaths) await installTextPaths({ sansUrl, monoUrl, sansFamilies: [TEST_SANS, ...SHADOWED_SANS], monoFamilies: [TEST_MONO, ...SHADOWED_MONO] });
     document.body.style.margin = '0';
     // The environment, recorded once per run beside the pictures
     const gl = document.createElement('canvas').getContext('webgl2');
@@ -61,6 +67,8 @@ g.__visualSpikeReady ??= (async () => {
         locale: Intl.DateTimeFormat().resolvedOptions().locale,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         devicePixelRatio,
+        textAsPaths: flags.textAsPaths,
+        colr: flags.colr,
     });
 })();
 

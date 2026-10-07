@@ -12,7 +12,7 @@ import { expect, test } from 'vitest';
 interface SpikeConfig {
     readonly mode: 'compare' | 'update';
     readonly hashes: Record<string, string>;
-    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean };
+    readonly flags: { readonly noFontRewrite: boolean; readonly sendAll: boolean; readonly textAsPaths: boolean; readonly freshTarget: boolean; readonly freshStage: boolean; readonly cdpCapture: boolean; readonly colr: boolean };
 }
 
 interface SpikeCommands {
@@ -186,15 +186,17 @@ export function visualTest(name: string, pose: () => Container | Promise<Contain
             let y0 = 0;
             let width = options.width;
             let height = options.height;
+            holder.position.set(0, 0);
+            holder.addChild(view);
             if (width === undefined || height === undefined) {
-                const b = view.getLocalBounds();
+                // The holder's bounds, so the view's own position counts
+                const b = holder.getLocalBounds();
                 x0 = Math.floor(b.minX) - MARGIN;
                 y0 = Math.floor(b.minY) - MARGIN;
                 width ??= Math.ceil(b.maxX) + MARGIN - x0;
                 height ??= Math.ceil(b.maxY) + MARGIN - y0;
             }
             holder.position.set(-x0, -y0);
-            holder.addChild(view);
             backdrop.clear().rect(0, 0, width, height).fill(options.background ?? DEFAULT_BACKGROUND);
             const rt = targetFor(width, height, resolution, options.msaa ?? !pixelArt);
             times.bounds = performance.now() - t;
@@ -204,6 +206,13 @@ export function visualTest(name: string, pose: () => Container | Promise<Contain
             const { pixels, width: pw, height: ph } = app.renderer.texture.getPixels(rt);
             times.draw = performance.now() - t;
 
+            // A picture of nothing but the background is a pose that drew nothing, or drew it out of frame
+            const words = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.byteLength >> 2);
+            let blank = true;
+            for (let i = 1; i < words.length; i++) {
+                if (words[i] !== words[0]) { blank = false; break; }
+            }
+            if (blank) throw new Error('the picture is blank: the view drew nothing inside it');
             t = performance.now();
             const hash = await sha(pw, ph, pixels);
             times.hash = performance.now() - t;

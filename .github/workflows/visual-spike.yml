@@ -24,8 +24,6 @@ jobs:
         defaults:
             run:
                 shell: bash
-        env:
-            VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true'
         steps:
             - uses: actions/checkout@v4
 
@@ -41,29 +39,8 @@ jobs:
                   if [ "$RUNNER_OS" = "Linux" ]; then npx playwright install --with-deps chromium-headless-shell
                   else npx playwright install chromium-headless-shell; fi
 
-            - name: Calibration and entries, against the Windows references
-              continue-on-error: true
-              env:
-                  SPIKE_MODE: compare
-                  SPIKE_LABEL: ci-${{ matrix.os }}-cal
-                  SPIKE_INCLUDE: visual-spike/calibration.visual.tsx,visual-spike/entries.visual.tsx
-              run: npx vitest run --config packages/website/visual-spike/vitest.config.ts
-
-            - name: Speed suite, 1000 pictures (hashes compared afterwards)
-              continue-on-error: true
-              env:
-                  SPIKE_MODE: update
-                  SPIKE_REFS: __refs-ci__
-                  SPIKE_LABEL: ci-${{ matrix.os }}-speed-update
-                  SPIKE_INCLUDE: visual-spike/speed/generated/*.visual.tsx
-              run: |
-                  node packages/website/visual-spike/speed/generate.mjs
-                  # First run writes the references (slow path); the second is the fast path, timed
-                  npx vitest run --config packages/website/visual-spike/vitest.config.ts > /dev/null || true
-                  start=$(node -p "Date.now()")
-                  SPIKE_MODE=compare SPIKE_LABEL=ci-${{ matrix.os }}-speed npx vitest run --config packages/website/visual-spike/vitest.config.ts | tail -6
-                  end=$(node -p "Date.now()")
-                  echo "SPEED_WALL=$(( end - start )) ms" >> "$GITHUB_ENV"
+            - name: Every text variant, against the Windows references
+              run: node packages/website/visual-spike/run-variants.mjs compare ci-${{ matrix.os }}
 
             - name: Summary
               if: always()
