@@ -271,6 +271,38 @@ sessions; on arm64 Linux, identical within a small per-channel tolerance;
 not on macOS. It also makes the Windows-only route safer, since native
 HTML text differed between two Windows machines.
 
+**Bringing macOS in: fractional advances everywhere.** Who rounds the
+blank font's advances depends on which engine lays it out: Chrome's own
+font engine (every CFF2 font, and on Linux every web font) rounds them
+to whole pixels under the default hinting; DirectWrite (a TrueType font
+on Windows) and macOS keep exact fractions, and agree with each other to
+the 1/64 pixel. `--font-render-hinting=none` makes Linux keep fractions
+too; it changes nothing on Windows. So the blank font is rebuilt as
+TrueType (`fonts/build-blank-variants.py`, `VTBlankTT.ttf`; an empty
+glyph, every code point, which DirectWrite honours) and the browser
+launched with that flag:
+
+| | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| TrueType blank text, `--font-render-hinting=none` | 21/21 | 20/21 | 17/21 | 18/21 |
+
+All 8 real views match on all four, except the Arcade card's photo on
+the two arm64 runners (up to 14 levels). What is left:
+
+- Form controls with text at their default size (13.33 px): Linux's
+  advances differ from Windows' and macOS's by a fraction of a pixel at
+  some fractional sizes (17.3 px: 228.125 against 228.234 for 22
+  characters), enough to move a control's edge. The repo's own controls
+  set `font: inherit`, so its views escaped it here.
+- arm64: blur and backdrop filters (1 level), a wavy underline (1 level),
+  the scaled photo (14 levels).
+- macOS: rotated and 3D-transformed boxes (98 pixels, up to 14 levels).
+
+Every remaining difference but the default-sized controls is within 14
+levels per channel, so a per-channel tolerance of about 16 would pass all
+the real views on all three systems. Next to try: the photo (lossless
+images, or nearest-neighbour scaling), and the default control size.
+
 ### What changes in the design
 
 1. Canvas text is drawn as paths (rung 3) in every visual run, not only as
