@@ -24,13 +24,10 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** proposed. Nothing is built. Both headline goals rest on
-things that can only be measured: how long a picture takes on the fast
-path, and whether the pinned browser gives identical pixels on this
-machine (Windows) and on GitHub's Linux and Windows runners. Text is the
-hard part, and section 5.4 sets out a ladder of ways to pin it, tried in
-order. Step 1 is a spike that measures all of it and records the results
-here before anything else is built.
+**Status:** step 1, the spike, done (2026-10-07); its results are in
+[Spike results](#spike-results), and they change parts of sections 4, 5
+and 8. Nothing is built to keep. The spike's code is on branch
+`visual-tests`, in `packages/website/visual-spike/`.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -59,6 +56,110 @@ that offered tree snapshots, deleted unused),
 [018](../archive/018-one-view-convention.md) (whose views were checked by
 eye because headless Chrome drew the canvas blank),
 [`vitest.config.ts`](../../vitest.config.ts).
+
+## Spike results
+
+Measured 2026-10-07 on branch `visual-tests` (from `vnext` at `5afdd2e`):
+Vitest 5.0.1, `@vitest/browser-playwright` 5.0.1, Playwright 1.63.0, whose
+headless shell is Chrome 153.0.8010.12. This machine: Windows 11, 14
+cores. CI: GitHub's `windows-latest`, `ubuntu-latest`, `ubuntu-24.04-arm`
+and `macos-latest` (arm64). The harness is the design of sections 4 and 6
+in miniature: one shared page (`isolate: false`), one Pixi renderer,
+render textures read with `readPixels`, SHA-256 in the page, and a
+Node-side command only on a mismatch.
+
+### The browser and failed logons (section 8)
+
+**Playwright's headless shell makes no logon attempt.** The account's
+bad-password count (readable without admin through ADSI,
+`[ADSI]"WinNT://<computer>/<user>,user"`, `BadPasswordAttempts`) stayed at
+0 across a brand-new persistent profile, Playwright's default fresh
+temporary profile, and about 80 later runs. As a control, one launch of the
+installed Chrome 154 with a fresh profile raised it by exactly one. So
+`persistentContext` is not needed; the logon problem belongs to the full
+Chrome only. SwiftShader WebGL 2 works headless
+(`ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)...))`), launched
+in about 0.6 s.
+
+### Speed (section 4)
+
+1000 pictures of real views (fruit machine leaf views: spin buttons, win
+banners mid-count, meters, marquee lights, reel windows, paytables, game
+over; and 20 whole entry screens), 100 files, one worker:
+
+| Measure | Target | Measured |
+| --- | --- | --- |
+| 1000 pictures, start-up included | 10 s for 500 | 12.7 s wall |
+| Start-up (Vitest, Vite, browser, page, fonts) | 3 s | about 2.4 s |
+| A WebGL picture, median | 5 ms | 6.1 ms (spin button 1.9, meters 3.9, banner 6.4) |
+| The same, 95th percentile | 25 ms | 22.4 ms (reel window, 592 by 360 with a mask, 22 ms; whole screens median 38 ms) |
+| Vitest's own cost per test | | about 1.5 ms |
+| Watch mode: edit a view, its file re-runs | under 1 s | about 230 ms |
+| HTML picture (element screenshot) | 30 ms | 90-130 ms through `page.screenshot`; 35-60 ms through the DevTools protocol (`Page.captureScreenshot` with a clip, `optimizeForSpeed`), identical pixels |
+| Memory | no leak | about 100 MB after garbage collection, then about 3 MB more per 100 pictures |
+
+Where the time goes: drawing in SwiftShader (86% of in-page time), then
+building the views (10%); hashing is 3%, under 1 ms for a 960 by 540 picture.
+
+Two, four workers: 9.6 s and 9.5 s against 10.8 s for one (before the
+banner fix below). Not worth the extra start-ups and memory: one worker by
+default.
+
+What the design saves, on the same 100 pictures:
+
+| Setup | 100 pictures |
+| --- | --- |
+| Vitest's defaults (a fresh page per file) and `toMatchScreenshot` | 12.0 s |
+| One page, `toMatchScreenshot` | 10.4 s |
+| A fresh page per file, pixels from the renderer | 4.9 s |
+| One page, pixels from the renderer (this design) | 3.1 s |
+
+Screenshots cost about 90 ms a picture; isolation about 180 ms a file.
+1000 pictures done the obvious way would take about two minutes.
+
+### Consistency within a run (section 5.1)
+
+Ten runs in a row, and shuffled runs (`--sequence.shuffle`), give identical
+hashes for every picture, once four things found by the spike were fixed.
+Each is a design change:
+
+1. **Every dependency must be pre-bundled before the first test.** Vite's
+   optimizer found a new dependency mid-run and re-bundled, so files after
+   that point loaded a second copy of Pixi (`Texture.WHITE` was no longer
+   the first copy's, and text fills threw). The visual project lists every
+   dependency in `optimizeDeps.include`. A stale optimizer cache after a
+   dependency change can still break the first run after it; CI starts cold
+   and is not affected.
+2. **A Pixi bug: `BatchableGraphics.reset()` keeps `roundPixels`.** Pooled
+   batches from a pixel-art (rounded) graphic round the next graphics
+   context built from the pool, so a smooth view's curves snapped to whole
+   pixels depending on what was drawn before it (one MSAA sample at
+   rounded corners). Found by shuffling, isolated by probes, fixed in the
+   harness by patching `reset` to clear it. The same can happen in the
+   Arcade when a smooth entry follows a pixel-art one in the same page.
+   Worth reporting to Pixi.
+3. **Module-level state in a model.** Astrovoid's `asteroid-model.ts`
+   keeps `let nextSeed = 1` at module level, so asteroid shapes depend on
+   how many asteroids the page made before. It is the only module-level
+   `let` in any entry. The model should own the counter; a lint rule
+   (no module-level `let` in model files) would keep it so.
+4. **The harness's own.** Pictures are framed by the bounds of a holder
+   around the view, so the view's own position counts (`getLocalBounds()`
+   on the view leaves it out, and framed two views in empty space). A
+   picture that is all background now fails ("the view drew nothing inside
+   it"). Hooks registered in a module shared between files run for the
+   first file only, so per-test cleanup belongs in the harness, never in a
+   shared module.
+
+Also measured: one Pixi renderer serves pixel-art and smooth pictures
+(MSAA is the render texture's, rounding is set per picture); the WebGL
+context's own `antialias` attribute changes MSAA edges in render textures,
+so it must be fixed, not left to default. A three.js picture between Pixi
+pictures changes nothing.
+
+### Consistency across machines (section 5.2 to 5.4)
+
+TEXT_RESULTS
 
 ## Summary
 

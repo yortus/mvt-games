@@ -1,22 +1,21 @@
-// Spike probe: which part of a pixel-art picture (no MSAA, rounded positions) changes the reel windows after it?
+// Spike probe: does a three.js picture (a second WebGL context) change the Pixi pictures drawn after it?
 import { describe } from 'vitest';
-import { visualTest } from '../harness';
+import { visualTest, visualThreeTest } from '../harness';
 import { speedPose } from '../speed/poses';
 
-const R = speedPose(39);
-const S = speedPose(0);
-const reel = (label: string) => { for (let i = 0; i < 3; i++) visualTest(`${label} ${i}`, R.pose); };
+const PROBES = [39, 0, 12, 30];
+const sphere = async () => {
+    const T = await import('three');
+    const scene = new T.Scene();
+    scene.add(new T.Mesh(new T.SphereGeometry(1, 32, 16), new T.MeshStandardMaterial({ color: 0xff4f8b })), new T.AmbientLight(0xffffff, 1));
+    const camera = new T.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0, 4);
+    return { scene, camera };
+};
 
-describe('repeat', () => {
-    reel('A');
-    visualTest('spin: no msaa, round', S.pose, { msaa: false, round: true });
-    reel('B');
-    visualTest('spin: msaa, no round', S.pose);
-    reel('C');
-    visualTest('spin: no msaa, no round', S.pose, { msaa: false, round: false });
-    reel('D');
-    visualTest('spin: msaa, round', S.pose, { msaa: true, round: true });
-    reel('E');
-    visualTest('reel: no msaa', R.pose, { msaa: false, round: false });
-    reel('F');
+describe('three between', () => {
+    for (const i of PROBES) visualTest(`start: ${speedPose(i).name}`, speedPose(i).pose);
+    visualThreeTest('sphere', sphere, { width: 100, height: 100 });
+    for (const i of PROBES) visualTest(`after three: ${speedPose(i).name}`, speedPose(i).pose);
+    visualThreeTest('sphere again', sphere, { width: 100, height: 100 });
 });
