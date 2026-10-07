@@ -118,6 +118,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
     if (takesInput) {
         app.stage.addChild(KeyboardInputView({
+            // The stage outlives each entry, so only handle key events while an entry that takes input is running
+            isActive: () => inputConfig() !== undefined,
             onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
             onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
             onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),

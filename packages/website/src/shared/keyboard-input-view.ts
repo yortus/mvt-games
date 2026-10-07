@@ -5,6 +5,13 @@ import { Container } from 'pixi.js';
 // ---------------------------------------------------------------------------
 
 export interface KeyboardInputViewBindings {
+    /**
+     * Whether to handle key events: true while an entry that takes input is
+     * running. When false, key events are ignored so the rest of the page
+     * (such as the Arcade's search box) can use them, and any held keys are
+     * released. Checked on every key press and release.
+     */
+    readonly isActive: () => boolean;
     onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
     onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     onPrimaryButtonChanged?: (pressed: boolean) => void;
@@ -19,7 +26,8 @@ export interface KeyboardInputViewBindings {
 /**
  * Keyboard input for the games: arrows or WASD for direction, Space and Shift
  * for the two buttons, Enter to restart. Shows nothing; it only has relay
- * bindings.
+ * bindings. It ignores all key events while no entry runs, so those reach the
+ * rest of the page.
  */
 export function KeyboardInputView(bindings: KeyboardInputViewBindings): Container {
     const view = new Container();
@@ -40,6 +48,11 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
     const onKeyUp = (e: KeyboardEvent): void => handleKeyboardEvent(e, false);
 
     function handleKeyboardEvent(e: KeyboardEvent, isDown: boolean): void {
+        if (!bindings.isActive()) {
+            // Release any held keys, so none carry over into the next entry
+            pressedKeys = 0;
+            return;
+        }
         if (e.key !== 'Enter' && e.key !== 'Shift') e.preventDefault();
         const keyFlag = keyFlags[e.key as keyof typeof keyFlags] ?? 0;
         const oldPressedKeys = pressedKeys;
