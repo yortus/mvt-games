@@ -303,6 +303,33 @@ levels per channel, so a per-channel tolerance of about 16 would pass all
 the real views on all three systems. Next to try: the photo (lossless
 images, or nearest-neighbour scaling), and the default control size.
 
+**The photo, the controls and the compositor** (one more round, 30
+pictures: the 21 above and 9 of images):
+
+- **Rotation, not decoding.** WebP and PNG pictures at natural size,
+  scaled smoothly and scaled pixelated all match on every system. Rotated
+  ones differ on both arm64 runners, identically (up to 26 levels): it is
+  the CPU, not macOS. The Arcade card's photo is tilted, which is all of
+  its difference.
+- **Controls' default size is not the cause.** With
+  `:where(input, button, select, textarea) { font-size: 13px }`, which
+  replaces only the browser's default, the controls-with-text picture
+  still differs on Linux and macOS (the same as before, near enough).
+  Something in the controls themselves (a select's arrow, a text field's
+  inner box) is drawn or sized per system. The repo's controls are a
+  styled button, progress bars and a range slider, and all of them
+  matched.
+- **Software compositing** (`--disable-gpu --disable-gpu-compositing`)
+  fixes macOS's transformed boxes, but adds 1-level differences on both
+  arm64 runners in the fruit machine panel, the entry info and the
+  filters. Not worth it.
+
+With TrueType blank text, hinting off, and nothing else: Windows 30/30,
+Linux x64 29/30 (only the unstyled controls with text), and on arm64 the
+rotated images (26 levels), blur and backdrop filters (1), a wavy
+underline (1), the unstyled controls, and on macOS its transformed boxes
+(14).
+
 ### What changes in the design
 
 1. Canvas text is drawn as paths (rung 3) in every visual run, not only as
