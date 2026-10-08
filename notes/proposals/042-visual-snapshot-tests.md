@@ -26,7 +26,7 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 6 done. The spike (2026-10-07) measured 1000
+**Status:** steps 1 to 7 done. The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
@@ -35,8 +35,9 @@ was revised to it (2026-10-08). The harness is built (2026-10-08):
 `visual-tests` (the spike's code is in its history, up to `b7f40c3`).
 The first eleven visual tests are in (step 3), and CI runs them on every
 push, on all three systems when the pinning could change (step 4).
-Every entry has a picture of its whole screen (step 5), and three.js
-views have pictures too (step 6); orphaned references are next.
+Every entry has a picture of its whole screen (step 5), three.js views
+have pictures too (step 6), and a full run finds references left behind
+(step 7); the docs are next.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -1187,9 +1188,21 @@ option should never make a picture less exact.
 
 ### 7.4 Orphaned references
 
-Renaming or deleting a test leaves its reference behind. A full run (no
-`-t`, no file filter) ends by listing the references no test compared
-with, and failing; `test:visual:update` deletes them instead.
+Renaming or deleting a test leaves its reference behind. A full run ends
+by listing the references no test compared with, and failing;
+`test:visual:update` deletes them instead (and a test file's directory,
+and `__screenshots__`, when that empties them).
+
+A full run is one the runner was given no arguments for but
+`--sequence.shuffle` and its seed (so the weekly run counts), not
+interrupted, with every file loaded and no test skipped: only then is an
+unused reference an orphan, not the reference of a test that sat the run
+out. Vitest does not tell reporters a run's file filters, so the runner,
+which sees every argument, says whether a run is full. Each test records
+its picture's name as it starts, so one that fails before drawing still
+counts as using its reference; calibration pictures, drawn as a page is
+set up rather than by tests, are reported to Node by the page with the
+set it compared.
 
 ## 8. The browser on this machine
 
@@ -1496,7 +1509,11 @@ project structure page gains `__screenshots__/`, `src/testing/` and
      Fixed in `@mvtjs/pixi`, with a changeset; Kwazy Cactii, whose art is
      scaled, now looks the same, slightly crisper, every time, and its
      thumbnail will change when they are next made.
-7. **Orphaned references** (section 7.4).
+7. ~~**Orphaned references**~~ Done 2026-10-08, as section 7.4
+   describes. Checked with two planted orphans, one a test's and one a
+   calibration picture: a full run listed both and failed (every test
+   passing), a filtered run (`--picture`) ignored them, and the update
+   deleted them.
 8. **Docs** (section 11), with the documentation skill.
 
 ## Spike results

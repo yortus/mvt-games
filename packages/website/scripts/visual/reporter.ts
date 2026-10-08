@@ -4,13 +4,18 @@
  * kind), the slowest, and how much the references take, with the largest.
  * So a slow test, or a big picture, is noticed when it is added. On GitHub
  * it also goes on the job's summary page.
+ *
+ * After a full run (`scripts/visual/run.ts` says which), it also looks for
+ * references no picture was compared with, left by tests renamed or
+ * deleted: it lists them and fails the run, or, updating, deletes them.
  */
 
 import { appendFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
-import type { Reporter, TestModule } from 'vitest/node';
+import type { Reporter, TestModule, TestRunEndReason } from 'vitest/node';
 import type { VisualTestMeta } from '../../src/testing';
-import { findReferences } from './references';
+import { comparedCalibrationReferences } from './commands';
+import { findReferences, orphansOf, referenceDirOf, removeReference } from './references';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -22,7 +27,8 @@ export function createVisualReporter(): Reporter {
         onTestRunStart() {
             started = performance.now();
         },
-        onTestRunEnd(testModules: readonly TestModule[]) {
+        onTestRunEnd(testModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
+            const orphanLines = isFullRun(testModules, reason) ? settleOrphans(testModules) : [];
             const pictures: { name: string; meta: VisualTestMeta; total: number }[] = [];
             for (const module of testModules) {
                 for (const test of module.children.allTests()) {
@@ -33,7 +39,10 @@ export function createVisualReporter(): Reporter {
                     pictures.push({ name: test.fullName, meta, total });
                 }
             }
-            if (pictures.length === 0) return;
+            if (pictures.length === 0) {
+                if (orphanLines.length > 0) console.log(`\n${orphanLines.join('\n')}\n`);
+                return;
+            }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
             const lines = [`Visual: ${pictures.length} pictures in ${seconds} s`];
             for (const kind of ['pixi', 'html'] as const) {
@@ -54,6 +63,7 @@ export function createVisualReporter(): Reporter {
             const slowest = [...pictures].sort((a, b) => b.total - a.total).slice(0, 5);
             lines.push('  Slowest:');
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
+            lines.push(...orphanLines);
             const references = findReferences(join(WEBSITE, 'src'));
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             lines.push(`  References: ${references.length} files, ${kilobytes(bytes)}. Largest:`);
@@ -81,6 +91,48 @@ const OUTCOMES: Readonly<Record<string, string>> = {
 };
 
 const WEBSITE = resolve(import.meta.dirname, '..', '..');
+
+/**
+ * Whether every test ran: a run the runner calls full (no filters), not
+ * interrupted, with every file loaded and no test skipped. Only then is a
+ * reference no picture used an orphan, not one whose test sat this run out.
+ */
+function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason): boolean {
+    if (process.env.VISUAL_FULL_RUN !== '1' || reason === 'interrupted') return false;
+    for (const module of testModules) {
+        if (module.errors().length > 0) return false;
+        for (const test of module.children.allTests()) {
+            if (test.result().state === 'skipped') return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Lists the references no picture was compared with, and fails the run; or,
+ * updating, deletes them. Returns the summary's lines about them.
+ */
+function settleOrphans(testModules: readonly TestModule[]): string[] {
+    const compared = new Set(comparedCalibrationReferences());
+    for (const module of testModules) {
+        for (const test of module.children.allTests()) {
+            const picture = test.meta().visualPicture;
+            if (picture !== undefined) compared.add(join(referenceDirOf(module.moduleId), `${picture}.png`));
+        }
+    }
+    const orphans = orphansOf({ references: findReferences(join(WEBSITE, 'src')).map((r) => r.file), compared });
+    if (orphans.length === 0) return [];
+    const names = orphans.map((file) => `    ${relative(WEBSITE, file).replaceAll('\\', '/')}`);
+    if ((process.env.VISUAL_MODE ?? 'compare') === 'compare') {
+        process.exitCode = 1;
+        return [
+            `  ${orphans.length} references no test compared with, left by tests renamed or deleted (\`npm run test:visual:update\` deletes them):`,
+            ...names,
+        ];
+    }
+    for (const file of orphans) removeReference(file);
+    return [`  Deleted ${orphans.length} references no test compared with:`, ...names];
+}
 
 function kilobytes(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;

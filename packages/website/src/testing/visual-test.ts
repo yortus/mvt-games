@@ -46,6 +46,7 @@ export function visualTest(
         const maxPixels = inject('visualMaxPixels');
         const setup = await pageSetup();
         const id = pictureNameOfCurrentTest();
+        task.meta.visualPicture = id.name;
         const ms: Record<string, number> = {};
         // The overloads pair each kind of view with its own options
         if (kind === 'pixi') preparePixiPose(options as PixiPictureOptions);

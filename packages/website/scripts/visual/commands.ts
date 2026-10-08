@@ -14,14 +14,15 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
-    VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualPictureId, VisualPicturePayload, VisualScope,
+    VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualPictureId, VisualPicturePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../../src/testing';
 import { comparePictures } from './compare';
 import { decodePng, encodePng, hashPicture, type Picture, readPngHash } from './png';
+import { referenceDirOf } from './references';
 
 // ---------------------------------------------------------------------------
 // Commands
@@ -40,8 +41,9 @@ const visualSession: BrowserCommand<[VisualScope]> = (ctx, scope): VisualSession
     return { mode: MODE, hashes, isCalibrated: scope.calibration !== undefined && calibrated.has(scope.calibration) };
 };
 
-const visualCalibrated: BrowserCommand<[VisualKind]> = (_ctx, kind) => {
-    calibrated.add(kind);
+const visualCalibrated: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
+    calibrated.add(calibration.kind);
+    for (const name of calibration.names) calibrationReferences.add(join(calibrationDir(calibration.kind), `${name}.png`));
 };
 
 const visualMismatch: BrowserCommand<[VisualPicturePayload]> = (ctx, payload): VisualVerdict => {
@@ -92,6 +94,15 @@ const visualAbort: BrowserCommand<[string]> = (ctx, message) => {
 
 export const visualCommands = { visualSession, visualMismatch, visualCapture, visualEnvironment, visualCalibrated, visualAbort };
 
+/**
+ * The calibration references this run compared with: calibration pictures
+ * are drawn as a page is set up, not by tests, so the reporter learns of
+ * them here when it looks for references no picture was compared with.
+ */
+export function comparedCalibrationReferences(): ReadonlySet<string> {
+    return calibrationReferences;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
@@ -102,8 +113,9 @@ const OUT = join(REPO, '.vitest', 'visual');
 const ENVIRONMENT_FILE = join(WEBSITE, 'visual-environment.json');
 const MODE = (process.env.VISUAL_MODE ?? 'compare') as VisualMode;
 
-/** The calibration sets this run has checked and found matching. */
+/** The calibration sets this run has checked and found matching, and their references. */
 const calibrated = new Set<VisualKind>();
+const calibrationReferences = new Set<string>();
 
 interface EnvironmentFile {
     readonly browser: string;
@@ -117,7 +129,7 @@ function referenceDir(ctx: BrowserCommandContext, scope: VisualScope): string {
     if (scope.calibration !== undefined) return calibrationDir(scope.calibration);
     const testPath = ctx.testPath;
     if (testPath === undefined) throw new Error('A visual picture outside a test file');
-    return join(dirname(testPath), '__screenshots__', basename(testPath));
+    return referenceDirOf(testPath);
 }
 
 function calibrationDir(kind: VisualKind): string {

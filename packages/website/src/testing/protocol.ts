@@ -97,6 +97,12 @@ export interface VisualSession {
     readonly isCalibrated: boolean;
 }
 
+/** A calibration set that matched: its kind, and the names of the pictures compared. */
+export interface VisualCalibration {
+    readonly kind: VisualKind;
+    readonly names: readonly string[];
+}
+
 /** Timings and outcome, attached to each test for the run's summary. */
 export interface VisualTestMeta {
     readonly kind: VisualKind;
@@ -113,6 +119,11 @@ declare module 'vitest' {
     interface TaskMeta {
         /** A visual test's timings and outcome, for the run's summary. */
         visual?: VisualTestMeta;
+        /**
+         * The name of a visual test's reference file, set as it starts, so a
+         * test that fails before its picture still counts as using it.
+         */
+        visualPicture?: string;
     }
     interface ProvidedContext {
         /** Which project the page belongs to, provided by its config. */
@@ -134,8 +145,8 @@ export interface VisualCommands {
      * in `environment` mode, written as them). Returns what differed.
      */
     visualEnvironment: (environment: VisualEnvironment) => Promise<readonly string[]>;
-    /** Records that a calibration set matched, so the run's other pages skip it. */
-    visualCalibrated: (kind: VisualKind) => Promise<void>;
+    /** Records that a calibration set matched, so the run's other pages skip it, and which references it used. */
+    visualCalibrated: (calibration: VisualCalibration) => Promise<void>;
     /** Stops the run before any more tests, with one error. */
     visualAbort: (message: string) => Promise<void>;
 }

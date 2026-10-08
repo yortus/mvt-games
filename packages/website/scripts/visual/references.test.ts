@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { encodePng, type Picture } from './png';
-import { checkReference, findReferences } from './references';
+import { checkReference, findReferences, orphansOf, referenceDirOf, removeReference } from './references';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-references-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -50,5 +50,39 @@ describe('checkReference', () => {
     it('fails a PNG that carries no hash', () => {
         const png = new PNG({ width: 2, height: 2 });
         expect(checkReference(write('plain.png', PNG.sync.write(png)))).toMatch(/carries no pixel hash/);
+    });
+});
+
+describe('orphansOf', () => {
+    it('gives the references not compared with, whichever way their paths are written', () => {
+        const references = referenceDirOf(join(tmpdir(), 'views', 'a.visual.tsx'));
+        const kept = join(references, 'kept.png');
+        const orphan = join(references, 'renamed.png');
+        // Vitest writes paths with forward slashes
+        expect(orphansOf({ references: [kept, orphan], compared: [kept.replaceAll('\\', '/')] })).toEqual([orphan]);
+    });
+});
+
+describe('removeReference', () => {
+    it('deletes the file, and the directories it leaves empty', () => {
+        const views = join(dir, 'removal', 'views');
+        const one = referenceDirOf(join(views, 'one.visual.tsx'));
+        const two = referenceDirOf(join(views, 'two.visual.tsx'));
+        mkdirSync(one, { recursive: true });
+        mkdirSync(two, { recursive: true });
+        writeFileSync(join(one, 'a.png'), encodePng(picture(1)));
+        writeFileSync(join(one, 'b.png'), encodePng(picture(2)));
+        writeFileSync(join(two, 'c.png'), encodePng(picture(3)));
+
+        removeReference(join(one, 'a.png'));
+        expect(existsSync(join(one, 'b.png'))).toBe(true);
+
+        removeReference(join(one, 'b.png'));
+        expect(existsSync(one)).toBe(false);
+        expect(existsSync(two)).toBe(true);
+
+        removeReference(join(two, 'c.png'));
+        expect(existsSync(join(views, '__screenshots__'))).toBe(false);
+        expect(existsSync(views)).toBe(true);
     });
 });

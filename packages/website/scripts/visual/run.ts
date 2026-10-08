@@ -8,6 +8,11 @@
  *   npm run test:visual:update          also write the references that changed or are new
  *   npm run test:visual:environment     also rewrite the environment's fingerprint
  *
+ * A run with no arguments (or only `--sequence.shuffle` and its seed) is a
+ * full run: every test runs, so a reference no test compared with belongs
+ * to a test renamed or deleted. The summary lists those and fails the run;
+ * the update deletes them.
+ *
  * On Windows it also reads the account's failed-logon count before and
  * after: Playwright's headless shell makes no logon attempt, but the full
  * Chrome does (once per new profile), and too many lock the account. If
@@ -24,6 +29,8 @@ const WEBSITE = resolve(import.meta.dirname, '..', '..');
 const require = createRequire(import.meta.url);
 const VITEST = join(dirname(require.resolve('vitest/package.json')), 'vitest.mjs');
 const PLAYWRIGHT = join(dirname(require.resolve('playwright/package.json')), 'cli.js');
+/** Arguments that change only the order tests run in, which a full run may have. */
+const ORDER_ONLY = /^(--sequence\.shuffle|--sequence\.seed(=\d+)?|\d+)$/;
 /** Windows locks an account after 10 failed logons by default; stop well short. */
 const MAX_FAILED_LOGONS = 4;
 
@@ -42,6 +49,7 @@ for (let i = 0; i < args.length; i++) {
 // and lose on the way through npm and a shell
 if (pictures.length > 0) vitestArgs.push('-t', `(${pictures.map(pictureNamePattern).join('|')})$`);
 const isWatch = vitestArgs.includes('--watch');
+const isFullRun = !isWatch && vitestArgs.every((arg) => ORDER_ONLY.test(arg));
 
 const install = spawnSync(process.execPath, [PLAYWRIGHT, 'install', 'chromium-headless-shell'], { cwd: WEBSITE, stdio: 'inherit' });
 if (install.status !== 0) process.exit(install.status ?? 1);
@@ -55,7 +63,11 @@ if (before !== undefined && before >= MAX_FAILED_LOGONS) {
 const run = spawnSync(
     process.execPath,
     [VITEST, ...(isWatch ? [] : ['run']), '--config', 'vitest.visual.config.ts', ...vitestArgs.filter((a) => a !== '--watch')],
-    { cwd: WEBSITE, stdio: 'inherit', env: { ...process.env, VISUAL_MODE: mode, VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' } },
+    {
+        cwd: WEBSITE,
+        stdio: 'inherit',
+        env: { ...process.env, VISUAL_MODE: mode, VISUAL_FULL_RUN: isFullRun ? '1' : '', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' },
+    },
 );
 
 const after = failedLogons();

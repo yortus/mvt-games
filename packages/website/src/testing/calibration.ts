@@ -45,7 +45,7 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
         await visualCommands.visualAbort(message);
         throw new Error(message);
     }
-    await visualCommands.visualCalibrated(kind);
+    await visualCommands.visualCalibrated({ kind, names: Object.keys(kind === 'pixi' ? PIXI_CALIBRATION : HTML_CALIBRATION) });
 }
 
 // ---------------------------------------------------------------------------
