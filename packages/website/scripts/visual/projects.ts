@@ -40,9 +40,13 @@ export function visualProject(options: VisualProjectOptions): TestProjectInlineC
         extends: './vite.config.ts',
         // One page runs many files, so a dependency found mid-run must not be
         // re-bundled: the files after it would load a second copy of Pixi,
-        // whose objects (Texture.WHITE) are not the first's
+        // whose objects (Texture.WHITE) are not the first's. Every dependency
+        // an entry or the harness imports, so: a new one belongs here
         optimizeDeps: {
-            include: ['pixi.js', 'three', 'three/addons/environments/RoomEnvironment.js', 'gsap', 'fontkit'],
+            include: [
+                'pixi.js', 'pixi-solid', 'solid-js', 'solid-js/store', 'three', 'three/addons/environments/RoomEnvironment.js',
+                'gsap', 'fontkit',
+            ],
         },
         test: {
             name: isHtml ? 'visual-html' : 'visual',

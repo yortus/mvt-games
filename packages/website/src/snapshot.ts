@@ -1,22 +1,20 @@
 import { Application, TextureSource } from 'pixi.js';
-import { refreshView, updateView, type View } from '@mvtjs/pixi';
 import { CATALOGUE, findEntry } from './entries';
-import { type ArcadeEntry, type EntrySession, thumbnailCropOf } from './entry-types';
+import { type ArcadeEntry, thumbnailCropOf } from './entry-types';
+import { advanceHeadless, startPixiHeadless, thumbnailMomentOf } from './runner';
 
 // The snapshot page (`snapshot.html`), for `scripts/generate-thumbnails.ts`
 // only: it is served by the dev server and left out of the build. Opened as
 // `snapshot.html?entry=<id>`, it starts that entry at its play size, advances
 // it as long as the entry asks (`thumbnailAdvanceMs`) in frame-sized steps,
 // updating its models and views and playing any controls it asks for
-// (`thumbnailInput`), then refreshes and draws once. It then
+// (`thumbnailInput`), then refreshes and draws once (the runner's
+// `startPixiHeadless` and `advanceHeadless`, which the visual tests share). It then
 // resolves `window.snapshot` with the rectangle to capture. Opened without an
 // entry, it resolves it with every entry's id, play area and thumbnail crop,
 // so the script can size the viewport to each (an entry whose play area
 // follows the viewport then lays itself out as designed) and capture the
 // picture sharp enough for its crop to fill a card.
-//
-// The steps are small because models with phases or timelines are not
-// leap-safe: one giant step would skip what happens between.
 
 /** What the page resolves `window.snapshot` with. */
 interface SnapshotResult {
@@ -60,10 +58,11 @@ async function snapshot(): Promise<SnapshotResult> {
 
 async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     const starter = await entry.load();
-    const advanceMs = starter.thumbnailAdvanceMs ?? STEP_MS;
+    const totalMs = thumbnailMomentOf(starter);
 
     if (starter.kind === 'pixi') {
-        // An entry that lays itself out is photographed at the play area its metadata lists
+        // Fitted before the application is sized: an entry that lays itself out is
+        // photographed at the play area its metadata lists
         starter.fitTo?.(entry.screenWidth, entry.screenHeight);
         const isPixelArt = starter.pixelArt ?? false;
         TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
@@ -84,9 +83,8 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         root.style.height = app.canvas.style.height;
         if (isPixelArt) app.canvas.style.imageRendering = 'pixelated';
         root.append(app.canvas);
-        // Headless: no host, as when the entry is measured or thumbnailed
-        const session = starter.start({ stage: app.stage });
-        advance(session, [app.stage], advanceMs, starter.thumbnailInput);
+        const session = startPixiHeadless({ entry, starter, stage: app.stage });
+        advanceHeadless({ session, views: [app.stage], totalMs, input: starter.thumbnailInput });
         app.render();
         return;
     }
@@ -96,33 +94,13 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     const session = starter.start({ element: root });
     // Give the entry time to size itself, and to make renderers that start asynchronously
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
-    advance(session, session.views, advanceMs);
+    advanceHeadless({ session, views: session.views, totalMs });
     session.render();
-}
-
-function advance(
-    session: EntrySession,
-    views: readonly View[],
-    totalMs: number,
-    input?: (session: EntrySession, elapsedMs: number) => void,
-): void {
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const step = Math.min(STEP_MS, remaining);
-        input?.(session, totalMs - remaining);
-        session.update(step);
-        for (let i = 0; i < views.length; i++) updateView(views[i], step);
-        remaining -= step;
-    }
-    for (let i = 0; i < views.length; i++) refreshView(views[i]);
 }
 
 function nextFrame(): Promise<number> {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }
-
-/** One frame at 60 frames a second, rounded down. */
-const STEP_MS = 16;
 
 /** How long an element entry is given to lay itself out and make its renderers. */
 const SETTLE_MS = 500;
