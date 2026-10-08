@@ -213,7 +213,8 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         group.add(new AmbientLight(0xffffff, 0.3), light);
         return group;
     }, { width: 160, height: 120, camera: shapesCamera }),
-    // The fruit machine's way: a room to reflect, tone-mapped, on a coloured background
+    // The fruit machine's way: a room to reflect, tone-mapped, on a coloured background. A small
+    // environment map: the same code, and seconds less at start-up in software WebGL
     'three-environment': three(shapes, {
         width: 160,
         height: 120,
@@ -222,7 +223,7 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
             renderer.toneMapping = NeutralToneMapping;
             scene.background = new Color(0x15102b);
             const environment = new PMREMGenerator(renderer);
-            scene.environment = environment.fromScene(new RoomEnvironment(), 0.04).texture;
+            scene.environment = environment.fromScene(new RoomEnvironment(), 0.04, 0.1, 100, { size: 32 }).texture;
             environment.dispose();
         },
     }),
