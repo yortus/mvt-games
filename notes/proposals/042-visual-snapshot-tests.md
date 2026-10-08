@@ -75,7 +75,7 @@ eye because headless Chrome drew the canvas blank),
 | 5 | **No screenshots on the fast path.** Pixi and three.js pictures are read from the renderer (`readPixels`), hashed in the page, and compared with the hash stored in the reference PNG. No PNG is encoded, decoded or sent anywhere unless the hashes differ | [4.4](#44-pixels-from-the-renderer-hashes-not-images) |
 | 6 | HTML views need a real screenshot, taken through the DevTools protocol (35-60 ms), in a project of their own that isolates each file, since their stylesheets would otherwise leak | [4.5](#45-html-the-slow-path-kept-small) |
 | 7 | **One environment, pinned inside the browser.** Playwright's headless shell (its build fixed by the lockfile, fetched on first use), software WebGL (SwiftShader), software 2D drawing and compositing, hinting off, locale, time zone and scale. Nothing to install beyond `npm ci` | [5.3](#53-one-environment-pinned-inside-the-browser) |
-| 8 | **Text is not left to the system.** Canvas text (Pixi) is laid out and drawn as paths by our own code, from test fonts. HTML text uses a blank TrueType font: every character an empty glyph 0.6 em wide, so layout is kept and nothing is drawn. Rotated images are sampled nearest-neighbour and unstyled text fields are 20ch wide | [5.4](#54-text-the-hard-part) |
+| 8 | **Text is not left to the system.** Canvas text (Pixi) is laid out and drawn as paths by our own code, from test fonts. HTML text uses a blank TrueType font: every character an empty glyph 0.625 em wide, font sizes rounded to quarter pixels, so layout is kept and nothing is drawn. Rotated images are sampled nearest-neighbour and unstyled text fields are 20ch wide | [5.4](#54-text-the-hard-part) |
 | 9 | A committed **fingerprint** (browser build, WebGL renderer, and the hashes of a calibration set of pictures), checked before any comparison. Where it does not match, the tests refuse to compare or update, and say why | [5.5](#55-a-fingerprint-checked-first) |
 | 10 | **Exact first, tolerance second.** A pass is an identical hash. Only on a mismatch is the picture compared, passing when no channel of any pixel differs by more than 2 levels of 255 (arm64 rounding), and a pass within tolerance is reported, not hidden | [5.6](#56-exact-first-tolerance-second) |
 | 11 | References are PNGs written by our own encoder (byte-identical for identical pixels, on any machine), carrying their pixel hash in a text chunk, with no platform in their names: there is one environment | [5.7](#57-reference-files-the-same-bytes-from-any-machine) |
@@ -738,16 +738,24 @@ the test fonts' names").
 
 **HTML text: a blank font.** DOM text cannot be drawn by our code, and
 nothing tried in the browser makes the system draw it the same way. So
-it is not drawn. One rule, `font-family: "VT Blank" !important`, on every
+it is not drawn. One rule, `font-family: "Visual Blank" !important`, on every
 element, pseudo-element, placeholder and form control, puts all HTML
 text in a test font whose every code point (cmap format 13, so nothing
 falls back to a system font, emoji and CJK included) is one empty glyph,
-0.6 em wide, with fixed vertical metrics. Layout is kept, and the
+0.625 em wide, with fixed vertical metrics. Layout is kept, and the
 letters are gone. The font is TrueType: Windows (DirectWrite) and macOS
 lay a TrueType font out with exact fractional advances, and agree with
-each other to 1/64 pixel; with `--font-render-hinting=none`, Linux does
-too. (A CFF2 blank font does not work: Chrome's own engine rounds its
-advances on Windows and Linux, macOS does not.) It is written, table by
+each other exactly; with `--font-render-hinting=none`, Linux keeps
+fractions too. (A CFF2 blank font does not work: Chrome's own engine
+rounds its advances on Windows and Linux, macOS does not.) Linux still
+scales a font in 64ths of a pixel where the others use the exact size, so
+two more measures make it agree (found by CI in step 4): the font has
+1024 units per em, a power of two, and the harness rounds every element's
+font size to the nearest quarter pixel before the picture is taken. With
+both, a probe of every eighth of a pixel from 6 to 40 px, in lines of 1
+to 400 characters, matched exactly on all three systems at every quarter
+pixel; with 1000 units per em, Linux was a 64th or two off at most sizes,
+whole pixels included, enough to move a box's edge a pixel. It is written, table by
 table, by `scripts/visual/blank-font.ts` (`npm run generate-blank-font
 -w @mvtjs/website`), its output committed as
 `src/testing/fonts/visual-blank.ttf`; a unit test checks the two agree.
@@ -757,7 +765,8 @@ that font's, but for its name.
 What a blank-text picture shows: every box, border, background, image,
 control, bullet and underline, and the layout itself. What it cannot
 show: changes to copy, text colour, weight, style or alignment; and,
-since text takes 0.6 em per character rather than its real width, lines
+since text takes 0.625 em per character rather than its real width,
+and font sizes are rounded to quarter pixels, lines
 wrap and boxes size differently from the real page, so an overflow that
 only real text causes would not appear. For this repo's HTML views (the
 Arcade's, the fruit machine's panel and terminal, the boids' panel),
@@ -1194,29 +1203,43 @@ check on Windows before and after launching, and refuse to go on.
 
 ## 9. CI
 
-The deploy workflows run `npm test` on `ubuntu-latest`, unaffected.
+The deploy workflows run `npm test` on `ubuntu-latest`, unaffected. The
+visual tests have a workflow of their own, `.github/workflows/visual.yml`:
 
-A visual job runs `npm run test:visual` on every push, on
-`ubuntu-latest`, after the same `npm ci`. Playwright's browser cache is
-kept between runs with the cache action, keyed on Playwright's version.
-The spike's 1000 pictures took 29 s there, beyond `npm ci` and the
-browser download. Linux x64 matched this machine exactly in every
-picture, so no tolerance is needed.
+- **Every push, on Ubuntu.** `npm run test:visual` after the same
+  `npm ci`, with Playwright's browser kept between runs by the cache
+  action, keyed on Playwright's version. About 5 s of tests; the job,
+  `npm ci` and the browser included, takes under a minute. Pull requests
+  from forks run it too (a pull request from a branch here is already
+  run by its push).
+- **All three systems when the pinning could change.** A first job
+  compares the commit with the one before it (a new branch, with `main`):
+  if Playwright's version changed (so Chromium's), or the harness did
+  (`src/testing/`, `scripts/visual/`, the visual config, the fingerprint,
+  the workflow), the tests also run on `windows-latest` and
+  `macos-latest` (arm64). An upgrade or a harness change that draws or
+  lays out differently on one system is caught before it is accepted
+  (section 5.9). Its first run did exactly that: Linux laid the blank
+  font out a fraction of a pixel differently at fractional font sizes,
+  which section 5.4's two measures now pin.
+- **Weekly, and on demand** (Mondays 03:00 UTC, or "Run workflow"): all
+  three systems, since runner images change under us (`ubuntu-latest`
+  moves to Ubuntu 26 on 2026-10-19); the tests in a shuffled order
+  (`--sequence.shuffle`, seeded with the run's id, printed in the log to
+  repeat it), to show no picture depends on the ones before it (section
+  4.3); and `npm run test:visual:check-references`, which decodes every
+  reference and checks its pixels against the hash it carries (section
+  5.7).
 
-A commit that changes Playwright's version (so Chromium's) also runs the
-visual job on `windows-latest` and `macos-latest` (arm64), beside
-Ubuntu, so an upgrade that draws or lays out differently on one system is
-caught before it is accepted (section 5.9).
-
-A weekly scheduled job runs the suite in shuffled order, and decodes
-every reference to check that its pixels match its stored hash (sections
-4.3 and 5.7).
-
-Contributors on any of the three systems (and Claude Code's cloud
-sessions, on Linux) can run and update the references themselves, so no
-CI job writes references. A pull request whose pictures changed without
-their references fails, with the new pictures and diffs uploaded as an
-artifact for the reviewer.
+No job writes references: contributors on any of the three systems (and
+Claude Code's cloud sessions, on Linux) update them on their own machine.
+A changed picture fails its job with an annotation per picture on the
+run's page (Vitest's `github-actions` reporter: how many pixels, by how
+much, the rectangle holding them, and the files), and the actual and diff
+images are uploaded as an artifact for the reviewer. A failure before any
+test (the environment check) has no annotation of its own, so the job
+makes one from the run's last lines. The visual summary (timings, sizes)
+goes on the job's summary page.
 
 ## 10. Whole entries, for free
 
@@ -1272,7 +1295,7 @@ project structure page gains `__screenshots__/`, `src/testing/` and
 ## 12. Open questions
 
 1. **Is blank HTML text enough?** HTML pictures check layout and
-   styling, not copy, and lay text out 0.6 em per character, not at its
+   styling, not copy, and lay text out 0.625 em per character, not at its
    real width (section 5.4). For this repo's HTML views that is what a
    visual test is for. Recommendation: accept it; revisit if an HTML
    view's looks come to depend on its text (a view whose overflow
@@ -1697,7 +1720,8 @@ on arm64. Pixi and three.js pictures, with text drawn as paths, already
 were (one picture 1 level off on arm64).
 
 The compromises, all confined to the visual tests: HTML text draws
-nothing and takes 0.6 em per character; rotated images are sampled
+nothing and takes 0.6 em per character (0.625 em since step 4, with font
+sizes in quarter pixels); rotated images are sampled
 nearest-neighbour; the compositor is software (as it effectively is
 headless already); unstyled text fields are 20 characters wide by
 `ch`, not by the font's average; and a tolerance of 2 levels, which a

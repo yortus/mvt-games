@@ -95,23 +95,23 @@ jobs:
                   path: ${{ runner.temp }}/ms-playwright
                   key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
 
-            # The browser comes from the cache, or is fetched; on Linux, the system
-            # libraries it needs are installed either way
+            # The browser comes from the cache, or is fetched. Not --with-deps: the runners
+            # already have the libraries it needs, and the fonts it would add are never used
+            # (the harness draws or blanks all text) and come from a mirror that can take minutes
             - name: Playwright's headless shell
-              run: |
-                  if [ "$RUNNER_OS" = Linux ]; then npx playwright install --with-deps chromium-headless-shell
-                  else npx playwright install chromium-headless-shell; fi
+              run: npx playwright install chromium-headless-shell
               working-directory: packages/website
 
             # Weekly and on demand, in a shuffled order, its seed in the log to repeat it.
-            # A failure before any test (the environment check) makes no annotation of
-            # its own, so the run's last lines become one, readable without the logs
+            # A failing test is an annotation of its own; a failure before any test (the
+            # environment check) is not, so then the run's last lines become one
             - name: Visual tests
               env:
                   SHUFFLE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('--sequence.shuffle --sequence.seed={0}', github.run_id) || '' }}
               run: |
                   set -o pipefail
                   npm run test:visual -- $SHUFFLE 2>&1 | tee visual.log || {
+                      grep -q "Tests .* failed" visual.log ||
                       echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/\x1b\[[0-9;]*m//g; s/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
                       exit 1
                   }

@@ -72,5 +72,5 @@ function drawDisc(g: Graphics, radius: number): void {
 }
 
 function drawRing(g: Graphics, radius: number): void {
-    g.circle(0, 0, radius - 8).stroke({ width: 5, color: WHITE });
+    g.circle(0, 0, radius - 8).stroke({ width: 4, color: WHITE });
 }
