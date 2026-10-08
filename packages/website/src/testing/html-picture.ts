@@ -1,4 +1,4 @@
-import { pixelateRotatedImages } from './html-rules';
+import { pixelateRotatedImages, quantizeFontSizes } from './html-rules';
 import { visualCommands } from './judge';
 import { fitPicture } from './picture-budget';
 import type { VisualPictureId, VisualRect, VisualVerdict } from './protocol';
@@ -23,6 +23,7 @@ export interface HtmlPictureOptions {
  * Photographs an element: mounts it in a host that shrinks to fit it (or
  * takes the given size), waits for its fonts and every image, and has Node
  * capture the host's rectangle through the DevTools protocol and judge it.
+ * Font sizes are rounded to quarter pixels first (`quantizeFontSizes`).
  * The element is removed after, whatever happens. HTML pictures are always
  * full size (the browser's own scaling differs between systems), so one
  * over the size budget fails.
@@ -41,6 +42,7 @@ export async function captureHtmlPicture(
     try {
         await document.fonts.ready;
         pixelateRotatedImages(host);
+        quantizeFontSizes(host);
         // Every image loaded and decoded, lazy ones too (a lazy image off screen never loads)
         await Promise.all([...host.querySelectorAll('img')].map((image) => {
             image.loading = 'eager';

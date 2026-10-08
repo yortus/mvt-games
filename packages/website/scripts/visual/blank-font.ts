@@ -1,6 +1,6 @@
 /**
  * The blank font: a TrueType font in which every code point is one empty
- * glyph, 0.6 em wide, with fixed vertical metrics. HTML text in a visual
+ * glyph, 0.625 em wide, with fixed vertical metrics. HTML text in a visual
  * test is set in it, so it keeps its layout and draws nothing: the systems
  * draw text differently, and nothing else made them agree.
  *
@@ -9,6 +9,12 @@
  * agree to 1/64 pixel; with `--font-render-hinting=none`, Linux (Chrome's
  * own engine) does too. Chrome's engine rounds a CFF2 font's advances to
  * whole pixels on Windows and Linux, and macOS does not.
+ *
+ * 1024 units per em, a power of two: Linux scales a font in 64ths of a
+ * pixel, and with any other number of units its advances come out a 64th
+ * or two off the other systems' at most sizes, enough to move a box's edge
+ * a pixel. With 1024, all three agree exactly at every font size in
+ * quarter pixels (the harness rounds sizes to those).
  *
  * Every code point maps to the glyph: a format 4 subtable for U+0020 to
  * U+2FFF (its offsets cannot reach further), and a format 13 subtable
@@ -55,10 +61,10 @@ export function buildBlankFont(options: BlankFontOptions): Uint8Array {
 // Internals
 // ---------------------------------------------------------------------------
 
-const UNITS_PER_EM = 1000;
-const ADVANCE = 600;
-const ASCENT = 800;
-const DESCENT = 200;
+const UNITS_PER_EM = 1024;
+const ADVANCE = 640;
+const ASCENT = 820;
+const DESCENT = 204;
 /** `.notdef` and the one glyph every code point maps to. */
 const GLYPH_COUNT = 2;
 const BLANK_GLYPH = 1;

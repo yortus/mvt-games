@@ -11,24 +11,24 @@ describe('buildBlankFont', () => {
     it('is a TrueType font with the family asked for', () => {
         expect(String.fromCharCode(...bytes.subarray(0, 4))).toBe('\0\x01\0\0');
         expect(font.familyName).toBe('Visual Blank');
-        expect(font.unitsPerEm).toBe(1000);
+        expect(font.unitsPerEm).toBe(1024);
         expect(font.numGlyphs).toBe(2);
     });
 
-    it('maps every code point to one empty glyph, 0.6 em wide', () => {
+    it('maps every code point to one empty glyph, 0.625 em wide', () => {
         for (const text of ['Sphinx', '×←⛶', '漢字', '😀🎰', 'عربى']) {
             const run = font.layout(text);
             for (let i = 0; i < run.glyphs.length; i++) {
                 expect(run.glyphs[i].id).toBe(1);
-                expect(run.positions[i].xAdvance).toBe(600);
+                expect(run.positions[i].xAdvance).toBe(640);
                 expect(run.glyphs[i].path.commands).toHaveLength(0);
             }
         }
     });
 
     it('has fixed vertical metrics', () => {
-        expect(font.ascent).toBe(800);
-        expect(font.descent).toBe(-200);
+        expect(font.ascent).toBe(820);
+        expect(font.descent).toBe(-204);
         expect(font.lineGap).toBe(0);
     });
 
