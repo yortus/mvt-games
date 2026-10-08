@@ -26,7 +26,7 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 4 done. The spike (2026-10-07) measured 1000
+**Status:** steps 1 to 5 done. The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
@@ -35,7 +35,8 @@ was revised to it (2026-10-08). The harness is built (2026-10-08):
 `visual-tests` (the spike's code is in its history, up to `b7f40c3`).
 The first eleven visual tests are in (step 3), and CI runs them on every
 push, on all three systems when the pinning could change (step 4).
-Whole entries are next.
+Every Pixi entry has a picture of its whole screen (step 5); three.js is
+next.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -1249,11 +1250,17 @@ entry headless at its play size, advance it by `thumbnailAdvanceMs` in
 16 ms steps, playing its `thumbnailInput`, and draw one frame. That is a
 visual test of the whole entry, minus the comparison.
 
-One file, `entries/entries.visual.tsx`, can loop over the catalogue and
-make one `visualTest` per entry from the same code. To share it, the
-page's `start` and `advance` move into a module both import. Then every
-entry has a test of its whole screen, written once, catching what no leaf
-test sees: layout, layering, a view left out of its parent. The spike
+One file, `entries/entries.visual.tsx`, loops over the catalogue and
+makes one `visualTest` per Pixi entry from the same code: the runner's
+`startPixiHeadless` and `advanceHeadless`, which the thumbnail page now
+uses too. Every entry has a test of its whole screen, written once,
+catching what no leaf test sees: layout, layering, a view left out of its
+parent. Each is drawn at its thumbnail moment, in its own art style (the
+test file reads the starter's `pixelArt`; the harness knows nothing of
+entries), on black as the host draws round a play area. A smooth entry
+over the size budget is drawn at a lower resolution (Boids, 960 by 605,
+at half); pixel art over it is cropped by the test file (Kwazy Cactii,
+1600 by 2180, to three of its tiles and its score bar). The spike
 did this for all 11 Pixi entries, at their thumbnail moment and two
 seconds in: 22 pictures, about 4 s, identical on all four runners with
 canvas text drawn as paths. Its fruit machine reels and paytables
@@ -1430,8 +1437,15 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    - `npx playwright install --with-deps` took up to ten minutes on a slow
      Ubuntu mirror, mostly fetching fonts the harness never uses; the
      runners already have the libraries, so it is not used.
-5. **Whole entries.** Move `snapshot.ts`'s `start` and `advance` into a
-   module the page and `entries.visual.tsx` share; one test per Pixi entry.
+5. ~~**Whole entries.**~~ Done 2026-10-08, as section 10 describes: the
+   eleven Pixi entries, one picture each, 180 KB of references (Kwazy
+   Cactii's crop 64 KB, Falling Sand 35 KB, the pixel-art games 1 to 3
+   KB). With the rest, 33 pictures in about 4 s here and 7 s on
+   Ubuntu, cold, identical on all three systems. Found on the way: an
+   entry's code brought in `pixi-solid` and Solid, which Vite's optimizer
+   then found mid-run (with a warm cache), the case that loads a second
+   Pixi; they are pre-bundled with the rest now, and the projects'
+   comment says any new dependency of an entry belongs there.
 6. **three.js.** Camera and environment options, render targets and
    `readRenderTargetPixels`; the fruit machine's lever and the boids'
    flock. Element entries in `entries.visual.tsx`, if they can say when
