@@ -25,7 +25,7 @@ export interface HtmlPictureOptions {
  * The element is removed after, whatever happens.
  */
 export async function captureHtmlPicture(
-    element: HTMLElement,
+    element: Element,
     options: HtmlPictureOptions,
     id: VisualPictureId,
 ): Promise<VisualVerdict & { readonly captureMs: number; readonly width: number; readonly height: number }> {

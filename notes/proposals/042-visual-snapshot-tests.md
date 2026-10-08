@@ -26,7 +26,7 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 and 2 done. The spike (2026-10-07) measured 1000
+**Status:** steps 1 to 3 done. The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
@@ -34,7 +34,7 @@ was revised to it (2026-10-08). The harness is built (2026-10-08):
 `packages/website/scripts/visual/`, with its own tests, on branch
 `visual-tests`, which also keeps the spike's code in
 `packages/website/visual-spike/` until CI (step 4) replaces the spike's
-workflow. No view has a visual test yet (step 3).
+workflow. The first eleven visual tests are in (step 3); CI is next.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -595,7 +595,7 @@ four. One worker is the default.
 
 Adding a picture costs one line of code and nothing else: no
 registration, no config, no new file to wire up. The first run reports it
-as new and fails; `npm run test:visual:update -- -t <name>` writes its
+as new and fails; `npm run test:visual:update -- --picture <name>` writes its
 reference; the reference is reviewed like any other change. A view file
 with five pictures adds perhaps 25 ms to a run.
 
@@ -1005,6 +1005,7 @@ suffix `.visual.tsx` (not `.visual.test.tsx`) keeps the files out of the
 | `npm run test:visual:update` | The same, writing a reference for every picture that changed or is new, and none for the rest |
 | `npm run test:visual:environment` | The same, also rewriting the fingerprint and the calibration set's references, after a deliberate upgrade |
 | `npm run test:visual -- -t SpinButton` | One group, as with any Vitest run; `-- --watch` to watch |
+| `npm run test:visual:update -- --picture SpinButtonView-stop` | The test whose picture has that name, as a failure suggests. A test's full name (`SpinButtonView > stop`) has spaces and shell characters, which npm drops or a shell reinterprets on the way through (the `>` became a redirect in step 3); a picture's name has neither. The runner turns it into the `-t` pattern, and starts Vitest with no shell between |
 
 Whether `npm test` should include the visual projects is open question 2.
 
@@ -1086,8 +1087,9 @@ as well, so its UI shows them (step 2 checks what browser mode supports).
 Then one of two things is true:
 
 - **The change is a regression.** Fix the view, rerun.
-- **The change is intended.** Run `npm run test:visual:update` (with `-t`
-  to accept only the tests meant), and review the changed references
+- **The change is intended.** Run `npm run test:visual:update` (with
+  `--picture <name>`, as the failure prints it, to accept only the
+  pictures meant), and review the changed references
   before staging them. An agent never stages them: as with every change,
   the user stages while reviewing.
 
@@ -1097,7 +1099,7 @@ test that has stopped testing.
 ### 7.2 A new picture
 
 A test with no reference fails, in every mode but update, with "new
-picture: run `npm run test:visual:update -- -t <name>`, and review it".
+picture: run `npm run test:visual:update -- --picture <name>`, and review it".
 It never writes a reference by itself: in CI, a missing reference must be
 a failure, not a file written into a throwaway checkout.
 
@@ -1298,7 +1300,30 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    scripts, with the browser installed on first run; `.vitest/` in
    `.gitignore`. The run's timing summary. The lint rule of open
    question 6.
-3. **First tests.** The fruit machine's Pixi leaf views (spin button, win
+3. ~~**First tests.**~~ Done 2026-10-08. Eleven pictures beside their
+   views: the fruit machine's spin button (its three modes), win banner
+   (a win counted, and counting up 300 ms in), reel window (at rest, and
+   spinning), and control panel (HTML: ready, and mid-spin); and Crumb
+   Chase's whole screen (pixel art: at the start, and two seconds in).
+   With the harness's own, 21 pictures in about 2.5 s. References: 220 KB
+   for the eleven, 20 KB each on average (a spin button 3.5 KB, a game
+   screen 17 KB, the blurred reels 95 KB: blur does not compress), so a
+   hundred pictures come to about 2 MB. The deliberate change (the spin
+   button's stop colour) failed only its own picture, with the diff
+   files and the command to accept it, and that command rewrote that one
+   reference and no other. Found on the way:
+   - The suggested `-t "SpinButtonView > stop"` lost its quotes through
+     npm, and its `>` became a shell redirect. Hence `--picture <name>`
+     (section 6.2), and the runner starts Vitest and Playwright with no
+     shell.
+   - HTML views here return `Element`, not `HTMLElement`; `visualTest`
+     takes either.
+   - A view styled by its entry's layout needs that layout round it: the
+     fruit machine's panel sits in a quadrant of a two-by-two grid, so its
+     pose builds one quadrant spanning a machine one quadrant in size, at
+     the size the entry's play area gives it (derived from the entry's
+     `screenWidth` and `screenHeight`).
+   Original plan: the fruit machine's Pixi leaf views (spin button, win
    banner counting, reel window), one pixel-art game screen, and one HTML
    view (the Arcade's card, or the fruit machine's control panel). Make a
    deliberate change to one view, and check that its test fails with a

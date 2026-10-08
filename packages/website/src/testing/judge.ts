@@ -46,7 +46,8 @@ export function isPass(verdict: VisualVerdict): boolean {
 
 /** What a failed picture's error says: what differs, where to look, and what to run. */
 export function failureMessage(name: string, verdict: VisualVerdict, kind: VisualKind): string {
-    const filter = `-t "${name}"`;
+    // By picture name, which has no spaces or shell characters to lose on the way through npm
+    const filter = `--picture ${pictureName(name)}`;
     switch (verdict.outcome) {
         case 'new':
             return `New picture '${name}': run \`npm run test:visual:update -- ${filter}\`, and review ${verdict.actualFile ?? verdict.referenceFile}`;

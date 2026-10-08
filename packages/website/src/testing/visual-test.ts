@@ -27,8 +27,8 @@ export type Pose<V> = () => V | Promise<V>;
  * file, which runs in a page of its own.
  */
 export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
-export function visualTest(name: string, pose: Pose<HTMLElement>, options?: HtmlPictureOptions): void;
-export function visualTest(name: string, pose: Pose<Container | HTMLElement>, options: PixiPictureOptions | HtmlPictureOptions = {}): void {
+export function visualTest(name: string, pose: Pose<Element>, options?: HtmlPictureOptions): void;
+export function visualTest(name: string, pose: Pose<Container | Element>, options: PixiPictureOptions | HtmlPictureOptions = {}): void {
     test(name, async ({ task }) => {
         const kind = inject('visualKind');
         const setup = await pageSetup();
@@ -46,7 +46,7 @@ export function visualTest(name: string, pose: Pose<Container | HTMLElement>, op
             t = performance.now();
             refreshView(view);
             ms.refresh = performance.now() - t;
-            if (view instanceof HTMLElement) {
+            if (view instanceof Element) {
                 if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view: HTML views are tested in a *.html.visual.tsx file`);
                 const captured = await captureHtmlPicture(view, options as HtmlPictureOptions, id);
                 ms.capture = captured.captureMs;
@@ -76,7 +76,7 @@ export function visualTest(name: string, pose: Pose<Container | HTMLElement>, op
             }
         }
         finally {
-            if (view instanceof HTMLElement) destroyElement(view);
+            if (view instanceof Element) destroyElement(view);
             else view.destroy({ children: true });
         }
         const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, ms };
