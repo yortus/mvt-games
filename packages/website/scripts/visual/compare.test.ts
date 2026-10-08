@@ -31,6 +31,15 @@ describe('comparePictures', () => {
         expect(c.isWithinTolerance).toBe(false);
     });
 
+    it('gives the smallest rectangle holding every pixel that differs', () => {
+        const actual = flat(8, 8, [100, 100, 100, 255]);
+        actual.pixels[(2 * 8 + 5) * 4] = 0;
+        actual.pixels[(6 * 8 + 3) * 4] = 0;
+        const c = comparePictures({ expected: flat(8, 8, [100, 100, 100, 255]), actual });
+        expect(c.changedRect).toEqual({ x: 3, y: 2, width: 3, height: 5 });
+        expect(comparePictures({ expected: actual, actual }).changedRect).toBeUndefined();
+    });
+
     it('marks differing pixels red in the diff', () => {
         const actual = flat(2, 1, [0, 0, 0, 255]);
         actual.pixels[4] = 50;

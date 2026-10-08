@@ -173,6 +173,7 @@ function judge(ctx: BrowserCommandContext, id: VisualPictureId, actual: Picture)
         outcome: 'differs',
         changed: comparison.changed,
         maxDelta: comparison.maxDelta,
+        changedRect: comparison.changedRect,
         referenceFile,
         actualFile,
         diffFile: relative(REPO, `${outBase}.diff.png`).replaceAll('\\', '/'),

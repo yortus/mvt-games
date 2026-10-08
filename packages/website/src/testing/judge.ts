@@ -44,6 +44,13 @@ export function isPass(verdict: VisualVerdict): boolean {
     return verdict.outcome === 'same' || verdict.outcome === 'within-tolerance' || verdict.outcome === 'updated';
 }
 
+/** How much of a picture differs, and where: '36 pixels, by up to 219 of 255, in the 2x18 pixels at (120, 40)'. */
+export function describeDifference(verdict: VisualVerdict): string {
+    const rect = verdict.changedRect;
+    const where = rect === undefined ? '' : `, in the ${rect.width}x${rect.height} pixels at (${rect.x}, ${rect.y})`;
+    return `${verdict.changed} pixels, by up to ${verdict.maxDelta} of 255${where}`;
+}
+
 /** What a failed picture's error says: what differs, where to look, and what to run. */
 export function failureMessage(name: string, verdict: VisualVerdict, kind: VisualKind): string {
     // By picture name, which has no spaces or shell characters to lose on the way through npm
@@ -56,7 +63,7 @@ export function failureMessage(name: string, verdict: VisualVerdict, kind: Visua
         default: {
             const where = `reference ${verdict.referenceFile}, actual ${verdict.actualFile}, diff ${verdict.diffFile}`;
             const kindNote = kind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';
-            return `Picture '${name}' differs: ${verdict.changed} pixels, by up to ${verdict.maxDelta} of 255${kindNote}. ${where}. If intended, run \`npm run test:visual:update -- ${filter}\``;
+            return `Picture '${name}' differs: ${describeDifference(verdict)}${kindNote}. ${where}. If intended, run \`npm run test:visual:update -- ${filter}\``;
         }
     }
 }

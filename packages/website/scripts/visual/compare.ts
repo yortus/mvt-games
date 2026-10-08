@@ -7,6 +7,7 @@
  * a real change would fail them.
  */
 
+import type { VisualRect } from '../../src/testing';
 import type { Picture } from './png';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,8 @@ export interface Comparison {
     readonly changed: number;
     /** The largest difference in any channel of any pixel, 0 to 255. */
     readonly maxDelta: number;
+    /** The smallest rectangle holding every pixel that differs, if any does. */
+    readonly changedRect: VisualRect | undefined;
     /** Whether the largest difference is within the tolerance. */
     readonly isWithinTolerance: boolean;
     /** The reference dimmed, with every pixel that differs in red. */
@@ -37,12 +40,22 @@ export function comparePictures(options: { readonly expected: Picture; readonly 
     const diff = new Uint8Array(width * height * 4);
     let changed = 0;
     let maxDelta = 0;
+    let left = width;
+    let top = height;
+    let right = -1;
+    let bottom = -1;
     for (let i = 0; i < diff.length; i += 4) {
         let delta = 0;
         for (let c = 0; c < 4; c++) delta = Math.max(delta, Math.abs(expected.pixels[i + c] - actual.pixels[i + c]));
         if (delta > 0) {
             changed++;
             maxDelta = Math.max(maxDelta, delta);
+            const x = (i / 4) % width;
+            const y = Math.floor(i / 4 / width);
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
             diff[i] = 255;
             diff[i + 1] = 0;
             diff[i + 2] = 0;
@@ -53,5 +66,6 @@ export function comparePictures(options: { readonly expected: Picture; readonly 
         }
         diff[i + 3] = 255;
     }
-    return { changed, maxDelta, isWithinTolerance: maxDelta <= TOLERANCE, diff: { width, height, pixels: diff } };
+    const changedRect = changed > 0 ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 } : undefined;
+    return { changed, maxDelta, changedRect, isWithinTolerance: maxDelta <= TOLERANCE, diff: { width, height, pixels: diff } };
 }

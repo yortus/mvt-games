@@ -1,7 +1,7 @@
 import { inject } from 'vitest';
 import { BlurFilter, Container, FillGradient, Graphics, Sprite, Text, type TextStyleOptions, Texture } from 'pixi.js';
 import { captureHtmlPicture } from './html-picture';
-import { hashPixels, isPass, sessionFor, toBase64, visualCommands } from './judge';
+import { describeDifference, hashPixels, isPass, sessionFor, toBase64, visualCommands } from './judge';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualEnvironment, VisualKind, VisualVerdict } from './protocol';
 
@@ -27,7 +27,7 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
         for (const [name, draw] of Object.entries(pictures)) {
             const verdict = await draw(name, session.hashes[name]);
             if (!isPass(verdict)) {
-                const detail = verdict.outcome === 'differs' ? `${verdict.changed} pixels, by up to ${verdict.maxDelta} of 255` : verdict.outcome;
+                const detail = verdict.outcome === 'differs' ? describeDifference(verdict) : verdict.outcome;
                 problems.push(`the calibration picture '${name}' differs (${detail}): see ${verdict.diffFile ?? verdict.actualFile}`);
             }
         }

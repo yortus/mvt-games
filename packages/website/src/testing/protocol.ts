@@ -34,6 +34,8 @@ export interface VisualVerdict {
     /** Pixels that differ, and the largest difference in a channel (0 to 255). */
     readonly changed?: number;
     readonly maxDelta?: number;
+    /** The smallest rectangle holding every pixel that differs. */
+    readonly changedRect?: VisualRect;
     /** The reference's size, when it differs. */
     readonly referenceSize?: string;
     /** Where the reference is, and where the actual picture and the diff were written, from the repo's root. */
