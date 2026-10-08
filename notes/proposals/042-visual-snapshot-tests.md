@@ -399,14 +399,17 @@ export interface PixiPictureOptions {
     readonly background?: number;
     /** Nearest-neighbour textures and no antialiasing, as a pixel-art entry is drawn. Default false. */
     readonly pixelArt?: boolean;
-    /** Default 1. */
+    /** Default 1. Below 1 for big smooth views only, at the cost of fine detail (section 7.3). */
     readonly resolution?: number;
+    /** Allows a picture over the size budget (section 7.3). Default false. */
+    readonly large?: boolean;
 }
 
 export interface HtmlPictureOptions {
     readonly width?: number;
     readonly height?: number;
     readonly background?: string;
+    readonly large?: boolean;
 }
 
 export interface ThreePictureOptions {
@@ -867,8 +870,13 @@ control view shows a PNG's old and new versions side by side. Three
 choices make them consistent too:
 
 - **Written by our encoder, never the browser's, and only when the pixels
-  change.** A small PNG encoder in Node with fixed settings: one filter,
-  one compression level, no timestamps or metadata beyond our own. Node's
+  change.** A small PNG encoder in Node, lossless and as small as a
+  simple encoder makes a picture: a palette (1, 2, 4 or 8 bits a pixel)
+  for 256 colours or fewer, otherwise RGB for an opaque picture, each row
+  with whichever of PNG's five filters suits it; one compression level, no
+  timestamps or metadata beyond our own. Against one fixed filter in RGBA,
+  it made the references 30% smaller (the spike's 1000 pictures, 34%;
+  Kwazy Cactii's whole screen, 585 to 353 KB). Node's
   zlib could still compress the same pixels to different bytes on another
   version or processor, so the update never rewrites a reference whose
   pixels match (or match within tolerance): accepting a picture that did
@@ -1108,10 +1116,40 @@ a failure, not a file written into a throwaway checkout.
 A leaf view's picture is small (the spin button is about 120 pixels
 across). A top-level view of a pixel-art game is its screen at
 resolution 1 (Crumb Chase's is its maze at 20 pixels a tile, plus its
-HUD), and PNG compresses flat pixel art well. A hundred pictures should
-come to a few megabytes. Step 3 records the real figure. The guidance
-that follows: photograph leaf views, plus one or two whole screens per
-entry, not every frame of every animation.
+HUD), and PNG compresses flat pixel art well. Measured in step 3, with
+the encoder of section 5.7: a spin button 3.5 KB, a game screen 12-17 KB,
+a blurred reel window 85 KB (blur does not compress); the 36 references
+then committed, 305 KB. A hundred pictures come to about 1.5 MB, and git
+keeps every version of each. The guidance that follows: photograph leaf
+views, plus one or two whole screens per entry, not every frame of every
+animation.
+
+Three measures keep size, and so storage and drawing time, in hand
+without making pictures less exact:
+
+- **A budget.** A picture over 500,000 pixels (about a 960 by 540
+  screen) fails, saying how to fix it: crop it (`width`, `height`), pose
+  part of the view, draw it at a lower resolution, or pass `large: true`
+  where every pixel matters at full size. Big pictures are then a choice
+  made per test, not an accident.
+- **A lower resolution, for big smooth views only.** `resolution: 0.5`
+  draws a whole screen at half size in each direction: a quarter of the
+  pixels to draw, hash and store. It stays exact (SwiftShader draws it
+  the same everywhere), but every detail finer than a picture pixel is
+  averaged away, so a small change may pass unseen; it is opt-in per
+  test, and refused for pixel art, where it would drop whole texels.
+  HTML has no such option: the browser's own scaling differs between
+  systems.
+- **The figures, every run.** The summary gives the references' total
+  size and the largest files, beside the timings.
+
+Downscaling every picture after it is drawn was considered and rejected
+(2026-10-08): it saves no time, since drawing, not hashing or diffing, is
+where the time goes (86% of it), and diffing happens only for a picture
+that changed; and averaging makes a change smaller, so that a one-pixel
+change of 8 levels becomes 2 after a 2:1 downscale, inside the tolerance
+arm64 needs. Lower resolution, chosen per test, gets the speed without
+hiding that it is a choice.
 
 ### 7.4 Orphaned references
 

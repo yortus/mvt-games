@@ -5,6 +5,7 @@ import { inject, test } from 'vitest';
 import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
 import { failureMessage, hashPixels, isPass, pictureNameOfCurrentTest, sessionFor, toBase64, visualCommands } from './judge';
 import { pageSetup } from './page-setup';
+import { overBudget } from './picture-budget';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualTestMeta, VisualVerdict } from './protocol';
 
@@ -59,6 +60,8 @@ export function visualTest(name: string, pose: Pose<Container | Element>, option
                 const picture = await drawPixiPicture(view, options as PixiPictureOptions);
                 ms.draw = performance.now() - t;
                 if (picture.isBlank) throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture`);
+                const tooBig = overBudget(picture.width, picture.height, (options as PixiPictureOptions).large);
+                if (tooBig !== undefined) throw new Error(`'${id.test}' ${tooBig}`);
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
                     throw new Error(`'${id.test}' uses fonts no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts`);

@@ -34,6 +34,41 @@ describe('encodePng', () => {
     });
 });
 
+describe('encodePng, every form it chooses', () => {
+    function withColours(width: number, height: number, count: number, alpha = 255): Picture {
+        const pixels = new Uint8Array(width * height * 4);
+        for (let i = 0; i < width * height; i++) {
+            const c = (i * 7) % count;
+            pixels.set([c * 3, 255 - c, (c * 11) & 0xff, i % 5 === 0 ? alpha : 255], i * 4);
+        }
+        return { width, height, pixels };
+    }
+
+    // Widths that leave a partly filled byte at the end of each row, at every palette bit depth
+    for (const [count, name] of [[2, '1-bit'], [4, '2-bit'], [16, '4-bit'], [200, '8-bit']] as const) {
+        it(`round-trips a ${name} palette`, () => {
+            const p = withColours(13, 7, count);
+            expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
+        });
+    }
+
+    it('round-trips a palette with transparent colours', () => {
+        const p = withColours(9, 5, 12, 40);
+        expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
+    });
+
+    it('round-trips more than 256 colours, opaque (RGB) and not (RGBA)', () => {
+        for (const alpha of [255, 90]) {
+            const p = withColours(41, 23, 943, alpha);
+            expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
+        }
+    });
+
+    it('makes a flat picture small', () => {
+        expect(encodePng(withColours(200, 100, 4)).length).toBeLessThan(800);
+    });
+});
+
 describe('hashPicture', () => {
     it('depends on the size, not only the pixels', () => {
         const pixels = new Uint8Array(4 * 4 * 4);

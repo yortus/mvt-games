@@ -17,6 +17,9 @@ describe('visualTest', () => {
 
     visualTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a), { pixelArt: true });
 
+    // A big smooth view drawn at half resolution: a quarter of the pixels
+    visualTest('at half resolution', () => new Graphics().roundRect(0, 0, 300, 160, 24).fill(0x5bd1ff).circle(150, 80, 50).fill(0xff4f8b), { resolution: 0.5 });
+
     visualTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }));
 
     visualTest('after time passes', async () => {

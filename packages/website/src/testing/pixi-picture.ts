@@ -5,15 +5,26 @@ import { Application, Container, Graphics, RenderTexture, TextureSource } from '
 // ---------------------------------------------------------------------------
 
 export interface PixiPictureOptions {
-    /** The picture's size in pixels. Default: the view's bounds after its first refresh, plus a margin. */
+    /** The picture's size in the view's pixels. Default: the view's bounds after its first refresh, plus a margin. */
     readonly width?: number;
     readonly height?: number;
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
     /** Nearest-neighbour textures, no antialiasing and whole-pixel positions, as a pixel-art entry is drawn. Default false. */
     readonly pixelArt?: boolean;
-    /** Default 1. */
+    /**
+     * Picture pixels per view pixel. Default 1. Below 1, a big smooth view
+     * (a whole screen) draws faster and stores smaller, and every detail
+     * finer than a picture pixel is averaged away: a change smaller than
+     * that may pass unseen. Never below 1 for pixel art, which would drop
+     * whole texels.
+     */
     readonly resolution?: number;
+    /**
+     * Allows a picture over the size budget (`MAX_PICTURE_PIXELS`), for a
+     * view whose every pixel matters at full size. Default false.
+     */
+    readonly large?: boolean;
 }
 
 /** A picture's pixels, read back from the renderer: RGBA, rows from the top, opaque. */
@@ -32,9 +43,12 @@ export interface PixiPicture {
 /**
  * Sets the texture defaults a pose's textures are made with, before the
  * pose runs: entries set them per entry, and a test must not inherit the
- * last one's.
+ * last one's. Checks the options first.
  */
 export function preparePixiPose(options: PixiPictureOptions): void {
+    if (options.pixelArt === true && (options.resolution ?? 1) < 1) {
+        throw new Error('Pixel art is never drawn below resolution 1: it would drop whole texels');
+    }
     TextureSource.defaultOptions.scaleMode = options.pixelArt === true ? 'nearest' : 'linear';
 }
 

@@ -1,5 +1,6 @@
 import { pixelateRotatedImages } from './html-rules';
 import { visualCommands } from './judge';
+import { overBudget } from './picture-budget';
 import type { VisualPictureId, VisualRect, VisualVerdict } from './protocol';
 
 // ---------------------------------------------------------------------------
@@ -12,6 +13,13 @@ export interface HtmlPictureOptions {
     readonly height?: number;
     /** A CSS colour. Default: the same dark grey as WebGL pictures. */
     readonly background?: string;
+    /**
+     * Allows a picture over the size budget, for an element whose every
+     * pixel matters at full size. Default false. (There is no lower
+     * resolution for HTML: the browser's own scaling differs between
+     * systems.)
+     */
+    readonly large?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,6 +52,8 @@ export async function captureHtmlPicture(
             return image.decode().catch(() => undefined);
         }));
         const rect = rectOf(host);
+        const tooBig = overBudget(rect.width, rect.height, options.large);
+        if (tooBig !== undefined) throw new Error(`'${id.test}' ${tooBig}`);
         const verdict = await visualCommands.visualCapture({ ...id, rect });
         return { ...verdict, width: rect.width, height: rect.height };
     }
