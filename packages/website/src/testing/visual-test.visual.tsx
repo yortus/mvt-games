@@ -1,6 +1,7 @@
-// The harness's own visual tests: what a Pixi picture covers, one case each.
+// The harness's own visual tests: what a Pixi or three.js picture covers, one case each.
 import { Container, Graphics, Text } from 'pixi.js';
-import { setUpdate } from '@mvtjs/pixi';
+import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
+import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { describe } from 'vitest';
 import { advanceTime, visualTest } from '#testing';
 
@@ -38,4 +39,40 @@ describe('visualTest', () => {
         await advanceTime({ views: [view], totalMs: 320 });
         return view;
     }, SMOOTH);
+
+    describe('three.js', () => {
+        visualTest('lit by its own lights, with the camera given', () => knot(), { width: 200, height: 150, camera: knotCamera });
+
+        // Refreshed before it is drawn, and advanced like any view
+        visualTest('after time passes', async () => {
+            const view = knot();
+            let turned = 0;
+            setUpdate(view, (deltaMs) => {
+                turned += deltaMs / 1000;
+            });
+            setRefresh(view, () => {
+                view.rotation.y = turned;
+            });
+            await advanceTime({ views: [view], totalMs: 800 });
+            return view;
+        }, { width: 200, height: 150, camera: knotCamera });
+
+        // Always antialiased, so over the size budget it is drawn at half resolution, as a smooth Pixi view is
+        visualTest('over the budget', () => knot(), { width: 1200, height: 600, camera: knotCamera, background: 0x15102b });
+    });
 });
+
+function knot(): Group {
+    const group = new Group();
+    const light = new DirectionalLight(0xffffff, 2);
+    light.position.set(2, 3, 4);
+    group.add(new Mesh(new TorusKnotGeometry(1, 0.32, 96, 16), new MeshStandardMaterial({ color: 0x2fd27a, roughness: 0.4 })));
+    group.add(new AmbientLight(0xffffff, 0.4), light);
+    return group;
+}
+
+function knotCamera(): PerspectiveCamera {
+    const camera = new PerspectiveCamera(40, 1, 0.1, 100);
+    camera.position.set(0, 0, 6);
+    return camera;
+}

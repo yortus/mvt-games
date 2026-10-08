@@ -92,8 +92,8 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
     const session = starter.start({ element: root });
-    // Give the entry time to size itself, and to make renderers that start asynchronously
-    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    // Renderers that start asynchronously
+    await session.ready;
     advanceHeadless({ session, views: session.views, totalMs });
     session.render();
 }
@@ -101,6 +101,3 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
 function nextFrame(): Promise<number> {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }
-
-/** How long an element entry is given to lay itself out and make its renderers. */
-const SETTLE_MS = 500;

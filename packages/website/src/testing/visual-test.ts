@@ -1,12 +1,15 @@
 import type { Container } from 'pixi.js';
+import { Object3D } from 'three';
 import { destroyElement } from '@mvtjs/html';
 import { refreshView } from '@mvtjs/pixi';
+import { destroyObject } from '@mvtjs/three';
 import { inject, test } from 'vitest';
 import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
 import { failureMessage, hashPixels, isPass, pictureNameOfCurrentTest, sessionFor, toBase64, visualCommands } from './judge';
 import { pageSetup } from './page-setup';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualTestMeta, VisualVerdict } from './protocol';
+import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -24,13 +27,20 @@ export type Pose<V> = () => V | Promise<V>;
  * with its reference, `__screenshots__/<this file>/<describe blocks>-<name>.png`.
  * A Pixi view is drawn in a `*.visual.tsx` file, as pixel art unless its
  * options say `artStyle: 'smooth'` (see `PixiPictureOptions.artStyle` for
- * what each style means for the picture); an HTML view (whose text is
- * drawn blank, so its layout and styling show) in a `*.html.visual.tsx`
- * file, which runs in a page of its own.
+ * what each style means for the picture). A three.js view is drawn in the
+ * same files, with the camera its options make, in a scene they can dress
+ * as its entry does. An HTML view (whose text is drawn blank, so its layout
+ * and styling show) in a `*.html.visual.tsx` file, which runs in a page of
+ * its own.
  */
 export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
+export function visualTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
 export function visualTest(name: string, pose: Pose<Element>, options?: HtmlPictureOptions): void;
-export function visualTest(name: string, pose: Pose<Container | Element>, options: PixiPictureOptions | HtmlPictureOptions = {}): void {
+export function visualTest(
+    name: string,
+    pose: Pose<Container | Object3D | Element>,
+    options: PixiPictureOptions | ThreePictureOptions | HtmlPictureOptions = {},
+): void {
     test(name, async ({ task }) => {
         const kind = inject('visualKind');
         const maxPixels = inject('visualMaxPixels');
@@ -57,11 +67,18 @@ export function visualTest(name: string, pose: Pose<Container | Element>, option
                 size = { width: captured.width, height: captured.height, resolution: 1 };
             }
             else {
-                if (kind !== 'pixi') throw new Error(`'${id.test}' poses a Pixi view: Pixi views are tested in a *.visual.tsx file, not *.html.visual.tsx`);
+                if (kind !== 'pixi') {
+                    throw new Error(`'${id.test}' poses a Pixi or three.js view: they are tested in a *.visual.tsx file, not *.html.visual.tsx`);
+                }
                 t = performance.now();
-                const picture = await drawPixiPicture(view, { ...(options as PixiPictureOptions), maxPixels });
+                const picture = view instanceof Object3D
+                    ? drawThreePicture(view, { ...(options as ThreePictureOptions), maxPixels })
+                    : await drawPixiPicture(view, { ...(options as PixiPictureOptions), maxPixels });
                 ms.draw = performance.now() - t;
-                if (picture.isBlank) throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture`);
+                if (picture.isBlank) {
+                    const hint = view instanceof Object3D ? ' (is the camera looking at it, and is it lit?)' : '';
+                    throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture${hint}`);
+                }
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
                     throw new Error(`'${id.test}' uses fonts no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts`);
@@ -80,6 +97,7 @@ export function visualTest(name: string, pose: Pose<Container | Element>, option
         }
         finally {
             if (view instanceof Element) destroyElement(view);
+            else if (view instanceof Object3D) destroyObject(view);
             else view.destroy({ children: true });
         }
         const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };

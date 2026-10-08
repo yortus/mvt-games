@@ -1,9 +1,16 @@
 import { inject } from 'vitest';
 import { BlurFilter, Container, FillGradient, Graphics, Sprite, Text, type TextStyleOptions, Texture } from 'pixi.js';
+import {
+    AmbientLight, BoxGeometry, Color, DirectionalLight, Group, Mesh, MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping,
+    type Object3D, PerspectiveCamera, PMREMGenerator, SphereGeometry,
+} from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { destroyObject } from '@mvtjs/three';
 import { captureHtmlPicture } from './html-picture';
 import { describeDifference, hashPixels, isPass, sessionFor, toBase64, visualCommands } from './judge';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualEnvironment, VisualKind, VisualVerdict } from './protocol';
+import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 
 // ---------------------------------------------------------------------------
 // Function
@@ -65,18 +72,38 @@ function pixi(pose: () => Container, options: PixiPictureOptions = {}): Calibrat
         preparePixiPose(options);
         const view = pose();
         try {
-            const picture = await drawPixiPicture(view, { ...options, maxPixels: inject('visualMaxPixels') });
-            const hash = await hashPixels(picture.width, picture.height, picture.pixels);
-            if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
-            return await visualCommands.visualMismatch({
-                calibration: 'pixi', name, test: `calibration ${name}`,
-                width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels),
-            });
+            return await judgeWebGl(name, expectedHash, await drawPixiPicture(view, { ...options, maxPixels: inject('visualMaxPixels') }));
         }
         finally {
             view.destroy({ children: true });
         }
     };
+}
+
+/** A calibration picture drawn with three.js, in the WebGL set: it shares the page, and SwiftShader. */
+function three(pose: () => Object3D, options: ThreePictureOptions): Calibration {
+    return async (name, expectedHash) => {
+        const view = pose();
+        try {
+            return await judgeWebGl(name, expectedHash, drawThreePicture(view, { ...options, maxPixels: inject('visualMaxPixels') }));
+        }
+        finally {
+            destroyObject(view);
+        }
+    };
+}
+
+async function judgeWebGl(
+    name: string,
+    expectedHash: string | undefined,
+    picture: { readonly width: number; readonly height: number; readonly pixels: Uint8Array },
+): Promise<VisualVerdict> {
+    const hash = await hashPixels(picture.width, picture.height, picture.pixels);
+    if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
+    return visualCommands.visualMismatch({
+        calibration: 'pixi', name, test: `calibration ${name}`,
+        width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels),
+    });
 }
 
 /** A calibration picture in HTML. */
@@ -126,6 +153,24 @@ function checkerSprite(): Container {
 
 const SMOOTH: PixiPictureOptions = { artStyle: 'smooth' };
 
+/** A sphere and a box, in two kinds of material, for the lighting to show on. */
+function shapes(): Object3D {
+    const group = new Group();
+    const sphere = new Mesh(new SphereGeometry(1, 48, 32), new MeshStandardMaterial({ color: 0xff4f8b, roughness: 0.35, metalness: 0.2 }));
+    const box = new Mesh(new BoxGeometry(0.9, 0.9, 0.9), new MeshPhongMaterial({ color: 0x5bd1ff, shininess: 80 }));
+    box.position.set(1.6, -0.2, -0.5);
+    box.rotation.set(0.4, 0.7, 0);
+    group.add(sphere, box);
+    return group;
+}
+
+function shapesCamera(): PerspectiveCamera {
+    const camera = new PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0.6, 0.4, 5);
+    camera.lookAt(0.4, 0, 0);
+    return camera;
+}
+
 const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
     'circle-msaa': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), SMOOTH),
     'circle-aliased': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), {}),
@@ -161,6 +206,26 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         root.addChild(a, b, c);
         return root;
     }, SMOOTH),
+    'three-lights': three(() => {
+        const group = shapes();
+        const light = new DirectionalLight(0xffffff, 2.5);
+        light.position.set(3, 4, 5);
+        group.add(new AmbientLight(0xffffff, 0.3), light);
+        return group;
+    }, { width: 160, height: 120, camera: shapesCamera }),
+    // The fruit machine's way: a room to reflect, tone-mapped, on a coloured background
+    'three-environment': three(shapes, {
+        width: 160,
+        height: 120,
+        camera: shapesCamera,
+        scene: ({ scene, renderer }) => {
+            renderer.toneMapping = NeutralToneMapping;
+            scene.background = new Color(0x15102b);
+            const environment = new PMREMGenerator(renderer);
+            scene.environment = environment.fromScene(new RoomEnvironment(), 0.04).texture;
+            environment.dispose();
+        },
+    }),
 };
 
 const HTML_CALIBRATION: Readonly<Record<string, Calibration>> = {

@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, RenderTexture, TextureSource } from 'pixi.js';
 import { fitPicture } from './picture-budget';
+import { isAllOne } from './picture-pixels';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -145,12 +146,4 @@ function targetFor(width: number, height: number, resolution: number, isAntialia
         targets.set(key, target);
     }
     return target;
-}
-
-function isAllOne(pixels: Uint8Array): boolean {
-    const words = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.byteLength >> 2);
-    for (let i = 1; i < words.length; i++) {
-        if (words[i] !== words[0]) return false;
-    }
-    return true;
 }
