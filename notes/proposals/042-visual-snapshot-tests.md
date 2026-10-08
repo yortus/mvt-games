@@ -26,15 +26,16 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 3 done. The spike (2026-10-07) measured 1000
+**Status:** steps 1 to 4 done. The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
 `packages/website/src/testing/` (`#testing`) and
 `packages/website/scripts/visual/`, with its own tests, on branch
-`visual-tests`, which also keeps the spike's code in
-`packages/website/visual-spike/` until CI (step 4) replaces the spike's
-workflow. The first eleven visual tests are in (step 3); CI is next.
+`visual-tests` (the spike's code is in its history, up to `b7f40c3`).
+The first eleven visual tests are in (step 3), and CI runs them on every
+push, on all three systems when the pinning could change (step 4).
+Whole entries are next.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -960,8 +961,8 @@ measure relies on, from the sturdiest:
   the switches are inside Playwright's Chromium, pinned by the lockfile.
   Only upgrading Playwright can change them, and that is a commit.
 - **An upgrade is checked where it would show.** A commit that changes
-  Playwright's version runs the visual tests on Ubuntu, Windows and macOS
-  (section 9). If a new Chromium changed any of the above, the calibration
+  Playwright's version, or the harness, runs the visual tests on Ubuntu,
+  Windows and macOS (section 9). If a new Chromium changed any of the above, the calibration
   pictures disagree between the three, and the upgrade stops there, before
   any reference is rewritten. The fix is then to find the new switch or
   rule, as the spike found these, or to stay on the older Playwright while
@@ -1356,8 +1357,8 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    pictures in about 2 s, start-up included. A changed picture fails with
    its reference, actual and diff paths and the command to accept it; a
    wrong environment stops the run in a second, before any picture is
-   compared. Built as listed: from the spike's code (`packages/website/visual-spike/`
-   on `visual-tests`), rewritten to the repo's conventions. `#testing`
+   compared. Built as listed: from the spike's code (`packages/website/visual-spike/`,
+   in `visual-tests`' history up to `b7f40c3`), rewritten to the repo's conventions. `#testing`
    with `visualTest` (Pixi first, then HTML) and `advanceTime`; the setup
    file and its resets, the seeded `Math.random` and the Pixi pool patch;
    the test fonts, the canvas `font` rewrite and the canvas text drawn as
@@ -1399,9 +1400,36 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    deliberate change to one view, and check that its test fails with a
    useful diff, and that the update command accepts it and only it.
    Record the size of the references.
-4. **CI.** The visual job on every push, on Ubuntu; Windows and macOS
-   beside it when Playwright's version changes; the weekly shuffled and
-   verification job (section 9).
+4. ~~**CI.**~~ Done 2026-10-08, as section 9 describes:
+   `.github/workflows/visual.yml`, replacing the spike's workflow, and
+   `npm run test:visual:check-references`; the spike's code deleted. On
+   Ubuntu the job takes about 35 s with its caches warm, 5 s of it tests;
+   Windows and macOS about a minute and a half. Checked: a view change
+   runs Ubuntu only and fails with an annotation per picture and the diff
+   images as an artifact; a harness change runs all three; the weekly
+   path (dispatched by hand) shuffled the order on all three and found
+   all 36 references matching their hashes. Found on the way:
+   - **The first cross-platform run failed, usefully.** Ubuntu stopped at
+     the HTML calibration: one box's edge a pixel off, in the 17.3 px line
+     of `blank-text`. The spike had seen Linux lay the blank font out a
+     fraction of a pixel differently at some fractional sizes, but its
+     real views never crossed a pixel. A probe of every eighth of a pixel
+     from 6 to 40 px, in eight font variants and three `text-rendering`
+     values, showed that Linux scales fonts in 64ths of a pixel; with 1000
+     units per em it was off at most sizes, whole pixels included, and
+     no `text-rendering` value helped. With a power of two (16, 64, 1024
+     or 2048 units per em) all three systems matched exactly at every
+     quarter pixel, in lines of 1 to 400 characters. Hence the blank font
+     at 1024 units per em (0.625 em advances, not 0.6) and font sizes
+     rounded to quarter pixels by the harness (section 5.4). macOS now
+     matches Windows exactly in every picture, without the tolerance.
+   - A failure before any test (the calibration's abort) makes no Vitest
+     annotation, and the logs need a login to read; the job turns the
+     run's last lines into an annotation then. Every difference's message
+     now gives the rectangle holding it.
+   - `npx playwright install --with-deps` took up to ten minutes on a slow
+     Ubuntu mirror, mostly fetching fonts the harness never uses; the
+     runners already have the libraries, so it is not used.
 5. **Whole entries.** Move `snapshot.ts`'s `start` and `advance` into a
    module the page and `entries.visual.tsx` share; one test per Pixi entry.
 6. **three.js.** Camera and environment options, render targets and
