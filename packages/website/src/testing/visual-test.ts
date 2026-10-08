@@ -22,7 +22,9 @@ export type Pose<V> = () => V | Promise<V>;
 /**
  * One visual test: the view the pose returns, refreshed, drawn and compared
  * with its reference, `__screenshots__/<this file>/<describe blocks>-<name>.png`.
- * A Pixi view is drawn in a `*.visual.tsx` file; an HTML view (whose text is
+ * A Pixi view is drawn in a `*.visual.tsx` file, as pixel art unless its
+ * options say `artStyle: 'smooth'` (see `PixiPictureOptions.artStyle` for
+ * what each style means for the picture); an HTML view (whose text is
  * drawn blank, so its layout and styling show) in a `*.html.visual.tsx`
  * file, which runs in a page of its own.
  */

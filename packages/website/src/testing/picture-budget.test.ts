@@ -18,6 +18,6 @@ describe('fitPicture', () => {
     it('fails a picture over the budget that cannot be scaled, saying what to do', () => {
         const fit = fitPicture({ width: 1600, height: 2180, maxPixels: MAX, canScale: false });
         expect('problem' in fit && fit.problem).toContain('over the budget of 500,000');
-        expect('problem' in fit && fit.problem).toContain('isSmooth: true');
+        expect('problem' in fit && fit.problem).toContain("artStyle: 'smooth'");
     });
 });

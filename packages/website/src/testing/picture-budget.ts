@@ -21,7 +21,7 @@ export function fitPicture(options: {
         return {
             problem: `The picture is ${width}x${height}, ${count(width * height)} pixels, over the budget of ${count(maxPixels)} `
                 + '(maxPixels in vitest.visual.config.ts). Pixel art and HTML are drawn at full size: crop the picture (width, height) '
-                + 'or pose part of the view. A smooth view (isSmooth: true) is drawn at a lower resolution to fit instead.',
+                + 'or pose part of the view. A smooth view (artStyle: \'smooth\') is drawn at a lower resolution to fit instead.',
         };
     }
     let resolution = 1;

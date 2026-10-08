@@ -46,7 +46,7 @@ export function createVisualReporter(): Reporter {
             if (within > 0) lines.push(`  ${within} matched within tolerance, not exactly: expected only on arm64`);
             const reduced = pictures.filter((p) => p.meta.resolution < 1);
             if (reduced.length > 0) {
-                lines.push(`  ${reduced.length} smooth, over the size budget, drawn at a lower resolution (detail finer than a picture pixel is averaged away):`);
+                lines.push(`  ${reduced.length} smooth (artStyle 'smooth'), over the size budget, drawn at a lower resolution (detail finer than a picture pixel is averaged away):`);
                 for (const p of reduced) lines.push(`    1/${1 / p.meta.resolution}  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             }
             const slowest = [...pictures].sort((a, b) => b.total - a.total).slice(0, 5);

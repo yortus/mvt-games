@@ -1,6 +1,6 @@
 export { advanceTime, type AdvanceTimeOptions } from './advance-time';
 export type { HtmlPictureOptions } from './html-picture';
-export type { PixiPictureOptions } from './pixi-picture';
+export type { ArtStyle, PixiPictureOptions } from './pixi-picture';
 export type {
     VisualCaptureRequest, VisualCommands, VisualEnvironment, VisualKind, VisualMode, VisualOutcome, VisualPictureId,
     VisualPicturePayload, VisualRect, VisualScope, VisualSession, VisualTestMeta, VisualVerdict,

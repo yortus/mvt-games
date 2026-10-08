@@ -9,7 +9,7 @@ describe('preparePixiPose', () => {
     });
 
     it('samples them smoothly for a smooth view', () => {
-        preparePixiPose({ isSmooth: true });
+        preparePixiPose({ artStyle: 'smooth' });
         expect(TextureSource.defaultOptions.scaleMode).toBe('linear');
         preparePixiPose({});
     });

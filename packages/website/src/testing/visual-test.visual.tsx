@@ -4,7 +4,7 @@ import { setUpdate } from '@mvtjs/pixi';
 import { describe } from 'vitest';
 import { advanceTime, visualTest } from '#testing';
 
-const SMOOTH = { isSmooth: true };
+const SMOOTH = { artStyle: 'smooth' } as const;
 
 describe('visualTest', () => {
     visualTest('framed by its bounds', () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff), SMOOTH);
@@ -15,7 +15,7 @@ describe('visualTest', () => {
         return view;
     }, SMOOTH);
 
-    visualTest('at a fixed size', () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b), { width: 100, height: 60, isSmooth: true });
+    visualTest('at a fixed size', () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b), { width: 100, height: 60, artStyle: 'smooth' });
 
     // Drawn as pixel art is, by default: hard edges, whole pixels
     visualTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));

@@ -124,7 +124,7 @@ function checkerSprite(): Container {
     return root;
 }
 
-const SMOOTH: PixiPictureOptions = { isSmooth: true };
+const SMOOTH: PixiPictureOptions = { artStyle: 'smooth' };
 
 const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
     'circle-msaa': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), SMOOTH),
@@ -142,8 +142,8 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         const root = new Container();
         root.addChild(shape);
         return root;
-    }, { width: 200, height: 130, isSmooth: true }),
-    'texture-linear': pixi(checkerSprite, { width: 120, height: 120, isSmooth: true }),
+    }, { width: 200, height: 130, artStyle: 'smooth' }),
+    'texture-linear': pixi(checkerSprite, { width: 120, height: 120, artStyle: 'smooth' }),
     'texture-nearest': pixi(checkerSprite, { width: 120, height: 120 }),
     'text-sans': pixi(() => textBlock('"Segoe UI", sans-serif'), SMOOTH),
     'text-mono': pixi(() => textBlock('monospace'), SMOOTH),

@@ -12,16 +12,31 @@ export interface PixiPictureOptions {
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
     /**
-     * Whether the view is smooth: drawn with antialiased edges, at
-     * fractional positions, its own textures sampled smoothly. Default
-     * false: drawn as pixel art is, hard-edged, on whole pixels, textures
-     * nearest-neighbour. A smooth picture larger than the size budget is
-     * drawn at a lower resolution to fit it (half, a quarter, ...), every
-     * detail finer than a picture pixel averaged away; a pixel-art one
-     * cannot be, and fails instead.
+     * How the view's art is drawn, as its game draws it. Default `'pixel'`.
+     *
+     * - `'pixel'`: pixel art. Hard edges (no antialiasing), positions
+     *   rounded to whole pixels, and the textures the pose makes sampled
+     *   nearest-neighbour, so a magnified image stays blocky. Always drawn
+     *   at full size: a picture over the size budget (`maxPixels` in
+     *   `vitest.visual.config.ts`) fails, since drawing pixel art smaller
+     *   would drop whole texels. Crop it (`width`, `height`) or pose part of
+     *   the view instead.
+     * - `'smooth'`: antialiased edges, fractional positions, and the pose's
+     *   textures sampled smoothly. A picture over the size budget is drawn
+     *   at a lower resolution to fit it (half, a quarter, ...): faster and
+     *   smaller, but every detail finer than a picture pixel is averaged
+     *   away, so a change that small can pass unseen. The run's summary
+     *   lists every picture drawn that way.
+     *
+     * A smooth view tested as `'pixel'` comes out jagged: not as its game
+     * draws it, but consistent, and plain to see in review. The games'
+     * spritesheets are sampled nearest-neighbour whatever the style.
      */
-    readonly isSmooth?: boolean;
+    readonly artStyle?: ArtStyle;
 }
+
+/** How a view's art is drawn: see `PixiPictureOptions.artStyle`. */
+export type ArtStyle = 'pixel' | 'smooth';
 
 /** A picture's pixels, read back from the renderer: RGBA, rows from the top, opaque. */
 export interface PixiPicture {
@@ -44,7 +59,7 @@ export interface PixiPicture {
  * last one's. (The games' spritesheets set their own, nearest-neighbour.)
  */
 export function preparePixiPose(options: PixiPictureOptions): void {
-    TextureSource.defaultOptions.scaleMode = options.isSmooth === true ? 'linear' : 'nearest';
+    TextureSource.defaultOptions.scaleMode = options.artStyle === 'smooth' ? 'linear' : 'nearest';
 }
 
 /**
@@ -54,7 +69,7 @@ export function preparePixiPose(options: PixiPictureOptions): void {
  * and cannot be drawn smaller.
  */
 export async function drawPixiPicture(view: Container, options: PixiPictureOptions & { readonly maxPixels: number }): Promise<PixiPicture> {
-    const isSmooth = options.isSmooth === true;
+    const isSmooth = options.artStyle === 'smooth';
     const app = await appFor(isSmooth);
     holder.position.set(0, 0);
     holder.addChild(view);

@@ -331,7 +331,7 @@ loads once per run, not once per test, since the page lives for the whole
 run (section 4.3). The size is the game's screen, not its bounds. A
 picture is drawn as pixel art by default (hard edges, whole-pixel
 positions, nearest-neighbour textures), as this game is; a smooth view
-says `isSmooth: true`.
+says `artStyle: 'smooth'`.
 
 Six entries' models (eight files) call `Math.random()` without a seed:
 Astrovoid, Boids, Burrow Bust, Dojo Duel, Galaxy Raiders and Kwazy
@@ -399,11 +399,12 @@ export interface PixiPictureOptions {
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
     /**
-     * Antialiased edges, fractional positions, smooth textures; and, over
-     * the size budget, drawn at a lower resolution to fit (section 7.3).
-     * Default false: drawn as pixel art is.
+     * `'pixel'` (the default): hard edges, whole-pixel positions,
+     * nearest-neighbour textures, always full size. `'smooth'`: antialiased
+     * edges, fractional positions, smooth textures, and drawn at a lower
+     * resolution when over the size budget (section 7.3).
      */
-    readonly isSmooth?: boolean;
+    readonly artStyle?: 'pixel' | 'smooth';
 }
 
 export interface HtmlPictureOptions {
@@ -622,7 +623,7 @@ pinned:
 | Seeds picked by a page | The fruit machine's load picks its seed with `Math.random()` | Same |
 | Wall clock in a view | None found (`performance.now`, `Date.now`, `requestAnimationFrame` in views) | Lint covers models only; a pose that needs a view's wall clock is a bug in the view |
 | No ticker | Pixi applications tick themselves by default | Made with `autoStart: false`, as the thumbnail page and the fruit machine make theirs; the harness draws once per picture |
-| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Set before each pose runs, from the test's `isSmooth` |
+| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Set before each pose runs, from the test's `artStyle` |
 | Left-over views | A failed pose could leave its view mounted | Unmounted and destroyed in a `finally` |
 | Stylesheets | HTML views import CSS that stays in the page | HTML pictures run isolated per file (section 4.5) |
 | CSS transitions and animations | HTML views use them | Screenshots taken with animations disabled; transitions finish at once |
@@ -1127,12 +1128,13 @@ animation.
 Three measures keep size, and so storage and drawing time, in hand
 without making pictures less exact:
 
-- **One flag, `isSmooth`.** A picture is drawn as pixel art unless its
-  test says `isSmooth: true`: hard edges, whole-pixel positions, and
+- **One option, `artStyle`: `'pixel'` or `'smooth'`.** A picture is
+  drawn as pixel art unless its test says `artStyle: 'smooth'`: hard
+  edges, whole-pixel positions, and
   nearest-neighbour sampling for the textures a pose makes (the games'
   spritesheets are always nearest-neighbour). A smooth picture gets
   antialiased edges, fractional positions and smooth sampling. A test
-  that forgets the flag for a smooth view gets a jagged picture: unfaithful,
+  that leaves a smooth view at the default gets a jagged picture: unfaithful,
   but consistent, and plain to see in review.
 - **A budget, `maxPixels`**, set once in `vitest.visual.config.ts`,
   default 500,000 (about a 960 by 540 screen). A smooth picture over it is
@@ -1143,8 +1145,8 @@ without making pictures less exact:
   picture drawn that way. Pixel art is never drawn smaller (it would drop
   whole texels), nor HTML (the browser's own scaling differs between
   systems): over the budget, they fail, saying to crop the picture
-  (`width`, `height`), pose part of the view, or mark a smooth view
-  `isSmooth`.
+  (`width`, `height`), pose part of the view, or give a smooth view
+  `artStyle: 'smooth'`.
 - **The figures, every run.** The summary gives the references' total
   size and the largest files, beside the timings.
 
@@ -1155,9 +1157,9 @@ that changed; and averaging makes a change smaller, so that a one-pixel
 change of 8 levels becomes 2 after a 2:1 downscale, inside the tolerance
 arm64 needs. Drawing smooth views over the budget at a lower resolution
 gets the speed, and the summary keeps it in view. So were a per-test
-`resolution` and an opt-out `large` (2026-10-08): one flag and one
-budget are simpler, and pixel art is the default because forgetting a
-flag should never make a picture less exact.
+`resolution` and an opt-out `large` (2026-10-08): one option and one
+budget are simpler, and pixel art is the default because leaving out the
+option should never make a picture less exact.
 
 ### 7.4 Orphaned references
 

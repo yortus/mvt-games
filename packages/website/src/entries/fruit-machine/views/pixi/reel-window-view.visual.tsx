@@ -17,11 +17,11 @@ describe('ReelWindowView', () => {
     visualTest('at rest', async () => {
         const { textureFor } = await symbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => reel * 3, isBlurredAt: () => false, textureFor });
-    }, { isSmooth: true });
+    }, { artStyle: 'smooth' });
 
     // Fractional positions show the reels part-way between symbols, blurred as they turn
     visualTest('spinning', async () => {
         const { textureFor } = await symbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => 5.4 + reel * 1.7, isBlurredAt: () => true, textureFor });
-    }, { isSmooth: true });
+    }, { artStyle: 'smooth' });
 });
