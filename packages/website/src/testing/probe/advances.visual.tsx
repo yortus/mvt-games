@@ -12,18 +12,18 @@ import u64a40 from './u64a40.ttf?url';
 
 const FONTS: Record<string, string> = { cur, a500, a625, u1024a640, u2048a1024, u2048a1280, u16a8, u64a40 };
 const SIZES: number[] = [];
-for (let s = 80; s <= 320; s++) SIZES.push(s / 10);
-SIZES.push(13.333333, 10.666667, 14.666667, 21.333333, 13.3333333333, 15.12, 17.28, 13.75);
-const LENGTHS = [1, 7, 55];
-const STYLES: Record<string, string> = {
-    plain: '',
-    geometric: 'text-rendering:geometricPrecision;',
-    speed: 'text-rendering:optimizeSpeed;',
-    legible: 'text-rendering:optimizeLegibility;',
-};
+// Every eighth of a pixel from 6 to 40
+for (let s = 48; s <= 320; s++) SIZES.push(s / 8);
+const GRIDS: [string, (size: number) => boolean][] = [
+    ['whole', (s) => Number.isInteger(s)],
+    ['half', (s) => Number.isInteger(s * 2)],
+    ['quarter', (s) => Number.isInteger(s * 4)],
+    ['eighth', () => true],
+];
+const LENGTHS = [1, 3, 7, 20, 55, 133, 400];
+const STYLES: Record<string, string> = { plain: '' };
 const CONFIGS: [string, string, string][] = [];
 for (const name of Object.keys(FONTS)) CONFIGS.push([name, name, 'plain']);
-for (const style of Object.keys(STYLES)) if (style !== 'plain') CONFIGS.push([`cur+${style}`, 'cur', style]);
 
 test('advances', async () => {
     const host = document.createElement('div');
@@ -61,21 +61,29 @@ test('advances', async () => {
     const expected = JSON.parse(await commands.readFile('./probe-windows.json')) as Record<string, number[]>;
     const lines: string[] = [`${platform}: sizes ${SIZES.length}, lengths ${LENGTHS.join('/')}`];
     for (const [name] of CONFIGS) {
-        const mismatches: string[] = [];
-        let maxDiff = 0;
-        const bySize = new Set<number>();
-        for (let i = 0; i < out[name].length; i++) {
-            const diff = out[name][i] - expected[name][i];
-            if (diff === 0) continue;
-            const size = SIZES[Math.floor(i / LENGTHS.length)];
-            const n = LENGTHS[i % LENGTHS.length];
-            bySize.add(size);
-            maxDiff = Math.max(maxDiff, Math.abs(diff));
-            if (mismatches.length < 12) mismatches.push(`${size}x${n}:${expected[name][i]}->${out[name][i]}`);
+        const parts: string[] = [];
+        for (const [grid, inGrid] of GRIDS) {
+            let sizes = 0;
+            let bad = 0;
+            let maxDiff = 0;
+            const examples: string[] = [];
+            for (let si = 0; si < SIZES.length; si++) {
+                if (!inGrid(SIZES[si])) continue;
+                sizes++;
+                let isBad = false;
+                for (let li = 0; li < LENGTHS.length; li++) {
+                    const i = si * LENGTHS.length + li;
+                    const diff = out[name][i] - expected[name][i];
+                    if (diff === 0) continue;
+                    isBad = true;
+                    maxDiff = Math.max(maxDiff, Math.abs(diff));
+                    if (examples.length < 4) examples.push(`${SIZES[si]}x${LENGTHS[li]}:${diff}`);
+                }
+                if (isBad) bad++;
+            }
+            parts.push(`${grid} ${bad}/${sizes} max ${maxDiff} [${examples.join(' ')}]`);
         }
-        lines.push(`${name}: ${bySize.size} sizes differ, max ${maxDiff}/64. ${mismatches.join(' ')}`);
+        lines.push(`${name}: ${parts.join('; ')}`);
     }
-    lines.push(`raw cur 55: ${out.cur.filter((_, i) => i % 3 === 2).join(',')}`);
-    lines.push(`raw cur 1: ${out.cur.filter((_, i) => i % 3 === 0).join(',')}`);
     throw new Error(`PROBE ${lines.join(' | ')}`);
 });

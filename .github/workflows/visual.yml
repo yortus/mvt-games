@@ -103,15 +103,18 @@ jobs:
                   else npx playwright install chromium-headless-shell; fi
               working-directory: packages/website
 
+            # Weekly and on demand, in a shuffled order, its seed in the log to repeat it.
+            # A failure before any test (the environment check) makes no annotation of
+            # its own, so the run's last lines become one, readable without the logs
             - name: Visual tests
-              if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+              env:
+                  SHUFFLE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('--sequence.shuffle --sequence.seed={0}', github.run_id) || '' }}
               run: |
                   set -o pipefail
-                  npm run test:visual 2>&1 | tee visual.log || { echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"; exit 1; }
-
-            - name: Visual tests, shuffled
-              if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-              run: npm run test:visual -- --sequence.shuffle --sequence.seed=${{ github.run_id }}
+                  npm run test:visual -- $SHUFFLE 2>&1 | tee visual.log || {
+                      echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/\x1b\[[0-9;]*m//g; s/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+                      exit 1
+                  }
 
             - name: Every reference against its hash
               if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && runner.os == 'Linux'
