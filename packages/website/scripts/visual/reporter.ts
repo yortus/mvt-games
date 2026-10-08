@@ -2,9 +2,11 @@
  * The visual run's summary, printed after Vitest's own: how many pictures,
  * how they compared, how long they took (median and 95th percentile per
  * kind), the slowest, and how much the references take, with the largest.
- * So a slow test, or a big picture, is noticed when it is added.
+ * So a slow test, or a big picture, is noticed when it is added. On GitHub
+ * it also goes on the job's summary page.
  */
 
+import { appendFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import type { Reporter, TestModule } from 'vitest/node';
 import type { VisualTestMeta } from '../../src/testing';
@@ -59,6 +61,8 @@ export function createVisualReporter(): Reporter {
                 lines.push(`    ${kilobytes(r.bytes).padStart(9)}  ${relative(WEBSITE, r.file).replaceAll('\\', '/')}`);
             }
             console.log(`\n${lines.join('\n')}\n`);
+            const summary = process.env.GITHUB_STEP_SUMMARY;
+            if (summary !== undefined && summary !== '') appendFileSync(summary, `\`\`\`\n${lines.join('\n')}\n\`\`\`\n`);
         },
     };
 }

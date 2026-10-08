@@ -13,6 +13,7 @@ const maxPixels = DEFAULT_MAX_PIXELS;
 export default defineConfig({
     test: {
         projects: [visualProject({ kind: 'pixi', maxPixels }), visualProject({ kind: 'html', maxPixels })],
-        reporters: ['default', createVisualReporter()],
+        // On GitHub, each failure is also an annotation on the run, with its message
+        reporters: ['default', ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []), createVisualReporter()],
     },
 });
