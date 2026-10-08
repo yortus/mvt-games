@@ -10,7 +10,8 @@
         "./entries/falling-sand/views": "./src/entries/falling-sand/views/index.ts"
     },
     "imports": {
-        "#shared": "./src/shared/index.ts"
+        "#shared": "./src/shared/index.ts",
+        "#testing": "./src/testing/index.ts"
     },
     "scripts": {
         "dev": "vite --host",
@@ -18,7 +19,11 @@
         "preview": "vite preview",
         "generate-textures": "tsx scripts/generate-textures.ts",
         "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
-        "measure-load": "tsx scripts/measure-load.ts"
+        "measure-load": "tsx scripts/measure-load.ts",
+        "test:visual": "tsx scripts/visual/run.ts",
+        "test:visual:update": "tsx scripts/visual/run.ts --update",
+        "test:visual:environment": "tsx scripts/visual/run.ts --environment",
+        "generate-blank-font": "tsx scripts/visual/generate-blank-font.ts"
     },
     "dependencies": {
         "@codemirror/commands": "^6.11.1",
@@ -41,6 +46,7 @@
         "three": "^0.186.1"
     },
     "devDependencies": {
+        "@types/fontkit": "^2.0.9",
         "@types/glob": "^8.1.0",
         "@types/lz-string": "^1.3.34",
         "@types/pngjs": "^6.0.5",

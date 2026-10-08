@@ -1,0 +1,86 @@
+import type { Container } from 'pixi.js';
+import { destroyElement } from '@mvtjs/html';
+import { refreshView } from '@mvtjs/pixi';
+import { inject, test } from 'vitest';
+import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
+import { failureMessage, hashPixels, isPass, pictureNameOfCurrentTest, sessionFor, toBase64, visualCommands } from './judge';
+import { pageSetup } from './page-setup';
+import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
+import type { VisualTestMeta, VisualVerdict } from './protocol';
+
+// ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+/** Builds a view in the state to photograph, advancing its time if it has any, and returns it. */
+export type Pose<V> = () => V | Promise<V>;
+
+// ---------------------------------------------------------------------------
+// Function
+// ---------------------------------------------------------------------------
+
+/**
+ * One visual test: the view the pose returns, refreshed, drawn and compared
+ * with its reference, `__screenshots__/<this file>/<describe blocks>-<name>.png`.
+ * A Pixi view is drawn in a `*.visual.tsx` file; an HTML view (whose text is
+ * drawn blank, so its layout and styling show) in a `*.html.visual.tsx`
+ * file, which runs in a page of its own.
+ */
+export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
+export function visualTest(name: string, pose: Pose<HTMLElement>, options?: HtmlPictureOptions): void;
+export function visualTest(name: string, pose: Pose<Container | HTMLElement>, options: PixiPictureOptions | HtmlPictureOptions = {}): void {
+    test(name, async ({ task }) => {
+        const kind = inject('visualKind');
+        const setup = await pageSetup();
+        const id = pictureNameOfCurrentTest();
+        const ms: Record<string, number> = {};
+        // The overloads pair each kind of view with its own options
+        if (kind === 'pixi') preparePixiPose(options as PixiPictureOptions);
+
+        let t = performance.now();
+        const view = await pose();
+        ms.pose = performance.now() - t;
+        let verdict: VisualVerdict;
+        let size: { width: number; height: number };
+        try {
+            t = performance.now();
+            refreshView(view);
+            ms.refresh = performance.now() - t;
+            if (view instanceof HTMLElement) {
+                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view: HTML views are tested in a *.html.visual.tsx file`);
+                const captured = await captureHtmlPicture(view, options as HtmlPictureOptions, id);
+                ms.capture = captured.captureMs;
+                verdict = captured;
+                size = captured;
+            }
+            else {
+                if (kind !== 'pixi') throw new Error(`'${id.test}' poses a Pixi view: Pixi views are tested in a *.visual.tsx file, not *.html.visual.tsx`);
+                t = performance.now();
+                const picture = await drawPixiPicture(view, options as PixiPictureOptions);
+                ms.draw = performance.now() - t;
+                if (picture.isBlank) throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture`);
+                const unpinned = setup.takeUnpinnedFamilies();
+                if (unpinned.length > 0) {
+                    throw new Error(`'${id.test}' uses fonts no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts`);
+                }
+                t = performance.now();
+                const hash = await hashPixels(picture.width, picture.height, picture.pixels);
+                ms.hash = performance.now() - t;
+                const session = await sessionFor({});
+                t = performance.now();
+                verdict = session.hashes[id.name] === hash
+                    ? { outcome: 'same', referenceFile: id.name }
+                    : await visualCommands.visualMismatch({ ...id, width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels) });
+                ms.compare = performance.now() - t;
+                size = picture;
+            }
+        }
+        finally {
+            if (view instanceof HTMLElement) destroyElement(view);
+            else view.destroy({ children: true });
+        }
+        const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, ms };
+        task.meta.visual = meta;
+        if (!isPass(verdict)) throw new Error(failureMessage(id.test, verdict, kind));
+    });
+}
