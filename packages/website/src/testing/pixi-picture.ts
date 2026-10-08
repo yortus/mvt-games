@@ -1,4 +1,5 @@
 import { Application, Container, Graphics, RenderTexture, TextureSource } from 'pixi.js';
+import { fitPicture } from './picture-budget';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -10,21 +11,16 @@ export interface PixiPictureOptions {
     readonly height?: number;
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
-    /** Nearest-neighbour textures, no antialiasing and whole-pixel positions, as a pixel-art entry is drawn. Default false. */
-    readonly pixelArt?: boolean;
     /**
-     * Picture pixels per view pixel. Default 1. Below 1, a big smooth view
-     * (a whole screen) draws faster and stores smaller, and every detail
-     * finer than a picture pixel is averaged away: a change smaller than
-     * that may pass unseen. Never below 1 for pixel art, which would drop
-     * whole texels.
+     * Whether the view is smooth: drawn with antialiased edges, at
+     * fractional positions, its own textures sampled smoothly. Default
+     * false: drawn as pixel art is, hard-edged, on whole pixels, textures
+     * nearest-neighbour. A smooth picture larger than the size budget is
+     * drawn at a lower resolution to fit it (half, a quarter, ...), every
+     * detail finer than a picture pixel averaged away; a pixel-art one
+     * cannot be, and fails instead.
      */
-    readonly resolution?: number;
-    /**
-     * Allows a picture over the size budget (`MAX_PICTURE_PIXELS`), for a
-     * view whose every pixel matters at full size. Default false.
-     */
-    readonly large?: boolean;
+    readonly isSmooth?: boolean;
 }
 
 /** A picture's pixels, read back from the renderer: RGBA, rows from the top, opaque. */
@@ -32,6 +28,8 @@ export interface PixiPicture {
     readonly width: number;
     readonly height: number;
     readonly pixels: Uint8Array;
+    /** Picture pixels per view pixel: 1, or less for a big smooth view. */
+    readonly resolution: number;
     /** Whether every pixel is the background's: the view drew nothing inside the picture. */
     readonly isBlank: boolean;
 }
@@ -43,22 +41,21 @@ export interface PixiPicture {
 /**
  * Sets the texture defaults a pose's textures are made with, before the
  * pose runs: entries set them per entry, and a test must not inherit the
- * last one's. Checks the options first.
+ * last one's. (The games' spritesheets set their own, nearest-neighbour.)
  */
 export function preparePixiPose(options: PixiPictureOptions): void {
-    if (options.pixelArt === true && (options.resolution ?? 1) < 1) {
-        throw new Error('Pixel art is never drawn below resolution 1: it would drop whole texels');
-    }
-    TextureSource.defaultOptions.scaleMode = options.pixelArt === true ? 'nearest' : 'linear';
+    TextureSource.defaultOptions.scaleMode = options.isSmooth === true ? 'linear' : 'nearest';
 }
 
 /**
  * Draws a refreshed view into a render texture and reads its pixels back.
  * No screenshot: the renderer's own pixels, with no compositor or colour
- * management in between.
+ * management in between. Throws if the picture is over the size budget
+ * and cannot be drawn smaller.
  */
-export async function drawPixiPicture(view: Container, options: PixiPictureOptions): Promise<PixiPicture> {
-    const app = await appFor(options.pixelArt === true);
+export async function drawPixiPicture(view: Container, options: PixiPictureOptions & { readonly maxPixels: number }): Promise<PixiPicture> {
+    const isSmooth = options.isSmooth === true;
+    const app = await appFor(isSmooth);
     holder.position.set(0, 0);
     holder.addChild(view);
     try {
@@ -74,14 +71,15 @@ export async function drawPixiPicture(view: Container, options: PixiPictureOptio
             width ??= Math.ceil(bounds.maxX) + MARGIN - x0;
             height ??= Math.ceil(bounds.maxY) + MARGIN - y0;
         }
+        const fit = fitPicture({ width, height, maxPixels: options.maxPixels, canScale: isSmooth });
+        if ('problem' in fit) throw new Error(fit.problem);
         holder.position.set(-x0, -y0);
-        const background = options.background ?? DEFAULT_BACKGROUND;
-        backdrop.clear().rect(0, 0, width, height).fill(background);
-        const target = targetFor(width, height, options.resolution ?? 1, options.pixelArt !== true);
+        backdrop.clear().rect(0, 0, width, height).fill(options.background ?? DEFAULT_BACKGROUND);
+        const target = targetFor(width, height, fit.resolution, isSmooth);
         app.renderer.render({ container: stage, target, clear: true });
         const read = app.renderer.texture.getPixels(target);
         const pixels = new Uint8Array(read.pixels.buffer, read.pixels.byteOffset, read.pixels.byteLength);
-        return { width: read.width, height: read.height, pixels, isBlank: isAllOne(pixels) };
+        return { width: read.width, height: read.height, pixels, resolution: fit.resolution, isBlank: isAllOne(pixels) };
     }
     finally {
         holder.removeChildren();
@@ -111,7 +109,7 @@ const targets = new Map<string, RenderTexture>();
  * context's own antialiasing is fixed (off): it changes MSAA edges in render
  * textures too, so it must never be left to a default.
  */
-async function appFor(isPixelArt: boolean): Promise<Application> {
+async function appFor(isSmooth: boolean): Promise<Application> {
     app ??= (async () => {
         const made = new Application();
         await made.init({ width: 8, height: 8, antialias: false, autoStart: false, preference: 'webgl', sharedTicker: false });
@@ -119,7 +117,7 @@ async function appFor(isPixelArt: boolean): Promise<Application> {
     })();
     const ready = await app;
     // The renderer reads this field every frame; Pixi offers no setter
-    (ready.renderer as unknown as { _roundPixels: number })._roundPixels = isPixelArt ? 1 : 0;
+    (ready.renderer as unknown as { _roundPixels: number })._roundPixels = isSmooth ? 0 : 1;
     return ready;
 }
 

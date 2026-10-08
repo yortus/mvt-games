@@ -101,6 +101,8 @@ export interface VisualTestMeta {
     readonly outcome: VisualOutcome;
     readonly width: number;
     readonly height: number;
+    /** Picture pixels per view pixel: 1, or less for a big smooth view drawn to fit the budget. */
+    readonly resolution: number;
     /** Milliseconds per stage: pose, refresh, draw, hash, capture, compare. */
     readonly ms: Readonly<Record<string, number>>;
 }
@@ -113,6 +115,8 @@ declare module 'vitest' {
     interface ProvidedContext {
         /** Which project the page belongs to, provided by its config. */
         visualKind: VisualKind;
+        /** The size budget, in pixels, provided by the config (`maxPixels`). */
+        visualMaxPixels: number;
     }
 }
 

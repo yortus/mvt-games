@@ -8,6 +8,6 @@ const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 describe('SpinButtonView', () => {
     // The held-down state comes from the pointer, not bindings: a freshly built button is at rest
     for (const mode of MODES) {
-        visualTest(mode, () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }));
+        visualTest(mode, () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }), { isSmooth: true });
     }
 });

@@ -5,7 +5,6 @@ import { inject, test } from 'vitest';
 import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
 import { failureMessage, hashPixels, isPass, pictureNameOfCurrentTest, sessionFor, toBase64, visualCommands } from './judge';
 import { pageSetup } from './page-setup';
-import { overBudget } from './picture-budget';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualTestMeta, VisualVerdict } from './protocol';
 
@@ -32,6 +31,7 @@ export function visualTest(name: string, pose: Pose<Element>, options?: HtmlPict
 export function visualTest(name: string, pose: Pose<Container | Element>, options: PixiPictureOptions | HtmlPictureOptions = {}): void {
     test(name, async ({ task }) => {
         const kind = inject('visualKind');
+        const maxPixels = inject('visualMaxPixels');
         const setup = await pageSetup();
         const id = pictureNameOfCurrentTest();
         const ms: Record<string, number> = {};
@@ -42,26 +42,24 @@ export function visualTest(name: string, pose: Pose<Container | Element>, option
         const view = await pose();
         ms.pose = performance.now() - t;
         let verdict: VisualVerdict;
-        let size: { width: number; height: number };
+        let size: { width: number; height: number; resolution: number };
         try {
             t = performance.now();
             refreshView(view);
             ms.refresh = performance.now() - t;
             if (view instanceof Element) {
                 if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view: HTML views are tested in a *.html.visual.tsx file`);
-                const captured = await captureHtmlPicture(view, options as HtmlPictureOptions, id);
+                const captured = await captureHtmlPicture(view, { ...(options as HtmlPictureOptions), maxPixels }, id);
                 ms.capture = captured.captureMs;
                 verdict = captured;
-                size = captured;
+                size = { width: captured.width, height: captured.height, resolution: 1 };
             }
             else {
                 if (kind !== 'pixi') throw new Error(`'${id.test}' poses a Pixi view: Pixi views are tested in a *.visual.tsx file, not *.html.visual.tsx`);
                 t = performance.now();
-                const picture = await drawPixiPicture(view, options as PixiPictureOptions);
+                const picture = await drawPixiPicture(view, { ...(options as PixiPictureOptions), maxPixels });
                 ms.draw = performance.now() - t;
                 if (picture.isBlank) throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture`);
-                const tooBig = overBudget(picture.width, picture.height, (options as PixiPictureOptions).large);
-                if (tooBig !== undefined) throw new Error(`'${id.test}' ${tooBig}`);
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
                     throw new Error(`'${id.test}' uses fonts no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts`);
@@ -82,7 +80,7 @@ export function visualTest(name: string, pose: Pose<Container | Element>, option
             if (view instanceof Element) destroyElement(view);
             else view.destroy({ children: true });
         }
-        const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, ms };
+        const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
         task.meta.visual = meta;
         if (!isPass(verdict)) throw new Error(failureMessage(id.test, verdict, kind));
     });

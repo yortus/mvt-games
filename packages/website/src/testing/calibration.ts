@@ -1,3 +1,4 @@
+import { inject } from 'vitest';
 import { BlurFilter, Container, FillGradient, Graphics, Sprite, Text, type TextStyleOptions, Texture } from 'pixi.js';
 import { captureHtmlPicture } from './html-picture';
 import { hashPixels, isPass, sessionFor, toBase64, visualCommands } from './judge';
@@ -64,7 +65,7 @@ function pixi(pose: () => Container, options: PixiPictureOptions = {}): Calibrat
         preparePixiPose(options);
         const view = pose();
         try {
-            const picture = await drawPixiPicture(view, options);
+            const picture = await drawPixiPicture(view, { ...options, maxPixels: inject('visualMaxPixels') });
             const hash = await hashPixels(picture.width, picture.height, picture.pixels);
             if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
             return await visualCommands.visualMismatch({
@@ -84,7 +85,7 @@ function html(markup: string): Calibration {
         const root = document.createElement('div');
         root.style.cssText = 'padding:8px;color:#e6edf3;font-size:14px;';
         root.innerHTML = markup;
-        return captureHtmlPicture(root, {}, { calibration: 'html', name, test: `calibration ${name}` });
+        return captureHtmlPicture(root, { maxPixels: inject('visualMaxPixels') }, { calibration: 'html', name, test: `calibration ${name}` });
     };
 }
 
@@ -123,27 +124,29 @@ function checkerSprite(): Container {
     return root;
 }
 
+const SMOOTH: PixiPictureOptions = { isSmooth: true };
+
 const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
-    'circle-msaa': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c })),
-    'circle-aliased': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), { pixelArt: true }),
+    'circle-msaa': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), SMOOTH),
+    'circle-aliased': pixi(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), {}),
     'gradients': pixi(() => {
         const linear = new FillGradient({
             type: 'linear', start: { x: 0, y: 0 }, end: { x: 1, y: 0 },
             colorStops: [{ offset: 0, color: 0xff4f8b }, { offset: 0.5, color: 0xffe45c }, { offset: 1, color: 0x2a1766 }],
         });
         return new Graphics().rect(0, 0, 240, 40).fill(linear).roundRect(20, 60, 200, 60, 18).fill(linear);
-    }),
+    }, SMOOTH),
     'blur': pixi(() => {
         const shape = new Graphics().star(60, 60, 5, 40, 18).fill(0x5bd1ff).rect(110, 30, 60, 60).fill(0xffe45c);
         shape.filters = [new BlurFilter({ strength: 6, quality: 4 })];
         const root = new Container();
         root.addChild(shape);
         return root;
-    }, { width: 200, height: 130 }),
-    'texture-linear': pixi(checkerSprite, { width: 120, height: 120 }),
-    'texture-nearest': pixi(checkerSprite, { width: 120, height: 120, pixelArt: true }),
-    'text-sans': pixi(() => textBlock('"Segoe UI", sans-serif')),
-    'text-mono': pixi(() => textBlock('monospace')),
+    }, { width: 200, height: 130, isSmooth: true }),
+    'texture-linear': pixi(checkerSprite, { width: 120, height: 120, isSmooth: true }),
+    'texture-nearest': pixi(checkerSprite, { width: 120, height: 120 }),
+    'text-sans': pixi(() => textBlock('"Segoe UI", sans-serif'), SMOOTH),
+    'text-mono': pixi(() => textBlock('monospace'), SMOOTH),
     'text-effects': pixi(() => {
         const root = new Container();
         const gradient = new FillGradient({
@@ -157,7 +160,7 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         c.y = 100;
         root.addChild(a, b, c);
         return root;
-    }),
+    }, SMOOTH),
 };
 
 const HTML_CALIBRATION: Readonly<Record<string, Calibration>> = {

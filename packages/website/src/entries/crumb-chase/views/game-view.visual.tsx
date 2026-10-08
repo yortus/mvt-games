@@ -14,7 +14,7 @@ async function game(advanceMs: number) {
 }
 
 describe('Crumb Chase GameView', () => {
-    visualTest('at the start', () => game(0), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: true });
+    visualTest('at the start', () => game(0), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
     // The cats leave their pen, and the mouse runs on its own until steered
-    visualTest('two seconds in', () => game(2000), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: true });
+    visualTest('two seconds in', () => game(2000), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 });

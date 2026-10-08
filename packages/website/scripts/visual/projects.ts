@@ -17,7 +17,18 @@ import { visualCommands } from './commands';
 
 export interface VisualProjectOptions {
     readonly kind: VisualKind;
+    /**
+     * The size budget: the most pixels a picture may have. A smooth Pixi
+     * view over it is drawn at a lower resolution to fit (half, a quarter,
+     * ...); pixel art and HTML are always drawn at full size, so over it
+     * they fail. Pictures cost storage in every version of every reference,
+     * and drawing time. Default `DEFAULT_MAX_PIXELS`.
+     */
+    readonly maxPixels?: number;
 }
+
+/** About a 960 by 540 screen. */
+export const DEFAULT_MAX_PIXELS = 500_000;
 
 // ---------------------------------------------------------------------------
 // Function
@@ -42,7 +53,7 @@ export function visualProject(options: VisualProjectOptions): TestProjectInlineC
             fileParallelism: false,
             setupFiles: ['src/testing/setup.ts'],
             testTimeout: 30_000,
-            provide: { visualKind: options.kind },
+            provide: { visualKind: options.kind, visualMaxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS },
             browser: {
                 enabled: true,
                 headless: true,

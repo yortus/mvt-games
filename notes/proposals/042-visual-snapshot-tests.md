@@ -321,16 +321,17 @@ describe('Crumb Chase GameView', () => {
         const view = GameView({ model });
         await advanceTime({ models: [model], views: [view], totalMs: 2000 });
         return view;
-    }, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: true });
+    }, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 });
 ```
 
 `textures.load()` works because the visual project runs under the
 website's Vite config, whose spritesheet plugin serves the textures. It
 loads once per run, not once per test, since the page lives for the whole
-run (section 4.3). The size is the game's screen, not its bounds, and
-`pixelArt` draws it as its entry does: nearest-neighbour textures, no
-antialiasing.
+run (section 4.3). The size is the game's screen, not its bounds. A
+picture is drawn as pixel art by default (hard edges, whole-pixel
+positions, nearest-neighbour textures), as this game is; a smooth view
+says `isSmooth: true`.
 
 Six entries' models (eight files) call `Math.random()` without a seed:
 Astrovoid, Boids, Burrow Bust, Dojo Duel, Galaxy Raiders and Kwazy
@@ -397,19 +398,18 @@ export interface PixiPictureOptions {
     readonly height?: number;
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
-    /** Nearest-neighbour textures and no antialiasing, as a pixel-art entry is drawn. Default false. */
-    readonly pixelArt?: boolean;
-    /** Default 1. Below 1 for big smooth views only, at the cost of fine detail (section 7.3). */
-    readonly resolution?: number;
-    /** Allows a picture over the size budget (section 7.3). Default false. */
-    readonly large?: boolean;
+    /**
+     * Antialiased edges, fractional positions, smooth textures; and, over
+     * the size budget, drawn at a lower resolution to fit (section 7.3).
+     * Default false: drawn as pixel art is.
+     */
+    readonly isSmooth?: boolean;
 }
 
 export interface HtmlPictureOptions {
     readonly width?: number;
     readonly height?: number;
     readonly background?: string;
-    readonly large?: boolean;
 }
 
 export interface ThreePictureOptions {
@@ -622,7 +622,7 @@ pinned:
 | Seeds picked by a page | The fruit machine's load picks its seed with `Math.random()` | Same |
 | Wall clock in a view | None found (`performance.now`, `Date.now`, `requestAnimationFrame` in views) | Lint covers models only; a pose that needs a view's wall clock is a bug in the view |
 | No ticker | Pixi applications tick themselves by default | Made with `autoStart: false`, as the thumbnail page and the fruit machine make theirs; the harness draws once per picture |
-| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Reset before each test, then set from `pixelArt` before the pose runs |
+| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Set before each pose runs, from the test's `isSmooth` |
 | Left-over views | A failed pose could leave its view mounted | Unmounted and destroyed in a `finally` |
 | Stylesheets | HTML views import CSS that stays in the page | HTML pictures run isolated per file (section 4.5) |
 | CSS transitions and animations | HTML views use them | Screenshots taken with animations disabled; transitions finish at once |
@@ -1127,19 +1127,24 @@ animation.
 Three measures keep size, and so storage and drawing time, in hand
 without making pictures less exact:
 
-- **A budget.** A picture over 500,000 pixels (about a 960 by 540
-  screen) fails, saying how to fix it: crop it (`width`, `height`), pose
-  part of the view, draw it at a lower resolution, or pass `large: true`
-  where every pixel matters at full size. Big pictures are then a choice
-  made per test, not an accident.
-- **A lower resolution, for big smooth views only.** `resolution: 0.5`
-  draws a whole screen at half size in each direction: a quarter of the
-  pixels to draw, hash and store. It stays exact (SwiftShader draws it
-  the same everywhere), but every detail finer than a picture pixel is
-  averaged away, so a small change may pass unseen; it is opt-in per
-  test, and refused for pixel art, where it would drop whole texels.
-  HTML has no such option: the browser's own scaling differs between
-  systems.
+- **One flag, `isSmooth`.** A picture is drawn as pixel art unless its
+  test says `isSmooth: true`: hard edges, whole-pixel positions, and
+  nearest-neighbour sampling for the textures a pose makes (the games'
+  spritesheets are always nearest-neighbour). A smooth picture gets
+  antialiased edges, fractional positions and smooth sampling. A test
+  that forgets the flag for a smooth view gets a jagged picture: unfaithful,
+  but consistent, and plain to see in review.
+- **A budget, `maxPixels`**, set once in `vitest.visual.config.ts`,
+  default 500,000 (about a 960 by 540 screen). A smooth picture over it is
+  drawn at a lower resolution, halving until it fits (half, a quarter,
+  ...), so each picture pixel is an exact square of view pixels. It stays
+  exact (SwiftShader draws it the same everywhere), but every detail
+  finer than a picture pixel is averaged away, so the summary lists every
+  picture drawn that way. Pixel art is never drawn smaller (it would drop
+  whole texels), nor HTML (the browser's own scaling differs between
+  systems): over the budget, they fail, saying to crop the picture
+  (`width`, `height`), pose part of the view, or mark a smooth view
+  `isSmooth`.
 - **The figures, every run.** The summary gives the references' total
   size and the largest files, beside the timings.
 
@@ -1148,8 +1153,11 @@ Downscaling every picture after it is drawn was considered and rejected
 where the time goes (86% of it), and diffing happens only for a picture
 that changed; and averaging makes a change smaller, so that a one-pixel
 change of 8 levels becomes 2 after a 2:1 downscale, inside the tolerance
-arm64 needs. Lower resolution, chosen per test, gets the speed without
-hiding that it is a choice.
+arm64 needs. Drawing smooth views over the budget at a lower resolution
+gets the speed, and the summary keeps it in view. So were a per-test
+`resolution` and an opt-out `large` (2026-10-08): one flag and one
+budget are simpler, and pixel art is the default because forgetting a
+flag should never make a picture less exact.
 
 ### 7.4 Orphaned references
 
@@ -1282,10 +1290,9 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    feature software WebGL gets wrong, its pictures would be consistently
    wrong, which still catches changes, but would confuse a reviewer.
    Decide when it happens, if it does.
-5. **Resolution 1 or 2 by default?** 1 keeps pictures small and fast, and
-   is what pixel art wants. Smooth views lose detail at 1 that a
-   regression could hide in. Recommendation: 1, with `resolution: 2` for
-   the views that need it.
+5. ~~**Resolution 1 or 2 by default?**~~ Settled 2026-10-08: 1, never
+   more; a smooth picture over the size budget is drawn at less to fit
+   (section 7.3).
 6. ~~**A lint rule against module-level `let` in model files?**~~
    Settled 2026-10-08: added in step 2 as `@mvtjs/no-module-state`, in
    the `architecture` preset beside `no-wall-clock`. Astrovoid's shared

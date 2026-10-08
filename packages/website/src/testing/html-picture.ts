@@ -1,6 +1,6 @@
 import { pixelateRotatedImages } from './html-rules';
 import { visualCommands } from './judge';
-import { overBudget } from './picture-budget';
+import { fitPicture } from './picture-budget';
 import type { VisualPictureId, VisualRect, VisualVerdict } from './protocol';
 
 // ---------------------------------------------------------------------------
@@ -13,13 +13,6 @@ export interface HtmlPictureOptions {
     readonly height?: number;
     /** A CSS colour. Default: the same dark grey as WebGL pictures. */
     readonly background?: string;
-    /**
-     * Allows a picture over the size budget, for an element whose every
-     * pixel matters at full size. Default false. (There is no lower
-     * resolution for HTML: the browser's own scaling differs between
-     * systems.)
-     */
-    readonly large?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -30,11 +23,13 @@ export interface HtmlPictureOptions {
  * Photographs an element: mounts it in a host that shrinks to fit it (or
  * takes the given size), waits for its fonts and every image, and has Node
  * capture the host's rectangle through the DevTools protocol and judge it.
- * The element is removed after, whatever happens.
+ * The element is removed after, whatever happens. HTML pictures are always
+ * full size (the browser's own scaling differs between systems), so one
+ * over the size budget fails.
  */
 export async function captureHtmlPicture(
     element: Element,
-    options: HtmlPictureOptions,
+    options: HtmlPictureOptions & { readonly maxPixels: number },
     id: VisualPictureId,
 ): Promise<VisualVerdict & { readonly captureMs: number; readonly width: number; readonly height: number }> {
     const host = document.createElement('div');
@@ -52,8 +47,8 @@ export async function captureHtmlPicture(
             return image.decode().catch(() => undefined);
         }));
         const rect = rectOf(host);
-        const tooBig = overBudget(rect.width, rect.height, options.large);
-        if (tooBig !== undefined) throw new Error(`'${id.test}' ${tooBig}`);
+        const fit = fitPicture({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false });
+        if ('problem' in fit) throw new Error(fit.problem);
         const verdict = await visualCommands.visualCapture({ ...id, rect });
         return { ...verdict, width: rect.width, height: rect.height };
     }
