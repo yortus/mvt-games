@@ -45,8 +45,14 @@ packages/website/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
-└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+└── testing/             The visual tests' harness (`visualTest`, `advanceTime`), imported as `#testing`
 ```
+
+Visual tests (`*.visual.tsx`, `*.html.visual.tsx`) sit beside the views they
+picture, their reference PNGs in `__screenshots__/` beside them; the Node side
+of the harness is in `packages/website/scripts/visual/`. See
+[Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
 `exports` condition), so nothing needs building to run the site or the tests.
@@ -88,6 +94,9 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm test`             | Every workspace's tests (Vitest) |
+| `npm run test:visual`  | Visual tests: compare every picture (downloads the browser on first run); `-- --picture <name>` for one |
+| `npm run test:visual:update` | Also write changed and new pictures as references, and delete orphaned ones; look at each before committing |
+| `npm run test:visual:environment` | Also rewrite the environment fingerprint and calibration pictures, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/checks/](packages/checks/README.md)) |
@@ -106,7 +115,7 @@ done. Proposals and tasks share one number sequence.
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead (lint: `@mvtjs/no-em-dash`, which auto-fixes).
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files. [Time Management](packages/docs/building-with-mvt/simulating-the-world/time-management.md)
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files, and `@mvtjs/no-module-state` rejects module-level `let`, which every model the file makes would share. [Time Management](packages/docs/building-with-mvt/simulating-the-world/time-management.md)
 2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md)
 3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](packages/docs/reference/project-structure.md)
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/docs/reference/style-guide.md)

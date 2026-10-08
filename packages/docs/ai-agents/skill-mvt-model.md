@@ -240,6 +240,7 @@ Re-export through the directory's barrel file (`index.ts`).
 | Pattern                                | Rule         | Fix                                           |
 | -------------------------------------- | ------------ | --------------------------------------------- |
 | `setTimeout` / `setInterval` in model  | M-time       | Use `update(deltaMs)` with arithmetic or GSAP |
+| Module-level `let` in a model file     | M-isolation  | State in the factory's closure: every model the file makes would share it (lint: `@mvtjs/no-module-state`) |
 | Importing a view or view module        | M-isolation  | Models never reference views                  |
 | Storing pixel coordinates              | M-domain     | Use domain units (row/col, world units)       |
 | Using `class`                          | Style        | Factory function + plain record               |

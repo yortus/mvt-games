@@ -114,6 +114,7 @@ export default withMermaid(defineConfig({
                             { text: 'Testing', link: '/building-with-mvt/iterating-with-confidence/testing' },
                             { text: 'Testing Models', link: '/building-with-mvt/iterating-with-confidence/testing-models' },
                             { text: 'Testing Views', link: '/building-with-mvt/iterating-with-confidence/testing-views' },
+                            { text: 'Visual Tests', link: '/building-with-mvt/iterating-with-confidence/visual-tests' },
                         ],
                     },
                     {

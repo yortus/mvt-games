@@ -18,9 +18,10 @@ public properties. A view test captures visual output and compares
 against a known baseline. If either layer's internals change, tests
 should not break unless the observable result changes.
 
-This project uses [Vitest](https://vitest.dev/) for model and view model
-tests, and [Playwright](https://playwright.dev/) for visual snapshot
-tests.
+This project uses [Vitest](https://vitest.dev/) for every test: in Node
+for models, view models and scene graph assertions, and in a browser
+(Vitest's browser mode, driving [Playwright](https://playwright.dev/)'s
+Chromium) for [visual tests](visual-tests.md).
 
 ## Testing by Layer
 
@@ -45,3 +46,5 @@ values.
   when they help and when they hurt
 - [Visual snapshot testing](testing-views.md#visual-snapshot-testing) -
   capturing and comparing rendered output
+- [Visual tests](visual-tests.md) - writing one in this project, running
+  and accepting them, and how they stay fast and consistent

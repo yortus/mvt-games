@@ -513,6 +513,38 @@ once, when the element is built, not per frame.
 | Using `null`                               | Style           | Use `undefined`                               |
 | `array.map()` in `refresh()` hot path      | H-alloc         | Index-based `for` loop                        |
 
+## Visual Tests
+
+**[project convention]** A new or changed view gets a visual test: a
+`*.visual.tsx` beside it (a `*.html.visual.tsx` for an HTML view), with
+one `visualTest(name, pose, options?)` per state its bindings can show.
+The pose builds the view from fixed bindings (or a top-level view from a
+model in a known state) and returns it; a view with presentation state is
+advanced in the pose with `advanceTime({ models, views, totalMs })`. Both
+come from `#testing`.
+
+```tsx
+describe('WinBannerView', () => {
+    visualTest('a win, counted', () => WinBannerView({ isShown: () => true, amount: () => WIN, caption: () => CAPTION }), { artStyle: 'smooth' });
+});
+```
+
+- Set `artStyle: 'smooth'` for a view its game draws with antialiasing;
+  the default is `'pixel'`. A three.js view also needs `camera`, and the
+  entry's scene dressing as `scene` if it is lit by an environment map.
+- Record the pictures with `npm run test:visual:update -- --picture <name>`
+  (or the whole update), look at each new or changed PNG, and commit them
+  with the view. Never accept a change you have not looked at.
+- `npm run test:visual` must pass before handing over. A failure gives the
+  reference, actual and diff paths: read the diff before deciding the
+  change is intended.
+- Visual runs may be repeated freely: Playwright's headless shell makes no
+  Windows logon attempts, unlike the installed Chrome the thumbnail and
+  load-time scripts use.
+- Assertions still test behaviour and structure (what a view does with its
+  bindings); pictures test looks. See
+  [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md).
+
 ## Complete Minimal Example
 
 A reusable bullet view, shown in a `<List>` above, with a JSX body:
@@ -564,3 +596,4 @@ export function BulletView(bindings: BulletViewBindings): Container {
 - [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `refresh()`
+- [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md) - writing, running and accepting visual tests

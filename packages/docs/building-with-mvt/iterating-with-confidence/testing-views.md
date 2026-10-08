@@ -4,9 +4,10 @@
 > view produce the right visual output for a given set of inputs? The
 > answer is less straightforward than it sounds.
 
+**Previous:** [Testing Models](testing-models.md)
 **Related:** [Views (Learn)](../presenting-the-world/views.md) -
 [Presentation State](../adding-visual-polish/presentation-state.md) -
-[Testing Models](testing-models.md)
+[Visual Tests](visual-tests.md)
 
 ---
 
@@ -132,6 +133,10 @@ a shifted sprite, a missing particle, a wrong tint.
 3. **Update baselines** when the change is intentional. Review the diff,
    confirm it looks correct, and accept the new baseline.
 
+Done naively, each step is slow and none is consistent between machines.
+[Visual Tests](visual-tests.md) describes how this project does each
+step, and how it keeps hundreds of pictures fast and the same everywhere.
+
 ### What snapshots verify
 
 A snapshot answers the question: **does this view still look the same as
@@ -173,18 +178,18 @@ Views with `update(deltaMs)` (those holding
 [presentation state](../adding-visual-polish/presentation-state.md)) need time advanced before
 the snapshot is taken. Use the same small-step approach as model tests:
 
-```ts
-test('door view - halfway through fade-in', async ({ page }) => {
-    await page.goto('/test-harness?view=door&isOpen=true&advanceMs=200');
-    await expect(page.locator('canvas')).toHaveScreenshot('door-fade-50.png');
+```tsx
+visualTest('door - halfway through fading in', async () => {
+    const view = DoorView({ isOpen: () => true });
+    await advanceTime({ views: [view], totalMs: 200 });
+    return view;
 });
 ```
 
-The harness advances the view's `update(deltaMs)` by the specified
-amount, calls `refresh()`, renders, and waits for capture. In this project
-that means `updateView(view, deltaMs)` in small steps, then
-`refreshView(view)`: both work on any container, with no renderer or ticker
-needed.
+`advanceTime` steps the view's `update(deltaMs)` in frame-sized steps
+(in this project, `updateView(view, deltaMs)`, which works on any view
+with no renderer or ticker); the harness then refreshes the view once,
+draws it and compares the picture.
 
 ## Choosing an Approach
 
@@ -214,3 +219,7 @@ complement for coarse structural checks and view model testing.
   bindings, fixed canvas size, fixed seeds.
 - Review snapshot diffs carefully. The value comes from the review
   process, not from blind acceptance.
+
+---
+
+**Next:** [Visual Tests](visual-tests.md)

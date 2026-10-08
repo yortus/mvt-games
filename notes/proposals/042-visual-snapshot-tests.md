@@ -26,7 +26,7 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 7 done. The spike (2026-10-07) measured 1000
+**Status:** every step done (1 to 8). The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
@@ -36,8 +36,9 @@ was revised to it (2026-10-08). The harness is built (2026-10-08):
 The first eleven visual tests are in (step 3), and CI runs them on every
 push, on all three systems when the pinning could change (step 4).
 Every entry has a picture of its whole screen (step 5), three.js views
-have pictures too (step 6), and a full run finds references left behind
-(step 7); the docs are next.
+have pictures too (step 6), a full run finds references left behind
+(step 7), and the docs describe it all (step 8). What remains is feeding
+the branch to `main` in reviewable chunks, then archiving this proposal.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -1514,7 +1515,24 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    calibration picture: a full run listed both and failed (every test
    passing), a filtered run (`--picture`) ignored them, and the update
    deleted them.
-8. **Docs** (section 11), with the documentation skill.
+8. ~~**Docs**~~ Done 2026-10-08, with the documentation skill. A new
+   guide page, `iterating-with-confidence/visual-tests.md` (writing one,
+   for Pixi, presentation state, HTML and three.js views; whole entries;
+   running and accepting; CI; how it stays fast; how it stays consistent,
+   with its compromises), after Testing Views, in the sidebar and the
+   glossary (`Visual test`). `testing-views.md` keeps its general case for
+   pictures, with a `visualTest` and `advanceTime` example in place of
+   the `/test-harness` one; `testing.md` says Vitest runs every test,
+   visual ones in its browser mode. The view skill asks for a
+   `.visual.tsx` beside a new view, a picture per state, recorded and
+   looked at before committing, and says visual runs may be repeated (no
+   Windows logons). AGENTS.md gains the commands, `testing/` and where
+   tests and references sit, and `@mvtjs/no-module-state` beside
+   `no-wall-clock`, as does the model skill's table (under M-isolation).
+   The project structure page gains `testing/`, `__screenshots__/`,
+   `scripts/visual/` and the config; the entries README, the whole-screen
+   picture every entry gets, an element session's `ready`, and a checklist
+   line.
 
 ## Spike results
 

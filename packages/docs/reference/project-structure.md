@@ -42,8 +42,18 @@ packages/website/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          The in-browser editor and the sandbox it runs code in
-└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+└── testing/             The visual tests' harness, in the browser, imported as `#testing`
 ```
+
+[Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
+sit beside the views they picture, as `*.visual.tsx` (Pixi and three.js)
+or `*.html.visual.tsx` (HTML), with their reference pictures in a
+`__screenshots__/<test file>/` directory beside them. The harness's Node
+side (the browser commands, the PNG files, the comparison, the run's
+summary) is in `packages/website/scripts/visual/`, and its configuration is
+`packages/website/vitest.visual.config.ts`, with the environment's
+fingerprint in `packages/website/visual-environment.json`.
 
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its
@@ -56,6 +66,7 @@ public API.
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
 | `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
+| `packages/website/src/testing/` | The visual tests' harness                       | `visualTest`, `advanceTime`                                   |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -263,8 +274,10 @@ The rules above apply inside each package. Between packages:
   site share no code in either direction (`import/no-restricted-paths`), so
   the playground could become a package of its own.
 
-Within the site, its shared views are imported as `#shared`, an alias that
-`packages/website/package.json` defines.
+Within the site, its shared views are imported as `#shared`, and the
+visual tests' harness as `#testing`, aliases that
+`packages/website/package.json` defines. `#testing` imports Vitest, so only
+test files import it.
 
 ## Entry Structure
 

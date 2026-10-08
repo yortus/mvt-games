@@ -341,9 +341,12 @@ entry inside an element the host gives it, and returns a session with two
 more members: `views`, the roots of its views of every renderer, and
 `render()`, which draws a frame. The host still runs each frame in the MVT
 order: the session's `update`, then `updateView` and `refreshView` over its
-`views`, then `render`. See [Boids in 3D](./boids-3d/start/load.ts) for a
-small one, and the [Fruit Machine](./fruit-machine/start/load.ts) for one
-model with views on three renderers.
+`views`, then `render`. A renderer that starts asynchronously (Pixi's
+`init`) makes the session's `ready` a promise that settles once it can
+draw, so that a host taking one picture (a thumbnail, a visual test) waits
+for it. See [Boids in 3D](./boids-3d/start/load.ts) for a small one, and
+the [Fruit Machine](./fruit-machine/start/load.ts) for one model with
+views on three renderers.
 
 ## Step 5: Describe the Entry (`start/entry.ts`)
 
@@ -433,6 +436,19 @@ npm run generate-thumbnails -- breakout
 It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 `start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
+The same moment is also the entry's visual test of its whole screen, which
+it gets without any code: `entries.visual.tsx` (or `entries.html.visual.tsx`,
+for an element entry) makes one for every entry in the catalogue. Record
+its picture, look at it, and commit it:
+
+```bash
+npm run test:visual:update -- --picture breakout
+```
+
+Give the views their own visual tests too, one picture per state their
+bindings can show: see
+[Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
@@ -447,5 +463,6 @@ It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
   starter's
 - Barrel files export public API at each level
 - The entry is listed in `catalogue.ts`, and has its own thumbnail
+- The entry's whole-screen picture is recorded, and its views have visual tests
 - Model tests exist and pass
 - The title, characters, art and levels are the entry's own (see [Originality](#originality))
