@@ -26,7 +26,7 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 5 done. The spike (2026-10-07) measured 1000
+**Status:** steps 1 to 6 done. The spike (2026-10-07) measured 1000
 pictures in 12.7 s, and the same pictures on Windows, Linux x64, Linux
 arm64 and macOS arm64 (see [Spike results](#spike-results)); the design
 was revised to it (2026-10-08). The harness is built (2026-10-08):
@@ -35,8 +35,8 @@ was revised to it (2026-10-08). The harness is built (2026-10-08):
 `visual-tests` (the spike's code is in its history, up to `b7f40c3`).
 The first eleven visual tests are in (step 3), and CI runs them on every
 push, on all three systems when the pinning could change (step 4).
-Every Pixi entry has a picture of its whole screen (step 5); three.js is
-next.
+Every entry has a picture of its whole screen (step 5), and three.js
+views have pictures too (step 6); orphaned references are next.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
@@ -372,22 +372,32 @@ pose builds.
 ### 3.5 A three.js view
 
 A three.js view returns an `Object3D`, and needs a camera, and usually
-light, to be seen. Its options name them:
+light, to be seen. Its options make the camera, and can dress the scene
+the view is drawn in as its entry does:
 
 ```tsx
-visualTest('lever at rest', () => LeverView({ ... }), {
-    width: 320,
-    height: 320,
-    camera: () => cameraLookingAt(LEVER_CENTRE),
-    environment: 'room',
+visualTest('200 ms into a pull', () => pulledFor(200), {
+    width: 240,
+    height: 300,
+    camera: sideCamera,
+    scene: dressBanditScene,
 });
 ```
 
-`environment: 'room'` gives it the `RoomEnvironment` the fruit machine
-lights its bandit with; without one, nothing shines. three.js support is a
-later step (step 6): Pixi and HTML cover most views, and a three.js view's
-look depends on more of its entry's setup, which that step decides how
-much to share. Its pictures take the fast path, like Pixi's.
+`dressBanditScene` is the fruit machine's own: its starter calls it too.
+It sets the tone mapping, the background, and the blurred `RoomEnvironment`
+the bandit's paint and chrome reflect; without one, nothing shines. The
+harness calls a dressing once per page, keeps its scene, and adds each
+picture's view to it (with the renderer settings it chose), because an
+environment map takes a second or more to make in software WebGL. A view
+that brings its own lights (the boids' flock) needs no dressing.
+
+Pictures are drawn on the canvas of one renderer kept for every three.js
+picture, not into a render target, because three.js tone-maps and
+converts colour only on the way to the canvas; the pixels are read
+straight back, before the page composites them, so it is still no
+screenshot. Always antialiased, so a picture over the size budget is drawn
+at a lower resolution, as a smooth Pixi one is.
 
 ### 3.6 The API
 
@@ -419,17 +429,18 @@ export interface ThreePictureOptions {
     readonly width: number;
     readonly height: number;
     readonly camera: () => Camera;
-    readonly environment?: 'room';
+    /** Dresses the scene and renderer as the view's entry does; called once per page. */
+    readonly scene?: (options: { readonly scene: Scene; readonly renderer: WebGLRenderer }) => void;
     readonly background?: number;
 }
 
 export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
-export function visualTest(name: string, pose: Pose<HTMLElement>, options?: HtmlPictureOptions): void;
 export function visualTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
+export function visualTest(name: string, pose: Pose<Element>, options?: HtmlPictureOptions): void;
 ```
 
 The kind of view is told apart at run time by what the pose returns
-(`instanceof Container`, `Object3D` or `HTMLElement`); the overloads make
+(`instanceof Object3D` or `Element`, else Pixi); the overloads make
 the options match at compile time. A three.js pose without a camera does
 not compile.
 
@@ -538,12 +549,14 @@ in shuffled order (`--sequence.shuffle`) checks that it does not.
 For a Pixi or three.js view, a picture never needs to be a screenshot.
 The harness:
 
-1. Renders the posed view into a render texture of the picture's size
-   (`RenderTexture` in Pixi, `WebGLRenderTarget` in three.js), kept in a
-   pool by size, so the canvas is never resized and no texture is made per
-   test.
-2. Reads the pixels back (`readPixels`, through Pixi's `extract.pixels`
-   or three.js's `readRenderTargetPixels`). With software WebGL this is a
+1. Renders the posed view: a Pixi view into a `RenderTexture` of the
+   picture's size, kept in a pool by size, so the canvas is never resized
+   and no texture is made per test; a three.js view onto its renderer's
+   canvas, sized to the picture, since three.js tone-maps only on the way
+   to the canvas (section 3.5).
+2. Reads the pixels back (`readPixels`, through Pixi's `getPixels`, or
+   straight from the three.js canvas before the page composites it).
+   With software WebGL this is a
    memory copy; there is no compositor, no colour management and no
    PNG anywhere.
 3. Hashes them in the page: SHA-256 through `crypto.subtle.digest`,
@@ -1269,11 +1282,15 @@ Astrovoid's until its asteroid seeds moved into its model (section 5.1).
 
 Two cautions:
 
-- **Element entries are not instant.** The page gives them 500 ms of real
-  time to lay themselves out and start their renderers: the one
-  wall-clock wait in the pipeline, against both goals of this proposal.
-  Pixi entries come first; element entries follow when they can say when
-  they are ready.
+- **Element entries say when they are ready.** The thumbnail page gave
+  them 500 ms of real time to lay themselves out and start their
+  renderers. Since step 6 an element session has an optional `ready`
+  promise (the fruit machine's settles when its Pixi renderer has
+  started), which both the page and `entries.html.visual.tsx` await, so no
+  wall-clock wait is left. Element entries are HTML pictures, being part
+  DOM; their WebGL canvases appear as on screen. The two over the size
+  budget (the fruit machine, 1280 by 800, and Boids 3D, 960 by 600) are
+  laid out at 880 by 550, as in a smaller window.
 - **These tests fail on any change to an entry.** That is their job, but
   an entry's own commits will often accept a new reference. They
   complement leaf tests, which say what changed; they do not replace them.
@@ -1446,10 +1463,39 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    then found mid-run (with a warm cache), the case that loads a second
    Pixi; they are pre-bundled with the rest now, and the projects'
    comment says any new dependency of an entry belongs there.
-6. **three.js.** Camera and environment options, render targets and
-   `readRenderTargetPixels`; the fruit machine's lever and the boids'
-   flock. Element entries in `entries.visual.tsx`, if they can say when
-   they are ready.
+6. ~~**three.js.**~~ Done 2026-10-08, as sections 3.5 and 10 describe:
+   `camera` and `scene` options (a dressing function in place of the
+   planned `environment: 'room'`, so a view is drawn in its entry's own
+   scene, which the fruit machine's `dressBanditScene` and
+   `frameBanditCamera` now share between its starter and its tests),
+   drawn on a canvas, not a render target (planned), for tone mapping.
+   Two three.js pictures in the calibration set (lights; a room
+   environment, tone-mapped), three in the harness's own tests. Tests:
+   the lever (at rest, 200 and 450 ms into a pull), the bandit (ready, and
+   mid-spin), the flock (at the start, and two seconds in); and the two
+   element entries' whole screens, in `entries.html.visual.tsx`. 45
+   pictures: about 8 s here, 13 s on Ubuntu, identical on Windows and
+   Linux and, for 12 three.js pictures, within the tolerance on macOS.
+   Found on the way:
+   - **An environment map is slow in software WebGL**: a second here, five
+     on a CI runner, and every picture of the bandit paid it until the
+     harness kept each dressing's scene (the lever's later pictures went
+     from a second to 5 ms). `readPixels` is where it shows, since it waits
+     for the work queued before it. Each page still pays it once per
+     dressing; the calibration's own uses a 32-pixel map, the same code
+     for a fraction of the time.
+   - **The texture registry's sampling was never applied.** Shuffling
+     the order (new test files moved the entries' file) changed two entry
+     pictures, Neon Monsoon and Kwazy Cactii: `createTextureRegistry`
+     asked for nearest-neighbour sampling as `data.scaleMode`, which Pixi
+     8's spritesheet loader ignores (it reads `data.textureOptions`). So
+     every pixel-art game's sheet took whatever
+     `TextureSource.defaultOptions.scaleMode` was when it loaded: on the
+     site, smooth for the first game started on a fresh page, nearest for
+     one started after a pixel-art game, and smooth in every thumbnail.
+     Fixed in `@mvtjs/pixi`, with a changeset; Kwazy Cactii, whose art is
+     scaled, now looks the same, slightly crisper, every time, and its
+     thumbnail will change when they are next made.
 7. **Orphaned references** (section 7.4).
 8. **Docs** (section 11), with the documentation skill.
 
