@@ -15,6 +15,15 @@ const SIZES: number[] = [];
 for (let s = 80; s <= 320; s++) SIZES.push(s / 10);
 SIZES.push(13.333333, 10.666667, 14.666667, 21.333333, 13.3333333333, 15.12, 17.28, 13.75);
 const LENGTHS = [1, 7, 55];
+const STYLES: Record<string, string> = {
+    plain: '',
+    geometric: 'text-rendering:geometricPrecision;',
+    speed: 'text-rendering:optimizeSpeed;',
+    legible: 'text-rendering:optimizeLegibility;',
+};
+const CONFIGS: [string, string, string][] = [];
+for (const name of Object.keys(FONTS)) CONFIGS.push([name, name, 'plain']);
+for (const style of Object.keys(STYLES)) if (style !== 'plain') CONFIGS.push([`cur+${style}`, 'cur', style]);
 
 test('advances', async () => {
     const host = document.createElement('div');
@@ -22,22 +31,26 @@ test('advances', async () => {
     document.body.append(host);
     const out: Record<string, number[]> = {};
     for (const [name, url] of Object.entries(FONTS)) {
-        const family = `Probe ${name}`;
-        const face = new FontFace(family, `url(${url})`);
+        const face = new FontFace(`Probe ${name}`, `url(${url})`);
         await face.load();
         document.fonts.add(face);
+    }
+    for (const [config, font, style] of CONFIGS) {
+        const family = `Probe ${font}`;
         const widths: number[] = [];
         for (const size of SIZES) {
             for (const n of LENGTHS) {
                 const line = document.createElement('div');
-                line.style.cssText = `font-family:"${family}";font-size:${size}px;width:max-content;white-space:pre`;
+                line.style.cssText = `font-size:${size}px;width:max-content;white-space:pre;${STYLES[style]}`;
+                // Inline and important, over the harness's own important blank font
+                line.style.setProperty('font-family', `"${family}"`, 'important');
                 line.textContent = 'x'.repeat(n);
                 host.append(line);
                 widths.push(Math.round(line.getBoundingClientRect().width * 64));
                 line.remove();
             }
         }
-        out[name] = widths;
+        out[config] = widths;
     }
     host.remove();
     const platform = navigator.userAgent.includes('Windows') ? 'windows' : navigator.userAgent.includes('Mac') ? 'mac' : 'linux';
@@ -47,7 +60,7 @@ test('advances', async () => {
     }
     const expected = JSON.parse(await commands.readFile('./probe-windows.json')) as Record<string, number[]>;
     const lines: string[] = [`${platform}: sizes ${SIZES.length}, lengths ${LENGTHS.join('/')}`];
-    for (const name of Object.keys(FONTS)) {
+    for (const [name] of CONFIGS) {
         const mismatches: string[] = [];
         let maxDiff = 0;
         const bySize = new Set<number>();
@@ -62,5 +75,7 @@ test('advances', async () => {
         }
         lines.push(`${name}: ${bySize.size} sizes differ, max ${maxDiff}/64. ${mismatches.join(' ')}`);
     }
+    lines.push(`raw cur 55: ${out.cur.filter((_, i) => i % 3 === 2).join(',')}`);
+    lines.push(`raw cur 1: ${out.cur.filter((_, i) => i % 3 === 0).join(',')}`);
     throw new Error(`PROBE ${lines.join(' | ')}`);
 });
