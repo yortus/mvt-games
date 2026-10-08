@@ -37,6 +37,7 @@
         "test:visual:update": "npm run test:visual:update -w @mvtjs/website --",
         "pretest:visual:environment": "npm run generate-refresh-copies",
         "test:visual:environment": "npm run test:visual:environment -w @mvtjs/website --",
+        "test:visual:check-references": "npm run test:visual:check-references -w @mvtjs/website",
         "generate-textures": "npm run generate-textures -w @mvtjs/website",
         "pregenerate-thumbnails": "npm run generate-refresh-copies",
         "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/website --",

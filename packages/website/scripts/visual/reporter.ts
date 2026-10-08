@@ -5,10 +5,10 @@
  * So a slow test, or a big picture, is noticed when it is added.
  */
 
-import { readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import type { Reporter, TestModule } from 'vitest/node';
 import type { VisualTestMeta } from '../../src/testing';
+import { findReferences } from './references';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -52,7 +52,7 @@ export function createVisualReporter(): Reporter {
             const slowest = [...pictures].sort((a, b) => b.total - a.total).slice(0, 5);
             lines.push('  Slowest:');
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
-            const references = referenceFiles(join(WEBSITE, 'src'));
+            const references = findReferences(join(WEBSITE, 'src'));
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             lines.push(`  References: ${references.length} files, ${kilobytes(bytes)}. Largest:`);
             for (const r of [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3)) {
@@ -77,17 +77,6 @@ const OUTCOMES: Readonly<Record<string, string>> = {
 };
 
 const WEBSITE = resolve(import.meta.dirname, '..', '..');
-
-/** Every reference picture under a directory: the PNGs in `__screenshots__` directories. */
-function referenceFiles(dir: string, isReference = false): { file: string; bytes: number }[] {
-    const found: { file: string; bytes: number }[] = [];
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) found.push(...referenceFiles(path, isReference || entry.name === '__screenshots__'));
-        else if (isReference && entry.name.endsWith('.png')) found.push({ file: path, bytes: statSync(path).size });
-    }
-    return found;
-}
 
 function kilobytes(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;

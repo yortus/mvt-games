@@ -23,6 +23,7 @@
         "test:visual": "tsx scripts/visual/run.ts",
         "test:visual:update": "tsx scripts/visual/run.ts --update",
         "test:visual:environment": "tsx scripts/visual/run.ts --environment",
+        "test:visual:check-references": "tsx scripts/visual/check-references.ts",
         "generate-blank-font": "tsx scripts/visual/generate-blank-font.ts"
     },
     "dependencies": {

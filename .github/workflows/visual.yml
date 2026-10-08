@@ -1,0 +1,123 @@
+name: Visual tests
+
+# The visual tests (npm run test:visual) on every push, on Ubuntu. Beside it,
+# on Windows and macOS, whenever Playwright's version or the harness changes:
+# a new Chromium, or a change to how the harness pins it, is what could make
+# the three systems draw differently. Weekly, and on demand: all three
+# systems (whose runner images change under us), the tests in a
+# shuffled order (to show that no picture depends on the ones before it), and
+# every reference decoded and checked against the hash it carries.
+#
+# No job writes references: whoever changes a view updates them on their own
+# machine. A changed picture fails, and its actual and diff images are
+# uploaded for the reviewer.
+on:
+    push:
+    pull_request:
+    schedule:
+        - cron: '0 3 * * 1'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: visual-${{ github.event_name }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    systems:
+        # A push already runs a pull request's commits, unless they come from a fork
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+        runs-on: ubuntu-latest
+        outputs:
+            os: ${{ steps.pick.outputs.os }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Pick the systems
+              id: pick
+              env:
+                  EVENT: ${{ github.event_name }}
+                  BEFORE: ${{ github.event.before }}
+                  PR_BASE: ${{ github.event.pull_request.base.sha }}
+              run: |
+                  all='["ubuntu-latest","windows-latest","macos-latest"]'
+                  if [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then
+                      echo "os=$all" >> "$GITHUB_OUTPUT"; exit 0
+                  fi
+                  base="$PR_BASE"
+                  if [ "$EVENT" = push ]; then base="$BEFORE"; fi
+                  # A new branch has no commit before it: compare with main
+                  if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] || ! git fetch -q --depth=1 origin "$base"; then
+                      git fetch -q --depth=1 origin main
+                  fi
+                  version='const lock = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(lock.packages["node_modules/playwright"]?.version ?? "none")'
+                  was=$(git show FETCH_HEAD:package-lock.json | node -e "$version")
+                  now=$(node -e "$version" < package-lock.json)
+                  echo "Playwright: $was before, $now now"
+                  # The harness is where the pinning lives (the fonts, the HTML rules, the
+                  # browser's switches), so a change to it is checked everywhere too
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/website/src/testing packages/website/scripts/visual packages/website/vitest.visual.config.ts packages/website/visual-environment.json .github/workflows/visual.yml)
+                  echo "Harness changes: ${harness:-none}"
+                  if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+                  else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
+
+    visual:
+        needs: systems
+        strategy:
+            fail-fast: false
+            matrix:
+                os: ${{ fromJSON(needs.systems.outputs.os) }}
+        runs-on: ${{ matrix.os }}
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - run: npm ci
+
+            - name: Where Playwright keeps its browser
+              id: playwright
+              run: |
+                  echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
+                  echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+              working-directory: packages/website
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ runner.temp }}/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+
+            # The browser comes from the cache, or is fetched; on Linux, the system
+            # libraries it needs are installed either way
+            - name: Playwright's headless shell
+              run: |
+                  if [ "$RUNNER_OS" = Linux ]; then npx playwright install --with-deps chromium-headless-shell
+                  else npx playwright install chromium-headless-shell; fi
+              working-directory: packages/website
+
+            - name: Visual tests
+              if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+              run: npm run test:visual
+
+            - name: Visual tests, shuffled
+              if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+              run: npm run test:visual -- --sequence.shuffle --sequence.seed=${{ github.run_id }}
+
+            - name: Every reference against its hash
+              if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && runner.os == 'Linux'
+              run: npm run test:visual:check-references
+
+            - uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: visual-${{ matrix.os }}
+                  path: .vitest/visual/
+                  if-no-files-found: ignore
