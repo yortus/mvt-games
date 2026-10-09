@@ -98,13 +98,8 @@ shows.
 
 ### HTML and three.js Views
 
-An HTML view is tested with `htmlTest`. Each file of HTML tests runs
-in a page of its own, because a stylesheet stays in a page once it is
-imported. Canvas tests all share one page, so a file declares one kind of
-visual test only. The package reads each file's declarations to send it
-to the right kind of page, and stops with an error for a file that
-declares both kinds. The view's text is drawn blank, as explained below, so its
-picture shows its layout and styling. Some views are styled by the layout
+An HTML view is tested with `htmlTest`. The view's text is drawn blank,
+as explained below, so its picture shows its layout and styling. Some views are styled by the layout
 of the game around them. A pose for such a view builds the same containing
 elements around it.
 
@@ -114,6 +109,25 @@ picture. Its `scene` option can set up the scene as the view's game does,
 with a background, an environment map and tone mapping. Pass the game's
 own setup function, so that the test and the game stay the same. A view
 that brings its own lights needs no `scene` option.
+
+### One Kind of Test in Each File
+
+The tests run in a browser. Vitest loads each test file into a browser
+page, much like a tab, and the views are drawn in that page. The two kinds
+of test need their pages arranged differently.
+
+- **Canvas tests share one page.** Every file of canvas tests runs in the
+  same page, one file after another. The libraries load once, the shaders
+  compile once, and one renderer draws every picture. That is what lets
+  hundreds of pictures take seconds.
+- **Each file of HTML tests gets a fresh page.** A stylesheet that a view
+  imports stays in the page once it is loaded. In a shared page, it would
+  restyle the views of every file after it.
+
+A file runs in one page, so it declares one kind of test only. When the
+config loads, the package reads each file's declarations, and sends the
+file to the right kind of page. A file that declares both kinds, or
+neither, stops the run with an error.
 
 ### Whole Games
 
@@ -172,9 +186,10 @@ pictures are uploaded with the run.
 The aim is for visual tests to run at the speed of unit tests. Hundreds of
 pictures should take seconds, so that adding one costs nothing.
 
-- **One page runs every test file.** HTML files are the exception. The
-  libraries load once, the shaders compile once, and one renderer draws
-  every picture.
+- **Canvas tests share one browser page,** as
+  [One Kind of Test in Each File](#one-kind-of-test-in-each-file) explains.
+  The libraries load once, the shaders compile once, and one renderer
+  draws every picture.
 - **No screenshots are taken.** The harness reads a Pixi or three.js
   picture straight from the renderer.
 - **Hashes are compared, not images.** The page computes a hash of the

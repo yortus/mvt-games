@@ -18,11 +18,8 @@
 A test is a declaration in a `*.visual.ts` or `*.visual.tsx` file beside
 the view. A Pixi or three.js view is declared with
 `canvasTest(name, pose, options?)`, and an HTML view with
-`htmlTest(name, pose, options?)`. A file declares one kind only,
-because canvas tests share one page, and each file of HTML tests gets a
-page of its own. The package reads each file's declarations to send it to
-the right kind of page. The pose is a function that builds the view in the
-state to photograph, and returns it.
+`htmlTest(name, pose, options?)`. The pose is a function that builds the
+view in the state to photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
@@ -41,6 +38,25 @@ test file. `advanceTime({ models, views, totalMs })` advances a view with
 presentation state, in frame-sized steps, before its picture is taken.
 [Visual Tests](../docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
 describes the options, HTML and three.js views, and how failures read.
+
+### One Kind of Test in Each File
+
+The tests run in a browser. Vitest loads each test file into a browser
+page, much like a tab, and the views are drawn in that page. The two kinds
+of test need their pages arranged differently.
+
+- **Canvas tests share one page.** Every file of canvas tests runs in the
+  same page, one file after another. The libraries load once, the shaders
+  compile once, and one renderer draws every picture. That is what lets
+  hundreds of pictures take seconds.
+- **Each file of HTML tests gets a fresh page.** A stylesheet that a view
+  imports stays in the page once it is loaded. In a shared page, it would
+  restyle the views of every file after it.
+
+A file runs in one page, so it declares one kind of test only. When the
+config loads, the package reads each file's declarations, and sends the
+file to the right kind of page. A file that declares both kinds, or
+neither, stops the run with an error.
 
 ## Setting a Package Up
 
