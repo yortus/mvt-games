@@ -102,6 +102,23 @@ A package that has visual tests needs three things.
    "test:visual:check-references": "visual-tests check-references"
    ```
 
+### Why a Separate Config
+
+Vitest can run Node projects and browser projects from one config, so the
+visual projects could join a package's `vitest.config.ts`. They have a
+config of their own for two reasons.
+
+- **Unit tests stay fast, and need no browser.** A run with visual tests
+  starts a browser, and its first run downloads one.
+- **The `visual-tests` command does work that a config can't.** It
+  installs the browser if it is missing, and runs Vitest with tsx's loader.
+  It also tells the run whether every test ran. The check for references
+  that no test uses depends on that, and Vitest does not tell a reporter
+  which filters a run had.
+
+To run every test with one command, a package's `test` script can run its
+unit tests, then `visual-tests`.
+
 ## Commands
 
 | Command | What it does |
