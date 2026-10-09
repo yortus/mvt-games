@@ -1,0 +1,49 @@
+{
+    "name": "@mvtjs/visual-testing",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Visual tests for views: pictures of Pixi, three.js and HTML views, compared with committed references, fast and the same on Windows, Linux and macOS",
+    "license": "MIT",
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/browser/index.ts"
+        },
+        "./node": {
+            "@mvtjs/source": "./src/node/index.ts",
+            "default": "./src/node/index.ts"
+        }
+    },
+    "bin": {
+        "visual-tests": "./bin/visual-tests.js"
+    },
+    "scripts": {
+        "test:visual": "tsx scripts/run.ts",
+        "test:visual:update": "tsx scripts/run.ts --update",
+        "test:visual:environment": "tsx scripts/run.ts --environment",
+        "test:visual:check-references": "tsx scripts/check-references.ts",
+        "generate-blank-font": "tsx scripts/generate-blank-font.ts"
+    },
+    "dependencies": {
+        "@vitest/browser-playwright": "^5.0.3",
+        "fontkit": "^2.0.4",
+        "playwright": "1.63.0",
+        "pngjs": "^7.0.0",
+        "tsx": "^4.21.0"
+    },
+    "peerDependencies": {
+        "@mvtjs/html": "^0.2.0",
+        "@mvtjs/pixi": "^0.2.0",
+        "@mvtjs/three": "^0.2.0",
+        "pixi.js": "^8.16.0",
+        "three": "^0.186.1",
+        "vitest": "^5.0.3"
+    },
+    "devDependencies": {
+        "@types/fontkit": "^2.0.9",
+        "@types/pngjs": "^6.0.5",
+        "@types/three": "^0.186.0",
+        "vite": "^8.3.2"
+    }
+}

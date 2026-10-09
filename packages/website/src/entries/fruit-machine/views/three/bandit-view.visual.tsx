@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreePictureOptions, visualTest } from '#testing';
+import { advanceTime, type ThreePictureOptions, visualTest } from '@mvtjs/visual-testing';
 import { createFruitMachineModel } from '../../models';
 import { loadSymbolArt } from '../art';
 import { dressBanditScene, frameBanditCamera } from './bandit-scene';

@@ -32,8 +32,8 @@ describe('buildBlankFont', () => {
         expect(font.lineGap).toBe(0);
     });
 
-    it('is the font committed in src/testing/fonts', () => {
-        const committed = readFileSync(resolve(import.meta.dirname, '..', '..', 'src', 'testing', 'fonts', 'visual-blank.ttf'));
+    it('is the font committed in src/browser/fonts', () => {
+        const committed = readFileSync(resolve(import.meta.dirname, '..', 'browser', 'fonts', 'visual-blank.ttf'));
         expect(new Uint8Array(committed)).toEqual(bytes);
     });
 });

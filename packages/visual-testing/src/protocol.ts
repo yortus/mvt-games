@@ -2,7 +2,7 @@
  * These are the messages between the test page and Node. They are the
  * visual tests' browser commands, with their arguments and their answers.
  * The commands run in Node, and the page calls them. The page's side is in
- * `judge.ts`, and Node's side is in `scripts/visual/commands.ts`.
+ * `src/browser/judge.ts`, and Node's side is in `src/node/commands.ts`.
  */
 
 // ---------------------------------------------------------------------------

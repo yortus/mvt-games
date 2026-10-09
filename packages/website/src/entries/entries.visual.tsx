@@ -12,7 +12,7 @@
 import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { type PixiPictureOptions, visualTest } from '#testing';
+import { type PixiPictureOptions, visualTest } from '@mvtjs/visual-testing';
 import type { ArcadeEntry, PixiEntryStarter } from '../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../runner';
 import { CATALOGUE } from './catalogue';

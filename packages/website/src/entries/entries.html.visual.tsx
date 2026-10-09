@@ -9,7 +9,7 @@
 
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { visualTest } from '#testing';
+import { visualTest } from '@mvtjs/visual-testing';
 import type { ElementEntryStarter } from '../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs } from '../runner';
 import { CATALOGUE } from './catalogue';

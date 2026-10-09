@@ -82,8 +82,14 @@ function find(dir: string, isReference: boolean): { file: string; bytes: number 
     const found: { file: string; bytes: number }[] = [];
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const path = join(dir, entry.name);
+        if (entry.isDirectory() && isSkipped(entry.name)) continue;
         if (entry.isDirectory()) found.push(...find(path, isReference || entry.name === '__screenshots__'));
         else if (isReference && entry.name.endsWith('.png')) found.push({ file: path, bytes: statSync(path).size });
     }
     return found;
+}
+
+/** Returns whether a folder holds no references: installed packages, build output, and hidden folders such as `.git`. */
+function isSkipped(name: string): boolean {
+    return name === 'node_modules' || name === 'dist' || name.startsWith('.');
 }

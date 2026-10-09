@@ -1,7 +1,8 @@
 /**
- * Runs the visual tests. It installs Playwright's headless shell (a small
- * build of Chromium for headless use) if it is missing. Then it runs Vitest
- * on `vitest.visual.config.ts`, in the mode asked for. Any other arguments
+ * Runs the visual tests of the package in the current folder. It installs
+ * Playwright's headless shell (a small build of Chromium for headless use)
+ * if it is missing. Then it runs Vitest on that package's
+ * `vitest.visual.config.ts`, in the mode asked for. Any other arguments
  * go to Vitest, such as `-t SpinButton`, a file filter or `--watch`.
  *
  *   npm run test:visual                 compares every picture
@@ -22,15 +23,20 @@
 
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const WEBSITE = resolve(import.meta.dirname, '..', '..');
+/** The package whose tests run. npm runs a package's scripts in its folder. */
+const ROOT = process.cwd();
 // Node runs Vitest and Playwright directly, with no shell between them. A
 // shell would split or reinterpret the arguments passed on, such as `-t`
 // patterns and file filters.
 const require = createRequire(import.meta.url);
 const VITEST = join(dirname(require.resolve('vitest/package.json')), 'vitest.mjs');
 const PLAYWRIGHT = join(dirname(require.resolve('playwright/package.json')), 'cli.js');
+// Vitest loads a package's visual config, which imports this package's Node
+// side. That is TypeScript, so Node runs Vitest with tsx's loader.
+const TSX_LOADER = `--import=${pathToFileURL(require.resolve('tsx/esm')).href}`;
 /** Arguments that change only the order the tests run in. A full run may have these. */
 const ORDER_ONLY = /^(--sequence\.shuffle|--sequence\.seed(=\d+)?|\d+)$/;
 /** By default, Windows locks an account after 10 failed logons. The run stops well short of that. */
@@ -54,7 +60,7 @@ if (pictures.length > 0) vitestArgs.push('-t', `(${pictures.map(toPictureNamePat
 const isWatch = vitestArgs.includes('--watch');
 const isFullRun = !isWatch && vitestArgs.every((arg) => ORDER_ONLY.test(arg));
 
-const install = spawnSync(process.execPath, [PLAYWRIGHT, 'install', 'chromium-headless-shell'], { cwd: WEBSITE, stdio: 'inherit' });
+const install = spawnSync(process.execPath, [PLAYWRIGHT, 'install', 'chromium-headless-shell'], { cwd: ROOT, stdio: 'inherit' });
 if (install.status !== 0) process.exit(install.status ?? 1);
 
 const before = countFailedLogons();
@@ -65,9 +71,9 @@ if (before !== undefined && before >= MAX_FAILED_LOGONS) {
 
 const run = spawnSync(
     process.execPath,
-    [VITEST, ...(isWatch ? [] : ['run']), '--config', 'vitest.visual.config.ts', ...vitestArgs.filter((a) => a !== '--watch')],
+    [TSX_LOADER, VITEST, ...(isWatch ? [] : ['run']), '--config', 'vitest.visual.config.ts', ...vitestArgs.filter((a) => a !== '--watch')],
     {
-        cwd: WEBSITE,
+        cwd: ROOT,
         stdio: 'inherit',
         env: { ...process.env, VISUAL_MODE: mode, VISUAL_FULL_RUN: isFullRun ? '1' : '', VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' },
     },
@@ -87,7 +93,7 @@ process.exit(run.status ?? 1);
  * Returns a pattern that matches the full names of the tests whose pictures
  * have this name. Where the picture's name has a hyphen, the test's name may
  * have any run of characters that are not letters, digits or dots. This is
- * the inverse of `toPictureName` in `src/testing/picture-name.ts`.
+ * the inverse of `toPictureName` in `src/browser/picture-name.ts`.
  */
 function toPictureNamePattern(picture: string): string {
     return picture.split('-').map((part) => part.replaceAll('.', '\\.')).join('[^A-Za-z0-9.]+');

@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreePictureOptions, visualTest } from '#testing';
+import { advanceTime, type ThreePictureOptions, visualTest } from '@mvtjs/visual-testing';
 import { createFlockModel, type FlockModel } from '../../boids';
 import { FlockView } from './flock-view';
 

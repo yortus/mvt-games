@@ -8,7 +8,7 @@
  * a real change would fail those pictures.
  */
 
-import type { VisualRect } from '../../src/testing';
+import type { VisualRect } from '../protocol';
 import type { Picture } from './png';
 
 // ---------------------------------------------------------------------------

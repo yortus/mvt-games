@@ -1,6 +1,6 @@
 import { describe } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { advanceTime, visualTest } from '#testing';
+import { advanceTime, visualTest } from '@mvtjs/visual-testing';
 import { textures } from '../data';
 import { createGameModel } from '../models';
 import { GameView } from './game-view';

@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreePictureOptions, visualTest } from '#testing';
+import { advanceTime, type ThreePictureOptions, visualTest } from '@mvtjs/visual-testing';
 import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from './bandit-layout';
 import { dressBanditScene } from './bandit-scene';
 import { LeverView } from './lever-view';

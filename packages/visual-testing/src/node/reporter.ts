@@ -9,31 +9,47 @@
  *
  * After a full run, the reporter also looks for references that no picture
  * was compared with. A full run is one in which every test ran, and
- * `scripts/visual/run.ts` says whether a run is full. Such references were
+ * `scripts/run.ts` says whether a run is full. Such references were
  * left by tests that were renamed or deleted. In compare mode, the reporter
  * lists them and fails the run. In the modes that write references, it
- * deletes them.
+ * deletes them. It looks for references under the root of the project being
+ * tested, which is the folder that holds the Vitest config.
  */
 
 import { appendFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
-import type { Reporter, TestModule, TestRunEndReason } from 'vitest/node';
-import type { VisualTestMeta } from '../../src/testing';
+import { join } from 'node:path';
+import type { InlineConfig, Reporter, TestModule, TestRunEndReason, Vitest } from 'vitest/node';
+import type { VisualTestMeta } from '../protocol';
 import { listComparedCalibrationReferences } from './commands';
+import { toDisplayPath } from './paths';
 import { findReferences, findOrphans, findReferenceDir, removeReference } from './references';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns the reporters for a visual run: Vitest's own, then the visual
+ * summary. On GitHub, Vitest's `github-actions` reporter also turns each
+ * failure into an annotation on the run.
+ */
+export function createVisualReporters(): NonNullable<InlineConfig['reporters']> {
+    return ['default', ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []), createVisualReporter()];
+}
+
+/** Creates the reporter that prints the visual run's summary, and handles references that no test used. */
 export function createVisualReporter(): Reporter {
     let started = 0;
+    let root = process.cwd();
     return {
+        onInit(vitest: Vitest) {
+            root = vitest.config.root;
+        },
         onTestRunStart() {
             started = performance.now();
         },
         onTestRunEnd(testModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
-            const orphanLines = isFullRun(testModules, reason) ? settleOrphans(testModules) : [];
+            const orphanLines = isFullRun(testModules, reason) ? settleOrphans(testModules, root) : [];
             const pictures: { name: string; meta: VisualTestMeta; total: number }[] = [];
             for (const module of testModules) {
                 for (const test of module.children.allTests()) {
@@ -69,11 +85,11 @@ export function createVisualReporter(): Reporter {
             lines.push('  These pictures were the slowest:');
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             lines.push(...orphanLines);
-            const references = findReferences(join(WEBSITE, 'src'));
+            const references = findReferences(root);
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             lines.push(`  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. These are the largest:`);
             for (const r of [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3)) {
-                lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${relative(WEBSITE, r.file).replaceAll('\\', '/')}`);
+                lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${toDisplayPath(r.file)}`);
             }
             console.log(`\n${lines.join('\n')}\n`);
             const summary = process.env.GITHUB_STEP_SUMMARY;
@@ -95,10 +111,8 @@ const OUTCOMES: Readonly<Record<string, string>> = {
     'updated': 'updated',
 };
 
-const WEBSITE = resolve(import.meta.dirname, '..', '..');
-
 /**
- * Returns whether every test ran. That is true when `run.ts` called the run
+ * Returns whether every test ran. That is true when `scripts/run.ts` called the run
  * full (it had no filters), the run was not interrupted, every file loaded,
  * and no test was skipped. Only then is a reference that no picture used an
  * orphan, rather than a reference whose test did not run this time.
@@ -119,7 +133,7 @@ function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason)
  * mode, it lists them and fails the run. In the modes that write
  * references, it deletes them. It returns the summary's lines about them.
  */
-function settleOrphans(testModules: readonly TestModule[]): string[] {
+function settleOrphans(testModules: readonly TestModule[], root: string): string[] {
     const compared = new Set(listComparedCalibrationReferences());
     for (const module of testModules) {
         for (const test of module.children.allTests()) {
@@ -127,9 +141,9 @@ function settleOrphans(testModules: readonly TestModule[]): string[] {
             if (picture !== undefined) compared.add(join(findReferenceDir(module.moduleId), `${picture}.png`));
         }
     }
-    const orphans = findOrphans({ references: findReferences(join(WEBSITE, 'src')).map((r) => r.file), compared });
+    const orphans = findOrphans({ references: findReferences(root).map((r) => r.file), compared });
     if (orphans.length === 0) return [];
-    const names = orphans.map((file) => `    ${relative(WEBSITE, file).replaceAll('\\', '/')}`);
+    const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
     if ((process.env.VISUAL_MODE ?? 'compare') === 'compare') {
         process.exitCode = 1;
         return [

@@ -1,0 +1,7 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "types": ["node", "vite/client"]
+    },
+    "include": ["src", "scripts", "bin", "vitest.visual.config.ts"]
+}

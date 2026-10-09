@@ -8,7 +8,7 @@ import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
 import { describeFailure, hashPixels, isPass, nameCurrentPicture, openSession, toBase64, visualCommands } from './judge';
 import { setUpPage } from './page-setup';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
-import type { VisualTestMeta, VisualVerdict } from './protocol';
+import type { VisualTestMeta, VisualVerdict } from '../protocol';
 import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export type Pose<V> = () => V | Promise<V>;
  *   `PixiPictureOptions.artStyle` for what each style means for the picture.
  * - A three.js view is tested in the same files. It is drawn with the
  *   camera that its options make, in a scene that they can dress as its
- *   entry does.
+ *   game does.
  * - An HTML view is tested in a `*.html.visual.tsx` file, which runs in a
  *   page of its own. Its text is drawn blank, so its layout and styling show.
  */
@@ -89,7 +89,7 @@ export function visualTest(
                 }
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
-                    throw new Error(`'${id.test}' uses fonts that no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts.`);
+                    throw new Error(`'${id.test}' uses fonts that no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/browser/canvas-text.ts, in the @mvtjs/visual-testing package.`);
                 }
                 t = performance.now();
                 const hash = await hashPixels(picture.width, picture.height, picture.pixels);

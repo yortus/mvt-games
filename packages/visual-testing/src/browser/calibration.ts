@@ -9,7 +9,7 @@ import { destroyObject } from '@mvtjs/three';
 import { captureHtmlPicture } from './html-picture';
 import { describeDifference, hashPixels, isPass, openSession, toBase64, visualCommands } from './judge';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
-import type { VisualEnvironment, VisualKind, VisualVerdict } from './protocol';
+import type { VisualEnvironment, VisualKind, VisualVerdict } from '../protocol';
 import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 
 // ---------------------------------------------------------------------------
@@ -218,8 +218,8 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         group.add(new AmbientLight(0xffffff, 0.3), light);
         return group;
     }, { width: 160, height: 120, camera: createShapesCamera }),
-    // This lights the shapes the way the fruit machine game does. They reflect
-    // a room, the picture is tone-mapped, and the background is coloured. The
+    // This lights the shapes as a game lit by an environment map would be. They
+    // reflect a room, the picture is tone-mapped, and the background is coloured. The
     // environment map is small. It runs the same code as a full-size one, and
     // takes seconds less to make at start-up in software WebGL.
     'three-environment': createThreeCalibration(createShapes, {

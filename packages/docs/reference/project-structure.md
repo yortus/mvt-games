@@ -12,7 +12,8 @@
 
 The repository is an npm workspace. It has four libraries, published under
 the `@mvtjs` npm scope. Its other packages are private: the sound chip, the
-lint rules, the website, the docs, the benchmarks and the checks.
+visual tests, the lint rules, the website, the docs, the benchmarks and the
+checks.
 
 ```
 packages/
@@ -21,6 +22,7 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+├── visual-testing/      @mvtjs/visual-testing (private for now): visual tests for Pixi, three.js and HTML views, and the `visual-tests` command
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -44,19 +46,19 @@ packages/website/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          The in-browser editor and the sandbox it runs code in
-├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
-└── testing/             The visual tests' harness, in the browser, imported as `#testing`
+└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
 sit beside the views they picture. A Pixi or three.js view's test is a
 `*.visual.tsx` file, and an HTML view's test is a `*.html.visual.tsx` file.
 Each test file's reference pictures are in a `__screenshots__/<test file>/`
-directory beside it. The harness's Node side is in
-`packages/website/scripts/visual/`. It holds the browser commands, the PNG
-files, the comparison and the run's summary. The configuration is in
-`packages/website/vitest.visual.config.ts`, and the browser's fingerprint
-is in `packages/website/visual-environment.json`.
+directory beside it. The tests import `visualTest` from
+`@mvtjs/visual-testing`, the package in `packages/visual-testing/`. The
+website's `vitest.visual.config.ts` sets up its runs with the package's
+Node side. The package's
+[README](https://github.com/yortus/mvt-games/blob/main/packages/visual-testing/README.md)
+describes how it is laid out.
 
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its
@@ -69,7 +71,6 @@ public API.
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
 | `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
-| `packages/website/src/testing/` | The visual tests' harness                       | `visualTest`, `advanceTime`                                   |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -277,10 +278,8 @@ The rules above apply inside each package. Between packages:
   site share no code in either direction (`import/no-restricted-paths`), so
   the playground could become a package of its own.
 
-Within the site, its shared views are imported as `#shared`, and the
-visual tests' harness is imported as `#testing`. Both aliases are defined
-in `packages/website/package.json`. Only test files import `#testing`,
-because it imports Vitest.
+Within the site, its shared views are imported as `#shared`, an alias that
+`packages/website/package.json` defines.
 
 ## Entry Structure
 

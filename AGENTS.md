@@ -26,6 +26,7 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+├── visual-testing/      @mvtjs/visual-testing (private for now): visual tests for Pixi, three.js and HTML views, and the `visual-tests` command
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -47,13 +48,12 @@ packages/website/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
-├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
-└── testing/             The visual tests' harness (`visualTest`, `advanceTime`), imported as `#testing`
+└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
 Visual tests (`*.visual.tsx`, `*.html.visual.tsx`) sit beside the views they
 picture. Their reference PNGs are in `__screenshots__/`, beside the tests. The
-Node side of the harness is in `packages/website/scripts/visual/`. See
+harness is the `@mvtjs/visual-testing` package, in `packages/visual-testing/`. See
 [Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`

@@ -40,8 +40,6 @@ const DEV_FILES = [
     '**/*.test.{ts,tsx}',
     '**/*.visual.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
-    // Only the visual tests import their harness. The site never does.
-    'packages/website/src/testing/**',
     '**/scripts/**',
     'packages/benchmarks/**',
     'packages/docs/**',
@@ -120,8 +118,9 @@ export default tseslint.config(
                         'pixi-solid',
                         'three',
                         'three/**',
-                        // The visual tests' harness (src/testing) talks to Node through Vitest's browser API.
-                        'vitest/browser',
+                        // Vitest's own entry points, such as `vitest/browser`, through which
+                        // the visual tests' harness talks to Node.
+                        'vitest/**',
                         // Allow the site's import-map alias. Escaped: the rule
                         // compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
@@ -238,8 +237,8 @@ export default tseslint.config(
             'packages/website/scripts/vite-plugin-spritesheet.ts',
             'packages/audio/src/web/chip-processor.ts',
             // The visual tests' harness replaces canvas text drawing and patches a Pixi pool.
-            'packages/website/src/testing/canvas-text.ts',
-            'packages/website/src/testing/page-state.ts',
+            'packages/visual-testing/src/browser/canvas-text.ts',
+            'packages/visual-testing/src/browser/page-state.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },

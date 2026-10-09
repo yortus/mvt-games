@@ -585,7 +585,7 @@ can show. The pose is a function that builds the view and returns it. It
 builds a leaf view from fixed bindings, and a top-level view from a model
 in a known state. If the view has presentation state, the pose advances it
 with `advanceTime({ models, views, totalMs })`. Both functions come from
-`#testing`.
+`@mvtjs/visual-testing`.
 
 ```tsx
 describe('WinBannerView', () => {

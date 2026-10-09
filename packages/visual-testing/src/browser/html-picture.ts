@@ -1,7 +1,7 @@
 import { pixelateRotatedImages, quantizeFontSizes } from './html-rules';
 import { visualCommands } from './judge';
 import { fitPicture } from './picture-budget';
-import type { VisualPictureId, VisualRect, VisualVerdict } from './protocol';
+import type { VisualPictureId, VisualRect, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { advanceTime, visualTest } from '#testing';
+import { advanceTime, visualTest } from '@mvtjs/visual-testing';
 import '../../fruit-machine.css';
 import { createFruitMachineModel } from '../../models';
 import { entry } from '../../start';

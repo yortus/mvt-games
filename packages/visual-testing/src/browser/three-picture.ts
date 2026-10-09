@@ -23,7 +23,7 @@ export interface ThreePictureOptions {
     readonly camera: () => Camera;
     /**
      * Dresses the scene that the view is added to, and the renderer, as the
-     * view's entry does. It sets things such as the background, the
+     * view's game does. It sets things such as the background, the
      * environment map (an image that lights the scene and is reflected in
      * it), the lights and the tone mapping (how bright colours are fitted to
      * the screen). Without it, the scene holds only the view, and a view lit
@@ -34,7 +34,7 @@ export interface ThreePictureOptions {
      * scene is kept. Each picture's view is added to that scene and taken out
      * after, with the renderer's settings as the function left them. So the
      * function must dress the scene the same way every time. It must also be
-     * one function shared by the tests (ideally the entry's own), not a new
+     * one function shared by the tests (ideally the game's own), not a new
      * one for each test.
      */
     readonly scene?: (options: ThreeSceneOptions) => void;

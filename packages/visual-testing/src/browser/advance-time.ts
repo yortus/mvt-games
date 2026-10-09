@@ -10,7 +10,7 @@ export interface AdvanceTimeOptions {
     readonly models?: readonly { readonly update: (deltaMs: number) => void }[];
     /** The views to update. Each step calls `updateView` on every view, after the models. */
     readonly views?: readonly View[];
-    /** The size of each step. The default is 16, a frame at 60 frames a second, which is the step the thumbnail page uses. */
+    /** The size of each step. The default is 16, which is one frame at 60 frames a second, rounded down. */
     readonly stepMs?: number;
 }
 
@@ -19,11 +19,11 @@ export interface AdvanceTimeOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Advances models and views by `totalMs`, in frame-sized steps, as the entry
- * host does. Each step updates every model, then every view, then awaits a
+ * Advances models and views by `totalMs`, in frame-sized steps, as a game
+ * loop does. Each step updates every model, then every view, then awaits a
  * microtask, so that a model with an internal `await` moves on. It does not
- * refresh. A picture is refreshed once, before it is drawn, just as the
- * entry host refreshes once per frame. The steps are small because models
+ * refresh. A picture is refreshed once, before it is drawn, just as a game
+ * loop refreshes once per frame. The steps are small because models
  * with phases or timelines cannot safely jump ahead. One giant step would
  * skip what happens in between.
  */

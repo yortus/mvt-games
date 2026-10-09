@@ -11,9 +11,10 @@
  * machines pinned to one value.
  */
 
+import { resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
 import type { TestProjectInlineConfiguration } from 'vitest/config';
-import type { VisualKind } from '../../src/testing';
+import type { VisualKind } from '../protocol';
 import { visualCommands } from './commands';
 
 // ---------------------------------------------------------------------------
@@ -31,6 +32,20 @@ export interface VisualProjectOptions {
      * default is `DEFAULT_MAX_PIXELS`.
      */
     readonly maxPixels?: number;
+    /**
+     * The Vite config that the project extends, relative to the Vitest config
+     * file. It gives the tested code the plugins and aliases that it needs.
+     */
+    readonly viteConfig?: string;
+    /**
+     * The dependencies of the tested code that Vite must bundle before the
+     * run, such as `'gsap'`. The harness adds its own. Every file runs in one
+     * page, so a dependency that Vite finds during the run makes it bundle
+     * again. The files after that point then load a second copy of a
+     * library, whose objects are not the first copy's. So a new dependency of
+     * the tested code belongs in this list.
+     */
+    readonly optimizeDeps?: readonly string[];
 }
 
 /** The default size budget, which is about a 960 by 540 screen. */
@@ -40,20 +55,13 @@ export const DEFAULT_MAX_PIXELS = 500_000;
 // Function
 // ---------------------------------------------------------------------------
 
+/** Creates the Vitest project for one kind of visual test, run from the folder that holds the Vitest config. */
 export function createVisualProject(options: VisualProjectOptions): TestProjectInlineConfiguration {
     const isHtml = options.kind === 'html';
     return {
-        extends: './vite.config.ts',
-        // One page runs many files, so a dependency found during the run must
-        // not be bundled again. If it were, the files after it would load a
-        // second copy of Pixi, whose objects (such as Texture.WHITE) are not
-        // the first copy's. So this lists every dependency that an entry or
-        // the test harness imports, and a new one belongs here.
+        ...(options.viteConfig === undefined ? {} : { extends: options.viteConfig }),
         optimizeDeps: {
-            include: [
-                'pixi.js', 'pixi-solid', 'solid-js', 'solid-js/store', 'three', 'three/addons/environments/RoomEnvironment.js',
-                'gsap', 'fontkit',
-            ],
+            include: [...HARNESS_DEPENDENCIES, ...options.optimizeDeps ?? []],
         },
         test: {
             name: isHtml ? 'visual-html' : 'visual',
@@ -63,7 +71,7 @@ export function createVisualProject(options: VisualProjectOptions): TestProjectI
             // so each HTML file gets a fresh page.
             isolate: isHtml,
             fileParallelism: false,
-            setupFiles: ['src/testing/setup.ts'],
+            setupFiles: [SETUP_FILE],
             testTimeout: 30_000,
             provide: { visualKind: options.kind, visualMaxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS },
             browser: {
@@ -86,6 +94,17 @@ export function createVisualProject(options: VisualProjectOptions): TestProjectI
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/**
+ * The harness's own dependencies that Vite must bundle before the run. The
+ * harness draws with Pixi and three.js (the tested code shares those copies),
+ * lights three.js scenes with a room environment, and lays text out with
+ * fontkit.
+ */
+const HARNESS_DEPENDENCIES = ['pixi.js', 'three', 'three/addons/environments/RoomEnvironment.js', 'fontkit'];
+
+/** The file that sets each page up before its tests, from this package. */
+const SETUP_FILE = resolve(import.meta.dirname, '..', 'browser', 'setup.ts');
 
 /**
  * The browser's switches. They pin everything that would otherwise differ

@@ -10,8 +10,7 @@
         "./entries/falling-sand/views": "./src/entries/falling-sand/views/index.ts"
     },
     "imports": {
-        "#shared": "./src/shared/index.ts",
-        "#testing": "./src/testing/index.ts"
+        "#shared": "./src/shared/index.ts"
     },
     "scripts": {
         "dev": "vite --host",
@@ -21,11 +20,9 @@
         "generate-textures": "tsx scripts/generate-textures.ts",
         "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
         "measure-load": "tsx scripts/measure-load.ts",
-        "test:visual": "tsx scripts/visual/run.ts",
-        "test:visual:update": "tsx scripts/visual/run.ts --update",
-        "test:visual:environment": "tsx scripts/visual/run.ts --environment",
-        "test:visual:check-references": "tsx scripts/visual/check-references.ts",
-        "generate-blank-font": "tsx scripts/visual/generate-blank-font.ts"
+        "test:visual": "visual-tests",
+        "test:visual:update": "visual-tests --update",
+        "test:visual:check-references": "visual-tests check-references"
     },
     "dependencies": {
         "@codemirror/commands": "^6.11.1",
@@ -49,16 +46,13 @@
         "three": "^0.186.1"
     },
     "devDependencies": {
-        "@types/fontkit": "^2.0.9",
+        "@mvtjs/visual-testing": "*",
         "@types/glob": "^8.1.0",
         "@types/lz-string": "^1.3.34",
         "@types/pngjs": "^6.0.5",
         "@types/three": "^0.186.0",
         "@vitejs/plugin-basic-ssl": "^2.3.0",
-        "@vitest/browser-playwright": "^5.0.3",
-        "fontkit": "^2.0.4",
         "glob": "^13.0.6",
-        "playwright": "1.63.0",
         "pngjs": "^7.0.0",
         "tsx": "^4.21.0",
         "vite": "^8.3.2",

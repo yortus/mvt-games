@@ -21,12 +21,13 @@ says when a picture is the right test, and when an assertion is.*
 
 A visual test is one call to `visualTest(name, pose, options?)`. The call
 goes in a `*.visual.tsx` file beside the view. `visualTest` comes from
-`#testing`, which is the website's test harness. The `pose` argument is a
-function that builds the view in the state to photograph, and returns it.
+`@mvtjs/visual-testing`, which is this repo's package for visual tests. The
+`pose` argument is a function that builds the view in the state to
+photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
-import { visualTest } from '#testing';
+import { visualTest } from '@mvtjs/visual-testing';
 import { BUTTON_RADIUS } from './pixi-layout';
 import { type SpinButtonMode, SpinButtonView } from './spin-button-view';
 
@@ -54,7 +55,7 @@ each state the bindings can show.
 
 Some views have an update step, because they hold
 [presentation state](../../reference/glossary.md). A pose advances such a
-view with `advanceTime`, which also comes from `#testing`. It steps the
+view with `advanceTime`, which also comes from `@mvtjs/visual-testing`. It steps the
 models, then the views, in frame-sized steps, as the ticker does. It is the
 same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
@@ -122,7 +123,7 @@ left out of its parent. So they change with almost any change to an entry.
 
 | Command | What it does |
 | --- | --- |
-| `npm run test:visual` | Compares every picture. The first run downloads the browser |
+| `npm run test:visual` | Compares every picture, the test harness's own first and then the website's. The first run downloads the browser |
 | `npm run test:visual -- --picture SpinButtonView-spin` | Runs only the tests whose pictures have that name |
 | `npm run test:visual:update` | Also writes each new or changed picture as its reference |
 | `npm run test:visual:environment` | Also rewrites the browser's fingerprint and calibration pictures (see below). Run it only after upgrading Playwright on purpose |
@@ -135,6 +136,10 @@ diff. The diff shows the reference dimmed, with the changed pixels in
 red. If the change is intended, the message gives the command that accepts
 that picture alone. The update never rewrites a reference whose pixels
 still match, so it changes only what changed.
+
+These commands run from the repository's root. The package's
+[README](https://github.com/yortus/mvt-games/blob/main/packages/visual-testing/README.md)
+says how to give another package visual tests.
 
 A run with no filters is a full run. A full run also lists every
 reference that no test compared with, and fails. Such a reference was left
@@ -199,8 +204,8 @@ container or virtual machine is needed.
 | Rotated images | They are sampled nearest-neighbour |
 | Processor rounding | A tolerance of 2 levels of 255 per channel. Processors with the arm64 architecture need it for blurs and rotations |
 
-Each run first checks a fingerprint of the browser, which is kept in
-`visual-environment.json`. Then it draws a set of calibration pictures.
+Each run first checks a fingerprint of the browser, which the package keeps
+in `visual-environment.json`. Then it draws a set of calibration pictures.
 These cover antialiasing, gradients, blur, textures, text and three.js
 lighting. If any of them differ, the run stops at once with one error that
 names the difference. This saves a run from failing every test for the

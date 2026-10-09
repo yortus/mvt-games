@@ -8,16 +8,17 @@
  *   npm run test:visual:check-references
  */
 
-import { relative, resolve } from 'node:path';
-import { checkReference, findReferences } from './references';
+import { relative } from 'node:path';
+import { checkReference, findReferences } from '../src/node';
 
-const WEBSITE = resolve(import.meta.dirname, '..', '..');
+/** The package whose references are checked. npm runs a package's scripts in its folder. */
+const ROOT = process.cwd();
 
-const references = findReferences(resolve(WEBSITE, 'src'));
+const references = findReferences(ROOT);
 const problems: string[] = [];
 for (const { file } of references) {
     const problem = checkReference(file);
-    if (problem !== undefined) problems.push(`  ${relative(WEBSITE, file).replaceAll('\\', '/')}: ${problem}`);
+    if (problem !== undefined) problems.push(`  ${relative(ROOT, file).replaceAll('\\', '/')}: ${problem}`);
 }
 if (problems.length > 0) {
     console.error(`${problems.length} of ${references.length} references do not match their hashes:\n${problems.join('\n')}`);

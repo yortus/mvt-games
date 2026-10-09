@@ -1,7 +1,7 @@
 // These are the visual test harness's own tests. Each one checks one case
 // that an HTML picture covers.
 import { describe } from 'vitest';
-import { visualTest } from '#testing';
+import { visualTest } from './visual-test';
 
 function createBlock(markup: string): HTMLElement {
     const root = document.createElement('div');

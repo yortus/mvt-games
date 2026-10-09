@@ -28,7 +28,7 @@ export interface Picture {
 /**
  * Returns the hash a picture is known by. It holds the picture's size and
  * the first 32 hex digits of the SHA-256 hash of its pixels. The test page
- * computes the same hash, in `src/testing/judge.ts`.
+ * computes the same hash, in `src/browser/judge.ts`.
  */
 export function hashPicture(picture: Picture): string {
     return `${picture.width}x${picture.height}:${createHash('sha256').update(picture.pixels).digest('hex').slice(0, 32)}`;

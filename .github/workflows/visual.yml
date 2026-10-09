@@ -63,7 +63,7 @@ jobs:
                   # The harness pins everything that could differ between systems, such
                   # as the fonts, the HTML rules and the browser's switches. So a change
                   # to it is checked on every system too.
-                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/website/src/testing packages/website/scripts/visual packages/website/vitest.visual.config.ts packages/website/visual-environment.json .github/workflows/visual.yml)
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/visual-testing .github/workflows/visual.yml)
                   echo "Harness changes: ${harness:-none}"
                   if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
                   else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
@@ -93,7 +93,7 @@ jobs:
               run: |
                   echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
                   echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
-              working-directory: packages/website
+              working-directory: packages/visual-testing
 
             - uses: actions/cache@v4
               with:
@@ -107,19 +107,21 @@ jobs:
             # minutes.
             - name: Playwright's headless shell
               run: npx playwright install chromium-headless-shell
-              working-directory: packages/website
+              working-directory: packages/visual-testing
 
-            # Weekly and on demand, the tests run in a shuffled order. The seed is in
-            # the log, so the same order can be repeated. A failing test becomes an
-            # annotation of its own. A failure before any test, such as in the
-            # environment check, does not. In that case, the run's last lines are
-            # made into an annotation.
+            # The harness's own tests run first, then the site's. Weekly and on
+            # demand, the tests run in a shuffled order. The seed is in the log, so
+            # the same order can be repeated. A failing test becomes an annotation of
+            # its own. A failure before any test, such as in the environment check,
+            # does not. In that case, the run's last lines are made into an
+            # annotation.
             - name: Visual tests
               env:
                   SHUFFLE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('--sequence.shuffle --sequence.seed={0}', github.run_id) || '' }}
               run: |
                   set -o pipefail
-                  npm run test:visual -- $SHUFFLE 2>&1 | tee visual.log || {
+                  npm run generate-refresh-copies
+                  { npm run test:visual -w @mvtjs/visual-testing -- $SHUFFLE && npm run test:visual -w @mvtjs/website -- $SHUFFLE; } 2>&1 | tee visual.log || {
                       grep -q "Tests .* failed" visual.log ||
                       echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/\x1b\[[0-9;]*m//g; s/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
                       exit 1

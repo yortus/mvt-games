@@ -4,7 +4,8 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { describe } from 'vitest';
-import { advanceTime, visualTest } from '#testing';
+import { advanceTime } from './advance-time';
+import { visualTest } from './visual-test';
 
 const SMOOTH = { artStyle: 'smooth' } as const;
 

@@ -1,7 +1,7 @@
 import { commands } from 'vitest/browser';
 import { expect } from 'vitest';
 import { toPictureName } from './picture-name';
-import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from './protocol';
+import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -37,7 +37,7 @@ export function openSession(scope: VisualScope): Promise<VisualSession> {
 
 /**
  * Returns a picture's hash, which is made from its size and the SHA-256 of
- * its pixels. It is the same hash that Node computes in `scripts/visual/png.ts`.
+ * its pixels. It is the same hash that Node computes in `src/node/png.ts`.
  */
 export async function hashPixels(width: number, height: number, pixels: Uint8Array): Promise<string> {
     const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', pixels as Uint8Array<ArrayBuffer>));

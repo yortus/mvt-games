@@ -1344,12 +1344,21 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    realistic suite of a few hundred would add 4-6 s and a browser launch,
    plus the one-time download. Recommendation: decide after step 3, with
    real tests to time; lean towards yes.
-3. **A package?** `visualTest` and `advanceTime` are not specific to the
-   website, and `advanceTime` is not specific to visual tests. A private
-   `@mvtjs/testing` would serve the benchmarks or a future package's own
-   views; a published one would serve users of the libraries, and the
-   pinning of section 5 would be most of its value. Recommendation: start
-   in the website, and move it when a second package needs it.
+3. ~~**A package?**~~ Settled 2026-10-09: yes, `@mvtjs/visual-testing`
+   (`packages/visual-testing/`, private for now). The harness first grew in
+   the website, as this question recommended, waiting for a second user.
+   By the time it was built, it had its own dependencies, a browser side
+   and a Node side with a protocol between them, and about 4,000 lines that
+   know nothing of games; and the Node side imported the protocol's types
+   from the website's `src/`. The browser side is the main entry point
+   (`visualTest`, `advanceTime`), the Node side is `./node`
+   (`createVisualProject`, `createVisualReporters`), and `visual-tests` is
+   its command. The calibration set and the environment's fingerprint
+   moved with it. The website keeps its tests, their references and a
+   short `vitest.visual.config.ts`. Two details made it work: the Node
+   entry point names its source as the default too, since Vitest bundles a
+   config with no custom conditions, and the command runs Vitest with
+   tsx's loader, so that Node can run the package's TypeScript.
 4. **What if SwiftShader draws something wrongly?** If a view uses a
    feature software WebGL gets wrong, its pictures would be consistently
    wrong, which still catches changes, but would confuse a reviewer.

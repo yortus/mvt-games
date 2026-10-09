@@ -69,9 +69,9 @@ export interface PixiPicture {
 
 /**
  * Sets the defaults that a pose's textures are made with. Call it before the
- * pose runs. Each entry sets these defaults for itself, and a test must not
- * inherit the last test's. The games' spritesheets set their own, which are
- * nearest-neighbour.
+ * pose runs. Each game sets these defaults for itself, and a test must not
+ * inherit the last test's. A spritesheet can set its own sampling, which
+ * these defaults then do not change.
  */
 export function preparePixiPose(options: PixiPictureOptions): void {
     TextureSource.defaultOptions.scaleMode = options.artStyle === 'smooth' ? 'linear' : 'nearest';

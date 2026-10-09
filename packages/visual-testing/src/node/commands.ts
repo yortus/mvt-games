@@ -1,6 +1,6 @@
 /**
  * The visual tests' browser commands. A browser command runs in Node, and
- * the test page calls it (the page's side is in `src/testing/judge.ts`).
+ * the test page calls it (the page's side is in `src/browser/judge.ts`).
  * These commands read and write reference pictures. They compare a picture
  * whose hash does not match its reference's hash. They capture HTML
  * pictures through the Chrome DevTools protocol, and they check the
@@ -9,23 +9,24 @@
  * A test file's references live beside it, in
  * `__screenshots__/<test file>/<picture name>.png`. The calibration set is
  * a set of small pictures that checks this machine draws like the reference
- * environment. Its references live in
- * `src/testing/__screenshots__/calibration-<kind>/`. When a picture fails,
- * its actual pixels and its diff are written to `.vitest/visual/`, in the
- * same directory layout as the repo.
+ * environment. Its references live in this package, in
+ * `src/browser/__screenshots__/calibration-<kind>/`. When a picture fails,
+ * its actual pixels and its diff are written to `.vitest/visual/` at the
+ * repository's root, in the same directory layout as the repository.
  *
  * The run's mode comes from the `VISUAL_MODE` environment variable
- * (`compare`, `update` or `environment`), which `run.ts` sets.
+ * (`compare`, `update` or `environment`), which `scripts/run.ts` sets.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
     VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualPictureId, VisualPicturePayload, VisualScope,
     VisualSession, VisualVerdict,
-} from '../../src/testing';
+} from '../protocol';
 import { comparePictures } from './compare';
+import { ENVIRONMENT_FILE, findCalibrationDir, OUT_DIR, REPO_ROOT, toDisplayPath } from './paths';
 import { decodePng, encodePng, hashPicture, type Picture, readPngHash } from './png';
 import { findReferenceDir } from './references';
 
@@ -82,7 +83,7 @@ const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, envir
         writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
         return [];
     }
-    if (!existsSync(ENVIRONMENT_FILE)) return [`${relative(REPO, ENVIRONMENT_FILE)} is missing, and \`npm run test:visual:environment\` writes it`];
+    if (!existsSync(ENVIRONMENT_FILE)) return [`${toDisplayPath(ENVIRONMENT_FILE)} is missing, and \`npm run test:visual:environment\` writes it`];
     const expected = JSON.parse(readFileSync(ENVIRONMENT_FILE, 'utf8')) as EnvironmentFile;
     const problems: string[] = [];
     for (const key of Object.keys(expected) as (keyof EnvironmentFile)[]) {
@@ -114,10 +115,6 @@ export function listComparedCalibrationReferences(): ReadonlySet<string> {
 // Internals
 // ---------------------------------------------------------------------------
 
-const WEBSITE = resolve(import.meta.dirname, '..', '..');
-const REPO = resolve(WEBSITE, '..', '..');
-const OUT = join(REPO, '.vitest', 'visual');
-const ENVIRONMENT_FILE = join(WEBSITE, 'visual-environment.json');
 const MODE = (process.env.VISUAL_MODE ?? 'compare') as VisualMode;
 
 /** The calibration sets that this run checked and found matching, and their references. */
@@ -137,10 +134,6 @@ function resolveReferenceDir(ctx: BrowserCommandContext, scope: VisualScope): st
     const testPath = ctx.testPath;
     if (testPath === undefined) throw new Error('A visual picture was taken outside a test file.');
     return findReferenceDir(testPath);
-}
-
-function findCalibrationDir(kind: VisualKind): string {
-    return join(WEBSITE, 'src', 'testing', '__screenshots__', `calibration-${kind}`);
 }
 
 /**
@@ -164,7 +157,7 @@ function judge(ctx: BrowserCommandContext, id: VisualPictureId, actual: Picture)
     }
     makers.set(file, id.test);
 
-    const referenceFile = relative(REPO, file).replaceAll('\\', '/');
+    const referenceFile = toDisplayPath(file);
     const hash = hashPicture(actual);
     const exists = existsSync(file);
     const isWritable = id.calibration !== undefined ? MODE === 'environment' : MODE !== 'compare';
@@ -183,10 +176,10 @@ function judge(ctx: BrowserCommandContext, id: VisualPictureId, actual: Picture)
         return { outcome: 'updated', referenceFile };
     }
 
-    const outBase = join(OUT, relative(REPO, dir), id.name);
+    const outBase = join(OUT_DIR, relative(REPO_ROOT, dir), id.name);
     mkdirSync(dirname(outBase), { recursive: true });
     writeFileSync(`${outBase}.actual.png`, encodePng(actual));
-    const actualFile = relative(REPO, `${outBase}.actual.png`).replaceAll('\\', '/');
+    const actualFile = toDisplayPath(`${outBase}.actual.png`);
     if (expected === undefined) return { outcome: 'new', referenceFile, actualFile };
     if (comparison === undefined) {
         return { outcome: 'size', referenceSize: `${expected.width}x${expected.height}`, referenceFile, actualFile };
@@ -199,7 +192,7 @@ function judge(ctx: BrowserCommandContext, id: VisualPictureId, actual: Picture)
         changedRect: comparison.changedRect,
         referenceFile,
         actualFile,
-        diffFile: relative(REPO, `${outBase}.diff.png`).replaceAll('\\', '/'),
+        diffFile: toDisplayPath(`${outBase}.diff.png`),
     };
 }
 

@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { advanceTime, visualTest } from '#testing';
+import { advanceTime, visualTest } from '@mvtjs/visual-testing';
 import { WinBannerView } from './win-banner-view';
 
 const WIN = 1250;
