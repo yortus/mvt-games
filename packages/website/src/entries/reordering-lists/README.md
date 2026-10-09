@@ -54,5 +54,5 @@ Dense ids and storage indices both make the lookup an array index.
 
 See [Presenting Collections](../../../../docs/building-with-mvt/presenting-the-world/collections.md) for how to
 apply both approaches, and
-[the `SlotList` proposal](../../../../../notes/archive/005-slot-list-proposal.md)
-(sections 5.2 and 6) for why `OrderedSlotList` exists.
+[Keyed by storage index](../../../../docs/building-with-mvt/presenting-the-world/collections.md#keyed-by-storage-index-orderedslotlist)
+for when to reach for `OrderedSlotList`.

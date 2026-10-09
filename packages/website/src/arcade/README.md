@@ -225,7 +225,4 @@ deliberate:
 
 Building the Arcade raised questions the docs do not answer yet: when a view
 may read layout back, how a view model and a model hand control to each
-other, where reduced motion belongs, and how a URL relates to a model. They
-are task [041](../../../../notes/tasks/backlog/041-docs-from-the-arcade.md).
-What it showed about the HTML JSX runtime is task
-[038](../../../../notes/tasks/backlog/038-html-jsx-findings-from-the-arcade.md).
+other, where reduced motion belongs, and how a URL relates to a model.

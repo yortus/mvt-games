@@ -1,28 +1,22 @@
 # Design notes
 
 > How `updateView` and `refreshView` work, what was tried and rejected, and
-> what has been measured. The product document is [README.md](./README.md); this page assumes
-> you have read it. [the appraisal](../../../notes/archive/003-mvt-plugin-appraisal.md) is an independent review of
-> whether this repo should adopt any of it, and
-> [the rework plan](../../../notes/archive/001-mvt-plugin-rework-plan.md) is the plan this implementation follows.
+> what has been measured. The product document is [README.md](./README.md).
+> This page assumes you have read it.
 
 **Written against Pixi 8.16.0.**
 
-**Where the code is now.** Since proposal
-[022](../../../notes/proposals/022-renderer-agnostic-jsx.md) phase 2, the
-method lists described here are generic over any tree, in
+**Where the code is now.** The method lists described here have since become
+generic over any tree. They live in
 [tick-api/tick-api.ts](../../utils/src/tick-api/tick-api.ts) in `@mvtjs/utils`, which the
 three.js and DOM renderers use too: each renderer registers its node
 prototype with `registerRenderer`. @mvtjs/pixi keeps what is Pixi's: the
 structural wrappers, the destroy warning, and that registration. Invoking a
 method list now calls the methods cached in it rather than reading each
-container's method, as
-[012](../../../notes/proposals/012-falling-sand-performance-findings.md) section
-2 proposed. Views set their methods with `setUpdate` and `setRefresh`, and
+container's method. Views set their methods with `setUpdate` and `setRefresh`, and
 hosts call `updateView` and `refreshView`, one set of functions for every
-renderer (proposal [031](../../../notes/archive/031-tick-api-in-mvt-terms.md));
-before that it was `setTickMethods` and `tickScene`, one pair per renderer
-(task 028), and before that `onUpdate` / `onRefresh` accessors on `Container`
+renderer. Before that it was `setTickMethods` and `tickScene`, one pair per
+renderer, and before that `onUpdate` / `onRefresh` accessors on `Container`
 (see "Methods are set with `setUpdate` and `setRefresh`" below). The design
 below is unchanged by these moves. The code samples show the algorithm before
 the method cache, simplified; in `tick-api/tick-api.ts`, `updateSubtree` and
@@ -234,7 +228,7 @@ The mixin then moved to module load, so importing @mvtjs/pixi at all is the
 only ordering requirement, and ES modules evaluate imports before the importing
 module's own code. A dev-mode assertion during each rebuild caught an own method
 property however it arrived, since `Object.defineProperty` and a dynamic
-import of @mvtjs/pixi could both still produce one. Since task 028 there are no
+import of @mvtjs/pixi could both still produce one. Now there are no
 accessors to shadow: methods are set only through functions (now `setUpdate`
 and `setRefresh`), which write the private fields themselves, so the defect
 and its assertion are both gone.
@@ -377,10 +371,9 @@ mvt-view skill say so.
 refreshed with `updateView` and `refreshView`, and the fields stay named.**
 Views and library code alike set a node's methods with the two setters, and
 hosts call `updateView` and then `refreshView`. There is no second way: the
-`onUpdate` / `onRefresh` accessors are gone
-([proposal 027](../../../notes/archive/027-mvt-method-names.md), task 028),
+`onUpdate` / `onRefresh` accessors are gone,
 and so is the per-renderer `setTickMethods` / `tickScene` pair that followed
-them ([031](../../../notes/archive/031-tick-api-in-mvt-terms.md)). Nothing
+them. Nothing
 is added to a node's public surface. Each renderer registers its node
 prototype with `registerRenderer`, which puts the fields' defaults on it,
 including `_mvtRenderer`: that renderer's `updateView` and `refreshView`, and
@@ -391,8 +384,7 @@ renderers declare in `RendererViews`, so passing anything else is a type
 error; inside `@mvtjs/utils`, which installs no renderer, the library's own
 code uses untyped versions. The fields stay named `_mvt*` properties of the
 node. One record object per node, a `WeakMap`, and
-symbol-keyed fields were each measured, and each was slower or larger
-(027 section 11.8).
+symbol-keyed fields were each measured, and each was slower or larger.
 
 **A method that declares a parameter wraps the one it replaces; there are no
 getters.** `setRefresh(node, (own) => ...)` is given the node's current
@@ -478,7 +470,7 @@ performance ones:
   accessor, which is under a nanosecond per container. Reading the backing
   fields directly instead was tried and measured as noise, so the public
   property read stayed at the time. The loop now calls methods cached in the
-  method list (012 section 2), and there are no accessors.
+  method list, and there are no accessors.
 - The structural wrappers cost an unmanaged tree nothing measurable. Every
   mutation on a tree nothing drives hits the invalidation's early stop on its
   first comparison.
