@@ -42,15 +42,6 @@ export interface VisualProjectOptions {
      * file. It gives the tested code the plugins and aliases that it needs.
      */
     readonly viteConfig?: string;
-    /**
-     * The dependencies of the tested code that Vite must bundle before the
-     * run, such as `'gsap'`. The harness adds its own. Every file runs in one
-     * page, so a dependency that Vite finds during the run makes it bundle
-     * again. The files after that point then load a second copy of a
-     * library, whose objects are not the first copy's. So a new dependency of
-     * the tested code belongs in this list.
-     */
-    readonly optimizeDeps?: readonly string[];
 }
 
 /** The default size budget, which is about a 960 by 540 screen. */
@@ -63,14 +54,25 @@ export const DEFAULT_MAX_PIXELS = 500_000;
 /** Creates the Vitest project for one kind of visual test, run from the folder that holds the Vitest config. */
 export function createVisualProject(options: VisualProjectOptions): TestProjectInlineConfiguration {
     const isHtml = options.kind === 'html';
+    const files = findVisualTestFiles(process.cwd())[options.kind];
     return {
         ...(options.viteConfig === undefined ? {} : { extends: options.viteConfig }),
+        // Every file of a kind runs in one page, so Vite must bundle every
+        // library that the tests import before the run starts. If it found one
+        // during the run, it would bundle again, and the files after that
+        // point would load a second copy of a library such as Pixi, whose
+        // objects are not the first copy's. So Vite scans the test files and
+        // the harness's setup for the libraries they import, and bundles them
+        // afresh on every run. A cache from an earlier run would skip the
+        // scan, and miss a library that a test has started to import. The
+        // bundling takes about a second.
         optimizeDeps: {
-            include: [...HARNESS_DEPENDENCIES, ...options.optimizeDeps ?? []],
+            entries: [...files, SETUP_FILE],
+            force: true,
         },
         test: {
             name: `visual-${options.kind}`,
-            include: [...findVisualTestFiles(process.cwd())[options.kind]],
+            include: [...files],
             // An HTML view's stylesheet stays in the page once it is imported,
             // so each HTML file gets a fresh page.
             isolate: isHtml,
@@ -98,14 +100,6 @@ export function createVisualProject(options: VisualProjectOptions): TestProjectI
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/**
- * The harness's own dependencies that Vite must bundle before the run. The
- * harness draws with Pixi and three.js (the tested code shares those copies),
- * lights three.js scenes with a room environment, and lays text out with
- * fontkit.
- */
-const HARNESS_DEPENDENCIES = ['pixi.js', 'three', 'three/addons/environments/RoomEnvironment.js', 'fontkit'];
 
 /** The file that sets each page up before its tests, from this package. */
 const SETUP_FILE = resolve(import.meta.dirname, '..', 'browser', 'setup.ts');

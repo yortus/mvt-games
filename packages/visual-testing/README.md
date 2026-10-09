@@ -77,7 +77,6 @@ A package that has visual tests needs three things.
    const options = {
        maxPixels: DEFAULT_MAX_PIXELS,
        viteConfig: './vite.config.ts',
-       optimizeDeps: ['gsap'],
    };
 
    export default defineConfig({
@@ -92,9 +91,7 @@ A package that has visual tests needs three things.
    ```
 
    `viteConfig` is the package's own Vite config, for the plugins and
-   aliases its views need. `optimizeDeps` lists the libraries its views
-   import. Every test file runs in one page, so Vite must bundle them
-   before the run starts.
+   aliases its views need.
 3. Scripts that run the package's command:
 
    ```json
@@ -106,7 +103,7 @@ A package that has visual tests needs three things.
 ### Why a Separate Config
 
 Vitest can run Node projects and browser projects from one config, so the
-visual projects could join a package's `vitest.config.ts`. They have a
+visual projects *could* join a package's `vitest.config.ts`. They have a
 config of their own for two reasons.
 
 - **Unit tests stay fast, and need no browser.** A run with visual tests
@@ -158,7 +155,7 @@ Vitest with tsx's loader, so that Node can run that TypeScript. The
 command's `bin` entry is a small JavaScript file, which loads the command
 through tsx.
 
-## Fast, and the Same Everywhere
+## Achieving Speed and Consistency
 
 The goal of this package is to make visual tests as convenient as unit
 tests. Adding one should take no more thought than adding a unit test, and
@@ -187,6 +184,13 @@ this package took 3.1 s. Four things make the difference.
 - **Big smooth pictures are drawn smaller.** A smooth picture over the size
   budget (`maxPixels`, 500,000 pixels by default) is drawn at a lower
   resolution.
+
+One step costs time to keep the shared page correct. Vite bundles every
+library that the tests import before the run starts, because one found
+during the run would be bundled again, and the files after it would load a
+second copy. Vite finds those libraries by scanning the test files, and it
+bundles them afresh on every run, so that a newly imported library is never
+missed. That takes about a second, however many tests there are.
 
 ### The Same on Every Machine, Without Docker
 
