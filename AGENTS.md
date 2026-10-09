@@ -52,8 +52,8 @@ packages/website/src/
 ```
 
 Visual tests (`*.visual.tsx`, `*.html.visual.tsx`) sit beside the views they
-picture, their reference PNGs in `__screenshots__/` beside them; the Node side
-of the harness is in `packages/website/scripts/visual/`. See
+picture. Their reference PNGs are in `__screenshots__/`, beside the tests. The
+Node side of the harness is in `packages/website/scripts/visual/`. See
 [Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`

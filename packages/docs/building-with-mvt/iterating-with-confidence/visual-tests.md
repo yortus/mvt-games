@@ -1,27 +1,28 @@
 # Visual Tests
 
-> How this project tests what its views look like: a short function that
-> builds a view in a known state, a picture of it compared with one
-> committed beside the test, and one command to accept an intended change.
-> Hundreds of pictures run in seconds, and give the same result on
-> Windows, Linux and macOS, with nothing to install beyond `npm ci`.
+> A visual test checks what a view looks like. It builds the view in a
+> known state, takes a picture of it, and compares the picture with a
+> reference picture committed beside the test. In this project, hundreds of
+> these tests run in seconds. They give the same result on Windows, Linux
+> and macOS, and they need nothing installed beyond `npm ci`.
 
 **Previous:** [Testing Views](testing-views.md)
 **Related:** [Testing](testing.md) -
 [Testing Models](testing-models.md) -
-[Presentation State](../adding-visual-polish/presentation-state.md)
+[Presentation State](../adding-visual-polish/presentation-state.md) -
+[Sound and Music](../presenting-the-world/sound.md)
 
 ---
 
-*Assumes familiarity with [Testing Views](testing-views.md), which says
-when a picture is the right test and when an assertion is.*
+*Assumes familiarity with [Testing Views](testing-views.md). That page
+says when a picture is the right test, and when an assertion is.*
 
-## Writing One
+## Writing a Visual Test
 
-A visual test is one call to `visualTest(name, pose, options?)`, from
-`#testing` (the website's test harness), in a `*.visual.tsx` file beside
-the view. The pose is a function that builds the view, in the state to
-photograph, and returns it:
+A visual test is one call to `visualTest(name, pose, options?)`. The call
+goes in a `*.visual.tsx` file beside the view. `visualTest` comes from
+`#testing`, which is the website's test harness. The `pose` argument is a
+function that builds the view in the state to photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
@@ -33,166 +34,198 @@ const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 
 describe('SpinButtonView', () => {
     for (const mode of MODES) {
-        visualTest(mode, () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }), { artStyle: 'smooth' });
+        visualTest(
+            mode,
+            () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }),
+            { artStyle: 'smooth' },
+        );
     }
 });
 ```
 
 The harness refreshes the view, draws it, and compares the picture with
-its reference, `__screenshots__/spin-button-view.visual.tsx/SpinButtonView-spin.png`
-beside the test. Fixed [bindings](../../reference/glossary.md) make the
-picture the same every run: one picture per state the bindings can show.
+its reference. The reference for the first test is
+`__screenshots__/spin-button-view.visual.tsx/SpinButtonView-spin.png`,
+beside the test file. The view's [bindings](../../reference/glossary.md)
+are fixed, so the picture is the same on every run. Write one test for
+each state the bindings can show.
 
-### Presentation state
+### Views With Presentation State
 
-A view with an update step (a
-[stateful view](../../reference/glossary.md)) is advanced in the pose with
-`advanceTime`, also from `#testing`. It steps models, then views, in
-frame-sized steps, as the ticker does (the same idea as
-[`advanceTime` for models](testing-models.md#advancing-time)):
+Some views have an update step, because they hold
+[presentation state](../../reference/glossary.md). A pose advances such a
+view with `advanceTime`, which also comes from `#testing`. It steps the
+models, then the views, in frame-sized steps, as the ticker does. It is the
+same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
 ```tsx
 visualTest('counting up, 300 ms in', async () => {
     let amount = 0;
-    const view = WinBannerView({ isShown: () => true, amount: () => amount, caption: () => CAPTION });
-    // The win arrives after the banner is built, and the count catches up over time
+    const view = WinBannerView({
+        isShown: () => true,
+        amount: () => amount,
+        caption: () => CAPTION,
+    });
+    // The win arrives after the banner is built. The count then catches up.
     amount = WIN;
     await advanceTime({ views: [view], totalMs: 300 });
     return view;
 }, { artStyle: 'smooth' });
 ```
 
-A top-level view is posed through its model: make the model, act on it,
+A top-level view takes its model. To pose one, make the model, act on it,
 and pass both to `advanceTime({ models: [model], views: [view], totalMs })`.
 
 ### Options
 
 | Option | Default | Use |
 | --- | --- | --- |
-| `width`, `height` | The view's bounds, plus a margin | A fixed picture size, or a crop from the top left |
-| `background` | One dark grey for every test | So transparent areas show |
-| `artStyle` | `'pixel'` | `'smooth'` for a view drawn with antialiasing and smooth textures |
+| `width`, `height` | The view's bounds, plus a margin | A fixed picture size. A size smaller than the view crops it from the top left |
+| `background` | One dark grey for every test | The colour behind the view, so that transparent areas show |
+| `artStyle` | `'pixel'` | `'smooth'` for a view that its game draws with antialiasing and smooth textures |
 
-`artStyle` should say how the view's game draws it. `'pixel'` draws hard
-edges at whole-pixel positions and samples textures nearest-neighbour;
-`'smooth'` antialiases and samples smoothly. A smooth view tested as
-pixel art comes out jagged: consistent, but not as the game shows it.
+The `artStyle` option should say how the view's game draws it. The
+`'pixel'` style draws hard edges at whole-pixel positions, and samples
+textures nearest-neighbour. The `'smooth'` style antialiases edges and
+samples textures smoothly. A smooth view tested as pixel art comes out
+jagged. That picture is still consistent, but it is not what the game
+shows.
 
-### HTML and three.js views
+### HTML and three.js Views
 
-An **HTML view** is tested in a `*.html.visual.tsx` file, which runs in a
-page of its own, since a stylesheet stays in a page once imported. Its
-text is drawn blank (see below), so its picture shows layout and styling.
-A view styled by its entry's layout needs that layout round it: make the
-same containing elements in the pose.
+An HTML view is tested in a `*.html.visual.tsx` file. Each such file runs
+in a page of its own, because a stylesheet stays in a page once it is
+imported. The view's text is drawn blank, as explained below, so its
+picture shows its layout and styling. Some views are styled by the layout
+of the game around them. A pose for such a view builds the same containing
+elements around it.
 
-A **three.js view** is tested in a `*.visual.tsx` file like a Pixi one,
-with two more options: `camera`, which makes the camera the picture is
-taken with, and `scene`, which dresses the scene the view is drawn in as
-its entry does (background, environment map, tone mapping). Pass the
-entry's own dressing function, so the test and the game cannot drift
-apart. A view that brings its own lights needs none.
+A three.js view is tested in a `*.visual.tsx` file, like a Pixi view. It
+needs a `camera` option, which is a function that makes the camera for the
+picture. Its `scene` option can set up the scene as the view's game does,
+with a background, an environment map and tone mapping. Pass the game's
+own setup function, so that the test and the game stay the same. A view
+that brings its own lights needs no `scene` option.
 
-### Whole entries
+### Whole Games
 
-Every entry also has a picture of its whole screen, at the moment its
-thumbnail is taken, from `entries/entries.visual.tsx` (Pixi entries) and
-`entries/entries.html.visual.tsx` (element entries). A new entry gets
-one without writing anything. These catch what no single view's test
-sees (layout, layering, a view left out of its parent), so they change
-with almost any change to an entry.
+Every game and demo also has a picture of its whole screen, taken at the
+moment its thumbnail is taken. In this project, a game or demo is called
+an [entry](../../reference/glossary.md). Two test files make these
+pictures for every entry in the catalogue: `entries/entries.visual.tsx`
+for Pixi entries, and `entries/entries.html.visual.tsx` for the others. A
+new entry gets its picture without any new code. These pictures catch
+what a single view's test cannot see, such as layout, layering, or a view
+left out of its parent. So they change with almost any change to an entry.
 
-## Running and Accepting
+## Running Visual Tests
 
 | Command | What it does |
 | --- | --- |
 | `npm run test:visual` | Compares every picture. The first run downloads the browser |
-| `npm run test:visual -- --picture SpinButtonView-spin` | Runs the tests whose pictures have that name |
-| `npm run test:visual:update` | Also writes every picture that changed, or is new, as its reference |
-| `npm run test:visual:environment` | Also rewrites the environment's fingerprint and calibration pictures (below), after a deliberate browser upgrade |
-| `npm run test:visual:check-references` | Decodes every reference and checks its pixels against the hash it carries |
+| `npm run test:visual -- --picture SpinButtonView-spin` | Runs only the tests whose pictures have that name |
+| `npm run test:visual:update` | Also writes each new or changed picture as its reference |
+| `npm run test:visual:environment` | Also rewrites the browser's fingerprint and calibration pictures (see below). Run it only after upgrading Playwright on purpose |
+| `npm run test:visual:check-references` | Decodes every reference, and checks its pixels against the hash it carries |
 
-A changed picture fails its test with how many pixels changed, by how
-much, and where, and the paths of three files: the reference, the actual
-picture and a diff (the reference dimmed, the changed pixels in red),
-under `.vitest/visual/`. If the change is intended, the message gives
-the command that accepts that picture alone. A reference whose pixels
-still match is never rewritten, so an update changes only what changed.
+When a picture changes, its test fails. The message says how many pixels
+changed, by how much, and where. It also gives the paths of three files
+under `.vitest/visual/`. They are the reference, the actual picture, and a
+diff. The diff shows the reference dimmed, with the changed pixels in
+red. If the change is intended, the message gives the command that accepts
+that picture alone. The update never rewrites a reference whose pixels
+still match, so it changes only what changed.
 
-A run with no filters is a full run: it also lists any reference no test
-compared with, left by a test renamed or deleted, and fails. The update
-deletes those instead.
+A run with no filters is a full run. A full run also lists every
+reference that no test compared with, and fails. Such a reference was left
+behind by a test that was renamed or deleted. The update deletes these
+references instead.
 
 ### In CI
 
 Every push runs the visual tests on Ubuntu. When Playwright's version or
-the harness changes, they also run on Windows and macOS. Every week, all
-three run the tests in a shuffled order, which shows that no picture
-depends on the ones before it, and check every reference's hash. No CI
-job writes references: whoever changes a view updates them on their own
-machine, and reviews the pictures with the code. A changed picture fails
-its job with a note per picture on the run's page, and the actual and
-diff pictures are uploaded with it.
+the test harness changes, the tests also run on Windows and macOS. Once a
+week, they run on all three systems in a shuffled order. That shows that
+no picture depends on the tests before it. The weekly run also checks
+every reference's hash.
 
-## How It Stays Fast
+No CI job writes references. Whoever changes a view updates its
+references on their own machine, and commits them with the code, so that
+reviewers see the pictures. When a picture changes, the CI job fails. The
+run's page has a note for each changed picture, and the actual and diff
+pictures are uploaded with the run.
 
-The target is unit-test speed: hundreds of pictures in seconds, so that
-adding one costs nothing and running all of them is routine.
+## How the Tests Stay Fast
 
-- **One page for the run.** Every test file runs in the same browser
-  page (HTML files apart): the libraries load once, shaders compile once,
-  and one renderer draws every picture.
-- **No screenshots.** A Pixi or three.js picture is read straight from
-  the renderer.
-- **Hashes, not images.** The page hashes the pixels and compares the
-  hash with the one each reference file carries in its first bytes. Only
-  a picture that changed is sent to Node to be compared, written and
+The aim is for visual tests to run at the speed of unit tests. Hundreds of
+pictures should take seconds, so that adding one costs nothing.
+
+- **One page runs every test file.** HTML files are the exception. The
+  libraries load once, the shaders compile once, and one renderer draws
+  every picture.
+- **No screenshots are taken.** The harness reads a Pixi or three.js
+  picture straight from the renderer.
+- **Hashes are compared, not images.** The page computes a hash of the
+  pixels, which is a short string worked out from them. Each reference
+  file carries the hash of its own pixels in its first bytes. Only a
+  picture whose hash differs is sent to Node, to be compared, written and
   diffed.
-- **Big smooth pictures are drawn smaller.** A size budget (`maxPixels`
-  in `vitest.visual.config.ts`, 500,000 pixels) caps each picture. A
-  smooth view over it is drawn at half resolution (or a quarter...), and
-  the run's summary lists it; pixel art and HTML over it fail, saying to
-  crop the picture or pose part of the view.
+- **Big smooth pictures are drawn smaller.** The size budget is set by
+  `maxPixels` in `vitest.visual.config.ts`, and is 500,000 pixels. A smooth
+  view over the budget is drawn at half its resolution, or a quarter if
+  needed. The run's summary lists each one. Pixel art and HTML over the
+  budget fail instead. The message says to crop the picture, or to pose
+  part of the view.
 
-The run ends with a summary: how long pictures took (median and 95th
-percentile), the slowest, and how much the references take, so a slow
-test or a big picture is noticed when it is added.
+The run ends with a summary. It shows how long the pictures took, which
+ones were slowest, and how much space the references take. So a slow test
+or a big picture is noticed when it is added.
 
-## How It Stays Consistent
+## How the Tests Stay Consistent
 
-The same picture must come out the same on every machine, or tests fail
-for reasons that have nothing to do with the view. Everything that
-differs between machines is pinned inside the browser, with no container
-or virtual machine:
+Each picture must come out the same on every machine. Otherwise tests
+fail for reasons that have nothing to do with the view. The harness pins
+everything that differs between machines inside the browser, so no
+container or virtual machine is needed.
 
 | What differs | How it is pinned |
 | --- | --- |
-| The browser | Playwright's Chromium, its version fixed by the lockfile |
-| WebGL and 2D drawing | Software rendering (SwiftShader), and software compositing |
-| Random numbers | `Math.random` seeded the same before every test |
-| Canvas text | Drawn as shapes from test fonts by the harness, not by the system's font engine |
-| HTML text | A blank font: every character an empty glyph, 0.625 em wide; font sizes rounded to quarter pixels |
-| Unstyled text fields | 20 characters wide, not the font's average character width |
-| Rotated images | Sampled nearest-neighbour |
-| Processor rounding | A tolerance of 2 levels of 255 per channel, which arm64 processors need for blurs and rotations |
+| The browser | Playwright's Chromium. Its version is pinned exactly, in `package.json` |
+| WebGL and 2D drawing | Software rendering (SwiftShader) and software compositing |
+| Random numbers | `Math.random` is seeded the same before every test |
+| Canvas text | The harness draws it as shapes from two test fonts, not with the system's fonts |
+| HTML text | A blank font draws every character as an empty glyph, 0.625 em wide. Font sizes are rounded to quarter pixels |
+| Unstyled text fields | They are 20 characters wide, not the font's average character width |
+| Rotated images | They are sampled nearest-neighbour |
+| Processor rounding | A tolerance of 2 levels of 255 per channel. Processors with the arm64 architecture need it for blurs and rotations |
 
-Before any picture is compared, each run checks a fingerprint of the
-browser (`visual-environment.json`) and draws a calibration set: a few
-pictures covering antialiasing, gradients, blur, textures, text and
-three.js lighting. If they differ, the run stops at once with one error
-naming what differs, instead of failing every test.
+Each run first checks a fingerprint of the browser, which is kept in
+`visual-environment.json`. Then it draws a set of calibration pictures.
+These cover antialiasing, gradients, blur, textures, text and three.js
+lighting. If any of them differ, the run stops at once with one error that
+names the difference. This saves a run from failing every test for the
+same reason.
 
-### The compromises
+### The Compromises
 
-Each pin trades a little fidelity for consistency, in the tests only:
+Each pin gives up a little accuracy for consistency. The compromises
+affect the tests only.
 
 - **HTML pictures have no text.** They show every box, border, image,
-  control and underline, but not the copy, its colour or its weight, and
-  lines wrap where 0.625 em per character puts them, not where the real
-  font would. Copy that matters is checked by assertions.
-- **Canvas text comes from two test fonts**, standing in for the
-  families a game asks for. A family no test font stands in for fails its
-  test, saying to add it.
+  control and underline. They do not show the words, or the text's colour
+  or weight. Lines wrap where 0.625 em per character puts them, not where
+  the real font would. Assertions check the words that matter.
+- **Canvas text uses two test fonts.** They stand in for the font families
+  a game asks for. If a game asks for a family that no test font stands in
+  for, its test fails and says to add the family.
 - **Rotated images look a little jagged.**
 - **A change of 2 levels or less in every channel passes.** A real change
   is almost never that small.
+
+## Sounds Have the Same Kind of Test
+
+An audio test checks a sound in the same way. It renders the sound in
+memory, computes a hash of its samples, and compares the hash with a saved
+reference. A change that alters the sound fails the test, until someone
+has listened to it and accepted the new hash. See
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests).

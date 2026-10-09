@@ -49,13 +49,14 @@ packages/website/src/
 ```
 
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
-sit beside the views they picture, as `*.visual.tsx` (Pixi and three.js)
-or `*.html.visual.tsx` (HTML), with their reference pictures in a
-`__screenshots__/<test file>/` directory beside them. The harness's Node
-side (the browser commands, the PNG files, the comparison, the run's
-summary) is in `packages/website/scripts/visual/`, and its configuration is
-`packages/website/vitest.visual.config.ts`, with the environment's
-fingerprint in `packages/website/visual-environment.json`.
+sit beside the views they picture. A Pixi or three.js view's test is a
+`*.visual.tsx` file, and an HTML view's test is a `*.html.visual.tsx` file.
+Each test file's reference pictures are in a `__screenshots__/<test file>/`
+directory beside it. The harness's Node side is in
+`packages/website/scripts/visual/`. It holds the browser commands, the PNG
+files, the comparison and the run's summary. The configuration is in
+`packages/website/vitest.visual.config.ts`, and the browser's fingerprint
+is in `packages/website/visual-environment.json`.
 
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its
@@ -277,9 +278,9 @@ The rules above apply inside each package. Between packages:
   the playground could become a package of its own.
 
 Within the site, its shared views are imported as `#shared`, and the
-visual tests' harness as `#testing`, aliases that
-`packages/website/package.json` defines. `#testing` imports Vitest, so only
-test files import it.
+visual tests' harness is imported as `#testing`. Both aliases are defined
+in `packages/website/package.json`. Only test files import `#testing`,
+because it imports Vitest.
 
 ## Entry Structure
 

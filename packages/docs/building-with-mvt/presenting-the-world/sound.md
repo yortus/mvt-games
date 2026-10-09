@@ -311,6 +311,8 @@ in memory and compares a hash of its samples with a saved one. A change
 that alters the sound then fails the test, until someone has listened to it
 and updated the saved hash. See
 [Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/audio/docs/using-the-audio80.md#testing-and-listening).
+A view's pictures have the same kind of test, described in
+[Visual Tests](../iterating-with-confidence/visual-tests.md).
 
 ## Common Mistakes
 

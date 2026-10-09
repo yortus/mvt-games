@@ -577,34 +577,42 @@ once, when the element is built, not per frame.
 
 ## Visual Tests
 
-**[project convention]** A new or changed view gets a visual test: a
-`*.visual.tsx` beside it (a `*.html.visual.tsx` for an HTML view), with
-one `visualTest(name, pose, options?)` per state its bindings can show.
-The pose builds the view from fixed bindings (or a top-level view from a
-model in a known state) and returns it; a view with presentation state is
-advanced in the pose with `advanceTime({ models, views, totalMs })`. Both
-come from `#testing`.
+**[project convention]** A new or changed view gets a visual test. The
+test goes in a `*.visual.tsx` file beside the view, or a
+`*.html.visual.tsx` file for an HTML view. Write one
+`visualTest(name, pose, options?)` call for each state the view's bindings
+can show. The pose is a function that builds the view and returns it. It
+builds a leaf view from fixed bindings, and a top-level view from a model
+in a known state. If the view has presentation state, the pose advances it
+with `advanceTime({ models, views, totalMs })`. Both functions come from
+`#testing`.
 
 ```tsx
 describe('WinBannerView', () => {
-    visualTest('a win, counted', () => WinBannerView({ isShown: () => true, amount: () => WIN, caption: () => CAPTION }), { artStyle: 'smooth' });
+    visualTest('a win, counted', () => WinBannerView({
+        isShown: () => true,
+        amount: () => WIN,
+        caption: () => CAPTION,
+    }), { artStyle: 'smooth' });
 });
 ```
 
-- Set `artStyle: 'smooth'` for a view its game draws with antialiasing;
-  the default is `'pixel'`. A three.js view also needs `camera`, and the
-  entry's scene dressing as `scene` if it is lit by an environment map.
-- Record the pictures with `npm run test:visual:update -- --picture <name>`
-  (or the whole update), look at each new or changed PNG, and commit them
-  with the view. Never accept a change you have not looked at.
-- `npm run test:visual` must pass before handing over. A failure gives the
-  reference, actual and diff paths: read the diff before deciding the
-  change is intended.
-- Visual runs may be repeated freely: Playwright's headless shell makes no
-  Windows logon attempts, unlike the installed Chrome the thumbnail and
-  load-time scripts use.
-- Assertions still test behaviour and structure (what a view does with its
-  bindings); pictures test looks. See
+- Set `artStyle: 'smooth'` for a view that its game draws with
+  antialiasing. The default is `'pixel'`.
+- A three.js view also needs a `camera` option. If the view is lit by an
+  environment map, pass the game's scene setup function as `scene`.
+- Record the pictures with
+  `npm run test:visual:update -- --picture <name>`, or run the whole
+  update. Look at each new or changed PNG, and commit it with the view.
+  Never accept a change you have not looked at.
+- `npm run test:visual` must pass before you hand over. A failure gives
+  the paths of the reference, the actual picture and a diff. Read the diff
+  before you decide that the change is intended.
+- You may repeat visual runs freely. Playwright's browser makes no Windows
+  logon attempts. The installed Chrome does, and the thumbnail and
+  load-time scripts use it.
+- Assertions still test behaviour and structure, which is what a view does
+  with its bindings. Pictures test how it looks. See
   [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 ## Complete Minimal Example

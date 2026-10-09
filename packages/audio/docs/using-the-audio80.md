@@ -661,6 +661,10 @@ for (const [name, effect] of effects) {
 }
 ```
 
+Views have the same kind of test for their pictures. See
+[Visual Tests](../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
+in the MVT guide.
+
 **Audio views** are tested against a headless chip that records. The test
 advances the chip's clock and ticks the view, as a game loop would:
 

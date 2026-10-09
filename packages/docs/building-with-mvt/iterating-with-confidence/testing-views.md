@@ -134,9 +134,14 @@ a shifted sprite, a missing particle, a wrong tint.
 3. **Update baselines** when the change is intentional. Review the diff,
    confirm it looks correct, and accept the new baseline.
 
-Done naively, each step is slow and none is consistent between machines.
-[Visual Tests](visual-tests.md) describes how this project does each
-step, and how it keeps hundreds of pictures fast and the same everywhere.
+Done naively, each step is slow, and the pictures differ between
+machines. [Visual Tests](visual-tests.md) describes how this project does
+each step. It also explains how hundreds of pictures stay fast, and the
+same on every machine.
+
+Sounds have the same kind of test. An
+[audio test](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests)
+renders a sound and compares a hash of its samples with a saved one.
 
 ### What snapshots verify
 
@@ -187,10 +192,10 @@ visualTest('door - halfway through fading in', async () => {
 });
 ```
 
-`advanceTime` steps the view's `update(deltaMs)` in frame-sized steps
-(in this project, `updateView(view, deltaMs)`, which works on any view
-with no renderer or ticker); the harness then refreshes the view once,
-draws it and compares the picture.
+`advanceTime` calls the view's `update(deltaMs)` in frame-sized steps. In
+this project it does this with `updateView(view, deltaMs)`, which works on
+any view, with no renderer or ticker. The harness then refreshes the view
+once, draws it, and compares the picture.
 
 ## Testing Audio Views
 
@@ -237,11 +242,12 @@ some note sounded, still passes when the view plays the wrong one. For
 music, compare the view's notes with those of a music player playing the
 expected song.
 
-Audio tests check the sounds themselves, much as visual snapshots check a
-view's pictures. An audio test renders a sound in memory and compares a
-hash of its samples with a stored hash. A change that alters the sound
-fails the test, until someone has listened to it and accepted the new
-hash.
+Audio tests check the sounds themselves, much as
+[visual tests](visual-tests.md) check a view's pictures. An audio test
+renders a sound in memory and compares a hash of its samples with a stored
+hash. A change that alters the sound fails the test, until someone has
+listened to it and accepted the new hash. See
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests).
 
 ## Choosing an Approach
 

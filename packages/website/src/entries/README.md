@@ -341,10 +341,10 @@ entry inside an element the host gives it, and returns a session with two
 more members: `views`, the roots of its views of every renderer, and
 `render()`, which draws a frame. The host still runs each frame in the MVT
 order: the session's `update`, then `updateView` and `refreshView` over its
-`views`, then `render`. A renderer that starts asynchronously (Pixi's
-`init`) makes the session's `ready` a promise that settles once it can
-draw, so that a host taking one picture (a thumbnail, a visual test) waits
-for it. See [Boids in 3D](./boids-3d/start/load.ts) for a small one, and
+`views`, then `render`. Some renderers start asynchronously, as Pixi's
+`init` does. If the entry has one, its session's `ready` is a promise that
+settles once every renderer can draw. A host that takes one picture, such
+as a thumbnail or a visual test, waits for it. See [Boids in 3D](./boids-3d/start/load.ts) for a small one, and
 the [Fruit Machine](./fruit-machine/start/load.ts) for one model with
 views on three renderers.
 
@@ -436,17 +436,17 @@ npm run generate-thumbnails -- breakout
 It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 `start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
-The same moment is also the entry's visual test of its whole screen, which
-it gets without any code: `entries.visual.tsx` (or `entries.html.visual.tsx`,
-for an element entry) makes one for every entry in the catalogue. Record
-its picture, look at it, and commit it:
+The entry also gets a visual test of its whole screen, at the same moment,
+without any new code. `entries.visual.tsx` makes one for every Pixi entry
+in the catalogue, and `entries.html.visual.tsx` makes one for every element
+entry. Record the entry's picture, look at it, and commit it:
 
 ```bash
 npm run test:visual:update -- --picture breakout
 ```
 
-Give the views their own visual tests too, one picture per state their
-bindings can show: see
+Give the views their own visual tests too, with one picture for each
+state their bindings can show. See
 [Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 ## Checklist
