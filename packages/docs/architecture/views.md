@@ -85,7 +85,7 @@ transform domain state into presentation:
 - Domain position to pixel coordinates
 - Named state to texture/colour/animation frame
 - Count to laid-out display elements
-- Named event to sound playback
+- A change in state (a phase begun, a count risen) to a sound
 
 ## What Does NOT Belong in a View
 

@@ -13,7 +13,7 @@ import type { CardWallLayout } from './card-wall-layout';
 export interface CardWallViewBindings {
     /** Every entry, shown or not, in a fixed order: card `i` always shows entry `i`. */
     readonly entries: readonly ArcadeEntry[];
-    /** Where each card goes, shared with the arcade view, which reads where the cards are as a transition starts. */
+    /** Where each card goes, shared with the Arcade's view, which reads where the cards are as a transition starts. */
     readonly layout: CardWallLayout;
     /** How many cards are shown, and which, in order: the order the keyboard moves through. */
     readonly shownCount: () => number;
@@ -44,6 +44,8 @@ export interface CardWallViewBindings {
     /** Reported with the card pressed, and where its photo is drawn, for the way into its entry to start from. */
     readonly onLaunchPressed?: (index: number, from: PhotoPose) => void;
     readonly onInfoPressed?: (index: number) => void;
+    /** Reported as the keyboard moves the selection to another card. */
+    readonly onCardKeyedTo?: (index: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,6 +210,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
             const next = movedPosition({ position, move, shownCount: bindings.shownCount(), columnCount: layout.columnCount });
             selected = bindings.shownIndexAt(next);
             focusPending = 'into-view';
+            if (selected !== tabStop) bindings.onCardKeyedTo?.(selected);
         }
         else if (e.key === 'i' || e.key === 'I') {
             selected = tabStop;

@@ -20,6 +20,7 @@ conventions.
 | Bindings types         | `XxxViewBindings`            | `HudViewBindings` (never `Props`)             |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createSlotList`          |
+| Other functions        | Start with a verb; conversions `to` + target; predicates `is` / `has` / `can` | `measureLoudness`, `toInt16`, `isNoteInRange` |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
 | Query bindings         | What they return, no `get`   | `score`, `screenX`, `isAlive`                 |
 | ... with position/index | Suffix `At`                 | `tileKindAt(row, col)`                        |
@@ -247,6 +248,20 @@ Within factory functions, follow big-picture-first ordering:
 
 JavaScript's function hoisting makes this possible - declare functions in
 conceptual order, not call-before-definition order.
+
+## Comments, Test Names and Messages
+
+JSDoc, comments, test names and error messages follow the same writing rules
+as the docs. See [Style Guide: Writing](../reference/style-guide.md#writing).
+
+- **Short, complete sentences.** One idea in each. No fragments, and no long
+  sentences joined by colons or semicolons.
+- **Plain words.** Explain an unfamiliar term where it first appears.
+- **Say what a function returns or does,** not who calls it.
+- **Start a factory's JSDoc with "Creates".** For example: "Creates a music
+  player with no song playing."
+- **No in-house names in a package.** Say "the game loop", not "the host".
+- **Wrap JSDoc and comments at about 80 columns.**
 
 ## Full Reference
 

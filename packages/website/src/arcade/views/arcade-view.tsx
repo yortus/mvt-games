@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
-import { destroyElement } from '@mvtjs/html';
-import { memoiseLast, watch } from '@mvtjs/utils';
+import type { Audio80 } from '@mvtjs/audio';
+import { destroyElement, Match, Switch } from '@mvtjs/html';
+import { assert, memoiseLast, watch } from '@mvtjs/utils';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
 import { ArcadeHeadView } from './arcade-head-view';
@@ -8,7 +9,9 @@ import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';
 import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
+import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import { NavSearchView } from './nav-search-view';
+import { NavSoundView } from './nav-sound-view';
 import { NO_RECT, type Rect } from './rect';
 import { RunnerView } from './runner-view';
 import { TransitionView } from './transition-view';
@@ -19,7 +22,9 @@ import { WallEffectView } from './wall-effect-view';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The Arcade's model, and what the page gives the Arcade's view besides. */
 export interface ArcadeViewBindings {
+    /** The Arcade's model. */
     readonly model: ArcadeModel;
     /** The element entries play in, which the page's entry host fills. */
     readonly stage: HTMLElement;
@@ -35,17 +40,38 @@ export interface ArcadeViewBindings {
      * none, as on a touch screen.
      */
     readonly liveElement?: HTMLElement;
-    /** The entry the page is playing live, if any, and whether it has drawn yet. */
+    /** The entry the page is playing live, if any. */
     readonly liveEntry: () => ArcadeEntry | undefined;
+    /** Whether the entry playing live has drawn enough to show. */
     readonly isLiveShowing: () => boolean;
     /** Reported with the entry whose card wants to play it live, or undefined for none, as it changes. */
     readonly onLiveWanted?: (entry: ArcadeEntry | undefined) => void;
     /**
-     * A place in the site's nav for the arcade's own tools, if the page has
-     * one: a magnifier there takes a visitor scrolled down the wall back to
-     * the search. The page ticks it with the rest of its views.
+     * A place in the site's nav for the Arcade's own tools, if the page has
+     * one. A magnifier there takes a visitor scrolled down the wall back to
+     * the search. A speaker there turns all the sound off, or back on. The
+     * page ticks them with the rest of its views.
      */
     readonly navTools?: HTMLElement;
+    /**
+     * The page's own chip. It plays whether an entry runs, is paused or is
+     * held. The Arcade's own sounds and the pause menu's volume previews play
+     * on it. Read once.
+     */
+    readonly pageSound: Audio80;
+    /**
+     * The views that play the Arcade's own sounds, once the page has loaded
+     * them. It is undefined until then, and none of the Arcade's sounds play.
+     * Browsers play no sound before the visitor's first press, so the page
+     * loads them on that press, and its first load holds no sound.
+     */
+    readonly audioViews: () => ArcadeAudioViews | undefined;
+    /**
+     * Whether all the sound is muted because the visit started that way, as
+     * a first visit on a phone does, and the visitor has not changed it. A
+     * hint then offers to turn the sound on as an entry plays.
+     */
+    readonly isSoundOffByDefault: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,15 +79,22 @@ export interface ArcadeViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The arcade: its head (its name and a search over its entries), a wall of
- * cards for the entries it picks, by name, an entry's info panel, and the
- * runner an entry plays in. Choosing an entry burns the other cards away
- * around its polaroid while it loads, then the polaroid recedes and the
- * entry's screen powers on; leaving it powers the screen off, and the
- * polaroid comes back as the cards develop. The transition and the wall's
- * layout are this view's presentation state, in view models it owns.
+ * Shows the Arcade. It has a head, with the Arcade's name and a search over
+ * its entries. Below is a wall of cards for the entries the search picks, in
+ * order of name. It also has an entry's info panel, and the runner an entry
+ * plays in.
+ *
+ * Choosing an entry burns the other cards away around its polaroid while it
+ * loads. Then the polaroid recedes and the entry's screen powers on. Leaving
+ * the entry powers the screen off, and the polaroid comes back as the cards
+ * develop. The transition and the wall's layout are this view's
+ * presentation state, in view models it owns.
+ *
  * Scrolled down the wall, past the head, a magnifier shows in the site's nav
- * to go back to the search, as `/` does from anywhere on the wall.
+ * to go back to the search, as `/` does from anywhere on the wall. A speaker
+ * in the site's nav, and another in the runner's bar, turns all the sound
+ * off, or back on at the levels it had. The Arcade's own sounds play from
+ * audio views that load on the visitor's first press.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -78,11 +111,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         estimatedHeightAt: (_index, columnWidth) => cardHeightFor(columnWidth),
         isMotionReduced: bindings.isMotionReduced,
     });
+    // Presentation state: how many times the keyboard has moved the selection to another card.
+    // The Arcade's audio view ticks each time it rises.
+    let cardKeyMoves = 0;
     const transition = createTransitionViewModel({
         target: playRect,
         isReady: () => model.phase === 'ready',
         isPlaying: () => model.phase === 'playing',
         onHandOver: model.startPlaying,
+        onShown: model.letGo,
         isMotionReduced: bindings.isMotionReduced,
     });
     const phaseWatcher = watch({ phase: () => model.phase });
@@ -108,6 +145,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         onLiveWanted: (index) => bindings.onLiveWanted?.(entries[index]),
         onLaunchPressed: (index, from) => launch(index, from),
         onInfoPressed: (index) => model.openInfo(entries[index].id),
+        onCardKeyedTo: () => { cardKeyMoves++; },
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
@@ -119,7 +157,14 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         totalCount: entries.length,
         onPressed: goToSearch,
     });
-    bindings.navTools?.append(navSearch);
+    // The speaker mutes all the sound, the music and the effects, so a game started next is silent too.
+    // Pressed again, it unmutes, and each sound plays at the level it had. A press on a speaker that
+    // shows the sound off always brings sound back: if both sounds are at 0, it turns both on
+    const navSound = NavSoundView({
+        isOn: isAnySoundOn,
+        onPressed: toggleAllSound,
+    });
+    bindings.navTools?.append(navSearch, navSound);
 
     window.addEventListener('keydown', onKeyDown);
 
@@ -154,11 +199,32 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                     launch(index, cardPoseAt(index));
                 }}
             />
+            <Switch>
+                <Match when={() => bindings.audioViews() !== undefined}>{AudioView}</Match>
+            </Switch>
             <RunnerView
                 stage={bindings.stage}
                 isOpen={() => model.phase !== 'browsing'}
                 isPlaying={() => model.phase === 'playing'}
                 isPaused={() => model.isPaused}
+                // The runner's bar covers the site's nav, so it has a speaker of its own, the same as the nav's
+                isSoundOn={isAnySoundOn}
+                isSoundOffByDefault={bindings.isSoundOffByDefault}
+                onSoundPressed={toggleAllSound}
+                // While all the sound is muted, the pause menu shows each sound as off.
+                // Using a slider or an icon there unmutes the sound first.
+                musicVolume={() => (model.isSoundMuted ? 0 : model.musicVolume)}
+                effectsVolume={() => (model.isSoundMuted ? 0 : model.effectsVolume)}
+                onMusicVolumeChanged={(volume) => {
+                    model.isSoundMuted = false;
+                    model.musicVolume = volume;
+                }}
+                onMusicIconPressed={() => toggleSound(model.musicVolume, model.turnMusicOn, model.turnMusicOff)}
+                onEffectsVolumeChanged={(volume) => {
+                    model.isSoundMuted = false;
+                    model.effectsVolume = volume;
+                }}
+                onEffectsIconPressed={() => toggleSound(model.effectsVolume, model.turnEffectsOn, model.turnEffectsOff)}
                 title={() => model.activeEntry?.name ?? ''}
                 instructions={() => model.activeEntry?.instructions}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
@@ -176,6 +242,42 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             />
         </div>
     );
+
+    /**
+     * Builds the views that play the Arcade's sounds and the pause menu's
+     * volume previews. It runs once, when they have loaded. Each view hears
+     * only the changes after it is built, so nothing that happened before
+     * plays late.
+     */
+    function AudioView(): Element {
+        const views = bindings.audioViews();
+        assert(views !== undefined, 'arcade: the audio views are built only once they have loaded');
+        return (
+            <div class="arcade-audio-views">
+                {views.ArcadeAudioView({
+                    sound: bindings.pageSound,
+                    phase: () => model.phase,
+                    isPaused: () => model.isPaused,
+                    isPanelOpen: () => model.infoEntry !== undefined || model.isAboutOpen,
+                    searchText: () => model.searchText,
+                    chosenTagCount: () => model.activeChipCount,
+                    shownCount: () => model.shownCount,
+                    loadFailure: () => model.loadFailure,
+                    transitionPhase: () => transition.phase,
+                    isBeamOn: () => transition.isBeamOn,
+                    wallEffect: () => transition.wallEffect,
+                    cardKeyMoves: () => cardKeyMoves,
+                })}
+                {views.VolumePreviewAudioView({
+                    sound: bindings.pageSound,
+                    // The pause menu is open while the entry is paused.
+                    isOpen: () => model.isPaused,
+                    musicVolume: () => model.musicVolume,
+                    effectsVolume: () => model.effectsVolume,
+                })}
+            </div>
+        );
+    }
 
     /** Starts the transition in or out as the phase changes, then advances it. */
     function update(deltaMs: number): void {
@@ -234,6 +336,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         window.removeEventListener('keydown', onKeyDown);
         // In the site's nav, outside this view: destroyed with it, which takes it out of the nav
         destroyElement(navSearch);
+        destroyElement(navSound);
     }
 
     function onKeyDown(e: KeyboardEvent): void {
@@ -248,13 +351,50 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         goToSearch();
     }
 
-    /** Escape closes the info panel, pauses or resumes a game, or leaves the entry. */
+    /** Escape closes the info panel, pauses or resumes the entry playing (a game or a demo, alike), or leaves one still loading. */
     function stepBack(e: KeyboardEvent): void {
         if (model.infoEntry !== undefined) model.closeInfo();
-        else if (model.phase === 'playing' && model.activeEntry?.tags.kind === 'game') model.isPaused = !model.isPaused;
+        else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();
         else return;
         e.preventDefault();
+    }
+
+    /**
+     * Mutes all the sound if any plays. Otherwise unmutes it. If both sounds
+     * are at 0 even so, it turns both on, each at the level it had before it
+     * was turned off, or at the default.
+     */
+    function toggleAllSound(): void {
+        if (isAnySoundOn()) {
+            model.isSoundMuted = true;
+            return;
+        }
+        model.isSoundMuted = false;
+        if (model.musicVolume === 0 && model.effectsVolume === 0) {
+            model.turnMusicOn();
+            model.turnEffectsOn();
+        }
+    }
+
+    /** Whether any sound plays, the music or the effects, with all the sound unmuted. */
+    function isAnySoundOn(): boolean {
+        return !model.isSoundMuted && (model.musicVolume > 0 || model.effectsVolume > 0);
+    }
+
+    /**
+     * Turns a sound off as its icon is pressed, or on again at the level it
+     * had. While all the sound is muted, each sound shows as off, so pressing
+     * an icon unmutes the sound and turns that sound on.
+     */
+    function toggleSound(volume: number, turnOn: () => void, turnOff: () => void): void {
+        if (model.isSoundMuted || volume === 0) {
+            model.isSoundMuted = false;
+            turnOn();
+        }
+        else {
+            turnOff();
+        }
     }
 
     function activeIndex(): number {

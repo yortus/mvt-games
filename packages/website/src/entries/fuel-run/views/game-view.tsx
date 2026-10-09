@@ -3,6 +3,7 @@
 import { type Container, Graphics } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
 import { List } from '@mvtjs/pixi';
+import type { Audio80 } from '@mvtjs/audio';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
@@ -19,6 +20,7 @@ import { DeathFlashView } from './death-flash-view';
 import { BaseAlertView } from './base-alert-view';
 import { BaseTargetView } from './base-target-view';
 import { HudView } from './hud-view';
+import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -26,6 +28,8 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The chip the game's audio view plays on. It is the view's output, not model state, so it is read once. */
+    sound: Audio80;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,12 +43,25 @@ export interface GameViewBindings {
  * empty slots hide themselves.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, sound } = bindings;
     const gameOverText = `GAME OVER\n\n${isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart'}`;
     const playMask = new Graphics().rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
 
     return (
         <container>
+            <GameAudioView
+                sound={sound}
+                phase={() => model.phase}
+                shotsFired={() => model.shotsFired}
+                bombsDropped={() => model.bombsDropped}
+                rocketsLaunched={() => model.rocketsLaunched}
+                enemiesDestroyed={() => model.enemiesDestroyed}
+                fuelTanksDestroyed={() => model.fuelTanksDestroyed}
+                basesDestroyed={() => model.basesDestroyed}
+                fuel={() => model.fuel.fuel}
+                saucersFlying={() => model.ufos.liveCount}
+                isWaitingAtBase={() => model.isScrollClamped && model.isBaseAlive}
+            />
             {/* Masked play area - clips all game content to the visible screen */}
             <container ref={(c) => { c.mask = playMask; }}>
                 {playMask}

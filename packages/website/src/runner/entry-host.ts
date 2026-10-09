@@ -1,5 +1,6 @@
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
 import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter } from '../entry-types';
+import { createPageSound, type PageSound } from './page-sound';
 import { fitPlayArea, type PlayArea } from './play-area';
 import type { PixiStage } from './pixi-stage';
 import './entry-host.css';
@@ -9,34 +10,43 @@ import './entry-host.css';
 // ---------------------------------------------------------------------------
 
 /**
- * Runs one entry at a time, of either kind, inside an element: it prepares
+ * Runs one entry at a time, of either kind, inside an element. It prepares
  * the entry's renderer, starts and stops its sessions, and drives its frames
- * in the MVT order. It holds no state of the page's: the page decides when to
- * start, pause and stop.
+ * in the MVT order. It holds none of the page's state. The page decides when
+ * to start, pause and stop.
  *
- * A Pixi entry draws on a stage the host owns, which comes in its own module,
- * loaded the first time one is prepared, so a page that runs no Pixi entry
- * loads no Pixi. An element entry mounts into an element of its own, which
- * the host leaves out of the page's `updateView` and `refreshView` and ticks
- * itself, through the session's `views`.
+ * A Pixi entry draws on a stage that the host owns. The stage's code is in a
+ * module of its own, which the host loads the first time it prepares a Pixi
+ * entry. So a page that runs no Pixi entry loads no Pixi. An element entry
+ * mounts into an element of its own. The host leaves that element out of the
+ * page's `updateView` and `refreshView`, and ticks the entry's views itself,
+ * through the session's `views`.
  */
 export interface EntryHost {
     /** The starter of the entry running, if any. */
     readonly starter: EntryStarter | undefined;
+    /** The session running, if any. */
     readonly session: EntrySession | undefined;
     /**
-     * While paused, the session's models and views' update steps are left out,
-     * and its views are still refreshed and drawn: it shows frozen.
+     * While paused, the session's models and its views' update steps are left
+     * out. Its views are still refreshed and drawn, so it shows frozen. The
+     * sound chip's clock stops too, so the chip fades its sound out and holds
+     * every voice where it is.
      */
     isPaused: boolean;
     /**
-     * Gets ready to start `starter`. For a Pixi entry, loads Pixi and makes its
-     * application, and fits the entry to the host's area if it fits itself.
-     * For an element entry, which brings its own renderers, lets go of the
-     * Pixi application, so the host holds no renderer it does not use.
+     * Gets ready to start `starter`. For a Pixi entry, it loads Pixi, makes
+     * the Pixi application, and fits the entry to the host's area if the
+     * entry fits itself. For an element entry, which brings its own
+     * renderers, it lets go of the Pixi application. So the host holds no
+     * renderer it does not use.
+     *
+     * It also loads the page's sound, if the host was given one, and waits
+     * for it. So a session never starts before the chip has loaded. Where
+     * audio cannot start, the chip stays silent.
      */
     prepare: (starter: EntryStarter) => Promise<void>;
-    /** Starts a session of `starter`, which must have been prepared, ending any session running. */
+    /** Starts a session of `starter`, which must have been prepared. It ends any session already running. */
     start: (starter: EntryStarter) => void;
     /** Ends the session, and starts a new one of the same entry. */
     restart: () => void;
@@ -45,11 +55,12 @@ export interface EntryHost {
      * the renderer allows one, for the page to show as it leaves.
      */
     stop: () => HTMLCanvasElement | undefined;
-    /** One frame: the session's models, then its views, then its renderers. */
+    /** Runs one frame. It advances the session's models, then updates and refreshes its views, then draws. */
     tick: (timeMs: number, deltaMs: number) => void;
     /**
-     * Where an entry's play area would sit in the viewport, in CSS pixels:
-     * centred and scaled to fit the host's element, as the host would scale it.
+     * Returns where an entry's play area would sit in the viewport, in CSS
+     * pixels. The area is centred in the host's element and scaled to fit it,
+     * as the host would scale it.
      */
     playRectFor: (target: PlayTarget) => Rect;
     /** Removes the host and everything it made. */
@@ -61,7 +72,7 @@ export interface PlayTarget {
     /** The entry's play area, as its metadata gives it. */
     readonly screenWidth: number;
     readonly screenHeight: number;
-    /** The entry's starter, once it is loaded: its play area and scaling are the ones that count. */
+    /** The entry's starter, once it is loaded. Its play area and scaling then take the place of the metadata's. */
     readonly starter?: EntryStarter;
     /** Whether it takes controls, which a touch page draws beside it. */
     readonly hasControls: boolean;
@@ -79,6 +90,7 @@ export interface Rect {
 // Options
 // ---------------------------------------------------------------------------
 
+/** How to make an entry host. */
 export interface EntryHostOptions {
     /** The element the entry plays in. The host fills it, and follows its size. */
     readonly element: HTMLElement;
@@ -86,15 +98,24 @@ export interface EntryHostOptions {
     readonly isTouch: boolean;
     /**
      * Whether the entry takes input from the keyboard and touch controls.
-     * Defaults to true; false for an entry that only plays, as a preview.
+     * Defaults to true. It is false for an entry that only plays, such as a
+     * preview.
      */
     readonly takesInput?: boolean;
+    /**
+     * The page's sound. The host plays its sessions on the sound's
+     * `entryAudio80`, and prepares the sound along with each entry. The page
+     * owns it, sets its settings and destroys it. Without it, the host's
+     * sessions play on a silent chip.
+     */
+    readonly sound?: PageSound;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Creates an entry host, which runs entries inside `options.element`. */
 export function createEntryHost(options: EntryHostOptions): EntryHost {
     const { element, isTouch } = options;
     const takesInput = options.takesInput ?? true;
@@ -103,6 +124,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let session: EntrySession | undefined;
     let isPaused = false;
     let pixiStage: PixiStage | undefined;
+    const sound = options.sound ?? createPageSound({ isEnabled: false });
+    const isSoundOwned = options.sound === undefined;
 
     // The element an element entry mounts into. The host ticks the entry's
     // views itself, so the page's walk skips this subtree.
@@ -113,7 +136,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     setRefresh(entryElement, () => SKIP_DESCENDANTS);
     element.append(entryElement);
 
-    // The element's place in the viewport, kept as it changes, so nothing
+    // The element's place in the viewport is kept as it changes, so nothing
     // reads layout while the page ticks
     let areaRect: Rect = { x: 0, y: 0, width: 0, height: 0 };
     const resizeObserver = new ResizeObserver(fit);
@@ -135,33 +158,15 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
 
         async prepare(next) {
-            if (next.kind !== 'pixi') {
-                pixiStage?.destroy();
-                pixiStage = undefined;
-                return;
-            }
-            fitStarter(next);
-            const pixelArt = next.pixelArt ?? false;
-            if (pixiStage !== undefined && pixiStage.isPixelArt === pixelArt) return;
-            // Antialiasing is fixed when a renderer is made, so a change of style needs a new one
-            pixiStage?.destroy();
-            pixiStage = undefined;
-            const { createPixiStage } = await import('./pixi-stage');
-            pixiStage = await createPixiStage({
-                element,
-                isPixelArt: pixelArt,
-                isTouch,
-                takesInput,
-                session: () => session,
-                isPaused: () => isPaused,
-            });
-            pixiStage.fit(areaRect.width, areaRect.height);
+            await Promise.all([sound.prepare(), prepareRenderer(next)]);
         },
 
         start(next) {
             host.stop();
             starter = next;
             isPaused = false;
+            // No sound of the last session's carries into this one
+            sound.entryControls.reset();
             session = startSession(next);
         },
 
@@ -174,6 +179,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             if (session === undefined || starter === undefined) return undefined;
             const frame = starter.kind === 'pixi' ? pixiStage?.captureFrame() : undefined;
             session.destroy();
+            sound.entryControls.reset();
             if (starter.kind === 'pixi') pixiStage?.hide();
             else entryElement.hidden = true;
             session = undefined;
@@ -188,12 +194,18 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 return;
             }
             const elementSession = session as ElementEntrySession;
-            if (!isPaused) elementSession.update(deltaMs);
+            const controls = sound.entryControls;
+            if (!isPaused) {
+                elementSession.update(deltaMs);
+                // The chip's clock advances only with the models, so it stops while the game is paused
+                controls.update(deltaMs);
+            }
             const views = elementSession.views;
             if (!isPaused) {
                 for (let i = 0; i < views.length; i++) updateView(views[i], deltaMs);
             }
             for (let i = 0; i < views.length; i++) refreshView(views[i]);
+            controls.flush();
             elementSession.render();
         },
 
@@ -209,7 +221,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 integerScale: pixiStarter?.integerScale,
                 hasTouchControls: isTouch && target.hasControls,
             });
-            return rectOf(area, screenWidth, screenHeight, areaRect);
+            return toViewportRect(area, screenWidth, screenHeight, areaRect);
         },
 
         destroy() {
@@ -217,11 +229,38 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             resizeObserver.disconnect();
             pixiStage?.destroy();
             pixiStage = undefined;
+            if (isSoundOwned) sound.destroy();
             entryElement.remove();
         },
     };
 
     return host;
+
+    async function prepareRenderer(next: EntryStarter): Promise<void> {
+        if (next.kind !== 'pixi') {
+            pixiStage?.destroy();
+            pixiStage = undefined;
+            return;
+        }
+        fitStarter(next);
+        const pixelArt = next.pixelArt ?? false;
+        if (pixiStage !== undefined && pixiStage.isPixelArt === pixelArt) return;
+        // Antialiasing is fixed when a renderer is made, so a change of style needs a new one
+        pixiStage?.destroy();
+        pixiStage = undefined;
+        const { createPixiStage } = await import('./pixi-stage');
+        pixiStage = await createPixiStage({
+            element,
+            isPixelArt: pixelArt,
+            isTouch,
+            takesInput,
+            session: () => session,
+            isPaused: () => isPaused,
+            audio80: sound.entryAudio80,
+            audioControls: sound.entryControls,
+        });
+        pixiStage.fit(areaRect.width, areaRect.height);
+    }
 
     function startSession(next: EntryStarter): EntrySession {
         if (next.kind === 'pixi') {
@@ -230,13 +269,14 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             return pixiStage.start(next);
         }
         entryElement.hidden = false;
-        return next.start({ element: entryElement });
+        return next.start({ element: entryElement, sound: sound.entryAudio80 });
     }
 
     /**
-     * Follows the element's size: a Pixi entry is fitted again, and an element
-     * entry follows its element itself. The size is the element's own, before
-     * any transform: a preview is drawn at its play size and scaled down.
+     * Follows the element's size. A Pixi entry is fitted again, and an
+     * element entry follows its element itself. The size is the element's
+     * own, before any transform, because a preview is drawn at its play size
+     * and then scaled down.
      */
     function fit(): void {
         const bounds = element.getBoundingClientRect();
@@ -258,7 +298,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 // Internals
 // ---------------------------------------------------------------------------
 
-function rectOf(area: PlayArea, screenWidth: number, screenHeight: number, areaRect: Rect): Rect {
+/** Converts a play area, fitted to the host's area at `areaRect`, to a rectangle in the viewport. */
+function toViewportRect(area: PlayArea, screenWidth: number, screenHeight: number, areaRect: Rect): Rect {
     return {
         x: areaRect.x + area.offsetX * area.scale,
         y: areaRect.y + area.offsetY * area.scale,

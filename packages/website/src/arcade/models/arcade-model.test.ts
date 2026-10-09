@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ArcadeEntry, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
 import { createArcadeModel, type ArcadeModelOptions } from './arcade-model';
+import { DEFAULT_SOUND_SETTINGS } from './sound-settings';
 
 describe('ArcadeModel', () => {
     describe('picking entries', () => {
@@ -176,6 +177,18 @@ describe('ArcadeModel', () => {
             expect(model.phase).toBe('playing');
         });
 
+        it('holds a started entry still until letGo, and stops holding it on exit', async () => {
+            const model = createArcadeModel(options());
+            await play(model, 'maze-game');
+            expect(model.isHeld).toBe(true);
+            model.letGo();
+            expect(model.isHeld).toBe(false);
+            model.exit();
+            await play(model, 'maze-game');
+            model.exit();
+            expect(model.isHeld).toBe(false);
+        });
+
         it('launches only from the wall, and only entries it lists', () => {
             const model = createArcadeModel(options());
             model.launch('no-such-entry');
@@ -236,8 +249,106 @@ describe('ArcadeModel', () => {
         });
     });
 
+    describe('sound', () => {
+        it('starts with the settings it is given, or the defaults', () => {
+            expect(createArcadeModel(options()).soundSettings).toEqual(DEFAULT_SOUND_SETTINGS);
+            const kept = { ...DEFAULT_SOUND_SETTINGS, musicVolume: 0.1, effectsVolume: 0 };
+            expect(createArcadeModel({ ...options(), soundSettings: kept }).soundSettings).toEqual(kept);
+        });
+
+        it('replaces its settings with a new object on each change, and only on a change', () => {
+            const model = createArcadeModel(options());
+            const before = model.soundSettings;
+            model.musicVolume = before.musicVolume;
+            expect(model.soundSettings).toBe(before);
+            const quieter = before.musicVolume / 2;
+            model.musicVolume = quieter;
+            expect(model.soundSettings).not.toBe(before);
+            expect(model.soundSettings).toEqual({ ...before, musicVolume: quieter });
+        });
+
+        it('turns a sound off and on again at the volume it had', () => {
+            const model = createArcadeModel(options());
+            const quieter = DEFAULT_SOUND_SETTINGS.musicVolume / 2;
+            model.musicVolume = quieter;
+            model.turnMusicOff();
+            expect(model.musicVolume).toBe(0);
+            model.turnMusicOn();
+            expect(model.musicVolume).toBe(quieter);
+        });
+
+        it('turns a sound that was slid to 0 on again at the default volume', () => {
+            const model = createArcadeModel(options());
+            model.effectsVolume = DEFAULT_SOUND_SETTINGS.effectsVolume / 2;
+            model.turnEffectsOff();
+            model.turnEffectsOn();
+            model.effectsVolume = 0;
+            model.turnEffectsOn();
+            expect(model.effectsVolume).toBe(DEFAULT_SOUND_SETTINGS.effectsVolume);
+        });
+
+        it('turns nothing off that is off, and nothing on that is on', () => {
+            const model = createArcadeModel(options());
+            const before = model.soundSettings;
+            model.turnMusicOn();
+            expect(model.soundSettings).toBe(before);
+            model.turnMusicOff();
+            const off = model.soundSettings;
+            model.turnMusicOff();
+            expect(model.soundSettings).toBe(off);
+            expect(model.soundSettings.musicVolumeBeforeOff).toBe(before.musicVolume);
+        });
+
+        it('mutes and unmutes all the sound, and leaves a sound slid to 0 off', () => {
+            const model = createArcadeModel(options());
+            const effectsVolume = 0.7;
+            model.musicVolume = 0;
+            model.effectsVolume = effectsVolume;
+            model.isSoundMuted = true;
+            expect(model.soundSettings.isMuted).toBe(true);
+            model.isSoundMuted = false;
+            expect(model.musicVolume).toBe(0);
+            expect(model.effectsVolume).toBe(effectsVolume);
+            model.turnMusicOn();
+            expect(model.musicVolume).toBe(DEFAULT_SOUND_SETTINGS.musicVolume);
+        });
+
+        it('mutes and unmutes all the sound, and leaves a sound turned off still off, with its level kept', () => {
+            const model = createArcadeModel(options());
+            const musicVolume = 0.3;
+            const effectsVolume = 0.7;
+            model.musicVolume = musicVolume;
+            model.turnMusicOff();
+            model.effectsVolume = effectsVolume;
+            model.isSoundMuted = true;
+            model.isSoundMuted = false;
+            expect(model.musicVolume).toBe(0);
+            expect(model.effectsVolume).toBe(effectsVolume);
+            model.turnMusicOn();
+            expect(model.musicVolume).toBe(musicVolume);
+        });
+
+        it('leaves its settings object alone when muted twice', () => {
+            const model = createArcadeModel(options());
+            model.isSoundMuted = true;
+            const muted = model.soundSettings;
+            model.isSoundMuted = true;
+            expect(model.soundSettings).toBe(muted);
+        });
+
+        it('keeps volumes between 0 and 1, and turns NaN into 0', () => {
+            const model = createArcadeModel(options());
+            model.effectsVolume = 1.7;
+            expect(model.effectsVolume).toBe(1);
+            model.musicVolume = -0.2;
+            expect(model.musicVolume).toBe(0);
+            model.effectsVolume = Number.NaN;
+            expect(model.effectsVolume).toBe(0);
+        });
+    });
+
     describe('the info panels', () => {
-        it('opens one at a time: an entry\'s, or the arcade\'s', () => {
+        it('opens one panel at a time, an entry\'s or the Arcade\'s', () => {
             const model = createArcadeModel(options());
             model.openAbout();
             model.openInfo('sim-demo');

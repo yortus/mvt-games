@@ -1,13 +1,14 @@
 import type { Container, Renderer, Ticker } from 'pixi.js';
 import type { View } from '@mvtjs/pixi';
+import type { Audio80 } from '@mvtjs/audio';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * A loaded entry, ready to start. Its kind says how it runs: a `pixi` entry
- * draws on a stage the host owns, and an `element` entry brings its own
+ * A loaded entry, ready to start. Its kind says how it runs. A `pixi` entry
+ * draws on a stage that the host owns. An `element` entry brings its own
  * renderers and mounts into an element.
  */
 export type EntryStarter = PixiEntryStarter | ElementEntryStarter;
@@ -22,23 +23,24 @@ export type EntryStarter = PixiEntryStarter | ElementEntryStarter;
 export interface PixiEntryStarter {
     readonly kind: 'pixi';
     /**
-     * The play area, in the entry's own pixels. Getters, for an entry that
-     * fits itself to the area it is given (`fitTo`): until it is fitted, the
-     * play area it is designed around, as its metadata lists it.
+     * The play area, in the entry's own pixels. An entry that fits itself to
+     * the area it is given (`fitTo`) makes these getters. Until it is fitted,
+     * they give the play area it is designed around, as its metadata lists it.
      */
     readonly screenWidth: number;
     readonly screenHeight: number;
     /**
-     * For an entry whose layout follows the area it plays in: lays it out for
-     * an area of this size, in CSS pixels, and its play area follows. The host
-     * calls it as it prepares the entry, and as the area changes, then calls
-     * the session's `resize`. An entry without it plays at one size, scaled
-     * to fit.
+     * Lays the entry out for an area of this size, in CSS pixels, and its play
+     * area follows. It is for an entry whose layout follows the area it plays
+     * in. The host calls it as it prepares the entry, and as the area changes,
+     * then calls the session's `resize`. An entry without it plays at one
+     * size, scaled to fit.
      */
     readonly fitTo?: (width: number, height: number) => void;
     /**
-     * Whether it is drawn as pixel art: textures scaled by nearest neighbour,
-     * no antialiasing, and positions rounded to whole pixels.
+     * Whether it is drawn as pixel art. Pixel art has its textures scaled by
+     * nearest neighbour, no antialiasing, and positions rounded to whole
+     * pixels.
      */
     readonly pixelArt?: boolean;
     /** Whether a desktop host scales by whole numbers only (1x, 2x, 3x...), for crisp pixel art. */
@@ -50,19 +52,27 @@ export interface PixiEntryStarter {
     readonly thumbnailAdvanceMs?: number;
     /**
      * Plays the entry's controls while its thumbnail is set up, for a picture
-     * of it in action: called before each step of the advance, with the time
-     * advanced so far, to press or release controls through the session's
-     * `inputConfig`.
+     * of it in action. It is called before each step of the advance, with the
+     * time advanced so far. It presses or releases controls through the
+     * session's `inputConfig`.
      */
     readonly thumbnailInput?: (session: EntrySession, elapsedMs: number) => void;
     /** Starts a session, adding the entry's view to `stage`. */
     readonly start: (options: PixiStartOptions) => EntrySession;
 }
 
+/** How to start a Pixi entry. */
 export interface PixiStartOptions {
+    /** The container to add the entry's view to. */
     readonly stage: Container;
     /** The application the entry runs in. Absent when it is started headless. */
     readonly host?: PixiHost;
+    /**
+     * The Audio80 that the entry's audio views play on. The host owns it and
+     * resets it between sessions. It is silent when the entry is started
+     * headless, or where audio cannot start.
+     */
+    readonly sound: Audio80;
 }
 
 /** The Pixi application an entry runs in, for entries that measure it (`createPerformanceMetrics`). */
@@ -75,8 +85,9 @@ export interface PixiHost {
 /**
  * An entry that brings its own renderers (three.js, a Pixi application, the
  * DOM, or several at once) and mounts into an element the host gives it. The
- * host still drives its frames, in the MVT order: the session's `update`,
- * then `updateView` and `refreshView` over its `views`, then its `render`.
+ * host still drives its frames, in the MVT order. It calls the session's
+ * `update`, then `updateView` and `refreshView` over its `views`, then its
+ * `render`.
  */
 export interface ElementEntryStarter {
     readonly kind: 'element';
@@ -86,16 +97,20 @@ export interface ElementEntryStarter {
     readonly start: (options: ElementStartOptions) => ElementEntrySession;
 }
 
+/** How to start an element entry. */
 export interface ElementStartOptions {
+    /** The element to build the entry in. */
     readonly element: HTMLElement;
+    /** The Audio80 that the entry's audio views play on, as for a Pixi entry. */
+    readonly sound: Audio80;
 }
 
 /** A running entry. */
 export interface EntrySession {
     /**
-     * Advances the entry's models. Models only: the host updates and refreshes
-     * the entry's views. Pausing is the host's call too: while paused, it calls
-     * neither this nor `updateView`.
+     * Advances the entry's models, and nothing else. The host updates and
+     * refreshes the entry's views. Pausing is the host's call too. While
+     * paused, the host calls neither this nor `updateView`.
      */
     readonly update: (deltaMs: number) => void;
     /** Lays the entry out again after its starter has been fitted to a new area (`fitTo`). */
@@ -109,9 +124,9 @@ export interface EntrySession {
 /** A running element entry. */
 export interface ElementEntrySession extends EntrySession {
     /**
-     * The roots of the entry's views, of any renderer: each three.js scene,
-     * Pixi stage and top-level element. The host ticks exactly these, so the
-     * DOM views among them are left out of its walk of the page.
+     * The roots of the entry's views, of any renderer. They are each three.js
+     * scene, Pixi stage and top-level element. The host ticks exactly these,
+     * so the DOM views among them are left out of its walk of the page.
      */
     readonly views: readonly View[];
     /** Draws a frame with the entry's renderers, after the host has refreshed its views. */

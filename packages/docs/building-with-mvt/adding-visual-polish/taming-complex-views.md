@@ -95,8 +95,9 @@ independent.
 
 Some presentation patterns recur across many views: smoothing a value toward
 a target, tweening a boolean into a progress value, playing a one-shot
-effect on a rising edge. Rather than reimplementing these inline each time,
-extract them into small, tested utility modules.
+effect on a rising edge, repeating an effect at a steady beat. Rather than
+reimplementing these inline each time, extract them into small, tested
+utility modules.
 
 ### Boolean-to-progress tweens
 
@@ -145,6 +146,34 @@ hitFlash.update(deltaMs);
 // In refresh():
 overlay.alpha = hitFlash.value;
 ```
+
+### Repeating beats
+
+Some effects repeat for as long as a condition holds, such as an alarm that
+beeps while fuel is low. A [metronome](../../reference/glossary.md) counts
+the beats. `createMetronome()`, from `@mvtjs/utils`, makes one. It starts
+stopped, with a `periodMs` of 0. The view sets the period in `update()`.
+Setting it to 0 stops the metronome again. The view acts each time the
+`count` rises:
+
+```ts
+const alarm = createMetronome();
+const watcher = watch({ beats: () => alarm.count });
+// So the first refresh sees the first beat, which the first update makes
+watcher.poll();
+
+// In update():
+alarm.periodMs = bindings.isFuelLow() ? 500 : 0;
+alarm.update(deltaMs);
+
+// In refresh():
+if (watcher.poll().beats.increased) sound.play(ALARM);
+```
+
+The first beat comes as soon as the metronome starts, not a period later.
+The period can change on any tick, so an alarm can quicken as the fuel runs
+out. A blinking light can read the count directly instead. For example,
+`light.visible = alarm.count % 2 === 1` turns it on and off with each beat.
 
 ### Easing functions
 

@@ -58,6 +58,7 @@ npm run dev
 | Command                | Description                                      |
 | ---------------------- | ------------------------------------------------ |
 | `npm run dev`          | Start the Vite dev server with hot reload        |
+| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check with `tsc` then bundle for production |
 | `npm run preview`      | Preview the production build locally             |
 | `npm run lint`         | Check lint and formatting rules                  |
@@ -77,17 +78,19 @@ and private packages for everything else.
 
 ```
 packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
-              @mvtjs/three, @mvtjs/html), and the private ones: the website,
-              the docs, the benchmarks, the checks and the lint rules
+              @mvtjs/three, @mvtjs/html), and the private ones: the sound
+              chip, the website, the docs, the benchmarks, the checks and
+              the lint rules
 notes/        Proposals, tasks, and the archive of finished work
 ```
 
 ```
 packages/
-├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
+├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
 ├── pixi/                The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                The tick API for DOM elements, and its JSX runtime
+├── audio/               The Audio80 sound chip, its tracker notation and music player (private for now)
 ├── eslint-plugin/       This repo's lint rules (private for now)
 ├── benchmarks/          Performance benchmarks (private; npm run bench)
 ├── checks/              Tests that the packages still fit together as decided (private)
@@ -99,7 +102,7 @@ packages/website/src/
 ├── entries/             Every game and demo, one directory each, and the catalogue
 │   └── <id>/            Self-contained entry (start/, data/, models/, views/)
 ├── entry-types/         What an entry is, and how it starts
-├── runner/              The entry host: runs one entry of any renderer
+├── runner/              The entry host, which runs one entry of any renderer, and the page's sound
 ├── playground/          In-browser editor and sandbox
 └── shared/              The site's shared views (overlay, input, perfmon)
 ```

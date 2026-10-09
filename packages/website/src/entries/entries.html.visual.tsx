@@ -7,9 +7,10 @@
  */
 
 import { onTestFinished } from 'vitest';
+import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { visualTest } from '#testing';
 import type { ElementEntryStarter } from '../entry-types';
-import { advanceHeadless, thumbnailMomentOf } from '../runner';
+import { advanceHeadless, findThumbnailAdvanceMs } from '../runner';
 import { CATALOGUE } from './catalogue';
 
 /**
@@ -46,11 +47,13 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     element.style.cssText = `width:${size.width}px;height:${size.height}px;background:#000;`;
     // In the page while it starts, so it can measure itself
     document.body.append(element);
-    const session = starter.start({ element });
+    // A headless chip, which makes no sound
+    const { audio80, controls } = createHeadlessAudio80();
+    const session = starter.start({ element, sound: audio80 });
     // After the picture, which destroys the element; destroying a view twice is harmless
     onTestFinished(() => session.destroy());
     await session.ready;
-    advanceHeadless({ session, views: session.views, totalMs: thumbnailMomentOf(starter) });
+    advanceHeadless({ session, views: session.views, controls, totalMs: findThumbnailAdvanceMs(starter) });
     session.render();
     return element;
 }

@@ -15,9 +15,9 @@ export async function load(): Promise<PixiEntryStarter> {
         screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 2000,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel();
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             return {

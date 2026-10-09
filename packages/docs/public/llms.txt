@@ -55,6 +55,13 @@ presentation state, refresh views, render. Models settle before views read.
   suit trees of display objects that follow the model, plain TypeScript views
   that mostly draw or manage their own display objects.
 - Barrel imports only: never import past index.ts
+- Sound is a view's job. An audio view plays sounds instead of drawing
+  visuals. It polls its bindings with watch() and plays on a change,
+  never on a state alone. A phase that begins is a change, and so is a
+  count that rises (shotsFired, seen as increased by watch()). Audio
+  views play on the Audio80 sound chip (@mvtjs/audio), passed to each
+  entry as sound. Music and repeating sounds are the view's presentation
+  state.
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest
 - TypeScript 5.9, Pixi.js 8, GSAP 3, Vite 8
@@ -66,4 +73,5 @@ presentation state, refresh views, render. Models settle before views read.
   performance (time, composition, change detection, testing, etc.)
 - packages/docs/reference/ - rules, style guide, glossary, project structure
 - packages/docs/ai-agents/ - agent orientation and task-specific skills files
+- packages/audio/docs/ - guides to the Audio80 sound chip and its tracker music
 - AGENTS.md - compressed agent entry point (canonical)

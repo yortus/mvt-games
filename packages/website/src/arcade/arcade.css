@@ -33,11 +33,21 @@ button { font: inherit; color: inherit; }
 
 :focus-visible { outline: 2px solid var(--site-accent, #58a6ff); outline-offset: 2px; }
 
+/* Text for assistive technology only. Something on screen already says it, such as the tabs or an icon */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 /* --- The page ------------------------------------------------------------- */
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search { transition: none; }
+    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search, .nav-sound { transition: none; }
 }
 
 .arcade {
@@ -78,11 +88,8 @@ button { font: inherit; color: inherit; }
     .arcade-head { --wordmark-height: 38px; }
 }
 
-/*
- * The magnifier in the site's nav, shown once the head is scrolled away,
- * styled as the nav's GitHub link. A dot on it marks a search that narrows the wall.
- */
-.nav-search {
+/* The Arcade's tools in the site's nav, styled as the nav's GitHub link */
+.nav-search, .nav-sound {
     position: relative;
     display: inline-flex;
     padding: 6px;
@@ -91,19 +98,26 @@ button { font: inherit; color: inherit; }
     background: none;
     color: var(--site-text-muted, #8b949e);
     cursor: pointer;
+}
+.nav-search:hover, .nav-sound:hover { color: var(--site-text, #c9d1d9); background: rgba(255, 255, 255, 0.05); }
+.nav-search::before, .nav-sound::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+}
+
+/*
+ * The magnifier, shown once the head is scrolled away. A dot on it marks a
+ * search that narrows the wall.
+ */
+.nav-search {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.15s, visibility 0.15s, color 0.15s, background 0.15s;
 }
 .nav-search.is-shown { opacity: 1; visibility: visible; }
-.nav-search:hover { color: var(--site-text, #c9d1d9); background: rgba(255, 255, 255, 0.05); }
-.nav-search::before {
-    content: '';
-    width: 20px;
-    height: 20px;
-    background: currentColor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") center / 18px no-repeat;
-}
+.nav-search::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .nav-search.is-narrowed::after {
     content: '';
     position: absolute;
@@ -113,6 +127,13 @@ button { font: inherit; color: inherit; }
     height: 7px;
     border-radius: 50%;
     background: var(--site-accent, #58a6ff);
+}
+
+/* The speaker beside it, for all the sound. It is always shown, and struck through when all the sound is off. The runner's bar has one too */
+.nav-sound { transition: color 0.15s, background 0.15s; }
+.nav-sound::before, .runner-sound::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9'/%3E%3C/svg%3E") center / 18px no-repeat; }
+.nav-sound.is-off::before, .runner-sound.is-off::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 6l4 4M15 6l-4 4'/%3E%3C/svg%3E");
 }
 
 /* The (i) by the title, and the note it opens beneath it */
@@ -617,6 +638,9 @@ button { font: inherit; color: inherit; }
     cursor: pointer;
 }
 .runner-bar button:hover:not(:disabled) { border-color: var(--site-accent, #58a6ff); }
+/* The speaker, drawn with the nav speaker's icon */
+.runner-sound { display: flex; align-items: center; justify-content: center; color: #e6edf3; }
+.runner-sound::before { content: ''; width: 20px; height: 20px; background: currentColor; }
 .runner-bar button:disabled { opacity: 0.4; cursor: default; }
 
 /* Laid out even while hidden, so the transition knows where an entry will play */
@@ -649,15 +673,15 @@ button { font: inherit; color: inherit; }
 .pause-panel {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    max-width: 320px;
-    padding: 22px;
+    max-width: 360px;
+    max-height: 100%;
+    padding: 18px 22px 22px;
     border-radius: 12px;
     border: 1px solid #30363d;
     background: #161b22;
 }
-.pause-panel h2 { text-align: center; font-size: 20px; color: #e6edf3; margin-bottom: 4px; }
 .pause-panel button {
     padding: 9px 16px;
     border-radius: 6px;
@@ -668,8 +692,118 @@ button { font: inherit; color: inherit; }
 }
 .pause-panel button:hover { border-color: var(--site-accent, #58a6ff); }
 .pause-panel .pause-resume { background: #238636; border-color: #2ea043; color: #fff; font-weight: 600; }
-.pause-how-to summary { cursor: pointer; padding: 6px 0; color: var(--site-text-muted, #8b949e); }
-.pause-how-to pre { padding: 10px; border-radius: 6px; background: #0d1117; font-size: 12px; white-space: pre-wrap; }
+/* The key that presses a choice, shown on it */
+.pause-key {
+    margin-left: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 400;
+    vertical-align: 1px;
+    opacity: 0.65;
+}
+/* A touch screen has no keys to press */
+@media (hover: none) and (pointer: coarse) {
+    .pause-key { display: none; }
+}
+
+.pause-tabs { display: flex; border-bottom: 1px solid #30363d; }
+.pause-panel .pause-tab {
+    flex: 1;
+    margin-bottom: -1px;
+    padding: 8px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px 6px 0 0;
+    background: none;
+    color: var(--site-text-muted, #8b949e);
+    font-size: 14px;
+    font-weight: 600;
+}
+.pause-panel .pause-tab:hover { border-color: transparent; color: #e6edf3; }
+.pause-panel .pause-tab.is-selected { border-color: #30363d #30363d #161b22; background: #161b22; color: #e6edf3; }
+/*
+ * A page scrolls if it is taller than the panel, as on a phone held sideways.
+ * A scrolling box clips what is drawn outside it, so the page has room inside
+ * its edges for a focus outline (2px, 2px off the control). The negative
+ * margin keeps the page where it was.
+ */
+.pause-page { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; margin: -4px; padding: 4px; }
+
+.pause-sound {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+}
+.sound-control { display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 12px; }
+.pause-panel .sound-control-toggle {
+    position: relative;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 20px;
+    line-height: 1;
+    text-align: center;
+}
+/* When the sound is off, its icon is greyed and struck through */
+.sound-control.is-off .sound-control-icon { filter: grayscale(1); opacity: 0.55; }
+.sound-control.is-off .sound-control-toggle::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    top: 50%;
+    height: 2px;
+    border-radius: 1px;
+    background: #f85149;
+    transform: rotate(-45deg);
+}
+.sound-control input { width: 100%; margin: 0; }
+/*
+ * The slider is drawn here, not by the browser. Safari ignores accent-color
+ * on a slider, and on a dark page draws its track nearly black. The view sets
+ * --fill to the thumb's place, and the track is coloured up to it. Firefox
+ * colours that part itself, as -moz-range-progress.
+ */
+.sound-control input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    background: none;
+    cursor: pointer;
+}
+.sound-control input::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--site-accent, #58a6ff) var(--fill, 0%), #484f58 var(--fill, 0%));
+}
+.sound-control input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border: none;
+    border-radius: 50%;
+    background: var(--site-accent, #58a6ff);
+}
+.sound-control input::-moz-range-track { height: 6px; border-radius: 3px; background: #484f58; }
+.sound-control input::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--site-accent, #58a6ff); }
+.sound-control input::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--site-accent, #58a6ff); }
+
+.pause-how-to pre {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #0d1117;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
 
 .runner-rotate-hint {
     position: fixed;
@@ -690,6 +824,27 @@ button { font: inherit; color: inherit; }
 @media (orientation: portrait) and (pointer: coarse) {
     .runner-rotate-hint:not([hidden]) { display: flex; }
 }
+
+/* Under the bar's speaker, while the sound is off only because the visit started that way */
+.runner-sound-hint {
+    position: fixed;
+    top: 52px;
+    right: 8px;
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 16px);
+    padding: 4px 6px 4px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--site-accent, #58a6ff);
+    background: rgba(22, 27, 34, 0.94);
+    font-size: 13px;
+}
+.runner-sound-hint[hidden] { display: none; }
+.runner-sound-hint button { border: none; background: none; color: inherit; cursor: pointer; }
+.runner-sound-hint-text { padding: 4px 0; font-size: 13px; text-align: left; }
+.runner-sound-hint button[aria-label] { font-size: 18px; }
 
 /* --- The way in and out -------------------------------------------------- */
 

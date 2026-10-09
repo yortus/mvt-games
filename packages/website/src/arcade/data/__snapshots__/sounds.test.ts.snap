@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`arcade sounds > BURN sounds as it did, audible and unclipped 1`] = `"b7c8efaa"`;
+
+exports[`arcade sounds > CARD_TICK sounds as it did, audible and unclipped 1`] = `"84fcd346"`;
+
+exports[`arcade sounds > DEVELOP sounds as it did, audible and unclipped 1`] = `"108c8ea2"`;
+
+exports[`arcade sounds > EFFECTS_PREVIEW sounds as it did, audible and unclipped 1`] = `"19a9e625"`;
+
+exports[`arcade sounds > KEY_TICK_HIGH sounds as it did, audible and unclipped 1`] = `"d0ac586c"`;
+
+exports[`arcade sounds > KEY_TICK_LOW sounds as it did, audible and unclipped 1`] = `"dd7e2010"`;
+
+exports[`arcade sounds > LAUNCH sounds as it did, audible and unclipped 1`] = `"6da41291"`;
+
+exports[`arcade sounds > LOAD_FAILED sounds as it did, audible and unclipped 1`] = `"4ad7eddc"`;
+
+exports[`arcade sounds > MUSIC_PREVIEW sounds as it did, audible and unclipped 1`] = `"e52667cd"`;
+
+exports[`arcade sounds > NO_RESULTS sounds as it did, audible and unclipped 1`] = `"4539e22e"`;
+
+exports[`arcade sounds > PANEL_CLOSE sounds as it did, audible and unclipped 1`] = `"5c64f88e"`;
+
+exports[`arcade sounds > PANEL_OPEN sounds as it did, audible and unclipped 1`] = `"348e5116"`;
+
+exports[`arcade sounds > PAUSE sounds as it did, audible and unclipped 1`] = `"890eb12f"`;
+
+exports[`arcade sounds > POWER_OFF sounds as it did, audible and unclipped 1`] = `"c804dda2"`;
+
+exports[`arcade sounds > POWER_ON sounds as it did, audible and unclipped 1`] = `"4299d059"`;
+
+exports[`arcade sounds > RESUME sounds as it did, audible and unclipped 1`] = `"214c8852"`;
+
+exports[`arcade sounds > TAG_ADD sounds as it did, audible and unclipped 1`] = `"3c36ae2f"`;
+
+exports[`arcade sounds > TAG_REMOVE sounds as it did, audible and unclipped 1`] = `"6bdd7f44"`;

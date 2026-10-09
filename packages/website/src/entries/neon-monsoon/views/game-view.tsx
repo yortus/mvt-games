@@ -3,6 +3,7 @@
 import { type Container, Graphics } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
+import type { Audio80 } from '@mvtjs/audio';
 import { isTouchDevice, OverlayView } from '#shared';
 import { textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
@@ -13,6 +14,7 @@ import { BulletLayerView } from './bullet-layer-view';
 import { CityView } from './city-view';
 import { EnemyView } from './enemy-view';
 import { ExplosionView } from './explosion-view';
+import { GameAudioView } from './game-audio-view';
 import { HitboxView } from './hitbox-view';
 import { HudView } from './hud-view';
 import { ItemView } from './item-view';
@@ -28,6 +30,8 @@ import { WarningView } from './warning-view';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The chip the game's sound plays on. It is the view's output, not model state, so the view reads it once. */
+    sound: Audio80;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,7 +49,7 @@ export interface GameViewBindings {
  * `BulletLayerView`, reading its field by index.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, sound } = bindings;
     const { scoring, ship, boss, stage, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
@@ -53,6 +57,24 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
+            <GameAudioView
+                sound={sound}
+                phase={() => model.phase}
+                extendsEarned={() => scoring.extendsEarned}
+                isBombing={() => model.isBombing}
+                warningElapsedMs={() => model.warningElapsedMs}
+                bossPhase={() => boss.phase}
+                bossMsSinceHit={() => boss.msSinceHit}
+                // The guns fire through the tally too, but their blips stay quiet under its jingle
+                isFiring={() => model.phase === 'playing' && ship.isAlive}
+                isFocused={() => ship.isFocused}
+                grazes={() => scoring.grazeCount}
+                explosionsStarted={() => model.explosionsStarted}
+                lastExplosionSize={() => model.lastExplosionSize}
+                itemsCollected={() => model.itemsCollected}
+                lastItemKind={() => model.lastItemKind}
+                gemsCollected={() => model.gemsCollected}
+            />
             {/* The arena, clipped to the screen and shaken by bombs and the boss's death */}
             <container mask={arenaMask}>
                 {arenaMask}

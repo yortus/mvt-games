@@ -10,9 +10,10 @@
 
 import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
+import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { type PixiPictureOptions, visualTest } from '#testing';
 import type { ArcadeEntry, PixiEntryStarter } from '../entry-types';
-import { advanceHeadless, startPixiHeadless, thumbnailMomentOf } from '../runner';
+import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../runner';
 import { CATALOGUE } from './catalogue';
 
 /**
@@ -53,10 +54,12 @@ interface Crop {
 
 function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
     const stage = new Container();
-    const session = startPixiHeadless({ entry, starter, stage });
+    // A headless chip, which makes no sound
+    const { audio80, controls } = createHeadlessAudio80();
+    const session = startPixiHeadless({ entry, starter, stage, sound: audio80 });
     // After the picture, which destroys the stage; destroying a Pixi object twice is harmless
     onTestFinished(() => session.destroy());
-    advanceHeadless({ session, views: [stage], totalMs: thumbnailMomentOf(starter), input: starter.thumbnailInput });
+    advanceHeadless({ session, views: [stage], controls, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
     if (crop === undefined) return stage;
     const cropped = new Container();
     stage.position.set(-crop.x, -crop.y);

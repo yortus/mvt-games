@@ -17,14 +17,15 @@ Full reference: [Architecture Overview](packages/docs/architecture/index.md) -
 ## Project Structure
 
 An npm workspace: four libraries published under `@mvtjs`, and private
-packages for everything else.
+packages for everything else, including `@mvtjs/audio` for now.
 
 ```
 packages/
-├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
+├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
+├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -35,15 +36,16 @@ notes/                   Proposals and tasks
 
 ```
 packages/website/src/
-├── arcade/              The Arcade, the home page, in HTML JSX: model, views, and the page's loop (main.ts)
+├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
 │       ├── start/       entry.ts (what the Arcade lists), load.ts (the code, imported on launch), thumbnail.webp
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Presentation (Pixi, three.js or HTML)
+├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
-├── runner/              The entry host: runs one entry of any renderer, in the MVT order
+├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
 ├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 └── testing/             The visual tests' harness (`visualTest`, `advanceTime`), imported as `#testing`
@@ -79,8 +81,11 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
+- **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; top-level application views take the model itself (they're application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
+- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/audio/docs/](packages/audio/docs/using-the-audio80.md)
 - **`_` prefix** for intentionally unused parameters
+- **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
 Full reference: [Style Guide](packages/docs/reference/style-guide.md)
@@ -90,6 +95,7 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | Command                | Purpose                       |
 | ---------------------- | ----------------------------- |
 | `npm run dev`          | Start Vite dev server         |
+| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check + production build |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
@@ -102,6 +108,7 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/checks/](packages/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
 | `npm run bench`        | Performance benchmarks ([packages/benchmarks/](packages/benchmarks/README.md)) |
+| `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/audio/](packages/audio/README.md)) |
 
 ## Notes: Proposals and Tasks
 

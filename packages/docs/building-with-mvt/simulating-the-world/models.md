@@ -132,7 +132,7 @@ swapped the renderer belongs in the view, not the model.
 | Colours & textures | Named state: `color: 'red'`, `phase: 'inflating'`                 | Actual hex values, texture lookups, tint                         |
 | Animation progress | Sequence order: `inflationStage: 2`, `progress: 0.3`              | Sprite frame, alpha tween, particle burst                        |
 | Layout             | Count of items, grid dimensions                                   | Pixel spacing, margins, font size                                |
-| Audio              | Named events: `'pelletEaten'`, `'levelClear'`                     | Sound file, volume, pan                                          |
+| Audio              | State a view can watch: `phase: 'dying'`, `pelletsEaten: 12`      | Which sound, its volume and pitch                                |
 | Timing             | Internal timers via `update(deltaMs)`                             | Frame-synced presentation tweens                                 |
 
 ## What Does NOT Belong in a Model

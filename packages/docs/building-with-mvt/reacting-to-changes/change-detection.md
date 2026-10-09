@@ -8,7 +8,8 @@
 [Events and Signals](events-and-signals.md) -
 [Bindings (Learn)](../presenting-the-world/bindings.md) -
 [Bindings in Depth](../presenting-the-world/bindings-in-depth.md) -
-[Hot Paths](../performance/hot-paths.md)
+[Hot Paths](../performance/hot-paths.md) -
+[Sound and Music](../presenting-the-world/sound.md)
 
 ---
 
@@ -75,11 +76,19 @@ function refresh(): void {
 
 Each property on the poll result provides:
 
-| Property   | Type      | Description                              |
-| ---------- | --------- | ---------------------------------------- |
-| `changed`  | `boolean` | Whether the value differs from last poll |
-| `value`    | `T`       | The most recent value                    |
-| `previous` | `T`       | The value from the prior poll            |
+| Property    | Type             | Description                                       |
+| ----------- | ---------------- | ------------------------------------------------- |
+| `changed`   | `boolean`        | Whether the value differs from last poll          |
+| `value`     | `T`              | The most recent value                             |
+| `previous`  | `T \| undefined` | The value from the prior poll                     |
+| `increased` | `boolean`        | For a number, whether it changed to a greater one |
+| `decreased` | `boolean`        | For a number, whether it changed to a lesser one  |
+
+When a getter returns a number, its property also has `increased` and
+`decreased`. They compare `value` with `previous`, so both are false when
+nothing changed. Both are also false on the first poll, because there is no
+previous value yet. The property of a getter that returns anything else
+has neither, and reading one is a type error.
 
 All getters are polled unconditionally on every call - no short-circuit
 evaluation that might skip a poll and miss a change.
@@ -97,6 +106,24 @@ change-guarded setup work runs automatically on the first frame without
 special initialization code. If your setup logic is expensive and should run
 exactly once at construction time instead, perform that work before the first
 `refresh()` rather than relying on the first poll.
+
+When a view should react only to changes that happen after it is made,
+poll once as it is made. The first `refresh()` then sees no change. Views
+that play sound need this. For example, a game that is already over when
+its view is made should not play the game-over tune.
+
+```ts
+const watcher = watch({ isAlive: bindings.isAlive });
+// The first refresh hears only what changes after the view is made
+watcher.poll();
+```
+
+A view in a [`<List>`](../presenting-the-world/collections.md) is a special
+case. The list reuses the view for each later item in its slot, so a poll
+at construction covers only the slot's first item. When a new item
+arrives, the next poll reports each difference from the old item as a
+change. [Sound and Music](../presenting-the-world/sound.md#audio-views-in-a-list)
+shows how a view in a list can react only to real changes.
 
 ### The `Watchable` type restriction
 
@@ -162,6 +189,36 @@ function refresh(): void {
 A second view can watch the same binding and react differently - or ignore it
 entirely. No event registration, no coupling to the producer's event API, and
 no risk of missing or double-handling an event.
+
+### Counts: Moments That Repeat
+
+A phase reports a change only when it becomes something else. Some moments
+are not a change of state at all. A ship that fires twice in a row is still
+a ship that is flying. For moments like these, the model keeps a
+**count**, and a view watches it rise:
+
+```ts
+// In the model: one more each time it happens
+shotsFired++;
+
+// In a view: a rise is a shot
+const w = watcher.poll();
+if (w.shots.increased) sound.play(SHOT);
+```
+
+- The **first value is not a rise**. On the first poll `previous` is
+  `undefined`, so `increased` is false.
+- **Going back to 0** for a new game is not a rise either.
+- **Several in one tick** are one rise. When the view needs to know about
+  them (how big a rock broke), the model keeps the **last one's details**
+  beside the count (`lastBrokenRockSize`).
+
+A count is the model's half of a consumer-defined event. The model says
+how many times something has happened, in its own terms. It knows nothing
+of who watches. A count is plain state, so it is as easy to test as any
+other state.
+[Sound and Music](../presenting-the-world/sound.md) relies on counts
+throughout.
 
 ## Dynamic Child Lists
 

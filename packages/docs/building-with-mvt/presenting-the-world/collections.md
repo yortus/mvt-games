@@ -8,7 +8,8 @@
 
 **Related:** [Views](views.md) · [View Composition](view-composition.md) ·
 [Bindings in Depth](bindings-in-depth.md) ·
-[Presentation State](../adding-visual-polish/presentation-state.md)
+[Presentation State](../adding-visual-polish/presentation-state.md) ·
+[Sound and Music](sound.md)
 
 ---
 
@@ -100,6 +101,11 @@ storage index. A [view model](../adding-visual-polish/presentation-state.md)
 is a natural home for that store when its logic deserves its own tests, but
 the rule is about the key, not where the store lives. See
 [Lists whose items carry presentation state](#lists-whose-items-carry-presentation-state).
+
+A `watch()` in a slot's view is state of this kind. When a new item arrives,
+the next poll compares the new item's values with the old item's, and reports
+each difference as a change. A view that plays a sound on a change has to
+allow for that. [Sound and Music](sound.md#audio-views-in-a-list) shows how.
 
 ## Which Kind of Collection Is It?
 

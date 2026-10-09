@@ -2,16 +2,18 @@ import { Container } from 'pixi.js';
 import { findEntry } from '@mvtjs/website/entries';
 import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/website/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
+import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
-// Measured file for the `games-and-demos` suite: the games and demos in this
-// repo, as they ship, each started through its entry and run headless under
-// Node. The games get scripted input; the demos run unattended, as they do
-// before anyone touches them. Textures and text measurement are stubbed (see
-// the driver and `stubTextMeasurement`), and nothing is rendered, so this is
-// each one's own frame work: the session's update, which advances its models,
-// then a tick of the stage, as the website's entry host runs them.
+// This is the measured file for the `games-and-demos` suite. It runs the
+// games and demos in this repo as they ship. Each is started through its
+// entry and run headless under Node. The games get scripted input. The demos
+// run unattended, as they do before anyone touches them. Textures and text
+// measurement are stubbed (see the driver and `stubTextMeasurement`), and
+// nothing is rendered. So this measures each one's own frame work, in the
+// order the website's entry host runs it. First the session's update
+// advances its models, and then the stage is ticked.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
 //   after a 10-second warm-up, split into the models, `updateView` and
@@ -35,15 +37,21 @@ const params = readParams();
 const measure = String(params.measure);
 const starter = await loadPixiStarter(String(params.entry));
 const stage = new Container();
-const session = starter.start({ stage });
+// The entry plays on a silent chip. Its clock advances as the host advances
+// the real chip's, so the audio views do their usual work, but no sound is
+// made.
+const { audio80, controls } = createHeadlessAudio80();
+const session = starter.start({ stage, sound: audio80 });
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
+    controls.update(FRAME_MS);
     updateView(stage, FRAME_MS);
     refreshView(stage);
+    controls.flush();
 };
 
 if (measure === 'time') {
@@ -55,11 +63,14 @@ if (measure === 'time') {
         input(frameIndex++);
         const start = performance.now();
         session.update(FRAME_MS);
+        controls.update(FRAME_MS);
         const modelsDone = performance.now();
         updateView(stage, FRAME_MS);
         const updateDone = performance.now();
         refreshView(stage);
         const refreshDone = performance.now();
+        // The host sends the chip's writes after the refresh. The silent chip's `flush` does nothing, so it is not timed
+        controls.flush();
         modelsMs += modelsDone - start;
         updateMs += updateDone - modelsDone;
         refreshMs += refreshDone - updateDone;
@@ -96,11 +107,11 @@ async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
 }
 
 /**
- * A fixed, repeating input pattern for the games, so every process plays the
- * same way: the horizontal direction changes every half second, the vertical
- * every 0.7 seconds, and the primary and secondary buttons are pressed briefly
- * every second and every 1.5 seconds. Only changes are sent, as real input
- * would be. Demos have no `inputConfig`, so they get none.
+ * Creates a fixed, repeating input pattern for the games, so every process
+ * plays the same way. The horizontal direction changes every half second,
+ * and the vertical every 0.7 seconds. The primary and secondary buttons are
+ * pressed briefly every second and every 1.5 seconds. Only changes are sent,
+ * as real input would be. Demos have no `inputConfig`, so they get none.
  */
 function createInputScript(config: EntryInputConfig | undefined): (frame: number) => void {
     return (f) => {

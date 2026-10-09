@@ -163,8 +163,10 @@ export function createControlsPanel(): ControlsPanel {
         speedSlider.max = '5';
         speedSlider.step = '0.1';
         speedSlider.value = '1';
+        showSpeedFill(speedSlider);
         speedSlider.addEventListener('input', () => {
             speed = Number(speedSlider!.value);
+            showSpeedFill(speedSlider!);
             if (speedLabel) speedLabel.textContent = `${speed.toFixed(1)}x`;
             emit({ kind: 'speed', speed });
         });
@@ -240,4 +242,14 @@ export function createControlsPanel(): ControlsPanel {
     };
 
     return panel;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** Sets a slider's `--fill` to its thumb's place, which the stylesheet colours the track up to. */
+function showSpeedFill(slider: HTMLInputElement): void {
+    const share = (Number(slider.value) - Number(slider.min)) / (Number(slider.max) - Number(slider.min));
+    slider.style.setProperty('--fill', `${share * 100}%`);
 }

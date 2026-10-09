@@ -4,7 +4,15 @@ import { Container } from 'pixi.js';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The bindings of `KeyboardInputView`. They say whether it is active, and where it reports key presses. */
 export interface KeyboardInputViewBindings {
+    /**
+     * Whether to handle key events. It is true while an entry that takes
+     * input is running. When it is false, key events are ignored, so the
+     * rest of the page, such as the Arcade's search box, can use them. Any
+     * held keys are released. It is read on every key press and release.
+     */
+    readonly isActive: () => boolean;
     onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
     onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     onPrimaryButtonChanged?: (pressed: boolean) => void;
@@ -17,9 +25,14 @@ export interface KeyboardInputViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Keyboard input for the games: arrows or WASD for direction, Space and Shift
- * for the two buttons, Enter to restart. Shows nothing; it only has relay
- * bindings.
+ * Keyboard input for the games. The arrow keys or WASD set the direction,
+ * Space and Shift press the two buttons, and Enter restarts. It shows
+ * nothing.
+ *
+ * It ignores key presses inside a modal dialog, such as the pause menu, so
+ * the dialog gets them. It still counts a key's release there, so a key held
+ * as the dialog opens is let go. While no entry runs, it ignores every key
+ * event, so they reach the rest of the page.
  */
 export function KeyboardInputView(bindings: KeyboardInputViewBindings): Container {
     const view = new Container();
@@ -35,12 +48,23 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
         w: 1 << 6,
         s: 1 << 7,
     };
-    let pressedKeys = 0; // bit field for currently pressed keys
+    // A bit for each key held
+    let pressedKeys = 0;
     const onKeyDown = (e: KeyboardEvent): void => handleKeyboardEvent(e, true);
     const onKeyUp = (e: KeyboardEvent): void => handleKeyboardEvent(e, false);
 
     function handleKeyboardEvent(e: KeyboardEvent, isDown: boolean): void {
-        if (e.key !== 'Enter' && e.key !== 'Shift') e.preventDefault();
+        if (!bindings.isActive()) {
+            // Release any held keys, so none carry over into the next entry
+            pressedKeys = 0;
+            return;
+        }
+        // A modal dialog's keys are its own, such as a pause menu's Tab, Space
+        // and slider arrows. A release still counts, so a key held as the
+        // dialog opens is let go.
+        const isInDialog = e.target instanceof Element && e.target.closest('[aria-modal="true"]') !== null;
+        if (isInDialog && isDown) return;
+        if (!isInDialog && e.key !== 'Enter' && e.key !== 'Shift') e.preventDefault();
         const keyFlag = keyFlags[e.key as keyof typeof keyFlags] ?? 0;
         const oldPressedKeys = pressedKeys;
         pressedKeys = isDown ? pressedKeys | keyFlag : pressedKeys & ~keyFlag;
@@ -67,7 +91,6 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
     window.addEventListener('keyup', onKeyUp);
 
     view.on('destroyed', () => {
-        console.log('Destroying keyboard input view, removing event listeners');
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
     });

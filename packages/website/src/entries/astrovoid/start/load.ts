@@ -16,13 +16,13 @@ export async function load(): Promise<PixiEntryStarter> {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
             });
 
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             return {

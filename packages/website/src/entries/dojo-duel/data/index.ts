@@ -31,3 +31,7 @@ export {
     WON_TOTAL_MS,
 } from './constants';
 export { type MoveData, MOVE_DATA } from './move-data';
+export { FIGHT_THEME, MATCH_LOST, MATCH_WON, ROUND_LOST, ROUND_WON } from './music';
+export {
+    BLOCK, GONG, HIT, KICK_SWISH, LEAP_SWISH, POINT_LOST, POINT_WON, PUNCH_SWISH, TICK,
+} from './sounds';

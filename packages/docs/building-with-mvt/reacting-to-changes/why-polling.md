@@ -241,28 +241,39 @@ carries over.
 
 ## Hybrid Approaches
 
-Polling handles the vast majority of view-update needs in a game loop. For
-cross-cutting concerns that are not view-correctness-critical - audio cues,
-analytics, achievement tracking - events can complement polling naturally.
-
-The key constraint: **views should not depend on events for correctness.** If a
-view needs state to render correctly, it should read that state through
-bindings. Events are appropriate for fire-and-forget side effects where missing
-a notification is not a rendering bug.
+Polling handles the vast majority of view-update needs in a game loop,
+sound included. Playing a sound looks like the classic case for events. An
+enemy is destroyed, so an event fires and a boom plays. But sound works
+just as well with polling. An
+**[audio view](../../reference/glossary.md)** is a view that plays sounds
+instead of drawing visuals. It reads a count the model keeps, and plays a
+sound when the count rises.
 
 ```ts
-// Audio reacts to events - missing one is a minor glitch, not a visual bug.
-audioManager.on('enemy-destroyed', () => playSound('boom'));
-
-// The view reads state through bindings - always correct, every frame.
+// The model counts the kills. The view plays a boom when the count rises.
 function refresh(): void {
-    sprite.x = bindings.x() * TILE_SIZE;
+    const w = watcher.poll();
+    if (w.kills.increased) sound.play(BOOM);
 }
 ```
 
+A count is better than an event here, for the same reasons that polling
+is better elsewhere:
+
+- The model stays plain state, with no listeners to manage.
+- A view made at any time reads the same state, so it misses nothing.
+- The sound plays in the refresh that shows the change, not whenever an
+  event fires.
+
+See [Sound and Music](../presenting-the-world/sound.md) for more.
+
+Events still have a place outside the frame loop, where a missed one costs
+nothing on screen. Analytics, achievements and logs are examples. The rule
+still holds that **views should not depend on events for correctness.**
+
 This keeps models simple (events are optional, not required), views reliable
-(polling for correctness), and side-effect systems loosely coupled (events for
-notification).
+(polling for correctness), and other systems loosely coupled (events for
+notification, where they help).
 
 For a detailed look at the tradeoffs of events and signals in game contexts,
 see [Events and Signals](events-and-signals.md).

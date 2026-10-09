@@ -9,7 +9,8 @@
 [Taming Complex Views](taming-complex-views.md) -
 [Phase-Based Transitions](../animating-transitions/phase-based-transitions.md) -
 [View Composition](../presenting-the-world/view-composition.md) -
-[The Game Loop](../the-game-loop.md)
+[The Game Loop](../the-game-loop.md) -
+[Sound and Music](../presenting-the-world/sound.md)
 
 ---
 

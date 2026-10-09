@@ -17,4 +17,5 @@ export {
     MAX_UFOS,
     MAX_FUEL_TANKS,
     MAX_EXPLOSIONS,
+    SECTION_CLEAR_DELAY_MS,
 } from './model-constants';

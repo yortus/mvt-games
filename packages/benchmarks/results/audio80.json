@@ -1,0 +1,282 @@
+{
+    "suite": "audio80",
+    "environment": {
+        "date": "2026-10-08",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "26.10.0",
+        "v8": "14.6.202.34-node.34",
+        "pixi": "8.21.0",
+        "solid": "1.9.15"
+    },
+    "runs": "adaptive",
+    "inputsHash": "faa4bf9947e048b29da21740ff7152a4dade54478326f1d2e284b7dcbccaef17",
+    "results": [
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "pulse",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    11.471822742474924,
+                    12.009747899159677
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "pulse",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    17.40490611750454,
+                    17.581496758986415
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "pulse",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    25.67828886844528,
+                    27.44836363636368
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "saw+pulse",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    11.210866202629553,
+                    11.434855467113515
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "saw+pulse",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    16.61454965357969,
+                    17.54249558563856
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "saw+pulse",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    24.945026178010462,
+                    25.523503902862068
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "noise",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    11.105953779866821,
+                    11.645354330708667
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "noise",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    15.419249592169653,
+                    15.604128686327075
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "none",
+                "wave": "noise",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    21.901374045801546,
+                    22.991408114558507
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "pulse",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    10.797141782625056,
+                    10.803556564510036
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "pulse",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    16.58280982295827,
+                    17.13993883792052
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "pulse",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    25.002302025782665,
+                    25.5804368471035
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "saw+pulse",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    10.820960000000014,
+                    11.230907054871244
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "saw+pulse",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    16.269470752089088,
+                    16.358060879368633
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "saw+pulse",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    23.592258579409425,
+                    24.232347972972978
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "noise",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    10.669774436090222,
+                    10.728199404761906
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "noise",
+                "voices": 4
+            },
+            "metrics": {
+                "usPerBlock": [
+                    15.211746680286012,
+                    15.384496919917861
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "filtered": "both",
+                "wave": "noise",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    20.90232558139538,
+                    21.047379912663725
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "filtered": "both",
+                "wave": "pulse",
+                "voices": 8
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    523.0608,
+                    523.0608
+                ]
+            }
+        }
+    ]
+}

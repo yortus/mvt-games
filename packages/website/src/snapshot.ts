@@ -1,20 +1,28 @@
 import { Application, TextureSource } from 'pixi.js';
+import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { CATALOGUE, findEntry } from './entries';
 import { type ArcadeEntry, thumbnailCropOf } from './entry-types';
-import { advanceHeadless, startPixiHeadless, thumbnailMomentOf } from './runner';
+import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from './runner';
 
-// The snapshot page (`snapshot.html`), for `scripts/generate-thumbnails.ts`
-// only: it is served by the dev server and left out of the build. Opened as
-// `snapshot.html?entry=<id>`, it starts that entry at its play size, advances
-// it as long as the entry asks (`thumbnailAdvanceMs`) in frame-sized steps,
-// updating its models and views and playing any controls it asks for
-// (`thumbnailInput`), then refreshes and draws once (the runner's
-// `startPixiHeadless` and `advanceHeadless`, which the visual tests share). It then
-// resolves `window.snapshot` with the rectangle to capture. Opened without an
-// entry, it resolves it with every entry's id, play area and thumbnail crop,
-// so the script can size the viewport to each (an entry whose play area
-// follows the viewport then lays itself out as designed) and capture the
-// picture sharp enough for its crop to fill a card.
+// This is the snapshot page (`snapshot.html`). Only
+// `scripts/generate-thumbnails.ts` uses it. The dev server serves it, and the
+// build leaves it out.
+//
+// Opened as `snapshot.html?entry=<id>`, it starts that entry at its play
+// size. It advances the entry in frame-sized steps, for as long as the entry
+// asks (`thumbnailAdvanceMs`). Each step plays any controls the entry asks
+// for (`thumbnailInput`), advances its models and its sound chip's clock, and
+// updates its views. Then the page refreshes the views, sends the chip's
+// writes, and draws once, in the order the entry host uses. The runner's
+// `startPixiHeadless` and `advanceHeadless` do this, and the visual tests use
+// them too. The page then resolves `window.snapshot` with the rectangle to
+// capture.
+//
+// Opened without an entry, it resolves `window.snapshot` with every entry's
+// id, play area and thumbnail crop. The script sizes the viewport to each
+// entry, so an entry whose play area follows the viewport lays itself out as
+// designed. The script also captures the picture sharp enough for its crop to
+// fill a card.
 
 /** What the page resolves `window.snapshot` with. */
 interface SnapshotResult {
@@ -28,9 +36,9 @@ interface SnapshotResult {
     readonly rect?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
 
-Object.assign(window, { snapshot: snapshot() });
+Object.assign(window, { snapshot: takeSnapshot() });
 
-async function snapshot(): Promise<SnapshotResult> {
+async function takeSnapshot(): Promise<SnapshotResult> {
     const id = new URLSearchParams(location.search).get('entry');
     if (id === null) {
         return {
@@ -50,19 +58,19 @@ async function snapshot(): Promise<SnapshotResult> {
     if (root === null) throw new Error('The page has no #snapshot element');
     await start(entry, root);
     // Let the frame drawn reach the screen
-    await nextFrame();
-    await nextFrame();
+    await waitForFrame();
+    await waitForFrame();
     const bounds = root.getBoundingClientRect();
     return { rect: { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height } };
 }
 
 async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     const starter = await entry.load();
-    const totalMs = thumbnailMomentOf(starter);
+    const totalMs = findThumbnailAdvanceMs(starter);
 
     if (starter.kind === 'pixi') {
-        // Fitted before the application is sized: an entry that lays itself out is
-        // photographed at the play area its metadata lists
+        // An entry that lays itself out is photographed at the play area its metadata lists.
+        // It is fitted before the application is sized from it
         starter.fitTo?.(entry.screenWidth, entry.screenHeight);
         const isPixelArt = starter.pixelArt ?? false;
         TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
@@ -70,7 +78,7 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         await app.init({
             width: starter.screenWidth,
             height: starter.screenHeight,
-            // Drawn sharp enough for a thumbnail larger than the play area; pixel art is enlarged as pixels instead
+            // It is drawn sharp enough for a thumbnail larger than the play area. Pixel art is enlarged as pixels instead
             resolution: isPixelArt ? 1 : 2,
             antialias: !isPixelArt,
             roundPixels: isPixelArt,
@@ -83,21 +91,24 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         root.style.height = app.canvas.style.height;
         if (isPixelArt) app.canvas.style.imageRendering = 'pixelated';
         root.append(app.canvas);
-        const session = startPixiHeadless({ entry, starter, stage: app.stage });
-        advanceHeadless({ session, views: [app.stage], totalMs, input: starter.thumbnailInput });
+        // The entry runs headless, with no host and a silent chip, as when it is measured
+        const { audio80, controls } = createHeadlessAudio80();
+        const session = startPixiHeadless({ entry, starter, stage: app.stage, sound: audio80 });
+        advanceHeadless({ session, views: [app.stage], controls, totalMs, input: starter.thumbnailInput });
         app.render();
         return;
     }
 
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
-    const session = starter.start({ element: root });
-    // Renderers that start asynchronously
+    const { audio80, controls } = createHeadlessAudio80();
+    const session = starter.start({ element: root, sound: audio80 });
+    // Some renderers start asynchronously
     await session.ready;
-    advanceHeadless({ session, views: session.views, totalMs });
+    advanceHeadless({ session, views: session.views, controls, totalMs });
     session.render();
 }
 
-function nextFrame(): Promise<number> {
+function waitForFrame(): Promise<number> {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }

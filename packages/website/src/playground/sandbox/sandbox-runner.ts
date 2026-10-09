@@ -170,13 +170,15 @@ function createUserGlobals(): Record<string, unknown> {
 /** Minimal watch implementation matching the project's watch utility. */
 function createWatch<T extends Record<string, () => unknown>>(
     getters: T,
-): { poll: () => Record<string, { changed: boolean; value: unknown; previous: unknown }> } {
+): { poll: () => Record<string, WatchedState> } {
     const keys = Object.keys(getters);
     const reads = keys.map((k) => getters[k]);
-    const state = reads.map(() => ({
+    const state = reads.map((): WatchedState => ({
         changed: false,
-        value: undefined as unknown,
-        previous: undefined as unknown,
+        value: undefined,
+        previous: undefined,
+        increased: false,
+        decreased: false,
     }));
     const watched = Object.fromEntries(keys.map((k, i) => [k, state[i]]));
 
@@ -185,13 +187,27 @@ function createWatch<T extends Record<string, () => unknown>>(
             for (let i = 0; i < keys.length; ++i) {
                 const next = reads[i]();
                 const s = state[i];
-                s.previous = s.value;
-                s.changed = next !== s.value;
-                if (s.changed) s.value = next;
+                const last = s.value;
+                const changed = next !== last;
+                s.previous = last;
+                s.changed = changed;
+                if (changed) s.value = next;
+                const isNumberChange = changed && typeof next === 'number' && typeof last === 'number';
+                s.increased = isNumberChange && next > last;
+                s.decreased = isNumberChange && next < last;
             }
             return watched;
         },
     };
+}
+
+/** One watched property. `increased` and `decreased` are true only when a number moved to another number. */
+interface WatchedState {
+    changed: boolean;
+    value: unknown;
+    previous: unknown;
+    increased: boolean;
+    decreased: boolean;
 }
 
 let canvasLogicalW = 400;

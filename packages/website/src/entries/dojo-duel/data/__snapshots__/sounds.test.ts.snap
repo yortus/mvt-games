@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dojo duel sounds > BLOCK sounds as it did, audible and unclipped 1`] = `"8f32a543"`;
+
+exports[`dojo duel sounds > FIGHT_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"e68694bc"`;
+
+exports[`dojo duel sounds > GONG sounds as it did, audible and unclipped 1`] = `"e0124eb2"`;
+
+exports[`dojo duel sounds > HIT sounds as it did, audible and unclipped 1`] = `"d14e292c"`;
+
+exports[`dojo duel sounds > KICK_SWISH sounds as it did, audible and unclipped 1`] = `"1de5db7a"`;
+
+exports[`dojo duel sounds > LEAP_SWISH sounds as it did, audible and unclipped 1`] = `"f8f1e15f"`;
+
+exports[`dojo duel sounds > MATCH_LOST sounds as it did, audible and unclipped, as loud as every other song 1`] = `"478c0ef7"`;
+
+exports[`dojo duel sounds > MATCH_WON sounds as it did, audible and unclipped, as loud as every other song 1`] = `"ab1adffb"`;
+
+exports[`dojo duel sounds > POINT_LOST sounds as it did, audible and unclipped 1`] = `"d6ccf1d9"`;
+
+exports[`dojo duel sounds > POINT_WON sounds as it did, audible and unclipped 1`] = `"18389c00"`;
+
+exports[`dojo duel sounds > PUNCH_SWISH sounds as it did, audible and unclipped 1`] = `"5cb4c53f"`;
+
+exports[`dojo duel sounds > ROUND_LOST sounds as it did, audible and unclipped, as loud as every other song 1`] = `"4a117f9c"`;
+
+exports[`dojo duel sounds > ROUND_WON sounds as it did, audible and unclipped, as loud as every other song 1`] = `"ac3ccae8"`;
+
+exports[`dojo duel sounds > TICK sounds as it did, audible and unclipped 1`] = `"4c539311"`;

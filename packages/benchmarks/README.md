@@ -66,6 +66,7 @@ which the docs include).
 | `memory` | Bytes allocated per frame, garbage collections over a simulated minute, and memory kept alive per container |
 | `games-and-demos` | This repo's games and demos as they ship, each started through its entry and run headless, the games with scripted input and the demos unattended: time per frame, allocation and garbage collection |
 | `falling-sand-scaling` | The falling-sand demo from 1,000 to 20,000 grains, one sprite each, settled and flipping: time per frame split into model, `updateView` and `refreshView`, and reads per frame. Its SolidJS store variants flipping at 10,000 grains and more are extended cases. Builds the demo's model and view directly, since its entry cannot set a grain count |
+| `audio80` | The Audio80 rendering 128-sample blocks through the headless chip (`@mvtjs/audio/headless`), a browser's block size, into one reused buffer: time per block by voices playing, waveform and filtering, and bytes allocated per block |
 
 ## Layout
 

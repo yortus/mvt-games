@@ -1437,7 +1437,11 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    view (the Arcade's card, or the fruit machine's control panel). Make a
    deliberate change to one view, and check that its test fails with a
    useful diff, and that the update command accepts it and only it.
-   Record the size of the references.
+   Record the size of the references. Then replace Kwazy Cactii's
+   `views/game-view.test.ts` with an "after a restart" pose of its
+   `GameView`. That test is a stopgap: it checks that a restart shows the
+   new board, not the old one (a bug it once had), by stubbing the textures
+   with `vi.mock` and reading the sprites in order.
 4. ~~**CI.**~~ Done 2026-10-08, as section 9 describes:
    `.github/workflows/visual.yml`, replacing the spike's workflow, and
    `npm run test:visual:check-references`; the spike's code deleted. On

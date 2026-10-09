@@ -26,6 +26,11 @@ export interface EnemyModel {
     readonly isFireTelegraph: boolean;
     /** Whether this enemy has been told to flee (last enemy alive). */
     readonly isFleeing: boolean;
+    /**
+     * Whether this enemy fled off the field and got away. Its phase is then
+     * 'popped', since it is gone, but nobody popped it.
+     */
+    readonly hasEscaped: boolean;
     /** Advance inflation by one stage. Returns true if enemy popped. */
     inflate: () => boolean;
     /** Called by game-model when crushed by a rock. */
@@ -104,6 +109,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         fireTelegraph: false,
         fireReady: false,
         fleeing: false,
+        escaped: false,
         patrolSwitchTimer: 0,
     };
 
@@ -142,6 +148,9 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         },
         get isFleeing() {
             return state.fleeing;
+        },
+        get hasEscaped() {
+            return state.escaped;
         },
 
         inflate(): boolean {
@@ -223,6 +232,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             state.fireTelegraph = false;
             state.fireReady = false;
             state.fleeing = false;
+            state.escaped = false;
             state.patrolSwitchTimer = 2000;
             scheduleFireCooldown();
             scheduleGhostCountdown(ghostInterval);
@@ -409,6 +419,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         if (state.phase !== 'fleeing') return false;
         if (state.tileRow === 0 && state.tileCol === 0) {
             state.alive = false;
+            state.escaped = true;
             state.phase = 'popped';
             return true;
         }

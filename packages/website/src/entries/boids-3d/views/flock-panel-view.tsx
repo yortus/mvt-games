@@ -68,6 +68,7 @@ interface RangeViewBindings {
 function RangeView(bindings: RangeViewBindings): Element {
     const setting = bindings.setting;
     const id = `flock-${setting.key}`;
+    let shownValue = Number.NaN;
     return (
         <div class="range">
             <label for={id} text={setting.label} />
@@ -81,8 +82,18 @@ function RangeView(bindings: RangeViewBindings): Element {
                 onInput={(event) => {
                     bindings.onValueInput((event.currentTarget as HTMLInputElement).valueAsNumber);
                 }}
+                onRefresh={showFill}
             />
             <span class="range-value" text={bindings.value} />
         </div>
     );
+
+    /** Sets `--fill` to the thumb's place, which the stylesheet colours the track up to. */
+    function showFill(slider: HTMLInputElement): void {
+        const value = bindings.value();
+        if (value === shownValue) return;
+        shownValue = value;
+        const share = (value - setting.min) / (setting.max - setting.min);
+        slider.style.setProperty('--fill', `${share * 100}%`);
+    }
 }

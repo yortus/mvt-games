@@ -61,6 +61,28 @@ Every docs page must follow this structure:
 - No hedging ("It should be noted that...") or condescension ("Obviously...").
 - No marketing language.
 
+### Sentences and Wording
+
+The [Style Guide: Writing](../reference/style-guide.md#writing) has the full
+rules, with examples. In short:
+
+- **Short, simple sentences.** One idea in each. Say only what is relevant
+  there.
+- **Split long sentences.** Avoid sentences joined by colons, semicolons,
+  stacked commas or asides.
+- **Complete sentences.** No fragments, especially at the start of a section
+  or before a colon.
+- **Plain words.** No compressed or clever phrasing ("takes the keys", "the
+  notation, parsed").
+- **Explain unfamiliar terms where they first appear,** in a few words. The
+  reader knows TypeScript, but not the domain or this repo.
+- **No in-house names in package docs.** Say "the game loop" or "a game",
+  not "the host" or "an entry".
+- **API tables say what each function returns,** not who calls it.
+- **Explain subtle behaviour in order:** the situation, what happens, then
+  why.
+- **Code samples** stay within 80 columns and import only what they use.
+
 ### Structure
 
 - **One topic per page.** Target 150-400 lines. Split if growing beyond ~400.

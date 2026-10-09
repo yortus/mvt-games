@@ -3,12 +3,15 @@
 import type { Container, Graphics } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
 import { List } from '@mvtjs/pixi';
+import type { Audio80 } from '@mvtjs/audio';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { ShipView } from './ship-view';
 import { EnemyView } from './enemy-view';
 import { BulletView } from './bullet-view';
 import { HudView } from './hud-view';
+import { EnemyAudioView } from './enemy-audio-view';
+import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -16,6 +19,8 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The chip that the game's audio views play on. It is an output, so the view reads it once. */
+    sound: Audio80;
 }
 
 // ---------------------------------------------------------------------------
@@ -23,27 +28,43 @@ export interface GameViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole game: a star backdrop, the enemies, both players' bullets and the
- * ship, then the HUD below and the overlay above. Each collection is a
- * `<List>`, whose item views are reused as the collection changes.
+ * Draws the whole game and plays its sound. It draws a star backdrop, the
+ * raiders, the ship's and the raiders' bullets, and the ship, with the HUD
+ * below and the overlay above. Each collection is a `<List>`, whose item views
+ * are reused as the collection changes. Each enemy's slot holds its
+ * `EnemyView` and an `EnemyAudioView`, which plays its sounds.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, sound } = bindings;
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            <GameAudioView
+                sound={sound}
+                phase={() => model.phase}
+                shotsFired={() => model.shotsFired}
+                enemiesLeft={() => model.enemiesLeft}
+            />
             <graphics ref={(g) => drawStars(g, ARENA_WIDTH, ARENA_HEIGHT)} />
             <List items={() => model.enemies}>
                 {(enemy) => (
-                    <EnemyView
-                        x={() => enemy().x}
-                        y={() => enemy().y}
-                        kind={() => enemy().kind}
-                        phase={() => enemy().phase}
-                        isAlive={() => enemy().isAlive}
-                    />
+                    <container>
+                        <EnemyView
+                            x={() => enemy().x}
+                            y={() => enemy().y}
+                            kind={() => enemy().kind}
+                            phase={() => enemy().phase}
+                            isAlive={() => enemy().isAlive}
+                        />
+                        <EnemyAudioView
+                            sound={sound}
+                            kind={() => enemy().kind}
+                            phase={() => enemy().phase}
+                            isAlive={() => enemy().isAlive}
+                        />
+                    </container>
                 )}
             </List>
             <List items={() => model.playerBullets}>

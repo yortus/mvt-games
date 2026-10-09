@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createGameModel } from './game-model';
 import type { SectionProfile } from '../data';
 import { SECTIONS } from '../data';
-import { SCROLL_SPEED } from './model-constants';
+import { MAX_FUEL_TANKS, ROCKET_DETECT_RANGE, SCROLL_SPEED, SHIP_START_COL, SHIP_START_ROW } from './model-constants';
 
 // Minimal section for focused tests: 30 cols, flat floor at height 2, no ceiling
 function makeSection(cols: number, floorHeight = 2): SectionProfile {
@@ -85,6 +85,91 @@ describe('GameModel', () => {
             g.playerInput.bombPressed = true;
             g.update(16);
             expect(g.bombs.liveCount).toBe(1);
+        });
+    });
+
+    describe('what it keeps for the views to hear', () => {
+        it('counts shots fired and bombs dropped, and starts again at 0 with a new game', () => {
+            const g = makeGame();
+            g.playerInput.firePressed = true;
+            g.playerInput.bombPressed = true;
+            g.update(16);
+            g.playerInput.firePressed = false;
+            g.playerInput.bombPressed = false;
+            g.update(16);
+            g.playerInput.firePressed = true;
+            g.update(16);
+            expect(g.shotsFired).toBe(2);
+            expect(g.bombsDropped).toBe(1);
+            g.reset();
+            expect(g.shotsFired).toBe(0);
+            expect(g.bombsDropped).toBe(0);
+        });
+
+        it('counts each rocket as it launches, even one that launches in the tick it appears', () => {
+            const g = createGameModel({
+                sections: [{
+                    ...makeSection(100),
+                    spawns: [
+                        // Within the ship's detect range at the start, so it launches at once
+                        { col: SHIP_START_COL + ROCKET_DETECT_RANGE / 2, row: 0, kind: 'rocket' },
+                        // Out of range at the start
+                        { col: SHIP_START_COL + ROCKET_DETECT_RANGE * 2, row: 0, kind: 'rocket' },
+                    ],
+                }],
+            });
+            g.update(16);
+            expect(g.rockets.liveCount).toBe(2);
+            expect(g.rocketsLaunched).toBe(1);
+        });
+
+        it('counts a fuel tank destroyed by a bomb as an enemy and as a fuel tank', () => {
+            // A row of tanks, one in each slot, under the first bomb's path
+            const spawns = Array.from({ length: MAX_FUEL_TANKS }, (_, i) => ({ col: 6 + i, row: 0, kind: 'fuel-tank' as const }));
+            const g = createGameModel({ sections: [{ ...makeSection(100), spawns }] });
+            g.playerInput.bombPressed = true;
+            for (let i = 0; i < 120; i++) g.update(1000 / 60);
+            expect(g.enemiesDestroyed).toBe(1);
+            expect(g.fuelTanksDestroyed).toBe(1);
+            expect(g.basesDestroyed).toBe(0);
+        });
+
+        it('counts the base destroyed by a bomb as a base, not as an enemy', () => {
+            // A bomb dropped as the game starts lands at about column 9
+            const g = createGameModel({ sections: [{ ...makeSection(100), spawns: [{ col: 9, row: 0, kind: 'base' }] }] });
+            g.playerInput.bombPressed = true;
+            for (let i = 0; i < 120; i++) g.update(1000 / 60);
+            expect(g.isBaseAlive).toBe(false);
+            expect(g.basesDestroyed).toBe(1);
+            expect(g.enemiesDestroyed).toBe(0);
+            expect(g.fuelTanksDestroyed).toBe(0);
+        });
+
+        it('does not count an enemy the ship crashes into, since the crash has a sound of its own', () => {
+            const g = createGameModel({
+                sections: [{ ...makeSection(100), spawns: [{ col: SHIP_START_COL + 2, row: SHIP_START_ROW, kind: 'ufo' }] }],
+            });
+            for (let i = 0; i < 60; i++) g.update(1000 / 60);
+            expect(g.phase).toBe('dying');
+            expect(g.enemiesDestroyed).toBe(0);
+        });
+
+        it('starts a new game on the tick after a restart, so each count rises from 0 in a later tick', () => {
+            const g = createGameModel({
+                sections: [{ ...makeSection(100), spawns: [{ col: SHIP_START_COL + ROCKET_DETECT_RANGE / 2, row: 0, kind: 'rocket' }] }],
+            });
+            g.update(16);
+            expect(g.rocketsLaunched).toBe(1);
+            // The fuel runs out for each ship in turn
+            for (let i = 0; i < 10000 && g.phase !== 'game-over'; i++) g.update(100);
+            expect(g.phase).toBe('game-over');
+            g.playerInput.restartPressed = true;
+            g.update(16);
+            expect(g.phase).toBe('playing');
+            expect(g.scrollCol).toBe(0);
+            expect(g.rocketsLaunched).toBe(0);
+            g.update(16);
+            expect(g.rocketsLaunched).toBe(1);
         });
     });
 

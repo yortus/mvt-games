@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fuel run sounds > BASE_DESTROYED sounds as it did, audible and unclipped 1`] = `"cff5e46b"`;
+
+exports[`fuel run sounds > BASE_SIREN sounds as it did, audible and unclipped 1`] = `"6cad40a4"`;
+
+exports[`fuel run sounds > BOMB_DROP sounds as it did, audible and unclipped 1`] = `"96cb92f8"`;
+
+exports[`fuel run sounds > EXPLOSION sounds as it did, audible and unclipped 1`] = `"775be6c7"`;
+
+exports[`fuel run sounds > FUEL_ALARM sounds as it did, audible and unclipped 1`] = `"f700fd2c"`;
+
+exports[`fuel run sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"56d7e22b"`;
+
+exports[`fuel run sounds > LAUNCH sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f7efea32"`;
+
+exports[`fuel run sounds > REFUEL sounds as it did, audible and unclipped 1`] = `"5a6a1854"`;
+
+exports[`fuel run sounds > ROCKET_LAUNCH sounds as it did, audible and unclipped 1`] = `"a1241985"`;
+
+exports[`fuel run sounds > RUN_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"cac5e455"`;
+
+exports[`fuel run sounds > SAUCER sounds as it did, audible and unclipped 1`] = `"d9fddcd0"`;
+
+exports[`fuel run sounds > SHIP_CRASH sounds as it did, audible and unclipped 1`] = `"f7d04eb6"`;
+
+exports[`fuel run sounds > SHOT sounds as it did, audible and unclipped 1`] = `"f0080477"`;

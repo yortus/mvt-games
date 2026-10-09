@@ -93,7 +93,7 @@ export const htmlElements = defineElements({
 
     input: element(() => document.createElement('input'), {
         ...globalAttributes,
-        /** What the field holds. Not written while the field has focus; see `writeValue`. */
+        /** What the field holds. Not written while the user may be typing in it; see `writeValue`. */
         value: field.everyFrame(writeValue),
         /**
          * What a number or range field holds, as a number: for a model's
@@ -217,19 +217,37 @@ function elementsFor<K extends keyof HTMLElementTagNameMap>(
 
 /**
  * `value`'s write. Compared with what the field holds, not with the value
- * last written: a model that rejects what the user typed puts its own value
- * back on the next frame. Skipped while the field has focus, so a refresh
- * never overwrites text as it is typed; a value the model changed meanwhile
- * shows once the user leaves the field.
+ * last written: if the model rejects what the user entered, its own value
+ * goes back on the next frame.
+ *
+ * Skipped while a text-like field (text, number, date, `<textarea>`) has
+ * focus, so a refresh never overwrites text as the user types it. A value the
+ * model changed meanwhile shows once the field loses focus.
+ *
+ * Other fields (sliders, colour pickers, `<select>`) are written even while
+ * focused, so a change the model makes elsewhere shows at once. These must
+ * report the user's changes through `onInput`, which fires as the value
+ * moves: `onChange` fires only when a slider is let go or a colour picker
+ * closes, and until then each refresh puts the model's value back.
  */
 function writeValue(e: FormField, v: string): void {
-    if (e.value !== v && e.ownerDocument.activeElement !== e) e.value = v;
+    if (e.value !== v && !isBeingTyped(e)) e.value = v;
 }
 
 /** `valueAsNumber`'s write: `writeValue`, for a number. */
 function writeValueAsNumber(e: HTMLInputElement, v: number): void {
-    if (e.valueAsNumber !== v && e.ownerDocument.activeElement !== e) e.valueAsNumber = v;
+    if (e.valueAsNumber !== v && !isBeingTyped(e)) e.valueAsNumber = v;
 }
+
+/** Whether the user may be typing in `e`: it has focus, and it is a text-like field rather than a slider, select and so on. */
+function isBeingTyped(e: FormField): boolean {
+    if (e.ownerDocument.activeElement !== e) return false;
+    if (e instanceof HTMLSelectElement) return false;
+    return !(e instanceof HTMLInputElement) || !UNTYPED_INPUT_TYPES.has(e.type);
+}
+
+/** Input types the user sets by clicking or dragging, not by typing. */
+const UNTYPED_INPUT_TYPES: ReadonlySet<string> = new Set(['range', 'color', 'checkbox', 'radio', 'button', 'submit', 'reset', 'image', 'file', 'hidden']);
 
 /** `checked`'s write, compared with the element, like `value`, but written while focused. */
 function writeChecked(e: HTMLInputElement, v: boolean): void {

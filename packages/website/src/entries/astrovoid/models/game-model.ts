@@ -47,6 +47,26 @@ export interface GameModel {
     readonly score: number;
     readonly lives: number;
     readonly wave: number;
+    /**
+     * The number of shots fired this game. It is a count rather than a flag,
+     * because a shot's bullet may be gone before a view looks. Each rise is
+     * a shot, and it goes back to 0 for a new game.
+     */
+    readonly shotsFired: number;
+    /**
+     * The number of rocks broken this game. A broken rock leaves its slot in
+     * the same tick, so its own view never sees it break. Each rise is a
+     * break, and it goes back to 0 for a new game.
+     */
+    readonly rocksBroken: number;
+    /** The size of the rock broken last. It is undefined until a rock breaks in this game. */
+    readonly lastBrokenRockSize: AsteroidSize | undefined;
+    /**
+     * The number of breaks still needed to clear the wave. A large rock takes
+     * 7, since it splits into 2 medium rocks and each of those into 2 small
+     * ones. It falls by 1 with each break, and is 0 once the wave is cleared.
+     */
+    readonly breaksLeft: number;
     readonly playerInput: PlayerInput;
     reset: () => void;
     update: (deltaMs: number) => void;
@@ -75,6 +95,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let wave = 1;
     /** Each asteroid's outline seed, counted per game, so one game's shapes never depend on another's. */
     let nextShapeSeed = 1;
+    let shotsFired = 0;
+    let rocksBroken = 0;
+    let lastBrokenRockSize: AsteroidSize | undefined;
+    let breaksLeft = 0;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -117,12 +141,27 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get wave() {
             return wave;
         },
+        get shotsFired() {
+            return shotsFired;
+        },
+        get rocksBroken() {
+            return rocksBroken;
+        },
+        get lastBrokenRockSize() {
+            return lastBrokenRockSize;
+        },
+        get breaksLeft() {
+            return breaksLeft;
+        },
         get playerInput() {
             return playerInput;
         },
 
         reset(): void {
             score = 0;
+            shotsFired = 0;
+            rocksBroken = 0;
+            lastBrokenRockSize = undefined;
             lives = 3;
             wave = 1;
             loadWave();
@@ -247,6 +286,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 ay = Math.random() * arenaHeight;
             } while (distSq(ax, ay, ship.x, ship.y) < SPAWN_SAFE_RADIUS * SPAWN_SAFE_RADIUS);
             asteroids.insert(spawnAsteroid(ax, ay, 'large'));
+            breaksLeft += BREAKS_BY_SIZE.large;
         }
     }
 
@@ -309,6 +349,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         ship.respawn(arenaWidth / 2, arenaHeight / 2);
         bullets = buildBulletPool();
         asteroids.clear();
+        breaksLeft = 0;
         spawnWaveAsteroids(asteroidCountForWave(wave));
         debrisModel.clear();
         fireConsumed = false;
@@ -387,6 +428,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     const bvx = Math.sin(ship.angle) * BULLET_SPEED;
                     const bvy = -Math.cos(ship.angle) * BULLET_SPEED;
                     bullets[b].fire(ship.x, ship.y, bvx, bvy);
+                    shotsFired++;
                     break;
                 }
             }
@@ -436,6 +478,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function splitAsteroid(slot: Slot<AsteroidModel>): void {
         const ast = slot.value;
         ast.kill();
+        rocksBroken++;
+        lastBrokenRockSize = ast.size;
+        breaksLeft--;
         asteroids.remove(slot);
 
         const childSize = CHILD_SIZE[ast.size];
@@ -481,4 +526,11 @@ const CHILD_SIZE: Record<AsteroidSize, AsteroidSize | undefined> = {
     large: 'medium',
     medium: 'small',
     small: undefined,
+};
+
+/** The breaks it takes to clear a rock and all its pieces. A rock splits into 2 of the next size down. */
+const BREAKS_BY_SIZE: Record<AsteroidSize, number> = {
+    large: 7,
+    medium: 3,
+    small: 1,
 };

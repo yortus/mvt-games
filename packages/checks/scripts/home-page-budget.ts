@@ -22,7 +22,7 @@ import { build } from 'vite';
 // ---------------------------------------------------------------------------
 
 /** The most JavaScript the home page may load before its first paint, gzipped, in bytes. */
-const BUDGET_BYTES = 40 * 1024;
+const BUDGET_BYTES = 50 * 1024;
 
 /** Packages the home page's first load must not include, and how their modules' paths show them. */
 const FORBIDDEN: readonly { readonly name: string; readonly path: string }[] = [

@@ -24,7 +24,7 @@ export async function load(): Promise<PixiEntryStarter> {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({
                 grid: MAZE_DATA,
                 mouseSpawn: MOUSE_SPAWN,
@@ -32,7 +32,7 @@ export async function load(): Promise<PixiEntryStarter> {
                 penExit: PEN_EXIT,
             });
 
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             return {

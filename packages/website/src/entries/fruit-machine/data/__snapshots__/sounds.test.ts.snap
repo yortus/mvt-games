@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fruit machine sounds > BIG_WIN sounds as it did, audible and unclipped, as loud as every other song 1`] = `"ddb82f5a"`;
+
+exports[`fruit machine sounds > COIN sounds as it did, audible and unclipped 1`] = `"5d4b540a"`;
+
+exports[`fruit machine sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f151d08d"`;
+
+exports[`fruit machine sounds > LEVER sounds as it did, audible and unclipped 1`] = `"e500a588"`;
+
+exports[`fruit machine sounds > NO_WIN sounds as it did, audible and unclipped 1`] = `"6ff9fe4c"`;
+
+exports[`fruit machine sounds > REEL_CLICK sounds as it did, audible and unclipped 1`] = `"7640f024"`;
+
+exports[`fruit machine sounds > REEL_STOP sounds as it did, audible and unclipped 1`] = `"f8445f0d"`;
+
+exports[`fruit machine sounds > WAY_OF_3 sounds as it did, audible and unclipped 1`] = `"6579a39d"`;
+
+exports[`fruit machine sounds > WAY_OF_4 sounds as it did, audible and unclipped 1`] = `"2df1fa2c"`;
+
+exports[`fruit machine sounds > WAY_OF_5 sounds as it did, audible and unclipped 1`] = `"839823b8"`;
+
+exports[`fruit machine sounds > WIN sounds as it did, audible and unclipped, as loud as every other song 1`] = `"cfb789d2"`;

@@ -20,12 +20,12 @@ export async function load(): Promise<PixiEntryStarter> {
         // Long enough for the section's banner to have faded
         thumbnailAdvanceMs: 3000,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({
                 sections: SECTIONS,
             });
 
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             return {

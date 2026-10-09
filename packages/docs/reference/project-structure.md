@@ -10,16 +10,17 @@
 
 ## Directory Layout
 
-The repository is an npm workspace: four libraries, published under the
-`@mvtjs` npm scope, and private packages for the website, the docs, the
-benchmarks and the checks.
+The repository is an npm workspace. It has four libraries, published under
+the `@mvtjs` npm scope. Its other packages are private: the sound chip, the
+lint rules, the website, the docs, the benchmarks and the checks.
 
 ```
 packages/
-├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens); JSX base at ./jsx
+├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
 ├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
+├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -32,15 +33,16 @@ Each package's source is in its own `src/`. The site's is laid out by area:
 
 ```
 packages/website/src/
-├── arcade/              The Arcade, the home page, in HTML JSX: model, views, and the page's loop (main.ts)
+├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
 │       ├── start/       How the Arcade lists the entry, and loads it
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Presentation and user-input handling
+├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
-├── runner/              The entry host: runs one entry of any renderer, in the MVT order
+├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          The in-browser editor and the sandbox it runs code in
 ├── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 └── testing/             The visual tests' harness, in the browser, imported as `#testing`
@@ -64,7 +66,7 @@ public API.
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
-| `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `assert` |
+| `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
 | `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
 | `packages/website/src/testing/` | The visual tests' harness                       | `visualTest`, `advanceTime`                                   |
 
@@ -269,7 +271,7 @@ The rules above apply inside each package. Between packages:
   in every renderer package, so code that uses two renderers imports them
   from either.
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
-  sequences, slot lists.
+  sequences, slot lists, the metronome.
 - **The playground stands alone.** `packages/website/src/playground/` and the rest of the
   site share no code in either direction (`import/no-restricted-paths`), so
   the playground could become a package of its own.

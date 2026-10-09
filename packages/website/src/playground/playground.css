@@ -265,8 +265,38 @@ html, body {
     width: 100px;
     max-width: 160px;
     flex: 1;
-    accent-color: var(--pg-accent);
 }
+/*
+ * The slider is drawn here, not by the browser. Safari ignores accent-color
+ * on a slider, and on a dark page draws its track nearly black. The view sets
+ * --fill to the thumb's place, and the track is coloured up to it. Firefox
+ * colours that part itself, as -moz-range-progress.
+ */
+.pg-speed-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    background: none;
+    cursor: pointer;
+}
+.pg-speed-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--pg-accent) var(--fill, 0%), #484f58 var(--fill, 0%));
+}
+.pg-speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border: none;
+    border-radius: 50%;
+    background: var(--pg-accent);
+}
+.pg-speed-slider::-moz-range-track { height: 6px; border-radius: 3px; background: #484f58; }
+.pg-speed-slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--pg-accent); }
+.pg-speed-slider::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--pg-accent); }
 
 .pg-speed-label {
     font-size: 12px;

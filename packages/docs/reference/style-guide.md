@@ -34,6 +34,7 @@ is written and organized in this project.
 | No `this`             | Closures over `this` bindings          | [No `this`](#no-this)                          |
 | Function members      | `update: (deltaMs: number) => void`    | [Function-Valued Properties in Types](#function-valued-properties-in-types) |
 | Conditions            | `assert(loaded, 'call load() first')`  | [Assertions](#assertions)                      |
+| Writing               | Short, complete, plain sentences       | [Writing](#writing)                            |
 
 ## Naming Conventions
 
@@ -45,6 +46,7 @@ is written and organized in this project.
 | View functions         | `PascalCase`, ending `View`  | `HudView`, `ShipView`                         |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createSlotList`          |
+| Other functions        | Start with a verb            | `measureLoudness`, `parseCell`, `toInt16`     |
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
 | Query bindings         | What they return             | `score`, `screenX`, `isAlive`, `tileKindAt`   |
 | Relay bindings         | `on` + what the user did     | `onFirePressed`, `onTileTapped`               |
@@ -78,6 +80,34 @@ readonly alive: boolean;
 readonly autoTurn: boolean;
 readonly fuelEmpty: boolean;
 ```
+
+### Function Names
+
+A function's name says what it does, starting with a verb, so that a call
+never reads as a value. `songDurationMs(song)` looks like a number until you
+see the parentheses; `computeSongDurationMs(song)` cannot be mistaken for one.
+
+| Kind of function | Name                                 | Example                                    |
+| ---------------- | ------------------------------------ | ------------------------------------------ |
+| Most functions   | A verb, then what it acts on         | `measureLoudness`, `parseCell`, `findSounds` |
+| Conversions      | `to` + what it converts to, as `toString` does | `toInt16`, `toFrequency`         |
+| Predicates       | `is` / `has` / `can`, as for booleans | `isNoteInRange`, `hasShield`              |
+| Factories        | `create` + the noun it makes         | `createScoreModel`                         |
+
+```ts
+// ✅ Preferred - reads as an action
+const ms = computeSongDurationMs(song);
+const lufs = measureLoudness(samples);
+
+// ❌ Avoid - reads as a value
+const ms = songDurationMs(song);
+const lufs = loudnessOf(samples);
+```
+
+Three kinds of function keep noun names, because they stand for something
+other than an action: views (`HudView`, a thing on screen), query bindings
+(`score`, `tileKindAt`, which are read like values, and named for what they
+return), and relay bindings (`onFirePressed`, named for the event).
 
 ## File Naming
 
@@ -669,3 +699,72 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 }
 ```
+
+## Writing
+
+These rules cover all prose in the repo. That includes documentation,
+READMEs, JSDoc, code comments, test names and error messages. Write for a
+reader who knows TypeScript but not this repo or the problem's domain.
+
+### Sentences
+
+- **Keep sentences short and simple.** Put one idea in each sentence. Say
+  only what is relevant at that point.
+- **Split long sentences.** A sentence joined by colons, semicolons,
+  stacked commas or asides is hard to parse. Two or three short sentences
+  are easier to read.
+- **Write complete sentences.** Every sentence needs a subject and a verb.
+  Avoid fragments, especially at the start of a section or before a colon.
+  A short noun phrase is fine in a table cell, or in a one-line JSDoc on a
+  member.
+- **Use plain words.** Avoid compressed or clever phrasing. Prefer the
+  standard technical term to a metaphor.
+- **No em-dashes.** Use a hyphen, or restructure the sentence.
+
+| Avoid | Prefer |
+| --- | --- |
+| The Audio80 is a virtual sound chip in the spirit of the 1980s home computers: eight voices, two filters and an echo, played from views. | The Audio80 is a virtual sound chip in the spirit of the 1980s home computers. It has eight voices, two filters and an echo. |
+| Eight voices, each playing one note at a time. A voice has: | The chip has eight voices. Each voice plays one note at a time. A voice has these parts: |
+| It takes the keys while a game runs. | It handles key events while a game runs. |
+| `notation/`: the notation, parsed | `notation/`: parses the tracker notation |
+
+### Terms
+
+- **Explain each unfamiliar term where it first appears.** Use a few words,
+  or one short sentence. Don't save the explanations for a glossary section
+  at the end. In the docs site, also link to the
+  [glossary](glossary.md).
+- **Don't assume the reader knows the domain.** A reader may not know what
+  a note-off, a mix bus or LUFS is. Write "the call that stops a note
+  (`noteOff`)", not "the note-off".
+- **Keep in-house names out of packages.** A package's docs and comments
+  should not use the site's internal names. Say "the game loop" or "a
+  game", not "the host" or "an entry".
+- **Don't coin new terms.** Use the plain words that the code and docs
+  already use.
+
+### Describing an API
+
+- **Say what a function returns or does,** not who calls it. Write "Returns
+  a new `MusicPlayer`, which plays one song at a time on a chip", not
+  "Plays one song at a time, for an audio view".
+- **Start a factory's JSDoc with "Creates".** For example: "Creates an
+  Audio80 that turns each call into a command for the synthesiser."
+- **In prose, name a member by its owner,** not by a variable from a code
+  sample. Write "`Audio80.play`" or "the chip's `log` property", not
+  "`audio80.log`", which reads like a file name to someone who hasn't seen
+  the sample. Code samples can use their own variables, since they define
+  them.
+
+### Explaining Behaviour
+
+When something is subtle, explain it in order. Describe the situation
+first, then what happens, then why. When there are several cases, a short
+list with one case per item is easier to follow than one long paragraph.
+
+### Code Samples in Docs
+
+- **Keep each line within 80 columns,** so a sample does not wrap on a
+  narrow screen. The same goes for text trees, such as a file layout.
+- **Import only what the sample uses.** An unused import suggests a step
+  that isn't shown.

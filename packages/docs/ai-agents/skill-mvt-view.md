@@ -406,8 +406,65 @@ function refresh(): void {
 }
 ```
 
+Each watched property has `changed`, `value` and `previous`. A numeric one
+also has `increased` and `decreased`, which are true only when it changed to
+a greater or a lesser number. Both are false on the first poll.
+
 Use change detection for infrequent, expensive updates. For cheap per-frame
 updates (position, alpha, visibility), read directly without watching.
+
+## Audio Views
+
+Sound is presentation, so views play it, never models. An **audio view** is
+a view that plays sounds instead of drawing visuals. It polls its bindings
+with `watch()`, and plays a sound when a value **changes**. It never plays
+from a state alone, which would play the sound every frame.
+
+- **[project convention]** It plays on the **Audio80**, a virtual sound chip
+  from `@mvtjs/audio`. The chip is a fixed binding, `sound: Audio80`, which
+  the view reads once. An entry gets it from the host as `sound`, in its
+  start options.
+- **A phase or a flag** finds most moments. Play when it changes to a value.
+- **A count** (`shotsFired`) finds moments that repeat with no change of
+  state. Play when it rises (`if (w.shots.increased)`). When the sound
+  depends on which one, the model also keeps the last one's details
+  (`lastBrokenRockSize`).
+- **Poll once at construction** (`watcher.poll()` before returning). Then
+  the first refresh plays nothing for the starting state. Skip the poll
+  only when the starting state should sound, such as a fanfare.
+- **Also poll at construction when the view's own first update can cause a
+  change.** A metronome's first beat comes in the first update. Without the
+  poll, the first refresh takes the count of 1 as its starting value, and
+  the beat is silent.
+- **In a `<List>`**, a slot's view is made once and reused for later items.
+  So a poll at construction covers only the slot's first item. Play only on
+  changes that a newly arrived item cannot cause, such as `isAlive` going
+  from `true` to `false`. Otherwise, also watch the item's id, and play
+  nothing in a poll where it changed.
+- **An item removed in the tick it finishes** (a rock that breaks and leaves
+  its `SlotList`) never shows its `<List>` view the change. Count it in the
+  model, and play it from a view outside the list.
+- **One moment, two changes.** When one moment changes two watched values in
+  the same tick (a ship comes back and its fuel fills), play one sound. Best
+  is a model count of the moment itself. Otherwise, read the values
+  together.
+- **Music and repeating sounds are presentation state.** A music player
+  (`createMusicPlayer`, from `@mvtjs/audio`) or a metronome
+  (`createMetronome`, from `@mvtjs/utils`) advances in the update step. The
+  refresh step plays what is due. It calls `MusicPlayer.refresh` last, and
+  plays a sound each time the metronome's `count` rises. A metronome only
+  counts beats, at a tempo the view sets with `periodMs`. A period of 0
+  stops it.
+- **A new song cuts the old one short.** `MusicPlayer.play` releases the
+  song playing and cancels any song queued. A jingle that starts a phase
+  must be no longer than the phase. Check it with `computeSongDurationMs`.
+- **Test** against a chip from `createHeadlessAudio80({ record: true })`, in
+  `@mvtjs/audio/headless`. Advance its clock with `AudioControls.update`,
+  tick the view, and check the chip's `log` property.
+
+Full guide: [Sound and Music](../building-with-mvt/presenting-the-world/sound.md) ·
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/audio/docs/using-the-audio80.md) ·
+[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/audio/docs/writing-tracker-music.md)
 
 ## Presentation State
 
@@ -465,8 +522,13 @@ export function BaseAlertView(bindings: BaseAlertViewBindings): Container {
 ```
 
 As soon as the presentation state grows beyond a single value, or the timing
-logic warrants unit testing, extract it into a view model. Never hardcode
-frame deltas (`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
+logic warrants unit testing, extract it into a view model. For common
+patterns, `@mvtjs/utils` has tested helpers, all advanced with
+`update(deltaMs)`. `createBooleanTween` and `createEdgeTween` turn a flag
+into a value that tweens. `createSequence` runs timed steps.
+`createMetronome` counts beats at a tempo the view can change, for anything
+that repeats while something lasts. Never hardcode frame deltas
+(`timerMs += 16`). Never compute `deltaMs` from `Date.now()`.
 
 **Start presentation state valid.** A view's first `refresh()` can run before
 its first `update(deltaMs)`: a view built during a refresh is refreshed that

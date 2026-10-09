@@ -11,7 +11,10 @@ export interface MazeModel {
     isWall: (row: number, col: number) => boolean;
     isCrumb: (row: number, col: number) => boolean;
     eatCrumb: (row: number, col: number) => boolean;
+    /** How many crumbs are left to eat. */
     readonly remainingCrumbs: number;
+    /** How many crumbs the maze starts with. */
+    readonly totalCrumbs: number;
     update: (deltaMs: number) => void;
 }
 
@@ -46,10 +49,12 @@ export function createMazeModel(options: MazeModelOptions): MazeModel {
             }
         }
     }
+    const totalCrumbs = crumbCount;
 
     const model: MazeModel = {
         rows,
         cols,
+        totalCrumbs,
 
         tileAt(row: number, col: number): TileKind {
             if (row < 0 || row >= rows || col < 0 || col >= cols) {

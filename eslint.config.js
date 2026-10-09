@@ -230,11 +230,13 @@ export default tseslint.config(
     },
     {
         // Methods wrapped onto a library's prototype, and Rollup plugin hooks,
-        // can reach their instance or plugin context only through `this`
+        // can reach their instance or plugin context only through `this`; an
+        // audio worklet's processor must be a class, and gets its port that way
         files: [
             'packages/pixi/src/container-mixin.ts',
             'packages/three/src/object3d-mixin.ts',
             'packages/website/scripts/vite-plugin-spritesheet.ts',
+            'packages/audio/src/web/chip-processor.ts',
             // The visual tests replace canvas text drawing, and patch a Pixi pool
             'packages/website/src/testing/canvas-text.ts',
             'packages/website/src/testing/page-state.ts',
