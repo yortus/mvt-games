@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**048**. (046 is the Arcade's highscores, still in its own worktree.)
+**049**. (046 is the Arcade's highscores, still in its own worktree.)
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -89,9 +89,8 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
 | 042 | [Visual snapshot tests for views](./proposals/042-visual-snapshot-tests.md) | Proposed; nothing built, step 1 is a spike measuring speed and consistency at scale. A view's visual test is one `visualTest(name, pose)` call in a `*.visual.tsx` beside it: the pose builds the view (advancing time with `advanceTime` if it has presentation state) and returns it. Built for unit-test speed (target: 500 pictures in about 10 s): one page for the whole run, pixels read from the renderer and hashed in the page, compared with a hash stored in the reference PNG; no screenshot or PNG work unless a picture changed. Built for identical pictures on every machine and CI with nothing to install beyond `npm ci` (no Docker): pinned inside the browser, with Playwright's Chromium fetched on first run, software WebGL and 2D drawing, and OFL test fonts in CFF2, which Chrome draws with its own engine (Fontations) on every OS, standing in for every family the views name. Fallbacks for text if that fails, ending at Windows as the one reference system. A committed fingerprint checked first; exact matches first, a small, counted tolerance second. Runs on Vitest's browser mode. Draws on the workshop's Lab 02 experiment |
-| 045 | [A virtual sound chip, and sound for the Arcade](./proposals/045-sound-chip.md) | Implemented. It stays open for two things. One is a check in Safari, on the desktop and on iOS, after the deploy. The other is the owner's listening pass on questions the games' code reviews raised. Chrome and Firefox passed by ear. Measured (section 16.1): the mono chip takes 21-27 µs per 128-sample block for eight voices, about 1% of the block, and Galaxy Raiders' sound costs about 1.5 µs a frame on the main thread. The home page's first load is 40.1 KB, within a budget raised to 50 KB, since the sound loads on the visitor's first press. The **Audio80** is an eight-voice mono chip in the spirit of the SID. It has combined waveforms, pitched noise, sync, ring modulation, ADSR envelopes, two resonant filters, an echo, wavetables, and instruments that run their own arpeggios and sweeps. It runs in an `AudioWorklet`, around a synthesiser of plain TypeScript that also runs in Node. Its clock is the ticks. The host advances it with the models' delta, writes are stamped in chip time, and the worklet plays a steady 35 ms behind and never past what it has been told, so pause is free. Audio views play sound by polling bindings with `watch`, on states and counts, with no model events, and a song's position is the audio view's presentation state. Instruments are objects, and effects and songs are written in a small tracker notation, as multiline strings with `\|` columns and `#` comments. The private package `@mvtjs/audio` has `/web` (`createWebAudio80`) and `/headless` (`createHeadlessAudio80`, rendering, loudness and WAV files). Audio tests keep each sound's hash in a Vitest snapshot. The page's `PageSound` owns one audio context, made in the visitor's first gesture, with a chip for entries and one for the Arcade's own sounds. All nine games have sound, and `@mvtjs/utils` gained `createMetronome` and `watch`'s `increased` and `decreased` |
 
-**How they relate.** All ten can be read on their own. 022 is the
+**How they relate.** All nine can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
 012's method caching in its generic scene-pass core. 008 concerns
 the `watch()` helper (now in `@mvtjs/utils`), and now also whether `memoiseLast`
@@ -110,10 +109,9 @@ follows the games' originality rules, and tests 013's inherent cost in a
 shipping game. 035 adds a demo that follows the same rules, and would be an
 entry in the Arcade that 036, now archived, built. 042 would reuse 036's
 thumbnail code to give every entry a visual test, and makes true what 015's
-testing docs already describe. 045 gives 035 the music its section 8
-deferred, as an audio view on 045's sound chip, and leans on 008's `watch`
-for its sound cues. 045 gave `watch` its `increased` and `decreased`, which
-008's builder may want too.
+testing docs already describe. 045, now archived, built the sound chip that
+035's music can play on, which 035's section 8 deferred. It gave `watch` its
+`increased` and `decreased`, which 008's builder may want too.
 
 ## Tasks
 
@@ -133,6 +131,7 @@ for its sound cues. 045 gave `watch` its `increased` and `decreased`, which
 | 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
 | 047 | [Pixel Art as Multiline Strings](tasks/backlog/047-pixel-art-as-multiline-strings.md) | low | 2026-10-09 |
+| 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 
 ## Archive
 
@@ -163,6 +162,7 @@ for its sound cues. 045 gave `watch` its `increased` and `decreased`, which
 | 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/website/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
+| 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/audio`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
 
 ## Elsewhere
 

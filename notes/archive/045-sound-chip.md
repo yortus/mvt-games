@@ -14,11 +14,10 @@
 > poll bindings with `watch` like any other view. Galaxy Raiders is the
 > demonstration, with sound effects and music.
 
-**Status:** implemented, from 2026-10-06 to 2026-10-09. Two things remain.
-The first is a check in Safari, on the desktop and on iOS, after the merge
-and deploy (step 11). Firefox passed on 2026-10-07. The second is a listening
-pass by the owner, on the sound questions that the games' code reviews
-raised on 2026-10-09 (step 13). The proposal stays open until both are done.
+**Status:** implemented, from 2026-10-06 to 2026-10-09, and archived on
+2026-10-09. Firefox passed on 2026-10-07, and Safari on the desktop and iOS
+on 2026-10-09 (step 11). The owner's listening pass kept every sound as it
+was (step 13). The loose ends and the open questions moved to task 048.
 
 What was built:
 
@@ -98,9 +97,9 @@ figures are estimates until the spike.
 [Time Management](../../packages/docs/building-with-mvt/simulating-the-world/time-management.md) -
 [Hot Paths](../../packages/docs/building-with-mvt/performance/hot-paths.md) -
 [Originality](../../packages/website/src/entries/README.md#originality) -
-[035](035-demoscene-demo.md) section 8 (music deferred to "an audio view", which this would provide) -
-[008](008-watch-builder-spike.md) (`watch`, which audio views lean on) -
-[042](042-visual-snapshot-tests.md) (visual snapshots; section 10.5 here is their audio cousin)
+[035](../proposals/035-demoscene-demo.md) section 8 (music deferred to "an audio view", which this would provide) -
+[008](../proposals/008-watch-builder-spike.md) (`watch`, which audio views lean on) -
+[042](../proposals/042-visual-snapshot-tests.md) (visual snapshots; section 10.5 here is their audio cousin)
 
 ---
 
@@ -1483,13 +1482,16 @@ Do not reopen without new information.
    skills). Section 16.3's lessons are in the Sound and Music page
    and the Audio80 guide.
 10. **Then**: 035's music, once 035 is built; open question 9's Sound Test.
-    These are follow-ons, not needed to finish 045. When 045 is archived,
-    they and the open questions still open (5, 6, 7 and 9) move to a task,
-    or to 035 for its music.
+    These are follow-ons, not needed to finish 045. They moved to task 048
+    with the open questions still open (5, 6, 7 and 9). 035's music belongs
+    to 035.
 11. **Firefox and Safari, desktop and iOS**: by ear, left to the owner, who
     asked to be reminded. Firefox: done, all well (section 16.5). Safari,
-    desktop and iOS: after the merge and deploy, fixing what turns up then.
-    iOS's silent switch is open question 6. **Open.**
+    desktop and iOS: done (2026-10-09), after the deploy. Every sound played
+    well. The site's sliders showed a black track in Safari, which ignores
+    `accent-color` on a slider, so the site now draws its sliders itself
+    (`40f60fc`). iOS's silent switch is open question 6, now in task 048.
+    **Done.**
 12. ~~**Hand over.** The worktree's commits, to the main checkout as
     reviewable chunks, uncommitted.~~ Done for the code (2026-10-09): the
     package, the page's sound, the Arcade's sounds and every game's sound
@@ -1518,7 +1520,8 @@ Do not reopen without new information.
       now stops as the ship is lost.
     - Astrovoid: the heartbeat now quickens with each break, from `breaksLeft`,
       rather than with the rocks left.
-    **Open.**
+    **Done** (2026-10-09). The owner listened to every game, and kept every
+    sound and every change as it was.
 
 ---
 
@@ -2137,7 +2140,7 @@ together, as Fuel Run first did (section 16.3). And a view beside a pooled
 object cannot hear an event in the tick the object appears or goes. The
 model has to count it.
 
-**Loose ends**, for a task when 045 is archived:
+**Loose ends**, now in task 048:
 
 - The Hot Paths page has no line yet on boxed doubles (section 16.1).
 - `findSounds` does not look into arrays, so Kwazy Cactii's test spreads its
@@ -2176,6 +2179,8 @@ model has to count it.
   `MusicPlayer.play` now cancels any song queued. Every game's sound was
   reviewed and fixed (section 16.10). The code reached `vnext`, in commits
   `4023035` to `e3fb5f2`.
-- **Remaining.** Safari, on the desktop and on iOS, is to be checked after
-  the merge and deploy (step 11). The owner is to make a listening pass
-  (step 13). Then 045 can be archived.
+  The docs and these notes followed (`c8052c6`), and the packages lost their
+  links to `notes/` (`6149215`). After the deploy, Safari passed on the
+  desktop and iOS. Its black slider tracks were fixed by drawing the site's
+  sliders in CSS (`40f60fc`). The owner's listening pass kept every sound.
+  045 was archived, and its loose ends moved to task 048.

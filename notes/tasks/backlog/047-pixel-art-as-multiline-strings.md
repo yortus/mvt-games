@@ -15,8 +15,8 @@ so it reads more like the picture it draws.
 
 The Audio80's tracker notation made the same change on 2026-10-09, in
 proposal 045. Its songs and step tables are now backtick strings. The parser
-skips blank lines and lines that start with `//`, and trims each line's
-indentation. The pixel art can follow the same rules.
+skips blank lines and `#` comments, and trims each line's indentation. The
+pixel art can follow the same rules.
 
 ## Files
 
