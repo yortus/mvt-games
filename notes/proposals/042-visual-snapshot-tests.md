@@ -1441,7 +1441,11 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    `views/game-view.test.ts` with an "after a restart" pose of its
    `GameView`. That test is a stopgap: it checks that a restart shows the
    new board, not the old one (a bug it once had), by stubbing the textures
-   with `vi.mock` and reading the sprites in order.
+   with `vi.mock` and reading the sprites in order. Done 2026-10-09:
+   `views/game-view.visual.tsx` pictures the board at the start and after
+   a restart (the top-left three by three tiles, since the screen is over
+   the size budget). Random numbers are seeded the same in both, so a
+   restart that kept the old board would match the first picture.
 4. ~~**CI.**~~ Done 2026-10-08, as section 9 describes:
    `.github/workflows/visual.yml`, replacing the spike's workflow, and
    `npm run test:visual:check-references`; the spike's code deleted. On
