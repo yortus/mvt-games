@@ -49,9 +49,10 @@ of test need their pages arranged differently.
   same page, one file after another. The libraries load once, the shaders
   compile once, and one renderer draws every picture. That is what lets
   hundreds of pictures take seconds.
-- **Each file of HTML tests gets a fresh page.** A stylesheet that a view
-  imports stays in the page once it is loaded. A fresh page for each file
-  means that its views are styled only by the stylesheets it loads itself.
+- **Each file of HTML tests gets a fresh page.** That way, a file's views
+  are styled only by the stylesheets it loads itself. Once a view imports
+  a stylesheet, the stylesheet can't be unloaded from the page, and it
+  styles everything drawn there afterwards.
 
 A file runs in one page, so it declares one kind of test only. When the
 config loads, the package reads each file's declarations, and sends the
