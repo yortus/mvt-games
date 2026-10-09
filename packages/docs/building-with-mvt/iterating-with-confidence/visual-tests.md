@@ -26,7 +26,7 @@ beside the view. A Pixi or three.js view, which draws on a canvas, is
 declared with `canvasTest(name, options?, pose)`. An HTML view is
 declared with `htmlTest(name, options?, pose)`. Both come from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
-`pose` function has one job. It returns a view that has been arranged into
+`pose` function's only job is to return a view that has been arranged into
 the pose that the test describes.
 
 ```tsx
@@ -122,9 +122,9 @@ of test need their pages arranged differently.
   same page, one file after another. The libraries load once, the shaders
   compile once, and one renderer draws every picture. That is what lets
   hundreds of pictures take seconds.
-- **Each file of HTML tests gets a fresh page.** That way, a file's views
-  are styled only by the stylesheets it loads itself. Stylesheets can't be
-  unloaded from a page, so this keeps tests isolated from each other's styles.
+- **Each file of HTML tests gets a fresh page.** This is because HTML
+  views use stylesheets, which can't be unloaded from a page, so the fresh
+  pages ensure that each view gets only its own styles.
 
 A file runs in one page, so it declares one kind of test only. When the
 config loads, the package reads each file's declarations, and sends the

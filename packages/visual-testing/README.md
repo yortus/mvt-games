@@ -18,8 +18,8 @@
 A test is a declaration in a `*.visual.ts` or `*.visual.tsx` file beside
 the view. A Pixi or three.js view is declared with
 `canvasTest(name, options?, pose)`, and an HTML view with
-`htmlTest(name, options?, pose)`. The options come before the pose, as
-they do in Vitest's `test`. The `pose` function has one job. It returns a
+`htmlTest(name, options?, pose)`. The options (if any) come before the pose,
+as they do in Vitest's `test`. The `pose` function's only job is to return a
 view that has been arranged into the pose that the test describes.
 
 ```tsx
@@ -50,16 +50,15 @@ of test need their pages arranged differently.
   same page, one file after another. The libraries load once, the shaders
   compile once, and one renderer draws every picture. That is what lets
   hundreds of pictures take seconds.
-- **Each file of HTML tests gets a fresh page.** That way, a file's views
-  are styled only by the stylesheets it loads itself. Stylesheets can't be
-  unloaded from a page, so this keeps tests isolated from each other's styles.
+- **Each file of HTML tests gets a fresh page.** This is because html views use stylesheets, which can't be unloaded from a page, so the fresh pages ensure that
+each view gets only its own styles.
 
 A file runs in one page, so it declares one kind of test only. When the
 config loads, the package reads each file's declarations, and sends the
 file to the right kind of page. A file that declares both kinds, or
 neither, stops the run with an error.
 
-## Setting a Package Up
+## Setting Up a Package
 
 A package that has visual tests needs three things.
 
