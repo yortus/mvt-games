@@ -11,8 +11,8 @@ import type { Rule } from 'eslint';
  * in every game played on the same page. So one game's state leaks into the
  * next, and what a model does depends on what ran before it. For example, a
  * counter at module level once made a game's asteroid shapes depend on the
- * games played before it. The rule is meant for model files, and a config applies
- * it to them.
+ * games played before it. The rule is meant for model files, and a config
+ * applies it to them.
  */
 export const noModuleState: Rule.RuleModule = {
     meta: {
