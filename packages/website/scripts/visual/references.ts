@@ -1,7 +1,7 @@
 /**
- * The reference pictures on disk: finding them, checking that each one's
- * pixels still match the hash it carries, and finding and removing those
- * no picture was compared with.
+ * Functions for the reference pictures on disk. They find the references,
+ * and check that each one's pixels still match the hash it carries. They
+ * also find and remove the references that no picture was compared with.
  */
 
 import { readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
@@ -12,37 +12,39 @@ import { decodePng, hashPicture, readPngHash } from './png';
 // Functions
 // ---------------------------------------------------------------------------
 
-/** Where a test file's references are: `__screenshots__/<the file's name>/` beside it. */
+/** Returns the directory of a test file's references, which is `__screenshots__/<the file's name>/` beside it. */
 export function findReferenceDir(testFile: string): string {
     return join(dirname(testFile), '__screenshots__', basename(testFile));
 }
 
-/** Every reference picture under a directory: the PNGs in `__screenshots__` directories. */
+/** Returns every reference picture under a directory, which means every PNG in a `__screenshots__` directory. */
 export function findReferences(dir: string): { readonly file: string; readonly bytes: number }[] {
     return find(dir, false);
 }
 
 /**
- * What is wrong with a reference file, or undefined if nothing is: a run
- * trusts the hash a reference carries without decoding it, so a file whose
- * pixels were edited, or that carries no hash, would pass unnoticed.
+ * Returns what is wrong with a reference file, or undefined if nothing is.
+ * A visual run trusts the hash a reference carries, without decoding the
+ * file. So a file whose pixels were edited, or that carries no hash, would
+ * pass the run unnoticed.
  */
 export function checkReference(file: string): string | undefined {
     const stored = readPngHash(file);
-    if (stored === undefined) return 'carries no pixel hash (not written by the visual tests)';
+    if (stored === undefined) return 'carries no pixel hash, so the visual tests did not write it';
     let actual: string;
     try {
         actual = hashPicture(decodePng(readFileSync(file)));
     }
     catch (error) {
-        return `cannot be decoded: ${error instanceof Error ? error.message : String(error)}`;
+        return `cannot be decoded (${error instanceof Error ? error.message : String(error)})`;
     }
-    return actual === stored ? undefined : `pixels hash to ${actual}, but the file says ${stored}`;
+    return actual === stored ? undefined : `its pixels hash to ${actual}, but the hash it carries is ${stored}`;
 }
 
 /**
- * The references no picture was compared with, of those given: the files
- * of tests renamed or deleted (in a full run, where every test ran).
+ * Returns the references, of those given, that no picture was compared
+ * with. After a full run, in which every test ran, these are the files of
+ * tests that were renamed or deleted.
  */
 export function findOrphans(options: { readonly references: readonly string[]; readonly compared: Iterable<string> }): string[] {
     const compared = new Set<string>();
@@ -50,7 +52,10 @@ export function findOrphans(options: { readonly references: readonly string[]; r
     return options.references.filter((file) => !compared.has(toFileKey(file)));
 }
 
-/** Deletes a reference, and its test file's directory and `__screenshots__` if that leaves them empty. */
+/**
+ * Deletes a reference. If that leaves its test file's directory empty, it
+ * deletes that too, and then `__screenshots__` if that is also left empty.
+ */
 export function removeReference(file: string): void {
     rmSync(file);
     for (let dir = dirname(file), i = 0; i < 2; dir = dirname(dir), i++) {
@@ -63,7 +68,11 @@ export function removeReference(file: string): void {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** A path to compare by: resolved, and on Windows, whose paths ignore case, lower-cased (Vitest's are `V:/...`, Node's `v:\...`). */
+/**
+ * Returns a path in a form that can be compared. The path is resolved. On
+ * Windows, where paths ignore case, it is also lower-cased, because Vitest
+ * writes paths as `V:/...` and Node writes them as `v:\...`.
+ */
 function toFileKey(file: string): string {
     const resolved = resolve(file);
     return process.platform === 'win32' ? resolved.toLowerCase() : resolved;

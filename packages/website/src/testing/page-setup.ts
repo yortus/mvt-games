@@ -10,11 +10,11 @@ import { installSeededRandom, patchPixiPools } from './page-state';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What a page sets up once, before its first test, and keeps. */
+/** The state that a page sets up once, before its first test, and keeps. */
 export interface PageSetup {
-    /** Resets everything a test could have changed that the next must not see. */
+    /** Resets everything that a test could have changed and that the next test must not see. */
     resetForTest: () => void;
-    /** Canvas font families asked for since the last call that no test font stands in for. */
+    /** Returns the canvas font families asked for since the last call that no test font stands in for. */
     takeUnpinnedFamilies: () => readonly string[];
 }
 
@@ -23,10 +23,11 @@ export interface PageSetup {
 // ---------------------------------------------------------------------------
 
 /**
- * Sets the page up, once: the Pixi patch, the seeded `Math.random`, the test
- * fonts and canvas text, the HTML rules; then checks the environment and the
- * calibration set (once per run), and stops the run if they do not match.
- * Every test file's setup awaits the same promise.
+ * Sets the page up once, and returns the setup. It installs the Pixi patch,
+ * the seeded `Math.random`, the test fonts, the canvas text and the HTML
+ * rules. Then it checks the environment and the calibration set, once per
+ * run, and stops the run if they do not match. Every test file's setup
+ * awaits the same promise.
  */
 export function setUpPage(): Promise<PageSetup> {
     setup ??= setUp();

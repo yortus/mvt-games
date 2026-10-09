@@ -1,11 +1,12 @@
 /**
- * Every Pixi entry's whole screen, at its thumbnail moment: started
- * headless at its play size and advanced as its thumbnail is (for its
- * `thumbnailAdvanceMs`, playing its `thumbnailInput`), with the runner's
- * code the thumbnail page uses. These catch what no leaf test sees
- * (layout, layering, a view left out of its parent), and so fail on almost
- * any change to an entry: an entry's own commits will often accept a new
- * picture here, beside the leaf tests that say what changed.
+ * These tests draw every Pixi entry's whole screen at its thumbnail moment.
+ * Each entry is started headless at its play size. It is then advanced as
+ * its thumbnail is, for its `thumbnailAdvanceMs` and playing its
+ * `thumbnailInput`. The tests use the same runner code as the thumbnail
+ * page. They catch what no test of a single view sees, such as layout,
+ * layering, or a view left out of its parent. So they fail on almost any
+ * change to an entry. An entry's own commits will often accept a new picture
+ * here, beside the tests of single views that say what changed.
  */
 
 import { Container } from 'pixi.js';
@@ -17,15 +18,20 @@ import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../r
 import { CATALOGUE } from './catalogue';
 
 /**
- * Pixel art over the size budget, cropped to a part that shows the game and
- * its HUD (pixel art is never drawn smaller), in the entry's own pixels.
+ * Crops for pixel-art entries whose screens are over the size budget. Pixel
+ * art is never drawn smaller, so each picture shows only a part of the
+ * screen that shows the game and its HUD. The crops are in the entry's own
+ * pixels.
  */
 const CROPS: Readonly<Record<string, Crop>> = {
-    // An 8 by 8 board of 200 by 250 tiles over a score bar, 1600 by 2180: three tiles of the bottom two rows, and the score
+    // The screen is 1600 by 2180. It holds an 8 by 8 board of 200 by 250 tiles
+    // over a score bar. The crop shows three tiles of the bottom two rows, and
+    // the score.
     'kwazy-cactii': { x: 0, y: 1500, width: 600, height: 680 },
 };
 
-// Each entry's code, loaded before its test is declared: whether it is drawn with Pixi, and as pixel art, is known only then
+// Each entry's code is loaded before its test is declared. Only then is it
+// known whether the entry is drawn with Pixi, and whether it is pixel art.
 const loaded = await Promise.all(CATALOGUE.map(async (entry) => ({ entry, starter: await entry.load() })));
 
 for (const { entry, starter } of loaded) {
@@ -35,7 +41,7 @@ for (const { entry, starter } of loaded) {
         artStyle: starter.pixelArt === true ? 'pixel' : 'smooth',
         width: crop?.width ?? entry.screenWidth,
         height: crop?.height ?? entry.screenHeight,
-        // As the host draws round a play area
+        // The host draws black round a play area, and so does the picture.
         background: 0x000000,
     };
     visualTest(entry.id, () => pose(entry, starter, crop), options);
@@ -54,10 +60,11 @@ interface Crop {
 
 function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
     const stage = new Container();
-    // A headless chip, which makes no sound
+    // A headless chip makes no sound.
     const { audio80, controls } = createHeadlessAudio80();
     const session = startPixiHeadless({ entry, starter, stage, sound: audio80 });
-    // After the picture, which destroys the stage; destroying a Pixi object twice is harmless
+    // This runs after the picture, which destroys the stage. Destroying a Pixi
+    // object twice is harmless.
     onTestFinished(() => session.destroy());
     advanceHeadless({ session, views: [stage], controls, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
     if (crop === undefined) return stage;

@@ -70,7 +70,7 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
 
     if (starter.kind === 'pixi') {
         // An entry that lays itself out is photographed at the play area its metadata lists.
-        // It is fitted before the application is sized from it
+        // It is fitted before the application is sized from it.
         starter.fitTo?.(entry.screenWidth, entry.screenHeight);
         const isPixelArt = starter.pixelArt ?? false;
         TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
@@ -103,7 +103,7 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.height = `${entry.screenHeight}px`;
     const { audio80, controls } = createHeadlessAudio80();
     const session = starter.start({ element: root, sound: audio80 });
-    // Some renderers start asynchronously
+    // Some renderers start asynchronously, so this waits until they can draw.
     await session.ready;
     advanceHeadless({ session, views: session.views, controls, totalMs });
     session.render();

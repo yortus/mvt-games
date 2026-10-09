@@ -1,16 +1,19 @@
 name: Visual tests
 
-# The visual tests (npm run test:visual) on every push, on Ubuntu. Beside it,
-# on Windows and macOS, whenever Playwright's version or the harness changes:
-# a new Chromium, or a change to how the harness pins it, is what could make
-# the three systems draw differently. Weekly, and on demand: all three
-# systems (whose runner images change under us), the tests in a
-# shuffled order (to show that no picture depends on the ones before it), and
-# every reference decoded and checked against the hash it carries.
+# This workflow runs the visual tests (npm run test:visual).
 #
-# No job writes references: whoever changes a view updates them on their own
-# machine. A changed picture fails, and its actual and diff images are
-# uploaded for the reviewer.
+# - On every push, they run on Ubuntu.
+# - When Playwright's version or the test harness changes, they also run on
+#   Windows and macOS. A new Chromium, or a change to how the harness pins
+#   it, is what could make the three systems draw differently.
+# - Weekly, and on demand, they run on all three systems, because the
+#   runner images change over time. The tests run in a shuffled
+#   order, to show that no picture depends on the ones before it. Every
+#   reference is also decoded and checked against the hash it carries.
+#
+# No job writes references. Whoever changes a view updates the references
+# on their own machine. A changed picture fails, and its actual and diff
+# images are uploaded for the reviewer.
 on:
     push:
     pull_request:
@@ -27,7 +30,8 @@ concurrency:
 
 jobs:
     systems:
-        # A push already runs a pull request's commits, unless they come from a fork
+        # A push already runs a pull request's commits, unless they come from
+        # a fork. So a pull request runs this job only when it comes from a fork.
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
         runs-on: ubuntu-latest
         outputs:
@@ -48,7 +52,7 @@ jobs:
                   fi
                   base="$PR_BASE"
                   if [ "$EVENT" = push ]; then base="$BEFORE"; fi
-                  # A new branch has no commit before it: compare with main
+                  # A new branch has no commit before it, so compare with main.
                   if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] || ! git fetch -q --depth=1 origin "$base"; then
                       git fetch -q --depth=1 origin main
                   fi
@@ -56,8 +60,9 @@ jobs:
                   was=$(git show FETCH_HEAD:package-lock.json | node -e "$version")
                   now=$(node -e "$version" < package-lock.json)
                   echo "Playwright: $was before, $now now"
-                  # The harness is where the pinning lives (the fonts, the HTML rules, the
-                  # browser's switches), so a change to it is checked everywhere too
+                  # The harness pins everything that could differ between systems, such
+                  # as the fonts, the HTML rules and the browser's switches. So a change
+                  # to it is checked on every system too.
                   harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/website/src/testing packages/website/scripts/visual packages/website/vitest.visual.config.ts packages/website/visual-environment.json .github/workflows/visual.yml)
                   echo "Harness changes: ${harness:-none}"
                   if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
@@ -95,16 +100,20 @@ jobs:
                   path: ${{ runner.temp }}/ms-playwright
                   key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
 
-            # The browser comes from the cache, or is fetched. Not --with-deps: the runners
-            # already have the libraries it needs, and the fonts it would add are never used
-            # (the harness draws or blanks all text) and come from a mirror that can take minutes
+            # The browser comes from the cache, or is downloaded. This does not use
+            # --with-deps. The runners already have the libraries the browser needs.
+            # The fonts that --with-deps would add are never used, because the harness
+            # draws or blanks all text. They also come from a mirror that can take
+            # minutes.
             - name: Playwright's headless shell
               run: npx playwright install chromium-headless-shell
               working-directory: packages/website
 
-            # Weekly and on demand, in a shuffled order, its seed in the log to repeat it.
-            # A failing test is an annotation of its own; a failure before any test (the
-            # environment check) is not, so then the run's last lines become one
+            # Weekly and on demand, the tests run in a shuffled order. The seed is in
+            # the log, so the same order can be repeated. A failing test becomes an
+            # annotation of its own. A failure before any test, such as in the
+            # environment check, does not. In that case, the run's last lines are
+            # made into an annotation.
             - name: Visual tests
               env:
                   SHUFFLE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('--sequence.shuffle --sequence.seed={0}', github.run_id) || '' }}

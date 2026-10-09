@@ -4,13 +4,14 @@ import { advanceTime, type ThreePictureOptions, visualTest } from '#testing';
 import { createFlockModel, type FlockModel } from '../../boids';
 import { FlockView } from './flock-view';
 
-// From above and to one side, where the page's orbiting camera starts; the view brings its own lights
+// The camera looks from above and to one side, where the page's orbiting
+// camera starts. The view brings its own lights.
 const PICTURE: ThreePictureOptions = { width: 480, height: 300, camera: createOrbitStartCamera, background: 0x0d1117 };
 
 describe('FlockView', () => {
     visualTest('as the flock starts', () => FlockView({ model: createFlock() }), PICTURE);
 
-    // Flocked: the boids turned into groups, heading together
+    // By now the boids have formed groups that head the same way.
     visualTest('two seconds in', async () => {
         const model = createFlock();
         const view = FlockView({ model });

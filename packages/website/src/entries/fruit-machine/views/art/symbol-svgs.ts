@@ -123,10 +123,11 @@ function wild(): string {
 }
 
 /**
- * WILD as heavy block letters, drawn as outlines rather than text: an SVG
- * drawn as an image cannot use the page's fonts, so text in it would come
- * out in whatever fonts and rendering each system has. Centred on x = 50,
- * from y = 40 to the baseline at y = 60, with strokes 5 units thick.
+ * Returns the path data for WILD in heavy block letters. The letters are
+ * drawn as outlines rather than text, because an SVG drawn as an image cannot
+ * use the page's fonts. Text in it would come out in whatever fonts and
+ * rendering each system has. The letters are centred on x = 50, and run from
+ * y = 40 down to the baseline at y = 60. Their strokes are 5 units thick.
  */
 function wildLetters(): string {
     const top = 40;
@@ -136,7 +137,7 @@ function wildLetters(): string {
     let x = 50 - (widths.w + widths.i + widths.l + widths.d + gap * 3) / 2;
     const at = (dx: number, y: number) => `${(x + dx).toFixed(2)} ${y}`;
 
-    // W: two V shapes, the middle stroke shared
+    // The W is two V shapes that share the middle stroke.
     const w = `M${at(0, top)} L${at(5.5, top)} L${at(7.5, 51)} L${at(9.75, top)} L${at(14.25, top)} L${at(16.5, 51)} `
         + `L${at(18.5, top)} L${at(24, top)} L${at(19.5, bottom)} L${at(14, bottom)} L${at(12, 50)} L${at(10, bottom)} `
         + `L${at(4.5, bottom)} Z`;
@@ -145,7 +146,8 @@ function wildLetters(): string {
     x += widths.i + gap;
     const l = `M${at(0, top)} H${(x + 5.5).toFixed(2)} V${bottom - 5} H${(x + 14).toFixed(2)} V${bottom} H${x.toFixed(2)} Z`;
     x += widths.l + gap;
-    // D: a straight back and a round bowl, with its counter cut out (even-odd)
+    // The D is a straight back and a round bowl. Its hole (the counter) is
+    // cut out by the even-odd fill rule.
     const d = `M${at(0, top)} H${(x + 7).toFixed(2)} A9 10 0 0 1 ${at(7, bottom)} H${x.toFixed(2)} Z `
         + `M${at(5, top + 5)} H${(x + 7).toFixed(2)} A4 5 0 0 1 ${at(7, bottom - 5)} H${(x + 5).toFixed(2)} Z`;
     return `${w} ${i} ${l} ${d}`;

@@ -8,10 +8,10 @@ import type { VisualPictureId, VisualRect, VisualVerdict } from './protocol';
 // ---------------------------------------------------------------------------
 
 export interface HtmlPictureOptions {
-    /** The picture's size in CSS pixels. Default: the element's own, as it lays itself out. */
+    /** The picture's size in CSS pixels. By default, it is the element's own size, as the element lays itself out. */
     readonly width?: number;
     readonly height?: number;
-    /** A CSS colour. Default: the same dark grey as WebGL pictures. */
+    /** The background, as a CSS colour. By default, it is the same dark grey as WebGL pictures. */
     readonly background?: string;
 }
 
@@ -20,13 +20,14 @@ export interface HtmlPictureOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Photographs an element: mounts it in a host that shrinks to fit it (or
- * takes the given size), waits for its fonts and every image, and has Node
- * capture the host's rectangle through the DevTools protocol and judge it.
- * Font sizes are rounded to quarter pixels first (`quantizeFontSizes`).
- * The element is removed after, whatever happens. HTML pictures are always
- * full size (the browser's own scaling differs between systems), so one
- * over the size budget fails.
+ * Photographs an element and returns the verdict. It mounts the element in a
+ * host element, which shrinks to fit it or takes the given size. It waits
+ * for the element's fonts and every image. Then Node captures the host's
+ * rectangle through the DevTools protocol and judges it. Font sizes are
+ * rounded to quarter pixels first (`quantizeFontSizes`). The element is
+ * removed afterwards, whatever happens. HTML pictures are always full size,
+ * because the browser's own scaling differs between systems. So an HTML
+ * picture over the size budget fails.
  */
 export async function captureHtmlPicture(
     element: Element,
@@ -43,7 +44,8 @@ export async function captureHtmlPicture(
         await document.fonts.ready;
         pixelateRotatedImages(host);
         quantizeFontSizes(host);
-        // Every image loaded and decoded, lazy ones too (a lazy image off screen never loads)
+        // Wait until every image is loaded and decoded, lazy ones too. A lazy
+        // image that is off screen never loads, so each one is made eager.
         await Promise.all([...host.querySelectorAll('img')].map((image) => {
             image.loading = 'eager';
             return image.decode().catch(() => undefined);
@@ -66,9 +68,9 @@ export async function captureHtmlPicture(
 const DEFAULT_BACKGROUND = '#202024';
 
 /**
- * The host's rectangle in the top-level page, which holds the test's page
- * in an iframe: rounded outwards to whole pixels, as Playwright's element
- * screenshots are.
+ * Returns the host's rectangle in the top-level page, which holds the test's
+ * page in an iframe. The rectangle is rounded outwards to whole pixels, as
+ * Playwright's element screenshots are.
  */
 function measureRect(host: HTMLElement): VisualRect {
     const box = host.getBoundingClientRect();

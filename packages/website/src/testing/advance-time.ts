@@ -6,11 +6,11 @@ import { updateView, type View } from '@mvtjs/pixi';
 
 export interface AdvanceTimeOptions {
     readonly totalMs: number;
-    /** Each step: every model's `update`, in order... */
+    /** The models to update. Each step calls every model's `update`, in order, before the views. */
     readonly models?: readonly { readonly update: (deltaMs: number) => void }[];
-    /** ...then `updateView` on every view. */
+    /** The views to update. Each step calls `updateView` on every view, after the models. */
     readonly views?: readonly View[];
-    /** Default 16, a frame at 60 frames a second, as the thumbnail page steps. */
+    /** The size of each step. The default is 16, a frame at 60 frames a second, which is the step the thumbnail page uses. */
     readonly stepMs?: number;
 }
 
@@ -19,13 +19,13 @@ export interface AdvanceTimeOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Advances models and views by `totalMs`, in frame-sized steps, as the
- * host does: each step updates every model, then every view, then awaits a
- * microtask, so a model with an internal `await` moves on. It does not
- * refresh: a picture is refreshed once, before it is drawn, as the host
- * refreshes once per frame. The steps are small because models with phases
- * or timelines are not leap-safe: one giant step would skip what happens
- * between.
+ * Advances models and views by `totalMs`, in frame-sized steps, as the entry
+ * host does. Each step updates every model, then every view, then awaits a
+ * microtask, so that a model with an internal `await` moves on. It does not
+ * refresh. A picture is refreshed once, before it is drawn, just as the
+ * entry host refreshes once per frame. The steps are small because models
+ * with phases or timelines cannot safely jump ahead. One giant step would
+ * skip what happens in between.
  */
 export async function advanceTime(options: AdvanceTimeOptions): Promise<void> {
     const { totalMs, models = [], views = [], stepMs = 16 } = options;

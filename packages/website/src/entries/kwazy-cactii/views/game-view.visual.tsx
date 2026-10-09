@@ -22,7 +22,7 @@ describe('GameView', () => {
 async function poseGame(options: { readonly isRestarted: boolean }): Promise<ReturnType<typeof GameView>> {
     await textures.load();
     const model = createGameModel();
-    // A headless chip makes no sound, and a picture does not depend on what plays
+    // A headless chip makes no sound, and a picture does not depend on what plays.
     const view = GameView({ model, sound: createHeadlessAudio80().audio80 });
     await advanceTime({ models: [model], views: [view], totalMs: 16 });
     if (options.isRestarted) {

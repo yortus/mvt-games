@@ -1,8 +1,9 @@
 /**
  * Decodes every reference picture and checks that its pixels match the
- * hash it carries. A visual run compares hashes only, read from each
- * file's first bytes, so this is what catches a reference edited by hand
- * (or by a tool) without its hash. CI runs it weekly.
+ * hash it carries. A visual run compares only the hashes, which it reads
+ * from each file's first bytes. So this script is what catches a reference
+ * whose pixels were edited, by hand or by a tool, without its hash. CI runs
+ * it weekly.
  *
  *   npm run test:visual:check-references
  */
@@ -20,7 +21,7 @@ for (const { file } of references) {
 }
 if (problems.length > 0) {
     console.error(`${problems.length} of ${references.length} references do not match their hashes:\n${problems.join('\n')}`);
-    console.error('Rewrite them from their tests with npm run test:visual:update, after deleting the files.');
+    console.error('Delete these files, then rewrite them from their tests with npm run test:visual:update.');
     process.exit(1);
 }
-console.log(`${references.length} references, every one's pixels matching its hash.`);
+console.log(`All ${references.length} references have pixels that match their hashes.`);

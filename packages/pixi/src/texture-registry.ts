@@ -35,9 +35,9 @@ export function createTextureRegistry<T extends TextureNameMap>(
     return {
         async load(): Promise<void> {
             if (record) return; // Already loaded
-            // Pixel art: the sheet's image sampled nearest-neighbour, whatever
-            // `TextureSource.defaultOptions` says when it loads. Pixi's
-            // spritesheet loader takes the image's options as `textureOptions`
+            // The sheet is pixel art, so its image is sampled nearest-neighbour,
+            // whatever `TextureSource.defaultOptions` says when it loads. Pixi's
+            // spritesheet loader takes the image's options as `textureOptions`.
             await Assets.load<Spritesheet>({ src: spritesheetUrl, data: { textureOptions: { scaleMode: 'nearest' } } });
             record = buildRecord(nameMap, spritesheetUrl) as TextureRecord<T>;
         },

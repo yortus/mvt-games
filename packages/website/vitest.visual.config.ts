@@ -3,17 +3,20 @@ import { DEFAULT_MAX_PIXELS, createVisualProject } from './scripts/visual/projec
 import { createVisualReporter } from './scripts/visual/reporter';
 
 /**
- * The size budget: the most pixels a picture may have. A smooth view over
- * it is drawn at a lower resolution to fit; pixel art and HTML over it fail.
+ * The size budget, which is the most pixels a picture may have. A smooth
+ * view over the budget is drawn at a lower resolution to fit. Pixel art and
+ * HTML over the budget fail.
  */
 const maxPixels = DEFAULT_MAX_PIXELS;
 
-// The visual tests, apart from the unit tests: run them with `npm run test:visual`
-// (scripts/visual/run.ts), which installs the browser on first use.
+// This config runs the visual tests, separately from the unit tests. Run
+// them with `npm run test:visual` (scripts/visual/run.ts), which installs
+// the browser on first use.
 export default defineConfig({
     test: {
         projects: [createVisualProject({ kind: 'pixi', maxPixels }), createVisualProject({ kind: 'html', maxPixels })],
-        // On GitHub, each failure is also an annotation on the run, with its message
+        // On GitHub, each failure also becomes an annotation on the run, with
+        // its message.
         reporters: ['default', ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []), createVisualReporter()],
     },
 });

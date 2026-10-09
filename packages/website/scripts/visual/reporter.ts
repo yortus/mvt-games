@@ -1,13 +1,18 @@
 /**
- * The visual run's summary, printed after Vitest's own: how many pictures,
- * how they compared, how long they took (median and 95th percentile per
- * kind), the slowest, and how much the references take, with the largest.
- * So a slow test, or a big picture, is noticed when it is added. On GitHub
- * it also goes on the job's summary page.
+ * The reporter that prints the visual run's summary, after Vitest's own
+ * summary. It says how many pictures were drawn and how they compared. It
+ * says how long they took, as the median and 95th percentile for each kind
+ * of picture, and lists the slowest. It also says how much space the
+ * references take, and lists the largest. That way, a slow test or a big
+ * picture is noticed when it is added. On GitHub, the summary also goes on
+ * the job's summary page.
  *
- * After a full run (`scripts/visual/run.ts` says which), it also looks for
- * references no picture was compared with, left by tests renamed or
- * deleted: it lists them and fails the run, or, updating, deletes them.
+ * After a full run, the reporter also looks for references that no picture
+ * was compared with. A full run is one in which every test ran, and
+ * `scripts/visual/run.ts` says whether a run is full. Such references were
+ * left by tests that were renamed or deleted. In compare mode, the reporter
+ * lists them and fails the run. In the modes that write references, it
+ * deletes them.
  */
 
 import { appendFileSync } from 'node:fs';
@@ -44,29 +49,29 @@ export function createVisualReporter(): Reporter {
                 return;
             }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
-            const lines = [`Visual: ${pictures.length} pictures in ${seconds} s`];
+            const lines = [`The visual tests drew ${pictures.length} pictures in ${seconds} s.`];
             for (const kind of ['pixi', 'html'] as const) {
                 const times = pictures.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
                 if (times.length === 0) continue;
-                lines.push(`  ${kind === 'pixi' ? 'WebGL' : 'HTML'}: ${times.length}, median ${formatPercentile(times, 0.5)} ms, 95th percentile ${formatPercentile(times, 0.95)} ms`);
+                lines.push(`  ${times.length} ${kind === 'pixi' ? 'WebGL' : 'HTML'} pictures took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
             }
             const counts = new Map<string, number>();
             for (const p of pictures) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
-            lines.push(`  ${[...counts].map(([outcome, n]) => `${n} ${OUTCOMES[outcome] ?? outcome}`).join(', ')}`);
+            lines.push(`  Compared with their references, ${[...counts].map(([outcome, n]) => `${n} ${OUTCOMES[outcome] ?? outcome}`).join(', ')}.`);
             const within = counts.get('within-tolerance') ?? 0;
-            if (within > 0) lines.push(`  ${within} matched within tolerance, not exactly: expected only on arm64`);
+            if (within > 0) lines.push(`  ${within} matched within the tolerance but not exactly. That is expected only on arm64 processors.`);
             const reduced = pictures.filter((p) => p.meta.resolution < 1);
             if (reduced.length > 0) {
-                lines.push(`  ${reduced.length} smooth (artStyle 'smooth'), over the size budget, drawn at a lower resolution (detail finer than a picture pixel is averaged away):`);
+                lines.push(`  ${reduced.length} smooth pictures (artStyle 'smooth') were over the size budget, so they were drawn at a lower resolution. Any detail finer than a picture pixel is averaged away. Here are their scales, names and sizes:`);
                 for (const p of reduced) lines.push(`    1/${1 / p.meta.resolution}  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             }
             const slowest = [...pictures].sort((a, b) => b.total - a.total).slice(0, 5);
-            lines.push('  Slowest:');
+            lines.push('  These pictures were the slowest:');
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             lines.push(...orphanLines);
             const references = findReferences(join(WEBSITE, 'src'));
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
-            lines.push(`  References: ${references.length} files, ${formatKilobytes(bytes)}. Largest:`);
+            lines.push(`  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. These are the largest:`);
             for (const r of [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3)) {
                 lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${relative(WEBSITE, r.file).replaceAll('\\', '/')}`);
             }
@@ -93,9 +98,10 @@ const OUTCOMES: Readonly<Record<string, string>> = {
 const WEBSITE = resolve(import.meta.dirname, '..', '..');
 
 /**
- * Whether every test ran: a run the runner calls full (no filters), not
- * interrupted, with every file loaded and no test skipped. Only then is a
- * reference no picture used an orphan, not one whose test sat this run out.
+ * Returns whether every test ran. That is true when `run.ts` called the run
+ * full (it had no filters), the run was not interrupted, every file loaded,
+ * and no test was skipped. Only then is a reference that no picture used an
+ * orphan, rather than a reference whose test did not run this time.
  */
 function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason): boolean {
     if (process.env.VISUAL_FULL_RUN !== '1' || reason === 'interrupted') return false;
@@ -109,8 +115,9 @@ function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason)
 }
 
 /**
- * Lists the references no picture was compared with, and fails the run; or,
- * updating, deletes them. Returns the summary's lines about them.
+ * Handles the references that no picture was compared with. In compare
+ * mode, it lists them and fails the run. In the modes that write
+ * references, it deletes them. It returns the summary's lines about them.
  */
 function settleOrphans(testModules: readonly TestModule[]): string[] {
     const compared = new Set(listComparedCalibrationReferences());
@@ -126,12 +133,12 @@ function settleOrphans(testModules: readonly TestModule[]): string[] {
     if ((process.env.VISUAL_MODE ?? 'compare') === 'compare') {
         process.exitCode = 1;
         return [
-            `  ${orphans.length} references no test compared with, left by tests renamed or deleted (\`npm run test:visual:update\` deletes them):`,
+            `  No test compared with these ${orphans.length} references. Tests that were renamed or deleted left them behind, and \`npm run test:visual:update\` deletes them:`,
             ...names,
         ];
     }
     for (const file of orphans) removeReference(file);
-    return [`  Deleted ${orphans.length} references no test compared with:`, ...names];
+    return [`  These ${orphans.length} references were deleted, because no test compared with them:`, ...names];
 }
 
 function formatKilobytes(bytes: number): string {

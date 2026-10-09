@@ -15,7 +15,7 @@ describe('buildBlankFont', () => {
         expect(font.numGlyphs).toBe(2);
     });
 
-    it('maps every code point to one empty glyph, 0.625 em wide', () => {
+    it('maps every code point to one empty glyph that is 0.625 em wide', () => {
         for (const text of ['Sphinx', '×←⛶', '漢字', '😀🎰', 'عربى']) {
             const run = font.layout(text);
             for (let i = 0; i < run.glyphs.length; i++) {

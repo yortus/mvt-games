@@ -7,46 +7,59 @@ import { isAllOne } from './picture-pixels';
 // ---------------------------------------------------------------------------
 
 export interface PixiPictureOptions {
-    /** The picture's size in the view's pixels. Default: the view's bounds after its first refresh, plus a margin. */
+    /**
+     * The picture's size in the view's pixels. By default, it is the view's
+     * bounds after its first refresh, plus a margin.
+     */
     readonly width?: number;
     readonly height?: number;
-    /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
+    /**
+     * The colour behind the view. By default, it is one opaque dark grey,
+     * the same for every test, so that transparent areas show.
+     */
     readonly background?: number;
     /**
-     * How the view's art is drawn, as its game draws it. Default `'pixel'`.
+     * How the view's art is drawn. Set it to the style that the view's game
+     * draws it in. The default is `'pixel'`.
      *
-     * - `'pixel'`: pixel art. Hard edges (no antialiasing), positions
-     *   rounded to whole pixels, and the textures the pose makes sampled
-     *   nearest-neighbour, so a magnified image stays blocky. Always drawn
-     *   at full size: a picture over the size budget (`maxPixels` in
-     *   `vitest.visual.config.ts`) fails, since drawing pixel art smaller
-     *   would drop whole texels. Crop it (`width`, `height`) or pose part of
-     *   the view instead.
-     * - `'smooth'`: antialiased edges, fractional positions, and the pose's
-     *   textures sampled smoothly. A picture over the size budget is drawn
-     *   at a lower resolution to fit it (half, a quarter, ...): faster and
-     *   smaller, but every detail finer than a picture pixel is averaged
-     *   away, so a change that small can pass unseen. The run's summary
-     *   lists every picture drawn that way.
+     * - `'pixel'` is for pixel art. Edges are hard (no antialiasing), and
+     *   positions are rounded to whole pixels. The textures that the pose
+     *   makes are sampled nearest-neighbour, so a magnified image stays
+     *   blocky. The picture is always drawn at full size. A picture over
+     *   the size budget (`maxPixels` in `vitest.visual.config.ts`) fails,
+     *   since drawing pixel art smaller would drop whole texels (texture
+     *   pixels). Crop it (`width`, `height`) or pose part of the view
+     *   instead.
+     * - `'smooth'` gives antialiased edges and fractional positions, and the
+     *   pose's textures are sampled smoothly. A picture over the size budget
+     *   is drawn at a lower resolution to fit it (a half, a quarter and so
+     *   on). That is faster, and the picture is smaller. But every detail
+     *   finer than a picture pixel is averaged away, so a change that small
+     *   can pass unseen. The run's summary lists every picture drawn that
+     *   way.
      *
-     * A smooth view tested as `'pixel'` comes out jagged: not as its game
-     * draws it, but consistent, and plain to see in review. The games'
-     * spritesheets are sampled nearest-neighbour whatever the style.
+     * A smooth view tested as `'pixel'` comes out jagged. That is not how its
+     * game draws it, but the result is consistent, and plain to see in
+     * review. The games' spritesheets are sampled nearest-neighbour whatever
+     * the style.
      */
     readonly artStyle?: ArtStyle;
 }
 
-/** How a view's art is drawn: see `PixiPictureOptions.artStyle`. */
+/** How a view's art is drawn. See `PixiPictureOptions.artStyle`. */
 export type ArtStyle = 'pixel' | 'smooth';
 
-/** A picture's pixels, read back from the renderer: RGBA, rows from the top, opaque. */
+/**
+ * A picture's pixels, read back from the renderer. They are opaque RGBA,
+ * with rows from the top.
+ */
 export interface PixiPicture {
     readonly width: number;
     readonly height: number;
     readonly pixels: Uint8Array;
-    /** Picture pixels per view pixel: 1, or less for a big smooth view. */
+    /** Picture pixels per view pixel. This is 1, or less for a big smooth view. */
     readonly resolution: number;
-    /** Whether every pixel is the background's: the view drew nothing inside the picture. */
+    /** Whether every pixel is the background's, which means the view drew nothing inside the picture. */
     readonly isBlank: boolean;
 }
 
@@ -55,9 +68,10 @@ export interface PixiPicture {
 // ---------------------------------------------------------------------------
 
 /**
- * Sets the texture defaults a pose's textures are made with, before the
- * pose runs: entries set them per entry, and a test must not inherit the
- * last one's. (The games' spritesheets set their own, nearest-neighbour.)
+ * Sets the defaults that a pose's textures are made with. Call it before the
+ * pose runs. Each entry sets these defaults for itself, and a test must not
+ * inherit the last test's. The games' spritesheets set their own, which are
+ * nearest-neighbour.
  */
 export function preparePixiPose(options: PixiPictureOptions): void {
     TextureSource.defaultOptions.scaleMode = options.artStyle === 'smooth' ? 'linear' : 'nearest';
@@ -65,9 +79,9 @@ export function preparePixiPose(options: PixiPictureOptions): void {
 
 /**
  * Draws a refreshed view into a render texture and reads its pixels back.
- * No screenshot: the renderer's own pixels, with no compositor or colour
- * management in between. Throws if the picture is over the size budget
- * and cannot be drawn smaller.
+ * It takes no screenshot. The pixels are the renderer's own, with no
+ * compositor or colour management in between. It throws if the picture is
+ * over the size budget and cannot be drawn smaller.
  */
 export async function drawPixiPicture(view: Container, options: PixiPictureOptions & { readonly maxPixels: number }): Promise<PixiPicture> {
     const isSmooth = options.artStyle === 'smooth';
@@ -80,7 +94,8 @@ export async function drawPixiPicture(view: Container, options: PixiPictureOptio
         let width = options.width;
         let height = options.height;
         if (width === undefined || height === undefined) {
-            // The holder's bounds, so the view's own position counts (a view's local bounds leave it out)
+            // Use the holder's bounds, so that the view's own position counts.
+            // A view's local bounds leave its position out.
             const bounds = holder.getLocalBounds();
             x0 = Math.floor(bounds.minX) - MARGIN;
             y0 = Math.floor(bounds.minY) - MARGIN;
@@ -106,11 +121,14 @@ export async function drawPixiPicture(view: Container, options: PixiPictureOptio
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Room round a view's bounds, so an antialiased edge or a glow at them is in the picture. */
+/** The space added around a view's bounds, so that an antialiased edge or a glow at them is in the picture. */
 const MARGIN = 4;
 const DEFAULT_BACKGROUND = 0x202024;
 
-/** What every picture is drawn from: a backdrop, then the view, moved by its bounds. */
+/**
+ * The stage that every picture is drawn from. It holds a backdrop, then a
+ * holder for the view. The holder is moved by the view's bounds.
+ */
 const stage = new Container();
 const backdrop = new Graphics();
 const holder = new Container();
@@ -120,10 +138,12 @@ let app: Promise<Application> | undefined;
 const targets = new Map<string, RenderTexture>();
 
 /**
- * One renderer for every picture, made on first use and kept: MSAA is the
- * render texture's, and whole-pixel positions are set per picture. Its
- * context's own antialiasing is fixed (off): it changes MSAA edges in render
- * textures too, so it must never be left to a default.
+ * Returns the one renderer that draws every picture. It is made on first
+ * use and kept. MSAA (multisample antialiasing) belongs to each picture's
+ * render texture, and whole-pixel positions are set for each picture. The
+ * renderer's WebGL context has its own antialiasing, which is fixed to off.
+ * That setting changes MSAA edges in render textures too, so it must never
+ * be left to a default.
  */
 async function ensureApp(isSmooth: boolean): Promise<Application> {
     app ??= (async () => {
@@ -132,12 +152,16 @@ async function ensureApp(isSmooth: boolean): Promise<Application> {
         return made;
     })();
     const ready = await app;
-    // The renderer reads this field every frame; Pixi offers no setter
+    // The renderer reads this field every frame. Pixi offers no setter for it.
     (ready.renderer as unknown as { _roundPixels: number })._roundPixels = isSmooth ? 0 : 1;
     return ready;
 }
 
-/** A render texture of each size, kept, so the canvas is never resized and no texture is made per test. */
+/**
+ * Returns the render texture for a size, resolution and antialiasing. Each
+ * one is made on first use and kept. So the canvas is never resized, and no
+ * texture is made for each test.
+ */
 function ensureTarget(width: number, height: number, resolution: number, isAntialiased: boolean): RenderTexture {
     const key = `${width}x${height}@${resolution}${isAntialiased ? 'aa' : ''}`;
     let target = targets.get(key);

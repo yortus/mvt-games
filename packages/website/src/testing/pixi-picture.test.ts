@@ -8,7 +8,7 @@ describe('preparePixiPose', () => {
         expect(TextureSource.defaultOptions.scaleMode).toBe('nearest');
     });
 
-    it('samples them smoothly for a smooth view', () => {
+    it('samples textures smoothly for a smooth view', () => {
         preparePixiPose({ artStyle: 'smooth' });
         expect(TextureSource.defaultOptions.scaleMode).toBe('linear');
         preparePixiPose({});

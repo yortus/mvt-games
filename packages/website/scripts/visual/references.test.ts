@@ -22,7 +22,7 @@ function write(name: string, bytes: Uint8Array): string {
 }
 
 describe('findReferences', () => {
-    it('finds the PNGs in __screenshots__ directories, and only those', () => {
+    it('finds the PNGs in __screenshots__ directories and no others', () => {
         const root = join(dir, 'tree');
         mkdirSync(join(root, 'views', '__screenshots__', 'a.visual.tsx'), { recursive: true });
         writeFileSync(join(root, 'views', '__screenshots__', 'a.visual.tsx', 'one.png'), encodePng(createPicture(1)));
@@ -38,13 +38,15 @@ describe('checkReference', () => {
     });
 
     it('fails a file whose pixels were changed without its hash', () => {
-        // The hash of one picture, the pixels of another: as if edited in a paint program that kept the text chunk
+        // This file has the hash of one picture and the pixels of another. It
+        // is as if a paint program edited the pixels but kept the text chunk
+        // that holds the hash.
         const original = encodePng(createPicture(3));
         const edited = encodePng(createPicture(5));
         const textEnd = 33 + 12 + new DataView(original.buffer, original.byteOffset).getUint32(33);
         const editedTextEnd = 33 + 12 + new DataView(edited.buffer, edited.byteOffset).getUint32(33);
         const forged = new Uint8Array([...original.subarray(0, textEnd), ...edited.subarray(editedTextEnd)]);
-        expect(checkReference(write('forged.png', forged))).toMatch(/^pixels hash to /);
+        expect(checkReference(write('forged.png', forged))).toMatch(/^its pixels hash to /);
     });
 
     it('fails a PNG that carries no hash', () => {
@@ -53,18 +55,18 @@ describe('checkReference', () => {
     });
 });
 
-describe('orphansOf', () => {
-    it('gives the references not compared with, whichever way their paths are written', () => {
+describe('findOrphans', () => {
+    it('returns the references that were not compared with, however their paths are written', () => {
         const references = findReferenceDir(join(tmpdir(), 'views', 'a.visual.tsx'));
         const kept = join(references, 'kept.png');
         const orphan = join(references, 'renamed.png');
-        // Vitest writes paths with forward slashes
+        // Vitest writes paths with forward slashes.
         expect(findOrphans({ references: [kept, orphan], compared: [kept.replaceAll('\\', '/')] })).toEqual([orphan]);
     });
 });
 
 describe('removeReference', () => {
-    it('deletes the file, and the directories it leaves empty', () => {
+    it('deletes the file and any directories that it leaves empty', () => {
         const views = join(dir, 'removal', 'views');
         const one = findReferenceDir(join(views, 'one.visual.tsx'));
         const two = findReferenceDir(join(views, 'two.visual.tsx'));

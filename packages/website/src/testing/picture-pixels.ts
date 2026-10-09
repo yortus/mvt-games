@@ -2,7 +2,10 @@
 // Functions
 // ---------------------------------------------------------------------------
 
-/** Whether every pixel is the same as the first: a picture of nothing but its background. */
+/**
+ * Returns whether every pixel is the same as the first. Such a picture shows
+ * nothing but its background.
+ */
 export function isAllOne(pixels: Uint8Array): boolean {
     const words = new Uint32Array(pixels.buffer, pixels.byteOffset, pixels.byteLength >> 2);
     for (let i = 1; i < words.length; i++) {
@@ -11,7 +14,10 @@ export function isAllOne(pixels: Uint8Array): boolean {
     return true;
 }
 
-/** Turns RGBA rows upside down, in place: WebGL reads the bottom row first. */
+/**
+ * Reverses the order of a picture's RGBA rows, in place. This is needed
+ * because WebGL reads the bottom row first.
+ */
 export function flipRows(pixels: Uint8Array, width: number, height: number): void {
     const row = width * 4;
     const swap = new Uint8Array(row);

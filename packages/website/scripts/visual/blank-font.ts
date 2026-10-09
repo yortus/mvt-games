@@ -1,29 +1,35 @@
 /**
- * The blank font: a TrueType font in which every code point is one empty
- * glyph, 0.625 em wide, with fixed vertical metrics. HTML text in a visual
- * test is set in it, so it keeps its layout and draws nothing: the systems
- * draw text differently, and nothing else made them agree.
+ * The blank font is a TrueType font in which every code point maps to one
+ * empty glyph. The glyph is 0.625 em wide, and the font's vertical metrics
+ * are fixed. HTML text in a visual test is set in this font, so the text
+ * keeps its layout but draws nothing. Each operating system draws text
+ * differently, and nothing else made them agree.
  *
- * TrueType, not CFF2: Windows lays a TrueType web font out with DirectWrite
- * and macOS with Core Text, which keep each advance's exact fraction, and
- * agree to 1/64 pixel; with `--font-render-hinting=none`, Linux (Chrome's
- * own engine) does too. Chrome's engine rounds a CFF2 font's advances to
- * whole pixels on Windows and Linux, and macOS does not.
+ * The font is TrueType, not CFF2 (the other OpenType outline format).
+ * Windows lays out a TrueType web font with DirectWrite, and macOS lays it
+ * out with Core Text. Both keep the exact fraction of each advance (the
+ * distance from one glyph to the next), and they agree to 1/64 pixel. With
+ * `--font-render-hinting=none`, Linux, which uses Chrome's own text engine,
+ * agrees too. Chrome's engine rounds a CFF2 font's advances to whole pixels
+ * on Windows and Linux, but macOS does not.
  *
- * 1024 units per em, a power of two: Linux scales a font in 64ths of a
- * pixel, and with any other number of units its advances come out a 64th
- * or two off the other systems' at most sizes, enough to move a box's edge
- * a pixel. With 1024, all three agree exactly at every font size in
- * quarter pixels (the harness rounds sizes to those).
+ * The font has 1024 units per em, a power of two. Linux scales a font in
+ * 64ths of a pixel. With any other number of units, its advances come out
+ * a 64th or two off the other systems' advances at most font sizes. That
+ * is enough to move a box's edge by a pixel. With 1024, all three systems
+ * agree exactly at every font size that is a whole number of quarter
+ * pixels. The visual test harness rounds font sizes to quarter pixels.
  *
- * Every code point maps to the glyph: a format 4 subtable for U+0020 to
- * U+2FFF (its offsets cannot reach further), and a format 13 subtable
- * (many-to-one ranges) for every code point. So no character falls back to
- * a system font, emoji and CJK included.
+ * Every code point maps to the glyph through two subtables of the character
+ * map (`cmap`). A format 4 subtable covers U+0020 to U+2FFF, because its
+ * offsets cannot reach further. A format 13 subtable, which maps ranges of
+ * code points to one glyph, covers every code point from U+0020 up. So no
+ * character falls back to a system font, emoji and CJK included.
  *
- * Written by hand, table by table, to the OpenType specification, as small
- * as a font can be. Its tables mirror the font the spike measured, which
- * was built with fontTools.
+ * The font is written by hand, table by table, to the OpenType
+ * specification, and it is as small as a font can be. Its tables mirror
+ * those of a font built with fontTools, which an earlier experiment
+ * measured.
  */
 
 // ---------------------------------------------------------------------------
@@ -31,7 +37,7 @@
 // ---------------------------------------------------------------------------
 
 export interface BlankFontOptions {
-    /** The family name the font declares. CSS names it in `@font-face` anyway. */
+    /** The family name the font declares. CSS gives the font its own name in `@font-face`, so this one matters little. */
     readonly family: string;
 }
 
@@ -39,7 +45,7 @@ export interface BlankFontOptions {
 // Function
 // ---------------------------------------------------------------------------
 
-/** The font's file, as bytes. */
+/** Builds the blank font and returns its file as bytes. */
 export function buildBlankFont(options: BlankFontOptions): Uint8Array {
     const tables: [string, Uint8Array][] = [
         ['DSIG', writeDsig()],
@@ -65,14 +71,14 @@ const UNITS_PER_EM = 1024;
 const ADVANCE = 640;
 const ASCENT = 820;
 const DESCENT = 204;
-/** `.notdef` and the one glyph every code point maps to. */
+/** The number of glyphs. They are `.notdef` and the one glyph that every code point maps to. */
 const GLYPH_COUNT = 2;
 const BLANK_GLYPH = 1;
 /** The last code point the format 4 subtable maps. */
 const FORMAT_4_LAST = 0x2fff;
 const FIRST_CHAR = 0x20;
 
-/** A growable big-endian byte writer. */
+/** Writes big-endian values into a list of bytes that grows as needed. */
 interface Writer {
     u8: (value: number) => Writer;
     u16: (value: number) => Writer;
@@ -106,7 +112,7 @@ function createWriter(): Writer {
     return w;
 }
 
-/** An empty digital signature table, as fontTools writes for TrueType fonts. */
+/** Returns an empty digital signature table (`DSIG`), as fontTools writes for TrueType fonts. */
 function writeDsig(): Uint8Array {
     return createWriter().u32(1).u16(0).u16(0).finish();
 }
@@ -150,8 +156,10 @@ function writeCmap(): Uint8Array {
 }
 
 /**
- * U+0020 to U+2FFF, every one to the blank glyph, through `glyphIdArray`
- * (one entry per code point), and the 0xFFFF segment the format requires.
+ * Returns a format 4 `cmap` subtable. It maps each code point from U+0020
+ * to U+2FFF to the blank glyph through `glyphIdArray`, which has one entry
+ * for each code point. It ends with the 0xFFFF segment that the format
+ * requires.
  */
 function writeCmapFormat4(): Uint8Array {
     const segCount = 2;
@@ -171,12 +179,16 @@ function writeCmapFormat4(): Uint8Array {
         .u16(0) // reservedPad
         .u16(FIRST_CHAR).u16(0xffff) // startCode
         .i16(0).i16(1) // idDelta
-        .u16(segCount * 2).u16(0); // idRangeOffset: the first segment's glyphIdArray starts right after
+        .u16(segCount * 2).u16(0); // idRangeOffset: the first segment's glyphIdArray starts right after this array
     for (let i = 0; i < count; i++) w.u16(BLANK_GLYPH);
     return w.finish();
 }
 
-/** Every code point but the surrogates, to the blank glyph, in two groups. */
+/**
+ * Returns a format 13 `cmap` subtable. It maps every code point from U+0020
+ * up, except the surrogates, to the blank glyph. It uses two groups, one on
+ * each side of the surrogates.
+ */
 function writeCmapFormat13(): Uint8Array {
     const groups: [number, number][] = [[FIRST_CHAR, 0xd7ff], [0xe000, 0x10ffff]];
     const w = createWriter()
@@ -219,7 +231,7 @@ function writeHhea(): Uint8Array {
         .finish();
 }
 
-/** One advance and left side bearing, then the other glyph's left side bearing. */
+/** Returns the horizontal metrics table (`hmtx`). It holds one advance and left side bearing, then the other glyph's left side bearing. */
 function writeHmtx(): Uint8Array {
     const w = createWriter().u16(ADVANCE).i16(0);
     for (let i = 1; i < GLYPH_COUNT; i++) w.i16(0);
@@ -232,11 +244,11 @@ function writeMaxp(): Uint8Array {
         .u16(GLYPH_COUNT)
         .u16(0).u16(0).u16(0).u16(0) // maxPoints, maxContours, maxCompositePoints, maxCompositeContours
         .u16(2) // maxZones
-        .u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0) // twilight points to component depth
+        .u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0) // maxTwilightPoints to maxComponentDepth
         .finish();
 }
 
-/** Family and subfamily names, for Macintosh (Roman) and Windows (Unicode, US English). */
+/** Returns the naming table (`name`). It holds the family and subfamily names for Macintosh (Roman) and for Windows (Unicode, US English). */
 function writeName(family: string): Uint8Array {
     const records: { platform: number; encoding: number; language: number; id: number; bytes: Uint8Array }[] = [];
     for (const [id, value] of [[1, family], [2, 'Regular']] as const) {
@@ -257,7 +269,7 @@ function writeName(family: string): Uint8Array {
     return w.finish();
 }
 
-/** Version 2, naming `.notdef` and `g` by their indices among the standard Macintosh glyph names. */
+/** Returns a version 2 PostScript table (`post`). It names the glyphs `.notdef` and `g` by their indices among the standard Macintosh glyph names. */
 function writePost(): Uint8Array {
     return createWriter()
         .u32(0x00020000)
@@ -271,7 +283,11 @@ function writePost(): Uint8Array {
         .finish();
 }
 
-/** The table directory, the tables (each padded to four bytes), and the whole font's checksum in `head`. */
+/**
+ * Returns the font file. It holds the table directory, then the tables,
+ * each padded to four bytes. Last, it sets the checksum adjustment in
+ * `head`, which is computed from the whole font's checksum.
+ */
 function assemble(tables: [string, Uint8Array][]): Uint8Array {
     const sorted = [...tables].sort(([a], [b]) => (a < b ? -1 : 1));
     let searchRange = 1;

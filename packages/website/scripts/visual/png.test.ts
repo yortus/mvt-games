@@ -26,7 +26,7 @@ describe('encodePng', () => {
         expect(encodePng(createPicture(16, 16, 3))).toEqual(encodePng(createPicture(16, 16, 3)));
     });
 
-    it('carries the hash of the pixels, read from the file\'s first bytes', () => {
+    it('carries the hash of the pixels, which readPngHash reads from the file\'s first bytes', () => {
         const p = createPicture(64, 48, 5);
         const file = join(dir, 'p.png');
         writeFileSync(file, encodePng(p));
@@ -34,7 +34,7 @@ describe('encodePng', () => {
     });
 });
 
-describe('encodePng, every form it chooses', () => {
+describe('encodePng, in each form it can choose', () => {
     function createColouredPicture(width: number, height: number, count: number, alpha = 255): Picture {
         const pixels = new Uint8Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
@@ -44,7 +44,8 @@ describe('encodePng, every form it chooses', () => {
         return { width, height, pixels };
     }
 
-    // Widths that leave a partly filled byte at the end of each row, at every palette bit depth
+    // The width of 13 leaves a partly filled byte at the end of each row, at
+    // each palette bit depth below 8.
     for (const [count, name] of [[2, '1-bit'], [4, '2-bit'], [16, '4-bit'], [200, '8-bit']] as const) {
         it(`round-trips a ${name} palette`, () => {
             const p = createColouredPicture(13, 7, count);
@@ -57,7 +58,7 @@ describe('encodePng, every form it chooses', () => {
         expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
     });
 
-    it('round-trips more than 256 colours, opaque (RGB) and not (RGBA)', () => {
+    it('round-trips more than 256 colours, both opaque (RGB) and not (RGBA)', () => {
         for (const alpha of [255, 90]) {
             const p = createColouredPicture(41, 23, 943, alpha);
             expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
@@ -77,9 +78,10 @@ describe('hashPicture', () => {
 });
 
 describe('readPngHash', () => {
-    it('is undefined for a PNG without one', () => {
+    it('returns undefined for a PNG without a hash', () => {
         const file = join(dir, 'plain.png');
-        // A minimal PNG's signature and header, with no text chunk after it
+        // These bytes are a minimal PNG's signature and header, with no text
+        // chunk after them.
         writeFileSync(file, Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex'));
         expect(readPngHash(file)).toBeUndefined();
     });

@@ -93,7 +93,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let score = 0;
     let lives = 3;
     let wave = 1;
-    /** Each asteroid's outline seed, counted per game, so one game's shapes never depend on another's. */
+    /** The next asteroid's shape seed. It counts from 1 in each game, so one game's shapes never depend on another's. */
     let nextShapeSeed = 1;
     let shotsFired = 0;
     let rocksBroken = 0;

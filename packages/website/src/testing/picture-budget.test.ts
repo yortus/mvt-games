@@ -11,11 +11,12 @@ describe('fitPicture', () => {
 
     it('halves a smooth picture over the budget until it fits', () => {
         expect(fitPicture({ width: 1208, height: 608, maxPixels: MAX, canScale: true })).toEqual({ resolution: 0.5 });
-        // 1600 by 2180 is 3.5 million: a half is 872,000, a quarter 218,000
+        // 1600 by 2180 is 3.5 million pixels. At half resolution it is 872,000,
+        // and at a quarter it is 218,000.
         expect(fitPicture({ width: 1600, height: 2180, maxPixels: MAX, canScale: true })).toEqual({ resolution: 0.25 });
     });
 
-    it('fails a picture over the budget that cannot be scaled, saying what to do', () => {
+    it('fails a picture over the budget that cannot be scaled, and says what to do', () => {
         const fit = fitPicture({ width: 1600, height: 2180, maxPixels: MAX, canScale: false });
         expect('problem' in fit && fit.problem).toContain('over the budget of 500,000');
         expect('problem' in fit && fit.problem).toContain("artStyle: 'smooth'");

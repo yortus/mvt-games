@@ -6,17 +6,19 @@ import type { Font, Glyph } from 'fontkit';
 
 /**
  * Canvas text in a visual test is laid out and drawn by this module, not by
- * the browser: each system's font engine positions and antialiases glyphs
- * its own way, and nothing in the browser makes them agree. It replaces a 2D
- * canvas's `fillText`, `strokeText` and `measureText` with its own layout
- * (fontkit, from the test fonts' files, at the weight asked for, with
- * kerning) and `Path2D` fills, which Skia draws the same way everywhere.
- * Fill styles, gradients, strokes, letter spacing and shadows apply to paths
- * as to text. Pixi measures through the same `measureText`, so its layout and
- * the drawing agree.
+ * the browser. Each system's font engine positions and antialiases glyphs
+ * its own way, and nothing in the browser makes them agree. So this module
+ * replaces a 2D canvas's `fillText`, `strokeText` and `measureText`. Its own
+ * layout uses fontkit, a font-reading library, to read the test fonts'
+ * files. It lays text out at the weight asked for, with kerning. It draws
+ * each glyph as a `Path2D` fill, which Skia (the browser's 2D graphics
+ * library) draws the same way everywhere. Fill styles, gradients, strokes,
+ * letter spacing and shadows apply to paths as they do to text. Pixi
+ * measures text through the same `measureText`, so its layout agrees with
+ * the drawing.
  */
 export interface CanvasText {
-    /** Families asked for since the last call that no test font stands in for. */
+    /** Returns the font families asked for since the last call that no test font stands in for. */
     takeUnpinnedFamilies: () => readonly string[];
 }
 
@@ -25,8 +27,9 @@ export interface CanvasText {
 // ---------------------------------------------------------------------------
 
 export interface CanvasTextOptions {
-    /** The test fonts: sans-serif for every proportional family, monospace for every fixed one. */
+    /** The sans-serif test font, which stands in for every proportional family. */
     readonly sans: Font;
+    /** The monospace test font, which stands in for every fixed-width family. */
     readonly mono: Font;
 }
 
@@ -34,7 +37,7 @@ export interface CanvasTextOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Replaces canvas text drawing in this page, for the rest of its life. */
+/** Replaces canvas text drawing in this page for the rest of the page's life. */
 export function installCanvasText(options: CanvasTextOptions): CanvasText {
     const unpinned = new Set<string>();
     const parsed = new Map<string, ParsedFont>();
@@ -60,7 +63,10 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
         },
     };
 
-    /** The test font, size and slant a CSS font string asks for (as the canvas normalises it). */
+    /**
+     * Returns the test font, size and slant that a CSS font string asks for.
+     * The string is in the form that the canvas normalises it to.
+     */
     function parse(css: string): ParsedFont {
         let font = parsed.get(css);
         if (font === undefined) {
@@ -105,7 +111,7 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
 interface ParsedFont {
     readonly font: Font;
     readonly size: number;
-    /** No italic test font: italic and oblique text is slanted. */
+    /** Whether the text is slanted. There is no italic test font, so italic and oblique text is slanted instead. */
     readonly isItalic: boolean;
 }
 
@@ -114,12 +120,12 @@ interface Laid {
     /** Each glyph's pen position, in pixels. */
     readonly x: readonly number[];
     readonly y: readonly number[];
-    /** The advance, letter spacing included after every glyph, as the canvas measures it. */
+    /** The total advance (how far the pen moves), with letter spacing after every glyph, as the canvas measures it. */
     readonly width: number;
     readonly scale: number;
 }
 
-/** A canvas font string: style, variant, weight, stretch, size (px), line height, families. */
+/** Matches a canvas font string. Its parts are style, variant, weight, stretch, size (px), line height and families. */
 const FONT_PATTERN = /^(?:(italic|oblique(?: [-\d.]+deg)?|normal)\s+)?(?:(small-caps|normal)\s+)?(?:(bold|bolder|lighter|normal|\d{1,4})\s+)?(?:(?:ultra-|extra-|semi-)?(?:condensed|expanded)\s+)?([\d.]+)px(?:\/\S+)?\s+(.+)$/;
 
 const MONO_FAMILIES: ReadonlySet<string> = new Set([
@@ -177,7 +183,7 @@ function computeBaselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): nu
 
 function layOutPath(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, x: number, y: number, maxWidth: number | undefined): Path2D {
     const laid = lay(ctx, p, text);
-    // Text wider than maxWidth is squeezed to fit, as the canvas does
+    // Text wider than maxWidth is squeezed to fit, as the canvas does.
     const squeeze = maxWidth !== undefined && laid.width > maxWidth && laid.width > 0 ? maxWidth / laid.width : 1;
     const originX = x + computeAlignOffset(ctx, laid.width * squeeze);
     const originY = y + computeBaselineOffset(ctx, p);

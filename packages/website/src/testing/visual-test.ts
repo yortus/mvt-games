@@ -15,7 +15,10 @@ import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** Builds a view in the state to photograph, advancing its time if it has any, and returns it. */
+/**
+ * A function that builds a view in the state to take a picture of, and
+ * returns it. If the view has time to advance, the pose advances it too.
+ */
 export type Pose<V> = () => V | Promise<V>;
 
 // ---------------------------------------------------------------------------
@@ -23,15 +26,18 @@ export type Pose<V> = () => V | Promise<V>;
 // ---------------------------------------------------------------------------
 
 /**
- * One visual test: the view the pose returns, refreshed, drawn and compared
- * with its reference, `__screenshots__/<this file>/<describe blocks>-<name>.png`.
- * A Pixi view is drawn in a `*.visual.tsx` file, as pixel art unless its
- * options say `artStyle: 'smooth'` (see `PixiPictureOptions.artStyle` for
- * what each style means for the picture). A three.js view is drawn in the
- * same files, with the camera its options make, in a scene they can dress
- * as its entry does. An HTML view (whose text is drawn blank, so its layout
- * and styling show) in a `*.html.visual.tsx` file, which runs in a page of
- * its own.
+ * Adds one visual test. The test refreshes the view that the pose returns,
+ * draws it, and compares it with its reference,
+ * `__screenshots__/<this file>/<describe blocks>-<name>.png`.
+ *
+ * - A Pixi view is tested in a `*.visual.tsx` file. It is drawn as pixel
+ *   art unless its options say `artStyle: 'smooth'`. See
+ *   `PixiPictureOptions.artStyle` for what each style means for the picture.
+ * - A three.js view is tested in the same files. It is drawn with the
+ *   camera that its options make, in a scene that they can dress as its
+ *   entry does.
+ * - An HTML view is tested in a `*.html.visual.tsx` file, which runs in a
+ *   page of its own. Its text is drawn blank, so its layout and styling show.
  */
 export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
 export function visualTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
@@ -48,7 +54,8 @@ export function visualTest(
         const id = nameCurrentPicture();
         task.meta.visualPicture = id.name;
         const ms: Record<string, number> = {};
-        // The overloads pair each kind of view with its own options
+        // The casts of `options` here and below are safe, because the
+        // overloads pair each kind of view with its own options.
         if (kind === 'pixi') preparePixiPose(options as PixiPictureOptions);
 
         let t = performance.now();
@@ -61,7 +68,7 @@ export function visualTest(
             refreshView(view);
             ms.refresh = performance.now() - t;
             if (view instanceof Element) {
-                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view: HTML views are tested in a *.html.visual.tsx file`);
+                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view. HTML views are tested in a *.html.visual.tsx file.`);
                 const captured = await captureHtmlPicture(view, { ...(options as HtmlPictureOptions), maxPixels }, id);
                 ms.capture = captured.captureMs;
                 verdict = captured;
@@ -69,7 +76,7 @@ export function visualTest(
             }
             else {
                 if (kind !== 'pixi') {
-                    throw new Error(`'${id.test}' poses a Pixi or three.js view: they are tested in a *.visual.tsx file, not *.html.visual.tsx`);
+                    throw new Error(`'${id.test}' poses a Pixi or three.js view. Those views are tested in a *.visual.tsx file, not a *.html.visual.tsx file.`);
                 }
                 t = performance.now();
                 const picture = view instanceof Object3D
@@ -77,12 +84,12 @@ export function visualTest(
                     : await drawPixiPicture(view, { ...(options as PixiPictureOptions), maxPixels });
                 ms.draw = performance.now() - t;
                 if (picture.isBlank) {
-                    const hint = view instanceof Object3D ? ' (is the camera looking at it, and is it lit?)' : '';
-                    throw new Error(`'${id.test}' is blank: the view drew nothing inside its picture${hint}`);
+                    const hint = view instanceof Object3D ? ' Is the camera looking at it, and is it lit?' : '';
+                    throw new Error(`'${id.test}' is blank. The view drew nothing inside its picture.${hint}`);
                 }
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
-                    throw new Error(`'${id.test}' uses fonts no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts`);
+                    throw new Error(`'${id.test}' uses fonts that no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/testing/canvas-text.ts.`);
                 }
                 t = performance.now();
                 const hash = await hashPixels(picture.width, picture.height, picture.pixels);

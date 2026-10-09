@@ -1,8 +1,8 @@
 /**
- * What the page and Node say to each other: the visual tests' browser
- * commands (they run in Node, called from the page), their arguments and
- * their answers. The page's side is `commands.ts`; Node's is
- * `scripts/visual/commands.ts`.
+ * These are the messages between the test page and Node. They are the
+ * visual tests' browser commands, with their arguments and their answers.
+ * The commands run in Node, and the page calls them. The page's side is in
+ * `judge.ts`, and Node's side is in `scripts/visual/commands.ts`.
  */
 
 // ---------------------------------------------------------------------------
@@ -10,14 +10,21 @@
 // ---------------------------------------------------------------------------
 
 /**
- * What a run does with pictures. `compare` checks them; `update` also
- * writes the reference of every picture that changed or is new;
- * `environment` also rewrites the environment's fingerprint and the
- * calibration set's references.
+ * What a run does with pictures.
+ *
+ * - `compare` checks them against their references.
+ * - `update` also writes the reference of every picture that changed or is
+ *   new.
+ * - `environment` also rewrites the environment's fingerprint (the browser's
+ *   facts in `visual-environment.json`) and the calibration set's references.
  */
 export type VisualMode = 'compare' | 'update' | 'environment';
 
-/** Which project a page belongs to: WebGL pictures in one shared page, or HTML pictures in a page per file. */
+/**
+ * Which project a page belongs to. The `pixi` project draws WebGL pictures
+ * in one shared page. The `html` project captures HTML pictures, in a page
+ * for each file.
+ */
 export type VisualKind = 'pixi' | 'html';
 
 /** How a picture compares with its reference. */
@@ -31,34 +38,41 @@ export type VisualOutcome =
 
 export interface VisualVerdict {
     readonly outcome: VisualOutcome;
-    /** Pixels that differ, and the largest difference in a channel (0 to 255). */
+    /** The number of pixels that differ, and the largest difference in any channel (0 to 255). */
     readonly changed?: number;
     readonly maxDelta?: number;
     /** The smallest rectangle holding every pixel that differs. */
     readonly changedRect?: VisualRect;
     /** The reference's size, when it differs. */
     readonly referenceSize?: string;
-    /** Where the reference is, and where the actual picture and the diff were written, from the repo's root. */
+    /**
+     * The reference's path, and the paths that the actual picture and the
+     * diff were written to. Each path is relative to the repo's root.
+     */
     readonly referenceFile: string;
     readonly actualFile?: string;
     readonly diffFile?: string;
 }
 
 /**
- * Which pictures a request is about: a test file's (the file calling), or
- * a project's calibration set, checked before any test.
+ * Which pictures a request is about. Without `calibration`, they are the
+ * pictures of the test file that calls. With it, they are that project's
+ * calibration set, which is checked before any test.
  */
 export interface VisualScope {
     readonly calibration?: VisualKind;
 }
 
-/** A picture: the file name of its reference, and the full name of the test that makes it. */
+/** Identifies a picture by the file name of its reference and the full name of the test that makes it. */
 export interface VisualPictureId extends VisualScope {
     readonly name: string;
     readonly test: string;
 }
 
-/** A picture's pixels as sent to Node: RGBA, rows from the top, in base64. */
+/**
+ * A picture's pixels as sent to Node. They are RGBA, with rows from the top,
+ * encoded in base64.
+ */
 export interface VisualPicturePayload extends VisualPictureId {
     readonly width: number;
     readonly height: number;
@@ -66,7 +80,7 @@ export interface VisualPicturePayload extends VisualPictureId {
     readonly pixels: string;
 }
 
-/** A rectangle of the top-level page, in CSS pixels, whole. */
+/** A rectangle of the top-level page, in whole CSS pixels. */
 export interface VisualRect {
     readonly x: number;
     readonly y: number;
@@ -74,7 +88,7 @@ export interface VisualRect {
     readonly height: number;
 }
 
-/** An HTML picture to capture, by the rectangle it fills. */
+/** A request to capture an HTML picture, which gives the rectangle the picture fills. */
 export interface VisualCaptureRequest extends VisualPictureId {
     readonly rect: VisualRect;
 }
@@ -88,30 +102,33 @@ export interface VisualEnvironment {
     readonly devicePixelRatio: number;
 }
 
-/** What a page is told once per test file (or per calibration set). */
+/** What Node tells a page once for each test file, or for each calibration set. */
 export interface VisualSession {
     readonly mode: VisualMode;
     /** The hash of each reference in scope, by picture name. */
     readonly hashes: Readonly<Record<string, string>>;
-    /** For a calibration set: whether this run has already checked it (an HTML page per file asks again). */
+    /**
+     * For a calibration set, whether this run has already checked it. Each
+     * HTML test file has a page of its own, and each of those pages asks again.
+     */
     readonly isCalibrated: boolean;
 }
 
-/** A calibration set that matched: its kind, and the names of the pictures compared. */
+/** A calibration set that matched. It gives the set's kind and the names of the pictures compared. */
 export interface VisualCalibration {
     readonly kind: VisualKind;
     readonly names: readonly string[];
 }
 
-/** Timings and outcome, attached to each test for the run's summary. */
+/** A visual test's timings and outcome. They are attached to each test for the run's summary. */
 export interface VisualTestMeta {
     readonly kind: VisualKind;
     readonly outcome: VisualOutcome;
     readonly width: number;
     readonly height: number;
-    /** Picture pixels per view pixel: 1, or less for a big smooth view drawn to fit the budget. */
+    /** Picture pixels per view pixel. This is 1, or less for a big smooth view drawn to fit the budget. */
     readonly resolution: number;
-    /** Milliseconds per stage: pose, refresh, draw, hash, capture, compare. */
+    /** Milliseconds spent in each stage. The stages are pose, refresh, draw, hash, capture and compare. */
     readonly ms: Readonly<Record<string, number>>;
 }
 
@@ -120,32 +137,40 @@ declare module 'vitest' {
         /** A visual test's timings and outcome, for the run's summary. */
         visual?: VisualTestMeta;
         /**
-         * The name of a visual test's reference file, set as it starts, so a
-         * test that fails before its picture still counts as using it.
+         * The name of a visual test's reference file. It is set as the test
+         * starts, so a test that fails before its picture is drawn still
+         * counts as using the reference.
          */
         visualPicture?: string;
     }
     interface ProvidedContext {
         /** Which project the page belongs to, provided by its config. */
         visualKind: VisualKind;
-        /** The size budget, in pixels, provided by the config (`maxPixels`). */
+        /** The size budget in pixels, provided by the config (`maxPixels`). */
         visualMaxPixels: number;
     }
 }
 
-/** The commands, as the page calls them (the context argument Node receives is left out). */
+/** The commands as the page calls them. The context argument that Node receives is left out. */
 export interface VisualCommands {
     openVisualSession: (scope: VisualScope) => Promise<VisualSession>;
-    /** A WebGL picture whose hash is not its reference's: Node compares, writes files, and judges. */
+    /**
+     * Sends Node a WebGL picture whose hash is not its reference's. Node
+     * compares the pictures, writes the files, and returns the verdict.
+     */
     judgeVisualMismatch: (picture: VisualPicturePayload) => Promise<VisualVerdict>;
-    /** An HTML picture: Node takes the screenshot of the rectangle, and judges it. */
+    /**
+     * Asks Node to take a screenshot of an HTML picture's rectangle. Node
+     * judges the picture and returns the verdict.
+     */
     captureVisualPicture: (request: VisualCaptureRequest) => Promise<VisualVerdict & { readonly captureMs: number }>;
     /**
-     * The browser's facts, checked against the reference environment's (or,
-     * in `environment` mode, written as them). Returns what differed.
+     * Checks the browser's facts against the reference environment's. In
+     * `environment` mode, it writes them as the reference environment's
+     * instead. Returns what differed.
      */
     checkVisualEnvironment: (environment: VisualEnvironment) => Promise<readonly string[]>;
-    /** Records that a calibration set matched, so the run's other pages skip it, and which references it used. */
+    /** Records that a calibration set matched, and which references it used. The run's other pages then skip the set. */
     recordVisualCalibration: (calibration: VisualCalibration) => Promise<void>;
     /** Stops the run before any more tests, with one error. */
     abortVisualRun: (message: string) => Promise<void>;

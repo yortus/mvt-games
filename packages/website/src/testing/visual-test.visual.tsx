@@ -1,4 +1,5 @@
-// The harness's own visual tests: what a Pixi or three.js picture covers, one case each.
+// These are the visual test harness's own tests. Each one checks one case
+// that a Pixi or three.js picture covers.
 import { Container, Graphics, Text } from 'pixi.js';
 import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
@@ -18,16 +19,17 @@ describe('visualTest', () => {
 
     visualTest('at a fixed size', () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b), { width: 100, height: 60, artStyle: 'smooth' });
 
-    // Drawn as pixel art is, by default: hard edges, whole pixels
+    // By default, a view is drawn as pixel art is, with hard edges and whole pixels.
     visualTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
 
-    // A smooth view over the size budget (500,000 pixels) is drawn at half resolution to fit it
+    // A smooth view over the size budget (500,000 pixels) is drawn at half
+    // resolution to fit it.
     visualTest('smooth, over the budget', () => new Graphics().roundRect(0, 0, 1200, 600, 48).fill(0x5bd1ff).circle(600, 300, 200).fill(0xff4f8b), SMOOTH);
 
     visualTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }), SMOOTH);
 
     visualTest('after time passes', async () => {
-        // A bar that grows in its update step: presentation state
+        // The bar grows in its update step, so its width is presentation state.
         const bar = new Graphics();
         let width = 10;
         const view = new Container();
@@ -43,7 +45,7 @@ describe('visualTest', () => {
     describe('three.js', () => {
         visualTest('lit by its own lights, with the camera given', () => createKnot(), { width: 200, height: 150, camera: createKnotCamera });
 
-        // Refreshed before it is drawn, and advanced like any view
+        // A three.js view is refreshed before it is drawn, and advanced like any view.
         visualTest('after time passes', async () => {
             const view = createKnot();
             let turned = 0;
@@ -57,7 +59,8 @@ describe('visualTest', () => {
             return view;
         }, { width: 200, height: 150, camera: createKnotCamera });
 
-        // Always antialiased, so over the size budget it is drawn at half resolution, as a smooth Pixi view is
+        // A three.js picture is always antialiased. So over the size budget, it
+        // is drawn at half resolution, as a smooth Pixi view is.
         visualTest('over the budget', () => createKnot(), { width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b });
     });
 });

@@ -9,7 +9,7 @@ import type { ArcadeEntry, EntrySession, EntryStarter, PixiEntryStarter } from '
 
 export interface StartPixiHeadlessOptions {
     readonly entry: ArcadeEntry;
-    /** The entry's starter, from `entry.load()`. */
+    /** The entry's starter, which `ArcadeEntry.load` returns. */
     readonly starter: PixiEntryStarter;
     /** The bare container that the entry adds its view to. */
     readonly stage: Container;
@@ -24,7 +24,7 @@ export interface AdvanceHeadlessOptions {
     /** The controls of the chip that the session plays on. */
     readonly controls: AudioControls;
     readonly totalMs: number;
-    /** Plays the entry's controls before each step, as a starter's `thumbnailInput` does. */
+    /** Plays the entry's controls before each step, as `PixiEntryStarter.thumbnailInput` does. */
     readonly input?: (session: EntrySession, elapsedMs: number) => void;
 }
 
@@ -68,7 +68,11 @@ export function advanceHeadless(options: AdvanceHeadlessOptions): void {
     controls.flush();
 }
 
-/** Returns how long to advance an entry before its thumbnail is taken. That is as long as it asks, or one frame. */
+/**
+ * Returns how long to advance an entry before its thumbnail is taken. That
+ * is the time its starter asks for (`thumbnailAdvanceMs`), or one frame if
+ * it asks for none.
+ */
 export function findThumbnailAdvanceMs(starter: EntryStarter): number {
     return starter.thumbnailAdvanceMs ?? FRAME_MS;
 }

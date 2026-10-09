@@ -17,13 +17,14 @@ import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 // ---------------------------------------------------------------------------
 
 /**
- * Checks, before any test, that this machine is the reference environment:
- * the browser's facts, then a calibration set of small pictures, each
- * exercising one way a picture can differ between machines. If anything
- * differs beyond the tolerance, the run stops with one error saying what,
- * rather than failing every test for one reason nobody can see. In
- * `environment` mode, it writes the facts and the calibration set's
- * references instead. Once per run for each kind of page.
+ * Checks that this machine is the reference environment, before any test
+ * runs. First it checks the browser's facts. Then it draws a calibration set
+ * of small pictures. Each one exercises one way that a picture can differ
+ * between machines. If anything differs beyond the tolerance, the run stops
+ * with one error that says what differs. That is clearer than failing every
+ * test for one reason that nobody can see. In `environment` mode, it writes
+ * the facts and the calibration set's references instead. It runs once per
+ * run for each kind of page.
  */
 export async function checkCalibration(kind: VisualKind): Promise<void> {
     const session = await openSession({ calibration: kind });
@@ -35,12 +36,12 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
             const verdict = await draw(name, session.hashes[name]);
             if (!isPass(verdict)) {
                 const detail = verdict.outcome === 'differs' ? describeDifference(verdict) : verdict.outcome;
-                problems.push(`the calibration picture '${name}' differs (${detail}): see ${verdict.diffFile ?? verdict.actualFile}`);
+                problems.push(`the calibration picture '${name}' differs (${detail}), as ${verdict.diffFile ?? verdict.actualFile} shows`);
             }
         }
     }
     if (problems.length > 0) {
-        const message = `This machine is not the visual tests' reference environment (${kind}): ${problems.join('; ')}. `
+        const message = `This machine is not the visual tests' reference environment (${kind}). These checks failed: ${problems.join('; ')}. `
             + 'No picture was compared. If the browser was upgraded on purpose, run `npm run test:visual:environment` and review the changes.';
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
@@ -66,7 +67,7 @@ function readEnvironment(): VisualEnvironment {
     };
 }
 
-/** A calibration picture drawn with Pixi. */
+/** Creates a calibration picture drawn with Pixi. */
 function createPixiCalibration(pose: () => Container, options: PixiPictureOptions = {}): Calibration {
     return async (name, expectedHash) => {
         preparePixiPose(options);
@@ -80,7 +81,11 @@ function createPixiCalibration(pose: () => Container, options: PixiPictureOption
     };
 }
 
-/** A calibration picture drawn with three.js, in the WebGL set: it shares the page, and SwiftShader. */
+/**
+ * Creates a calibration picture drawn with three.js. It belongs to the WebGL
+ * set, with the Pixi pictures, because it runs in the same page and on the
+ * same software WebGL (SwiftShader).
+ */
 function createThreeCalibration(pose: () => Object3D, options: ThreePictureOptions): Calibration {
     return async (name, expectedHash) => {
         const view = pose();
@@ -106,7 +111,7 @@ async function judgeWebGl(
     });
 }
 
-/** A calibration picture in HTML. */
+/** Creates a calibration picture made of HTML markup. */
 function createHtmlCalibration(markup: string): Calibration {
     return async (name) => {
         const root = document.createElement('div');
@@ -137,7 +142,7 @@ function createCheckerSprite(): Container {
     canvas.width = 16;
     canvas.height = 16;
     const ctx = canvas.getContext('2d');
-    if (ctx === null) throw new Error('No 2D canvas');
+    if (ctx === null) throw new Error('The browser gave no 2D canvas context.');
     for (let i = 0; i < 16; i++) {
         ctx.fillStyle = ['#ff4f8b', '#ffe45c', '#2a1766', '#5bd1ff'][(i % 4 + Math.floor(i / 4)) % 4];
         ctx.fillRect((i % 4) * 4, Math.floor(i / 4) * 4, 4, 4);
@@ -153,7 +158,7 @@ function createCheckerSprite(): Container {
 
 const SMOOTH: PixiPictureOptions = { artStyle: 'smooth' };
 
-/** A sphere and a box, in two kinds of material, for the lighting to show on. */
+/** Creates a sphere and a box, in two kinds of material, for the lighting to show on. */
 function createShapes(): Object3D {
     const group = new Group();
     const sphere = new Mesh(new SphereGeometry(1, 48, 32), new MeshStandardMaterial({ color: 0xff4f8b, roughness: 0.35, metalness: 0.2 }));
@@ -213,8 +218,10 @@ const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
         group.add(new AmbientLight(0xffffff, 0.3), light);
         return group;
     }, { width: 160, height: 120, camera: createShapesCamera }),
-    // The fruit machine's way: a room to reflect, tone-mapped, on a coloured background. A small
-    // environment map: the same code, and seconds less at start-up in software WebGL
+    // This lights the shapes the way the fruit machine game does. They reflect
+    // a room, the picture is tone-mapped, and the background is coloured. The
+    // environment map is small. It runs the same code as a full-size one, and
+    // takes seconds less to make at start-up in software WebGL.
     'three-environment': createThreeCalibration(createShapes, {
         width: 160,
         height: 120,

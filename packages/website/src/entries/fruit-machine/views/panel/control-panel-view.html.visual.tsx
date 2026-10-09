@@ -13,10 +13,10 @@ const PADDING = 10;
 const GAP = 10;
 
 /**
- * The panel in the quadrant its entry gives it, so the stylesheet's
- * selectors apply. The machine's grid is two quadrants by two: a lone
- * quadrant spans it, in a machine one quadrant in size, so it is as big as
- * at the entry's play size.
+ * Returns the panel inside the quadrant that its entry gives it, so the
+ * stylesheet's selectors apply. The machine's grid is two quadrants by two.
+ * Here a lone quadrant spans the grid, in a machine only one quadrant in
+ * size. So the quadrant is as big as it is at the entry's play size.
  */
 function placeInQuadrant(view: Element): HTMLElement {
     const width = (entry.screenWidth - 2 * PADDING - GAP) / 2 + 2 * PADDING;

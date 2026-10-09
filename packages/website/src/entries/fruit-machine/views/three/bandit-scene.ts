@@ -11,7 +11,7 @@ export interface DressBanditSceneOptions {
 }
 
 export interface FrameBanditCameraOptions {
-    /** A perspective camera whose aspect is already the picture's. */
+    /** A perspective camera whose aspect ratio already matches the picture. */
     readonly camera: PerspectiveCamera;
 }
 
@@ -20,27 +20,29 @@ export interface FrameBanditCameraOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Dresses the scene the bandit is drawn in, and its renderer: the bandit's
- * paint and chrome shine by reflecting a room (its own lights add only a
- * key light and shadowed sides), tone-mapped so the paint keeps its hue as
- * its highlights brighten. The page does this once; visual tests do it for
- * each picture.
+ * Sets up the scene that the bandit is drawn in, and its renderer. The
+ * bandit's paint and chrome shine by reflecting a room. The bandit's own
+ * lights add only a key light and shadowed sides. The renderer's tone
+ * mapping keeps the paint's hue as its highlights brighten. The page does
+ * this once. The visual tests do it once per page too, and reuse the scene
+ * for each picture.
  */
 export function dressBanditScene(options: DressBanditSceneOptions): void {
     const { scene, renderer } = options;
     renderer.toneMapping = NeutralToneMapping;
     scene.background = new Color(0x15102b);
-    // A room for the paint and chrome to reflect: without one, nothing shines
+    // The paint and chrome reflect a room. Without one, nothing shines.
     const environment = new PMREMGenerator(renderer);
     scene.environment = environment.fromScene(new RoomEnvironment(), ENVIRONMENT_BLUR).texture;
-    // Dimmed: at full strength the room's light washes the paint out
+    // The room's light is dimmed, because at full strength it washes the paint out.
     scene.environmentIntensity = ENVIRONMENT_INTENSITY;
     environment.dispose();
 }
 
 /**
  * Points the camera at the bandit, framing its lever too, for the camera's
- * aspect: a narrow view would crop the cabinet's sides, so it steps back.
+ * aspect ratio. A narrow view would crop the cabinet's sides, so for one the
+ * camera steps back.
  */
 export function frameBanditCamera(options: FrameBanditCameraOptions): void {
     const { camera } = options;
@@ -54,11 +56,11 @@ export function frameBanditCamera(options: FrameBanditCameraOptions): void {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How soft the room's reflections are: a little, so the shine reads as gloss, not a mirror. */
+/** The room's reflections are blurred a little, so the shine looks like gloss rather than a mirror. */
 const ENVIRONMENT_BLUR = 0.04;
 const ENVIRONMENT_INTENSITY = 0.45;
 const FIELD_OF_VIEW = 30;
-/** A little right of the cabinet's middle, to frame its lever too. */
+/** The camera sits a little right of the cabinet's middle, to frame its lever too. */
 const CAMERA_X = 0.4;
 const CAMERA_HEIGHT = 4.6;
 const CAMERA_DISTANCE = 19;

@@ -1,10 +1,11 @@
 /**
- * Comparing a picture with its reference, within the visual tests'
- * tolerance: no channel of any pixel may differ by more than
- * `TOLERANCE` levels of 255. Per channel, not a count of pixels: arm64
- * processors round blurs, rotated images and some edges differently by 1 or
- * 2 levels over thousands of pixels, and a pixel count small enough to catch
- * a real change would fail them.
+ * Compares a picture with its reference, within the visual tests'
+ * tolerance. A picture passes if no channel of any pixel differs by more
+ * than `TOLERANCE` levels out of 255. The tolerance applies to each
+ * channel, and it is not a count of pixels. This is because arm64
+ * processors round blurs, rotated images and some edges differently, by 1
+ * or 2 levels over thousands of pixels. A pixel count small enough to catch
+ * a real change would fail those pictures.
  */
 
 import type { VisualRect } from '../../src/testing';
@@ -15,7 +16,7 @@ import type { Picture } from './png';
 // ---------------------------------------------------------------------------
 
 export interface Comparison {
-    /** Pixels that differ at all. */
+    /** The number of pixels that differ at all. */
     readonly changed: number;
     /** The largest difference in any channel of any pixel, 0 to 255. */
     readonly maxDelta: number;

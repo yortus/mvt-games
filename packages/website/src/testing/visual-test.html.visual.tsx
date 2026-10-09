@@ -1,4 +1,5 @@
-// The harness's own visual tests: what an HTML picture covers, one case each.
+// These are the visual test harness's own tests. Each one checks one case
+// that an HTML picture covers.
 import { describe } from 'vitest';
 import { visualTest } from '#testing';
 

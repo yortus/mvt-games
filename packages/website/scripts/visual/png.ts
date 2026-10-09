@@ -1,7 +1,8 @@
 /**
- * Reference pictures as PNG files, with the hash of their pixels in a text
- * chunk right after the header, so a run reads every reference's hash from
- * its first hundred or so bytes without decoding it.
+ * Reads and writes reference pictures as PNG files. Each file carries the
+ * hash of its pixels in a text chunk right after the PNG header. So a test
+ * run can read every reference's hash from the first hundred or so bytes of
+ * its file, without decoding the picture.
  */
 
 import { createHash } from 'node:crypto';
@@ -13,7 +14,7 @@ import { PNG } from 'pngjs';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A picture's pixels: RGBA, 8 bits a channel, rows from the top. */
+/** A picture's pixels, as RGBA with 8 bits for each channel, in rows from the top. */
 export interface Picture {
     readonly width: number;
     readonly height: number;
@@ -25,21 +26,26 @@ export interface Picture {
 // ---------------------------------------------------------------------------
 
 /**
- * The hash a picture is known by: its size and the SHA-256 of its pixels.
- * The page computes the same (`src/testing/judge.ts`).
+ * Returns the hash a picture is known by. It holds the picture's size and
+ * the first 32 hex digits of the SHA-256 hash of its pixels. The test page
+ * computes the same hash, in `src/testing/judge.ts`.
  */
 export function hashPicture(picture: Picture): string {
     return `${picture.width}x${picture.height}:${createHash('sha256').update(picture.pixels).digest('hex').slice(0, 32)}`;
 }
 
 /**
- * The PNG for a picture, with its hash in a `tEXt` chunk after the header.
- * Lossless, and as small as a simple encoder makes it: a palette (1, 2, 4
- * or 8 bits a pixel) for a picture of 256 colours or fewer, as flat art
- * and pixel art usually are; otherwise RGB for an opaque picture (every
- * picture here is), RGBA for the rest, each row with whichever of PNG's
- * five filters suits it best. The same pixels always give the same bytes
- * from the same Node.
+ * Returns the PNG file for a picture, with the picture's hash in a `tEXt`
+ * chunk after the header. The encoding is lossless, and as small as a
+ * simple encoder can make it. It takes one of these forms:
+ *
+ * - A picture of 256 colours or fewer, as flat art and pixel art usually
+ *   are, gets a palette with 1, 2, 4 or 8 bits for each pixel.
+ * - Otherwise, an opaque picture is stored as RGB, and any other picture
+ *   as RGBA. Every picture here is opaque. Each row uses whichever of PNG's
+ *   five filters suits it best.
+ *
+ * The same pixels always give the same bytes with the same version of Node.
  */
 export function encodePng(picture: Picture): Uint8Array {
     const { width, height } = picture;
@@ -54,7 +60,7 @@ export function encodePng(picture: Picture): Uint8Array {
         bitDepth = indexed.bitDepth;
         extra.push(encodeChunk('PLTE', indexed.palette));
         if (indexed.alphas !== undefined) extra.push(encodeChunk('tRNS', indexed.alphas));
-        // Palette rows are left unfiltered, as the PNG specification advises
+        // Palette rows are left unfiltered, as the PNG specification advises.
         rows = prefixEmptyFilters(indexed.rows, Math.ceil((width * bitDepth) / 8), height);
     }
     else {
@@ -70,7 +76,7 @@ export function encodePng(picture: Picture): Uint8Array {
     view.setUint32(4, height);
     header[8] = bitDepth;
     header[9] = colourType;
-    // Compression, filter method and interlace: all 0
+    // The compression, filter method and interlace bytes stay 0.
     return concat([
         SIGNATURE,
         encodeChunk('IHDR', header),
@@ -81,15 +87,16 @@ export function encodePng(picture: Picture): Uint8Array {
     ]);
 }
 
-/** Any PNG's pixels. */
+/** Decodes any PNG file and returns its pixels. */
 export function decodePng(bytes: Uint8Array): Picture {
     const png = PNG.sync.read(Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength));
     return { width: png.width, height: png.height, pixels: new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength) };
 }
 
 /**
- * The hash a reference file carries, read from its first bytes, or
- * undefined if it carries none (a PNG not written by `encodePng`).
+ * Returns the hash that a reference file carries, read from the file's
+ * first bytes. Returns undefined if the file carries no hash, as with a PNG
+ * that `encodePng` did not write.
  */
 export function readPngHash(path: string): string | undefined {
     const head = new Uint8Array(160);
@@ -100,7 +107,9 @@ export function readPngHash(path: string): string | undefined {
     finally {
         closeSync(file);
     }
-    // Signature (8), IHDR (25), then the text chunk: length, type, keyword, NUL, text
+    // The file starts with the signature (8 bytes) and the IHDR chunk (25
+    // bytes). The text chunk follows. It holds its length, its type, the
+    // keyword, a NUL byte and the text.
     const view = new DataView(head.buffer);
     const length = view.getUint32(33);
     const type = String.fromCharCode(...head.subarray(37, 41));
@@ -120,13 +129,13 @@ interface Indexed {
     readonly bitDepth: number;
     /** RGB triples, in the order the colours first appear. */
     readonly palette: Uint8Array;
-    /** Each colour's alpha, if any is not opaque. */
+    /** Each colour's alpha, or undefined if every colour is opaque. */
     readonly alphas: Uint8Array | undefined;
     /** Each row's indices, packed at the bit depth, unfiltered. */
     readonly rows: Uint8Array;
 }
 
-/** The picture as palette indices, if it has 256 colours or fewer. */
+/** Returns the picture as palette indices, or undefined if it has more than 256 colours. */
 function toIndexed(picture: Picture): Indexed | undefined {
     const { width, height, pixels } = picture;
     const words = new Uint32Array(pixels.buffer.slice(pixels.byteOffset, pixels.byteOffset + pixels.byteLength));
@@ -182,7 +191,7 @@ function dropAlpha(pixels: Uint8Array): Uint8Array {
     return rgb;
 }
 
-/** Rows each with filter byte 0 (none) in front. */
+/** Returns the rows, each with filter byte 0 (no filter) in front. */
 function prefixEmptyFilters(data: Uint8Array, rowBytes: number, height: number): Uint8Array {
     const out = new Uint8Array((rowBytes + 1) * height);
     for (let y = 0; y < height; y++) out.set(data.subarray(y * rowBytes, (y + 1) * rowBytes), y * (rowBytes + 1) + 1);
@@ -190,9 +199,9 @@ function prefixEmptyFilters(data: Uint8Array, rowBytes: number, height: number):
 }
 
 /**
- * Each row with the filter (none, sub, up, average, Paeth) whose output has
- * the smallest sum of absolute values, the usual heuristic for what
- * compresses best.
+ * Returns the rows, each filtered with the filter (none, sub, up, average
+ * or Paeth) whose output has the smallest sum of absolute values. This is
+ * the usual heuristic for which filter compresses best.
  */
 function filterAdaptively(data: Uint8Array, rowBytes: number, height: number, bpp: number): Uint8Array {
     const out = new Uint8Array((rowBytes + 1) * height);

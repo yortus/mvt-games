@@ -6,13 +6,15 @@ import { dressBanditScene } from './bandit-scene';
 import { LeverView } from './lever-view';
 import { createMaterialKit } from './material-kit';
 
-// From the side, where the swing towards the player shows as an angle; in the bandit's own scene, for its shine
+// The camera looks from the side, where the lever's swing towards the player
+// shows as an angle. The lever is drawn in the bandit's own scene, so it
+// shines as it does there.
 const PICTURE: ThreePictureOptions = { width: 240, height: 300, camera: createSideCamera, scene: dressBanditScene };
 
 describe('LeverView', () => {
     visualTest('at rest', () => LeverView({ kit: createMaterialKit(), spinCount: () => 0 }), PICTURE);
 
-    // A spin pulls it: down fast, then back with a spring past upright
+    // A spin pulls the lever. It goes down fast, then springs back past upright.
     visualTest('200 ms into a pull', () => posePulledLever(200), PICTURE);
     visualTest('450 ms into a pull', () => posePulledLever(450), PICTURE);
 });

@@ -6,7 +6,8 @@ import { loadSymbolArt } from '../art';
 import { dressBanditScene, frameBanditCamera } from './bandit-scene';
 import { BanditView } from './bandit-view';
 
-// As the page frames and lights it, in a quadrant of the machine's usual shape
+// The bandit is framed and lit as the page does it. The picture has the shape
+// that the bandit's quadrant usually has in the machine.
 const PICTURE: ThreePictureOptions = { width: 480, height: 360, camera: createBanditCamera, scene: dressBanditScene };
 const SEED = 7;
 
@@ -16,7 +17,8 @@ describe('BanditView', () => {
         return BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
     }, PICTURE);
 
-    // The drums turning, the lever on its way back, the cabinet swayed a little
+    // Mid-spin, the drums are turning, the lever is on its way back, and the
+    // cabinet has swayed a little.
     visualTest('mid-spin', async () => {
         const model = createFruitMachineModel({ seed: SEED });
         const view = BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
