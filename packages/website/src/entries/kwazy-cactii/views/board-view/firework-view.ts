@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
-import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
+import { CELL_WIDTH_PX, CELL_HEIGHT_PX, MIN_CASCADE_FOR_FIREWORKS } from '../view-constants';
 import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
@@ -133,9 +133,6 @@ export function FireworkView(bindings: FireworkViewBindings): Container {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** Minimum cascade step before fireworks activate. */
-const MIN_CASCADE_FOR_FIREWORKS = 3;
 
 /** Number of firework clusters. */
 const CLUSTER_COUNT = 5;

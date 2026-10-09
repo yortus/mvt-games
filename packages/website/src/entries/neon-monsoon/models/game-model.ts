@@ -7,6 +7,7 @@ import {
     type BossAttackDef,
     type BulletKind,
     type EnemyKind,
+    type ItemKind,
     type SpawnEvent,
     type StageEvent,
 } from '../data';
@@ -92,6 +93,21 @@ export interface GameModel {
      */
     readonly stepCount: number;
 
+    /**
+     * Explosions started this game. Each rise is one or more explosions going
+     * off. The `explosions` list can't tell of them, because an explosion may
+     * come and go between frames, and its slot is reused.
+     */
+    readonly explosionsStarted: number;
+    /** The size of the explosion started last, or `undefined` before the first in a game. */
+    readonly lastExplosionSize: ExplosionSize | undefined;
+    /** Items picked up this game. Each rise is one or more pickups. */
+    readonly itemsCollected: number;
+    /** The kind of item picked up last, or `undefined` before the first in a game. */
+    readonly lastItemKind: ItemKind | undefined;
+    /** Gems picked up this game. */
+    readonly gemsCollected: number;
+
     /** Score, high score, chain and grazes. */
     readonly scoring: ScoreModel;
     readonly ship: ShipModel;
@@ -163,6 +179,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let warningMsLeft = 0;
     let tallyBonus = 0;
     let stepCount = 0;
+    let explosionsStarted = 0;
+    let lastExplosionSize: ExplosionSize | undefined;
+    let itemsCollected = 0;
+    let lastItemKind: ItemKind | undefined;
+    let gemsCollected = 0;
     let accumulatedMs = 0;
     let untilBossExplosionMs = 0;
     // Whether the current boss attack has gone without a death or a bomb.
@@ -207,6 +228,21 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get stepCount() {
             return stepCount;
         },
+        get explosionsStarted() {
+            return explosionsStarted;
+        },
+        get lastExplosionSize() {
+            return lastExplosionSize;
+        },
+        get itemsCollected() {
+            return itemsCollected;
+        },
+        get lastItemKind() {
+            return lastItemKind;
+        },
+        get gemsCollected() {
+            return gemsCollected;
+        },
         scoring,
         ship,
         stage,
@@ -227,6 +263,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
             extendsGiven = 0;
             bombs = BOMBS_PER_LIFE;
             stepCount = 0;
+            explosionsStarted = 0;
+            lastExplosionSize = undefined;
+            itemsCollected = 0;
+            lastItemKind = undefined;
+            gemsCollected = 0;
             ship.reset();
             startLoop();
         },
@@ -456,7 +497,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         items.forEachLive(collectItem);
         const collected = gems.collectTouching(x, y, GEM_COLLECT_RADIUS);
-        if (collected > 0) scoring.addPoints(collected * GEM_POINTS * loop);
+        if (collected > 0) {
+            gemsCollected += collected;
+            scoring.addPoints(collected * GEM_POINTS * loop);
+        }
     }
 
     /** Whether the ship has flown into an enemy in the air, or the boss. */
@@ -514,6 +558,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function collectItem(item: ItemModel, slot: Slot<ItemModel>): void {
         if (!isTouching(ship.x, ship.y, item.x, item.y, ITEM_COLLECT_RADIUS)) return;
+        itemsCollected++;
+        lastItemKind = item.kind;
         if (item.kind === 'power') {
             if (!ship.powerUp()) scoring.addPoints(SPARE_ITEM_POINTS);
         }
@@ -535,6 +581,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function explode(x: number, y: number, size: ExplosionSize): void {
+        explosionsStarted++;
+        lastExplosionSize = size;
         if (!explosions.isFull) explosions.insert(createExplosionModel({ size, x, y }));
     }
 

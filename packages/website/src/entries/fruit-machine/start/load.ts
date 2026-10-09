@@ -5,7 +5,7 @@ import { createPointerPicker, destroyObject } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
 import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
 import { createFruitMachineModel } from '../models';
-import { BanditView, ControlPanelView, loadSymbolArt, PixiMachineView, TerminalView } from '../views';
+import { BanditView, ControlPanelView, loadSymbolArt, MachineAudioView, PixiMachineView, TerminalView } from '../views';
 import { DRAG_THRESHOLD_PX, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 import '../fruit-machine.css';
 
@@ -17,10 +17,11 @@ import '../fruit-machine.css';
  * Loads the symbol art, and returns how to start the fruit machine: one model,
  * four views of it, in four quadrants. A Pixi machine, a three.js one-armed
  * bandit, an HTML control panel and a text terminal, on three renderers, all
- * following and playing the same machine. None of them knows the others
- * exist. The host runs each frame the MVT way, once for all four: the model
- * updates, then `updateView` and `refreshView` visit every view (they are the
- * same functions for every renderer), then Pixi and three.js draw.
+ * following and playing the same machine; and a fifth view, which draws
+ * nothing, for its sound. None of them knows the others exist. The host runs
+ * each frame the MVT way, once for all five: the model updates, then
+ * `updateView` and `refreshView` visit every view (they are the same
+ * functions for every renderer), then Pixi and three.js draw.
  */
 export async function load(): Promise<ElementEntryStarter> {
     const art = await loadSymbolArt();
@@ -28,7 +29,7 @@ export async function load(): Promise<ElementEntryStarter> {
     return {
         kind: 'element',
         thumbnailAdvanceMs: 500,
-        start({ element }): ElementEntrySession {
+        start({ element, sound }): ElementEntrySession {
             element.classList.add('fruit-machine');
             element.innerHTML = QUADRANTS_HTML;
 
@@ -85,6 +86,10 @@ export async function load(): Promise<ElementEntryStarter> {
             const terminal = TerminalView({ model });
             quadrant(element, 'terminal').append(terminal);
 
+            // --- Sound: a fifth view, drawing nothing ------------------------
+            // Never added to the page: the host walks it with the other views
+            const audio = MachineAudioView({ model, sound });
+
             // --- Sizing ------------------------------------------------------
             const pixiObserver = new ResizeObserver(fitPixi);
             pixiObserver.observe(pixiHost);
@@ -93,7 +98,7 @@ export async function load(): Promise<ElementEntryStarter> {
             fitThree();
 
             return {
-                views: [pixi.stage, scene, panel, terminal],
+                views: [pixi.stage, scene, panel, terminal, audio],
                 update(deltaMs: number): void {
                     model.update(deltaMs);
                 },
@@ -114,6 +119,7 @@ export async function load(): Promise<ElementEntryStarter> {
                     renderer.forceContextLoss();
                     destroyElement(panel);
                     destroyElement(terminal);
+                    destroyElement(audio);
                     element.replaceChildren();
                     element.classList.remove('fruit-machine');
                 },

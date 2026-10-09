@@ -5,3 +5,5 @@ export {
 export { PAYTABLE, type Paytable, type WinLength } from './paytable';
 export { REEL_STRIPS } from './reel-strips';
 export { PICTURE_KINDS, type PictureKind, type SymbolKind } from './symbol-kind';
+export { BIG_WIN, GAME_OVER, WIN } from './music';
+export { COIN, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5 } from './sounds';

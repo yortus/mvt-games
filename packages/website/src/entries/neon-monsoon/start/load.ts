@@ -20,9 +20,9 @@ export async function load(): Promise<PixiEntryStarter> {
         // Long enough for the first kites to fly in.
         thumbnailAdvanceMs: 9000,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({ events: STAGE_EVENTS, bossAttacks: BOSS_ATTACKS });
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
             const input = gameModel.playerInput;
 

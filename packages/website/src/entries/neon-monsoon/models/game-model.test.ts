@@ -123,6 +123,7 @@ describe('GameModel', () => {
 
             play(game, 2000);
             expect(game.gems.count).toBe(0);
+            expect(game.gemsCollected).toBe(10);
             expect(game.scoring.score).toBeGreaterThan(0);
         });
 
@@ -144,6 +145,45 @@ describe('GameModel', () => {
             expect(game.scoring.score).toBeGreaterThan(0);
             expect(game.scoring.chain).toBe(1);
             expect(game.explosions.liveCount).toBe(1);
+        });
+
+        it('count each explosion as it starts, and keep the size of the last', () => {
+            const x = 120;
+            const game = makeGame([
+                { kind: 'spawn', atMs: 0, enemy: 'kite', x, path: { kind: 'straight', speed: 40 }, patterns: [] },
+            ]);
+            for (let i = 0; i < 180 && game.explosionsStarted === 0; i++) game.update(STEP_MS);
+            expect(game.explosionsStarted).toBe(1);
+            const explosion = game.explosions.slots.at(0)?.value;
+            expect(game.lastExplosionSize).toBe(explosion?.size);
+        });
+
+        it('drop their items for the ship to collect, counting each', () => {
+            const game = makeGame([
+                { kind: 'spawn', atMs: 0, enemy: 'kite', x: 120, path: { kind: 'straight', speed: 40 }, patterns: [], drop: 'power' },
+            ]);
+            for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
+            expect(game.itemsCollected).toBe(1);
+            expect(game.lastItemKind).toBe('power');
+        });
+
+        it('start the counts of explosions, items and gems again in a new game', () => {
+            const game = makeGame([
+                { kind: 'spawn', atMs: 0, enemy: 'kite', x: 120, path: { kind: 'straight', speed: 40 }, patterns: [], drop: 'power' },
+            ]);
+            for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
+            for (let i = 0; i < 10; i++) game.enemyBullets.fire(20 + i * 20, 40, 0, 'orb-amber', { speed: 0 });
+            game.playerInput.bombPressed = true;
+            play(game, 2000);
+            expect(game.explosionsStarted).toBeGreaterThan(0);
+            expect(game.itemsCollected).toBeGreaterThan(0);
+            expect(game.gemsCollected).toBeGreaterThan(0);
+            game.reset();
+            expect(game.explosionsStarted).toBe(0);
+            expect(game.itemsCollected).toBe(0);
+            expect(game.gemsCollected).toBe(0);
+            expect(game.lastExplosionSize).toBeUndefined();
+            expect(game.lastItemKind).toBeUndefined();
         });
     });
 

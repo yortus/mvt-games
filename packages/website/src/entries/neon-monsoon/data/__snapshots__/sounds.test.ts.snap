@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`neon monsoon sounds > ALL_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"ecd28102"`;
+
+exports[`neon monsoon sounds > ATTACK_BROKEN sounds as it did, audible and unclipped 1`] = `"aaa75638"`;
+
+exports[`neon monsoon sounds > BOMB sounds as it did, audible and unclipped 1`] = `"09baf9e1"`;
+
+exports[`neon monsoon sounds > BOMB_PICKUP sounds as it did, audible and unclipped 1`] = `"3def7459"`;
+
+exports[`neon monsoon sounds > BOSS_HIT sounds as it did, audible and unclipped 1`] = `"bf3777bc"`;
+
+exports[`neon monsoon sounds > BOSS_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"fd0185fe"`;
+
+exports[`neon monsoon sounds > EXPLODE_HUGE sounds as it did, audible and unclipped 1`] = `"174461d6"`;
+
+exports[`neon monsoon sounds > EXPLODE_LARGE sounds as it did, audible and unclipped 1`] = `"193fa803"`;
+
+exports[`neon monsoon sounds > EXPLODE_SMALL sounds as it did, audible and unclipped 1`] = `"41e18297"`;
+
+exports[`neon monsoon sounds > EXTEND sounds as it did, audible and unclipped 1`] = `"3ecc9fc3"`;
+
+exports[`neon monsoon sounds > FOCUS sounds as it did, audible and unclipped 1`] = `"54af27bc"`;
+
+exports[`neon monsoon sounds > FOCUSED_SHOT sounds as it did, audible and unclipped 1`] = `"172a875f"`;
+
+exports[`neon monsoon sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"000b9648"`;
+
+exports[`neon monsoon sounds > GEM sounds as it did, audible and unclipped 1`] = `"552e8d50"`;
+
+exports[`neon monsoon sounds > GRAZE sounds as it did, audible and unclipped 1`] = `"1e4ae19c"`;
+
+exports[`neon monsoon sounds > POWER_UP sounds as it did, audible and unclipped 1`] = `"e910e58d"`;
+
+exports[`neon monsoon sounds > RESPAWN sounds as it did, audible and unclipped 1`] = `"29c3d841"`;
+
+exports[`neon monsoon sounds > SHIP_EXPLODE sounds as it did, audible and unclipped 1`] = `"5d354dd2"`;
+
+exports[`neon monsoon sounds > SHOT sounds as it did, audible and unclipped 1`] = `"e15918df"`;
+
+exports[`neon monsoon sounds > STAGE_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"115fd1b6"`;
+
+exports[`neon monsoon sounds > STAGE_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"b1d1c2ea"`;
+
+exports[`neon monsoon sounds > WARNING sounds as it did, audible and unclipped 1`] = `"fe85844b"`;

@@ -1,4 +1,5 @@
 export { loadSymbolArt, type LoadSymbolArtOptions, type SymbolArt } from './art';
+export { MachineAudioView, type MachineAudioViewBindings } from './audio';
 export { ControlPanelView, type ControlPanelViewBindings } from './panel';
 export { PixiMachineView, type PixiMachineViewBindings, SCREEN_HEIGHT, SCREEN_WIDTH } from './pixi';
 export { TerminalView, type TerminalViewBindings } from './terminal';

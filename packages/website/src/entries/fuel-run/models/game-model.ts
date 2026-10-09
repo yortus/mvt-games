@@ -80,6 +80,31 @@ export interface GameModel {
     readonly baseWorldCol: number;
     readonly baseWorldRow: number;
     readonly isScrollClamped: boolean;
+    /**
+     * The number of shots fired this game. It is a count rather than a flag,
+     * because a shot's slot may be gone, or taken again, before a view looks.
+     * Each rise is a shot, and it goes back to 0 for a new game. The counts
+     * below work the same way.
+     */
+    readonly shotsFired: number;
+    /** The number of bombs dropped this game. */
+    readonly bombsDropped: number;
+    /**
+     * The number of rockets that have left the ground this game. A rocket can
+     * launch in the tick it appears, so a view of its slot cannot tell its
+     * launch from its arrival. This count can.
+     */
+    readonly rocketsLaunched: number;
+    /**
+     * The number of rockets, UFOs and fuel tanks destroyed by the ship's shots
+     * and bombs this game. The base is not counted here, and neither is an
+     * enemy the ship crashes into. Those have counts or phases of their own.
+     */
+    readonly enemiesDestroyed: number;
+    /** The number of fuel tanks destroyed this game. Each one gives the ship fuel. */
+    readonly fuelTanksDestroyed: number;
+    /** The number of times the base has been destroyed this game. There is one base on each loop of the sections. */
+    readonly basesDestroyed: number;
     reset: () => void;
     update: (deltaMs: number) => void;
 }
@@ -107,6 +132,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let baseSlot: Slot<FuelTankModel> | undefined;
     let scrollClamped = false;
     let score = 0;
+    let shotsFired = 0;
+    let bombsDropped = 0;
+    let rocketsLaunched = 0;
+    let enemiesDestroyed = 0;
+    let fuelTanksDestroyed = 0;
+    let basesDestroyed = 0;
     let lives = INITIAL_LIVES;
     let sectionIndex = 0;
     let loop = 0;
@@ -200,6 +231,24 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get isScrollClamped() {
             return scrollClamped;
         },
+        get shotsFired() {
+            return shotsFired;
+        },
+        get bombsDropped() {
+            return bombsDropped;
+        },
+        get rocketsLaunched() {
+            return rocketsLaunched;
+        },
+        get enemiesDestroyed() {
+            return enemiesDestroyed;
+        },
+        get fuelTanksDestroyed() {
+            return fuelTanksDestroyed;
+        },
+        get basesDestroyed() {
+            return basesDestroyed;
+        },
 
         reset(): void {
             scrollCol = 0;
@@ -208,6 +257,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
             baseSlot = undefined;
             scrollClamped = false;
             score = 0;
+            shotsFired = 0;
+            bombsDropped = 0;
+            rocketsLaunched = 0;
+            enemiesDestroyed = 0;
+            fuelTanksDestroyed = 0;
+            basesDestroyed = 0;
             lives = INITIAL_LIVES;
             sectionIndex = 0;
             loop = 0;
@@ -230,7 +285,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const watched = watcher.poll();
             if (watched.restart.changed && watched.restart.value) {
                 if (gamePhase === 'game-over') {
+                    // The new game starts on the next tick. So nothing happens in the
+                    // tick its counts go back to 0, and each count's next change is a rise.
                     model.reset();
+                    return;
                 }
             }
 
@@ -358,7 +416,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function updateRockets(deltaMs: number): void {
         for (let i = 0; i < rockets.slots.length; i++) {
             const slot = rockets.slots.at(i);
-            if (slot !== undefined) slot.value.update(deltaMs, ship.worldCol);
+            if (slot === undefined) continue;
+            const wasIdle = slot.value.phase === 'idle';
+            slot.value.update(deltaMs, ship.worldCol);
+            if (wasIdle && slot.value.phase !== 'idle') rocketsLaunched++;
         }
     }
 
@@ -430,6 +491,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             worldRow: ship.worldRow,
             speed: BULLET_SPEED,
         }));
+        shotsFired++;
     }
 
     function tryDropBomb(): void {
@@ -440,6 +502,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             vCol: currentScrollSpeed + BOMB_FORWARD_SPEED,
             gravity: BOMB_GRAVITY,
         }));
+        bombsDropped++;
     }
 
     // ---- Boundary management -----------------------------------------------
@@ -599,6 +662,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     rockets.remove(slot);
                     bullets.remove(bulletSlot);
                     score += SCORE_ROCKET;
+                    enemiesDestroyed++;
                     consumed = true;
                     break;
                 }
@@ -617,6 +681,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     ufos.remove(slot);
                     bullets.remove(bulletSlot);
                     score += SCORE_UFO;
+                    enemiesDestroyed++;
                     consumed = true;
                     break;
                 }
@@ -661,6 +726,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     rockets.remove(slot);
                     bombs.remove(bombSlot);
                     score += SCORE_ROCKET;
+                    enemiesDestroyed++;
                     consumed = true;
                     break;
                 }
@@ -679,6 +745,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     ufos.remove(slot);
                     bombs.remove(bombSlot);
                     score += SCORE_UFO;
+                    enemiesDestroyed++;
                     consumed = true;
                     break;
                 }
@@ -706,10 +773,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
         fuelTanks.remove(slot);
         if (slot === baseSlot) {
             score += SCORE_BASE;
+            basesDestroyed++;
         }
         else {
             score += SCORE_FUEL_TANK;
             fuelModel.addFuel(FUEL_REFILL_AMOUNT);
+            enemiesDestroyed++;
+            fuelTanksDestroyed++;
         }
     }
 
