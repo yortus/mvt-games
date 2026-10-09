@@ -124,10 +124,13 @@ export interface SongOptions {
     readonly instruments: Readonly<Record<string, Instrument>>;
     /**
      * The song's patterns, by name. Each pattern is a multiline string, with
-     * one row on each line. Blank lines and lines that start with `//` are
-     * not rows, so a pattern can have comments, such as column headings.
-     * Each row has one cell per channel, separated by `|`. A cell is tokens
-     * separated by spaces. Each of these may appear at most once:
+     * one row on each line. A `#` at the start of a line or after a space
+     * starts a comment, which runs to the end of the line, so a pattern can
+     * have column headings and notes. `F#5` is a note, not a comment. Blank
+     * lines and comment lines are not rows. Each row has one cell per
+     * channel, and each cell starts with `|`, so a row starts with one too.
+     * A cell is tokens separated by spaces. Each of these may appear at most
+     * once:
      *
      * - a note such as `C-4`, or `...` or nothing for no note
      * - `===` to release the note
@@ -183,7 +186,9 @@ export function createSong(options: SongOptions): Song {
         if (rows.length === 0) throw new Error(`song: pattern '${name}' has no rows`);
         const cells: number[] = [];
         for (let row = 0; row < rows.length; row++) {
-            const texts = rows[row].split('|');
+            // A row starts with `|`, as each of its cells does. Dropping that first one leaves the cells between the rest
+            if (!rows[row].startsWith('|')) throw new Error(`song: pattern '${name}', row ${row}: a row starts with |`);
+            const texts = rows[row].slice(1).split('|');
             if (channelCount === 0) channelCount = texts.length;
             if (texts.length !== channelCount) {
                 throw new Error(`song: pattern '${name}', row ${row}: expected ${channelCount} cells (one per channel), found ${texts.length}`);

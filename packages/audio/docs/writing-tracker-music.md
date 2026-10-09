@@ -23,11 +23,12 @@ playing, or do nothing at all.
 
 ```ts
 const tune = `
-    // lead | bass
-    C-5 L   | C-3 B
-    ...     | ...
-    E-5     | ...
-    ===     | ===
+    # lead  | bass
+    # ------------
+    | C-5 L | C-3 B
+    | ...   | ...
+    | E-5   | ...
+    | ===   | ===
 `;
 ```
 
@@ -37,10 +38,16 @@ carry on. In row 2, the lead moves to E. In row 3, both release their
 notes. To release a note is to stop it, so that it fades out.
 
 In this package the grid is plain TypeScript. Each **pattern** is a string
-in backticks, with one row on each line. The indentation of each line is
-ignored. Blank lines are skipped, so you can use them to split a pattern
-into bars. A line that starts with `//` is a comment, such as the column
-headings above, and is skipped too. Neither counts as a row.
+in backticks, with one row on each line. Each cell starts with `|`, so each
+row starts with one too. The indentation of each line is ignored. Blank
+lines are skipped, so you can use them to split a pattern into bars.
+
+A `#` starts a comment, which runs to the end of the line. The `#` must be
+the first thing on its line, or have a space before it. So a whole line
+can be a comment, like the column headings above, and a row can end with
+one, as in `| E-5   | ...   # bar 2`. A `#` inside a token is part of the
+token, so `F#5` is still a note. Comment lines are skipped, and they do
+not count as rows.
 
 `createSong` reads the grid once, when the module loads. If there is a
 mistake, it throws an error naming the pattern, row and channel, counted
@@ -67,15 +74,15 @@ export const HELLO = createSong({
     instruments: { L: LEAD },
     patterns: {
         tune: `
-            C-5 L
-            ...
-            E-5
-            ...
-            G-5
-            ...
-            C-6
-            ...
-            ===
+            | C-5 L
+            | ...
+            | E-5
+            | ...
+            | G-5
+            | ...
+            | C-6
+            | ...
+            | ===
         `,
     },
     order: ['tune'],
@@ -100,6 +107,8 @@ export const HELLO = createSong({
   `F#5` or `A-3`. The `#` makes it a sharp, one semitone higher. A
   semitone is the step from one piano key to the next, and 12 semitones
   make an octave. `C-4` is middle C, note number 60.
+- **`|`** starts a cell. This pattern has one channel, so each row has one
+  cell.
 - **`...`** changes nothing. The note carries on, as its envelope allows.
   An empty cell means the same.
 - **`===`** releases the note. Its envelope's release begins.
@@ -114,8 +123,14 @@ WAV file for each song and effect.
 
 ### Adding Channels
 
-Each `|` starts another channel. Spaces are ignored, so use them to line up
-the columns:
+Each `|` starts another channel's cell. Spaces are ignored, so use them to
+line up the columns. This guide keeps to one layout. Every column in a song
+is the same width, and each `|` sits on a tab stop, a multiple of four
+columns from the start of the line. The column headings go in a comment
+above the rows, laid out like a row. The `#` takes the place of the first
+`|`, and each heading sits over its column's cells, with a `|` between
+headings in line with the rows' `|`s. A second comment underlines them
+with dashes, to the end of the last heading:
 
 ```ts
 const BASS = createInstrument({
@@ -128,16 +143,17 @@ export const HELLO = createSong({
     instruments: { L: LEAD, B: BASS },
     patterns: {
         tune: `
-            // lead   | bass
-            C-5 L     | C-3 B
-            ...       | ...
-            E-5       | C-3
-            ...       | ...
-            G-5       | G-2
-            ...       | ...
-            C-6       | C-3
-            ...       | ...
-            ===       | ===
+            # lead  | bass
+            # ------------
+            | C-5 L | C-3 B
+            | ...   | ...
+            | E-5   | C-3
+            | ...   | ...
+            | G-5   | G-2
+            | ...   | ...
+            | C-6   | C-3
+            | ...   | ...
+            | ===   | ===
         `,
     },
     order: ['tune'],
@@ -156,7 +172,7 @@ note plays that note. Transposition, which plays a pattern higher or lower
 
 A drum's sound usually comes from a step table. A step table is a list of
 changes, with one row per short step. It is written like a pattern, as a
-string in backticks with one row on each line. Blank lines and `//`
+string in backticks with one row on each line. Blank lines and `#`
 comments are skipped, as in a pattern. Each step lasts the instrument's
 `stepMs`, a 60th of a second by default. Each row can switch the wave,
 move the pitch by some semitones, or set the volume (`v` and a hex digit).
@@ -168,7 +184,7 @@ const KICK = createInstrument({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 170, sustain: 0, releaseMs: 0 },
     steps: `
-        // wave    pitch
+        # wave     pitch
         noise      +24
         triangle   +7
         triangle   +0
@@ -199,11 +215,12 @@ const HAT = createInstrument({
 
 ```ts
 tune: `
-    // lead   | bass     | drums
-    C-5 L     | C-3 B    | k
-    ...       | ...      | h
-    E-5       | C-3      | s
-    ...       | ...      | h
+    # lead  | bass  | drums
+    # ---------------------
+    | C-5 L | C-3 B | k
+    | ...   | ...   | h
+    | E-5   | C-3   | s
+    | ...   | ...   | h
 `,
 ```
 
@@ -465,13 +482,14 @@ The table shows what follows the place:
 | Message | Cause |
 | --- | --- |
 | `unknown instrument 'Q'` | A letter not in `instruments` |
+| `a row starts with \|` | A row with no `\|` before its first cell, or a comment that starts with `//` instead of `#` |
 | `expected 3 cells (one per channel), found 2` | A missing or extra `\|` |
 | `two notes` | Two notes in one cell, or a note and `===`. Often a missing `\|` |
 | `two volumes`, `two glides`, `two slides`, ... | The same kind of token twice in one cell |
 | `a release (===) cannot name an instrument` | `=== L`. A release applies to the note already playing |
 | `a release (===) cannot take a volume` | `=== v4`. A release ends the note, so it cannot set the note's volume |
 | `a glide needs a note to glide to` | `>` without a note |
-| `'H-4' is not a note, an instrument or an effect` | A note name outside `A` to `G`, or a misspelt token |
+| `'H-4' is not a note, an instrument or an effect` | A note name outside `A` to `G`, or a misspelt token. Also a `#` with no space before it, as in `E-5#x`, which is part of the token rather than a comment |
 | `'A-9' is above G-9, the highest note` | A note above G-9 (note number 127) |
 | `a note with no instrument named on this channel before it` | A channel's first note in playing order names no instrument |
 | `note 120 transposed by 12 is 132, outside the chip's range (0 to 127)` | A transposition in the order takes a note out of range |
@@ -484,6 +502,7 @@ An instrument's or effect's message names the step or the option instead:
 | Message | Cause |
 | --- | --- |
 | `step 2: two waves` | The same kind of token twice in one row of a step table |
+| `step 0: '//' is not a wave, a pitch (+7, C-5), ...` | A token the step table does not know, such as a comment that starts with `//` instead of `#` |
 | `wavetable: needs 32 hex digits, one level (0-F) each; got '...'` | A wavetable of the wrong length, or a character that is not hex |
 | `instrument: an arpeggio has at most 16 notes; this one has 17` | An `arpeggio` option that is too long |
 | `instrument: a filter sweep's fromHz and toHz must be above 0; got 0 and 450` | A `filterSweep` to or from 0 Hz |

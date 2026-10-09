@@ -34,6 +34,14 @@ export interface GameModel {
     readonly score: number;
     readonly lives: number;
     readonly stage: number;
+    /**
+     * Shots the ship has fired this game. It is a count rather than a flag, so
+     * a view can play a sound for each shot. A shot's bullet can already be
+     * gone when a view looks, if it hits a raider in the tick it is fired.
+     */
+    readonly shotsFired: number;
+    /** How many raiders are still alive in this wave. */
+    readonly enemiesLeft: number;
     readonly playerInput: PlayerInput;
     reset: () => void;
     update: (deltaMs: number) => void;
@@ -68,6 +76,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let score = 0;
     let lives = 3;
     let stage = 1;
+    let shotsFired = 0;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -107,6 +116,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get stage() {
             return stage;
         },
+        get shotsFired() {
+            return shotsFired;
+        },
+        get enemiesLeft() {
+            return aliveEnemyCount();
+        },
         get playerInput() {
             return playerInput;
         },
@@ -115,6 +130,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             score = 0;
             lives = 3;
             stage = 1;
+            shotsFired = 0;
             waveIndex = 0;
             loadWave();
         },
@@ -340,6 +356,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             for (let b = 0; b < playerBullets.length; b++) {
                 if (!playerBullets[b].isActive) {
                     playerBullets[b].fire(ship.x, ship.y - 8, -BULLET_SPEED);
+                    shotsFired++;
                     break;
                 }
             }

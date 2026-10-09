@@ -46,7 +46,7 @@ export const COIN = createSoundEffect({
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     steps: `
-        // wave  pitch  width
+        # wave   pitch  width
         pulse    +0     p3
         pulse    +7
         pulse    +12
@@ -66,11 +66,12 @@ export const FANFARE = createSong({
     instruments: { L: LEAD, B: BASS, k: KICK, h: HAT },
     patterns: {
         fanfare: `
-            // lead    | bass     | drums
-            E-5 L v9   | E-2 B    | k
-            ...        | ...      | h
-            G-5        | E-3      | h
-            B-5 ~      | ...      | h
+            # lead      | bass      | drums
+            # -----------------------------
+            | E-5 L v9  | E-2 B     | k
+            | ...       | ...       | h
+            | G-5       | E-3       | h
+            | B-5 ~     | ...       | h
         `,
     },
     order: ['fanfare', 'fanfare+5'],

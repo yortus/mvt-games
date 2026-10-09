@@ -211,7 +211,7 @@ export const COIN = createSoundEffect({
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     steps: `
-        // wave  pitch  width
+        # wave   pitch  width
         pulse    +0     p3
         pulse    +7
         pulse    +12
@@ -284,7 +284,7 @@ export const BREAK = createSoundEffect({
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     steps: `
-        // wave  pitch  vol
+        # wave   pitch  vol
         noise    +17    vF
         noise    +12    vE
         noise    +8     vC
@@ -295,10 +295,12 @@ export const BREAK = createSoundEffect({
 });
 ```
 
-Put a comment naming the columns above the rows, as here. A line that
-starts with `//` is a comment, and is skipped. Blank lines are skipped
-too. Neither counts as a step. Indentation and extra spaces are ignored,
-so you can line the tokens up.
+Put a comment naming the columns above the rows, as here. A `#` starts a
+comment, which runs to the end of the line. The `#` must be the first
+thing on its line, or have a space before it, so the `#` in `F#5` is part
+of the note. Comment lines and blank lines are skipped, and neither counts
+as a step. Indentation and extra spaces are ignored, so you can line the
+tokens up.
 
 ### Recipes
 

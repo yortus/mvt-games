@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`galaxy raiders sounds > CARRIER_HIT sounds as it did, audible and unclipped 1`] = `"3604b272"`;
+
+exports[`galaxy raiders sounds > DIVE sounds as it did, audible and unclipped 1`] = `"b688b5d1"`;
+
+exports[`galaxy raiders sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"848831c0"`;
+
+exports[`galaxy raiders sounds > RESPAWN sounds as it did, audible and unclipped 1`] = `"91ebc80f"`;
+
+exports[`galaxy raiders sounds > SCOUT_HIT sounds as it did, audible and unclipped 1`] = `"9913f567"`;
+
+exports[`galaxy raiders sounds > SHIP_HIT sounds as it did, audible and unclipped 1`] = `"7da8ecef"`;
+
+exports[`galaxy raiders sounds > SHOT sounds as it did, audible and unclipped 1`] = `"4d6856d6"`;
+
+exports[`galaxy raiders sounds > STAGE_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"6ceeb881"`;
+
+exports[`galaxy raiders sounds > STAGE_FANFARE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"e32b3c60"`;
+
+exports[`galaxy raiders sounds > STAGE_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"a21c44fc"`;
+
+exports[`galaxy raiders sounds > STRIKER_HIT sounds as it did, audible and unclipped 1`] = `"0ae96c7b"`;

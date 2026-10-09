@@ -18,10 +18,10 @@ const TUNE = createSong({
     instruments: { L: LEAD, B: BASS, k: DRUM },
     patterns: {
         a: `
-            C-5 L v8 | C-3 B | k
-            ...      | ...   | ...
-            E-5      | ===   | k
-            ===      | G-2 B | ...
+            | C-5 L v8  | C-3 B     | k
+            | ...       | ...       | ...
+            | E-5       | ===       | k
+            | ===       | G-2 B     | ...
         `,
     },
     order: ['a', 'a+2'],
@@ -77,7 +77,7 @@ describe('music player', () => {
     });
 
     it('sends each cell\'s effects to the chip with its note', () => {
-        const song = createSong({ ...ONE_CHANNEL, patterns: { p: 'C-4 L a37 ~46 p8 fA' } });
+        const song = createSong({ ...ONE_CHANNEL, patterns: { p: '| C-4 L a37 ~46 p8 fA' } });
         const { log } = playThrough(song, () => 10, ROW_MS / 2);
         expect(listSettingValues(log, 'arpeggio')).toEqual([0x37]);
         expect(listSettingValues(log, 'vibratoDepth')).toEqual([4 / 8]);
@@ -234,9 +234,9 @@ describe('music player', () => {
     it('swings each odd row of a pattern late, the same on every pass', () => {
         const swing = 0.25;
         const p = `
-            C-4 L
-            D-4
-            E-4
+            | C-4 L
+            | D-4
+            | E-4
         `;
         const rowCount = 3;
         const song = createSong({ ...ONE_CHANNEL, swing, patterns: { p }, order: ['p', 'p'] });
@@ -250,9 +250,9 @@ describe('music player', () => {
     it('slides and glides over a swung row\'s actual length', () => {
         const swing = 0.25;
         const slid = `
-            C-4 L u0C
-            D-4 u0C
-            E-4 >
+            | C-4 L u0C
+            | D-4 u0C
+            | E-4 >
         `;
         const song = createSong({ ...ONE_CHANNEL, swing, patterns: { p: slid } });
         const { log } = playThrough(song, () => 10, computeSongDurationMs(song));
@@ -262,9 +262,9 @@ describe('music player', () => {
         // Row 2 is the last row. The row after it is row 0 of the next pass, which is on the beat
         expect(listSettingValues(log, 'glide')).toEqual([ROW_MS]);
         const glide = `
-            C-4 L
-            D-4 >
-            ...
+            | C-4 L
+            | D-4 >
+            | ...
         `;
         const glided = createSong({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
         expect(listSettingValues(playThrough(glided, () => 10, computeSongDurationMs(glided)).log, 'glide')).toEqual([(1 - swing) * ROW_MS]);
@@ -335,30 +335,30 @@ const TUNE_OPTIONS = {
     instruments: { L: LEAD, B: BASS, k: DRUM },
     patterns: {
         a: `
-            C-5 L | C-3 B | k
-            ...   | ...   | ...
-            ...   | ...   | k
-            ...   | ...   | ...
+            | C-5 L | C-3 B | k
+            | ...   | ...   | ...
+            | ...   | ...   | k
+            | ...   | ...   | ...
         `,
         b: `
-            G-5 L | ...   | k
-            ...   | ...   | ...
-            ...   | ...   | k
-            ...   | ...   | ...
+            | G-5 L | ...   | k
+            | ...   | ...   | ...
+            | ...   | ...   | k
+            | ...   | ...   | ...
         `,
     },
 };
 
 /** A one-channel song, for tests that set their own patterns. */
-const ONE_CHANNEL: SongOptions = { bpm: BPM, rowsPerBeat: ROWS_PER_BEAT, instruments: { L: LEAD }, patterns: { p: 'C-4 L' }, order: ['p'] };
+const ONE_CHANNEL: SongOptions = { bpm: BPM, rowsPerBeat: ROWS_PER_BEAT, instruments: { L: LEAD }, patterns: { p: '| C-4 L' }, order: ['p'] };
 
 /** The semitones a `u0C` slides by. */
 const SLIDE = 0x0C;
 
 /** A slide up an octave, then a row that holds the note. */
 const SLIDE_THEN_HOLD = `
-    C-4 L u0C
-    ...
+    | C-4 L u0C
+    | ...
 `;
 
 type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;

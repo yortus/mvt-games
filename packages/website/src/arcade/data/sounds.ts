@@ -41,8 +41,8 @@ export const MUSIC_PREVIEW = createSong({
     filters: { a: { mode: 'lowpass', cutoffHz: 1500, resonance: 0.45 } },
     patterns: {
         twang: `
-            C-3 P
-            ===
+            | C-3 P
+            | ===
         `,
     },
     order: ['twang'],
@@ -57,7 +57,7 @@ export const EFFECTS_PREVIEW = createSoundEffect({
     priority: 0,
     volume: 0.5,
     steps: `
-        // wave  pitch  width
+        # wave   pitch  width
         pulse    +0     p4
         pulse    +7
         pulse    +12
@@ -176,7 +176,7 @@ export const LAUNCH = createSoundEffect({
     priority: 2,
     volume: 0.4,
     steps: `
-        // wave  pitch  width
+        # wave   pitch  width
         pulse    +0     p3
         pulse    +7
         pulse    +12
@@ -192,7 +192,7 @@ export const BURN = createSoundEffect({
     priority: 2,
     volume: 0.5,
     steps: `
-        // wave  pitch  vol
+        # wave   pitch  vol
         noise    +24    v4
         noise    +12    v7
         noise    +26    v9
@@ -225,7 +225,7 @@ export const POWER_ON = createSoundEffect({
     priority: 2,
     volume: 0.45,
     steps: `
-        // wave     pitch   vol
+        # wave      pitch   vol
         triangle    -36     vF
         noise       +0      vC
         noise       +3      vB
@@ -249,7 +249,7 @@ export const POWER_OFF = createSoundEffect({
     priority: 2,
     volume: 0.45,
     steps: `
-        // wave  pitch  vol
+        # wave   pitch  vol
         noise    +0     vC
         noise    +2     vC
         noise    -1     vB
@@ -286,7 +286,7 @@ export const LOAD_FAILED = createSoundEffect({
     priority: 2,
     volume: 0.35,
     steps: `
-        // wave        vol
+        # wave         vol
         saw+pulse      vF
         saw+pulse      v0
         saw+pulse      vF
@@ -305,7 +305,7 @@ export const PAUSE = createSoundEffect({
     priority: 2,
     volume: 0.35,
     steps: `
-        // wave  pitch  width
+        # wave   pitch  width
         pulse    +0     p4
         pulse    +5
         pulse    +12

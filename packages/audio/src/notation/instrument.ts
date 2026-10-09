@@ -60,8 +60,9 @@ export interface InstrumentOptions {
     /**
      * A step table, which changes the note's settings step by step. It is a
      * multiline string, with one step on each line, and the last step holds.
-     * Blank lines and lines that start with `//` are not steps, so a table
-     * can have comments, such as column headings. A step may set any of
+     * A `#` at the start of a line or after a space starts a comment, which
+     * runs to the end of the line, so a table can have column headings.
+     * Blank lines and comment lines are not steps. A step may set any of
      * these:
      *
      * - a wave, such as `noise`

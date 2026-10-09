@@ -24,12 +24,12 @@ export async function load(): Promise<PixiEntryStarter> {
             session.inputConfig?.onPrimaryButtonChanged?.(isPressed);
         },
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({
                 waves: WAVES,
             });
 
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             return {

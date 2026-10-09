@@ -48,7 +48,7 @@ describe('tracker notation: cells', () => {
 
     it('reads a letter alone as an instrument, and a letter with digits as an effect', () => {
         const instruments = { u: LEAD, d: LEAD, v: LEAD };
-        const song = createSong({ bpm: 120, instruments, patterns: { p: 'C-4 u u0C | C-4 d d05 | C-4 v v9' }, order: ['p'] });
+        const song = createSong({ bpm: 120, instruments, patterns: { p: '| C-4 u u0C | C-4 d d05 | C-4 v v9' }, order: ['p'] });
         const { cells } = song.patterns[0];
         expect([cells[CELL_INSTRUMENT], cells[CELL_SLIDE]]).toEqual([0, 12]);
         expect([cells[CELL_STRIDE + CELL_INSTRUMENT], cells[CELL_STRIDE + CELL_SLIDE]]).toEqual([1, -5]);
@@ -61,7 +61,7 @@ describe('tracker notation: cells', () => {
     });
 
     it('reads an empty cell, dots, and a release', () => {
-        expect(createSongFromPattern('C-4 L |').patterns[0].cells[CELL_STRIDE + CELL_NOTE]).toBe(NO_NOTE);
+        expect(createSongFromPattern('| C-4 L |').patterns[0].cells[CELL_STRIDE + CELL_NOTE]).toBe(NO_NOTE);
         expect(parseCell('...')[CELL_NOTE]).toBe(NO_NOTE);
         expect(parseCell('===')[CELL_NOTE]).toBe(RELEASE);
     });
@@ -74,18 +74,18 @@ describe('tracker notation: cells', () => {
 
     it('says where a mistake is', () => {
         expect(() => createSongFromPattern(`
-            C-4 L | ...
-            C-4 Q | ...
+            | C-4 L | ...
+            | C-4 Q | ...
         `)).toThrow("pattern 'p', row 1, channel 0: unknown instrument 'Q'");
-        expect(() => createSongFromPattern('H-4 L')).toThrow("row 0, channel 0: 'H-4' is not a note");
+        expect(() => createSongFromPattern('| H-4 L')).toThrow("row 0, channel 0: 'H-4' is not a note");
         expect(() => createSongFromPattern(`
-            C-4 L | ...
-            C-4 L
+            | C-4 L | ...
+            | C-4 L
         `)).toThrow("pattern 'p', row 1: expected 2 cells (one per channel), found 1");
-        expect(() => createSongFromPattern('C-4 D-4 L')).toThrow('two notes');
-        expect(() => createSongFromPattern('C-4 L k')).toThrow('two instruments');
-        expect(() => createSongFromPattern('=== L')).toThrow('row 0, channel 0: a release (===) cannot name an instrument');
-        expect(() => createSongFromPattern('v8 >')).toThrow('a glide needs a note');
+        expect(() => createSongFromPattern('| C-4 D-4 L')).toThrow('two notes');
+        expect(() => createSongFromPattern('| C-4 L k')).toThrow('two instruments');
+        expect(() => createSongFromPattern('| === L')).toThrow('row 0, channel 0: a release (===) cannot name an instrument');
+        expect(() => createSongFromPattern('| v8 >')).toThrow('a glide needs a note');
     });
 
     it('rejects a second effect of one kind in a cell', () => {
@@ -99,31 +99,32 @@ describe('tracker notation: cells', () => {
             ['C-4 L f4 f8', 'two cutoffs'],
             ['C-4 L > >', 'two glides'],
         ];
-        for (const [cell, error] of cases) expect(() => createSongFromPattern(cell), cell).toThrow(`row 0, channel 0: ${error}`);
+        for (const [cell, error] of cases) expect(() => createSongFromPattern(`| ${cell}`), cell).toThrow(`row 0, channel 0: ${error}`);
     });
 
     it('rejects a release with a volume', () => {
         expect(() => createSongFromPattern(`
-            C-4 L
-            === v8
+            | C-4 L
+            | === v8
         `)).toThrow('row 1, channel 0: a release (===) cannot take a volume');
     });
 
     it('rejects a note above the highest', () => {
         expect(parseCell('G-9 L')[CELL_NOTE]).toBe(HIGHEST_NOTE);
-        expect(() => createSongFromPattern('B#9 L')).toThrow("row 0, channel 0: 'B#9' is above G-9, the highest note");
+        expect(() => createSongFromPattern('| B#9 L')).toThrow("row 0, channel 0: 'B#9' is above G-9, the highest note");
     });
 });
 
 describe('tracker notation: songs', () => {
     it('reads one row from each line of a pattern, skipping blank lines and comment lines', () => {
         const pattern = `
-            // lead   | drums
-            C-4 L     | k
+            # lead      | drums
+            # -----------------
+            | C-4 L     | k
 
-              // bar 2, indented differently
-            D-4       | ...
-        E-4 v9 | k
+                # bar 2, indented differently
+            | D-4       | ...
+        | E-4 v9    | k
         `;
         const song = createSongFromPattern(pattern);
         const { rowCount, cells } = song.patterns[0];
@@ -133,13 +134,42 @@ describe('tracker notation: songs', () => {
         expect(cells[2 * song.channelCount * CELL_STRIDE + CELL_VOLUME]).toBe(9);
     });
 
+    it('rejects a row that does not start with |', () => {
+        expect(() => createSongFromPattern('C-4 L | k')).toThrow("song: pattern 'p', row 0: a row starts with |");
+        const pattern = ['# lead | drums', '| C-4 L | k', '', 'D-4 | ...'].join('\n');
+        expect(() => createSongFromPattern(pattern)).toThrow("song: pattern 'p', row 1: a row starts with |");
+    });
+
+    it('ignores a comment at the end of a row, but reads a # inside a token as part of it', () => {
+        const pattern = `
+            | F#5 L | k     # bar 1
+            | G#5   | ...   #a comment with no space after its #
+        `;
+        const song = createSongFromPattern(pattern);
+        const { rowCount, cells } = song.patterns[0];
+        expect(rowCount).toBe(2);
+        const notes = [0, 1].map((row) => cells[row * song.channelCount * CELL_STRIDE + CELL_NOTE]);
+        expect(notes).toEqual([toNoteNumber('F#5'), toNoteNumber('G#5')]);
+    });
+
+    it('reads a # with no space before it as part of its token, not as a comment', () => {
+        expect(() => createSongFromPattern('| E-5#x L')).toThrow("row 0, channel 0: 'E-5#x' is not a note, an instrument or an effect");
+        expect(() => createSongFromPattern('| E-5 L#x')).toThrow("row 0, channel 0: 'L#x' is not a note, an instrument or an effect");
+    });
+
+    it('rejects a line that starts with //, which is not a comment', () => {
+        const pattern = ['// lead | drums', '| C-4 L | k'].join('\n');
+        expect(() => createSongFromPattern(pattern)).toThrow("song: pattern 'p', row 0: a row starts with |");
+    });
+
     it('counts rows from 0 over the lines that are rows, in its errors', () => {
         const pattern = `
-            // lead   | drums
-            C-4 L     | k
+            # lead  | drums
+            # -------------
+            | C-4 L | k
 
-            // bar 2
-            D-4 Q     | ...
+            # bar 2
+            | D-4 Q | ...
         `;
         expect(() => createSongFromPattern(pattern)).toThrow("pattern 'p', row 1, channel 0: unknown instrument 'Q'");
     });
@@ -148,7 +178,7 @@ describe('tracker notation: songs', () => {
         const song = createSong({
             bpm: 120,
             instruments: { L: LEAD },
-            patterns: { 'verse': 'C-4 L', 'part-2': 'D-4 L' },
+            patterns: { 'verse': '| C-4 L', 'part-2': '| D-4 L' },
             order: ['verse', 'verse+5', 'verse-3', 'part-2'],
             loop: 1,
         });
@@ -184,25 +214,25 @@ describe('tracker notation: songs', () => {
     });
 
     it('rejects a pattern with no rows, and more channels than the chip has voices', () => {
-        expect(() => createSong({ ...ONE_NOTE, patterns: { p: 'C-4 L', q: '' } })).toThrow("song: pattern 'q' has no rows");
+        expect(() => createSong({ ...ONE_NOTE, patterns: { p: '| C-4 L', q: '' } })).toThrow("song: pattern 'q' has no rows");
         const onlyComments = `
-            // lead
+            # lead
 
         `;
-        expect(() => createSong({ ...ONE_NOTE, patterns: { p: 'C-4 L', q: onlyComments } })).toThrow("song: pattern 'q' has no rows");
-        const tooWide = ['C-4 L', ...new Array<string>(VOICE_COUNT).fill('...')].join('|');
+        expect(() => createSong({ ...ONE_NOTE, patterns: { p: '| C-4 L', q: onlyComments } })).toThrow("song: pattern 'q' has no rows");
+        const tooWide = ['', 'C-4 L', ...new Array<string>(VOICE_COUNT).fill('...')].join('|');
         expect(() => createSongFromPattern(tooWide)).toThrow(`song: ${VOICE_COUNT + 1} channels is more than the chip's ${VOICE_COUNT} voices`);
     });
 
     it('rejects a note on a channel with no instrument named before it in the order', () => {
-        expect(() => createSongFromPattern('C-4 L | C-4')).toThrow("song: order entry 0 ('p'), pattern 'p', row 0, channel 1: a note with no instrument named on this channel before it");
-        const patterns = { named: 'C-4 L', bare: 'D-4' };
+        expect(() => createSongFromPattern('| C-4 L | C-4')).toThrow("song: order entry 0 ('p'), pattern 'p', row 0, channel 1: a note with no instrument named on this channel before it");
+        const patterns = { named: '| C-4 L', bare: '| D-4' };
         expect(() => createSong({ ...ONE_NOTE, patterns, order: ['named', 'bare'] })).not.toThrow();
         expect(() => createSong({ ...ONE_NOTE, patterns, order: ['bare', 'named'] })).toThrow("order entry 0 ('bare'), pattern 'bare', row 0, channel 0");
     });
 
     it('rejects a note its transposition takes out of the chip\'s range, but not an instrument\'s own note', () => {
-        const patterns = { top: 'G-9 L', bottom: 'C-0 L', drum: 'k' };
+        const patterns = { top: '| G-9 L', bottom: '| C-0 L', drum: '| k' };
         const options = { ...ONE_NOTE, instruments: { L: LEAD, k: KICK }, patterns };
         expect(() => createSong({ ...options, order: ['top+1'] }))
             .toThrow(`song: order entry 0 ('top+1'), pattern 'top', row 0, channel 0: note ${HIGHEST_NOTE} transposed by 1 is ${HIGHEST_NOTE + 1}`);
@@ -217,9 +247,9 @@ describe('tracker notation: songs', () => {
         const bpm = 150;
         const rowsPerBeat = 4;
         const p = `
-            C-4 L
-            ...
-            ...
+            | C-4 L
+            | ...
+            | ...
         `;
         const song = createSong({ bpm, rowsPerBeat, instruments: { L: LEAD }, patterns: { p }, order: ['p', 'p'] });
         expect(computeSongDurationMs(song)).toBeCloseTo(6 * 60000 / (bpm * rowsPerBeat), 9);
@@ -229,7 +259,7 @@ describe('tracker notation: songs', () => {
 describe('tracker notation: instruments and effects', () => {
     it('reads a step table, one step from each line, skipping blank lines and comment lines', () => {
         const steps = `
-            // wave    pitch  vol  width  cutoff
+            # wave     pitch  vol  width  cutoff
             noise      +24    vF
 
             triangle   -12         p4     f8
@@ -243,9 +273,24 @@ describe('tracker notation: instruments and effects', () => {
         expect(third).toMatchObject({ wave: -1, pitchMode: 'absolute', pitch: toNoteNumber('C-5') });
     });
 
+    it('ignores a comment at the end of a step, but reads a # inside a token as part of it', () => {
+        const steps = `
+            noise      +24    # the click
+            C#5               # an exact note
+        `;
+        const [first, second] = createInstrument({ steps }).data.steps;
+        expect(first).toMatchObject({ wave: toWaveFlags('noise'), pitch: 24 });
+        expect(second).toMatchObject({ pitchMode: 'absolute', pitch: toNoteNumber('C#5') });
+        expect(() => createInstrument({ steps: 'noise#x' })).toThrow("step 0: 'noise#x' is not a wave");
+    });
+
+    it('rejects a line that starts with //, which is not a comment', () => {
+        expect(() => createInstrument({ steps: '// wave\npulse' })).toThrow("step 0: '//' is not a wave");
+    });
+
     it('says which step is wrong, counting only the lines that are steps', () => {
         const steps = `
-            // wave
+            # wave
             pulse
 
             pulse sine
@@ -320,12 +365,12 @@ describe('tracker notation: instruments and effects', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const ONE_NOTE: SongOptions = { bpm: 120, instruments: { L: LEAD }, patterns: { p: 'C-4 L' }, order: ['p'] };
+const ONE_NOTE: SongOptions = { bpm: 120, instruments: { L: LEAD }, patterns: { p: '| C-4 L' }, order: ['p'] };
 
 function createSongFromPattern(pattern: string): Song {
     return createSong({ bpm: 120, instruments: { L: LEAD, k: KICK }, patterns: { p: pattern }, order: ['p'] });
 }
 
 function parseCell(text: string): Float64Array {
-    return createSongFromPattern(text).patterns[0].cells.subarray(0, CELL_STRIDE);
+    return createSongFromPattern(`| ${text}`).patterns[0].cells.subarray(0, CELL_STRIDE);
 }
