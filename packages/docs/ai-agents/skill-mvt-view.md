@@ -582,9 +582,10 @@ test goes in a `*.visual.ts` or `*.visual.tsx` file beside the view. Write
 one declaration for each state the view's bindings can show:
 `canvasTest(name, options?, pose)` for a Pixi or three.js view, or
 `htmlTest(name, options?, pose)` for an HTML view. A file declares
-one kind only. The pose is a function that builds the view and returns it. It
-builds a leaf view from fixed bindings, and a top-level view from a model
-in a known state. If the view has presentation state, the pose advances it
+one kind only. The `pose` function has one job. It returns a view that
+has been arranged into the pose that the test describes. It builds a leaf
+view from fixed bindings, and a top-level view from a model in a known
+state. If the view has presentation state, the pose advances it
 with `advanceTime({ models, views, totalMs })`. Both functions come from
 `@mvtjs/visual-testing`.
 

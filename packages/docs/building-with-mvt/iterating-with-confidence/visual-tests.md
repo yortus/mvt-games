@@ -26,8 +26,8 @@ beside the view. A Pixi or three.js view, which draws on a canvas, is
 declared with `canvasTest(name, options?, pose)`. An HTML view is
 declared with `htmlTest(name, options?, pose)`. Both come from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
-`pose` argument is a function that builds the view in the state to
-photograph, and returns it.
+`pose` function has one job. It returns a view that has been arranged into
+the pose that the test describes.
 
 ```tsx
 import { describe } from 'vitest';

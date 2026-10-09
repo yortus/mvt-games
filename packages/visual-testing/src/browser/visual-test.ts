@@ -16,8 +16,9 @@ import { drawThreePicture, type ThreePictureOptions } from './three-picture';
 // ---------------------------------------------------------------------------
 
 /**
- * A function that builds a view in the state to take a picture of, and
- * returns it. If the view has time to advance, the pose advances it too.
+ * A function with one job. It returns a view that has been arranged into
+ * the pose that the test describes. If the view has time to advance, the
+ * pose advances it too.
  */
 export type Pose<V> = () => V | Promise<V>;
 
