@@ -1,8 +1,10 @@
 # @mvtjs/visual-testing
 
-> Visual tests for views. A visual test builds a view in a known state,
-> takes a picture of it, and compares the picture with a reference picture
-> committed beside the test. This package runs hundreds of these tests in
+> Visual tests for views. A visual test is a kind of snapshot test, also
+> known as visual regression testing. A snapshot test compares a test's
+> output with a saved copy, and a visual test compares a picture. It builds
+> a view in a known state, takes a picture of it, and compares the picture
+> with a reference picture committed beside the test. This package runs hundreds of these tests in
 > seconds. The pictures come out the same on Windows, Linux and macOS, and
 > nothing needs installing beyond `npm ci`. It covers Pixi, three.js and
 > HTML views. The package is private for now.

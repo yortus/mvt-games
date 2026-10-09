@@ -1,8 +1,10 @@
 # Visual Tests
 
-> A visual test checks what a view looks like. It builds the view in a
-> known state, takes a picture of it, and compares the picture with a
-> reference picture committed beside the test. In this project, hundreds of
+> A visual test checks what a view looks like. It is a kind of
+> [visual snapshot test](testing-views.md#visual-snapshot-testing), also
+> known as visual regression testing. It builds the view in a known state,
+> takes a picture of it, and compares the picture with a reference picture
+> committed beside the test. In this project, hundreds of
 > these tests run in seconds. They give the same result on Windows, Linux
 > and macOS, and they need nothing installed beyond `npm ci`.
 
