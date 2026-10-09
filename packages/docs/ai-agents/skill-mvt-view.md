@@ -580,8 +580,8 @@ once, when the element is built, not per frame.
 **[project convention]** A new or changed view gets a visual test. The
 test goes in a `*.visual.tsx` file beside the view, or a
 `*.html.visual.tsx` file for an HTML view. Write one
-`visualTest(name, pose, options?)` call for each state the view's bindings
-can show. The pose is a function that builds the view and returns it. It
+`visualTest(name, pose, options?)` declaration for each state the view's
+bindings can show. The pose is a function that builds the view and returns it. It
 builds a leaf view from fixed bindings, and a top-level view from a model
 in a known state. If the view has presentation state, the pose advances it
 with `advanceTime({ models, views, totalMs })`. Both functions come from

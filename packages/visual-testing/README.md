@@ -15,7 +15,7 @@
 
 ## Writing a Test
 
-A test is one call to `visualTest(name, pose, options?)`, in a
+A test is a declaration, `visualTest(name, pose, options?)`, in a
 `*.visual.tsx` file beside the view. An HTML view's test goes in a
 `*.html.visual.tsx` file instead. The pose is a function that builds the
 view in the state to photograph, and returns it.

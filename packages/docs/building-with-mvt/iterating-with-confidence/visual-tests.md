@@ -21,8 +21,8 @@ says when a picture is the right test, and when an assertion is.*
 
 ## Writing a Visual Test
 
-A visual test is one call to `visualTest(name, pose, options?)`. The call
-goes in a `*.visual.tsx` file beside the view. `visualTest` comes from
+A visual test is a declaration, `visualTest(name, pose, options?)`, in a
+`*.visual.tsx` file beside the view. `visualTest` comes from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
 `pose` argument is a function that builds the view in the state to
 photograph, and returns it.
