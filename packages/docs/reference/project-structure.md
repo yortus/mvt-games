@@ -51,9 +51,10 @@ packages/website/src/
 
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
 sit beside the views they picture. A Pixi or three.js view's test is a
-`*.visual.tsx` file, and an HTML view's test is a `*.html.visual.tsx` file.
+`*.visual.ts` or `*.visual.tsx` file. It declares `canvasVisualTest` for a
+Pixi or three.js view, and `htmlVisualTest` for an HTML view.
 Each test file's reference pictures are in a `__screenshots__/<test file>/`
-directory beside it. The tests import `visualTest` from
+directory beside it. The tests import their declarations from
 `@mvtjs/visual-testing`, the package in `packages/visual-testing/`. The
 website's `vitest.visual.config.ts` sets up its runs with the package's
 Node side. The package's

@@ -1,10 +1,14 @@
 /**
  * The visual tests run as two Vitest projects, which this file creates.
  *
- * - `visual` tests Pixi and three.js views. Every file runs in one shared
- *   page.
- * - `visual-html` tests HTML views. Each file runs in a page of its own,
- *   since each file brings its own stylesheet.
+ * - `visual-canvas` runs the files that declare `canvasVisualTest`, which
+ *   test Pixi and three.js views. Every file runs in one shared page.
+ * - `visual-html` runs the files that declare `htmlVisualTest`. Each file
+ *   runs in a page of its own, since each file brings its own stylesheet.
+ *
+ * Each project gets its files from the declarations in them, read when the
+ * config loads. So in watch mode, a new test file joins the run only when
+ * Vitest restarts.
  *
  * Both run in Playwright's headless shell, a small build of Chromium for
  * headless use. It is launched with every setting that differs between
@@ -16,6 +20,7 @@ import { playwright } from '@vitest/browser-playwright';
 import type { TestProjectInlineConfiguration } from 'vitest/config';
 import type { VisualKind } from '../protocol';
 import { visualCommands } from './commands';
+import { findVisualTestFiles } from './test-files';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -64,9 +69,8 @@ export function createVisualProject(options: VisualProjectOptions): TestProjectI
             include: [...HARNESS_DEPENDENCIES, ...options.optimizeDeps ?? []],
         },
         test: {
-            name: isHtml ? 'visual-html' : 'visual',
-            include: isHtml ? ['src/**/*.html.visual.tsx'] : ['src/**/*.visual.tsx'],
-            exclude: isHtml ? [] : ['src/**/*.html.visual.tsx'],
+            name: `visual-${options.kind}`,
+            include: [...findVisualTestFiles(process.cwd())[options.kind]],
             // An HTML view's stylesheet stays in the page once it is imported,
             // so each HTML file gets a fresh page.
             isolate: isHtml,

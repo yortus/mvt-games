@@ -21,7 +21,7 @@ const optimizeDeps = ['gsap', 'pixi-solid', 'solid-js', 'solid-js/store'];
 export default defineConfig({
     test: {
         projects: [
-            createVisualProject({ kind: 'pixi', maxPixels, viteConfig: './vite.config.ts', optimizeDeps }),
+            createVisualProject({ kind: 'canvas', maxPixels, viteConfig: './vite.config.ts', optimizeDeps }),
             createVisualProject({ kind: 'html', maxPixels, viteConfig: './vite.config.ts', optimizeDeps }),
         ],
         reporters: createVisualReporters(),

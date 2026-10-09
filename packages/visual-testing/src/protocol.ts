@@ -21,11 +21,11 @@
 export type VisualMode = 'compare' | 'update' | 'environment';
 
 /**
- * Which project a page belongs to. The `pixi` project draws WebGL pictures
- * in one shared page. The `html` project captures HTML pictures, in a page
+ * Which project a page belongs to. The `canvas` project draws Pixi and
+ * three.js pictures in one shared page. The `html` project captures HTML pictures, in a page
  * for each file.
  */
-export type VisualKind = 'pixi' | 'html';
+export type VisualKind = 'canvas' | 'html';
 
 /** How a picture compares with its reference. */
 export type VisualOutcome =

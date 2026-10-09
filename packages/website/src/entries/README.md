@@ -437,9 +437,9 @@ It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 `start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
 The entry also gets a visual test of its whole screen, at the same moment,
-without any new code. `entries.visual.tsx` makes one for every Pixi entry
-in the catalogue, and `entries.html.visual.tsx` makes one for every element
-entry. Record the entry's picture, look at it, and commit it:
+without any new code. `pixi-entries.visual.tsx` makes one for every Pixi
+entry in the catalogue, and `element-entries.visual.tsx` makes one for every
+element entry. Record the entry's picture, look at it, and commit it:
 
 ```bash
 npm run test:visual:update -- --picture breakout

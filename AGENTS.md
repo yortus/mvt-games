@@ -51,8 +51,8 @@ packages/website/src/
 └── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
-Visual tests (`*.visual.tsx`, `*.html.visual.tsx`) sit beside the views they
-picture. Their reference PNGs are in `__screenshots__/`, beside the tests. The
+Visual tests (`*.visual.ts`, `*.visual.tsx`) sit beside the views they picture,
+and declare `canvasVisualTest` (Pixi, three.js) or `htmlVisualTest`. Their reference PNGs are in `__screenshots__/`, beside the tests. The
 harness is the `@mvtjs/visual-testing` package, in `packages/visual-testing/`. See
 [Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 

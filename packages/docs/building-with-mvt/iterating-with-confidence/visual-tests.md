@@ -21,15 +21,17 @@ says when a picture is the right test, and when an assertion is.*
 
 ## Writing a Visual Test
 
-A visual test is a declaration, `visualTest(name, pose, options?)`, in a
-`*.visual.tsx` file beside the view. `visualTest` comes from
+A visual test is a declaration in a `*.visual.ts` or `*.visual.tsx` file
+beside the view. A Pixi or three.js view, which draws on a canvas, is
+declared with `canvasVisualTest(name, pose, options?)`. An HTML view is
+declared with `htmlVisualTest(name, pose, options?)`. Both come from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
 `pose` argument is a function that builds the view in the state to
 photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
-import { visualTest } from '@mvtjs/visual-testing';
+import { canvasVisualTest } from '@mvtjs/visual-testing';
 import { BUTTON_RADIUS } from './pixi-layout';
 import { type SpinButtonMode, SpinButtonView } from './spin-button-view';
 
@@ -37,7 +39,7 @@ const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 
 describe('SpinButtonView', () => {
     for (const mode of MODES) {
-        visualTest(
+        canvasVisualTest(
             mode,
             () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }),
             { artStyle: 'smooth' },
@@ -62,7 +64,7 @@ models, then the views, in frame-sized steps, as the ticker does. It is the
 same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
 ```tsx
-visualTest('counting up, 300 ms in', async () => {
+canvasVisualTest('counting up, 300 ms in', async () => {
     let amount = 0;
     const view = WinBannerView({
         isShown: () => true,
@@ -96,14 +98,17 @@ shows.
 
 ### HTML and three.js Views
 
-An HTML view is tested in a `*.html.visual.tsx` file. Each such file runs
+An HTML view is tested with `htmlVisualTest`. Each file of HTML tests runs
 in a page of its own, because a stylesheet stays in a page once it is
-imported. The view's text is drawn blank, as explained below, so its
+imported. Canvas tests all share one page, so a file declares one kind of
+visual test only. The package reads each file's declarations to send it
+to the right kind of page, and stops with an error for a file that
+declares both kinds. The view's text is drawn blank, as explained below, so its
 picture shows its layout and styling. Some views are styled by the layout
 of the game around them. A pose for such a view builds the same containing
 elements around it.
 
-A three.js view is tested in a `*.visual.tsx` file, like a Pixi view. It
+A three.js view is tested with `canvasVisualTest`, like a Pixi view. It
 needs a `camera` option, which is a function that makes the camera for the
 picture. Its `scene` option can set up the scene as the view's game does,
 with a background, an environment map and tone mapping. Pass the game's
@@ -115,8 +120,8 @@ that brings its own lights needs no `scene` option.
 Every game and demo also has a picture of its whole screen, taken at the
 moment its thumbnail is taken. In this project, a game or demo is called
 an [entry](../../reference/glossary.md). Two test files make these
-pictures for every entry in the catalogue: `entries/entries.visual.tsx`
-for Pixi entries, and `entries/entries.html.visual.tsx` for the others. A
+pictures for every entry in the catalogue: `entries/pixi-entries.visual.tsx`
+for Pixi entries, and `entries/element-entries.visual.tsx` for the others. A
 new entry gets its picture without any new code. These pictures catch
 what a single view's test cannot see, such as layout, layering, or a view
 left out of its parent. So they change with almost any change to an entry.

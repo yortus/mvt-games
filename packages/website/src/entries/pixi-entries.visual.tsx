@@ -12,7 +12,7 @@
 import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { type PixiPictureOptions, visualTest } from '@mvtjs/visual-testing';
+import { type PixiPictureOptions, canvasVisualTest } from '@mvtjs/visual-testing';
 import type { ArcadeEntry, PixiEntryStarter } from '../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../runner';
 import { CATALOGUE } from './catalogue';
@@ -44,7 +44,7 @@ for (const { entry, starter } of loaded) {
         // The host draws black round a play area, and so does the picture.
         background: 0x000000,
     };
-    visualTest(entry.id, () => pose(entry, starter, crop), options);
+    canvasVisualTest(entry.id, () => pose(entry, starter, crop), options);
 }
 
 // ---------------------------------------------------------------------------

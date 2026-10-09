@@ -31,7 +31,7 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
     if (session.isCalibrated) return;
     const problems = [...await visualCommands.checkVisualEnvironment(readEnvironment())];
     if (problems.length === 0) {
-        const pictures = kind === 'pixi' ? PIXI_CALIBRATION : HTML_CALIBRATION;
+        const pictures = kind === 'canvas' ? CANVAS_CALIBRATION : HTML_CALIBRATION;
         for (const [name, draw] of Object.entries(pictures)) {
             const verdict = await draw(name, session.hashes[name]);
             if (!isPass(verdict)) {
@@ -46,7 +46,7 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }
-    await visualCommands.recordVisualCalibration({ kind, names: Object.keys(kind === 'pixi' ? PIXI_CALIBRATION : HTML_CALIBRATION) });
+    await visualCommands.recordVisualCalibration({ kind, names: Object.keys(kind === 'canvas' ? CANVAS_CALIBRATION : HTML_CALIBRATION) });
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ async function judgeWebGl(
     const hash = await hashPixels(picture.width, picture.height, picture.pixels);
     if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
     return visualCommands.judgeVisualMismatch({
-        calibration: 'pixi', name, test: `calibration ${name}`,
+        calibration: 'canvas', name, test: `calibration ${name}`,
         width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels),
     });
 }
@@ -176,7 +176,7 @@ function createShapesCamera(): PerspectiveCamera {
     return camera;
 }
 
-const PIXI_CALIBRATION: Readonly<Record<string, Calibration>> = {
+const CANVAS_CALIBRATION: Readonly<Record<string, Calibration>> = {
     'circle-msaa': createPixiCalibration(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), SMOOTH),
     'circle-aliased': createPixiCalibration(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), {}),
     'gradients': createPixiCalibration(() => {

@@ -185,7 +185,7 @@ Views with `update(deltaMs)` (those holding
 the snapshot is taken. Use the same small-step approach as model tests:
 
 ```tsx
-visualTest('door - halfway through fading in', async () => {
+canvasVisualTest('door - halfway through fading in', async () => {
     const view = DoorView({ isOpen: () => true });
     await advanceTime({ views: [view], totalMs: 200 });
     return view;

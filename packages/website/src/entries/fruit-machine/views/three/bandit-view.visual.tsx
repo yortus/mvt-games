@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreePictureOptions, visualTest } from '@mvtjs/visual-testing';
+import { advanceTime, type ThreePictureOptions, canvasVisualTest } from '@mvtjs/visual-testing';
 import { createFruitMachineModel } from '../../models';
 import { loadSymbolArt } from '../art';
 import { dressBanditScene, frameBanditCamera } from './bandit-scene';
@@ -12,14 +12,14 @@ const PICTURE: ThreePictureOptions = { width: 480, height: 360, camera: createBa
 const SEED = 7;
 
 describe('BanditView', () => {
-    visualTest('ready to spin', async () => {
+    canvasVisualTest('ready to spin', async () => {
         const model = createFruitMachineModel({ seed: SEED });
         return BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
     }, PICTURE);
 
     // Mid-spin, the drums are turning, the lever is on its way back, and the
     // cabinet has swayed a little.
-    visualTest('mid-spin', async () => {
+    canvasVisualTest('mid-spin', async () => {
         const model = createFruitMachineModel({ seed: SEED });
         const view = BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
         void model.spin();

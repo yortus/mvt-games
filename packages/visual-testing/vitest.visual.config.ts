@@ -6,7 +6,7 @@ import { createVisualProject, createVisualReporters, DEFAULT_MAX_PIXELS, type Vi
 // `npm run test:visual -w @mvtjs/visual-testing`.
 export default defineConfig({
     test: {
-        projects: [createProject({ kind: 'pixi' }), createProject({ kind: 'html' })],
+        projects: [createProject({ kind: 'canvas' }), createProject({ kind: 'html' })],
         reporters: createVisualReporters(),
     },
 });

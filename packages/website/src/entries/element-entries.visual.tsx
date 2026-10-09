@@ -1,6 +1,6 @@
 /**
  * These tests draw every element entry's whole screen at its thumbnail
- * moment, as `entries.visual.tsx` does for Pixi entries. Each entry is
+ * moment, as `pixi-entries.visual.tsx` does for Pixi entries. Each entry is
  * started in an element of its play size. Once its renderers are ready, it
  * is advanced as its thumbnail is, and then drawn. Each picture is an HTML
  * picture, since these entries are partly DOM. Their text is blank, and
@@ -9,7 +9,7 @@
 
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { visualTest } from '@mvtjs/visual-testing';
+import { htmlVisualTest } from '@mvtjs/visual-testing';
 import type { ElementEntryStarter } from '../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs } from '../runner';
 import { CATALOGUE } from './catalogue';
@@ -34,7 +34,7 @@ const loaded = await Promise.all(CATALOGUE.map(async (entry) => ({ entry, starte
 for (const { entry, starter } of loaded) {
     if (starter.kind !== 'element') continue;
     const size = SIZES[entry.id] ?? { width: entry.screenWidth, height: entry.screenHeight };
-    visualTest(entry.id, () => pose(starter, size));
+    htmlVisualTest(entry.id, () => pose(starter, size));
 }
 
 // ---------------------------------------------------------------------------

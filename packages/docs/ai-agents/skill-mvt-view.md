@@ -578,10 +578,11 @@ once, when the element is built, not per frame.
 ## Visual Tests
 
 **[project convention]** A new or changed view gets a visual test. The
-test goes in a `*.visual.tsx` file beside the view, or a
-`*.html.visual.tsx` file for an HTML view. Write one
-`visualTest(name, pose, options?)` declaration for each state the view's
-bindings can show. The pose is a function that builds the view and returns it. It
+test goes in a `*.visual.ts` or `*.visual.tsx` file beside the view. Write
+one declaration for each state the view's bindings can show:
+`canvasVisualTest(name, pose, options?)` for a Pixi or three.js view, or
+`htmlVisualTest(name, pose, options?)` for an HTML view. A file declares
+one kind only. The pose is a function that builds the view and returns it. It
 builds a leaf view from fixed bindings, and a top-level view from a model
 in a known state. If the view has presentation state, the pose advances it
 with `advanceTime({ models, views, totalMs })`. Both functions come from
@@ -589,7 +590,7 @@ with `advanceTime({ models, views, totalMs })`. Both functions come from
 
 ```tsx
 describe('WinBannerView', () => {
-    visualTest('a win, counted', () => WinBannerView({
+    canvasVisualTest('a win, counted', () => WinBannerView({
         isShown: () => true,
         amount: () => WIN,
         caption: () => CAPTION,

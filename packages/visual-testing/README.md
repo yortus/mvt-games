@@ -15,19 +15,23 @@
 
 ## Writing a Test
 
-A test is a declaration, `visualTest(name, pose, options?)`, in a
-`*.visual.tsx` file beside the view. An HTML view's test goes in a
-`*.html.visual.tsx` file instead. The pose is a function that builds the
-view in the state to photograph, and returns it.
+A test is a declaration in a `*.visual.ts` or `*.visual.tsx` file beside
+the view. A Pixi or three.js view is declared with
+`canvasVisualTest(name, pose, options?)`, and an HTML view with
+`htmlVisualTest(name, pose, options?)`. A file declares one kind only,
+because canvas tests share one page, and each file of HTML tests gets a
+page of its own. The package reads each file's declarations to send it to
+the right kind of page. The pose is a function that builds the view in the
+state to photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
-import { visualTest } from '@mvtjs/visual-testing';
+import { canvasVisualTest } from '@mvtjs/visual-testing';
 import { HudView } from './hud-view';
 
 describe('HudView', () => {
-    visualTest('at the start', () => HudView({ score: () => 0 }));
-    visualTest('a high score', () => HudView({ score: () => 98_765 }));
+    canvasVisualTest('at the start', () => HudView({ score: () => 0 }));
+    canvasVisualTest('a high score', () => HudView({ score: () => 98_765 }));
 });
 ```
 
@@ -61,7 +65,7 @@ A package that has visual tests needs three things.
    export default defineConfig({
        test: {
            projects: [
-               createVisualProject({ kind: 'pixi', ...options }),
+               createVisualProject({ kind: 'canvas', ...options }),
                createVisualProject({ kind: 'html', ...options }),
            ],
            reporters: createVisualReporters(),
@@ -103,7 +107,7 @@ them are defined once, in `src/protocol.ts`.
 
 | Folder | What it holds |
 | --- | --- |
-| `src/browser/` | The side that runs in the test page. It holds `visualTest` and `advanceTime`, which the main entry point exports. It also holds the picture code for each kind of view, and the page's setup. The setup pins random numbers, draws canvas text from two test fonts, and blanks HTML text |
+| `src/browser/` | The side that runs in the test page. It holds `canvasVisualTest`, `htmlVisualTest` and `advanceTime`, which the main entry point exports. It also holds the picture code for each kind of view, and the page's setup. The setup pins random numbers, draws canvas text from two test fonts, and blanks HTML text |
 | `src/node/` | The side that runs in Node. `@mvtjs/visual-testing/node` exports its Vitest projects and reporters. It also holds the browser commands, the PNG files, the comparison and the run's summary |
 | `src/node/cli/` | The `visual-tests` command, its reference check, and the generator of the blank font |
 | `src/browser/__screenshots__/` | The calibration pictures, and the pictures of this package's own tests |

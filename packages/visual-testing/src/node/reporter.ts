@@ -66,10 +66,10 @@ export function createVisualReporter(): Reporter {
             }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
             const lines = [`The visual tests drew ${pictures.length} pictures in ${seconds} s.`];
-            for (const kind of ['pixi', 'html'] as const) {
+            for (const kind of ['canvas', 'html'] as const) {
                 const times = pictures.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
                 if (times.length === 0) continue;
-                lines.push(`  ${times.length} ${kind === 'pixi' ? 'WebGL' : 'HTML'} pictures took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
+                lines.push(`  ${times.length} ${kind === 'canvas' ? 'canvas' : 'HTML'} pictures took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
             }
             const counts = new Map<string, number>();
             for (const p of pictures) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);

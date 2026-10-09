@@ -1359,6 +1359,13 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    entry point names its source as the default too, since Vitest bundles a
    config with no custom conditions, and the command runs Vitest with
    tsx's loader, so that Node can run the package's TypeScript.
+   The same day, the kind of test moved from the file name into the
+   declaration: `canvasVisualTest` (Pixi and three.js) or
+   `htmlVisualTest`, in any `*.visual.ts` or `*.visual.tsx` file. Vitest
+   assigns files to projects before any test code runs, so the package
+   reads each file's text when the config loads, and fails a file that
+   declares both kinds, or neither. `visualTest` and `*.html.visual.tsx`
+   are gone, and the internal kind `pixi` is now `canvas`.
 4. **What if SwiftShader draws something wrongly?** If a view uses a
    feature software WebGL gets wrong, its pictures would be consistently
    wrong, which still catches changes, but would confuse a reviewer.

@@ -11,7 +11,7 @@ export interface HtmlPictureOptions {
     /** The picture's size in CSS pixels. By default, it is the element's own size, as the element lays itself out. */
     readonly width?: number;
     readonly height?: number;
-    /** The background, as a CSS colour. By default, it is the same dark grey as WebGL pictures. */
+    /** The background, as a CSS colour. By default, it is the same dark grey as canvas pictures. */
     readonly background?: string;
 }
 
