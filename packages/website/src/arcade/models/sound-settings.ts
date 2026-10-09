@@ -30,6 +30,17 @@ export const DEFAULT_SOUND_SETTINGS: ArcadeSoundSettings = {
     isMuted: false,
 };
 
+/**
+ * The settings a first visit on a phone or a tablet starts with. They are the
+ * defaults, muted. A phone is often used in public, where a page that makes
+ * sound unasked can embarrass its owner. Unmuting plays each sound at its
+ * default volume.
+ */
+export const HANDHELD_SOUND_SETTINGS: ArcadeSoundSettings = {
+    ...DEFAULT_SOUND_SETTINGS,
+    isMuted: true,
+};
+
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------

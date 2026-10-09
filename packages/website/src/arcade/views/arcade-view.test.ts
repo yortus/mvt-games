@@ -123,6 +123,7 @@ function setUp(): { model: ArcadeModel; navTools: HTMLElement; view: Element; ti
         navTools,
         pageSound: audio80,
         audioViews: () => undefined,
+        isSoundOffByDefault: () => false,
     });
     document.body.replaceChildren(view, navTools);
     const tick = (): void => {

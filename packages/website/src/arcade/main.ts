@@ -3,8 +3,17 @@ import { refreshView, updateView } from '@mvtjs/html';
 import { assert, watch } from '@mvtjs/utils';
 import { CATALOGUE, findEntry } from '../entries';
 import type { ArcadeEntry, EntryStarter } from '../entry-types';
+import { isHandheldDevice } from '../device';
 import { createEntryHost, createPageSound, isTouchDevice } from '../runner';
-import { type ArcadeSoundSettings, createArcadeModel, formatArcadeQuery, formatSoundSettings, parseSoundSettings } from './models';
+import {
+    type ArcadeSoundSettings,
+    createArcadeModel,
+    DEFAULT_SOUND_SETTINGS,
+    formatArcadeQuery,
+    formatSoundSettings,
+    HANDHELD_SOUND_SETTINGS,
+    parseSoundSettings,
+} from './models';
 import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews } from './views';
 import './arcade.css';
 
@@ -62,15 +71,22 @@ let liveRequests = 0;
 /** The host's preparations, one after another. Two at once could each make a renderer. */
 let livePreparing: Promise<void> = Promise.resolve();
 
-// Declared before the model is made, which reads it.
+// Declared before the model is made, which reads them.
 /** Where the visitor's sound settings are kept between visits. */
 const SOUND_SETTINGS_KEY = 'mvt-arcade-sound';
+/** The sound settings the visitor saved on an earlier visit, as text. It is undefined if they never changed the sound. */
+const savedSoundSettings = readSavedSoundSettings();
+// A first visit takes the defaults. On a phone or a tablet, the sound starts
+// muted. Desktops start with sound, as a games site is expected to.
+const firstSoundSettings = savedSoundSettings !== undefined
+    ? parseSoundSettings(savedSoundSettings)
+    : isHandheldDevice() ? HANDHELD_SOUND_SETTINGS : DEFAULT_SOUND_SETTINGS;
 
 const model = createArcadeModel({
     entries: CATALOGUE,
     factsFor: (id) => ENTRY_FACTS[id],
     search: location.search,
-    soundSettings: readSoundSettings(),
+    soundSettings: firstSoundSettings,
     loadEntry: async (entry) => {
         const starter = await entry.load();
         if (DEV) checkPlayArea(entry, starter);
@@ -96,6 +112,8 @@ root.append(ArcadeView({
     isLiveShowing: () => liveFrames >= LIVE_SHOWN_AFTER_FRAMES,
     pageSound: sound.pageAudio80,
     audioViews: () => audioViews,
+    // The model replaces its settings object whenever one changes, so the first object still there means no change
+    isSoundOffByDefault: () => savedSoundSettings === undefined && model.soundSettings === firstSoundSettings && model.isSoundMuted,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,
@@ -266,13 +284,13 @@ function applySoundSettings(settings: ArcadeSoundSettings): void {
     sound.pageControls.isMuted = settings.isMuted;
 }
 
-/** Reads the sound settings the visitor last left. Returns the defaults if storage is blocked or holds no valid settings. */
-function readSoundSettings(): ArcadeSoundSettings {
+/** Returns the sound settings the visitor last left, as text. Returns undefined if storage is blocked or holds none. */
+function readSavedSoundSettings(): string | undefined {
     try {
-        return parseSoundSettings(localStorage.getItem(SOUND_SETTINGS_KEY) ?? undefined);
+        return localStorage.getItem(SOUND_SETTINGS_KEY) ?? undefined;
     }
     catch {
-        return parseSoundSettings(undefined);
+        return undefined;
     }
 }
 

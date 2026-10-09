@@ -66,6 +66,12 @@ export interface ArcadeViewBindings {
      * loads them on that press, and its first load holds no sound.
      */
     readonly audioViews: () => ArcadeAudioViews | undefined;
+    /**
+     * Whether all the sound is muted because the visit started that way, as
+     * a first visit on a phone does, and the visitor has not changed it. A
+     * hint then offers to turn the sound on as an entry plays.
+     */
+    readonly isSoundOffByDefault: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,9 +92,9 @@ export interface ArcadeViewBindings {
  *
  * Scrolled down the wall, past the head, a magnifier shows in the site's nav
  * to go back to the search, as `/` does from anywhere on the wall. A speaker
- * in the site's nav turns all the sound off, or back on at the levels it
- * had. The Arcade's own sounds play from audio views that load on the
- * visitor's first press.
+ * in the site's nav, and another in the runner's bar, turns all the sound
+ * off, or back on at the levels it had. The Arcade's own sounds play from
+ * audio views that load on the visitor's first press.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -201,6 +207,10 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 isOpen={() => model.phase !== 'browsing'}
                 isPlaying={() => model.phase === 'playing'}
                 isPaused={() => model.isPaused}
+                // The runner's bar covers the site's nav, so it has a speaker of its own, the same as the nav's
+                isSoundOn={isAnySoundOn}
+                isSoundOffByDefault={bindings.isSoundOffByDefault}
+                onSoundPressed={toggleAllSound}
                 // While all the sound is muted, the pause menu shows each sound as off.
                 // Using a slider or an icon there unmutes the sound first.
                 musicVolume={() => (model.isSoundMuted ? 0 : model.musicVolume)}

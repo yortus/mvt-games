@@ -129,10 +129,10 @@ button { font: inherit; color: inherit; }
     background: var(--site-accent, #58a6ff);
 }
 
-/* The speaker beside it, for all the sound. It is always shown, and struck through when all the sound is off */
+/* The speaker beside it, for all the sound. It is always shown, and struck through when all the sound is off. The runner's bar has one too */
 .nav-sound { transition: color 0.15s, background 0.15s; }
-.nav-sound::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9'/%3E%3C/svg%3E") center / 18px no-repeat; }
-.nav-sound.is-off::before {
+.nav-sound::before, .runner-sound::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9'/%3E%3C/svg%3E") center / 18px no-repeat; }
+.nav-sound.is-off::before, .runner-sound.is-off::before {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 6l4 4M15 6l-4 4'/%3E%3C/svg%3E");
 }
 
@@ -638,6 +638,9 @@ button { font: inherit; color: inherit; }
     cursor: pointer;
 }
 .runner-bar button:hover:not(:disabled) { border-color: var(--site-accent, #58a6ff); }
+/* The speaker, drawn with the nav speaker's icon */
+.runner-sound { display: flex; align-items: center; justify-content: center; color: #e6edf3; }
+.runner-sound::before { content: ''; width: 20px; height: 20px; background: currentColor; }
 .runner-bar button:disabled { opacity: 0.4; cursor: default; }
 
 /* Laid out even while hidden, so the transition knows where an entry will play */
@@ -790,6 +793,27 @@ button { font: inherit; color: inherit; }
 @media (orientation: portrait) and (pointer: coarse) {
     .runner-rotate-hint:not([hidden]) { display: flex; }
 }
+
+/* Under the bar's speaker, while the sound is off only because the visit started that way */
+.runner-sound-hint {
+    position: fixed;
+    top: 52px;
+    right: 8px;
+    z-index: 10002;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 16px);
+    padding: 4px 6px 4px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--site-accent, #58a6ff);
+    background: rgba(22, 27, 34, 0.94);
+    font-size: 13px;
+}
+.runner-sound-hint[hidden] { display: none; }
+.runner-sound-hint button { border: none; background: none; color: inherit; cursor: pointer; }
+.runner-sound-hint-text { padding: 4px 0; font-size: 13px; text-align: left; }
+.runner-sound-hint button[aria-label] { font-size: 18px; }
 
 /* --- The way in and out -------------------------------------------------- */
 
