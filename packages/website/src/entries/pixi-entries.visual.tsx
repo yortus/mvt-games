@@ -44,7 +44,7 @@ for (const { entry, starter } of loaded) {
         // The host draws black round a play area, and so does the picture.
         background: 0x000000,
     };
-    canvasTest(entry.id, () => pose(entry, starter, crop), options);
+    canvasTest(entry.id, options, () => pose(entry, starter, crop));
 }
 
 // ---------------------------------------------------------------------------

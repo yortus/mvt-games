@@ -12,20 +12,20 @@ const PICTURE: ThreePictureOptions = { width: 480, height: 360, camera: createBa
 const SEED = 7;
 
 describe('BanditView', () => {
-    canvasTest('ready to spin', async () => {
+    canvasTest('ready to spin', PICTURE, async () => {
         const model = createFruitMachineModel({ seed: SEED });
         return BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
-    }, PICTURE);
+    });
 
     // Mid-spin, the drums are turning, the lever is on its way back, and the
     // cabinet has swayed a little.
-    canvasTest('mid-spin', async () => {
+    canvasTest('mid-spin', PICTURE, async () => {
         const model = createFruitMachineModel({ seed: SEED });
         const view = BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
         void model.spin();
         await advanceTime({ models: [model], views: [view], totalMs: 600 });
         return view;
-    }, PICTURE);
+    });
 });
 
 function createBanditCamera(): PerspectiveCamera {

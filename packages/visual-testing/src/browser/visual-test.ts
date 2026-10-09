@@ -29,7 +29,9 @@ export type Pose<V> = () => V | Promise<V>;
  * Declares a visual test of a Pixi or three.js view, which draws on a canvas.
  * The test refreshes the view that the pose returns, draws it, and compares
  * it with its reference, `__screenshots__/<this file>/<describe blocks>-<name>.png`.
- * Canvas tests run in one page that every such file shares.
+ * Canvas tests run in one page that every such file shares. The options
+ * come before the pose, as they do in Vitest's `test`, and may be left out
+ * for a Pixi view.
  *
  * - A Pixi view is drawn as pixel art unless its options say
  *   `artStyle: 'smooth'`. See `PixiPictureOptions.artStyle` for what each
@@ -40,10 +42,15 @@ export type Pose<V> = () => V | Promise<V>;
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function canvasTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
-export function canvasTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
-export function canvasTest(name: string, pose: Pose<Container | Object3D>, options: PixiPictureOptions | ThreePictureOptions = {}): void {
-    declareVisualTest(name, 'canvas', pose, options);
+export function canvasTest(name: string, pose: Pose<Container>): void;
+export function canvasTest(name: string, options: PixiPictureOptions, pose: Pose<Container>): void;
+export function canvasTest(name: string, options: ThreePictureOptions, pose: Pose<Object3D>): void;
+export function canvasTest(
+    name: string,
+    optionsOrPose: PixiPictureOptions | ThreePictureOptions | Pose<Container>,
+    pose?: Pose<Container | Object3D>,
+): void {
+    declareVisualTest(name, 'canvas', ...sortArguments(optionsOrPose, pose));
 }
 
 /**
@@ -57,20 +64,31 @@ export function canvasTest(name: string, pose: Pose<Container | Object3D>, optio
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function htmlTest(name: string, pose: Pose<Element>, options: HtmlPictureOptions = {}): void {
-    declareVisualTest(name, 'html', pose, options);
+export function htmlTest(name: string, pose: Pose<Element>): void;
+export function htmlTest(name: string, options: HtmlPictureOptions, pose: Pose<Element>): void;
+export function htmlTest(name: string, optionsOrPose: HtmlPictureOptions | Pose<Element>, pose?: Pose<Element>): void {
+    declareVisualTest(name, 'html', ...sortArguments(optionsOrPose, pose));
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-function declareVisualTest(
-    name: string,
-    declared: VisualKind,
-    pose: Pose<Container | Object3D | Element>,
-    options: PixiPictureOptions | ThreePictureOptions | HtmlPictureOptions,
-): void {
+type AnyPose = Pose<Container | Object3D | Element>;
+type AnyOptions = PixiPictureOptions | ThreePictureOptions | HtmlPictureOptions;
+
+/**
+ * Returns a declaration's pose and options, in that order. A declaration
+ * takes its options before its pose, as Vitest's `test` does, or its pose
+ * alone.
+ */
+function sortArguments(optionsOrPose: AnyOptions | AnyPose, pose: AnyPose | undefined): [AnyPose, AnyOptions] {
+    if (typeof optionsOrPose === 'function') return [optionsOrPose, {}];
+    if (pose === undefined) throw new Error('A visual test with options needs a pose after them.');
+    return [pose, optionsOrPose];
+}
+
+function declareVisualTest(name: string, declared: VisualKind, pose: AnyPose, options: AnyOptions): void {
     test(name, async ({ task }) => {
         const kind = inject('visualKind');
         const maxPixels = inject('visualMaxPixels');

@@ -11,12 +11,12 @@ import { GameView } from './game-view';
 const CROP = { width: 600, height: 750 };
 
 describe('GameView', () => {
-    canvasTest('at the start', () => poseGame({ isRestarted: false }), CROP);
+    canvasTest('at the start', CROP, () => poseGame({ isRestarted: false }));
 
     // Random numbers are seeded the same in every test, so both tests start
     // from the same board. A restart deals a new one. If the view kept
     // showing the old board, this picture would match the one above.
-    canvasTest('after a restart', () => poseGame({ isRestarted: true }), CROP);
+    canvasTest('after a restart', CROP, () => poseGame({ isRestarted: true }));
 });
 
 async function poseGame(options: { readonly isRestarted: boolean }): Promise<ReturnType<typeof GameView>> {

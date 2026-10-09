@@ -17,9 +17,10 @@
 
 A test is a declaration in a `*.visual.ts` or `*.visual.tsx` file beside
 the view. A Pixi or three.js view is declared with
-`canvasTest(name, pose, options?)`, and an HTML view with
-`htmlTest(name, pose, options?)`. The pose is a function that builds the
-view in the state to photograph, and returns it.
+`canvasTest(name, options?, pose)`, and an HTML view with
+`htmlTest(name, options?, pose)`. The options come before the pose, as
+they do in Vitest's `test`. The pose is a function that builds the view in
+the state to photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';

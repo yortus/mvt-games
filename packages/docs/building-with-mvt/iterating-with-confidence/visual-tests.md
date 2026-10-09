@@ -23,8 +23,8 @@ says when a picture is the right test, and when an assertion is.*
 
 A visual test is a declaration in a `*.visual.ts` or `*.visual.tsx` file
 beside the view. A Pixi or three.js view, which draws on a canvas, is
-declared with `canvasTest(name, pose, options?)`. An HTML view is
-declared with `htmlTest(name, pose, options?)`. Both come from
+declared with `canvasTest(name, options?, pose)`. An HTML view is
+declared with `htmlTest(name, options?, pose)`. Both come from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
 `pose` argument is a function that builds the view in the state to
 photograph, and returns it.
@@ -39,11 +39,10 @@ const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 
 describe('SpinButtonView', () => {
     for (const mode of MODES) {
-        canvasTest(
-            mode,
-            () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }),
-            { artStyle: 'smooth' },
-        );
+        canvasTest(mode, { artStyle: 'smooth' }, () => SpinButtonView({
+            mode: () => mode,
+            radius: BUTTON_RADIUS,
+        }));
     }
 });
 ```
@@ -64,7 +63,7 @@ models, then the views, in frame-sized steps, as the ticker does. It is the
 same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
 ```tsx
-canvasTest('counting up, 300 ms in', async () => {
+canvasTest('counting up, 300 ms in', { artStyle: 'smooth' }, async () => {
     let amount = 0;
     const view = WinBannerView({
         isShown: () => true,
@@ -75,13 +74,16 @@ canvasTest('counting up, 300 ms in', async () => {
     amount = WIN;
     await advanceTime({ views: [view], totalMs: 300 });
     return view;
-}, { artStyle: 'smooth' });
+});
 ```
 
 A top-level view takes its model. To pose one, make the model, act on it,
 and pass both to `advanceTime({ models: [model], views: [view], totalMs })`.
 
 ### Options
+
+A test's options come before its pose, as they do in Vitest's `test`. A
+test without options takes its pose alone.
 
 | Option | Default | Use |
 | --- | --- | --- |

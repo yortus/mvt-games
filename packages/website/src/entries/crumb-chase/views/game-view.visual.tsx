@@ -16,8 +16,8 @@ async function poseGame(advanceMs: number): Promise<ReturnType<typeof GameView>>
 }
 
 describe('Crumb Chase GameView', () => {
-    canvasTest('at the start', () => poseGame(0), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+    canvasTest('at the start', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }, () => poseGame(0));
     // The cats leave their pen, and the mouse runs on its own until the player
     // steers it.
-    canvasTest('two seconds in', () => poseGame(2000), { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
+    canvasTest('two seconds in', { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }, () => poseGame(2000));
 });

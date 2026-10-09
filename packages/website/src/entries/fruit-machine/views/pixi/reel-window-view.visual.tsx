@@ -17,15 +17,15 @@ function loadSymbolTextures(): Promise<SymbolTextures> {
 }
 
 describe('ReelWindowView', () => {
-    canvasTest('at rest', async () => {
+    canvasTest('at rest', { artStyle: 'smooth' }, async () => {
         const { textureFor } = await loadSymbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => reel * 3, isBlurredAt: () => false, textureFor });
-    }, { artStyle: 'smooth' });
+    });
 
     // Fractional positions show the reels part-way between symbols. The reels
     // are blurred, as they are while they turn.
-    canvasTest('spinning', async () => {
+    canvasTest('spinning', { artStyle: 'smooth' }, async () => {
         const { textureFor } = await loadSymbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => 5.4 + reel * 1.7, isBlurredAt: () => true, textureFor });
-    }, { artStyle: 'smooth' });
+    });
 });

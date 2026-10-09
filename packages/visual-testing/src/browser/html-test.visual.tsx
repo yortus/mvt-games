@@ -17,5 +17,5 @@ describe('htmlTest', () => {
 
     htmlTest('a rotated image', () => createBlock(`<img style="width:80px;transform:rotate(-4deg)" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#2a1766"/><circle cx="20" cy="15" r="10" fill="#5bd1ff"/></svg>')}">`));
 
-    htmlTest('at a fixed size', () => createBlock('<div style="width:40px;height:40px;background:#ff4f8b"></div>'), { width: 120, height: 80 });
+    htmlTest('at a fixed size', { width: 120, height: 80 }, () => createBlock('<div style="width:40px;height:40px;background:#ff4f8b"></div>'));
 });

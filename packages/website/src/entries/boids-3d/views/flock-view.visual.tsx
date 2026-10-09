@@ -9,15 +9,15 @@ import { FlockView } from './flock-view';
 const PICTURE: ThreePictureOptions = { width: 480, height: 300, camera: createOrbitStartCamera, background: 0x0d1117 };
 
 describe('FlockView', () => {
-    canvasTest('as the flock starts', () => FlockView({ model: createFlock() }), PICTURE);
+    canvasTest('as the flock starts', PICTURE, () => FlockView({ model: createFlock() }));
 
     // By now the boids have formed groups that head the same way.
-    canvasTest('two seconds in', async () => {
+    canvasTest('two seconds in', PICTURE, async () => {
         const model = createFlock();
         const view = FlockView({ model });
         await advanceTime({ models: [model], views: [view], totalMs: 2000 });
         return view;
-    }, PICTURE);
+    });
 });
 
 function createFlock(): FlockModel {
