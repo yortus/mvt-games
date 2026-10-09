@@ -763,7 +763,38 @@ button { font: inherit; color: inherit; }
     background: #f85149;
     transform: rotate(-45deg);
 }
-.sound-control input { width: 100%; margin: 0; accent-color: var(--site-accent, #58a6ff); cursor: pointer; }
+.sound-control input { width: 100%; margin: 0; }
+/*
+ * The slider is drawn here, not by the browser. Safari ignores accent-color
+ * on a slider, and on a dark page draws its track nearly black. The view sets
+ * --fill to the thumb's place, and the track is coloured up to it. Firefox
+ * colours that part itself, as -moz-range-progress.
+ */
+.sound-control input {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    background: none;
+    cursor: pointer;
+}
+.sound-control input::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--site-accent, #58a6ff) var(--fill, 0%), #484f58 var(--fill, 0%));
+}
+.sound-control input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border: none;
+    border-radius: 50%;
+    background: var(--site-accent, #58a6ff);
+}
+.sound-control input::-moz-range-track { height: 6px; border-radius: 3px; background: #484f58; }
+.sound-control input::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--site-accent, #58a6ff); }
+.sound-control input::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--site-accent, #58a6ff); }
 
 .pause-how-to pre {
     padding: 12px 14px;

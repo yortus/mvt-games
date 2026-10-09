@@ -42,6 +42,7 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
     const turnOffText = `Turn the ${name} off`;
     const turnOnText = `Turn the ${name} on`;
     const toSpokenText = memoiseLast((step: number) => (step === 0 ? 'Off' : `${step} of ${STEPS}`));
+    let shownStep = -1;
 
     return (
         <div class={() => (isOff() ? 'sound-control is-off' : 'sound-control')}>
@@ -64,6 +65,7 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
                 step="1"
                 valueAsNumber={() => toStep(bindings.volume())}
                 aria-valuetext={() => toSpokenText(toStep(bindings.volume()))}
+                onRefresh={showFill}
                 onInput={(event) => {
                     bindings.onVolumeChanged?.((event.currentTarget as HTMLInputElement).valueAsNumber / STEPS);
                 }}
@@ -80,6 +82,14 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
     function isOff(): boolean {
         return toStep(bindings.volume()) === 0;
     }
+
+    /** Sets `--fill` to the thumb's place, which the stylesheet colours the track up to. */
+    function showFill(slider: HTMLInputElement): void {
+        const step = toStep(bindings.volume());
+        if (step === shownStep) return;
+        shownStep = step;
+        slider.style.setProperty('--fill', FILLS[step]);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +98,9 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
 
 /** How many steps the slider has above off. Each is a tenth of the volume. */
 const STEPS = 10;
+
+/** Each step's place along the slider, as a CSS percentage. */
+const FILLS: readonly string[] = Array.from({ length: STEPS + 1 }, (_, step) => `${(step / STEPS) * 100}%`);
 
 /** Converts a volume to the slider's step. A volume saved between steps shows at the nearest step. */
 function toStep(volume: number): number {
