@@ -31,8 +31,8 @@ export interface GameViewBindings {
 /**
  * The whole game: the maze and the mouse, the HUD below, the overlay, and the
  * cats, drawn last (so above the overlay, as they always have been). The
- * cats are a `<List>`; each takes its color from its index. Its audio view,
- * which draws nothing, plays the music and the nibbles.
+ * cats are a `<List>`; each takes its color from its index. Its audio view
+ * plays the music and the nibbles.
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, sound } = bindings;

@@ -56,14 +56,14 @@ export interface GameAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's music and sounds. It draws nothing. The stage has its own
- * theme. A warning silences it and sounds again and again while it shows.
- * Then the boss brings a faster theme. A jingle plays over each stage's
- * tally, a finale plays when every loop is cleared, and a slow tune plays
- * when the game is over. Over the music, the view plays the guns' soft blips
- * while the ship flies, a bell for each graze, explosions by their size,
- * pickups, bombs, and the ship's loss and return. It also plays a break as
- * each of the boss's attacks ends, and a tick while shots land on the boss.
+ * Plays the game's music and sounds. The stage has its own theme. A warning
+ * silences it and sounds again and again while it shows. Then the boss
+ * brings a faster theme. A jingle plays over each stage's tally, a finale
+ * plays when every loop is cleared, and a slow tune plays when the game is
+ * over. Over the music, the view plays the guns' soft blips while the ship
+ * flies, a bell for each graze, explosions by their size, pickups, bombs,
+ * and the ship's loss and return. It also plays a break as each of the
+ * boss's attacks ends, and a tick while shots land on the boss.
  *
  * The music player's place in the song, and the metronomes that time the
  * guns' blips and the boss's ticks, are the view's presentation state. They

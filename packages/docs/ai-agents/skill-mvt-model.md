@@ -166,9 +166,19 @@ presentation-specific ones:
 | Grid-based game       | Fractional `row` / `col`                     | `x = col * tileSize`      |
 | Open arena            | World-unit position (`worldX`, `worldY`)     | Pixel position from scale  |
 | Named states          | `phase: 'inflating' \| 'popped'`             | Sprite frame, alpha, scale |
+| Moments that repeat   | A count: `shotsFired`, and the last one's details | A sound as the count rises |
 
 Views compute pixel positions and visual properties from domain coordinates.
 Models know nothing about screen size or rendering technology.
+
+**Counts, not events.** A view finds most moments, such as a death, in a
+phase that changes. Some moments can happen twice in a row with no change of
+state, such as a shot or a coin. For each kind, the model keeps a count
+(`shotsFired++`) and resets it for a new game. A view plays a sound when the
+count rises. When the sound depends on which one or where, the model also
+keeps the last one's details (`lastBrokenRockSize`). Models never emit
+events or play sounds. See
+[Sound and Music](../building-with-mvt/presenting-the-world/sound.md).
 
 ## Factory Function Pattern
 

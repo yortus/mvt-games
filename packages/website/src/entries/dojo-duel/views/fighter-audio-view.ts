@@ -23,12 +23,12 @@ export interface FighterAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays one fighter's sounds. It draws nothing. A swish sounds as each move
- * starts. It is short for a punch, longer for a kick, and longest for a move
- * through the air. A clack sounds as the fighter blocks, and a crack and a
- * thud as they are knocked down. The view plays only on a change. A move
- * starts when the fighter's move changes to one. That happens even when the
- * same move is made twice, because the move goes back to none between them.
+ * Plays one fighter's sounds. A swish sounds as each move starts. It is
+ * short for a punch, longer for a kick, and longest for a move through the
+ * air. A clack sounds as the fighter blocks, and a crack and a thud as they
+ * are knocked down. The view plays only on a change. A move starts when the
+ * fighter's move changes to one. That happens even when the same move is
+ * made twice, because the move goes back to none between them.
  */
 export function FighterAudioView(bindings: FighterAudioViewBindings): Container {
     const { sound } = bindings;

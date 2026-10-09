@@ -36,7 +36,7 @@ export interface GameAudioViewBindings {
  * cactii tock as they land, and a few notes mark a new board and the end of
  * the game.
  *
- * The view draws nothing and keeps no state. Every sound it plays is a
+ * The view keeps no state. Every sound it plays is a
  * change in the game's phase or the board's.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {

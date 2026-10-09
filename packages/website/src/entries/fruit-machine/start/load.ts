@@ -86,7 +86,7 @@ export async function load(): Promise<ElementEntryStarter> {
             const terminal = TerminalView({ model });
             quadrant(element, 'terminal').append(terminal);
 
-            // --- Sound: a fifth view, drawing nothing ------------------------
+            // --- Sound: a fifth view, with no visuals -------------------------
             // Never added to the page: the host walks it with the other views
             const audio = MachineAudioView({ model, sound });
 

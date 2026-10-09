@@ -29,7 +29,7 @@ export interface MachineAudioViewBindings {
  * chime as it is shown. A spin that wins nothing plays a falling sigh, and a
  * slow tune plays as the credits run out.
  *
- * The view draws nothing, and is never added to the page. It is a fifth view
+ * The view has no visuals, and is never added to the page. It is a fifth view
  * of the one model, beside the four that draw it, and the host updates and
  * refreshes it with the rest. Its presentation state is the jingle's place in
  * its song and the beats of the clicks and the coins. Its update step

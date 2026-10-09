@@ -31,8 +31,8 @@ export interface VolumePreviewAudioViewBindings {
  * the menu opens, or for a volume turned to 0. The phrase stops when the
  * menu closes.
  *
- * The view draws nothing. It is an empty element that is never hidden, so it
- * is always ticked. Where the phrase has got to is its presentation state.
+ * The view has no visuals. It is an empty element that is never hidden, so
+ * it is always ticked. Where the phrase has got to is its presentation state.
  */
 export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings): HTMLElement {
     const { sound } = bindings;

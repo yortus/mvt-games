@@ -22,6 +22,7 @@
 | This repo's code style | [Style Guide](../reference/style-guide.md) |
 | Project layout and barrels | [Project Structure](../reference/project-structure.md) |
 | Adding a game or demo, and keeping it original | `packages/website/src/entries/README.md` (its Originality section) |
+| Playing sound in a game | [Sound and Music](../building-with-mvt/presenting-the-world/sound.md), then the guides in `packages/audio/docs/` |
 | All terms defined | [Glossary](../reference/glossary.md) |
 
 ## Skills Files

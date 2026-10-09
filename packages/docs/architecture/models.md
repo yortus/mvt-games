@@ -55,7 +55,7 @@ change if you swapped the renderer belongs elsewhere.
 | Named states (`'alive'`, `'inflating'`, `'exploding'`) | Textures, colours, particle effects |
 | Sequence progress (`stage: 2`, `progress: 0.3`) | Sprite frames, alpha tweens |
 | Counts and dimensions (lives, grid size) | Pixel spacing, font sizes |
-| Named events (`'pelletEaten'`, `'levelClear'`) | Sound files, volume, panning |
+| What happened, as state a view can watch, such as a phase (`'dying'`) or a count (`pelletsEaten`) | Which sound to play, its volume and pitch |
 
 ## What Does NOT Belong in a Model
 

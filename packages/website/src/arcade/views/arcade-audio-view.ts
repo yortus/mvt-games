@@ -57,8 +57,8 @@ export interface ArcadeAudioViewBindings {
  * static while the screen powers off, then the cards developing. It chimes
  * as an entry pauses and resumes, and buzzes when an entry cannot load.
  *
- * The view draws nothing. It is an empty element that is never hidden, so it
- * is always ticked. It polls its bindings once as it is made, so the page's
+ * The view has no visuals. It is an empty element that is never hidden, so
+ * it is always ticked. It polls its bindings once as it is made, so the page's
  * state at that moment plays nothing.
  */
 export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement {

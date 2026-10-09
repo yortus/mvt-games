@@ -43,12 +43,12 @@ export interface GameAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's music and sounds. It draws nothing. It plays a march as
- * each run starts, a fanfare as a run is cleared, and a slow tune as the game
- * ends. It plays the ship's shots, bombs and crash, rockets launching, enemies
- * and the base blowing up, and a chime as fuel is taken on. Three sounds
- * repeat while their cause lasts. They are the low-fuel alarm, the saucers'
- * warble and the base's siren.
+ * Plays the game's music and sounds. It plays a march as each run starts, a
+ * fanfare as a run is cleared, and a slow tune as the game ends. It plays the
+ * ship's shots, bombs and crash, rockets launching, enemies and the base
+ * blowing up, and a chime as fuel is taken on. Three sounds repeat while their
+ * cause lasts. They are the low-fuel alarm, the saucers' warble and the base's
+ * siren.
  *
  * The repeats are the view's presentation state. Each is timed by a
  * metronome, which counts beats in the view's update step, so the repeats

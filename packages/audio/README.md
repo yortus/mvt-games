@@ -11,7 +11,7 @@ The chip comes with a tracker notation for writing its music and sound
 effects. A tracker writes music as a grid of text, read from top to bottom,
 as the musicians of the 1980s did. The package also has a music player,
 which audio views use to play songs on the chip. An audio view is a view
-that plays sound and draws nothing.
+that plays sounds instead of drawing visuals.
 The package is private to this repo for now.
 
 ## Guides
@@ -26,9 +26,10 @@ The package is private to this repo for now.
   everything a cell of the grid can hold. It also covers arranging habits
   that suit the chip.
 
-The MVT guide's [Sound](../docs/building-with-mvt/presenting-the-world/sound.md)
-page explains why playing sound is a view's job. It also shows where audio
-views run in each tick.
+The MVT guide's page
+[Sound and Music](../docs/building-with-mvt/presenting-the-world/sound.md)
+explains why playing sound is a view's job. It also shows how an audio view
+sits among a game's other views, and is ticked with them.
 
 ## A Taste
 
@@ -78,8 +79,9 @@ export const FANFARE = createSong({
 });
 ```
 
-An **audio view** draws nothing. In its refresh step it polls its bindings,
-like any view. It plays a sound when it sees the model change:
+An **audio view** is a view that plays sounds instead of drawing visuals.
+In its refresh step it polls its bindings, like any view. It plays a sound
+when it sees the model change:
 
 ```ts
 setRefresh(view, () => {

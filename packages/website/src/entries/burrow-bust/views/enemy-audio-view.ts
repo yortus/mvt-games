@@ -33,7 +33,7 @@ export interface EnemyAudioViewBindings {
  * One creature's sounds. Each pump plays a puff, higher with each stage. The
  * creature pops, or is squashed under a rock, or slides eerily as it ghosts
  * through the earth. A salamander hisses before its fire, and its fire roars.
- * A creature that gets away makes no sound. The view draws nothing.
+ * A creature that gets away makes no sound.
  *
  * A `<List>` reuses this view's slot when a level brings new creatures. So
  * the view polls once as it is made, and after that plays only on a change

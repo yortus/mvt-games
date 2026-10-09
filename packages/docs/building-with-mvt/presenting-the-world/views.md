@@ -12,9 +12,10 @@
 
 A view is a **window into the simulation**. Each frame, it reads current model
 state and updates its audio/visual output to match - a Pixi.js scene graph, a
-DOM element, an audio channel, or a debug panel. You could open multiple
-windows (multiple views) onto the same model and they would all stay in sync.
-You could close all windows and the simulation would keep running unchanged.
+DOM element, a sound player ([Sound and Music](sound.md)), or a debug
+panel. You could open multiple windows (multiple views) onto the same model
+and they would all stay in sync. You could close all windows and the
+simulation would keep running unchanged.
 
 Views hold **no domain state** and are **timeless** - they don't track what
 happened before, and they don't decide what happens next. A `refresh()`

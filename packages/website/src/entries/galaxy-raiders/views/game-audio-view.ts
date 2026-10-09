@@ -37,13 +37,13 @@ export const HURRY_TEMPO = 1.15;
 
 /**
  * Plays the game's music, and the sounds that do not belong to any one raider.
- * It draws nothing. As each stage starts, it plays a fanfare and then the
- * stage's tune. It plays a jingle when a stage is cleared, and a slow tune
- * when the game is over. It also plays the ship's shots, its loss and its
- * return. It plays a sound only when a poll of its bindings sees a change, so
- * a second refresh in the same tick plays nothing. The music player's place in
- * the song is the view's presentation state. It advances in the view's update
- * step, so the music pauses with the game.
+ * As each stage starts, it plays a fanfare and then the stage's tune. It plays
+ * a jingle when a stage is cleared, and a slow tune when the game is over. It
+ * also plays the ship's shots, its loss and its return. It plays a sound only
+ * when a poll of its bindings sees a change, so a second refresh in the same
+ * tick plays nothing. The music player's place in the song is the view's
+ * presentation state. It advances in the view's update step, so the music
+ * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;

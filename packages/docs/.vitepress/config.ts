@@ -83,6 +83,7 @@ export default withMermaid(defineConfig({
                             { text: 'View Composition', link: '/building-with-mvt/presenting-the-world/view-composition' },
                             { text: 'Bindings in Depth', link: '/building-with-mvt/presenting-the-world/bindings-in-depth' },
                             { text: 'Presenting Collections', link: '/building-with-mvt/presenting-the-world/collections' },
+                            { text: 'Sound and Music', link: '/building-with-mvt/presenting-the-world/sound' },
                         ],
                     },
                     {

@@ -23,7 +23,7 @@ export interface RockAudioViewBindings {
 
 /**
  * One rock's sounds. It creaks as it works loose, whistles as it falls, and
- * crashes as it lands and breaks. The view draws nothing.
+ * crashes as it lands and breaks.
  *
  * It plays only on a change into one of those phases. A `<List>` reuses a
  * slot's view for later rocks, and a new rock arrives `'stable'`. So a new

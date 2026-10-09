@@ -115,9 +115,9 @@ export const HELLO = createSong({
 - **`order`** lists the patterns to play. Without a `loop`, the song plays
   once. Then it frees its voices for sound effects.
 
-Play it with a music player, from an audio view (a view that plays sound
-and draws nothing), as [Using the Audio80](using-the-audio80.md#music)
-shows. To listen to it
+Play it with a music player, from an audio view (a view that plays sounds
+instead of drawing visuals), as
+[Using the Audio80](using-the-audio80.md#music) shows. To listen to it
 straight away, run `npm run audio:render -- path/to/music.ts`. It writes a
 WAV file for each song and effect.
 

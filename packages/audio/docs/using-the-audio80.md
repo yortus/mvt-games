@@ -4,8 +4,8 @@
 > computers. It has eight voices, two filters and an echo. This guide covers
 > getting a chip, designing sound effects and instruments, and playing them
 > from audio views as the game changes. (An audio view is a view that plays
-> sound and draws nothing.) It also covers music, repeating sounds, the
-> balance of music and effects, and testing.
+> sounds instead of drawing visuals.) It also covers music, repeating
+> sounds, the balance of music and effects, and testing.
 
 **Related:** [Writing Tracker Music](writing-tracker-music.md) · [The package's README](../README.md) · [Sound, in the MVT guide](../../docs/building-with-mvt/presenting-the-world/sound.md)
 
@@ -403,9 +403,9 @@ const BELL = '7CEF FEDD DFFD A766 7998 5200 2221 0013';
 ## Playing from Audio Views
 
 Sound is presentation, so views play it. An **audio view** is an ordinary
-view that draws nothing. In its refresh step, it polls the model through
-its bindings with `watch`, like any view. It plays a sound when it sees a
-change that calls for one:
+view that plays sounds instead of drawing visuals. In its refresh step,
+it polls the model through its bindings with `watch`, like any view. It
+plays a sound when it sees a change that calls for one:
 
 ```ts
 import { Container } from 'pixi.js';

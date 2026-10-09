@@ -36,14 +36,14 @@ export const SNEAK_SPEED_UP = 0.6;
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's music and its nibbles. It draws nothing. As a game starts,
- * it plays a short tune and then the sneaking tune, which speeds up as the
- * maze empties. It plays a nibble for each crumb eaten. The nibbles go low and
- * high by turns, by whether the crumbs left are odd or even, so the view keeps
- * no count of its own. It plays a falling tune when the mouse is caught, and a
- * bright one when the maze is cleared. The music player's place in the song is
- * the view's presentation state. It advances in the view's update step, so
- * the music pauses with the game.
+ * Plays the game's music and its nibbles. As a game starts, it plays a short
+ * tune and then the sneaking tune, which speeds up as the maze empties. It
+ * plays a nibble for each crumb eaten. The nibbles go low and high by turns,
+ * by whether the crumbs left are odd or even, so the view keeps no count of
+ * its own. It plays a falling tune when the mouse is caught, and a bright one
+ * when the maze is cleared. The music player's place in the song is the view's
+ * presentation state. It advances in the view's update step, so the music
+ * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound, totalCrumbs } = bindings;

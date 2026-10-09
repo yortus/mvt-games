@@ -42,14 +42,13 @@ export const TICKING_SECONDS = 5;
 
 /**
  * Plays the match's music, and the sounds that do not belong to either
- * fighter. It draws nothing. A gong sounds as each round begins, and then the
- * fight's tune plays. The tune carries on through each point, and starts from
- * the top in each round. Three short notes mark each point. They rise for the
- * player's points and fall for the opponent's. A tick sounds in each of the
- * round's last seconds. A jingle plays as a round or the match is won or
- * lost. The music player's place in the song is the view's presentation
- * state. It advances in the view's update step, so the music pauses with the
- * game.
+ * fighter. A gong sounds as each round begins, and then the fight's tune
+ * plays. The tune carries on through each point, and starts from the top in
+ * each round. Three short notes mark each point. They rise for the player's
+ * points and fall for the opponent's. A tick sounds in each of the round's
+ * last seconds. A jingle plays as a round or the match is won or lost. The
+ * music player's place in the song is the view's presentation state. It
+ * advances in the view's update step, so the music pauses with the game.
  */
 export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
     const { sound } = bindings;

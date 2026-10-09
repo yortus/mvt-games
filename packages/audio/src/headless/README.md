@@ -188,9 +188,9 @@ reference with `vitest -u`.
 
 ## Testing an Audio View
 
-An audio view is a view that plays sound and draws nothing. Test one
-against a chip that records. Advance the chip's clock and tick the view, as
-a game loop would. Then check the log:
+An audio view is a view that plays sounds instead of drawing visuals. Test
+one against a chip that records. Advance the chip's clock and tick the
+view, as a game loop would. Then check the log:
 
 ```ts
 import { refreshView, updateView } from '@mvtjs/pixi';

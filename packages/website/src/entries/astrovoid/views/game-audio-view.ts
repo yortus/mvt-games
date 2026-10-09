@@ -35,12 +35,12 @@ export interface GameAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's sounds. It draws nothing. The game has no music. Instead,
- * a heartbeat of two thumps, low and high by turns, quickens with each rock
- * broken in the wave. The engine rumbles while the ship thrusts. The view
- * also plays each shot and each rock breaking, deeper for a bigger rock. It
- * plays the ship's loss and its return, a chime when a wave is cleared, and a
- * knell when the game ends.
+ * Plays the game's sounds. The game has no music. Instead, a heartbeat of two
+ * thumps, low and high by turns, quickens with each rock broken in the wave.
+ * The engine rumbles while the ship thrusts. The view also plays each shot
+ * and each rock breaking, deeper for a bigger rock. It plays the ship's loss
+ * and its return, a chime when a wave is cleared, and a knell when the game
+ * ends.
  *
  * The heartbeat and the engine's bursts are the view's presentation state.
  * Each is a metronome, which counts beats in the view's update step, so both

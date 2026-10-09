@@ -28,10 +28,10 @@ export interface EnemyAudioViewBindings {
 /**
  * Plays one raider's sounds. It plays a whistle as the raider starts a dive,
  * and an explosion when the raider is destroyed. A bigger raider's explosion
- * is deeper. The view draws nothing. In a `<List>`, a slot's view is reused
- * for the raiders of later stages and games. So the view plays only on
- * changes that a newly arrived raider cannot cause. A new raider arrives alive
- * and entering, so it plays nothing.
+ * is deeper. In a `<List>`, a slot's view is reused for the raiders of later
+ * stages and games. So the view plays only on changes that a newly arrived
+ * raider cannot cause. A new raider arrives alive and entering, so it plays
+ * nothing.
  */
 export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
     const { sound } = bindings;
