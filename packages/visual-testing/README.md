@@ -1,13 +1,15 @@
 # @mvtjs/visual-testing
 
-> Visual tests for views. A visual test is a kind of snapshot test, also
-> known as visual regression testing. A snapshot test compares a test's
-> output with a saved copy, and a visual test compares a picture. It builds
-> a view in a known state, takes a picture of it, and compares the picture
-> with a reference picture committed beside the test. This package runs hundreds of these tests in
-> seconds. The pictures come out the same on Windows, Linux and macOS, and
-> nothing needs installing beyond `npm ci`. It covers Pixi, three.js and
-> HTML views. The package is private for now.
+> Visual tests for views, made as convenient as unit tests. A visual test
+> is a kind of snapshot test, also known as visual regression testing. A
+> snapshot test compares a test's output with a saved copy, and a visual
+> test compares a picture. It builds a view in a known state, takes a
+> picture of it, and compares the picture with a reference picture
+> committed beside the test. To be as convenient as unit tests, visual
+> tests must be fast, and must give the same result on every machine. This
+> package runs hundreds of them in seconds. The pictures come out the same
+> on Windows, Linux and macOS, and nothing needs installing beyond `npm ci`.
+> It covers Pixi, three.js and HTML views. The package is private for now.
 
 **Related:** [Visual Tests, in the MVT guide](../docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
 
@@ -156,18 +158,129 @@ Vitest with tsx's loader, so that Node can run that TypeScript. The
 command's `bin` entry is a small JavaScript file, which loads the command
 through tsx.
 
-## How the Pictures Stay the Same Everywhere
+## Fast, and the Same Everywhere
 
-The browser is Playwright's build of Chromium, pinned to one version. It
-draws WebGL and 2D canvases in software (SwiftShader), with font hinting
-off. Canvas text is drawn as shapes from two test fonts, which are Source
-Sans 3 and Source Code Pro. HTML text is set in a blank font, so that the
-layout stays and no letters are drawn. A tolerance of 2 levels per channel
-covers the rounding of arm64 processors. Before any picture is compared,
-each run checks the fingerprint and draws the calibration set, and stops
-at once if they differ.
+The goal of this package is to make visual tests as convenient as unit
+tests. Adding one should take no more thought than adding a unit test, and
+running all of them should be as routine. That asks two things of them.
+They must be fast, and they must give the same result on every machine.
+Each of the measures below meets one of those needs, and each has a cost.
+The last part of this section lists the costs.
+
+### Speed
+
+On one developer machine, 1,000 pictures of real views took 12.7 s, start
+up included. That is about 10 ms a picture. The obvious way, with a fresh
+page for each test file and a screenshot of each picture, would take about
+two minutes. On the same 100 pictures, the obvious way took 12.0 s, and
+this package took 3.1 s. Four things make the difference.
+
+- **One page runs every canvas test file.** The libraries load once, the
+  shaders compile once, and one renderer draws every picture.
+- **No screenshots are taken.** The harness reads a Pixi or three.js
+  picture straight from the renderer. A screenshot costs about 90 ms.
+- **Hashes are compared, not images.** The page computes a hash of each
+  picture's pixels, which is a short string worked out from them. Each
+  reference file carries the hash of its own pixels in its first bytes.
+  Only a picture whose hash differs is sent to Node, to be compared and
+  written.
+- **Big smooth pictures are drawn smaller.** A smooth picture over the size
+  budget (`maxPixels`, 500,000 pixels by default) is drawn at a lower
+  resolution.
+
+### The Same on Every Machine, Without Docker
+
+Pictures of the same view differ between machines for many reasons. The
+graphics card and its driver draw differently. Each operating system has
+its own fonts and its own text engine. Colour profiles, screen scaling and
+even the processor's rounding play a part. The usual cure is to run the
+browser in a Linux container, such as Docker, so that every machine draws
+in the same environment. That needs Docker installed and running, which on
+Windows and macOS means a virtual machine, and it makes every run slower to
+start.
+
+This package pins everything that differs inside the browser instead, so
+the tests run natively, at full speed, on all three systems.
+
+- **The browser** is Playwright's build of Chromium, pinned to one version.
+- **WebGL and 2D canvases** are drawn in software (SwiftShader), and so is
+  compositing, so no graphics card is involved.
+- **Settings** such as the colour profile, the screen scale, the locale,
+  the time zone and font hinting are fixed.
+- **Random numbers** are seeded the same before every test.
+- **Processor rounding** is covered by a tolerance of 2 levels of 255 in
+  each colour channel. Processors with the arm64 architecture need it for
+  blurs and rotations.
+
+Before any picture is compared, each run checks a fingerprint of the
+browser, and draws a calibration set of small pictures. If anything
+differs, the run stops at once with one error, instead of failing every
+test for the same reason.
+
+### Text
+
+Text is the hardest part. Each operating system lays text out and draws it
+with its own engine, from its own fonts. The results differ by fractions
+of a pixel, which is enough to move a line, or the edge of a box.
+
+- **Canvas text** is drawn by the harness itself. It lays the text out with
+  fontkit, a font library, and draws each letter as a shape, from one of
+  two fonts that come with the package (Source Sans 3 and Source Code
+  Pro). The font family that a view asks for is mapped to one of them. A
+  family with no stand-in fails its test, with a message saying so.
+- **HTML text** is laid out by the browser, and no setting makes the
+  systems' engines agree. So HTML text is set in a blank font, in which
+  every character is an empty glyph, 0.625 em wide. The layout stays, and
+  no letters are drawn. Font sizes are also rounded to quarter pixels,
+  because Linux scales fonts in 64ths of a pixel and the other systems do
+  not.
+
+### What Tests Must Avoid
+
+A visual test is a unit test of a view, and the same discipline applies.
+Each test must stand on its own. That matters even more here, because
+canvas tests share one page, so whatever a test leaves behind is still
+there for the tests after it.
+
+- **Don't leave global state changed.** That includes module-level
+  variables, patched prototypes, and library defaults. The harness resets
+  random numbers, and Pixi's texture defaults, before every test.
+- **Don't depend on real time.** A pose advances a view with
+  `advanceTime`, never with timers or the clock.
+- **Use font families that have a stand-in.** Canvas text in any other
+  family fails, as described above.
+
+Running the tests in a shuffled order (`--sequence.shuffle`) shows whether
+any test depends on the ones before it.
+
+### What It Gives Up
+
+Each measure gives up a little accuracy for speed or consistency. The
+costs affect the tests only, never the views.
+
+- **HTML pictures have no text.** They show every box, border, image,
+  control and underline, and the layout itself. They don't show the
+  words, or the text's colour or weight, and lines wrap where 0.625 em per
+  character puts them, not where the real font would. For many views,
+  that is a fair trade, and in games it can even help. What matters in a
+  game's HTML, such as its menus, panels and overlays, is mostly layout and
+  styling. Words change for reasons that have nothing to do with how a view
+  works, such as a copy edit or a translation, and a picture without words
+  doesn't fail when they do. Words that matter can be checked with
+  assertions.
+- **Canvas text uses the two test fonts,** not the view's own. Pictures
+  show where text is and how big it is, but not the real typeface.
+- **Rotated images in HTML pictures look a little jagged.** They are
+  sampled nearest-neighbour, because smooth sampling under a rotation
+  rounds differently on arm64 processors.
+- **A change of 2 levels or less in every channel passes.** A real change
+  is almost never that small.
+- **The drawing is software's, not a graphics card's.** A feature that
+  SwiftShader draws differently from a graphics card is drawn the same way
+  on every machine, but not quite as it looks on a real screen.
+
 [Visual Tests](../docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
-explains each of these, and what each one gives up.
+describes the same measures from a test writer's point of view.
 
 The fonts in `src/browser/fonts/` are under the SIL Open Font License,
 whose text is beside them.
