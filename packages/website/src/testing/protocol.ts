@@ -135,18 +135,18 @@ declare module 'vitest' {
 
 /** The commands, as the page calls them (the context argument Node receives is left out). */
 export interface VisualCommands {
-    visualSession: (scope: VisualScope) => Promise<VisualSession>;
+    openVisualSession: (scope: VisualScope) => Promise<VisualSession>;
     /** A WebGL picture whose hash is not its reference's: Node compares, writes files, and judges. */
-    visualMismatch: (picture: VisualPicturePayload) => Promise<VisualVerdict>;
+    judgeVisualMismatch: (picture: VisualPicturePayload) => Promise<VisualVerdict>;
     /** An HTML picture: Node takes the screenshot of the rectangle, and judges it. */
-    visualCapture: (request: VisualCaptureRequest) => Promise<VisualVerdict & { readonly captureMs: number }>;
+    captureVisualPicture: (request: VisualCaptureRequest) => Promise<VisualVerdict & { readonly captureMs: number }>;
     /**
      * The browser's facts, checked against the reference environment's (or,
      * in `environment` mode, written as them). Returns what differed.
      */
-    visualEnvironment: (environment: VisualEnvironment) => Promise<readonly string[]>;
+    checkVisualEnvironment: (environment: VisualEnvironment) => Promise<readonly string[]>;
     /** Records that a calibration set matched, so the run's other pages skip it, and which references it used. */
-    visualCalibrated: (calibration: VisualCalibration) => Promise<void>;
+    recordVisualCalibration: (calibration: VisualCalibration) => Promise<void>;
     /** Stops the run before any more tests, with one error. */
-    visualAbort: (message: string) => Promise<void>;
+    abortVisualRun: (message: string) => Promise<void>;
 }

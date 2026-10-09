@@ -71,7 +71,7 @@ export function preparePixiPose(options: PixiPictureOptions): void {
  */
 export async function drawPixiPicture(view: Container, options: PixiPictureOptions & { readonly maxPixels: number }): Promise<PixiPicture> {
     const isSmooth = options.artStyle === 'smooth';
-    const app = await appFor(isSmooth);
+    const app = await ensureApp(isSmooth);
     holder.position.set(0, 0);
     holder.addChild(view);
     try {
@@ -91,7 +91,7 @@ export async function drawPixiPicture(view: Container, options: PixiPictureOptio
         if ('problem' in fit) throw new Error(fit.problem);
         holder.position.set(-x0, -y0);
         backdrop.clear().rect(0, 0, width, height).fill(options.background ?? DEFAULT_BACKGROUND);
-        const target = targetFor(width, height, fit.resolution, isSmooth);
+        const target = ensureTarget(width, height, fit.resolution, isSmooth);
         app.renderer.render({ container: stage, target, clear: true });
         const read = app.renderer.texture.getPixels(target);
         const pixels = new Uint8Array(read.pixels.buffer, read.pixels.byteOffset, read.pixels.byteLength);
@@ -125,7 +125,7 @@ const targets = new Map<string, RenderTexture>();
  * context's own antialiasing is fixed (off): it changes MSAA edges in render
  * textures too, so it must never be left to a default.
  */
-async function appFor(isSmooth: boolean): Promise<Application> {
+async function ensureApp(isSmooth: boolean): Promise<Application> {
     app ??= (async () => {
         const made = new Application();
         await made.init({ width: 8, height: 8, antialias: false, autoStart: false, preference: 'webgl', sharedTicker: false });
@@ -138,7 +138,7 @@ async function appFor(isSmooth: boolean): Promise<Application> {
 }
 
 /** A render texture of each size, kept, so the canvas is never resized and no texture is made per test. */
-function targetFor(width: number, height: number, resolution: number, isAntialiased: boolean): RenderTexture {
+function ensureTarget(width: number, height: number, resolution: number, isAntialiased: boolean): RenderTexture {
     const key = `${width}x${height}@${resolution}${isAntialiased ? 'aa' : ''}`;
     let target = targets.get(key);
     if (target === undefined) {

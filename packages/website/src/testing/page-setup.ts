@@ -28,7 +28,7 @@ export interface PageSetup {
  * calibration set (once per run), and stops the run if they do not match.
  * Every test file's setup awaits the same promise.
  */
-export function pageSetup(): Promise<PageSetup> {
+export function setUpPage(): Promise<PageSetup> {
     setup ??= setUp();
     return setup;
 }

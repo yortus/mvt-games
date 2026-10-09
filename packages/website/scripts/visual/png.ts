@@ -52,10 +52,10 @@ export function encodePng(picture: Picture): Uint8Array {
     if (indexed !== undefined) {
         colourType = 3;
         bitDepth = indexed.bitDepth;
-        extra.push(chunk('PLTE', indexed.palette));
-        if (indexed.alphas !== undefined) extra.push(chunk('tRNS', indexed.alphas));
+        extra.push(encodeChunk('PLTE', indexed.palette));
+        if (indexed.alphas !== undefined) extra.push(encodeChunk('tRNS', indexed.alphas));
         // Palette rows are left unfiltered, as the PNG specification advises
-        rows = withFilter(indexed.rows, Math.ceil((width * bitDepth) / 8), height);
+        rows = prefixEmptyFilters(indexed.rows, Math.ceil((width * bitDepth) / 8), height);
     }
     else {
         const isOpaque = isAllOpaque(picture.pixels);
@@ -73,11 +73,11 @@ export function encodePng(picture: Picture): Uint8Array {
     // Compression, filter method and interlace: all 0
     return concat([
         SIGNATURE,
-        chunk('IHDR', header),
-        chunk('tEXt', text),
+        encodeChunk('IHDR', header),
+        encodeChunk('tEXt', text),
         ...extra,
-        chunk('IDAT', deflateSync(rows, { level: 9 })),
-        chunk('IEND', new Uint8Array(0)),
+        encodeChunk('IDAT', deflateSync(rows, { level: 9 })),
+        encodeChunk('IEND', new Uint8Array(0)),
     ]);
 }
 
@@ -183,7 +183,7 @@ function dropAlpha(pixels: Uint8Array): Uint8Array {
 }
 
 /** Rows each with filter byte 0 (none) in front. */
-function withFilter(data: Uint8Array, rowBytes: number, height: number): Uint8Array {
+function prefixEmptyFilters(data: Uint8Array, rowBytes: number, height: number): Uint8Array {
     const out = new Uint8Array((rowBytes + 1) * height);
     for (let y = 0; y < height; y++) out.set(data.subarray(y * rowBytes, (y + 1) * rowBytes), y * (rowBytes + 1) + 1);
     return out;
@@ -209,7 +209,7 @@ function filterAdaptively(data: Uint8Array, rowBytes: number, height: number, bp
                 const a = x >= bpp ? row[x - bpp] : 0;
                 const b = above === undefined ? 0 : above[x];
                 const c = x >= bpp && above !== undefined ? above[x - bpp] : 0;
-                const predictor = filter === 0 ? 0 : filter === 1 ? a : filter === 2 ? b : filter === 3 ? (a + b) >> 1 : paeth(a, b, c);
+                const predictor = filter === 0 ? 0 : filter === 1 ? a : filter === 2 ? b : filter === 3 ? (a + b) >> 1 : predictPaeth(a, b, c);
                 const value = (row[x] - predictor) & 0xff;
                 candidate[x] = value;
                 score += value < 128 ? value : 256 - value;
@@ -227,7 +227,7 @@ function filterAdaptively(data: Uint8Array, rowBytes: number, height: number, bp
     return out;
 }
 
-function paeth(a: number, b: number, c: number): number {
+function predictPaeth(a: number, b: number, c: number): number {
     const p = a + b - c;
     const pa = Math.abs(p - a);
     const pb = Math.abs(p - b);
@@ -235,13 +235,13 @@ function paeth(a: number, b: number, c: number): number {
     return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
 }
 
-function chunk(type: string, data: Uint8Array): Uint8Array {
+function encodeChunk(type: string, data: Uint8Array): Uint8Array {
     const out = new Uint8Array(12 + data.length);
     const view = new DataView(out.buffer);
     view.setUint32(0, data.length);
     for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
     out.set(data, 8);
-    view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+    view.setUint32(8 + data.length, computeCrc32(out.subarray(4, 8 + data.length)));
     return out;
 }
 
@@ -265,7 +265,7 @@ const CRC_TABLE = (() => {
     return table;
 })();
 
-function crc32(data: Uint8Array): number {
+function computeCrc32(data: Uint8Array): number {
     let c = 0xffffffff;
     for (let i = 0; i < data.length; i++) c = CRC_TABLE[(c ^ data[i]) & 0xff] ^ (c >>> 8);
     return (c ^ 0xffffffff) >>> 0;

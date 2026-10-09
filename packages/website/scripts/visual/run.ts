@@ -47,14 +47,14 @@ for (let i = 0; i < args.length; i++) {
 // failure message suggests it: a picture's name has no spaces or shell characters,
 // which a `-t` pattern for the test's full name ('SpinButtonView > stop') would,
 // and lose on the way through npm and a shell
-if (pictures.length > 0) vitestArgs.push('-t', `(${pictures.map(pictureNamePattern).join('|')})$`);
+if (pictures.length > 0) vitestArgs.push('-t', `(${pictures.map(toPictureNamePattern).join('|')})$`);
 const isWatch = vitestArgs.includes('--watch');
 const isFullRun = !isWatch && vitestArgs.every((arg) => ORDER_ONLY.test(arg));
 
 const install = spawnSync(process.execPath, [PLAYWRIGHT, 'install', 'chromium-headless-shell'], { cwd: WEBSITE, stdio: 'inherit' });
 if (install.status !== 0) process.exit(install.status ?? 1);
 
-const before = failedLogons();
+const before = countFailedLogons();
 if (before !== undefined && before >= MAX_FAILED_LOGONS) {
     console.error(`This account has ${before} failed logons; waiting for the lockout window before launching a browser.`);
     process.exit(1);
@@ -70,7 +70,7 @@ const run = spawnSync(
     },
 );
 
-const after = failedLogons();
+const after = countFailedLogons();
 if (before !== undefined && after !== undefined && after > before) {
     console.warn(`\nWarning: this account's failed logons rose from ${before} to ${after} during the run. The browser may be testing a new profile's password: do not repeat the run until this is understood.\n`);
 }
@@ -85,12 +85,12 @@ process.exit(run.status ?? 1);
  * name: where the name has a hyphen, the test's has any run of characters
  * that are not letters, digits or dots (the inverse of `pictureName`).
  */
-function pictureNamePattern(picture: string): string {
+function toPictureNamePattern(picture: string): string {
     return picture.split('-').map((part) => part.replaceAll('.', '\\.')).join('[^A-Za-z0-9.]+');
 }
 
 /** The Windows account's failed-logon count, readable without admin; undefined elsewhere. */
-function failedLogons(): number | undefined {
+function countFailedLogons(): number | undefined {
     if (process.platform !== 'win32') return undefined;
     const result = spawnSync('powershell', [
         '-NoProfile', '-Command',

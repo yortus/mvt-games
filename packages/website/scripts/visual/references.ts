@@ -13,7 +13,7 @@ import { decodePng, hashPicture, readPngHash } from './png';
 // ---------------------------------------------------------------------------
 
 /** Where a test file's references are: `__screenshots__/<the file's name>/` beside it. */
-export function referenceDirOf(testFile: string): string {
+export function findReferenceDir(testFile: string): string {
     return join(dirname(testFile), '__screenshots__', basename(testFile));
 }
 
@@ -44,10 +44,10 @@ export function checkReference(file: string): string | undefined {
  * The references no picture was compared with, of those given: the files
  * of tests renamed or deleted (in a full run, where every test ran).
  */
-export function orphansOf(options: { readonly references: readonly string[]; readonly compared: Iterable<string> }): string[] {
+export function findOrphans(options: { readonly references: readonly string[]; readonly compared: Iterable<string> }): string[] {
     const compared = new Set<string>();
-    for (const file of options.compared) compared.add(fileKey(file));
-    return options.references.filter((file) => !compared.has(fileKey(file)));
+    for (const file of options.compared) compared.add(toFileKey(file));
+    return options.references.filter((file) => !compared.has(toFileKey(file)));
 }
 
 /** Deletes a reference, and its test file's directory and `__screenshots__` if that leaves them empty. */
@@ -64,7 +64,7 @@ export function removeReference(file: string): void {
 // ---------------------------------------------------------------------------
 
 /** A path to compare by: resolved, and on Windows, whose paths ignore case, lower-cased (Vitest's are `V:/...`, Node's `v:\...`). */
-function fileKey(file: string): string {
+function toFileKey(file: string): string {
     const resolved = resolve(file);
     return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }

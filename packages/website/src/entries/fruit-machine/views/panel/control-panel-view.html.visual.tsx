@@ -18,7 +18,7 @@ const GAP = 10;
  * quadrant spans it, in a machine one quadrant in size, so it is as big as
  * at the entry's play size.
  */
-function inQuadrant(view: Element): HTMLElement {
+function placeInQuadrant(view: Element): HTMLElement {
     const width = (entry.screenWidth - 2 * PADDING - GAP) / 2 + 2 * PADDING;
     const height = (entry.screenHeight - 2 * PADDING - GAP) / 2 + 2 * PADDING;
     const root = document.createElement('div');
@@ -33,7 +33,7 @@ describe('ControlPanelView', () => {
     visualTest('ready to spin', async () => {
         const art = await loadSymbolArt();
         const model = createFruitMachineModel({ seed: SEED });
-        return inQuadrant(ControlPanelView({ model, art }));
+        return placeInQuadrant(ControlPanelView({ model, art }));
     });
 
     visualTest('mid-spin', async () => {
@@ -42,6 +42,6 @@ describe('ControlPanelView', () => {
         const view = ControlPanelView({ model, art });
         void model.spin();
         await advanceTime({ models: [model], views: [view], totalMs: 600 });
-        return inQuadrant(view);
+        return placeInQuadrant(view);
     });
 });

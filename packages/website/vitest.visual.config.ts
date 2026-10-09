@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { DEFAULT_MAX_PIXELS, visualProject } from './scripts/visual/projects';
+import { DEFAULT_MAX_PIXELS, createVisualProject } from './scripts/visual/projects';
 import { createVisualReporter } from './scripts/visual/reporter';
 
 /**
@@ -12,7 +12,7 @@ const maxPixels = DEFAULT_MAX_PIXELS;
 // (scripts/visual/run.ts), which installs the browser on first use.
 export default defineConfig({
     test: {
-        projects: [visualProject({ kind: 'pixi', maxPixels }), visualProject({ kind: 'html', maxPixels })],
+        projects: [createVisualProject({ kind: 'pixi', maxPixels }), createVisualProject({ kind: 'html', maxPixels })],
         // On GitHub, each failure is also an annotation on the run, with its message
         reporters: ['default', ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []), createVisualReporter()],
     },

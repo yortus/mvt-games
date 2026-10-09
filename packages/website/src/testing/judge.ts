@@ -1,6 +1,6 @@
 import { commands } from 'vitest/browser';
 import { expect } from 'vitest';
-import { pictureName } from './picture-name';
+import { toPictureName } from './picture-name';
 import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from './protocol';
 
 // ---------------------------------------------------------------------------
@@ -11,17 +11,17 @@ import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerd
 export const visualCommands = commands as unknown as VisualCommands;
 
 /** The name of the running test's picture, the file name of its reference: its describe blocks and name, joined. */
-export function pictureNameOfCurrentTest(): { readonly name: string; readonly test: string } {
+export function nameCurrentPicture(): { readonly name: string; readonly test: string } {
     const test = expect.getState().currentTestName ?? 'unnamed';
-    return { name: pictureName(test), test };
+    return { name: toPictureName(test), test };
 }
 
 /** The references in scope (the running file's, or a calibration set's), asked for once per page. */
-export function sessionFor(scope: VisualScope): Promise<VisualSession> {
+export function openSession(scope: VisualScope): Promise<VisualSession> {
     const key = scope.calibration !== undefined ? `calibration-${scope.calibration}` : expect.getState().testPath ?? '';
     let session = sessions.get(key);
     if (session === undefined) {
-        session = visualCommands.visualSession(scope);
+        session = visualCommands.openVisualSession(scope);
         sessions.set(key, session);
     }
     return session;
@@ -52,9 +52,9 @@ export function describeDifference(verdict: VisualVerdict): string {
 }
 
 /** What a failed picture's error says: what differs, where to look, and what to run. */
-export function failureMessage(name: string, verdict: VisualVerdict, kind: VisualKind): string {
+export function describeFailure(name: string, verdict: VisualVerdict, kind: VisualKind): string {
     // By picture name, which has no spaces or shell characters to lose on the way through npm
-    const filter = `--picture ${pictureName(name)}`;
+    const filter = `--picture ${toPictureName(name)}`;
     switch (verdict.outcome) {
         case 'new':
             return `New picture '${name}': run \`npm run test:visual:update -- ${filter}\`, and review ${verdict.actualFile ?? verdict.referenceFile}`;

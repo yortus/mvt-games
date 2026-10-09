@@ -2,9 +2,9 @@
 // The page is set up once, and checked against the reference environment
 // before any test; every test then starts from the same state.
 import { beforeEach } from 'vitest';
-import { pageSetup } from './page-setup';
+import { setUpPage } from './page-setup';
 
-const setup = await pageSetup();
+const setup = await setUpPage();
 
 beforeEach(() => {
     setup.resetForTest();

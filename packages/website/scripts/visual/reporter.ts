@@ -14,8 +14,8 @@ import { appendFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import type { Reporter, TestModule, TestRunEndReason } from 'vitest/node';
 import type { VisualTestMeta } from '../../src/testing';
-import { comparedCalibrationReferences } from './commands';
-import { findReferences, orphansOf, referenceDirOf, removeReference } from './references';
+import { listComparedCalibrationReferences } from './commands';
+import { findReferences, findOrphans, findReferenceDir, removeReference } from './references';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -48,7 +48,7 @@ export function createVisualReporter(): Reporter {
             for (const kind of ['pixi', 'html'] as const) {
                 const times = pictures.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
                 if (times.length === 0) continue;
-                lines.push(`  ${kind === 'pixi' ? 'WebGL' : 'HTML'}: ${times.length}, median ${percentile(times, 0.5)} ms, 95th percentile ${percentile(times, 0.95)} ms`);
+                lines.push(`  ${kind === 'pixi' ? 'WebGL' : 'HTML'}: ${times.length}, median ${formatPercentile(times, 0.5)} ms, 95th percentile ${formatPercentile(times, 0.95)} ms`);
             }
             const counts = new Map<string, number>();
             for (const p of pictures) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
@@ -66,9 +66,9 @@ export function createVisualReporter(): Reporter {
             lines.push(...orphanLines);
             const references = findReferences(join(WEBSITE, 'src'));
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
-            lines.push(`  References: ${references.length} files, ${kilobytes(bytes)}. Largest:`);
+            lines.push(`  References: ${references.length} files, ${formatKilobytes(bytes)}. Largest:`);
             for (const r of [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3)) {
-                lines.push(`    ${kilobytes(r.bytes).padStart(9)}  ${relative(WEBSITE, r.file).replaceAll('\\', '/')}`);
+                lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${relative(WEBSITE, r.file).replaceAll('\\', '/')}`);
             }
             console.log(`\n${lines.join('\n')}\n`);
             const summary = process.env.GITHUB_STEP_SUMMARY;
@@ -113,14 +113,14 @@ function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason)
  * updating, deletes them. Returns the summary's lines about them.
  */
 function settleOrphans(testModules: readonly TestModule[]): string[] {
-    const compared = new Set(comparedCalibrationReferences());
+    const compared = new Set(listComparedCalibrationReferences());
     for (const module of testModules) {
         for (const test of module.children.allTests()) {
             const picture = test.meta().visualPicture;
-            if (picture !== undefined) compared.add(join(referenceDirOf(module.moduleId), `${picture}.png`));
+            if (picture !== undefined) compared.add(join(findReferenceDir(module.moduleId), `${picture}.png`));
         }
     }
-    const orphans = orphansOf({ references: findReferences(join(WEBSITE, 'src')).map((r) => r.file), compared });
+    const orphans = findOrphans({ references: findReferences(join(WEBSITE, 'src')).map((r) => r.file), compared });
     if (orphans.length === 0) return [];
     const names = orphans.map((file) => `    ${relative(WEBSITE, file).replaceAll('\\', '/')}`);
     if ((process.env.VISUAL_MODE ?? 'compare') === 'compare') {
@@ -134,10 +134,10 @@ function settleOrphans(testModules: readonly TestModule[]): string[] {
     return [`  Deleted ${orphans.length} references no test compared with:`, ...names];
 }
 
-function kilobytes(bytes: number): string {
+function formatKilobytes(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-function percentile(sorted: readonly number[], fraction: number): string {
+function formatPercentile(sorted: readonly number[], fraction: number): string {
     return sorted[Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))].toFixed(1);
 }

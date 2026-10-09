@@ -22,14 +22,14 @@ import type {
 } from '../../src/testing';
 import { comparePictures } from './compare';
 import { decodePng, encodePng, hashPicture, type Picture, readPngHash } from './png';
-import { referenceDirOf } from './references';
+import { findReferenceDir } from './references';
 
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
 
-const visualSession: BrowserCommand<[VisualScope]> = (ctx, scope): VisualSession => {
-    const dir = referenceDir(ctx, scope);
+const openVisualSession: BrowserCommand<[VisualScope]> = (ctx, scope): VisualSession => {
+    const dir = resolveReferenceDir(ctx, scope);
     const hashes: Record<string, string> = {};
     if (existsSync(dir)) {
         for (const file of readdirSync(dir)) {
@@ -41,19 +41,19 @@ const visualSession: BrowserCommand<[VisualScope]> = (ctx, scope): VisualSession
     return { mode: MODE, hashes, isCalibrated: scope.calibration !== undefined && calibrated.has(scope.calibration) };
 };
 
-const visualCalibrated: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
+const recordVisualCalibration: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
     calibrated.add(calibration.kind);
-    for (const name of calibration.names) calibrationReferences.add(join(calibrationDir(calibration.kind), `${name}.png`));
+    for (const name of calibration.names) calibrationReferences.add(join(findCalibrationDir(calibration.kind), `${name}.png`));
 };
 
-const visualMismatch: BrowserCommand<[VisualPicturePayload]> = (ctx, payload): VisualVerdict => {
+const judgeVisualMismatch: BrowserCommand<[VisualPicturePayload]> = (ctx, payload): VisualVerdict => {
     const pixels = new Uint8Array(Buffer.from(payload.pixels, 'base64'));
     return judge(ctx, payload, { width: payload.width, height: payload.height, pixels });
 };
 
-const visualCapture: BrowserCommand<[VisualCaptureRequest]> = async (ctx, request) => {
+const captureVisualPicture: BrowserCommand<[VisualCaptureRequest]> = async (ctx, request) => {
     const started = performance.now();
-    const cdp = await cdpFor(ctx);
+    const cdp = await connectCdp(ctx);
     const { data } = await cdp.send('Page.captureScreenshot', {
         format: 'png',
         clip: { ...request.rect, scale: 1 },
@@ -65,7 +65,7 @@ const visualCapture: BrowserCommand<[VisualCaptureRequest]> = async (ctx, reques
     return { ...judge(ctx, request, picture), captureMs };
 };
 
-const visualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
+const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
     const facts: EnvironmentFile = {
         browser: environment.browser,
         webgl: environment.webglRenderer.includes('SwiftShader') ? 'SwiftShader' : environment.webglRenderer,
@@ -86,20 +86,20 @@ const visualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environmen
     return problems;
 };
 
-const visualAbort: BrowserCommand<[string]> = (ctx, message) => {
+const abortVisualRun: BrowserCommand<[string]> = (ctx, message) => {
     console.error(`\n${message}\n`);
     // Not awaited: the cancellation waits for the running file, which is waiting for this command
     void ctx.project.vitest.cancelCurrentRun('test-failure');
 };
 
-export const visualCommands = { visualSession, visualMismatch, visualCapture, visualEnvironment, visualCalibrated, visualAbort };
+export const visualCommands = { openVisualSession, judgeVisualMismatch, captureVisualPicture, checkVisualEnvironment, recordVisualCalibration, abortVisualRun };
 
 /**
  * The calibration references this run compared with: calibration pictures
  * are drawn as a page is set up, not by tests, so the reporter learns of
  * them here when it looks for references no picture was compared with.
  */
-export function comparedCalibrationReferences(): ReadonlySet<string> {
+export function listComparedCalibrationReferences(): ReadonlySet<string> {
     return calibrationReferences;
 }
 
@@ -125,14 +125,14 @@ interface EnvironmentFile {
     readonly devicePixelRatio: number;
 }
 
-function referenceDir(ctx: BrowserCommandContext, scope: VisualScope): string {
-    if (scope.calibration !== undefined) return calibrationDir(scope.calibration);
+function resolveReferenceDir(ctx: BrowserCommandContext, scope: VisualScope): string {
+    if (scope.calibration !== undefined) return findCalibrationDir(scope.calibration);
     const testPath = ctx.testPath;
     if (testPath === undefined) throw new Error('A visual picture outside a test file');
-    return referenceDirOf(testPath);
+    return findReferenceDir(testPath);
 }
 
-function calibrationDir(kind: VisualKind): string {
+function findCalibrationDir(kind: VisualKind): string {
     return join(WEBSITE, 'src', 'testing', '__screenshots__', `calibration-${kind}`);
 }
 
@@ -145,7 +145,7 @@ const makers = new Map<string, string>();
  * processor rounds a little differently does not churn the references.
  */
 function judge(ctx: BrowserCommandContext, id: VisualPictureId, actual: Picture): VisualVerdict {
-    const dir = referenceDir(ctx, id);
+    const dir = resolveReferenceDir(ctx, id);
     const file = join(dir, `${id.name}.png`);
     const maker = makers.get(file);
     if (maker !== undefined && maker !== id.test) {
@@ -200,7 +200,7 @@ interface Cdp {
 const cdpSessions = new Map<string, Promise<Cdp>>();
 
 /** The page's DevTools protocol session, made once per page. */
-function cdpFor(ctx: BrowserCommandContext): Promise<Cdp> {
+function connectCdp(ctx: BrowserCommandContext): Promise<Cdp> {
     let cdp = cdpSessions.get(ctx.sessionId);
     if (cdp === undefined) {
         const provider = ctx.provider as unknown as { getCDPSession: (sessionId: string) => Promise<Cdp> };

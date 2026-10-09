@@ -42,10 +42,10 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
 
     for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype] as CanvasRenderingContext2D[]) {
         proto.fillText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
-            this.fill(pathFor(this, parse(this.font), text, x, y, maxWidth));
+            this.fill(layOutPath(this, parse(this.font), text, x, y, maxWidth));
         };
         proto.strokeText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
-            this.stroke(pathFor(this, parse(this.font), text, x, y, maxWidth));
+            this.stroke(layOutPath(this, parse(this.font), text, x, y, maxWidth));
         };
         proto.measureText = function (this: CanvasRenderingContext2D, text: string) {
             return measure(this, parse(this.font), text);
@@ -81,13 +81,13 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
                 unpinned.add(families[0]);
                 base = options.sans;
             }
-            font = { font: variation(base, weight), size, isItalic: style === 'italic' || style.startsWith('oblique') };
+            font = { font: findVariation(base, weight), size, isItalic: style === 'italic' || style.startsWith('oblique') };
             parsed.set(css, font);
         }
         return font;
     }
 
-    function variation(base: Font, weight: number): Font {
+    function findVariation(base: Font, weight: number): Font {
         const key = `${base === options.mono ? 'mono' : 'sans'}:${weight}`;
         let font = variations.get(key);
         if (font === undefined) {
@@ -152,7 +152,7 @@ function lay(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): Laid {
     return { glyphs: run.glyphs, x, y, width: pen, scale };
 }
 
-function alignOffset(ctx: CanvasRenderingContext2D, width: number): number {
+function computeAlignOffset(ctx: CanvasRenderingContext2D, width: number): number {
     switch (ctx.textAlign) {
         case 'center': return -width / 2;
         case 'right':
@@ -161,7 +161,7 @@ function alignOffset(ctx: CanvasRenderingContext2D, width: number): number {
     }
 }
 
-function baselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): number {
+function computeBaselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): number {
     const scale = p.size / p.font.unitsPerEm;
     const ascent = p.font.ascent * scale;
     const descent = -p.font.descent * scale;
@@ -175,12 +175,12 @@ function baselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): number {
     }
 }
 
-function pathFor(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, x: number, y: number, maxWidth: number | undefined): Path2D {
+function layOutPath(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, x: number, y: number, maxWidth: number | undefined): Path2D {
     const laid = lay(ctx, p, text);
     // Text wider than maxWidth is squeezed to fit, as the canvas does
     const squeeze = maxWidth !== undefined && laid.width > maxWidth && laid.width > 0 ? maxWidth / laid.width : 1;
-    const originX = x + alignOffset(ctx, laid.width * squeeze);
-    const originY = y + baselineOffset(ctx, p);
+    const originX = x + computeAlignOffset(ctx, laid.width * squeeze);
+    const originY = y + computeBaselineOffset(ctx, p);
     const s = laid.scale;
     const shear = p.isItalic ? ITALIC_SHEAR : 0;
     const path = new Path2D();
@@ -229,8 +229,8 @@ function measure(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): Te
         bottom = Math.min(bottom, laid.y[i] + b.minY * s);
     }
     if (!Number.isFinite(left)) left = right = top = bottom = 0;
-    const align = alignOffset(ctx, laid.width);
-    const base = baselineOffset(ctx, p);
+    const align = computeAlignOffset(ctx, laid.width);
+    const base = computeBaselineOffset(ctx, p);
     const ascent = p.font.ascent * s;
     const descent = -p.font.descent * s;
     return {

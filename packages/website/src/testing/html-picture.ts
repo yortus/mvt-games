@@ -48,10 +48,10 @@ export async function captureHtmlPicture(
             image.loading = 'eager';
             return image.decode().catch(() => undefined);
         }));
-        const rect = rectOf(host);
+        const rect = measureRect(host);
         const fit = fitPicture({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false });
         if ('problem' in fit) throw new Error(fit.problem);
-        const verdict = await visualCommands.visualCapture({ ...id, rect });
+        const verdict = await visualCommands.captureVisualPicture({ ...id, rect });
         return { ...verdict, width: rect.width, height: rect.height };
     }
     finally {
@@ -70,7 +70,7 @@ const DEFAULT_BACKGROUND = '#202024';
  * in an iframe: rounded outwards to whole pixels, as Playwright's element
  * screenshots are.
  */
-function rectOf(host: HTMLElement): VisualRect {
+function measureRect(host: HTMLElement): VisualRect {
     const box = host.getBoundingClientRect();
     const frame = window.frameElement?.getBoundingClientRect();
     const left = box.left + (frame?.left ?? 0);

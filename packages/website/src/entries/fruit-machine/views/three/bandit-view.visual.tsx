@@ -7,7 +7,7 @@ import { dressBanditScene, frameBanditCamera } from './bandit-scene';
 import { BanditView } from './bandit-view';
 
 // As the page frames and lights it, in a quadrant of the machine's usual shape
-const PICTURE: ThreePictureOptions = { width: 480, height: 360, camera: banditCamera, scene: dressBanditScene };
+const PICTURE: ThreePictureOptions = { width: 480, height: 360, camera: createBanditCamera, scene: dressBanditScene };
 const SEED = 7;
 
 describe('BanditView', () => {
@@ -26,7 +26,7 @@ describe('BanditView', () => {
     }, PICTURE);
 });
 
-function banditCamera(): PerspectiveCamera {
+function createBanditCamera(): PerspectiveCamera {
     const camera = new PerspectiveCamera(30, PICTURE.width / PICTURE.height, 0.1, 100);
     frameBanditCamera({ camera });
     return camera;

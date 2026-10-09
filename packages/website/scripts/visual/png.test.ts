@@ -7,7 +7,7 @@ import { decodePng, encodePng, hashPicture, type Picture, readPngHash } from './
 const dir = mkdtempSync(join(tmpdir(), 'visual-png-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-function picture(width: number, height: number, seed: number): Picture {
+function createPicture(width: number, height: number, seed: number): Picture {
     const pixels = new Uint8Array(width * height * 4);
     for (let i = 0; i < pixels.length; i++) pixels[i] = (i * seed + (i >> 3)) & 0xff;
     return { width, height, pixels };
@@ -15,7 +15,7 @@ function picture(width: number, height: number, seed: number): Picture {
 
 describe('encodePng', () => {
     it('decodes to the same pixels', () => {
-        const p = picture(37, 21, 7);
+        const p = createPicture(37, 21, 7);
         const back = decodePng(encodePng(p));
         expect(back.width).toBe(37);
         expect(back.height).toBe(21);
@@ -23,11 +23,11 @@ describe('encodePng', () => {
     });
 
     it('gives the same bytes for the same pixels', () => {
-        expect(encodePng(picture(16, 16, 3))).toEqual(encodePng(picture(16, 16, 3)));
+        expect(encodePng(createPicture(16, 16, 3))).toEqual(encodePng(createPicture(16, 16, 3)));
     });
 
     it('carries the hash of the pixels, read from the file\'s first bytes', () => {
-        const p = picture(64, 48, 5);
+        const p = createPicture(64, 48, 5);
         const file = join(dir, 'p.png');
         writeFileSync(file, encodePng(p));
         expect(readPngHash(file)).toBe(hashPicture(p));
@@ -35,7 +35,7 @@ describe('encodePng', () => {
 });
 
 describe('encodePng, every form it chooses', () => {
-    function withColours(width: number, height: number, count: number, alpha = 255): Picture {
+    function createColouredPicture(width: number, height: number, count: number, alpha = 255): Picture {
         const pixels = new Uint8Array(width * height * 4);
         for (let i = 0; i < width * height; i++) {
             const c = (i * 7) % count;
@@ -47,25 +47,25 @@ describe('encodePng, every form it chooses', () => {
     // Widths that leave a partly filled byte at the end of each row, at every palette bit depth
     for (const [count, name] of [[2, '1-bit'], [4, '2-bit'], [16, '4-bit'], [200, '8-bit']] as const) {
         it(`round-trips a ${name} palette`, () => {
-            const p = withColours(13, 7, count);
+            const p = createColouredPicture(13, 7, count);
             expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
         });
     }
 
     it('round-trips a palette with transparent colours', () => {
-        const p = withColours(9, 5, 12, 40);
+        const p = createColouredPicture(9, 5, 12, 40);
         expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
     });
 
     it('round-trips more than 256 colours, opaque (RGB) and not (RGBA)', () => {
         for (const alpha of [255, 90]) {
-            const p = withColours(41, 23, 943, alpha);
+            const p = createColouredPicture(41, 23, 943, alpha);
             expect([...decodePng(encodePng(p)).pixels]).toEqual([...p.pixels]);
         }
     });
 
     it('makes a flat picture small', () => {
-        expect(encodePng(withColours(200, 100, 4)).length).toBeLessThan(800);
+        expect(encodePng(createColouredPicture(200, 100, 4)).length).toBeLessThan(800);
     });
 });
 

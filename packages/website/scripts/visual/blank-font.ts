@@ -42,17 +42,17 @@ export interface BlankFontOptions {
 /** The font's file, as bytes. */
 export function buildBlankFont(options: BlankFontOptions): Uint8Array {
     const tables: [string, Uint8Array][] = [
-        ['DSIG', dsig()],
-        ['OS/2', os2()],
-        ['cmap', cmap()],
+        ['DSIG', writeDsig()],
+        ['OS/2', writeOs2()],
+        ['cmap', writeCmap()],
         ['glyf', new Uint8Array(1)],
-        ['head', head()],
-        ['hhea', hhea()],
-        ['hmtx', hmtx()],
+        ['head', writeHead()],
+        ['hhea', writeHhea()],
+        ['hmtx', writeHmtx()],
         ['loca', new Uint8Array(2 * (GLYPH_COUNT + 1))],
-        ['maxp', maxp()],
-        ['name', name(options.family)],
-        ['post', post()],
+        ['maxp', writeMaxp()],
+        ['name', writeName(options.family)],
+        ['post', writePost()],
     ];
     return assemble(tables);
 }
@@ -83,7 +83,7 @@ interface Writer {
     finish: () => Uint8Array;
 }
 
-function writer(): Writer {
+function createWriter(): Writer {
     const out: number[] = [];
     const w: Writer = {
         u8: (value) => {
@@ -107,12 +107,12 @@ function writer(): Writer {
 }
 
 /** An empty digital signature table, as fontTools writes for TrueType fonts. */
-function dsig(): Uint8Array {
-    return writer().u32(1).u16(0).u16(0).finish();
+function writeDsig(): Uint8Array {
+    return createWriter().u32(1).u16(0).u16(0).finish();
 }
 
-function os2(): Uint8Array {
-    return writer()
+function writeOs2(): Uint8Array {
+    return createWriter()
         .u16(4) // version
         .i16(ADVANCE) // xAvgCharWidth
         .u16(400) // usWeightClass
@@ -136,11 +136,11 @@ function os2(): Uint8Array {
         .finish();
 }
 
-function cmap(): Uint8Array {
-    const format4 = cmapFormat4();
-    const format13 = cmapFormat13();
+function writeCmap(): Uint8Array {
+    const format4 = writeCmapFormat4();
+    const format13 = writeCmapFormat13();
     const headerSize = 4 + 2 * 8;
-    return writer()
+    return createWriter()
         .u16(0).u16(2) // version, numTables
         .u16(3).u16(1).u32(headerSize) // Windows, Unicode BMP: format 4
         .u16(3).u16(10).u32(headerSize + format4.length) // Windows, Unicode full: format 13
@@ -153,7 +153,7 @@ function cmap(): Uint8Array {
  * U+0020 to U+2FFF, every one to the blank glyph, through `glyphIdArray`
  * (one entry per code point), and the 0xFFFF segment the format requires.
  */
-function cmapFormat4(): Uint8Array {
+function writeCmapFormat4(): Uint8Array {
     const segCount = 2;
     const count = FORMAT_4_LAST - FIRST_CHAR + 1;
     const length = 16 + segCount * 8 + count * 2;
@@ -164,7 +164,7 @@ function cmapFormat4(): Uint8Array {
         entrySelector++;
     }
     searchRange *= 2;
-    const w = writer()
+    const w = createWriter()
         .u16(4).u16(length).u16(0) // format, length, language
         .u16(segCount * 2).u16(searchRange).u16(entrySelector).u16(segCount * 2 - searchRange)
         .u16(FORMAT_4_LAST).u16(0xffff) // endCode
@@ -177,9 +177,9 @@ function cmapFormat4(): Uint8Array {
 }
 
 /** Every code point but the surrogates, to the blank glyph, in two groups. */
-function cmapFormat13(): Uint8Array {
+function writeCmapFormat13(): Uint8Array {
     const groups: [number, number][] = [[FIRST_CHAR, 0xd7ff], [0xe000, 0x10ffff]];
-    const w = writer()
+    const w = createWriter()
         .u16(13).u16(0) // format, reserved
         .u32(16 + groups.length * 12) // length
         .u32(0) // language
@@ -188,8 +188,8 @@ function cmapFormat13(): Uint8Array {
     return w.finish();
 }
 
-function head(): Uint8Array {
-    return writer()
+function writeHead(): Uint8Array {
+    return createWriter()
         .u32(0x00010000) // version
         .u32(0x00010000) // fontRevision 1.0
         .u32(0) // checkSumAdjustment, filled in by assemble()
@@ -206,8 +206,8 @@ function head(): Uint8Array {
         .finish();
 }
 
-function hhea(): Uint8Array {
-    return writer()
+function writeHhea(): Uint8Array {
+    return createWriter()
         .u32(0x00010000)
         .i16(ASCENT).i16(-DESCENT).i16(0) // ascender, descender, lineGap
         .u16(ADVANCE) // advanceWidthMax
@@ -220,14 +220,14 @@ function hhea(): Uint8Array {
 }
 
 /** One advance and left side bearing, then the other glyph's left side bearing. */
-function hmtx(): Uint8Array {
-    const w = writer().u16(ADVANCE).i16(0);
+function writeHmtx(): Uint8Array {
+    const w = createWriter().u16(ADVANCE).i16(0);
     for (let i = 1; i < GLYPH_COUNT; i++) w.i16(0);
     return w.finish();
 }
 
-function maxp(): Uint8Array {
-    return writer()
+function writeMaxp(): Uint8Array {
+    return createWriter()
         .u32(0x00010000)
         .u16(GLYPH_COUNT)
         .u16(0).u16(0).u16(0).u16(0) // maxPoints, maxContours, maxCompositePoints, maxCompositeContours
@@ -237,17 +237,17 @@ function maxp(): Uint8Array {
 }
 
 /** Family and subfamily names, for Macintosh (Roman) and Windows (Unicode, US English). */
-function name(family: string): Uint8Array {
+function writeName(family: string): Uint8Array {
     const records: { platform: number; encoding: number; language: number; id: number; bytes: Uint8Array }[] = [];
     for (const [id, value] of [[1, family], [2, 'Regular']] as const) {
         records.push({ platform: 1, encoding: 0, language: 0, id, bytes: Uint8Array.from(value, (c) => c.charCodeAt(0)) });
     }
     for (const [id, value] of [[1, family], [2, 'Regular']] as const) {
-        const utf16 = writer();
+        const utf16 = createWriter();
         for (let i = 0; i < value.length; i++) utf16.u16(value.charCodeAt(i));
         records.push({ platform: 3, encoding: 1, language: 0x409, id, bytes: utf16.finish() });
     }
-    const w = writer().u16(0).u16(records.length).u16(6 + records.length * 12);
+    const w = createWriter().u16(0).u16(records.length).u16(6 + records.length * 12);
     let offset = 0;
     for (const r of records) {
         w.u16(r.platform).u16(r.encoding).u16(r.language).u16(r.id).u16(r.bytes.length).u16(offset);
@@ -258,8 +258,8 @@ function name(family: string): Uint8Array {
 }
 
 /** Version 2, naming `.notdef` and `g` by their indices among the standard Macintosh glyph names. */
-function post(): Uint8Array {
-    return writer()
+function writePost(): Uint8Array {
+    return createWriter()
         .u32(0x00020000)
         .u32(0) // italicAngle
         .i16(0).i16(0) // underlinePosition, underlineThickness
@@ -281,27 +281,27 @@ function assemble(tables: [string, Uint8Array][]): Uint8Array {
         entrySelector++;
     }
     searchRange *= 16;
-    const directory = writer()
+    const directory = createWriter()
         .u32(0x00010000)
         .u16(sorted.length).u16(searchRange).u16(entrySelector).u16(sorted.length * 16 - searchRange);
     let offset = 12 + sorted.length * 16;
-    const body = writer();
+    const body = createWriter();
     let headOffset = 0;
     for (const [tag, data] of sorted) {
         if (tag === 'head') headOffset = offset;
-        directory.tag(tag).u32(checksum(data)).u32(offset).u32(data.length);
+        directory.tag(tag).u32(computeChecksum(data)).u32(offset).u32(data.length);
         const padded = new Uint8Array((data.length + 3) & ~3);
         padded.set(data);
         body.bytes(padded);
         offset += padded.length;
     }
     const font = new Uint8Array([...directory.finish(), ...body.finish()]);
-    const adjustment = (0xb1b0afba - checksum(font)) >>> 0;
+    const adjustment = (0xb1b0afba - computeChecksum(font)) >>> 0;
     new DataView(font.buffer).setUint32(headOffset + 8, adjustment);
     return font;
 }
 
-function checksum(data: Uint8Array): number {
+function computeChecksum(data: Uint8Array): number {
     let sum = 0;
     for (let i = 0; i < data.length; i += 4) {
         const word = ((data[i] << 24) | ((data[i + 1] ?? 0) << 16) | ((data[i + 2] ?? 0) << 8) | (data[i + 3] ?? 0)) >>> 0;

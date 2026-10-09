@@ -41,11 +41,11 @@ describe('visualTest', () => {
     }, SMOOTH);
 
     describe('three.js', () => {
-        visualTest('lit by its own lights, with the camera given', () => knot(), { width: 200, height: 150, camera: knotCamera });
+        visualTest('lit by its own lights, with the camera given', () => createKnot(), { width: 200, height: 150, camera: createKnotCamera });
 
         // Refreshed before it is drawn, and advanced like any view
         visualTest('after time passes', async () => {
-            const view = knot();
+            const view = createKnot();
             let turned = 0;
             setUpdate(view, (deltaMs) => {
                 turned += deltaMs / 1000;
@@ -55,14 +55,14 @@ describe('visualTest', () => {
             });
             await advanceTime({ views: [view], totalMs: 800 });
             return view;
-        }, { width: 200, height: 150, camera: knotCamera });
+        }, { width: 200, height: 150, camera: createKnotCamera });
 
         // Always antialiased, so over the size budget it is drawn at half resolution, as a smooth Pixi view is
-        visualTest('over the budget', () => knot(), { width: 1200, height: 600, camera: knotCamera, background: 0x15102b });
+        visualTest('over the budget', () => createKnot(), { width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b });
     });
 });
 
-function knot(): Group {
+function createKnot(): Group {
     const group = new Group();
     const light = new DirectionalLight(0xffffff, 2);
     light.position.set(2, 3, 4);
@@ -71,7 +71,7 @@ function knot(): Group {
     return group;
 }
 
-function knotCamera(): PerspectiveCamera {
+function createKnotCamera(): PerspectiveCamera {
     const camera = new PerspectiveCamera(40, 1, 0.1, 100);
     camera.position.set(0, 0, 6);
     return camera;

@@ -34,7 +34,7 @@ export const DEFAULT_MAX_PIXELS = 500_000;
 // Function
 // ---------------------------------------------------------------------------
 
-export function visualProject(options: VisualProjectOptions): TestProjectInlineConfiguration {
+export function createVisualProject(options: VisualProjectOptions): TestProjectInlineConfiguration {
     const isHtml = options.kind === 'html';
     return {
         extends: './vite.config.ts',

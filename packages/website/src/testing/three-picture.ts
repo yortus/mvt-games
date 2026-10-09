@@ -67,8 +67,8 @@ export function drawThreePicture(view: Object3D, options: ThreePictureOptions & 
     const { width, height } = options;
     const fit = fitPicture({ width, height, maxPixels: options.maxPixels, canScale: true });
     if ('problem' in fit) throw new Error(fit.problem);
-    const renderer = rendererFor();
-    const dressed = dressedFor(renderer, options.scene);
+    const renderer = ensureRenderer();
+    const dressed = ensureDressedScene(renderer, options.scene);
     try {
         applySettings(renderer, dressed.settings);
         renderer.setPixelRatio(fit.resolution);
@@ -126,18 +126,18 @@ const dressedScenes = new Map<((options: ThreeSceneOptions) => void) | undefined
  * shaders compile once, and a page keeps only so many WebGL contexts.
  * Antialiased, as the games' renderers are.
  */
-function rendererFor(): WebGLRenderer {
+function ensureRenderer(): WebGLRenderer {
     shared ??= new WebGLRenderer({ antialias: true });
     return shared;
 }
 
-function dressedFor(renderer: WebGLRenderer, dress: ((options: ThreeSceneOptions) => void) | undefined): DressedScene {
+function ensureDressedScene(renderer: WebGLRenderer, dress: ((options: ThreeSceneOptions) => void) | undefined): DressedScene {
     let dressed = dressedScenes.get(dress);
     if (dressed === undefined) {
         const scene = new Scene();
         applySettings(renderer, DEFAULT_SETTINGS);
         dress?.({ scene, renderer });
-        dressed = { scene, settings: settingsOf(renderer) };
+        dressed = { scene, settings: readSettings(renderer) };
         applySettings(renderer, DEFAULT_SETTINGS);
         dressedScenes.set(dress, dressed);
     }
@@ -154,7 +154,7 @@ const DEFAULT_SETTINGS: RendererSettings = {
     localClipping: false,
 };
 
-function settingsOf(renderer: WebGLRenderer): RendererSettings {
+function readSettings(renderer: WebGLRenderer): RendererSettings {
     return {
         toneMapping: renderer.toneMapping,
         toneMappingExposure: renderer.toneMappingExposure,

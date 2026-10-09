@@ -5,8 +5,8 @@ import { refreshView } from '@mvtjs/pixi';
 import { destroyObject } from '@mvtjs/three';
 import { inject, test } from 'vitest';
 import { captureHtmlPicture, type HtmlPictureOptions } from './html-picture';
-import { failureMessage, hashPixels, isPass, pictureNameOfCurrentTest, sessionFor, toBase64, visualCommands } from './judge';
-import { pageSetup } from './page-setup';
+import { describeFailure, hashPixels, isPass, nameCurrentPicture, openSession, toBase64, visualCommands } from './judge';
+import { setUpPage } from './page-setup';
 import { drawPixiPicture, type PixiPictureOptions, preparePixiPose } from './pixi-picture';
 import type { VisualTestMeta, VisualVerdict } from './protocol';
 import { drawThreePicture, type ThreePictureOptions } from './three-picture';
@@ -44,8 +44,8 @@ export function visualTest(
     test(name, async ({ task }) => {
         const kind = inject('visualKind');
         const maxPixels = inject('visualMaxPixels');
-        const setup = await pageSetup();
-        const id = pictureNameOfCurrentTest();
+        const setup = await setUpPage();
+        const id = nameCurrentPicture();
         task.meta.visualPicture = id.name;
         const ms: Record<string, number> = {};
         // The overloads pair each kind of view with its own options
@@ -87,11 +87,11 @@ export function visualTest(
                 t = performance.now();
                 const hash = await hashPixels(picture.width, picture.height, picture.pixels);
                 ms.hash = performance.now() - t;
-                const session = await sessionFor({});
+                const session = await openSession({});
                 t = performance.now();
                 verdict = session.hashes[id.name] === hash
                     ? { outcome: 'same', referenceFile: id.name }
-                    : await visualCommands.visualMismatch({ ...id, width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels) });
+                    : await visualCommands.judgeVisualMismatch({ ...id, width: picture.width, height: picture.height, hash, pixels: toBase64(picture.pixels) });
                 ms.compare = performance.now() - t;
                 size = picture;
             }
@@ -103,6 +103,6 @@ export function visualTest(
         }
         const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
         task.meta.visual = meta;
-        if (!isPass(verdict)) throw new Error(failureMessage(id.test, verdict, kind));
+        if (!isPass(verdict)) throw new Error(describeFailure(id.test, verdict, kind));
     });
 }
