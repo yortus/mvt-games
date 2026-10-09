@@ -6,10 +6,12 @@ and time stay apart. MVT is a pattern and needs no library. These helpers
 make common parts of it shorter, and none of them needs a renderer:
 
 - **Change detection:** `watch` polls values and reports which changed since
-  the last poll; `memoiseLast` recomputes only when its argument changes.
-- **Time-driven state:** tweens (`createBooleanTween`, `createEdgeTween`) and
-  sequences (`createSequence`, `createSequenceReaction`), all advanced by an
-  `update(deltaMs)` call rather than a clock.
+  the last poll, and whether each number went up or down; `memoiseLast`
+  recomputes only when its argument changes.
+- **Time-driven state:** tweens (`createBooleanTween`, `createEdgeTween`),
+  sequences (`createSequence`, `createSequenceReaction`) and a metronome
+  (`createMetronome`), all advanced by an `update(deltaMs)` call rather than
+  a clock.
 - **Collections:** `createSlotList` and `createOrderedSlotList`, which keep a
   stable slot per item, for views that pool what they draw.
 - **The tick API:** `updateView` and `refreshView`, which call the update and

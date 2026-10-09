@@ -195,6 +195,7 @@ architecture and engineering concerns.
 | Files | `lower-kebab-case.ts` |
 | Types | `PascalCase`, suffix `Model` / `View` as appropriate |
 | Functions/variables | `camelCase`; factories are `createXxx` |
+| Function names | Start with a verb (`measureLoudness`, not `loudnessOf`); conversions `to` + target (`toInt16`); views and bindings are exempt |
 | Views | `XxxView(bindings: XxxViewBindings)`, not `createXxxView`; never `props` |
 | Booleans | `is` / `has` / `can` prefix |
 | Bindings | Query bindings named for what they return (no `get`), `At`/`For` suffixes when parameterised; relay bindings `on` + what the user did |
@@ -219,7 +220,22 @@ architecture and engineering concerns.
 - **No `.ts` extensions** in module specifiers.
 - **4-space indentation.**
 
-Reference: [Style Guide](../reference/style-guide.md)
+#### Writing
+
+Review the prose too: docs, READMEs, JSDoc, comments, test names and error
+messages. Flag these, and give a rewrite for each:
+
+- **Long sentences** joined by colons, semicolons, stacked commas or asides.
+- **Fragments,** especially at the start of a section or before a colon.
+- **Compressed or clever phrasing** that is hard to parse on first reading.
+- **Unfamiliar terms** used before they are explained.
+- **In-house names in a package,** such as "the host" or "an entry".
+- **API descriptions that say who calls a function** instead of what it
+  returns, and factory JSDoc that doesn't start with "Creates".
+- **Code samples in docs** with lines over 80 columns, or unused imports.
+
+Reference: [Style Guide](../reference/style-guide.md), including
+[Writing](../reference/style-guide.md#writing)
 
 ### 5. Hot-Path Awareness
 

@@ -7,6 +7,7 @@ export { assert } from './assert';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
 export { memoiseLast } from './memoise-last';
+export { createMetronome, type Metronome } from './metronome';
 export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
 export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';

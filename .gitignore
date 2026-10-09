@@ -13,6 +13,9 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# WAV files written by `npm run audio:render`, for listening
+/renders
+
 # VitePress
 packages/docs/.vitepress/cache
 packages/docs/.vitepress/dist

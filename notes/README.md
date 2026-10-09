@@ -131,6 +131,7 @@ for its sound cues.
 | 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
 | 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
+| 047 | [Pixel Art as Multiline Strings](tasks/backlog/047-pixel-art-as-multiline-strings.md) | low | 2026-10-09 |
 
 ## Archive
 

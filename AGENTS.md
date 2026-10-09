@@ -73,8 +73,10 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
+- **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; top-level application views take the model itself (they're application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
 - **`_` prefix** for intentionally unused parameters
+- **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
 Full reference: [Style Guide](packages/docs/reference/style-guide.md)
