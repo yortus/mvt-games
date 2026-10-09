@@ -121,8 +121,8 @@ of test need their pages arranged differently.
   compile once, and one renderer draws every picture. That is what lets
   hundreds of pictures take seconds.
 - **Each file of HTML tests gets a fresh page.** A stylesheet that a view
-  imports stays in the page once it is loaded. In a shared page, it would
-  restyle the views of every file after it.
+  imports stays in the page once it is loaded. A fresh page for each file
+  means that its views are styled only by the stylesheets it loads itself.
 
 A file runs in one page, so it declares one kind of test only. When the
 config loads, the package reads each file's declarations, and sends the
