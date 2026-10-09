@@ -9,7 +9,7 @@
  *
  * After a full run, the reporter also looks for references that no picture
  * was compared with. A full run is one in which every test ran, and
- * `scripts/run.ts` says whether a run is full. Such references were
+ * `src/node/cli/visual-tests.ts` says whether a run is full. Such references were
  * left by tests that were renamed or deleted. In compare mode, the reporter
  * lists them and fails the run. In the modes that write references, it
  * deletes them. It looks for references under the root of the project being
@@ -112,9 +112,10 @@ const OUTCOMES: Readonly<Record<string, string>> = {
 };
 
 /**
- * Returns whether every test ran. That is true when `scripts/run.ts` called the run
- * full (it had no filters), the run was not interrupted, every file loaded,
- * and no test was skipped. Only then is a reference that no picture used an
+ * Returns whether every test ran. That is true when the command
+ * (`src/node/cli/visual-tests.ts`) called the run full because it had no
+ * filters, the run was not interrupted, every file loaded, and no test was
+ * skipped. Only then is a reference that no picture used an
  * orphan, rather than a reference whose test did not run this time.
  */
 function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason): boolean {

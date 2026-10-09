@@ -9,7 +9,7 @@
  */
 
 import { relative } from 'node:path';
-import { checkReference, findReferences } from '../src/node';
+import { checkReference, findReferences } from '../references';
 
 /** The package whose references are checked. npm runs a package's scripts in its folder. */
 const ROOT = process.cwd();

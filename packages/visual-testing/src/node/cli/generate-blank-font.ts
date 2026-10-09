@@ -7,10 +7,11 @@
  */
 
 import { writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { buildBlankFont } from '../src/node';
+import { join } from 'node:path';
+import { buildBlankFont } from '../blank-font';
+import { PACKAGE_DIR } from '../paths';
 
-const out = resolve(import.meta.dirname, '..', 'src', 'browser', 'fonts', 'visual-blank.ttf');
+const out = join(PACKAGE_DIR, 'src', 'browser', 'fonts', 'visual-blank.ttf');
 const font = buildBlankFont({ family: 'Visual Blank' });
 writeFileSync(out, font);
 console.log(`Wrote ${font.length} bytes to ${out}`);

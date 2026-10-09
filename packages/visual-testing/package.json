@@ -19,11 +19,11 @@
         "visual-tests": "./bin/visual-tests.js"
     },
     "scripts": {
-        "test:visual": "tsx scripts/run.ts",
-        "test:visual:update": "tsx scripts/run.ts --update",
-        "test:visual:environment": "tsx scripts/run.ts --environment",
-        "test:visual:check-references": "tsx scripts/check-references.ts",
-        "generate-blank-font": "tsx scripts/generate-blank-font.ts"
+        "test:visual": "tsx src/node/cli/visual-tests.ts",
+        "test:visual:update": "tsx src/node/cli/visual-tests.ts --update",
+        "test:visual:environment": "tsx src/node/cli/visual-tests.ts --environment",
+        "test:visual:check-references": "tsx src/node/cli/check-references.ts",
+        "generate-blank-font": "tsx src/node/cli/generate-blank-font.ts"
     },
     "dependencies": {
         "@vitest/browser-playwright": "^5.0.3",

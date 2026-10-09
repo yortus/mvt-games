@@ -15,7 +15,7 @@
  * repository's root, in the same directory layout as the repository.
  *
  * The run's mode comes from the `VISUAL_MODE` environment variable
- * (`compare`, `update` or `environment`), which `scripts/run.ts` sets.
+ * (`compare`, `update` or `environment`), which `src/node/cli/visual-tests.ts` sets.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';

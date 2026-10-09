@@ -102,8 +102,8 @@ them are defined once, in `src/protocol.ts`.
 | Folder | What it holds |
 | --- | --- |
 | `src/browser/` | The side that runs in the test page. It holds `visualTest` and `advanceTime`, which the main entry point exports. It also holds the picture code for each kind of view, and the page's setup. The setup pins random numbers, draws canvas text from two test fonts, and blanks HTML text |
-| `src/node/` | The side that runs in Node, which `@mvtjs/visual-testing/node` exports. It holds the browser commands, the PNG files, the comparison, the Vitest projects and the run's summary |
-| `scripts/` | The command that runs the tests, the reference check, and the generator of the blank font |
+| `src/node/` | The side that runs in Node. `@mvtjs/visual-testing/node` exports its Vitest projects and reporters. It also holds the browser commands, the PNG files, the comparison and the run's summary |
+| `src/node/cli/` | The `visual-tests` command, its reference check, and the generator of the blank font |
 | `src/browser/__screenshots__/` | The calibration pictures, and the pictures of this package's own tests |
 
 `visual-environment.json` holds the browser's fingerprint, which every
@@ -113,7 +113,9 @@ The Node entry point gives its TypeScript source both under the repo's
 `@mvtjs/source` condition and as the default. Vitest bundles a config file
 before it runs it, and the bundler knows no custom conditions. So the
 default lets a package's config import this one. The command then runs
-Vitest with tsx's loader, so that Node can run that TypeScript.
+Vitest with tsx's loader, so that Node can run that TypeScript. The
+command's `bin` entry is a small JavaScript file, which loads the command
+through tsx.
 
 ## How the Pictures Stay the Same Everywhere
 
