@@ -120,6 +120,19 @@ describe('music player', () => {
         expect(player.song).toBe(next);
     });
 
+    it('cancels a queued song when told to play another', () => {
+        const queued = createSong({ ...TUNE_OPTIONS, order: ['b'] });
+        const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+        const player = createMusicPlayer({ audio80: chip });
+        player.play(TUNE);
+        player.queue(queued);
+        tick(controls, player, () => 1000 / 60, ROW_MS);
+        player.play(TUNE);
+        tick(controls, player, () => 1000 / 60, computeSongDurationMs(TUNE) + 3 * ROW_MS);
+        expect(listNoteOns(chip.log).some((write) => write.note === requireNoteNumber('G-5'))).toBe(false);
+        expect(player.isPlaying).toBe(false);
+    });
+
     it('releases the song playing when told to play another, and starts the new one at once', () => {
         const next = createSong({ ...TUNE_OPTIONS, order: ['b'] });
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });

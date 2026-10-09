@@ -12,12 +12,23 @@ export interface DiggerModel {
     readonly row: number;
     /** Current movement direction. */
     readonly direction: Direction;
+    /**
+     * Whether the digger is on its way from one tile to the next. While a
+     * direction is held and the way is open, it stays true from tile to tile.
+     */
+    readonly isMoving: boolean;
     /** Whether the player is alive. */
     readonly isAlive: boolean;
     /** Whether the pump harpoon is currently extended. */
     readonly isHarpoonExtended: boolean;
     /** How far the harpoon extends (0→maxRange, in tiles). */
     readonly harpoonDistance: number;
+    /**
+     * How many times the harpoon has been shot out. Each press of the pump
+     * counts, whether the harpoon was in or already out. A press while the
+     * harpoon holds a creature does not count, since it pumps the creature.
+     */
+    readonly harpoonShots: number;
     /** Request a direction change ('none' = stop). */
     setDirection: (dir: Direction) => void;
     /** Lock the harpoon at its current distance (while attached to an enemy). */
@@ -92,6 +103,7 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         harpoonDistance: 0,
         harpoonLocked: false,
         pumping: false,
+        harpoonShots: 0,
     };
 
     const timeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
@@ -109,6 +121,9 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         get direction() {
             return state.direction;
         },
+        get isMoving() {
+            return state.moving;
+        },
         get isAlive() {
             return state.alive;
         },
@@ -117,6 +132,9 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
         },
         get harpoonDistance() {
             return state.harpoonDistance;
+        },
+        get harpoonShots() {
+            return state.harpoonShots;
         },
 
         setDirection(dir: Direction): void {
@@ -164,6 +182,7 @@ export function createDiggerModel(options: DiggerModelOptions): DiggerModel {
                     state.harpoonExtended = true;
                     state.harpoonDistance = 0;
                 }
+                if (!state.harpoonLocked) state.harpoonShots++;
                 scheduleHarpoonExtend();
             }
         },

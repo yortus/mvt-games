@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`astrovoid sounds > BEAT_HIGH sounds as it did, audible and unclipped 1`] = `"f0edd181"`;
+
+exports[`astrovoid sounds > BEAT_LOW sounds as it did, audible and unclipped 1`] = `"b1faac85"`;
+
+exports[`astrovoid sounds > BREAK_LARGE sounds as it did, audible and unclipped 1`] = `"c61900a8"`;
+
+exports[`astrovoid sounds > BREAK_MEDIUM sounds as it did, audible and unclipped 1`] = `"f6f2c6be"`;
+
+exports[`astrovoid sounds > BREAK_SMALL sounds as it did, audible and unclipped 1`] = `"f6aee07e"`;
+
+exports[`astrovoid sounds > FIRE sounds as it did, audible and unclipped 1`] = `"c0f8a2d4"`;
+
+exports[`astrovoid sounds > GAME_OVER sounds as it did, audible and unclipped 1`] = `"061f0521"`;
+
+exports[`astrovoid sounds > RESPAWN sounds as it did, audible and unclipped 1`] = `"48e727a3"`;
+
+exports[`astrovoid sounds > SHIP_EXPLODE sounds as it did, audible and unclipped 1`] = `"ff07c4f1"`;
+
+exports[`astrovoid sounds > THRUST sounds as it did, audible and unclipped 1`] = `"92e9311d"`;
+
+exports[`astrovoid sounds > WAVE_CLEAR sounds as it did, audible and unclipped 1`] = `"fa30bcde"`;

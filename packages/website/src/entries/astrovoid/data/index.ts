@@ -2,3 +2,6 @@ export {
     ARENA_WIDTH,
     ARENA_HEIGHT,
 } from './constants';
+export {
+    BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST, WAVE_CLEAR,
+} from './sounds';

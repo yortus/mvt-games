@@ -720,8 +720,13 @@ button { font: inherit; color: inherit; }
 }
 .pause-panel .pause-tab:hover { border-color: transparent; color: #e6edf3; }
 .pause-panel .pause-tab.is-selected { border-color: #30363d #30363d #161b22; background: #161b22; color: #e6edf3; }
-/* A page scrolls if it is taller than the panel, as on a phone held sideways */
-.pause-page { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+/*
+ * A page scrolls if it is taller than the panel, as on a phone held sideways.
+ * A scrolling box clips what is drawn outside it, so the page has room inside
+ * its edges for a focus outline (2px, 2px off the control). The negative
+ * margin keeps the page where it was.
+ */
+.pause-page { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; margin: -4px; padding: 4px; }
 
 .pause-sound {
     display: flex;

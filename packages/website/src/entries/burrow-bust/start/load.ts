@@ -18,7 +18,7 @@ export async function load(): Promise<PixiEntryStarter> {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage }): EntrySession {
+        start({ stage, sound }): EntrySession {
             const gameModel = createGameModel({
                 levels: LEVELS,
                 fieldCols: FIELD_COLS,
@@ -27,7 +27,7 @@ export async function load(): Promise<PixiEntryStarter> {
                 diggerSpawn: DIGGER_SPAWN,
             });
 
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
 
             let lastXDir: 'left' | 'none' | 'right' = 'none';

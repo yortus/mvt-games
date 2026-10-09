@@ -1,10 +1,13 @@
 import { Container } from 'pixi.js';
+import type { Audio80 } from '@mvtjs/audio';
 import { isTouchDevice, OverlayView } from '#shared';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
 import type { GameModel } from '../models';
 import { ArenaView } from './arena-view';
 import { FighterView } from './fighter-view';
 import { HudView } from './hud-view';
+import { FighterAudioView } from './fighter-audio-view';
+import { MatchAudioView } from './match-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -12,6 +15,8 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The chip that the game's audio views play on. It is an output, so the view reads it once. */
+    sound: Audio80;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +78,30 @@ export function GameView(bindings: GameViewBindings): Container {
             progress: () => game.opponent.progress,
             defeatVariant: () => game.opponent.defeatVariant,
             accentColor: OPPONENT_ACCENT_COLOR,
+        }),
+    );
+
+    // The sounds of each fighter and of the match
+    view.addChild(
+        FighterAudioView({
+            sound: bindings.sound,
+            phase: () => game.player.phase,
+            move: () => game.player.move,
+        }),
+        FighterAudioView({
+            sound: bindings.sound,
+            phase: () => game.opponent.phase,
+            move: () => game.opponent.move,
+        }),
+        MatchAudioView({
+            sound: bindings.sound,
+            phase: () => game.phase,
+            playerPoints: () => game.match.playerPoints,
+            opponentPoints: () => game.match.opponentPoints,
+            secondsLeft: () => Math.ceil(game.roundTimeRemainingMs / 1000),
+            hasPlayerWon: () => (game.phase === 'match-over'
+                ? game.match.getMatchWinner()
+                : game.match.getRoundWinner()) === 'player',
         }),
     );
 

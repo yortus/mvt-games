@@ -70,7 +70,10 @@ export interface MusicPlayer {
      * covers at the new tempo.
      */
     tempoScale: number;
-    /** Starts `song` from its beginning now, releasing any song playing. */
+    /**
+     * Starts `song` from its beginning now. It releases any song playing, and
+     * cancels any song queued, so nothing queued before plays after it.
+     */
     play: (song: Song) => void;
     /**
      * Plays `song` without a gap when the song playing reaches the end of its
@@ -153,6 +156,7 @@ export function createMusicPlayer(options: MusicPlayerOptions): MusicPlayer {
         },
 
         play(next) {
+            queued = undefined;
             if (song !== undefined) releaseChannels(audio80.time);
             start(next, audio80.time);
         },

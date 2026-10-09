@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`burrow bust sounds > DEATH sounds as it did, audible and unclipped, as loud as every other song 1`] = `"9de8460f"`;
+
+exports[`burrow bust sounds > FIRE sounds as it did, audible and unclipped 1`] = `"e2cf4c18"`;
+
+exports[`burrow bust sounds > FIRE_WARNING sounds as it did, audible and unclipped 1`] = `"0cc22c07"`;
+
+exports[`burrow bust sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"7a9402cf"`;
+
+exports[`burrow bust sounds > GHOST sounds as it did, audible and unclipped 1`] = `"663e52e9"`;
+
+exports[`burrow bust sounds > HARPOON sounds as it did, audible and unclipped 1`] = `"690ea185"`;
+
+exports[`burrow bust sounds > LEVEL_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"d01d9826"`;
+
+exports[`burrow bust sounds > LEVEL_START sounds as it did, audible and unclipped, as loud as every other song 1`] = `"40e363ae"`;
+
+exports[`burrow bust sounds > POP sounds as it did, audible and unclipped 1`] = `"bd6fb80a"`;
+
+exports[`burrow bust sounds > PUMP_1 sounds as it did, audible and unclipped 1`] = `"e1e1efc1"`;
+
+exports[`burrow bust sounds > PUMP_2 sounds as it did, audible and unclipped 1`] = `"9ae57120"`;
+
+exports[`burrow bust sounds > PUMP_3 sounds as it did, audible and unclipped 1`] = `"04f55de9"`;
+
+exports[`burrow bust sounds > PUMP_4 sounds as it did, audible and unclipped 1`] = `"0bc7cd42"`;
+
+exports[`burrow bust sounds > ROCK_CRASH sounds as it did, audible and unclipped 1`] = `"c5d77795"`;
+
+exports[`burrow bust sounds > ROCK_FALL sounds as it did, audible and unclipped 1`] = `"05e62b0d"`;
+
+exports[`burrow bust sounds > ROCK_WOBBLE sounds as it did, audible and unclipped 1`] = `"8811f0c0"`;
+
+exports[`burrow bust sounds > SQUASH sounds as it did, audible and unclipped 1`] = `"c6dcc5fe"`;
+
+exports[`burrow bust sounds > WALK_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"06d99747"`;

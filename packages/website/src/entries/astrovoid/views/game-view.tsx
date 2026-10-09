@@ -3,6 +3,7 @@
 import type { Container, Graphics } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
 import { List } from '@mvtjs/pixi';
+import type { Audio80 } from '@mvtjs/audio';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { ShipView } from './ship-view';
@@ -10,6 +11,7 @@ import { AsteroidView } from './asteroid-view';
 import { BulletView } from './bullet-view';
 import { DebrisView } from './debris-view';
 import { HudView } from './hud-view';
+import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -17,6 +19,8 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The chip to play the game's sounds on. It is an output, so the view reads it once. */
+    sound: Audio80;
 }
 
 // ---------------------------------------------------------------------------
@@ -30,12 +34,21 @@ export interface GameViewBindings {
  * bullets are a `<List>` over their array.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, sound } = bindings;
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            <GameAudioView
+                sound={sound}
+                phase={() => model.phase}
+                shotsFired={() => model.shotsFired}
+                rocksBroken={() => model.rocksBroken}
+                lastBrokenRockSize={() => model.lastBrokenRockSize}
+                breaksLeft={() => model.breaksLeft}
+                isThrusting={() => model.ship.isThrusting}
+            />
             <graphics ref={(g) => drawStars(g, ARENA_WIDTH, ARENA_HEIGHT)} />
             <List items={model.asteroids.slots}>
                 {(slot) => (

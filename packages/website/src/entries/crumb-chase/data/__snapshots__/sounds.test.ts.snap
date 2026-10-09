@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`crumb chase sounds > CAUGHT sounds as it did, audible and unclipped, as loud as every other song 1`] = `"eab14313"`;
+
+exports[`crumb chase sounds > CLEARED sounds as it did, audible and unclipped, as loud as every other song 1`] = `"8e44524f"`;
+
+exports[`crumb chase sounds > GAME_START sounds as it did, audible and unclipped, as loud as every other song 1`] = `"50d6e91b"`;
+
+exports[`crumb chase sounds > NIBBLE_HIGH sounds as it did, audible and unclipped 1`] = `"07009b73"`;
+
+exports[`crumb chase sounds > NIBBLE_LOW sounds as it did, audible and unclipped 1`] = `"b9c1459b"`;
+
+exports[`crumb chase sounds > SNEAK sounds as it did, audible and unclipped, as loud as every other song 1`] = `"99a62992"`;
