@@ -6,16 +6,17 @@ import { NO_RECT, type Rect } from './rect';
 // ---------------------------------------------------------------------------
 
 /**
- * The way into an entry and back out, as presentation state: the arcade view
+ * The way into an entry and back out, as presentation state: the Arcade's view
  * owns it, advances it in `update`, and its views draw it in `refresh`.
  *
  * In: the other cards burn away as the chosen card's polaroid floats to the
  * centre of where the entry will play, straightening, and the page blacks
  * out; the entry loads meanwhile, and a slow load holds the polaroid there.
  * Then the polaroid recedes into the dark, the entry starts, and once it has
- * drawn its first frame its screen powers on from that centre. The picture
- * and the entry are never seen together, so neither a blank first frame nor
- * a game that has moved on from its thumbnail shows.
+ * drawn its first frame its screen powers on from that centre. The entry's
+ * first frame then shows still for a moment (`SHOW_STILL_MS`) before the
+ * entry runs. The picture and the entry are never seen together, so neither
+ * a blank first frame nor a game that has moved on from its thumbnail shows.
  *
  * Out: the entry's last frame powers off to a line and a dot, the polaroid
  * comes back out of the dark there and floats back onto its card, and the
@@ -38,6 +39,13 @@ export interface TransitionViewModel {
     readonly stage: TransitionStage;
     /** The white-hot line of a tube powering on or off, over the play area's centre. Updated in place. */
     readonly glow: TransitionGlow;
+    /**
+     * Whether the tube's beam is concentrated into a line or a dot. It is on
+     * as the screen powers on, until the line opens out, and as it powers
+     * off, from the line to the dot. It is never on for a visitor who has
+     * asked for less motion.
+     */
+    readonly isBeamOn: boolean;
 
     /** What is drawn over the wall's cards now. */
     readonly wallEffect: WallEffectKind;
@@ -76,6 +84,8 @@ export interface TransitionViewModel {
  * - `'starting'`: the entry has been told to start; waiting for its first frame.
  * - `'powering-on'`: the entry's screen powers on, like an old tube: a
  *   white-hot line across the middle, opening out to the picture.
+ * - `'showing'`: the entry's first frame shows still for a moment, before
+ *   the entry runs, so the visitor can take it in.
  * - `'powering-off'`: the entry's last frame powers off: a line, then a dot.
  * - `'returning'`: the polaroid comes back out of the dark and floats back
  *   onto its card, and the cards develop around it.
@@ -87,6 +97,7 @@ export type TransitionPhase =
     | 'receding'
     | 'starting'
     | 'powering-on'
+    | 'showing'
     | 'powering-off'
     | 'returning';
 
@@ -158,6 +169,8 @@ export interface TransitionViewModelOptions {
     readonly isPlaying: () => boolean;
     /** Reported once the polaroid has receded and the entry has loaded: the entry starts. */
     readonly onHandOver: () => void;
+    /** Reported once the entry has powered on and shown still for a moment (`SHOW_STILL_MS`). The entry may then run. */
+    readonly onShown?: () => void;
     /** Whether the visitor has asked for less motion: read as each way in or out starts. */
     readonly isMotionReduced: () => boolean;
 }
@@ -213,6 +226,11 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
     const transition: TransitionViewModel = {
         get phase() {
             return phase;
+        },
+        get isBeamOn() {
+            if (isQuiet) return false;
+            if (phase === 'powering-on') return elapsedMs < POWER_ON_BEAM_MS;
+            return phase === 'powering-off' && elapsedMs >= POWER_OFF_MS - POWER_OFF_BEAM_MS;
         },
         picture,
         get backdropOpacity() {
@@ -321,6 +339,11 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
                 case 'powering-on':
                     updatePoweringOn();
                     return;
+                case 'showing':
+                    if (elapsedMs < SHOW_STILL_MS) return;
+                    enter('idle');
+                    options.onShown?.();
+                    return;
                 case 'powering-off':
                     updatePoweringOff();
                     return;
@@ -401,7 +424,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
     function updatePoweringOn(): void {
         if (isQuiet) {
             backdropOpacity = 1 - clamp01(elapsedMs / QUIET_FADE_MS);
-            if (elapsedMs >= QUIET_FADE_MS) finish();
+            if (elapsedMs >= QUIET_FADE_MS) finish('showing');
             return;
         }
         const t = clamp01(elapsedMs / POWER_ON_MS);
@@ -421,7 +444,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         glowOver(stage.scaleX, stage.scaleY);
         if (t < 1) return;
         glow.opacity = 0;
-        finish();
+        finish('showing');
     }
 
     // --- The way out --------------------------------------------------------
@@ -496,8 +519,12 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
 
     // --- Helpers ------------------------------------------------------------
 
-    function finish(): void {
-        enter('idle');
+    /**
+     * Ends the way in or out, and enters phase `next`, which is `'idle'`
+     * unless given. It puts the stage and the picture back as they rest.
+     */
+    function finish(next: TransitionPhase = 'idle'): void {
+        enter(next);
         resetPicture();
         stage.scaleX = 1;
         stage.scaleY = 1;
@@ -586,6 +613,14 @@ export const DEVELOP_STAGGER_MS = 300;
 export const RETURN_TOTAL_MS = Math.max(FLOAT_BACK_DELAY_MS + FLOAT_BACK_MS, DEVELOP_STAGGER_MS + DEVELOP_MS);
 /** Each fade of the quiet way in and out, for a visitor who has asked for less motion. */
 export const QUIET_FADE_MS = 250;
+/** The share of a power-on or power-off spent as a line. */
+export const POWER_LINE_SHARE = 0.35;
+/** How long the beam is a line as the screen powers on, before the line opens out. */
+export const POWER_ON_BEAM_MS = POWER_ON_MS * POWER_LINE_SHARE;
+/** How long the beam lasts as the screen powers off, from the line to the dot going out. */
+export const POWER_OFF_BEAM_MS = POWER_OFF_MS * (1 - POWER_LINE_SHARE);
+/** How long the entry's first frame shows still before the entry runs. */
+export const SHOW_STILL_MS = 500;
 
 // ---------------------------------------------------------------------------
 // Internals
@@ -600,8 +635,6 @@ const RECEDED_SCALE = 0.05;
 const LINE_SCALE = 0.006;
 /** How bright the line is. */
 const POWER_BRIGHTNESS = 3;
-/** The share of a power-on or power-off spent as a line. */
-const POWER_LINE_SHARE = 0.35;
 /** The glow is never thinner than this, in CSS pixels. */
 const GLOW_MIN_HEIGHT = 3;
 /** The share of the screen's opening over which the glow fades. */

@@ -58,6 +58,7 @@ npm run dev
 | Command                | Description                                      |
 | ---------------------- | ------------------------------------------------ |
 | `npm run dev`          | Start the Vite dev server with hot reload        |
+| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check with `tsc` then bundle for production |
 | `npm run preview`      | Preview the production build locally             |
 | `npm run lint`         | Check lint and formatting rules                  |

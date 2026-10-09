@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { KeyboardInputView } from './keyboard-input-view';
 
 describe('KeyboardInputView', () => {
-    it('handles key events while an entry runs: reports them and calls preventDefault', () => {
+    it('reports key events while an entry runs, and calls preventDefault on them', () => {
         const { view, state, press } = setUp();
         state.isActive = true;
         expect(press('ArrowLeft').defaultPrevented).toBe(true);
@@ -11,7 +11,7 @@ describe('KeyboardInputView', () => {
         view.destroy();
     });
 
-    it('ignores key events while no entry runs, so the page (such as a search box) still gets them', () => {
+    it('ignores key events while no entry runs, so the rest of the page, such as a search box, gets them', () => {
         const { view, state, press } = setUp();
         state.isActive = false;
         expect(press('b').defaultPrevented).toBe(false);

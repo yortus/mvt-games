@@ -39,6 +39,7 @@ packages/website/src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Presentation and user-input handling
+├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          The in-browser editor and the sandbox it runs code in

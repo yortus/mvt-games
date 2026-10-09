@@ -1,5 +1,6 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
+import type { Audio80, AudioControls } from '@mvtjs/audio';
 import { KeyboardInputView, TouchInputView } from '#shared';
 import type { EntryInputConfig, EntrySession, PixiEntryStarter } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
@@ -9,9 +10,10 @@ import { fitPlayArea, type PlayArea } from './play-area';
 // ---------------------------------------------------------------------------
 
 /**
- * The entry host's Pixi side: one application, with the entry's container,
- * on-screen touch controls and keyboard input on its stage. Loaded with Pixi,
- * the first time a Pixi entry is prepared.
+ * The entry host's Pixi side. It is one Pixi application, whose stage holds
+ * the entry's container, the on-screen touch controls and the keyboard input.
+ * The host loads this module, and Pixi with it, the first time it prepares a
+ * Pixi entry.
  */
 export interface PixiStage {
     /** Whether it draws pixel art, which is fixed when its renderer is made. */
@@ -20,12 +22,13 @@ export interface PixiStage {
     start: (starter: PixiEntryStarter) => EntrySession;
     /** Hides the canvas, once the session has ended. */
     hide: () => void;
-    /** One frame: steps the application's ticker, which updates, refreshes and renders the stage. */
+    /** Runs one frame. It steps the application's ticker, which updates, refreshes and renders the stage. */
     tick: (timeMs: number) => void;
     /** Fits the canvas to an area of this size, in CSS pixels. */
     fit: (areaWidth: number, areaHeight: number) => void;
     /** Draws the play area of the frame now showing into a new canvas. */
     captureFrame: () => HTMLCanvasElement | undefined;
+    /** Destroys the application, with its canvas and everything on its stage. */
     destroy: () => void;
 }
 
@@ -33,9 +36,11 @@ export interface PixiStage {
 // Options
 // ---------------------------------------------------------------------------
 
+/** How to make the entry host's Pixi stage. */
 export interface PixiStageOptions {
     /** The element to add the canvas to. */
     readonly element: HTMLElement;
+    /** Whether to draw pixel art. */
     readonly isPixelArt: boolean;
     /** Whether to draw touch controls for entries that take input. */
     readonly isTouch: boolean;
@@ -43,15 +48,21 @@ export interface PixiStageOptions {
     readonly takesInput: boolean;
     /** The session running, which the host owns. */
     readonly session: () => EntrySession | undefined;
+    /** Whether the session is paused. */
     readonly isPaused: () => boolean;
+    /** The host's Audio80, given to each session. */
+    readonly audio80: Audio80;
+    /** The Audio80's controls. The stage advances the chip's clock with the session's models, and sends its writes after each refresh. */
+    readonly audioControls: AudioControls;
 }
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Creates the entry host's Pixi stage, and adds its canvas to `options.element`. */
 export async function createPixiStage(options: PixiStageOptions): Promise<PixiStage> {
-    const { element, isPixelArt, isTouch, takesInput } = options;
+    const { element, isPixelArt, isTouch, takesInput, audio80, audioControls } = options;
 
     const app = new Application();
     await app.init({
@@ -60,17 +71,17 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         background: 0x000000,
         antialias: !isPixelArt,
         roundPixels: isPixelArt,
-        // Not started: the host's loop steps it, once a frame
+        // It is not started, because the host's loop steps it once a frame
         autoStart: false,
         sharedTicker: false,
     });
-    // A long gap (a hidden tab) is clamped rather than simulated
+    // A long gap, as after a hidden tab, is clamped rather than simulated
     app.ticker.minFPS = 1000 / MAX_STEP_MS;
 
     const canvas = app.canvas;
     canvas.className = 'entry-host-canvas';
     canvas.hidden = true;
-    // No pinch-zoom, scrolling or double-tap zoom over the game
+    // Pinch-zoom, scrolling and double-tap zoom are blocked over the game
     canvas.style.touchAction = 'none';
     canvas.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
     element.append(canvas);
@@ -128,15 +139,20 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         }));
     }
 
-    // Each step of the ticker runs the MVT order for the stage: the entry's
-    // models, then the stage's update and refresh. The application renders
-    // after, from its own, later listener.
+    // Each step of the ticker runs the MVT order for the stage. First the
+    // entry's models advance, and the Audio80's clock with them. Then the
+    // stage's views update and refresh. Then the chip's writes are sent. The
+    // application renders after this, from its own, later listener.
     app.ticker.add(() => {
         const deltaMs = app.ticker.deltaMS;
         const session = options.session();
-        if (session !== undefined && !options.isPaused()) session.update(deltaMs);
+        if (session !== undefined && !options.isPaused()) {
+            session.update(deltaMs);
+            audioControls.update(deltaMs);
+        }
         updateView(app.stage, deltaMs);
         refreshView(app.stage);
+        audioControls.flush();
     });
 
     const stage: PixiStage = {
@@ -144,11 +160,15 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
         start(next) {
             starter = next;
-            // For the textures the entry makes as it starts, such as text
+            // This applies to the textures the entry makes as it starts, such as text
             TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
-            const session = next.start({ stage: entryContainer, host: { renderer: app.renderer, ticker: app.ticker } });
+            const session = next.start({
+                stage: entryContainer,
+                host: { renderer: app.renderer, ticker: app.ticker },
+                sound: audio80,
+            });
             canvas.hidden = false;
-            // Its controls are known now, which can change the fit
+            // The session's controls are known now, and they can change the fit
             fitTo(areaWidth, areaHeight, session.inputConfig);
             return session;
         },

@@ -20,12 +20,15 @@
 | [`main.ts`](./main.ts) | The page: makes the model, the views and the entry host, and runs the one loop |
 | [`models/arcade-model.ts`](./models/arcade-model.ts) | `ArcadeModel`: the search, the tags chosen, the phase, the entry launched |
 | [`models/arcade-query.ts`](./models/arcade-query.ts) | The search as a URL query, and back |
+| [`models/sound-settings.ts`](./models/sound-settings.ts) | The visitor's sound settings, their defaults, and how they are saved and read back |
+| [`data/sounds.ts`](./data/sounds.ts) | The Arcade's own sound effects, and the pause menu's two previews |
 | [`views/arcade-view.tsx`](./views/arcade-view.tsx) | The top-level view: takes the model, wires the rest |
 | [`views/card-wall-view.tsx`](./views/card-wall-view.tsx), [`card-view.tsx`](./views/card-view.tsx) | The wall of cards, and one card |
 | [`views/card-wall-layout.ts`](./views/card-wall-layout.ts) | View model: where each card goes, in columns, and how it moves there |
 | [`views/transition-view-model.ts`](./views/transition-view-model.ts), [`transition-view.tsx`](./views/transition-view.tsx) | View model and view: the way into an entry and back out |
 | [`views/search-bar-view.tsx`](./views/search-bar-view.tsx), [`search-suggestions.ts`](./views/search-suggestions.ts) | The search box, its tag tokens and suggestions |
 | [`views/runner-view.tsx`](./views/runner-view.tsx), [`pause-menu-view.tsx`](./views/pause-menu-view.tsx) | The bar over a running entry, and the pause menu |
+| [`views/*-audio-view.ts`](./views/) | The views that play the Arcade's own sounds and the pause menu's previews of the volumes. They load on the visitor's first press |
 | [`../runner/`](../runner/) | The entry host, which runs one entry of any renderer |
 
 The rest are smaller views (the marquee, the info panel, the About note) and
@@ -51,12 +54,17 @@ Which state belongs to the model, and which to the views?
 - **In the model:** the search text, the tags chosen (in the order chosen),
   the phase (`'browsing' | 'loading' | 'ready' | 'playing'`), the entry
   launched, whether it is paused, and which info panel is open (an entry's,
-  or the arcade's own; one at a time). These are what the visitor asked for.
+  or the Arcade's own; one at a time). These are what the visitor asked for.
   The URL is a projection of them: `main.ts` writes the query and the
   fragment from the model (`writeUrl`), and reads them back on load. Going
   into an entry adds a history step, so Back returns to the wall, and so does
   opening an info panel (`writePanelStep`), so Back closes it, as a phone's
-  back button is expected to.
+  back button is expected to. The model also holds the visitor's sound
+  settings. These are a volume for the music and one for the effects, the
+  level each had when it was turned off, and whether all sound is muted. The
+  page saves them in `localStorage` whenever they change, and reads them back
+  on load. A started entry is held still (`isHeld`) until the way in has
+  shown its first frame.
 - **In the views:** which card is selected (`selected` in
   [`card-wall-view.tsx`](./views/card-wall-view.tsx)), where each card is
   and where it is sliding to (the layout), and every frame of the way in and
@@ -125,6 +133,10 @@ const transition = createTransitionViewModel({
 The model knows nothing about transitions, and the transition knows nothing
 about loading; each waits on the other through the bindings.
 
+The transition reports `onShown` too, once the entry has shown still for a
+moment. The model then lets it run (`letGo`). Until then the page keeps the
+host paused.
+
 ## 6. One Loop, Any Renderer
 
 [`main.ts`](./main.ts) runs the page's one loop, in the MVT order:
@@ -133,8 +145,10 @@ about loading; each waits on the other through the bindings.
 model.update(deltaMs);                // the Arcade's model
 followModel();                        // start or stop the entry's session as the phase changes
 host.tick(timeMs, deltaMs);           // the entry: its models, its views, its renderers
-updateView(document.body, deltaMs);   // the Arcade's views, its magnifier in the site's nav among them
+sound.pageControls.update(deltaMs);   // the page's own chip: advance its clock
+updateView(document.body, deltaMs);   // the Arcade's views, its tools in the site's nav among them
 refreshView(document.body);
+sound.pageControls.flush();           // the page's own chip: send what the views wrote
 ```
 
 The entry host ([`../runner/entry-host.ts`](../runner/entry-host.ts)) runs
@@ -156,6 +170,15 @@ attract view model says which card (`onLiveWanted`); the page loads the
 entry and plays it in a host that takes no input (`playLive` in `main.ts`),
 ticked in the same loop; the card shows it, scaled and cropped as its
 photo. The model never knows: which card plays is presentation.
+
+The page's sound loads late too. Browsers play no sound before the
+visitor's first press, so none of it is in the page's first load. On that
+press, the page loads the chips (`PageSound.prepare`) and the views that play
+the Arcade's own sounds (`loadArcadeAudioViews`). Until the chips load, they
+drop every write. The audio views reach `ArcadeView` through a binding,
+`audioViews`, which is undefined until they load. A `<Switch>` adds them to
+the view tree once the binding is defined. An entry that is launched waits
+for the chips to load.
 
 ## 7. Measurements as Input
 
@@ -188,12 +211,11 @@ deliberate:
   starts. Presentation output becomes input, but only at that one moment,
   and only to start presentation state.
 - **Views with their own `window` listeners.** The page's keys (`/` for the
-  search, Escape to close a panel, pause or leave, the pause menu's arrows)
-  are not events on any one element, and the JSX runtime has no attribute
-  for `window`. The views
-  that need them add a listener and remove it in `onDestroyed`
-  (`arcade-view.tsx`, `about-view.tsx`, `pause-menu-view.tsx`, and
-  `wall-effect-view.ts` for `resize`).
+  search, Escape to close a panel, pause or leave, the pause menu's arrows,
+  R and X) are not events on any one element, and the JSX runtime has no
+  attribute for `window`. The views that need them add a listener and remove
+  it in `onDestroyed` (`arcade-view.tsx`, `about-view.tsx`,
+  `pause-menu-view.tsx`, and `wall-effect-view.ts` for `resize`).
 - **The transition writes to the runner's stage.** The screen powering on
   squashes the entry's own picture, which is in the stage element the entry
   host owns. `drawStage` ([`transition-view.tsx`](./views/transition-view.tsx))

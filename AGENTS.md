@@ -42,6 +42,7 @@ packages/website/src/
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Presentation (Pixi, three.js or HTML)
+├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── runner/              The entry host: runs one entry of any renderer, in the MVT order
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
@@ -86,6 +87,7 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | Command                | Purpose                       |
 | ---------------------- | ----------------------------- |
 | `npm run dev`          | Start Vite dev server         |
+| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check + production build |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |

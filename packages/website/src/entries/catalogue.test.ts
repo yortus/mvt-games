@@ -32,6 +32,13 @@ describe('the catalogue', () => {
         }
     });
 
+    it('tells how to play each game, for the pause menu', () => {
+        for (const entry of CATALOGUE) {
+            if (entry.tags.kind !== 'game') continue;
+            expect(entry.instructions?.trim(), entry.id).toBeTruthy();
+        }
+    });
+
     it('gives each entry a play area', () => {
         for (const entry of CATALOGUE) {
             expect(entry.screenWidth, entry.id).toBeGreaterThan(0);

@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
 import { entryFactsPlugin } from './scripts/vite-plugin-entry-facts';
 import { spritesheetPlugin } from './scripts/vite-plugin-spritesheet';
@@ -10,7 +11,10 @@ const SITE_ROOT = __dirname;
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-/** Redirect `/playground` to `/playground/`, so Vite serves its index.html. */
+/** The mode (`--mode https`) in which the dev server serves over HTTPS. */
+const HTTPS_MODE = 'https';
+
+/** Creates a plugin that redirects `/playground` to `/playground/`, so Vite serves its index.html. */
 function trailingSlashPlugin(): Plugin {
     return {
         name: 'trailing-slash-rewrite',
@@ -28,7 +32,7 @@ function trailingSlashPlugin(): Plugin {
 }
 
 // The HTML pages sit at the site's root, beside src/, which they load as /src/...
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
     appType: 'mpa',
     root: SITE_ROOT,
     base: process.env.BASE_URL ?? '/',
@@ -37,13 +41,19 @@ export default defineConfig({
         spritesheetPlugin(),
         entryFactsPlugin(),
         trailingSlashPlugin(),
+        // `npm run dev:https` serves the site over HTTPS with a self-signed
+        // certificate, so a phone on the network can play sound. Sound needs a
+        // secure page, because only a secure page has `AudioWorklet`. Over
+        // plain HTTP, only `localhost` is secure.
+        mode === HTTPS_MODE ? basicSsl() : undefined,
     ],
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
     },
-    // Dev-only: proxy /docs requests to VitePress's dev server.
-    // In production, both Vite and VitePress output static files to the
-    // top-level dist/, the Pages output: the site at its root, the docs in docs/.
+    // In development, requests for /docs go to VitePress's dev server. In
+    // production, Vite and VitePress both write static files to the top-level
+    // dist/, which Pages serves. The site is at its root, and the docs are in
+    // docs/.
     server: {
         proxy: {
             '/docs': {
@@ -77,4 +87,4 @@ export default defineConfig({
             },
         },
     },
-});
+}));

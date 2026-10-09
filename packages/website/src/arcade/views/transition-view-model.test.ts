@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     BURN_MS, BURN_STAGGER_MS, createTransitionViewModel, EMERGE_MS, ENTER_MS, FLOAT_BACK_DELAY_MS, FLOAT_BACK_MS,
-    FLOAT_DELAY_MS, FLOAT_MS, type PicturePose, POWER_OFF_MS, POWER_ON_MS, QUIET_FADE_MS, RECEDE_MS, RETURN_TOTAL_MS,
-    type TransitionViewModel,
+    FLOAT_DELAY_MS, FLOAT_MS, type PicturePose, POWER_OFF_BEAM_MS, POWER_OFF_MS, POWER_ON_BEAM_MS, POWER_ON_MS, QUIET_FADE_MS,
+    RECEDE_MS, RETURN_TOTAL_MS, SHOW_STILL_MS, type TransitionViewModel,
 } from './transition-view-model';
 import type { Rect } from './rect';
 
@@ -121,11 +121,31 @@ describe('TransitionViewModel', () => {
             expect(harness.transition.glow.height).toBeLessThan(5);
             harness.transition.update(POWER_ON_MS);
             expect(harness.transition.glow.opacity).toBe(0);
-            expect(harness.transition.phase).toBe('idle');
+            // Powered on, the first frame shows still for a moment
+            expect(harness.transition.phase).toBe('showing');
             expect(harness.transition.stage.isTransformed).toBe(false);
             expect(harness.transition.stage.scaleY).toBe(1);
             expect(harness.transition.stage.brightness).toBe(1);
+            expect(harness.shows).toBe(0);
+            harness.transition.update(SHOW_STILL_MS);
+            expect(harness.transition.phase).toBe('idle');
+            expect(harness.shows).toBe(1);
             expect(harness.handOvers).toBe(1);
+        });
+
+        it('says the beam is on while the screen powers on as a line, and off as the line opens out', () => {
+            const harness = transitionHarness({ isReady: true });
+            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.update(ENTER_MS);
+            harness.transition.update(RECEDE_MS);
+            expect(harness.transition.isBeamOn).toBe(false);
+            harness.isPlaying = true;
+            harness.transition.update(16);
+            expect(harness.transition.isBeamOn).toBe(true);
+            harness.transition.update(POWER_ON_BEAM_MS - 1);
+            expect(harness.transition.isBeamOn).toBe(true);
+            harness.transition.update(2);
+            expect(harness.transition.isBeamOn).toBe(false);
         });
 
         it('starts blacked out, with the picture at the play area, for a link straight to an entry', () => {
@@ -149,8 +169,13 @@ describe('TransitionViewModel', () => {
             expect(harness.transition.picture.scaleY).toBeLessThan(1);
             expect(harness.transition.picture.brightness).toBeGreaterThan(1);
             expect(harness.transition.glow.opacity).toBeGreaterThan(0);
+            // The beam is off while the picture squashes. It comes on once the picture is a line, and lasts until the dot goes out.
+            expect(harness.transition.isBeamOn).toBe(false);
+            harness.transition.update(POWER_OFF_MS - POWER_OFF_BEAM_MS - POWER_OFF_MS * 0.2 + 1);
+            expect(harness.transition.isBeamOn).toBe(true);
             harness.transition.update(POWER_OFF_MS);
             expect(harness.transition.phase).toBe('returning');
+            expect(harness.transition.isBeamOn).toBe(false);
             expect(harness.transition.glow.opacity).toBe(0);
             expect(harness.transition.picture.showsEntryFrame).toBe(false);
             // Out of the dot: the polaroid, at the centre, its card's size, straight
@@ -229,8 +254,12 @@ describe('TransitionViewModel', () => {
             harness.transition.update(QUIET_FADE_MS / 2);
             expect(harness.transition.backdropOpacity).toBeLessThan(1);
             harness.transition.update(QUIET_FADE_MS / 2);
-            expect(harness.transition.phase).toBe('idle');
+            expect(harness.transition.phase).toBe('showing');
             expect(harness.transition.backdropOpacity).toBe(0);
+            expect(harness.transition.isBeamOn).toBe(false);
+            harness.transition.update(SHOW_STILL_MS);
+            expect(harness.transition.phase).toBe('idle');
+            expect(harness.shows).toBe(1);
         });
 
         it('goes out by fading: the last frame, then the page back, the polaroid on its card', () => {
@@ -274,6 +303,8 @@ interface Harness {
     isReady: boolean;
     isPlaying: boolean;
     handOvers: number;
+    /** How many times `onShown` has been reported. */
+    shows: number;
     /** Where the entry would play, as worked out now. */
     target: Rect;
 }
@@ -284,6 +315,7 @@ function transitionHarness(options: { isReady: boolean; isMotionReduced?: boolea
         isReady: options.isReady,
         isPlaying: false,
         handOvers: 0,
+        shows: 0,
         target: PLAY,
     };
     (harness as { transition: TransitionViewModel }).transition = createTransitionViewModel({
@@ -292,6 +324,9 @@ function transitionHarness(options: { isReady: boolean; isMotionReduced?: boolea
         isPlaying: () => harness.isPlaying,
         onHandOver: () => {
             harness.handOvers++;
+        },
+        onShown: () => {
+            harness.shows++;
         },
         isMotionReduced: () => options.isMotionReduced ?? false,
     });
@@ -307,6 +342,7 @@ function playing(): Harness {
     harness.isPlaying = true;
     harness.transition.update(16);
     harness.transition.update(POWER_ON_MS);
+    harness.transition.update(SHOW_STILL_MS);
     expect(harness.transition.phase).toBe('idle');
     return harness;
 }

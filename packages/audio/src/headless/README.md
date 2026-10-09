@@ -126,7 +126,9 @@ decibel.
 An audio test catches a sound that changes by accident. It renders the
 sound and compares it with a reference saved earlier. The reference is a
 hash, which is a short string worked out from the samples. A Vitest
-snapshot keeps it.
+snapshot keeps it. Vitest stores the snapshots beside the test, in
+`__snapshots__/`, one file for each test file, such as
+`__snapshots__/sounds.test.ts.snap`.
 
 `hashSamples(samples)` returns that hash, as 8 hex digits. It first rounds
 each sample to 16 bits, as a WAV file holds it. So a difference too small
@@ -181,8 +183,8 @@ describe('sounds', () => {
 ```
 
 When a change alters a sound, its test fails. Listen to the new sound
-first (see [Listening](#listening)). Then, if it is right, update the
-snapshot with `vitest -u`.
+first (see [Listening](#listening)). Then, if it is right, update its
+reference with `vitest -u`.
 
 ## Testing an Audio View
 

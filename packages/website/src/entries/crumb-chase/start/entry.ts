@@ -16,6 +16,18 @@ export const entry: ArcadeEntry = {
         'The first game in the repo, and a small one: a good place to start reading. Movement is tile to tile '
         + 'in fractional rows and columns, which the views scale to pixels.',
     ].join('\n\n'),
+    instructions: [
+        'Eat every crumb in the maze to win.',
+        '',
+        'Move: arrows / WASD / joystick',
+        'Press a way early: you turn at the',
+        'next corner that opens that way.',
+        '',
+        'The cats leave their pen one by',
+        'one, and each hunts you its own',
+        'way. One touch and the game is',
+        'over. Enter restarts.',
+    ].join('\n'),
     tags: { kind: 'game', era: '1980s', genres: ['maze'] },
     screenWidth: 560,
     screenHeight: 470,

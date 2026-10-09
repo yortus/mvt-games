@@ -209,7 +209,9 @@ async function bundleEntry(entry: string, outDir: string, isBrowser: boolean): P
         loader: { '.webp': 'empty', '.css': 'empty' },
         // Measure what a production build runs: Vite would replace these
         define: { 'import.meta.env': '{"DEV":false,"PROD":true,"MODE":"production","BASE_URL":"/"}' },
-        plugins: isBrowser ? [solidBrowserBuild, nodeProcessInBrowser] : [solidBrowserBuild, stubTextureRegistry],
+        plugins: isBrowser
+            ? [solidBrowserBuild, nodeProcessInBrowser]
+            : [solidBrowserBuild, stubTextureRegistry],
     });
     return outfile;
 }
