@@ -192,7 +192,7 @@ second copy. Vite finds those libraries by scanning the test files, and it
 bundles them afresh on every run, so that a newly imported library is never
 missed. That takes about a second, however many tests there are.
 
-### The Same on Every Machine, Without Docker
+### Consistency: The Same on Every Machine, Without Docker
 
 Pictures of the same view differ between machines for many reasons. The
 graphics card and its driver draw differently. Each operating system has
