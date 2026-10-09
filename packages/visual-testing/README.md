@@ -139,7 +139,7 @@ them are defined once, in `src/protocol.ts`.
 
 | Folder | What it holds |
 | --- | --- |
-| `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest` and `advanceTime`, which the main entry point exports. It also holds the picture code for each kind of view, and the page's setup. The setup pins random numbers, draws canvas text from two test fonts, and blanks HTML text |
+| `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest` and `advanceTime`, which the main entry point exports. It also holds the picture code for each kind of view, and the page's setup. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text |
 | `src/node/` | The side that runs in Node. `@mvtjs/visual-testing/node` exports its Vitest projects and reporters. It also holds the browser commands, the PNG files, the comparison and the run's summary |
 | `src/node/cli/` | The `visual-tests` command, its reference check, and the generator of the blank font |
 | `src/browser/__screenshots__/` | The calibration pictures, and the pictures of this package's own tests |
@@ -166,11 +166,12 @@ The last part of this section lists the costs.
 
 ### Speed
 
-On one developer machine, 1,000 pictures of real views took 12.7 s, start
-up included. That is about 10 ms a picture. The obvious way, with a fresh
-page for each test file and a screenshot of each picture, would take about
-two minutes. On the same 100 pictures, the obvious way took 12.0 s, and
-this package took 3.1 s. Four things make the difference.
+On one developer machine, this package drew and checked 1,000 pictures of
+real views in 12.7 s, including the time to start up. That is about 10 ms
+a picture. The obvious way, with a fresh page for each test file and a
+screenshot of each picture, takes about 120 ms a picture. At that rate, the
+same 1,000 pictures would take about two minutes. Four things make the
+difference.
 
 - **One page runs every canvas test file.** The libraries load once, the
   shaders compile once, and one renderer draws every picture.
@@ -203,10 +204,11 @@ in the same environment. That needs Docker installed and running, which on
 Windows and macOS means a virtual machine, and it makes every run slower to
 start.
 
-This package pins everything that differs inside the browser instead, so
+This package makes the browser itself draw the same way on every machine
+instead. For each thing that would differ, it chooses one fixed setting, so
 the tests run natively, at full speed, on all three systems.
 
-- **The browser** is Playwright's build of Chromium, pinned to one version.
+- **The browser** is Playwright's build of Chromium, always the same version.
 - **WebGL and 2D canvases** are drawn in software (SwiftShader), and so is
   compositing, so no graphics card is involved.
 - **Settings** such as the colour profile, the screen scale, the locale,
@@ -230,8 +232,12 @@ of a pixel, which is enough to move a line, or the edge of a box.
 - **Canvas text** is drawn by the harness itself. It lays the text out with
   fontkit, a font library, and draws each letter as a shape, from one of
   two fonts that come with the package (Source Sans 3 and Source Code
-  Pro). The font family that a view asks for is mapped to one of them. A
-  family with no stand-in fails its test, with a message saying so.
+  Pro). Each font that a view asks for is replaced with one of them.
+  Fixed-width fonts, such as Consolas or Menlo, become Source Code Pro.
+  Other common fonts, such as Arial or Segoe UI, become Source Sans 3. The
+  package keeps a list of the fonts it knows. A view that asks for a font
+  that isn't on the list fails its test, and the message says how to add
+  it.
 - **HTML text** is laid out by the browser, and no setting makes the
   systems' engines agree. So HTML text is set in a blank font, in which
   every character is an empty glyph, 0.625 em wide. The layout stays, and
@@ -251,8 +257,8 @@ there for the tests after it.
   random numbers, and Pixi's texture defaults, before every test.
 - **Don't depend on real time.** A pose advances a view with
   `advanceTime`, never with timers or the clock.
-- **Use font families that have a stand-in.** Canvas text in any other
-  family fails, as described above.
+- **Use only fonts that the package knows.** Canvas text in any other
+  font fails its test, as described above.
 
 Running the tests in a shuffled order (`--sequence.shuffle`) shows whether
 any test depends on the ones before it.

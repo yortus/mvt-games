@@ -135,7 +135,7 @@ function declareVisualTest(name: string, declared: VisualKind, pose: AnyPose, op
                 }
                 const unpinned = setup.takeUnpinnedFamilies();
                 if (unpinned.length > 0) {
-                    throw new Error(`'${id.test}' uses fonts that no test font stands in for: ${unpinned.join(', ')}. Add them to the families in src/browser/canvas-text.ts, in the @mvtjs/visual-testing package.`);
+                    throw new Error(`'${id.test}' uses fonts that the package doesn't know: ${unpinned.join(', ')}. Add them to the font lists in src/browser/canvas-text.ts, in the @mvtjs/visual-testing package.`);
                 }
                 t = performance.now();
                 const hash = await hashPixels(picture.width, picture.height, picture.pixels);

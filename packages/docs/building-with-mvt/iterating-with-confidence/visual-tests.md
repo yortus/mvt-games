@@ -213,13 +213,14 @@ or a big picture is noticed when it is added.
 ## How the Tests Stay Consistent
 
 Each picture must come out the same on every machine. Otherwise tests
-fail for reasons that have nothing to do with the view. The harness pins
-everything that differs between machines inside the browser, so no
-container or virtual machine is needed.
+fail for reasons that have nothing to do with the view. The harness makes
+the browser itself draw the same way on every machine. For each thing that
+would differ, it chooses one fixed setting, so no container or virtual
+machine is needed.
 
-| What differs | How it is pinned |
+| What differs | How the harness keeps it the same |
 | --- | --- |
-| The browser | Playwright's Chromium. Its version is pinned exactly, in `package.json` |
+| The browser | Playwright's Chromium, always the same version, set exactly in `package.json` |
 | WebGL and 2D drawing | Software rendering (SwiftShader) and software compositing |
 | Random numbers | `Math.random` is seeded the same before every test |
 | Canvas text | The harness draws it as shapes from two test fonts, not with the system's fonts |
@@ -237,16 +238,16 @@ same reason.
 
 ### The Compromises
 
-Each pin gives up a little accuracy for consistency. The compromises
+Each of these settings gives up a little accuracy for consistency. The compromises
 affect the tests only.
 
 - **HTML pictures have no text.** They show every box, border, image,
   control and underline. They do not show the words, or the text's colour
   or weight. Lines wrap where 0.625 em per character puts them, not where
   the real font would. Assertions check the words that matter.
-- **Canvas text uses two test fonts.** They stand in for the font families
-  a game asks for. If a game asks for a family that no test font stands in
-  for, its test fails and says to add the family.
+- **Canvas text uses two test fonts.** Each font that a game asks for is
+  replaced with one of them. If a game asks for a font that the package
+  doesn't know, its test fails, and the message says how to add it.
 - **Rotated images look a little jagged.**
 - **A change of 2 levels or less in every channel passes.** A real change
   is almost never that small.
