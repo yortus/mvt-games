@@ -1,9 +1,9 @@
 /**
  * The visual tests run as two Vitest projects, which this file creates.
  *
- * - `visual-canvas` runs the files that declare `canvasVisualTest`, which
+ * - `visual-canvas` runs the files that declare `canvasTest`, which
  *   test Pixi and three.js views. Every file runs in one shared page.
- * - `visual-html` runs the files that declare `htmlVisualTest`. Each file
+ * - `visual-html` runs the files that declare `htmlTest`. Each file
  *   runs in a page of its own, since each file brings its own stylesheet.
  *
  * Each project gets its files from the declarations in them, read when the

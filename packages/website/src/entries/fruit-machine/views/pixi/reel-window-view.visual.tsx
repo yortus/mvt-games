@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { canvasVisualTest } from '@mvtjs/visual-testing';
+import { canvasTest } from '@mvtjs/visual-testing';
 import { REEL_STRIPS } from '../../data';
 import { loadSymbolArt } from '../art';
 import { ReelWindowView } from './reel-window-view';
@@ -17,14 +17,14 @@ function loadSymbolTextures(): Promise<SymbolTextures> {
 }
 
 describe('ReelWindowView', () => {
-    canvasVisualTest('at rest', async () => {
+    canvasTest('at rest', async () => {
         const { textureFor } = await loadSymbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => reel * 3, isBlurredAt: () => false, textureFor });
     }, { artStyle: 'smooth' });
 
     // Fractional positions show the reels part-way between symbols. The reels
     // are blurred, as they are while they turn.
-    canvasVisualTest('spinning', async () => {
+    canvasTest('spinning', async () => {
         const { textureFor } = await loadSymbolTextures();
         return ReelWindowView({ strips: REEL_STRIPS, positionAt: (reel) => 5.4 + reel * 1.7, isBlurredAt: () => true, textureFor });
     }, { artStyle: 'smooth' });

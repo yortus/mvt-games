@@ -1,6 +1,6 @@
 import { describe } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { advanceTime, canvasVisualTest } from '@mvtjs/visual-testing';
+import { advanceTime, canvasTest } from '@mvtjs/visual-testing';
 import { textures } from '../data';
 import { createGameModel } from '../models';
 import { GameView } from './game-view';
@@ -11,12 +11,12 @@ import { GameView } from './game-view';
 const CROP = { width: 600, height: 750 };
 
 describe('GameView', () => {
-    canvasVisualTest('at the start', () => poseGame({ isRestarted: false }), CROP);
+    canvasTest('at the start', () => poseGame({ isRestarted: false }), CROP);
 
     // Random numbers are seeded the same in every test, so both tests start
     // from the same board. A restart deals a new one. If the view kept
     // showing the old board, this picture would match the one above.
-    canvasVisualTest('after a restart', () => poseGame({ isRestarted: true }), CROP);
+    canvasTest('after a restart', () => poseGame({ isRestarted: true }), CROP);
 });
 
 async function poseGame(options: { readonly isRestarted: boolean }): Promise<ReturnType<typeof GameView>> {

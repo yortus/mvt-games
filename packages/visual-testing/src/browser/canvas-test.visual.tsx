@@ -5,31 +5,31 @@ import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, Pers
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { describe } from 'vitest';
 import { advanceTime } from './advance-time';
-import { canvasVisualTest } from './visual-test';
+import { canvasTest } from './visual-test';
 
 const SMOOTH = { artStyle: 'smooth' } as const;
 
-describe('canvasVisualTest', () => {
-    canvasVisualTest('framed by its bounds', () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff), SMOOTH);
+describe('canvasTest', () => {
+    canvasTest('framed by its bounds', () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff), SMOOTH);
 
-    canvasVisualTest('placed by its own position', () => {
+    canvasTest('placed by its own position', () => {
         const view = new Graphics().rect(0, 0, 60, 20).fill(0xffe45c);
         view.position.set(400, 300);
         return view;
     }, SMOOTH);
 
-    canvasVisualTest('at a fixed size', () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b), { width: 100, height: 60, artStyle: 'smooth' });
+    canvasTest('at a fixed size', () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b), { width: 100, height: 60, artStyle: 'smooth' });
 
     // By default, a view is drawn as pixel art is, with hard edges and whole pixels.
-    canvasVisualTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
+    canvasTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
 
     // A smooth view over the size budget (500,000 pixels) is drawn at half
     // resolution to fit it.
-    canvasVisualTest('smooth, over the budget', () => new Graphics().roundRect(0, 0, 1200, 600, 48).fill(0x5bd1ff).circle(600, 300, 200).fill(0xff4f8b), SMOOTH);
+    canvasTest('smooth, over the budget', () => new Graphics().roundRect(0, 0, 1200, 600, 48).fill(0x5bd1ff).circle(600, 300, 200).fill(0xff4f8b), SMOOTH);
 
-    canvasVisualTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }), SMOOTH);
+    canvasTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }), SMOOTH);
 
-    canvasVisualTest('after time passes', async () => {
+    canvasTest('after time passes', async () => {
         // The bar grows in its update step, so its width is presentation state.
         const bar = new Graphics();
         let width = 10;
@@ -44,10 +44,10 @@ describe('canvasVisualTest', () => {
     }, SMOOTH);
 
     describe('three.js', () => {
-        canvasVisualTest('lit by its own lights, with the camera given', () => createKnot(), { width: 200, height: 150, camera: createKnotCamera });
+        canvasTest('lit by its own lights, with the camera given', () => createKnot(), { width: 200, height: 150, camera: createKnotCamera });
 
         // A three.js view is refreshed before it is drawn, and advanced like any view.
-        canvasVisualTest('after time passes', async () => {
+        canvasTest('after time passes', async () => {
             const view = createKnot();
             let turned = 0;
             setUpdate(view, (deltaMs) => {
@@ -62,7 +62,7 @@ describe('canvasVisualTest', () => {
 
         // A three.js picture is always antialiased. So over the size budget, it
         // is drawn at half resolution, as a smooth Pixi view is.
-        canvasVisualTest('over the budget', () => createKnot(), { width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b });
+        canvasTest('over the budget', () => createKnot(), { width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b });
     });
 });
 

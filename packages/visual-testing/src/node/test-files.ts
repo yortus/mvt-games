@@ -27,7 +27,7 @@ export function findVisualTestFiles(root: string): Readonly<Record<VisualKind, r
             throw new Error(`${path} declares both canvas and HTML visual tests. The two kinds run in different pages, so split them into two files.`);
         }
         if (!isCanvas && !isHtml) {
-            throw new Error(`${path} is named as a visual test file, but it declares no canvasVisualTest or htmlVisualTest.`);
+            throw new Error(`${path} is named as a visual test file, but it declares no canvasTest or htmlTest.`);
         }
         files[isHtml ? 'html' : 'canvas'].push(path);
     }
@@ -38,8 +38,8 @@ export function findVisualTestFiles(root: string): Readonly<Record<VisualKind, r
 // Internals
 // ---------------------------------------------------------------------------
 
-const CANVAS_DECLARATION = /\bcanvasVisualTest\s*\(/;
-const HTML_DECLARATION = /\bhtmlVisualTest\s*\(/;
+const CANVAS_DECLARATION = /\bcanvasTest\s*\(/;
+const HTML_DECLARATION = /\bhtmlTest\s*\(/;
 const VISUAL_TEST_FILE = /\.visual\.tsx?$/;
 
 /** Returns every visual test file under a folder, skipping installed packages and hidden folders. */

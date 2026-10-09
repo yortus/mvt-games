@@ -52,7 +52,7 @@ packages/website/src/
 ```
 
 Visual tests (`*.visual.ts`, `*.visual.tsx`) sit beside the views they picture,
-and declare `canvasVisualTest` (Pixi, three.js) or `htmlVisualTest`. Their reference PNGs are in `__screenshots__/`, beside the tests. The
+and declare `canvasTest` (Pixi, three.js) or `htmlTest`. Their reference PNGs are in `__screenshots__/`, beside the tests. The
 harness is the `@mvtjs/visual-testing` package, in `packages/visual-testing/`. See
 [Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 

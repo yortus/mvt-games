@@ -9,7 +9,7 @@
 
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { htmlVisualTest } from '@mvtjs/visual-testing';
+import { htmlTest } from '@mvtjs/visual-testing';
 import type { ElementEntryStarter } from '../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs } from '../runner';
 import { CATALOGUE } from './catalogue';
@@ -34,7 +34,7 @@ const loaded = await Promise.all(CATALOGUE.map(async (entry) => ({ entry, starte
 for (const { entry, starter } of loaded) {
     if (starter.kind !== 'element') continue;
     const size = SIZES[entry.id] ?? { width: entry.screenWidth, height: entry.screenHeight };
-    htmlVisualTest(entry.id, () => pose(starter, size));
+    htmlTest(entry.id, () => pose(starter, size));
 }
 
 // ---------------------------------------------------------------------------

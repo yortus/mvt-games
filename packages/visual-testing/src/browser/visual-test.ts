@@ -40,9 +40,9 @@ export type Pose<V> = () => V | Promise<V>;
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function canvasVisualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
-export function canvasVisualTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
-export function canvasVisualTest(name: string, pose: Pose<Container | Object3D>, options: PixiPictureOptions | ThreePictureOptions = {}): void {
+export function canvasTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
+export function canvasTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
+export function canvasTest(name: string, pose: Pose<Container | Object3D>, options: PixiPictureOptions | ThreePictureOptions = {}): void {
     declareVisualTest(name, 'canvas', pose, options);
 }
 
@@ -57,7 +57,7 @@ export function canvasVisualTest(name: string, pose: Pose<Container | Object3D>,
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function htmlVisualTest(name: string, pose: Pose<Element>, options: HtmlPictureOptions = {}): void {
+export function htmlTest(name: string, pose: Pose<Element>, options: HtmlPictureOptions = {}): void {
     declareVisualTest(name, 'html', pose, options);
 }
 
@@ -97,14 +97,14 @@ function declareVisualTest(
             refreshView(view);
             ms.refresh = performance.now() - t;
             if (view instanceof Element) {
-                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view. HTML views are declared with htmlVisualTest.`);
+                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view. HTML views are declared with htmlTest.`);
                 const captured = await captureHtmlPicture(view, { ...(options as HtmlPictureOptions), maxPixels }, id);
                 ms.capture = captured.captureMs;
                 verdict = captured;
                 size = { width: captured.width, height: captured.height, resolution: 1 };
             }
             else {
-                if (kind !== 'canvas') throw new Error(`'${id.test}' poses a Pixi or three.js view. Those views are declared with canvasVisualTest.`);
+                if (kind !== 'canvas') throw new Error(`'${id.test}' poses a Pixi or three.js view. Those views are declared with canvasTest.`);
                 t = performance.now();
                 const picture = view instanceof Object3D
                     ? drawThreePicture(view, { ...(options as ThreePictureOptions), maxPixels })

@@ -23,15 +23,15 @@ says when a picture is the right test, and when an assertion is.*
 
 A visual test is a declaration in a `*.visual.ts` or `*.visual.tsx` file
 beside the view. A Pixi or three.js view, which draws on a canvas, is
-declared with `canvasVisualTest(name, pose, options?)`. An HTML view is
-declared with `htmlVisualTest(name, pose, options?)`. Both come from
+declared with `canvasTest(name, pose, options?)`. An HTML view is
+declared with `htmlTest(name, pose, options?)`. Both come from
 `@mvtjs/visual-testing`, which is this repo's package for visual tests. The
 `pose` argument is a function that builds the view in the state to
 photograph, and returns it.
 
 ```tsx
 import { describe } from 'vitest';
-import { canvasVisualTest } from '@mvtjs/visual-testing';
+import { canvasTest } from '@mvtjs/visual-testing';
 import { BUTTON_RADIUS } from './pixi-layout';
 import { type SpinButtonMode, SpinButtonView } from './spin-button-view';
 
@@ -39,7 +39,7 @@ const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 
 describe('SpinButtonView', () => {
     for (const mode of MODES) {
-        canvasVisualTest(
+        canvasTest(
             mode,
             () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }),
             { artStyle: 'smooth' },
@@ -64,7 +64,7 @@ models, then the views, in frame-sized steps, as the ticker does. It is the
 same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
 ```tsx
-canvasVisualTest('counting up, 300 ms in', async () => {
+canvasTest('counting up, 300 ms in', async () => {
     let amount = 0;
     const view = WinBannerView({
         isShown: () => true,
@@ -98,7 +98,7 @@ shows.
 
 ### HTML and three.js Views
 
-An HTML view is tested with `htmlVisualTest`. Each file of HTML tests runs
+An HTML view is tested with `htmlTest`. Each file of HTML tests runs
 in a page of its own, because a stylesheet stays in a page once it is
 imported. Canvas tests all share one page, so a file declares one kind of
 visual test only. The package reads each file's declarations to send it
@@ -108,7 +108,7 @@ picture shows its layout and styling. Some views are styled by the layout
 of the game around them. A pose for such a view builds the same containing
 elements around it.
 
-A three.js view is tested with `canvasVisualTest`, like a Pixi view. It
+A three.js view is tested with `canvasTest`, like a Pixi view. It
 needs a `camera` option, which is a function that makes the camera for the
 picture. Its `scene` option can set up the scene as the view's game does,
 with a background, an environment map and tone mapping. Pass the game's

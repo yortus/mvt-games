@@ -1360,8 +1360,8 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    config with no custom conditions, and the command runs Vitest with
    tsx's loader, so that Node can run the package's TypeScript.
    The same day, the kind of test moved from the file name into the
-   declaration: `canvasVisualTest` (Pixi and three.js) or
-   `htmlVisualTest`, in any `*.visual.ts` or `*.visual.tsx` file. Vitest
+   declaration: `canvasTest` (Pixi and three.js) or
+   `htmlTest`, in any `*.visual.ts` or `*.visual.tsx` file. Vitest
    assigns files to projects before any test code runs, so the package
    reads each file's text when the config loads, and fails a file that
    declares both kinds, or neither. `visualTest` and `*.html.visual.tsx`

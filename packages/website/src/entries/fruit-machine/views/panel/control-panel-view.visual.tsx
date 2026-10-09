@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { advanceTime, htmlVisualTest } from '@mvtjs/visual-testing';
+import { advanceTime, htmlTest } from '@mvtjs/visual-testing';
 import '../../fruit-machine.css';
 import { createFruitMachineModel } from '../../models';
 import { entry } from '../../start';
@@ -30,13 +30,13 @@ function placeInQuadrant(view: Element): HTMLElement {
 }
 
 describe('ControlPanelView', () => {
-    htmlVisualTest('ready to spin', async () => {
+    htmlTest('ready to spin', async () => {
         const art = await loadSymbolArt();
         const model = createFruitMachineModel({ seed: SEED });
         return placeInQuadrant(ControlPanelView({ model, art }));
     });
 
-    htmlVisualTest('mid-spin', async () => {
+    htmlTest('mid-spin', async () => {
         const art = await loadSymbolArt();
         const model = createFruitMachineModel({ seed: SEED });
         const view = ControlPanelView({ model, art });
