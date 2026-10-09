@@ -93,6 +93,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let score = 0;
     let lives = 3;
     let wave = 1;
+    /** The next asteroid's shape seed. It counts from 1 in each game, so one game's shapes never depend on another's. */
+    let nextShapeSeed = 1;
     let shotsFired = 0;
     let rocksBroken = 0;
     let lastBrokenRockSize: AsteroidSize | undefined;
@@ -268,6 +270,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             vy: Math.sin(dir) * speed,
             size,
             radius: RADIUS_BY_SIZE[size],
+            shapeSeed: nextShapeSeed++,
             arenaWidth,
             arenaHeight,
         });
@@ -494,6 +497,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 vy: Math.sin(dir) * speed,
                 size: childSize,
                 radius: RADIUS_BY_SIZE[childSize],
+                shapeSeed: nextShapeSeed++,
                 arenaWidth,
                 arenaHeight,
             });
