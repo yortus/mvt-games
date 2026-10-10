@@ -1,0 +1,141 @@
+name: Visual tests
+
+# This workflow runs the visual tests (npm run test:visual).
+#
+# - On every push, they run on Ubuntu.
+# - When Playwright's version or the test harness changes, they also run on
+#   Windows and macOS. A new Chromium, or a change to how the harness sets
+#   it up, is what could make the three systems draw differently.
+# - Weekly, and on demand, they run on all three systems, because the
+#   runner images change over time. The tests run in a shuffled
+#   order, to show that no test's actual image depends on the tests
+#   before it. Every reference image is also decoded and checked against
+#   the hash it carries.
+#
+# No job writes reference images. Whoever changes a view updates them on
+# their own machine. A test whose actual image no longer matches its
+# reference image fails, and its actual and diff images are uploaded for
+# the reviewer.
+on:
+    push:
+    pull_request:
+    schedule:
+        - cron: '0 3 * * 1'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: visual-${{ github.event_name }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    systems:
+        # A push already runs a pull request's commits, unless they come from
+        # a fork. So a pull request runs this job only when it comes from a fork.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+        runs-on: ubuntu-latest
+        outputs:
+            os: ${{ steps.pick.outputs.os }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Pick the systems
+              id: pick
+              env:
+                  EVENT: ${{ github.event_name }}
+                  BEFORE: ${{ github.event.before }}
+                  PR_BASE: ${{ github.event.pull_request.base.sha }}
+              run: |
+                  all='["ubuntu-latest","windows-latest","macos-latest"]'
+                  if [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then
+                      echo "os=$all" >> "$GITHUB_OUTPUT"; exit 0
+                  fi
+                  base="$PR_BASE"
+                  if [ "$EVENT" = push ]; then base="$BEFORE"; fi
+                  # A new branch has no commit before it, so compare with main.
+                  if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] || ! git fetch -q --depth=1 origin "$base"; then
+                      git fetch -q --depth=1 origin main
+                  fi
+                  version='const lock = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(lock.packages["node_modules/playwright"]?.version ?? "none")'
+                  was=$(git show FETCH_HEAD:package-lock.json | node -e "$version")
+                  now=$(node -e "$version" < package-lock.json)
+                  echo "Playwright: $was before, $now now"
+                  # The harness fixes everything that could differ between systems, such
+                  # as the fonts, the HTML rules and the browser's switches. So a change
+                  # to it is checked on every system too.
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/visual-testing .github/workflows/visual.yml)
+                  echo "Harness changes: ${harness:-none}"
+                  if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+                  else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
+
+    visual:
+        needs: systems
+        strategy:
+            fail-fast: false
+            matrix:
+                os: ${{ fromJSON(needs.systems.outputs.os) }}
+        runs-on: ${{ matrix.os }}
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - run: npm ci
+
+            - name: Where Playwright keeps its browser
+              id: playwright
+              run: |
+                  echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
+                  echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+              working-directory: packages/visual-testing
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ runner.temp }}/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+
+            # The browser comes from the cache, or is downloaded. This does not use
+            # --with-deps. The runners already have the libraries the browser needs.
+            # The fonts that --with-deps would add are never used, because the harness
+            # draws or blanks all text. They also come from a mirror that can take
+            # minutes.
+            - name: Playwright's headless shell
+              run: npx playwright install chromium-headless-shell
+              working-directory: packages/visual-testing
+
+            # The harness's own tests run first, then its fixture project's, then
+            # the site's. Weekly and on demand, the tests run in a shuffled order.
+            # The seed is in the log, so the same order can be repeated. A failing
+            # test becomes an annotation of its own. A failure before any test, such as in the environment check,
+            # does not. In that case, the run's last lines are made into an
+            # annotation.
+            - name: Visual tests
+              env:
+                  SHUFFLE: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('--sequence.shuffle --sequence.seed={0}', github.run_id) || '' }}
+              run: |
+                  set -o pipefail
+                  npm run generate-refresh-copies
+                  { npm run test:visual -w @mvtjs/visual-testing -- $SHUFFLE && npm run test:visual:fixture -w @mvtjs/visual-testing -- $SHUFFLE && npm run test:visual -w @mvtjs/website -- $SHUFFLE; } 2>&1 | tee visual.log || {
+                      grep -q "Tests .* failed" visual.log ||
+                      echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/\x1b\[[0-9;]*m//g; s/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+                      exit 1
+                  }
+
+            - name: Every reference against its hash
+              if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && runner.os == 'Linux'
+              run: npm run test:visual:check-references
+
+            - uses: actions/upload-artifact@v4
+              if: failure()
+              with:
+                  name: visual-${{ matrix.os }}
+                  path: .vitest/visual/
+                  if-no-files-found: ignore
