@@ -9,8 +9,8 @@ import { entry as fallingSandEntry } from './falling-sand';
 import { entry as fruitMachineEntry } from './fruit-machine';
 import { entry as fuelRunEntry } from './fuel-run';
 import { entry as galaxyRaidersEntry } from './galaxy-raiders';
+import { entry as fractalscopeEntry } from './fractalscope';
 import { entry as kwazyCactiiEntry } from './kwazy-cactii';
-import { entry as mandelbrotDiveEntry } from './mandelbrot-dive';
 import { entry as neonMonsoonEntry } from './neon-monsoon';
 import { entry as reorderingListsEntry } from './reordering-lists';
 
@@ -36,7 +36,7 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     reorderingListsEntry,
     fuelRunEntry,
     astrovoidEntry,
-    mandelbrotDiveEntry,
+    fractalscopeEntry,
 ];
 
 /** The entry with `id`, if there is one. */

@@ -7,7 +7,8 @@ export {
     INTERIOR,
     UNKNOWN,
 } from './escape-field';
-export { createPlaneViewport, type PlaneViewport } from './plane-viewport';
+export { type EscapeKernel, type EscapeMeasure, pickKernel } from './fractal-kernels';
+export { createPlaneViewport, type PlaneViewport, type PlaneViewportOptions } from './plane-viewport';
 export { createExplorerModel, type ExplorerModel } from './explorer-model';
 export {
     BASE_ITERATIONS,

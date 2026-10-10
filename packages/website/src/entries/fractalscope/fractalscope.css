@@ -1,13 +1,13 @@
 /*
- * The Mandelbrot dive: the image fills the element, with the panel down its
+ * Fractalscope: the image fills the element, with the panel down its
  * right side, or below it on a narrow screen. The element the entry mounts
  * into is the container the layout measures, and is positioned by its host.
  */
-.mandelbrot-dive-host {
+.fractalscope-host {
     container-type: size;
 }
 
-.mandelbrot-dive {
+.fractalscope {
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -21,13 +21,13 @@
     *, *::before, *::after { box-sizing: border-box; }
 
     /* --- The image ---------------------------------------------------------- */
-    .dive-stage {
+    .scope-stage {
         position: relative;
         flex: 1;
         min-width: 0;
         min-height: 0;
     }
-    .dive-image {
+    .scope-image {
         position: absolute;
         inset: 0;
         display: block;
@@ -37,10 +37,10 @@
         user-select: none;
         -webkit-user-select: none;
     }
-    .dive-image:active { cursor: grabbing; }
+    .scope-image:active { cursor: grabbing; }
 
     /* --- The panel ---------------------------------------------------------- */
-    .dive-panel {
+    .scope-panel {
         flex: none;
         width: 288px;
         display: flex;
@@ -53,29 +53,46 @@
         font-size: 13px;
     }
 
-    .dive-map {
+    .scope-fractal { display: grid; gap: 6px; }
+    .scope-fractal-select {
+        width: 100%;
+        padding: 7px 30px 7px 10px;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        background: #21262d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E") no-repeat right 11px center;
+        color: #e6edf3;
+        font: inherit;
+        font-weight: 600;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+    }
+    .scope-fractal-select:hover { background-color: #30363d; }
+    .scope-fractal-select option { background: #161b22; color: #e6edf3; }
+
+    .scope-map {
         border: 1px solid #30363d;
         border-radius: 8px;
         overflow: hidden;
         background: #05060a;
         line-height: 0;
     }
-    .dive-minimap { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; }
+    .scope-minimap { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; }
 
-    .dive-readout { display: grid; gap: 6px; margin: 0; }
-    .dive-reading {
+    .scope-readout { display: grid; gap: 6px; margin: 0; }
+    .scope-reading {
         display: grid;
         grid-template-columns: 76px 1fr;
         align-items: baseline;
         gap: 8px;
     }
-    .dive-reading-label {
+    .scope-reading-label {
         color: #8b949e;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
-    .dive-reading-value {
+    .scope-reading-value {
         margin: 0;
         color: #e6edf3;
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -84,8 +101,8 @@
         overflow-wrap: anywhere;
     }
 
-    .dive-sharpness { display: grid; gap: 4px; }
-    .dive-progress {
+    .scope-sharpness { display: grid; gap: 4px; }
+    .scope-progress {
         width: 100%;
         height: 4px;
         appearance: none;
@@ -95,13 +112,13 @@
         background: #21262d;
         overflow: hidden;
     }
-    .dive-progress::-webkit-progress-bar { background: #21262d; }
-    .dive-progress::-webkit-progress-value { background: #f0883e; }
-    .dive-progress::-moz-progress-bar { background: #f0883e; }
-    .dive-sharpness-text { color: #8b949e; font-size: 11px; }
+    .scope-progress::-webkit-progress-bar { background: #21262d; }
+    .scope-progress::-webkit-progress-value { background: #f0883e; }
+    .scope-progress::-moz-progress-bar { background: #f0883e; }
+    .scope-sharpness-text { color: #8b949e; font-size: 11px; }
 
-    .dive-group { display: grid; gap: 8px; }
-    .dive-group-title {
+    .scope-group { display: grid; gap: 8px; }
+    .scope-group-title {
         margin: 0;
         color: #8b949e;
         font-size: 11px;
@@ -109,18 +126,18 @@
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
-    .dive-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-    .dive-swatch {
+    .scope-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .scope-swatch {
         height: 28px;
         border: 2px solid transparent;
         border-radius: 6px;
         cursor: pointer;
         outline-offset: 2px;
     }
-    .dive-swatch.chosen { border-color: #e6edf3; }
+    .scope-swatch.chosen { border-color: #e6edf3; }
 
-    .dive-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .dive-action {
+    .scope-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .scope-action {
         padding: 8px 10px;
         border: 1px solid #30363d;
         border-radius: 6px;
@@ -130,16 +147,16 @@
         font-weight: 600;
         cursor: pointer;
     }
-    .dive-action:hover { background: #30363d; }
-    .dive-action:active { background: #484f58; }
+    .scope-action:hover { background: #30363d; }
+    .scope-action:active { background: #484f58; }
 
-    .dive-hint { margin: auto 0 0; color: #6e7681; font-size: 11px; line-height: 1.5; }
+    .scope-hint { margin: auto 0 0; color: #6e7681; font-size: 11px; line-height: 1.5; }
 
     /* --- A narrow screen: the panel goes below the image --------------------- */
     @container (max-width: 640px) {
         & { flex-direction: column; }
 
-        .dive-panel {
+        .scope-panel {
             width: auto;
             max-height: 42%;
             border-left: none;
@@ -150,10 +167,27 @@
             gap: 10px 12px;
             padding: 12px;
         }
-        .dive-map { grid-row: span 2; align-self: start; }
-        .dive-sharpness { grid-column: 2; }
-        .dive-group, .dive-actions { grid-column: 1 / -1; }
-        .dive-reading { grid-template-columns: 64px 1fr; }
-        .dive-hint { display: none; }
+        .scope-fractal { display: grid; gap: 6px; }
+    .scope-fractal-select {
+        width: 100%;
+        padding: 7px 30px 7px 10px;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        background: #21262d url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b949e'/%3E%3C/svg%3E") no-repeat right 11px center;
+        color: #e6edf3;
+        font: inherit;
+        font-weight: 600;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+    }
+    .scope-fractal-select:hover { background-color: #30363d; }
+    .scope-fractal-select option { background: #161b22; color: #e6edf3; }
+
+    .scope-map { grid-row: span 2; align-self: start; }
+        .scope-sharpness { grid-column: 2; }
+        .scope-fractal, .scope-group, .scope-actions { grid-column: 1 / -1; }
+        .scope-reading { grid-template-columns: 64px 1fr; }
+        .scope-hint { display: none; }
     }
 }

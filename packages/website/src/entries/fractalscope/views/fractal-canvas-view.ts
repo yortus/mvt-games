@@ -1,6 +1,6 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import { HOME_SPAN, type PaletteName } from '../data';
+import type { FractalKind, PaletteName } from '../data';
 import type { EscapeGrid, PlaneRegion } from '../models';
 import { buildPaletteColors, paintEscapes, type PaletteColors } from './palettes';
 import { createPinchTracker } from './pinch-tracker';
@@ -16,6 +16,10 @@ export interface FractalCanvasViewBindings {
     field: () => EscapeGrid;
     /** The region being looked at, which a gesture moves before the image follows. */
     region: () => PlaneRegion;
+    /** The fractal being explored, which names a photo. */
+    fractal: () => FractalKind;
+    /** How much the region magnifies the fractal's home view, which names a photo too. */
+    zoom: () => number;
     /** The colours the image is drawn in. */
     palette: () => PaletteName;
     /** Rises each time a photo is ready. The view then saves what it shows. */
@@ -52,7 +56,7 @@ export interface FractalCanvasViewBindings {
  */
 export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element {
     const canvas = document.createElement('canvas');
-    canvas.className = 'dive-image';
+    canvas.className = 'scope-image';
     // The view does its own zooming and panning, so the browser's are off.
     canvas.style.touchAction = 'none';
     // A test environment has no canvas to draw on. Everything else still works.
@@ -250,7 +254,7 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     /** Hands the canvas, as it stands, to the browser to save as a PNG. */
     function savePhoto(): void {
         if (canvas.width <= 0 || canvas.height <= 0) return;
-        const name = namePhoto(bindings.region());
+        const name = namePhoto(bindings.fractal(), bindings.region(), bindings.zoom());
         canvas.toBlob((blob) => {
             // The browser gives nothing where it cannot make the picture.
             if (blob === null) return;
@@ -271,11 +275,11 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
 /** What shows where the picture does not reach, as a CSS colour. */
 const BACKDROP = `#${BACKDROP_COLOR.toString(16).padStart(6, '0')}`;
 
-/** The file name for a photo of `region`, saying where it is and how far in. */
-function namePhoto(region: PlaneRegion): string {
+/** The file name for a photo of `fractal` over `region`, saying which, where it is and how far in. */
+function namePhoto(fractal: FractalKind, region: PlaneRegion, zoom: number): string {
     const digits = countDigits(region.span);
     const re = region.centerRe.toFixed(digits);
     const im = region.centerIm.toFixed(digits);
-    const zoom = (HOME_SPAN / region.span).toExponential(1).replace('e+', 'e');
-    return `mandelbrot_re${re}_im${im}_zoom${zoom}.png`;
+    const times = zoom.toExponential(1).replace('e+', 'e');
+    return `${fractal}_re${re}_im${im}_zoom${times}.png`;
 }

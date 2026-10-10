@@ -1,6 +1,6 @@
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import { HOME_CENTER_IM, HOME_CENTER_RE, HOME_SPAN, type PaletteName } from '../data';
+import type { PaletteName } from '../data';
 import type { EscapeGrid, PlaneRegion } from '../models';
 import { buildPaletteColors, paintEscapes, type PaletteColors } from './palettes';
 import { MIN_VIEW_MARK, MINIMAP_HEIGHT, MINIMAP_WIDTH } from './view-constants';
@@ -10,7 +10,7 @@ import { MIN_VIEW_MARK, MINIMAP_HEIGHT, MINIMAP_WIDTH } from './view-constants';
 // ---------------------------------------------------------------------------
 
 export interface MinimapViewBindings {
-    /** The whole set at a glance, over the home view. */
+    /** The whole fractal at a glance, over its home view. The map covers the overview's region. */
     overview: () => EscapeGrid;
     /** The region being looked at, marked on the map. */
     region: () => PlaneRegion;
@@ -25,8 +25,8 @@ export interface MinimapViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole set as a small map, with a mark where the view is. The map is
- * the overview field, in the palette the image uses, so the two agree.
+ * The whole fractal as a small map, with a mark where the view is. The map
+ * is the overview, in the palette the image uses, so the two agree.
  *
  * Zoomed in, the view is a vanishingly small part of the set, so the mark
  * stops shrinking at a few pixels and reads as a pin on the spot. Panned
@@ -35,7 +35,7 @@ export interface MinimapViewBindings {
  */
 export function MinimapView(bindings: MinimapViewBindings): Element {
     const canvas = document.createElement('canvas');
-    canvas.className = 'dive-minimap';
+    canvas.className = 'scope-minimap';
     canvas.width = MINIMAP_WIDTH;
     canvas.height = MINIMAP_HEIGHT;
     const screen = canvas.getContext('2d') ?? undefined;
@@ -79,7 +79,7 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
 
         screen.imageSmoothingEnabled = true;
         screen.drawImage(picture, 0, 0, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        markView(screen);
+        markView(screen, overview.region);
     }
 
     function resizePicture(context: CanvasRenderingContext2D, cols: number, rows: number): void {
@@ -91,16 +91,16 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
         paintedRows = rows;
     }
 
-    /** Outlines where the view sits on the map. */
-    function markView(context: CanvasRenderingContext2D): void {
+    /** Outlines where the view sits on the map, which covers `map`. */
+    function markView(context: CanvasRenderingContext2D, map: PlaneRegion): void {
         const looking = bindings.region();
         const aspect = bindings.aspect();
-        if (!(looking.span > 0) || !(aspect > 0)) return;
+        if (!(looking.span > 0) || !(aspect > 0) || !(map.span > 0)) return;
 
-        const unitsPerPixel = HOME_SPAN / MINIMAP_WIDTH;
-        const mapHeight = HOME_SPAN * (MINIMAP_HEIGHT / MINIMAP_WIDTH);
-        const centerX = (looking.centerRe - (HOME_CENTER_RE - HOME_SPAN * 0.5)) / unitsPerPixel;
-        const centerY = (HOME_CENTER_IM + mapHeight * 0.5 - looking.centerIm) / unitsPerPixel;
+        const unitsPerPixel = map.span / MINIMAP_WIDTH;
+        const mapHeight = map.span * (MINIMAP_HEIGHT / MINIMAP_WIDTH);
+        const centerX = (looking.centerRe - (map.centerRe - map.span * 0.5)) / unitsPerPixel;
+        const centerY = (map.centerIm + mapHeight * 0.5 - looking.centerIm) / unitsPerPixel;
         const width = Math.max(MIN_VIEW_MARK, looking.span / unitsPerPixel);
         const height = Math.max(MIN_VIEW_MARK, looking.span / aspect / unitsPerPixel);
         // Held to the map, so that a view panned past its edge still shows.

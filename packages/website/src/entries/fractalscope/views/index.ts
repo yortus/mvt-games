@@ -1,4 +1,5 @@
 export { ExplorerView, type ExplorerViewBindings } from './explorer-view';
+export { FRACTAL_LABELS } from './fractal-labels';
 export { FractalCanvasView, type FractalCanvasViewBindings } from './fractal-canvas-view';
 export { MinimapView, type MinimapViewBindings } from './minimap-view';
 export { SidePanelView, type SidePanelViewBindings } from './side-panel-view';

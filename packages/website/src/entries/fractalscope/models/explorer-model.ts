@@ -1,4 +1,4 @@
-import { HOME_SPAN, type PaletteName } from '../data';
+import { FRACTAL_HOMES, FRACTAL_KINDS, type FractalKind, type PaletteName } from '../data';
 import type { PlaneRegion } from './common';
 import { createEscapeField, type EscapeGrid } from './escape-field';
 import { createPlaneViewport } from './plane-viewport';
@@ -20,8 +20,9 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * An explorer of the Mandelbrot set. It holds where the visitor is looking,
- * the image being computed for it, and the colours it is drawn in.
+ * An explorer of fractals. It holds which fractal the visitor is exploring,
+ * where they are looking, the image being computed for it, and the colours
+ * it is drawn in.
  *
  * A pan or a zoom moves the region at once, and leaves the image behind.
  * The image is computed again once the gesture is over and a moment has
@@ -33,13 +34,15 @@ import {
  * at, so a picture is never saved half sharp.
  */
 export interface ExplorerModel {
+    /** The fractal being explored. */
+    readonly fractal: FractalKind;
     /** The region of the complex plane the visitor is looking at. A gesture moves it at once. */
     readonly region: PlaneRegion;
-    /** How much the region magnifies the home view. */
+    /** How much the region magnifies the fractal's home view. */
     readonly zoom: number;
     /** The image being computed, and the region it covers. */
     readonly field: EscapeGrid;
-    /** The whole set at a glance, computed once, for a minimap to be drawn from. */
+    /** The whole fractal at a glance, over its home view, for a minimap to be drawn from. */
     readonly overview: EscapeGrid;
     /** The colours the image is drawn in. */
     readonly palette: PaletteName;
@@ -65,11 +68,17 @@ export interface ExplorerModel {
     panBy: (deltaRe: number, deltaIm: number) => void;
     /** Magnifies the region by `factor`, keeping the point `re` + `im`i where it is. */
     zoomBy: (factor: number, re: number, im: number) => void;
+    /**
+     * Switches to the fractal `fractal`, at its home view. The image and the
+     * overview start again from nothing. Choosing the fractal already shown
+     * changes nothing.
+     */
+    chooseFractal: (fractal: FractalKind) => void;
     /** Draws the image in `palette`'s colours from now on. */
     choosePalette: (palette: PaletteName) => void;
     /** Asks for a photo, which is taken once the image is finished. A second request while one waits changes nothing. */
     requestPhoto: () => void;
-    /** Goes back to the home view. */
+    /** Goes back to the fractal's home view. */
     reset: () => void;
     /** Settles the image after a gesture, and computes as much of it as one frame's budget buys. */
     update: (deltaMs: number) => void;
@@ -80,22 +89,27 @@ export interface ExplorerModel {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an explorer at the home view, with the image computed on a grid of
- * a few samples until whoever draws it says how big it is.
+ * Creates an explorer of the first fractal, at its home view, with the image
+ * computed on a grid of a few samples until whoever draws it says how big it
+ * is.
  */
 export function createExplorerModel(): ExplorerModel {
-    const viewport = createPlaneViewport();
+    let fractal = FRACTAL_KINDS[0];
+    const viewport = createPlaneViewport({ home: FRACTAL_HOMES[fractal] });
     const field = createEscapeField({
+        fractal,
         cols: STARTING_COLS,
         rows: STARTING_ROWS,
         region: viewport,
-        maxIterations: pickIterations(viewport.span),
+        maxIterations: pickIterations(viewport.zoom),
     });
-    // The overview covers the home view, and never moves.
+    // The overview covers the fractal's home view, and moves only when the
+    // fractal changes.
     const overview = createEscapeField({
+        fractal,
         cols: OVERVIEW_COLS,
         rows: OVERVIEW_ROWS,
-        region: { centerRe: viewport.centerRe, centerIm: viewport.centerIm, span: viewport.span },
+        region: viewport.home,
         maxIterations: OVERVIEW_ITERATIONS,
     });
 
@@ -109,6 +123,7 @@ export function createExplorerModel(): ExplorerModel {
     let settleMs = 0;
 
     const model: ExplorerModel = {
+        get fractal() { return fractal; },
         get region() { return viewport; },
         get zoom() { return viewport.zoom; },
         get field() { return field; },
@@ -143,6 +158,16 @@ export function createExplorerModel(): ExplorerModel {
         zoomBy(factor, re, im) {
             viewport.zoomBy(factor, re, im);
             holdImage();
+        },
+
+        chooseFractal(next) {
+            if (next === fractal) return;
+            fractal = next;
+            viewport.goHome(FRACTAL_HOMES[next]);
+            field.switchFractal(next, viewport, pickIterations(viewport.zoom));
+            overview.switchFractal(next, viewport.home, OVERVIEW_ITERATIONS);
+            isStale = false;
+            settleMs = 0;
         },
 
         choosePalette(next) {
@@ -196,7 +221,7 @@ export function createExplorerModel(): ExplorerModel {
     function computeImage(): void {
         isStale = false;
         settleMs = 0;
-        const iterations = pickIterations(viewport.span);
+        const iterations = pickIterations(viewport.zoom);
         const shown = field.region;
         if (
             shown.centerRe === viewport.centerRe && shown.centerIm === viewport.centerIm
@@ -226,12 +251,12 @@ function pickBudgetShare(deltaMs: number): number {
 }
 
 /**
- * How many iterations a sample gets in a view `span` wide. The deeper the
- * view, the finer the detail at its edges, and the longer a point must be
- * followed before it is called one of the set's own.
+ * How many iterations a sample gets in a view magnified `zoom` times. The
+ * deeper the view, the finer the detail at its edges, and the longer a point
+ * must be followed before it is called one of the set's own.
  */
-function pickIterations(span: number): number {
-    const halvings = Math.log2(HOME_SPAN / span);
+function pickIterations(zoom: number): number {
+    const halvings = Math.log2(zoom);
     const iterations = BASE_ITERATIONS + Math.max(0, halvings) * ITERATIONS_PER_HALVING;
     return Math.min(MAX_ITERATIONS, Math.round(iterations));
 }

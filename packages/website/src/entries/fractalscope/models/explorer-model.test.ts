@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { HOME_SPAN } from '../data';
+import { FRACTAL_HOMES } from '../data';
 import { createExplorerModel, type ExplorerModel } from './explorer-model';
 import { BASE_ITERATIONS, COARSEST_BLOCK, MAX_ITERATIONS, SETTLE_MS } from './model-constants';
+
+const HOME_SPAN = FRACTAL_HOMES['mandelbrot'].span;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -172,5 +174,55 @@ describe('ExplorerModel', () => {
         slow.update(100);
 
         expect(slow.field.progress).toBeLessThan(steady.field.progress);
+    });
+
+    it('starts with the Mandelbrot set', () => {
+        const model = createSizedModel();
+
+        expect(model.fractal).toBe('mandelbrot');
+        expect(model.field.fractal).toBe('mandelbrot');
+        expect(model.overview.fractal).toBe('mandelbrot');
+    });
+
+    it('switches fractal, going to its home view with a fresh image and map', () => {
+        const model = createSizedModel();
+        model.zoomBy(20, -0.75, 0.1);
+        stepMs(model, 500);
+
+        model.chooseFractal('burning-ship');
+
+        const home = FRACTAL_HOMES['burning-ship'];
+        expect(model.fractal).toBe('burning-ship');
+        expect(model.zoom).toBe(1);
+        expect(model.region.centerRe).toBe(home.centerRe);
+        expect(model.field.fractal).toBe('burning-ship');
+        expect(model.field.region).toEqual({ centerRe: home.centerRe, centerIm: home.centerIm, span: home.span });
+        expect(model.field.progress).toBe(0);
+        expect(model.overview.fractal).toBe('burning-ship');
+        expect(model.overview.region).toEqual(home);
+        expect(model.maxIterations).toBe(BASE_ITERATIONS);
+
+        stepMs(model, 1000);
+        expect(model.field.isComplete).toBe(true);
+        expect(model.overview.isComplete).toBe(true);
+    });
+
+    it('resets to the home of the fractal shown', () => {
+        const model = createSizedModel();
+        model.chooseFractal('phoenix');
+        model.zoomBy(8, 0.1, 0.1);
+        model.reset();
+
+        expect(model.fractal).toBe('phoenix');
+        expect(model.region.centerIm).toBe(FRACTAL_HOMES['phoenix'].centerIm);
+        expect(model.zoom).toBe(1);
+    });
+
+    it('changes nothing when the fractal shown is chosen again', () => {
+        const model = createSizedModel();
+        stepMs(model, 500);
+        model.chooseFractal('mandelbrot');
+
+        expect(model.field.isComplete).toBe(true);
     });
 });

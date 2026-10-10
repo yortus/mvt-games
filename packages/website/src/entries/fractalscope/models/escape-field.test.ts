@@ -9,7 +9,7 @@ import { COARSEST_BLOCK } from './model-constants';
 const HOME = { centerRe: -0.6, centerIm: 0, span: 3.2 };
 
 function createField(cols = 64, rows = 48, maxIterations = 200): EscapeField {
-    return createEscapeField({ cols, rows, region: HOME, maxIterations });
+    return createEscapeField({ fractal: 'mandelbrot', cols, rows, region: HOME, maxIterations });
 }
 
 /** Advances until the field is complete, and returns the iterations spent. */
@@ -190,6 +190,27 @@ describe('EscapeField', () => {
         expect(field.region).toEqual(HOME);
         expect(field.isComplete).toBe(false);
         expect(escapeNear(field, -1.9, 1.1)).toBe(before);
+    });
+
+    it('switches fractal, starting again from nothing', () => {
+        const field = createField();
+        complete(field);
+        const revision = field.revision;
+        const julia = { centerRe: 0, centerIm: 0, span: 3.2 };
+
+        field.switchFractal('julia-rabbit', julia, 250);
+
+        expect(field.fractal).toBe('julia-rabbit');
+        expect(field.region).toEqual(julia);
+        expect(field.maxIterations).toBe(250);
+        expect(field.progress).toBe(0);
+        expect(field.revision).toBeGreaterThan(revision);
+        expect(field.escapes.every((e) => e === UNKNOWN)).toBe(true);
+
+        complete(field);
+        // The rabbit's centre is its own, where the Mandelbrot set's home has it outside
+        expect(escapeNear(field, 0, 0)).toBe(INTERIOR);
+        expect(escapeNear(field, 1.4, 0)).toBeGreaterThan(0);
     });
 
     it('handles a grid that is not a whole number of blocks', () => {

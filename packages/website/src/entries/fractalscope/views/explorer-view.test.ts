@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { destroyElement, refreshView } from '@mvtjs/html';
-import { HOME_SPAN } from '../data';
+import { FRACTAL_HOMES, FRACTAL_KINDS } from '../data';
 import { createExplorerModel } from '../models';
 import { ExplorerView } from './explorer-view';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** The width of the Mandelbrot set's home view, where the explorer starts. */
+const HOME_SPAN = FRACTAL_HOMES['mandelbrot'].span;
 
 /** The size the image's canvas is laid out at, in CSS pixels. */
 const WIDTH = 400;
@@ -33,14 +36,14 @@ function setup() {
     const view = ExplorerView({ model });
     document.body.replaceChildren(view);
     refreshView(view);
-    const canvas = view.querySelector('.dive-image') as HTMLCanvasElement;
+    const canvas = view.querySelector('.scope-image') as HTMLCanvasElement;
     const pointer = (kind: string, id: number, x: number, y: number): void => {
         canvas.dispatchEvent(new PointerEvent(kind, {
             pointerId: id, clientX: x, clientY: y, pointerType: 'touch', button: 0, cancelable: true,
         }));
     };
     const reading = (label: string): string => {
-        for (const row of view.querySelectorAll('.dive-reading')) {
+        for (const row of view.querySelectorAll('.scope-reading')) {
             if (row.querySelector('dt')?.textContent === label) return row.querySelector('dd')?.textContent ?? '';
         }
         return '';
@@ -113,6 +116,36 @@ describe('ExplorerView', () => {
         expect(t.reading('Zoom')).toBe('3.00x');
     });
 
+    it('lists every fractal, showing the one explored', () => {
+        const t = setup();
+        const select = t.view.querySelector('.scope-fractal-select') as HTMLSelectElement;
+        const options = select.querySelectorAll('option');
+
+        expect(options.length).toBe(FRACTAL_KINDS.length);
+        expect(options[0].textContent).toBe('Mandelbrot set');
+        expect(select.value).toBe('mandelbrot');
+    });
+
+    it('switches fractal from the list', () => {
+        const t = setup();
+        const select = t.view.querySelector('.scope-fractal-select') as HTMLSelectElement;
+        select.value = 'phoenix';
+        select.dispatchEvent(new Event('input'));
+        refreshView(t.view);
+
+        expect(t.model.fractal).toBe('phoenix');
+        expect(select.value).toBe('phoenix');
+        expect(t.reading('Zoom')).toBe('1.00x');
+    });
+
+    it('follows the model when the fractal changes elsewhere', () => {
+        const t = setup();
+        t.model.chooseFractal('tricorn');
+        refreshView(t.view);
+
+        expect((t.view.querySelector('.scope-fractal-select') as HTMLSelectElement).value).toBe('tricorn');
+    });
+
     it('chooses a palette', () => {
         const t = setup();
         t.button('Ice').click();
@@ -129,7 +162,7 @@ describe('ExplorerView', () => {
         refreshView(t.view);
 
         expect(t.model.isPhotoPending).toBe(true);
-        expect(t.view.querySelectorAll('.dive-action')[0].textContent).toBe('Sharpening...');
+        expect(t.view.querySelectorAll('.scope-action')[0].textContent).toBe('Sharpening...');
 
         for (let i = 0; i < 30; i++) t.model.update(16);
         refreshView(t.view);

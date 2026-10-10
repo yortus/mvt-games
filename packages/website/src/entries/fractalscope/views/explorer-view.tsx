@@ -23,11 +23,13 @@ export interface ExplorerViewBindings {
 export function ExplorerView(bindings: ExplorerViewBindings): Element {
     const { model } = bindings;
     return (
-        <div class="mandelbrot-dive">
-            <div class="dive-stage">
+        <div class="fractalscope">
+            <div class="scope-stage">
                 {FractalCanvasView({
                     field: () => model.field,
                     region: () => model.region,
+                    fractal: () => model.fractal,
+                    zoom: () => model.zoom,
                     palette: () => model.palette,
                     photosTaken: () => model.photosTaken,
                     onResized: model.resize,
@@ -38,13 +40,16 @@ export function ExplorerView(bindings: ExplorerViewBindings): Element {
                 })}
             </div>
             {SidePanelView({
+                fractal: () => model.fractal,
                 region: () => model.region,
+                zoom: () => model.zoom,
                 overview: () => model.overview,
                 aspect: () => model.field.cols / model.field.rows,
                 maxIterations: () => model.maxIterations,
                 progress: () => model.field.progress,
                 palette: () => model.palette,
                 isPhotoPending: () => model.isPhotoPending,
+                onFractalChosen: model.chooseFractal,
                 onPaletteChosen: model.choosePalette,
                 onPhotoPressed: model.requestPhoto,
                 onResetPressed: model.reset,

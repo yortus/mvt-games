@@ -1,4 +1,6 @@
+import type { FractalKind } from '../data';
 import type { PlaneRegion } from './common';
+import { type EscapeMeasure, INTERIOR, pickKernel } from './fractal-kernels';
 import { COARSEST_BLOCK } from './model-constants';
 import { EXACT, reprojectSamples, type SampleGrid, UNKNOWN, UNKNOWN_COARSENESS } from './reproject-samples';
 
@@ -6,18 +8,17 @@ import { EXACT, reprojectSamples, type SampleGrid, UNKNOWN, UNKNOWN_COARSENESS }
 // Interface
 // ---------------------------------------------------------------------------
 
-/** The escape value of a sample that never escaped, so it lies inside the set. */
-export const INTERIOR = -1;
-
-export { UNKNOWN };
+export { INTERIOR, UNKNOWN };
 
 /**
  * A grid of samples over a region of the complex plane, as a reader sees
  * it, with no way to change it. Each sample holds how fast the point there
- * escapes to infinity. A point that never escapes lies inside the Mandelbrot
- * set.
+ * escapes to infinity under a fractal's rule. A point that never escapes
+ * lies inside the fractal's set.
  */
 export interface EscapeGrid {
+    /** The fractal whose rule the samples follow. */
+    readonly fractal: FractalKind;
     /** How many samples wide the grid is. */
     readonly cols: number;
     /** How many samples tall the grid is. Its height in the plane follows from this. */
@@ -75,6 +76,12 @@ export interface EscapeField extends EscapeGrid {
     restart: (region: PlaneRegion, maxIterations: number) => void;
     /** Resizes the grid, rebuilding its samples from the image as it was, and starts the passes again. */
     resize: (cols: number, rows: number) => void;
+    /**
+     * Switches to the fractal `fractal`, over `region`, and starts the
+     * passes again from nothing. Another fractal's image is no guide, so
+     * every sample becomes `UNKNOWN`.
+     */
+    switchFractal: (fractal: FractalKind, region: PlaneRegion, maxIterations: number) => void;
     /** Computes samples until `iterationBudget` iterations are spent. Returns how many it spent. */
     advance: (iterationBudget: number) => number;
 }
@@ -85,6 +92,8 @@ export interface EscapeField extends EscapeGrid {
 
 /** How to make an escape field. */
 export interface EscapeFieldOptions {
+    /** The fractal whose rule the samples follow. */
+    readonly fractal: FractalKind;
     readonly cols: number;
     readonly rows: number;
     /** The region to sample. */
@@ -101,6 +110,10 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let cols = Math.max(1, Math.floor(options.cols));
     let rows = Math.max(1, Math.floor(options.rows));
     let maxIterations = options.maxIterations;
+    let fractal = options.fractal;
+    let measureEscape = pickKernel(fractal);
+    // What the kernel found for the last point, written in place.
+    const measure: EscapeMeasure = { escape: 0, iterations: 0 };
 
     // The samples, and how coarse each is. The spares are where a rebuilt
     // image is written, and then the two swap, so a restart allocates
@@ -127,12 +140,11 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let computedCount = 0;
     let revision = 0;
 
-    // What the escape loop has spent since `advance` was called. It is a
-    // counter rather than a returned value, because the loop already returns
-    // the sample's escape value.
+    // What the kernel has spent since `advance` was called.
     let iterationsSpent = 0;
 
     const field: EscapeField = {
+        get fractal() { return fractal; },
         get cols() { return cols; },
         get rows() { return rows; },
         get region() { return region; },
@@ -163,6 +175,20 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
             spareCoarseness = new Uint8Array(cols * rows);
             rowRevisions = new Float64Array(rows);
             rebuildSamples(source);
+        },
+
+        switchFractal(nextFractal, next, nextMaxIterations) {
+            fractal = nextFractal;
+            measureEscape = pickKernel(nextFractal);
+            region.centerRe = next.centerRe;
+            region.centerIm = next.centerIm;
+            region.span = next.span;
+            maxIterations = nextMaxIterations;
+            escapes.fill(UNKNOWN);
+            coarseness.fill(UNKNOWN_COARSENESS);
+            revision++;
+            rowRevisions.fill(revision);
+            startPasses();
         },
 
         advance(iterationBudget) {
@@ -213,6 +239,11 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
         spareCoarseness = oldCoarseness;
         revision++;
         rowRevisions.fill(revision);
+        startPasses();
+    }
+
+    /** Puts the cursor back at the start of the coarsest pass, with nothing computed. */
+    function startPasses(): void {
         blockSize = COARSEST_BLOCK;
         cursorRow = 0;
         cursorCol = 0;
@@ -234,7 +265,9 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
         const unitsPerSample = region.span / cols;
         const re = region.centerRe + (col + 0.5 - cols * 0.5) * unitsPerSample;
         const im = region.centerIm - (row + 0.5 - rows * 0.5) * unitsPerSample;
-        const escape = measureEscape(re, im);
+        measureEscape(re, im, maxIterations, measure);
+        iterationsSpent += measure.iterations;
+        const escape = measure.escape;
 
         const rowEnd = Math.min(row + blockSize, rows);
         const colEnd = Math.min(col + blockSize, cols);
@@ -252,56 +285,4 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
         coarseness[corner] = EXACT;
         computedCount++;
     }
-
-    /**
-     * How fast the point `re` + `im`i escapes, as a fractional iteration
-     * count, or `INTERIOR` if it never does. It adds what it spent to
-     * `iterationsSpent`.
-     */
-    function measureEscape(re: number, im: number): number {
-        // The main cardioid and the big bulb beside it are inside the set.
-        // Testing for them costs a few multiplications, where the loop would
-        // take every iteration it is allowed.
-        const imSq = im * im;
-        const q = (re - 0.25) * (re - 0.25) + imSq;
-        if (q * (q + re - 0.25) <= 0.25 * imSq || (re + 1) * (re + 1) + imSq <= 0.0625) {
-            iterationsSpent += EARLY_OUT_COST;
-            return INTERIOR;
-        }
-
-        let zr = 0;
-        let zi = 0;
-        let zrSq = 0;
-        let ziSq = 0;
-        let i = 0;
-        while (i < maxIterations && zrSq + ziSq <= BAILOUT_SQ) {
-            zi = 2 * zr * zi + im;
-            zr = zrSq - ziSq + re;
-            zrSq = zr * zr;
-            ziSq = zi * zi;
-            i++;
-        }
-        iterationsSpent += i;
-        if (i >= maxIterations) return INTERIOR;
-
-        // How far past the bailout radius the point landed. It turns the
-        // whole-number steps of the count into one smooth gradient.
-        const logModulus = Math.log(zrSq + ziSq) * 0.5;
-        const smooth = i + 1 - Math.log(logModulus / Math.LN2) / Math.LN2;
-        return smooth > 0 ? smooth : 0;
-    }
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/**
- * How far a point must travel from the origin to count as escaped. It is far
- * further than the 2 that settles the question, because the extra distance
- * is what makes the fractional part of the count smooth.
- */
-const BAILOUT_SQ = 128 * 128;
-
-/** What a sample costs when the cardioid test settles it, in iterations of the loop it saved. */
-const EARLY_OUT_COST = 4;
