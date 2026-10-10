@@ -131,6 +131,13 @@ export interface ElementEntrySession extends EntrySession {
     readonly views: readonly View[];
     /** Draws a frame with the entry's renderers, after the host has refreshed its views. */
     readonly render: () => void;
+    /**
+     * Settles once every renderer can draw. An entry sets it when one of its
+     * renderers starts asynchronously, such as Pixi's `Application.init`. A
+     * host that produces a single image, such as for a thumbnail or a visual
+     * test, waits for it. It is absent when every renderer can draw at once.
+     */
+    readonly ready?: Promise<void>;
 }
 
 /** The controls an entry takes, and where the host reports them. */

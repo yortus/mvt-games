@@ -45,7 +45,7 @@ export async function load(): Promise<ElementEntryStarter> {
             pixi.stage.addChild(PixiMachineView({ model, art }));
             let isPixiReady = false;
             let isDestroyed = false;
-            void pixi.init({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, background: 0x2a1766, antialias: true, autoStart: false })
+            const pixiReady = pixi.init({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, background: 0x2a1766, antialias: true, autoStart: false })
                 .then(() => {
                     if (isDestroyed) {
                         pixi.destroy(true, { children: true });
@@ -92,6 +92,7 @@ export async function load(): Promise<ElementEntryStarter> {
 
             return {
                 views: [pixi.stage, scene, panel, terminal, audio],
+                ready: pixiReady,
                 update(deltaMs: number): void {
                     model.update(deltaMs);
                 },
