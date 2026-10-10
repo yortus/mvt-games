@@ -73,6 +73,7 @@ export function GameView(bindings: GameViewBindings): Container {
             sound: bindings.sound,
             gamePhase: () => game.phase,
             boardPhase: () => game.board.phase,
+            isSwapMatching: () => game.board.isSwapMatching,
             cascadeStep: () => game.board.cascadeStep,
             matchedCellCount: () => game.board.matchedCells.length,
         }));

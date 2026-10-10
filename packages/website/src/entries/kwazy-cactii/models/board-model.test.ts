@@ -23,6 +23,20 @@ function makeBoard(rowCount = 3, colCount = 3): BoardModel {
     return createBoardModel({ rowCount, colCount });
 }
 
+/**
+ * A repeatable source of numbers from 0 to 1, so a test sees the same board
+ * every run. It is mulberry32, which stays within 32-bit arithmetic.
+ */
+function makeSeededRandom(seed: number): () => number {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(state ^ (state >>> 15), 1 | state);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
 /** Find two adjacent cells with different kinds that can be swapped. */
 function findSwappablePair(board: BoardModel): [CactusCell, CactusCell] | undefined {
     for (let r = 0; r < board.rowCount; r++) {
@@ -147,6 +161,33 @@ describe('BoardModel', () => {
             board.update(50); // partial step (SWAP_DURATION_MS = 200)
             expect(board.swapProgress).toBeGreaterThan(0);
             expect(board.swapProgress).toBeLessThan(1);
+        });
+
+        it('isSwapMatching says, as a swap starts, whether it makes a line', () => {
+            // A seeded board, so the swaps it offers are the same on every run
+            const board = createBoardModel({ random: makeSeededRandom(7) });
+            let sawMatching = false;
+            let sawReversing = false;
+            for (let r = 0; r < board.rowCount; r++) {
+                for (let c = 0; c < board.colCount - 1; c++) {
+                    if (!board.trySwap(board.cells[r][c], board.cells[r][c + 1])) continue;
+                    const isSwapMatching = board.isSwapMatching;
+                    stepMs(board, 300); // past SWAP_DURATION_MS, so the board has acted on the swap
+                    if (isSwapMatching) {
+                        expect(board.phase).toBe('matching');
+                        sawMatching = true;
+                        stepMs(board, 5000); // let the cascade run out
+                    }
+                    else {
+                        expect(board.phase).toBe('reversing');
+                        sawReversing = true;
+                        stepMs(board, 300);
+                    }
+                    expect(board.isSwapMatching).toBe(false);
+                }
+            }
+            expect(sawMatching).toBe(true);
+            expect(sawReversing).toBe(true);
         });
 
         it('cell positions remain integer during swap', () => {

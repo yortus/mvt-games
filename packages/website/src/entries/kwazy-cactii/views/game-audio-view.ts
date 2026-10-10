@@ -2,9 +2,9 @@ import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80 } from '@mvtjs/audio';
 import { watch } from '@mvtjs/utils';
-import { BIG_MATCH, CASCADE_FANFARES, FIREWORKS, GAME_OVER, LAND, MATCH_BURST, NEW_GAME, SWAP, SWAP_BACK } from '../data';
+import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
-import { MIN_CASCADE_FOR_FIREWORKS, MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
+import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -18,6 +18,8 @@ export interface GameAudioViewBindings {
     readonly gamePhase: () => GamePhase;
     /** The board's phase. The view plays the moves, the matches and the landings as it changes. */
     readonly boardPhase: () => BoardPhase;
+    /** Whether the swap now under way makes a line. A swap that will be undone makes no sound of its own. */
+    readonly isSwapMatching: () => boolean;
     /** The cascade's step. It is 1 for a swap's own match, and 2 or more for each match that follows as the cactii fall. */
     readonly cascadeStep: () => number;
     /** How many cactii the current match clears, counting every line in it. */
@@ -29,12 +31,13 @@ export interface GameAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The game's sound effects. The game has no music. A swap whoops, and a swap
- * that is undone knocks twice. Each match bursts and plays a brass fanfare,
- * a step higher for each step of a cascade. A match that clears five or
- * more cactii also sparkles, and a long cascade sets off fireworks. The
- * cactii tock as they land, and a few notes mark a new board and the end of
- * the game.
+ * The game's sound effects. The game has no music. A swap that makes a line
+ * blips as it starts, and one that makes none says nothing until it knocks
+ * twice as it is undone. Each match whistles, a step higher for each step of
+ * a cascade, and the steps that set off fireworks crackle over the whistle as
+ * they burst, higher again at each step. A match that clears five or more cactii also
+ * sparkles. The cactii tock as they land, and a few notes mark a new board
+ * and the end of the game.
  *
  * The view keeps no state. Every sound it plays is a
  * change in the game's phase or the board's.
@@ -63,7 +66,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (previous === 'settling') sound.play(LAND);
         switch (phase) {
             case 'swapping':
-                sound.play(SWAP);
+                // A swap that makes no line says nothing here. It knocks as it is undone, which is the answer to the move
+                if (bindings.isSwapMatching()) sound.play(SWAP);
                 break;
             case 'reversing':
                 sound.play(SWAP_BACK);
@@ -79,9 +83,11 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
 
     function playMatch(): void {
         const step = bindings.cascadeStep();
-        sound.play(MATCH_BURST);
-        sound.play(CASCADE_FANFARES[Math.min(Math.max(step, 1), CASCADE_FANFARES.length) - 1]);
+        const index = Math.min(Math.max(step, 1), CASCADE_WHISTLES.length) - 1;
+        sound.play(CASCADE_WHISTLES[index]);
+        // The crackle is an effect of its own, so it bursts over the whistle on another voice instead of cutting it off
+        const crackle = CASCADE_CRACKLES[index];
+        if (crackle !== undefined) sound.play(crackle);
         if (bindings.matchedCellCount() >= MIN_CELLS_FOR_BIG_MATCH) sound.play(BIG_MATCH);
-        if (step >= MIN_CASCADE_FOR_FIREWORKS) sound.play(FIREWORKS);
     }
 }

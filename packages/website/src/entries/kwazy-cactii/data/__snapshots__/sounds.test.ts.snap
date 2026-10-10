@@ -2,32 +2,32 @@
 
 exports[`kwazy cactii sounds > BIG_MATCH sounds as it did, audible and unclipped 1`] = `"7941ea77"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[0] sounds as it did, audible and unclipped 1`] = `"939a66e3"`;
+exports[`kwazy cactii sounds > CASCADE_CRACKLES[2] sounds as it did, audible and unclipped 1`] = `"a9e49cc9"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[1] sounds as it did, audible and unclipped 1`] = `"bdb55024"`;
+exports[`kwazy cactii sounds > CASCADE_CRACKLES[3] sounds as it did, audible and unclipped 1`] = `"61c03748"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[2] sounds as it did, audible and unclipped 1`] = `"4372b3d7"`;
+exports[`kwazy cactii sounds > CASCADE_CRACKLES[4] sounds as it did, audible and unclipped 1`] = `"d9a21639"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[3] sounds as it did, audible and unclipped 1`] = `"38b1c5e7"`;
+exports[`kwazy cactii sounds > CASCADE_CRACKLES[5] sounds as it did, audible and unclipped 1`] = `"cc7279b8"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[4] sounds as it did, audible and unclipped 1`] = `"535851aa"`;
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[0] sounds as it did, audible and unclipped 1`] = `"188da6cf"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[5] sounds as it did, audible and unclipped 1`] = `"7b320736"`;
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[1] sounds as it did, audible and unclipped 1`] = `"3ae20d06"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[6] sounds as it did, audible and unclipped 1`] = `"81cf5781"`;
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[2] sounds as it did, audible and unclipped 1`] = `"2ce68f30"`;
 
-exports[`kwazy cactii sounds > CASCADE_FANFARES[7] sounds as it did, audible and unclipped 1`] = `"15e0e6d1"`;
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[3] sounds as it did, audible and unclipped 1`] = `"8bae849d"`;
 
-exports[`kwazy cactii sounds > FIREWORKS sounds as it did, audible and unclipped 1`] = `"fb718baa"`;
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[4] sounds as it did, audible and unclipped 1`] = `"b0b1621f"`;
+
+exports[`kwazy cactii sounds > CASCADE_WHISTLES[5] sounds as it did, audible and unclipped 1`] = `"92b36e4d"`;
 
 exports[`kwazy cactii sounds > GAME_OVER sounds as it did, audible and unclipped 1`] = `"1c6ed476"`;
 
 exports[`kwazy cactii sounds > LAND sounds as it did, audible and unclipped 1`] = `"738b0d4f"`;
 
-exports[`kwazy cactii sounds > MATCH_BURST sounds as it did, audible and unclipped 1`] = `"996f1105"`;
-
 exports[`kwazy cactii sounds > NEW_GAME sounds as it did, audible and unclipped 1`] = `"a9be0b4e"`;
 
-exports[`kwazy cactii sounds > SWAP sounds as it did, audible and unclipped 1`] = `"b7310bcb"`;
+exports[`kwazy cactii sounds > SWAP sounds as it did, audible and unclipped 1`] = `"c3753d4d"`;
 
 exports[`kwazy cactii sounds > SWAP_BACK sounds as it did, audible and unclipped 1`] = `"05bb0629"`;

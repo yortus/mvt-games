@@ -187,19 +187,11 @@ export function hasAvailableMove(
     return false;
 }
 
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-function kindAt(cell: CactusCell): CactusKind | undefined {
-    return cell === EMPTY_CELL ? undefined : cell.kind;
-}
-
 /**
  * Check whether swapping (r1,c1) with (r2,c2) would create a 3+ run
  * for either cell in its new position. Does not mutate the grid.
  */
-function wouldMatchAfterSwap(
+export function wouldMatchAfterSwap(
     cells: DeepReadonly<CactusCell[][]>,
     rowCount: number,
     colCount: number,
@@ -213,6 +205,14 @@ function wouldMatchAfterSwap(
     // Check kind1 placed at (r2,c2)
     if (formsMatchAt(cells, rowCount, colCount, r2, c2, kind1, r1, c1)) return true;
     return false;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function kindAt(cell: CactusCell): CactusKind | undefined {
+    return cell === EMPTY_CELL ? undefined : cell.kind;
 }
 
 /**

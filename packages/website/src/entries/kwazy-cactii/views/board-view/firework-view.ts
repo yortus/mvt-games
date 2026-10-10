@@ -1,7 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
-import { CELL_WIDTH_PX, CELL_HEIGHT_PX, MIN_CASCADE_FOR_FIREWORKS } from '../view-constants';
+import { MIN_CASCADE_FOR_FIREWORKS } from '../../data';
+import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
