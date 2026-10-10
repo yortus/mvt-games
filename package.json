@@ -33,6 +33,13 @@
         "pretest": "npm run generate-refresh-copies",
         "test": "vitest run",
         "test:watch": "vitest",
+        "pretest:visual": "npm run generate-refresh-copies",
+        "test:visual": "npm run test:visual:fixture -w @mvtjs/visual-testing && npm run test:visual -w @mvtjs/visual-testing --",
+        "pretest:visual:update": "npm run generate-refresh-copies",
+        "test:visual:update": "npm run test:visual:fixture -w @mvtjs/visual-testing -- --update && npm run test:visual:update -w @mvtjs/visual-testing --",
+        "pretest:visual:environment": "npm run generate-refresh-copies",
+        "test:visual:environment": "npm run test:visual:environment -w @mvtjs/visual-testing --",
+        "test:visual:check-references": "npm run test:visual:check-references -w @mvtjs/visual-testing && npm run test:visual:fixture -w @mvtjs/visual-testing -- check-references",
         "generate-textures": "npm run generate-textures -w @mvtjs/website",
         "audio:render": "npm run render-wav -w @mvtjs/audio --",
         "pregenerate-thumbnails": "npm run generate-refresh-copies",
@@ -60,5 +67,8 @@
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.59.0"
+    },
+    "overrides": {
+        "playwright": "1.63.0"
     }
 }

@@ -17,8 +17,9 @@ export default defineConfig({
         resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
     test: {
-        // .claude/ holds agent worktrees: separate checkouts, tested on their own
-        exclude: [...configDefaults.exclude, '.claude/**'],
+        // .claude/ holds agent worktrees: separate checkouts, tested on their own.
+        // Visual tests in visual-tests folders run with the visual-tests command.
+        exclude: [...configDefaults.exclude, '.claude/**', '**/visual-tests/**'],
         // Node resolves solid-js to its server build, where effects never
         // run. Tests get the browser build, as a page does, and Vite loads
         // solid-js and pixi-solid itself so that they share that one copy.

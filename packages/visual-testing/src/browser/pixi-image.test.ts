@@ -1,0 +1,16 @@
+import { TextureSource } from 'pixi.js';
+import { describe, expect, it } from 'vitest';
+import { preparePixiPose } from './pixi-image';
+
+describe('preparePixiPose', () => {
+    it('samples textures nearest-neighbour by default, as pixel art is drawn', () => {
+        preparePixiPose({});
+        expect(TextureSource.defaultOptions.scaleMode).toBe('nearest');
+    });
+
+    it('samples textures smoothly for a smooth view', () => {
+        preparePixiPose({ artStyle: 'smooth' });
+        expect(TextureSource.defaultOptions.scaleMode).toBe('linear');
+        preparePixiPose({});
+    });
+});

@@ -1,0 +1,7 @@
+{
+    "browser": "HeadlessChrome/153.0.8010.12",
+    "webgl": "SwiftShader",
+    "locale": "en-US",
+    "timeZone": "UTC",
+    "devicePixelRatio": 1
+}

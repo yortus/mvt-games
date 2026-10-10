@@ -38,6 +38,7 @@ const TICK_API_FROM_RENDERER = {
 // peer dependencies.
 const DEV_FILES = [
     '**/*.test.{ts,tsx}',
+    '**/*.visual.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
     'packages/benchmarks/**',
@@ -117,6 +118,9 @@ export default tseslint.config(
                         'pixi-solid',
                         'three',
                         'three/**',
+                        // Vitest's own entry points, such as `vitest/browser`, through which
+                        // the visual tests' harness talks to Node.
+                        'vitest/**',
                         // Allow the site's import-map alias. Escaped: the rule
                         // compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
@@ -232,6 +236,9 @@ export default tseslint.config(
             'packages/three/src/object3d-mixin.ts',
             'packages/website/scripts/vite-plugin-spritesheet.ts',
             'packages/audio/src/web/chip-processor.ts',
+            // The visual tests' harness replaces canvas text drawing and patches a Pixi pool.
+            'packages/visual-testing/src/browser/canvas-text.ts',
+            'packages/visual-testing/src/browser/page-state.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },

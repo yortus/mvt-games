@@ -1,0 +1,72 @@
+/**
+ * Compares an actual image with its reference, within the visual tests'
+ * tolerance. An actual image passes if no channel of any pixel differs by
+ * more than `TOLERANCE` levels out of 255. The tolerance applies to each
+ * channel, and it is not a count of pixels. This is because arm64
+ * processors round blurs, rotated images and some edges differently, by 1
+ * or 2 levels over thousands of pixels. A pixel count small enough to catch
+ * a real change would fail on those images.
+ */
+
+import type { VisualRect } from '../protocol';
+import type { RgbaImage } from './png';
+
+// ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+export interface Comparison {
+    /** The number of pixels that differ at all. */
+    readonly changed: number;
+    /** The largest difference in any channel of any pixel, 0 to 255. */
+    readonly maxDelta: number;
+    /** The smallest rectangle holding every pixel that differs, if any does. */
+    readonly changedRect: VisualRect | undefined;
+    /** Whether the largest difference is within the tolerance. */
+    readonly isWithinTolerance: boolean;
+    /** The reference dimmed, with every pixel that differs in red. */
+    readonly diff: RgbaImage;
+}
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+
+export const TOLERANCE = 2;
+
+/** Compares two images of the same size. */
+export function compareImages(options: { readonly expected: RgbaImage; readonly actual: RgbaImage }): Comparison {
+    const { expected, actual } = options;
+    const { width, height } = expected;
+    const diff = new Uint8Array(width * height * 4);
+    let changed = 0;
+    let maxDelta = 0;
+    let left = width;
+    let top = height;
+    let right = -1;
+    let bottom = -1;
+    for (let i = 0; i < diff.length; i += 4) {
+        let delta = 0;
+        for (let c = 0; c < 4; c++) delta = Math.max(delta, Math.abs(expected.pixels[i + c] - actual.pixels[i + c]));
+        if (delta > 0) {
+            changed++;
+            maxDelta = Math.max(maxDelta, delta);
+            const x = (i / 4) % width;
+            const y = Math.floor(i / 4 / width);
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+            diff[i] = 255;
+            diff[i + 1] = 0;
+            diff[i + 2] = 0;
+        }
+        else {
+            const grey = ((expected.pixels[i] + expected.pixels[i + 1] + expected.pixels[i + 2]) / 3) * 0.3;
+            diff[i] = diff[i + 1] = diff[i + 2] = grey;
+        }
+        diff[i + 3] = 255;
+    }
+    const changedRect = changed > 0 ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 } : undefined;
+    return { changed, maxDelta, changedRect, isWithinTolerance: maxDelta <= TOLERANCE, diff: { width, height, pixels: diff } };
+}
