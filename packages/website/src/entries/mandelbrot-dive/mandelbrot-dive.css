@@ -1,0 +1,159 @@
+/*
+ * The Mandelbrot dive: the image fills the element, with the panel down its
+ * right side, or below it on a narrow screen. The element the entry mounts
+ * into is the container the layout measures, and is positioned by its host.
+ */
+.mandelbrot-dive-host {
+    container-type: size;
+}
+
+.mandelbrot-dive {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    background: #05060a;
+    color: #c9d1d9;
+    font-family: var(--site-font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* --- The image ---------------------------------------------------------- */
+    .dive-stage {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+    }
+    .dive-image {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .dive-image:active { cursor: grabbing; }
+
+    /* --- The panel ---------------------------------------------------------- */
+    .dive-panel {
+        flex: none;
+        width: 288px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 16px;
+        overflow-y: auto;
+        background: #0d1117;
+        border-left: 1px solid #30363d;
+        font-size: 13px;
+    }
+
+    .dive-map {
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #05060a;
+        line-height: 0;
+    }
+    .dive-minimap { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; }
+
+    .dive-readout { display: grid; gap: 6px; margin: 0; }
+    .dive-reading {
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        align-items: baseline;
+        gap: 8px;
+    }
+    .dive-reading-label {
+        color: #8b949e;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .dive-reading-value {
+        margin: 0;
+        color: #e6edf3;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+
+    .dive-sharpness { display: grid; gap: 4px; }
+    .dive-progress {
+        width: 100%;
+        height: 4px;
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        border-radius: 2px;
+        background: #21262d;
+        overflow: hidden;
+    }
+    .dive-progress::-webkit-progress-bar { background: #21262d; }
+    .dive-progress::-webkit-progress-value { background: #f0883e; }
+    .dive-progress::-moz-progress-bar { background: #f0883e; }
+    .dive-sharpness-text { color: #8b949e; font-size: 11px; }
+
+    .dive-group { display: grid; gap: 8px; }
+    .dive-group-title {
+        margin: 0;
+        color: #8b949e;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    .dive-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .dive-swatch {
+        height: 28px;
+        border: 2px solid transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        outline-offset: 2px;
+    }
+    .dive-swatch.chosen { border-color: #e6edf3; }
+
+    .dive-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dive-action {
+        padding: 8px 10px;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        background: #21262d;
+        color: #e6edf3;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .dive-action:hover { background: #30363d; }
+    .dive-action:active { background: #484f58; }
+
+    .dive-hint { margin: auto 0 0; color: #6e7681; font-size: 11px; line-height: 1.5; }
+
+    /* --- A narrow screen: the panel goes below the image --------------------- */
+    @container (max-width: 640px) {
+        & { flex-direction: column; }
+
+        .dive-panel {
+            width: auto;
+            max-height: 42%;
+            border-left: none;
+            border-top: 1px solid #30363d;
+            display: grid;
+            grid-template-columns: minmax(120px, 40%) 1fr;
+            align-content: start;
+            gap: 10px 12px;
+            padding: 12px;
+        }
+        .dive-map { grid-row: span 2; align-self: start; }
+        .dive-sharpness { grid-column: 2; }
+        .dive-group, .dive-actions { grid-column: 1 / -1; }
+        .dive-reading { grid-template-columns: 64px 1fr; }
+        .dive-hint { display: none; }
+    }
+}
