@@ -17,6 +17,9 @@
 /* Whatever the page scrolls into view (a focused box, a card arrowed to) stops below the nav, not under it */
 html { scroll-padding-top: var(--site-nav-height); }
 
+/* Zooming the page is off across the site */
+html { touch-action: pan-x pan-y; }
+
 .site-nav {
     position: fixed;
     top: 0;
