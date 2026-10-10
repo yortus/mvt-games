@@ -1,11 +1,12 @@
 import { Application } from 'pixi.js';
-import { Color, NeutralToneMapping, PerspectiveCamera, PMREMGenerator, Scene, WebGLRenderer } from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { createPointerPicker, destroyObject } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
 import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
 import { createFruitMachineModel } from '../models';
-import { BanditView, ControlPanelView, loadSymbolArt, MachineAudioView, PixiMachineView, TerminalView } from '../views';
+import {
+    BanditView, ControlPanelView, dressBanditScene, frameBanditCamera, loadSymbolArt, MachineAudioView, PixiMachineView, TerminalView,
+} from '../views';
 import { DRAG_THRESHOLD_PX, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 import '../fruit-machine.css';
 
@@ -65,16 +66,8 @@ export async function load(): Promise<ElementEntryStarter> {
             threeHost.append(threeCanvas);
             const renderer = new WebGLRenderer({ canvas: threeCanvas, antialias: true });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            // Tone mapping that keeps the paint's hue as its highlights brighten
-            renderer.toneMapping = NeutralToneMapping;
             const scene = new Scene();
-            scene.background = new Color(0x15102b);
-            // A room for the paint and chrome to reflect: without one, nothing shines
-            const environment = new PMREMGenerator(renderer);
-            scene.environment = environment.fromScene(new RoomEnvironment(), ENVIRONMENT_BLUR).texture;
-            // Dimmed: at full strength the room's light washes the paint out
-            scene.environmentIntensity = ENVIRONMENT_INTENSITY;
-            environment.dispose();
+            dressBanditScene({ scene, renderer });
             const camera = new PerspectiveCamera(30, 1, 0.1, 100);
             scene.add(BanditView({ model, art, dragSurface: threeCanvas }));
             // A drag turns the cabinet; the picker drops the click that ends one, so letting go over the lever doesn't pull it
@@ -142,10 +135,7 @@ export async function load(): Promise<ElementEntryStarter> {
                 if (width === 0 || height === 0) return;
                 renderer.setSize(width, height, false);
                 camera.aspect = width / height;
-                // A narrow quadrant would crop the cabinet's sides: step back instead
-                camera.position.set(CAMERA_X, CAMERA_HEIGHT, CAMERA_DISTANCE * Math.max(1, 0.9 / camera.aspect));
-                camera.lookAt(CAMERA_X, LOOK_AT_HEIGHT, 0);
-                camera.updateProjectionMatrix();
+                frameBanditCamera({ camera });
             }
         },
     };
@@ -154,15 +144,6 @@ export async function load(): Promise<ElementEntryStarter> {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** How soft the room's reflections are: a little, so the shine reads as gloss, not a mirror. */
-const ENVIRONMENT_BLUR = 0.04;
-const ENVIRONMENT_INTENSITY = 0.45;
-/** A little right of the cabinet's middle, to frame its lever too. */
-const CAMERA_X = 0.4;
-const CAMERA_HEIGHT = 4.6;
-const CAMERA_DISTANCE = 19;
-const LOOK_AT_HEIGHT = 3.75;
 
 /** The four quadrants, each labelled with its renderer, in the order the grid reads them. */
 const QUADRANTS_HTML = `
