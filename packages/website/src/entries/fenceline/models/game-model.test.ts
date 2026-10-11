@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { RoundConfig } from '../data';
+import { BLOW_OUT_POINTS, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
 import { DIRECTION_DELTA, type HeldDirection } from './common';
 import { createGameModel, type GameModel } from './game-model';
-import {
-    BLOW_OUT_POINTS,
-    POINTS_PER_CELL,
-    READY_MS,
-    ROUND_CLEAR_MS,
-    SHEEP_POINTS,
-    SNAPPED_MS,
-    START_LIVES,
-} from './model-constants';
+import { READY_MS, ROUND_CLEAR_MS, SNAPPED_MS, START_LIVES } from './model-constants';
 
 // A meadow of 30 rows and 40 columns. The farmhand starts at the bottom
 // middle, at grid point (30, 20). Dust devils stand still, so a test can
@@ -133,7 +125,7 @@ describe('GameModel', () => {
         expect(game.devils[0].phase).toBe('whirling');
         expect(game.field.claimedCount).toBe(0);
         expect(game.field.closureCount).toBe(1);
-        // 165 cells, under twice the 120 at which it would blow out: it shrinks, and is starving
+        // 165 cells is under twice the 120 at which it would blow out, so it shrinks and starves
         expect(game.devils[0].size).toBeLessThan(0.6);
         expect(game.devils[0].isStarving).toBe(true);
         // The other still has most of the meadow

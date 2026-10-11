@@ -2,7 +2,7 @@
 // Rounds
 // ---------------------------------------------------------------------------
 
-/** A pond or a rock in the meadow from the start: an ellipse of cells. */
+/** A pond or a rock in the meadow from the start, as an ellipse of cells. */
 export interface ObstacleSpec {
     readonly kind: 'pond' | 'rock';
     /** Its centre, in cells. A half cell puts it on a grid line. */
@@ -82,7 +82,7 @@ export const ROUNDS: readonly RoundConfig[] = [
             { kind: 'pond', row: 21, col: 40, rowRadius: 5, colRadius: 7 },
         ],
     },
-    // Two dust devils: corner one in a small paddock and it blows itself out
+    // Two dust devils. Corner one in a small paddock and it blows itself out
     {
         devilCount: 2,
         devilSpeed: 7,

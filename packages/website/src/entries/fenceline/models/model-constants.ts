@@ -22,14 +22,16 @@ export const DEVIL_RADIUS = 1.6;
 export const DEVIL_BLOW_OUT_MS = 1200;
 
 /**
- * How much room a dust devil needs to be full size: its region's cells, as a
- * multiple of the region at which it blows out. With less, it shrinks, down
- * to `DEVIL_MIN_SIZE` just before it blows out.
+ * How much room a dust devil needs to be full size. Room is its region's
+ * cells, as a multiple of the region at which it blows out. With less room,
+ * it shrinks.
  */
 export const DEVIL_FULL_ROOM = 5;
+
+/** How small a dust devil gets, as a share of its full size, just before it blows out. */
 export const DEVIL_MIN_SIZE = 0.55;
 
-/** With less room than this, as a multiple of the region at which it blows out, a dust devil is starving: one cut from blowing out. */
+/** With less room than this, a dust devil is starving. It is one cut from blowing out. */
 export const DEVIL_STARVING_ROOM = 2;
 
 /**
@@ -53,19 +55,6 @@ export const SHEEP_FLEE_DISTANCE = 6;
 
 /** A sheep's half-width, in cells, which keeps it off the fences. */
 export const SHEEP_RADIUS = 0.45;
-
-// ---------------------------------------------------------------------------
-// Scoring
-// ---------------------------------------------------------------------------
-
-/** Points for each cell fenced off. */
-export const POINTS_PER_CELL = 10;
-/** Points for each sheep penned. */
-export const SHEEP_POINTS = 500;
-/** Points for each dust devil blown out. */
-export const BLOW_OUT_POINTS = 2000;
-/** The bonus for each whole percent fenced off past the round's target. */
-export const BONUS_PER_PERCENT = 1000;
 
 // ---------------------------------------------------------------------------
 // The game

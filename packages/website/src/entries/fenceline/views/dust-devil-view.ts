@@ -12,7 +12,7 @@ export interface DustDevilViewBindings {
     col: () => number;
     /** A cell's size in pixels, read once. */
     cellSize: number;
-    /** How big it is, as a share of its full size: smaller as it is fenced into less room. */
+    /** How big it is, as a share of its full size. It is smaller when fenced into less room. */
     size: () => number;
     /** Whether it is close to blowing out. It sputters. */
     isStarving: () => boolean;
@@ -29,12 +29,13 @@ export interface DustDevilViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * A dust devil: a funnel of swirling dust, narrow at the ground and wide at
- * the top, swaying as it spins, with grit whirling round it. Each ring of
- * the funnel and each speck of grit is drawn once, then moved each frame.
+ * A dust devil, drawn as a funnel of swirling dust, narrow at the ground and
+ * wide at the top. It sways as it spins, with grit whirling round it. Each
+ * ring of the funnel and each speck of grit is drawn once, then moved each
+ * frame.
  *
  * Its size shows how much room it has. Fenced into less, it shrinks, easing
- * to its new size. Close to blowing out, it sputters: it flickers, its
+ * to its new size. Close to blowing out, it sputters. It flickers, its
  * rings break up and jitter, and it pales. Blowing out, it splits into
  * three small whirlwinds that fly apart, shrinking and fading, and its
  * points rise from where it was.
@@ -124,7 +125,7 @@ const SIZE_EASE_PER_MS = 0.0008;
 /** How long each flicker lasts while it sputters. */
 const FLICKER_MS = 80;
 
-/** The ways the three pieces fly as it blows out: up left, up right, and down. */
+/** The ways the three pieces fly as it blows out. They go up left, up right, and down. */
 const PIECE_ANGLES: readonly number[] = [Math.PI * -0.8, Math.PI * -0.2, Math.PI * 0.5];
 /** How far the pieces fly, in pixels, and how big each is to start with, as a share of the whole. */
 const PIECE_FLIGHT = 40;
@@ -138,7 +139,7 @@ const POINTS_STYLE = {
     stroke: { color: COLOURS.devilEdge, width: 3 },
 } as const;
 
-/** One funnel of dust: its rings, the light streaks that circle them, and its grit. */
+/** One funnel of dust. It has rings, light streaks that circle them, and grit. */
 interface Funnel {
     readonly container: Container;
     readonly rings: readonly Graphics[];
@@ -197,7 +198,7 @@ function spinFunnel(funnel: Funnel, spinMs: number, isStarving: boolean, isFlick
     }
 }
 
-/** Half the width of ring `i`, counting up from the ground: the funnel widens as it rises. */
+/** Returns half the width of ring `i`, counting up from the ground. The funnel widens as it rises. */
 function measureRingHalfWidth(i: number): number {
     return 3 + i * 1.7;
 }

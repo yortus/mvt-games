@@ -29,7 +29,7 @@ export interface WireViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The wire being strung: a thin bright line with a shadow, from its post to
+ * The wire being strung, a thin bright line with a shadow, from its post to
  * the farmhand. Slack running along it from the post shows red. A snapped
  * wire flickers. Each new step of wire is added to what is drawn, and the
  * stretch to the farmhand, which moves every frame, is a sprite.

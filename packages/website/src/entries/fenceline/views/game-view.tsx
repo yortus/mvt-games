@@ -5,8 +5,8 @@ import { List } from '@mvtjs/pixi';
 import type { Audio80 } from '@mvtjs/audio';
 import { memoiseLast } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView } from '#shared';
-import { FIELD_COLS, FIELD_ROWS } from '../data';
-import { BLOW_OUT_POINTS, type GameModel, type GamePhase, SHEEP_POINTS } from '../models';
+import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
+import type { GameModel, GamePhase } from '../models';
 import { BeetleView } from './beetle-view';
 import { DustDevilView } from './dust-devil-view';
 import { FarmhandView } from './farmhand-view';
@@ -40,10 +40,10 @@ export interface GameViewBindings {
  * The whole game. The top-level view, so it takes the model itself and wires
  * each leaf view's bindings to it.
  *
- * Layered back to front: the ground and the fences; the sheep; the wire,
- * the beetles and the farmhand; then the dust devils, which tower over
- * everything, and the points. The HUD runs across the top, and the overlay
- * covers the meadow between rounds. On a touch screen, swipes and taps
+ * It is layered from back to front. The ground and the fences come first,
+ * then the sheep, then the wire, the beetles and the farmhand. The dust
+ * devils, which tower over everything, and the points come last. The HUD
+ * runs across the top, and the overlay covers the meadow between rounds. On a touch screen, swipes and taps
  * anywhere on the screen steer the farmhand, but the overlay's own taps
  * come first.
  */

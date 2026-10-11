@@ -27,8 +27,8 @@ export interface BeetleViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * A fence beetle: dark, with a green sheen, its legs scuttling as it
- * crawls, and turned the way it goes. While it hatches, it is an egg on the
+ * A fence beetle, dark with a green sheen. Its legs scuttle as it crawls,
+ * and it is turned the way it goes. While it hatches, it is an egg on the
  * fence that rocks harder and cracks as it is about to open.
  */
 export function BeetleView(bindings: BeetleViewBindings): Container {

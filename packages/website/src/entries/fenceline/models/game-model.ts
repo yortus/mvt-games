@@ -1,28 +1,26 @@
 import gsap from 'gsap';
 import { watch } from '@mvtjs/utils';
-import { LAP_SPEED_UP, type RoundConfig } from '../data';
-import { createBeetleModel, type BeetleHand, type BeetleModel } from './beetle-model';
-import type { Direction, GamePhase } from './common';
-import { createDustDevilModel, type DevilTarget, type DustDevilModel } from './dust-devil-model';
+import { BLOW_OUT_POINTS, BONUS_PER_PERCENT, LAP_SPEED_UP, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
+import { createBeetleModel, type BeetleModel } from './beetle-model';
+import type { GamePhase } from './common';
+import type { DevilTarget, DustDevilModel } from './dust-devil-model';
 import { createFarmhandModel, type FarmhandModel } from './farmhand-model';
 import { createFieldModel, type FieldModel } from './field-model';
+import { measureDistanceSquared } from './geometry';
 import {
     BEETLE_CATCH_DISTANCE,
-    BLOW_OUT_POINTS,
-    BONUS_PER_PERCENT,
     FARMHAND_SPEED,
     MAX_STEP_MS,
-    POINTS_PER_CELL,
     READY_MS,
     ROUND_CLEAR_MS,
-    SHEEP_POINTS,
     SNAPPED_MS,
     START_LIVES,
     STARVE_SHARE,
 } from './model-constants';
 import { createPlayerInput, type PlayerInput } from './player-input';
 import { createRandom } from './random';
-import { createSheepModel, type SheepModel } from './sheep-model';
+import { placeBeetles, placeDevils, placeSheep } from './round-setup';
+import type { SheepModel } from './sheep-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -59,7 +57,7 @@ export interface GameModel {
     readonly devilsBlownOut: number;
     /** Beetles hatched this game. Each rise is a new beetle. */
     readonly beetlesHatched: number;
-    /** The points the latest wire tied off scored: for its cells, its sheep and any dust devil blown out. */
+    /** The points the latest wire tied off scored. They count its cells, its sheep and any dust devil it blew out. */
     readonly lastClosurePoints: number;
     /** The bonus for the share fenced off past the target, as the latest round was cleared. */
     readonly roundBonus: number;
@@ -116,16 +114,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let beetles: BeetleModel[] = [];
     let sheep: SheepModel[] = [];
 
-    // What the dust devils lean towards: the farmhand, out in the meadow with wire
+    // The dust devils lean towards the farmhand while they have wire out in the meadow
     const devilTarget: DevilTarget = {
         get row() { return farmhand.row; },
         get col() { return farmhand.col; },
         get isExposed() { return farmhand.phase === 'stringing'; },
     };
-
-    // Where the latest search for a fence point found one
-    let foundRow = 0;
-    let foundCol = 0;
 
     loadRound();
 
@@ -197,8 +191,17 @@ export function createGameModel(options: GameModelOptions): GameModel {
         hatchMs += deltaMs;
         if (hatchMs < config.hatchIntervalMs) return;
         hatchMs = 0;
-        findFencePoint(farmhand.pointRow, farmhand.pointCol, 'farthest');
-        beetles.push(buildBeetle(foundRow, foundCol, findWayFrom(foundRow, foundCol), beetlesHatched % 2 === 0 ? 'right' : 'left', true));
+        const point = field.findFencePoint({ row: farmhand.pointRow, col: farmhand.pointCol, which: 'farthest' });
+        if (point === undefined) return;
+        beetles.push(createBeetleModel({
+            row: point.row,
+            col: point.col,
+            direction: field.findWayAlongFence(point.row, point.col) ?? 'right',
+            hand: beetlesHatched % 2 === 0 ? 'right' : 'left',
+            speed: config.beetleSpeed,
+            isWalkable: field.isWalkable,
+            isHatching: true,
+        }));
         beetlesHatched++;
     }
 
@@ -254,7 +257,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const devil = devils[i];
             if (devil.phase !== 'whirling') continue;
             const region = field.regionAt(Math.floor(devil.row), Math.floor(devil.col));
-            devil.setRoom(region < 0 ? 0 : field.regionSize(region) / starveSize);
+            devil.room = region < 0 ? 0 : field.regionSize(region) / starveSize;
         }
     }
 
@@ -275,16 +278,18 @@ export function createGameModel(options: GameModelOptions): GameModel {
      */
     function keepOnFences(): void {
         if (!field.isOnFence(farmhand.pointRow, farmhand.pointCol)) {
-            if (findFencePoint(farmhand.pointRow, farmhand.pointCol, 'nearest')) farmhand.moveTo(foundRow, foundCol);
+            const point = field.findFencePoint({ row: farmhand.pointRow, col: farmhand.pointCol, which: 'nearest' });
+            if (point !== undefined) farmhand.moveTo(point.row, point.col);
         }
         for (let i = 0; i < beetles.length; i++) {
             const beetle = beetles[i];
             const row = Math.round(beetle.row);
             const col = Math.round(beetle.col);
             if (field.isOnFence(row, col)) continue;
-            const isFound = findFencePoint(row, col, 'nearest', SAFE_DISTANCE)
-                || findFencePoint(farmhand.pointRow, farmhand.pointCol, 'farthest');
-            if (isFound) beetle.moveTo(foundRow, foundCol);
+            const clearOf = { row: farmhand.pointRow, col: farmhand.pointCol, distance: SAFE_DISTANCE };
+            const point = field.findFencePoint({ row, col, which: 'nearest', clearOf })
+                ?? field.findFencePoint({ row: farmhand.pointRow, col: farmhand.pointCol, which: 'farthest' });
+            if (point !== undefined) beetle.moveTo(point.row, point.col);
         }
     }
 
@@ -300,25 +305,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         if (farmhand.phase !== 'stringing') return false;
         for (let i = 0; i < devils.length; i++) {
             const devil = devils[i];
-            if (devil.phase === 'whirling' && isDevilOnWire(devil)) return true;
+            if (devil.phase === 'whirling' && farmhand.isWireWithin(devil.row, devil.col, devil.radius)) return true;
         }
         return false;
-    }
-
-    /** Whether the dust devil touches the wire, or the farmhand at its end. */
-    function isDevilOnWire(devil: DustDevilModel): boolean {
-        const radiusSquared = devil.radius * devil.radius;
-        const wireRows = farmhand.wireRows;
-        const wireCols = farmhand.wireCols;
-        const length = farmhand.wireLength;
-        for (let i = 1; i < length; i++) {
-            if (measureSegmentDistanceSquared(devil.row, devil.col, wireRows[i - 1], wireCols[i - 1], wireRows[i], wireCols[i]) < radiusSquared) {
-                return true;
-            }
-        }
-        const lastRow = wireRows[length - 1];
-        const lastCol = wireCols[length - 1];
-        return measureSegmentDistanceSquared(devil.row, devil.col, lastRow, lastCol, farmhand.row, farmhand.col) < radiusSquared;
     }
 
     function snapFarmhand(): void {
@@ -332,11 +321,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     /** Puts the farmhand back on the fence, and any beetle near them at the far side of the meadow. */
     function carryOn(): void {
         farmhand.respawn();
-        if (findFencePoint(farmhand.pointRow, farmhand.pointCol, 'farthest')) {
+        const point = field.findFencePoint({ row: farmhand.pointRow, col: farmhand.pointCol, which: 'farthest' });
+        if (point !== undefined) {
             for (let i = 0; i < beetles.length; i++) {
                 const beetle = beetles[i];
                 if (measureDistanceSquared(beetle.row, beetle.col, farmhand.row, farmhand.col) > SAFE_DISTANCE * SAFE_DISTANCE) continue;
-                beetle.moveTo(foundRow, foundCol);
+                beetle.moveTo(point.row, point.col);
             }
         }
         phase = 'playing';
@@ -367,10 +357,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         config = findRoundConfig(round);
         field = createFieldModel({ rows, cols, obstacles: config.obstacles });
         farmhand = buildFarmhand();
-        devils = buildDevils();
+        devils = placeDevils({ field, config, random, target: devilTarget });
         measureDevilRooms();
-        beetles = buildBeetles();
-        sheep = buildSheep();
+        beetles = placeBeetles({ field, config });
+        sheep = placeSheep({ field, config, random, devils: () => devils });
         sheepPennedThisRound = 0;
         hatchMs = 0;
         phase = 'ready';
@@ -382,7 +372,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         phase = 'playing';
     }
 
-    /** The round's settings. Past the last round, they repeat, faster each lap. */
+    /** Returns the round's settings. Past the last round, they repeat, faster each lap. */
     function findRoundConfig(roundNumber: number): RoundConfig {
         const base = rounds[(roundNumber - 1) % rounds.length];
         const lap = Math.floor((roundNumber - 1) / rounds.length);
@@ -407,181 +397,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
             field,
         });
     }
-
-    function buildDevils(): DustDevilModel[] {
-        const result: DustDevilModel[] = [];
-        for (let i = 0; i < config.devilCount; i++) {
-            const start = config.devilStarts?.[i];
-            let row = start?.row ?? rows / 2;
-            let col = start?.col ?? cols / 2;
-            for (let attempt = 0; start === undefined && attempt < PLACEMENT_ATTEMPTS; attempt++) {
-                row = random.between(DEVIL_MARGIN, rows - DEVIL_MARGIN);
-                col = random.between(DEVIL_MARGIN, cols - DEVIL_MARGIN);
-                if (isRoomForDevil(row, col) && isClearOf(result, row, col, DEVIL_SPACING)) break;
-            }
-            result.push(createDustDevilModel({
-                row,
-                col,
-                speed: config.devilSpeed,
-                chase: config.devilChase,
-                target: devilTarget,
-                random,
-                regionAt: field.regionAt,
-            }));
-        }
-        return result;
-    }
-
-    function buildBeetles(): BeetleModel[] {
-        const result: BeetleModel[] = [];
-        const middle = Math.floor(cols / 2);
-        for (let i = 0; i < config.startBeetles; i++) {
-            const start = BEETLE_STARTS[i % BEETLE_STARTS.length];
-            const row = start.atBottom ? rows : start.atMiddleRow ? Math.floor(rows / 2) : 0;
-            const col = start.side === 'left' ? 0 : start.side === 'right' ? cols : middle;
-            result.push(buildBeetle(row, col, start.direction, start.hand, false));
-        }
-        return result;
-    }
-
-    function buildBeetle(row: number, col: number, direction: Direction, hand: BeetleHand, isHatching: boolean): BeetleModel {
-        return createBeetleModel({
-            row,
-            col,
-            direction,
-            hand,
-            speed: config.beetleSpeed,
-            isWalkable: field.isWalkable,
-            isHatching,
-        });
-    }
-
-    function buildSheep(): SheepModel[] {
-        const result: SheepModel[] = [];
-        for (let i = 0; i < config.sheepCount; i++) {
-            const start = config.sheepStarts?.[i];
-            let row = start?.row ?? rows / 2;
-            let col = start?.col ?? cols / 2;
-            for (let attempt = 0; start === undefined && attempt < PLACEMENT_ATTEMPTS; attempt++) {
-                row = Math.floor(random.between(SHEEP_MARGIN, rows - SHEEP_MARGIN)) + 0.5;
-                col = Math.floor(random.between(SHEEP_MARGIN, cols - SHEEP_MARGIN)) + 0.5;
-                if (field.isMeadow(Math.floor(row), Math.floor(col))
-                    && isClearOf(devils, row, col, SHEEP_DEVIL_SPACING)
-                    && isClearOf(result, row, col, SHEEP_SPACING)) break;
-            }
-            result.push(createSheepModel({ row, col, random, regionAt: field.regionAt, devils: () => devils }));
-        }
-        return result;
-    }
-
-    /** Whether every cell a dust devil at (row, col) would cover is open meadow. */
-    function isRoomForDevil(row: number, col: number): boolean {
-        const reach = Math.ceil(DEVIL_ROOM);
-        for (let r = Math.floor(row) - reach; r <= Math.floor(row) + reach; r++) {
-            for (let c = Math.floor(col) - reach; c <= Math.floor(col) + reach; c++) {
-                if (!field.isMeadow(r, c)) return false;
-            }
-        }
-        return true;
-    }
-
-    // ---- Fence points ------------------------------------------------------
-
-    /**
-     * Finds the fence point nearest to, or farthest from, point (row, col),
-     * at least `clearance` grid steps from the farmhand, and leaves it in
-     * `foundRow` and `foundCol`. Returns whether there is any such point.
-     */
-    function findFencePoint(row: number, col: number, which: 'nearest' | 'farthest', clearance = 0): boolean {
-        let best = which === 'nearest' ? Infinity : -1;
-        for (let r = 0; r <= rows; r++) {
-            for (let c = 0; c <= cols; c++) {
-                const distance = measureDistanceSquared(r, c, row, col);
-                if (which === 'nearest' ? distance >= best : distance <= best) continue;
-                if (!field.isOnFence(r, c)) continue;
-                if (clearance > 0 && measureDistanceSquared(r, c, farmhand.pointRow, farmhand.pointCol) < clearance * clearance) continue;
-                best = distance;
-                foundRow = r;
-                foundCol = c;
-            }
-        }
-        return which === 'nearest' ? best !== Infinity : best >= 0;
-    }
-
-    /** A way along a fence from point (row, col). */
-    function findWayFrom(row: number, col: number): Direction {
-        for (let i = 0; i < DIRECTIONS.length; i++) {
-            if (field.isWalkable(row, col, DIRECTIONS[i])) return DIRECTIONS[i];
-        }
-        return 'right';
-    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-const DIRECTIONS: readonly Direction[] = ['up', 'right', 'down', 'left'];
-const PLACEMENT_ATTEMPTS = 200;
-/** How far in from the edge, in cells, dust devils and sheep start. */
-const DEVIL_MARGIN = 9;
-const SHEEP_MARGIN = 5;
-/** How far apart, in cells, dust devils start from one another, and sheep from dust devils and one another. */
-const DEVIL_SPACING = 14;
-const SHEEP_DEVIL_SPACING = 8;
-const SHEEP_SPACING = 5;
-/** How much open meadow, in cells, a dust devil needs round its middle to start. */
-const DEVIL_ROOM = 2.5;
 /**
  * How far, in grid steps, a beetle must be from the farmhand as they come
  * back, or it is moved away. A beetle moved off new pasture lands at least
  * this far from them too.
  */
 const SAFE_DISTANCE = 15;
-
-/**
- * Where the round's first beetles start, on the edge of the meadow: the top
- * middle, the left and right middles, and the bottom middle. Each keeps to
- * the hand that has the meadow on it, so it goes round the meadow's edge.
- */
-const BEETLE_STARTS: readonly {
-    readonly side: 'left' | 'middle' | 'right';
-    readonly atMiddleRow: boolean;
-    readonly atBottom: boolean;
-    readonly direction: Direction;
-    readonly hand: BeetleHand;
-}[] = [
-    { side: 'middle', atMiddleRow: false, atBottom: false, direction: 'right', hand: 'right' },
-    { side: 'middle', atMiddleRow: false, atBottom: false, direction: 'left', hand: 'left' },
-    { side: 'left', atMiddleRow: true, atBottom: false, direction: 'up', hand: 'right' },
-    { side: 'right', atMiddleRow: true, atBottom: false, direction: 'down', hand: 'right' },
-];
-
-interface Placed {
-    readonly row: number;
-    readonly col: number;
-}
-
-/** Whether (row, col) is at least `spacing` cells from everything in `placed`. */
-function isClearOf(placed: readonly Placed[], row: number, col: number, spacing: number): boolean {
-    for (let i = 0; i < placed.length; i++) {
-        if (measureDistanceSquared(placed[i].row, placed[i].col, row, col) < spacing * spacing) return false;
-    }
-    return true;
-}
-
-function measureDistanceSquared(row0: number, col0: number, row1: number, col1: number): number {
-    const dRow = row1 - row0;
-    const dCol = col1 - col0;
-    return dRow * dRow + dCol * dCol;
-}
-
-/** The squared distance from (row, col) to the line segment from (row0, col0) to (row1, col1). */
-function measureSegmentDistanceSquared(row: number, col: number, row0: number, col0: number, row1: number, col1: number): number {
-    const dRow = row1 - row0;
-    const dCol = col1 - col0;
-    const lengthSquared = dRow * dRow + dCol * dCol;
-    let t = lengthSquared === 0 ? 0 : ((row - row0) * dRow + (col - col0) * dCol) / lengthSquared;
-    t = Math.max(0, Math.min(1, t));
-    return measureDistanceSquared(row, col, row0 + dRow * t, col0 + dCol * t);
-}

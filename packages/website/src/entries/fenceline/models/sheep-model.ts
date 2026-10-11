@@ -41,8 +41,8 @@ export interface SheepModelOptions {
     readonly random: Random;
     /** The meadow region of cell (row, col), or -1 for a cell that is not meadow. */
     readonly regionAt: (row: number, col: number) => number;
-    /** The dust devils it runs from. */
-    readonly devils: () => readonly DustDevilModel[];
+    /** The dust devils it runs from. It needs only where each is, and whether it still whirls. */
+    readonly devils: () => readonly Pick<DustDevilModel, 'phase' | 'row' | 'col'>[];
 }
 
 // ---------------------------------------------------------------------------

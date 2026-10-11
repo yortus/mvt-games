@@ -28,10 +28,11 @@ export interface FenceViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The fences: wooden rails along the grid lines, and a post at every other
- * grid point and at each corner. Fences round the open meadow are dark and
- * solid. Those left behind inside the pasture, with pasture on both sides,
- * are faded. Redrawn only as a wire is tied off, or a round starts.
+ * The fences, drawn as wooden rails along the grid lines, with a post at
+ * every other grid point and at each corner. Fences round the open meadow
+ * are dark and solid. Those left behind inside the pasture, with pasture on
+ * both sides, are faded. They are redrawn only as a wire is tied off, or a
+ * round starts.
  */
 export function FenceView(bindings: FenceViewBindings): Container {
     const { rows, cols, cellSize } = bindings;

@@ -23,7 +23,7 @@ export type BeetleHand = 'left' | 'right';
  */
 export interface BeetleModel {
     readonly phase: BeetlePhase;
-    /** Where it is, in grid steps: between two points while it crawls. */
+    /** Where it is, in grid steps. While it crawls, it is between two points. */
     readonly row: number;
     readonly col: number;
     /** The way it crawls. */
@@ -107,7 +107,7 @@ export function createBeetleModel(options: BeetleModelOptions): BeetleModel {
                 progress = 0;
             }
             else if (!isWalkable(pointRow, pointCol, direction)) {
-                // The fence under it was left behind: back to the point it came from
+                // The fence under it was left behind, so it goes back to the point it came from
                 isOnLine = false;
                 progress = 0;
                 continue;

@@ -28,9 +28,9 @@ export interface SheepViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * A sheep: a puff of white wool with a dark face and legs. It nibbles the
- * grass, head down, while it grazes, in the meadow or penned; trots while
- * it walks; and bounds while it runs. As it is penned, a little cluster of
+ * A sheep, a puff of white wool with a dark face and legs. It nibbles the
+ * grass with its head down while it grazes, in the meadow or penned. It
+ * trots while it walks, and bounds while it runs. As it is penned, a little cluster of
  * hearts rises from it, swaying, with the points it scored, and fades. A
  * sheep lost to the storm is whirled up and away.
  */

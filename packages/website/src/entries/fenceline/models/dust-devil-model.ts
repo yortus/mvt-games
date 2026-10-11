@@ -9,10 +9,10 @@ import type { Random } from './random';
 export type DustDevilPhase = 'whirling' | 'blowing-out' | 'gone';
 
 /**
- * A dust devil: a whirlwind that wanders the open meadow, turning this way
+ * A dust devil is a whirlwind that wanders the open meadow, turning this way
  * and that, and bouncing off the fences. It stays in its own region of the
- * meadow. It snaps any wire it touches. It feeds on open meadow: the less
- * room its region gives it, the smaller it is, and fenced into a small
+ * meadow, and snaps any wire it touches. It feeds on open meadow, so the
+ * less room its region gives it, the smaller it is. Fenced into a small
  * enough region, it blows itself out.
  */
 export interface DustDevilModel {
@@ -27,22 +27,25 @@ export interface DustDevilModel {
      * of room, and shrinks as its region does.
      */
     readonly size: number;
-    /** Whether it is close to blowing out: its region less than twice the size at which it does. */
+    /** Whether it is close to blowing out. Its region is then less than twice the size at which it does. */
     readonly isStarving: boolean;
+    /**
+     * How much room it has. That is its region's cells, as a multiple of the
+     * region at which it blows out. Its size follows it.
+     */
+    room: number;
     /** How far it has blown itself out, from 0 to 1. */
     readonly blowOutProgress: number;
     update: (deltaMs: number) => void;
     /** Starts it blowing itself out. Once it starts, it is harmless. */
     blowOut: () => void;
-    /** Tells it how much room it has: its region's cells, as a multiple of the region at which it blows out. */
-    setRoom: (room: number) => void;
 }
 
 /** Something a dust devil may lean towards. */
 export interface DevilTarget {
     readonly row: number;
     readonly col: number;
-    /** Whether it can be caught out in the meadow: the farmhand with wire out. */
+    /** Whether it can be caught out in the meadow, as the farmhand can with wire out. */
     readonly isExposed: boolean;
 }
 
@@ -89,6 +92,8 @@ export function createDustDevilModel(options: DustDevilModelOptions): DustDevilM
             return DEVIL_MIN_SIZE + (1 - DEVIL_MIN_SIZE) * share;
         },
         get isStarving() { return phase === 'whirling' && room < DEVIL_STARVING_ROOM; },
+        get room() { return room; },
+        set room(value) { room = value; },
         get blowOutProgress() { return phase === 'whirling' ? 0 : Math.min(1, blowOutMs / DEVIL_BLOW_OUT_MS); },
 
         update(deltaMs) {
@@ -108,10 +113,6 @@ export function createDustDevilModel(options: DustDevilModelOptions): DustDevilM
 
         blowOut() {
             if (phase === 'whirling') phase = 'blowing-out';
-        },
-
-        setRoom(newRoom) {
-            room = newRoom;
         },
     };
 

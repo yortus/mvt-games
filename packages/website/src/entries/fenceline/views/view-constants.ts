@@ -21,7 +21,7 @@ export const FIELD_Y = HUD_HEIGHT;
 export const FIELD_WIDTH = FIELD_COLS * CELL_SIZE;
 export const FIELD_HEIGHT = FIELD_ROWS * CELL_SIZE;
 
-/** The whole play area, in pixels: the HUD, the meadow and the earth round it. */
+/** The whole play area, in pixels. It holds the HUD, the meadow and the earth round it. */
 export const SCREEN_WIDTH = FIELD_WIDTH + MARGIN * 2;
 export const SCREEN_HEIGHT = HUD_HEIGHT + FIELD_HEIGHT + MARGIN;
 
@@ -32,7 +32,7 @@ export const HUD_FONT = 'monospace';
 // Colours
 // ---------------------------------------------------------------------------
 
-/** The game's palette: an earthy farm in late summer. */
+/** The game's palette, for an earthy farm in late summer. */
 export const COLOURS = {
     earth: 0x3b2a19,
     hud: 0x24180d,

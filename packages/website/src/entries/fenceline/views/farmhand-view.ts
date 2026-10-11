@@ -29,10 +29,10 @@ export interface FarmhandViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The farmhand: a small figure in a straw hat, a red shirt and blue
- * overalls, outlined in dark, standing on the fence at their grid point. They walk while
- * they move, carry a reel of wire while stringing, and face the way they
- * last went left or right.
+ * The farmhand, a small figure in a straw hat, a red shirt and blue
+ * overalls, outlined in dark. They stand on the fence at their grid point.
+ * They walk while they move, carry a reel of wire while stringing, and face
+ * the way they last went left or right.
  */
 export function FarmhandView(bindings: FarmhandViewBindings): Container {
     const { cellSize, spriteScale } = bindings;
@@ -122,7 +122,7 @@ const REEL: PixelRects = [
     [5, -7, 1, 2, COLOURS.wire],
 ];
 
-/** A pose: the body and these legs, outlined in dark so the farmhand stands out from the straw. */
+/** Draws a pose, the body with these legs. It is outlined in dark, so the farmhand stands out from the straw. */
 function drawPose(legs: PixelRects): Graphics {
     return drawOutlinedPixels(new Graphics(), [...BODY, ...legs], COLOURS.boot);
 }

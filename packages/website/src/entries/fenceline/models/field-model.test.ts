@@ -76,6 +76,24 @@ describe('FieldModel', () => {
         expect(field.canString(6, 1, 'right')).toBe(false);
     });
 
+    it('finds the fence point nearest or farthest, keeping clear of a point when asked', () => {
+        const field = createFieldModel({ rows: 8, cols: 10, obstacles: [] });
+        expect(field.findFencePoint({ row: 4, col: 1, which: 'nearest' })).toEqual({ row: 4, col: 0 });
+        expect(field.findFencePoint({ row: 0, col: 0, which: 'farthest' })).toEqual({ row: 8, col: 10 });
+        const clearOf = { row: 4, col: 0, distance: 3 };
+        const point = field.findFencePoint({ row: 4, col: 1, which: 'nearest', clearOf });
+        expect(point).toBeDefined();
+        expect(Math.hypot((point?.row ?? 0) - 4, (point?.col ?? 0) - 0)).toBeGreaterThanOrEqual(3);
+    });
+
+    it('finds no fence point, and no way along a fence, once the meadow is all fenced off', () => {
+        const field = createFieldModel({ rows: 8, cols: 10, obstacles: [] });
+        expect(field.findWayAlongFence(0, 5)).toBeDefined();
+        field.claimRegions(() => false);
+        expect(field.findFencePoint({ row: 4, col: 5, which: 'nearest' })).toBeUndefined();
+        expect(field.findWayAlongFence(0, 5)).toBeUndefined();
+    });
+
     it('fences round each pond, which counts towards neither side', () => {
         const field = createFieldModel({
             rows: 8,

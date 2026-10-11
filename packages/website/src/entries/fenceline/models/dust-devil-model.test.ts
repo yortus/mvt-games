@@ -47,16 +47,16 @@ describe('DustDevilModel', () => {
         });
         expect(devil.size).toBe(1);
         expect(devil.radius).toBe(DEVIL_RADIUS);
-        devil.setRoom(DEVIL_FULL_ROOM * 2);
+        devil.room = DEVIL_FULL_ROOM * 2;
         expect(devil.size).toBe(1);
-        devil.setRoom(3);
+        devil.room = 3;
         expect(devil.size).toBeLessThan(1);
         expect(devil.size).toBeGreaterThan(DEVIL_MIN_SIZE);
         expect(devil.radius).toBeCloseTo(DEVIL_RADIUS * devil.size);
         expect(devil.isStarving).toBe(false);
-        devil.setRoom(1.2);
+        devil.room = 1.2;
         expect(devil.isStarving).toBe(true);
-        devil.setRoom(1);
+        devil.room = 1;
         expect(devil.size).toBe(DEVIL_MIN_SIZE);
     });
 

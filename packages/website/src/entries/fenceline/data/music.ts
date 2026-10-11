@@ -1,9 +1,9 @@
 import { createSong, type SongOptions } from '@mvtjs/audio';
 import { BANJO, FIDDLE, THUMP, TOCK } from './sounds';
 
-// Fenceline's music, written for this game: barn dance tunes in G. Each
-// plays on three channels, a lead, a bass and a tock, which leaves the
-// chip's other five voices for the sound effects. Each row is a sixteenth
+// Fenceline's music was written for this game. The tunes are barn dances
+// in G. Each plays on three channels, a lead, a bass and a tock, which
+// leaves the chip's other five voices for the sound effects. Each row is a sixteenth
 // note, with a cell for each channel. See @mvtjs/audio's guide, Writing
 // Tracker Music, for the notation.
 
@@ -21,9 +21,9 @@ const BAND = {
 // ---------------------------------------------------------------------------
 
 /**
- * The tune while the farmhand works the meadow. A lilting reel over a
- * boom-chick bass: a bass note on each beat, a tock between. It loops
- * through eight bars.
+ * The tune while the farmhand works the meadow. It is a lilting reel over a
+ * boom-chick bass, with a bass note on each beat and a tock between. It
+ * loops through eight bars.
  */
 export const MEADOW_TUNE = createSong({
     ...BAND,

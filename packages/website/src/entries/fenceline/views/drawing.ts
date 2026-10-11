@@ -2,7 +2,7 @@ import type { Graphics } from 'pixi.js';
 
 // Helpers for drawing the game's pixel art with Graphics.
 
-/** A pixel-art sprite: rectangles of colour, each [x, y, width, height, colour], from its origin. */
+/** A pixel-art sprite, as rectangles of colour. Each is [x, y, width, height, colour], from the sprite's origin. */
 export type PixelRects = readonly (readonly [number, number, number, number, number])[];
 
 /** Draws `rects` into `g`, offset by (x, y). */

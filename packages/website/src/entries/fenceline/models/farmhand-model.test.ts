@@ -166,6 +166,20 @@ describe('FarmhandModel', () => {
         });
     });
 
+    it('tells whether its wire, or the farmhand at its end, is within reach of a point', () => {
+        const { farmhand, input } = makeFarmhand();
+        expect(farmhand.isWireWithin(8, 5, 1)).toBe(false);
+        input.direction = 'up';
+        input.stringPressed = true;
+        run(farmhand, ONE_STEP_MS * 3);
+        input.direction = 'none';
+        run(farmhand, ONE_STEP_MS);
+        // The wire runs up column 5 from row 8
+        expect(farmhand.isWireWithin(7, 5.5, 1)).toBe(true);
+        expect(farmhand.isWireWithin(7, 7, 1)).toBe(false);
+        expect(farmhand.isWireWithin(farmhand.row - 0.5, 5, 1)).toBe(true);
+    });
+
     it('goes back to the wire\'s post when it respawns', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';

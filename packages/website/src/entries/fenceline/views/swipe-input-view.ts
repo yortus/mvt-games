@@ -6,7 +6,7 @@ import type { Direction } from '../models';
 // ---------------------------------------------------------------------------
 
 export interface SwipeInputViewBindings {
-    /** Whether it listens at all, read once: on a touch screen. */
+    /** Whether it listens at all, as on a touch screen. Read once. */
     isEnabled: boolean;
     /** The area it listens over, in its own pixels, read once. */
     x: number;
@@ -15,9 +15,9 @@ export interface SwipeInputViewBindings {
     height: number;
     /** How far a finger must slide, in the view's pixels, to swipe. Read once. */
     swipeDistance: number;
-    /** The player swiped `direction`: up, down, left or right, whichever the slide was mostly. */
+    /** The player swiped `direction`, the way the slide mostly went. */
     onSwiped?: (direction: Direction) => void;
-    /** The player tapped: touched and let go without sliding. */
+    /** The player tapped, touching and letting go without sliding. */
     onTapped?: () => void;
 }
 

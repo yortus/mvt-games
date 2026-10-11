@@ -1,24 +1,27 @@
 import type { CellKind, ObstacleSpec } from '../data';
 import type { Direction } from './common';
+import { measureDistanceSquared, type Placed } from './geometry';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * The meadow: a grid of cells, and the fences along the lines between them.
+ * The meadow is a grid of cells, with fences along the lines between them.
  * Cells are named by row and column. So are the grid points at their
- * corners: point (r, c) is the top left corner of cell (r, c). A fence runs
- * from a point to the next point up, down, left or right, and has no width.
+ * corners, and point (r, c) is the top left corner of cell (r, c). A fence
+ * runs from a point to the next point up, down, left or right, and has no
+ * width.
  *
- * The open meadow is split into regions: cells that reach one another
- * without crossing a fence. Fencing off a region turns it to pasture.
+ * The open meadow is split into regions. A region is the cells that reach
+ * one another without crossing a fence. Fencing off a region turns it to
+ * pasture.
  */
 export interface FieldModel {
     /** Rows and columns of cells. Points run one further each way. */
     readonly rows: number;
     readonly cols: number;
-    /** Cells that can be fenced off: every cell but the ponds and rocks. */
+    /** Cells that can be fenced off. That is every cell but the ponds and rocks. */
     readonly claimableCount: number;
     /** Cells fenced off so far. */
     readonly claimedCount: number;
@@ -34,6 +37,7 @@ export interface FieldModel {
     cellKindAt: (row: number, col: number) => CellKind;
     /** Which wire fenced off cell (row, col), counting from 1, or 0 for one not fenced off. */
     closureAt: (row: number, col: number) => number;
+    /** Whether cell (row, col) is open meadow, not yet fenced off. */
     isMeadow: (row: number, col: number) => boolean;
     /** The region of meadow cell (row, col), or -1 for a cell that is not meadow. */
     regionAt: (row: number, col: number) => number;
@@ -43,13 +47,13 @@ export interface FieldModel {
     hasFence: (row: number, col: number, direction: Direction) => boolean;
     /**
      * Whether there is a fence to walk from point (row, col) one step
-     * `direction`: a fence with open meadow on at least one side. Fences with
+     * `direction`. It must have open meadow on at least one side. Fences with
      * pasture on both sides are left behind.
      */
     isWalkable: (row: number, col: number, direction: Direction) => boolean;
     /** Whether point (row, col) is on a fence that can be walked. */
     isOnFence: (row: number, col: number) => boolean;
-    /** Whether wire can be strung from point (row, col) one step `direction`: across open meadow, along no fence. */
+    /** Whether wire can be strung from point (row, col) one step `direction`, across open meadow and along no fence. */
     canString: (row: number, col: number, direction: Direction) => boolean;
     /**
      * Turns a wire into fence. The wire runs through `length` points, the
@@ -57,8 +61,23 @@ export interface FieldModel {
      * worked out again, ready for `claimRegions`.
      */
     addFence: (pathRows: ArrayLike<number>, pathCols: ArrayLike<number>, length: number) => void;
-    /** Fences off every region that `isKept` says to let go, and returns how many cells that was. */
+    /** Fences off every region for which `isKept` returns false, and returns how many cells that was. */
     claimRegions: (isKept: (region: number) => boolean) => number;
+    /** Returns the fence point that `search` asks for, or undefined if there is none. */
+    findFencePoint: (search: FencePointSearch) => Placed | undefined;
+    /** Returns a way along a walkable fence from point (row, col), or undefined if there is none. */
+    findWayAlongFence: (row: number, col: number) => Direction | undefined;
+}
+
+/** A search for a point on a walkable fence. */
+export interface FencePointSearch {
+    /** The point to search from. */
+    readonly row: number;
+    readonly col: number;
+    /** Whether to find the fence point nearest to it, or the one farthest from it. */
+    readonly which: 'nearest' | 'farthest';
+    /** A point to stay away from, and how far, in grid steps. */
+    readonly clearOf?: Placed & { readonly distance: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +194,35 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
             lastClosureCells += claimed;
             return claimed;
         },
+
+        findFencePoint(search) {
+            const { row, col, which, clearOf } = search;
+            const isNearest = which === 'nearest';
+            let best = isNearest ? Infinity : -1;
+            let foundRow = 0;
+            let foundCol = 0;
+            for (let r = 0; r <= rows; r++) {
+                for (let c = 0; c <= cols; c++) {
+                    const distance = measureDistanceSquared(r, c, row, col);
+                    if (isNearest ? distance >= best : distance <= best) continue;
+                    if (!model.isOnFence(r, c)) continue;
+                    if (clearOf !== undefined
+                        && measureDistanceSquared(r, c, clearOf.row, clearOf.col) < clearOf.distance * clearOf.distance) continue;
+                    best = distance;
+                    foundRow = r;
+                    foundCol = c;
+                }
+            }
+            const isFound = isNearest ? best !== Infinity : best >= 0;
+            return isFound ? { row: foundRow, col: foundCol } : undefined;
+        },
+
+        findWayAlongFence(row, col) {
+            for (let i = 0; i < DIRECTIONS.length; i++) {
+                if (model.isWalkable(row, col, DIRECTIONS[i])) return DIRECTIONS[i];
+            }
+            return undefined;
+        },
     };
 
     return model;
@@ -198,7 +246,7 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
         }
     }
 
-    /** Fences every line with meadow on one side only: round the edge, and round each pond and rock. */
+    /** Fences every line with meadow on one side only. That is round the edge, and round each pond and rock. */
     function fenceRoundMeadow(): void {
         for (let r = 0; r <= rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -230,7 +278,7 @@ export function createFieldModel(options: FieldModelOptions): FieldModel {
                 size++;
                 const r = Math.floor(i / cols);
                 const c = i - r * cols;
-                // To each neighbour not across a fence: up, down, left, right
+                // Visit each neighbour, up, down, left and right, that no fence divides from it
                 if (r > 0 && acrossFences[r * cols + c] === 0) top = visit(i - cols, region, top);
                 if (r < rows - 1 && acrossFences[(r + 1) * cols + c] === 0) top = visit(i + cols, region, top);
                 if (c > 0 && downFences[r * (cols + 1) + c] === 0) top = visit(i - 1, region, top);
@@ -301,3 +349,4 @@ const PASTURE = 1;
 const POND = 2;
 const ROCK = 3;
 const CELL_KINDS: readonly CellKind[] = ['meadow', 'pasture', 'pond', 'rock'];
+const DIRECTIONS: readonly Direction[] = ['up', 'right', 'down', 'left'];

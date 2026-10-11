@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { type Container, Text } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { FIELD_COLS, FIELD_ROWS, type RoundConfig, ROUNDS } from '../data';
-import { createGameModel, type HeldDirection, SHEEP_POINTS } from '../models';
+import { FIELD_COLS, FIELD_ROWS, type RoundConfig, ROUNDS, SHEEP_POINTS } from '../data';
+import { createGameModel, type HeldDirection } from '../models';
 import { GameView } from './game-view';
 
 const STEP_MS = 1000 / 60;
@@ -43,6 +43,15 @@ describe('GameView', () => {
         game.playerInput.restartPressed = false;
         tick();
         expect(listTexts(view)).toContain('ROUND 1\n\nFence off 70% of the meadow');
+        view.destroy({ children: true });
+    });
+
+    it('shows lives past the three hats that fit as a count', () => {
+        const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS, startLives: 5 });
+        const view = GameView({ model: game, sound: createHeadlessAudio80().audio80 });
+        updateView(view, STEP_MS);
+        refreshView(view);
+        expect(listTexts(view)).toContain('x5');
         view.destroy({ children: true });
     });
 

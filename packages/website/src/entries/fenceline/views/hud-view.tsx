@@ -29,10 +29,11 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The bar across the top: the score and the round on the left; in the
- * middle, how much of the meadow is fenced off, against a mark for the
- * round's target; on the right, a sheep for each in the round, white once
- * penned, and a hat for each life.
+ * The bar across the top. The score and the round are on the left. In the
+ * middle, a bar shows how much of the meadow is fenced off, against a mark
+ * for the round's target. On the right are a sheep for each in the round,
+ * white once penned, and a hat for each life. Past three lives, one hat
+ * shows with the count beside it.
  */
 export function HudView(bindings: HudViewBindings): Container {
     const { width } = bindings;
@@ -40,6 +41,7 @@ export function HudView(bindings: HudViewBindings): Container {
     const roundText = memoiseLast((round: number) => `ROUND ${round}`);
     const shareText = memoiseLast((percent: number) => `${percent}%`);
     const targetText = memoiseLast((percent: number) => `/${percent}%`);
+    const livesText = memoiseLast((lives: number) => `x${lives}`);
 
     return (
         <container>
@@ -90,11 +92,18 @@ export function HudView(bindings: HudViewBindings): Container {
                 </List>
             </container>
 
-            {/* A hat for each life */}
+            {/* A hat for each life, or with more lives than fit, one hat and the count */}
             <container x={width - 40} y={16}>
-                <List items={{ length: bindings.lives, at: (i) => i }}>
+                <List items={{ length: () => countHats(bindings.lives()), at: (i) => i }}>
                     {(_, i) => <graphics x={i * 12} ref={drawHat} />}
                 </List>
+                <text
+                    text={() => livesText(bindings.lives())}
+                    visible={() => bindings.lives() > MAX_HATS}
+                    x={7}
+                    y={-9}
+                    style={SCORE_LABEL_STYLE}
+                />
             </container>
         </container>
     );
@@ -105,6 +114,8 @@ export function HudView(bindings: HudViewBindings): Container {
 // ---------------------------------------------------------------------------
 
 const BAR_X = 150;
+/** The most lives shown as hats, which is as many as fit. */
+const MAX_HATS = 3;
 const BAR_WIDTH = 120;
 
 const SCORE_STYLE = { fontFamily: HUD_FONT, fontSize: 12, fontWeight: 'bold', fill: COLOURS.hudText } as const;
@@ -133,6 +144,11 @@ const HAT_ICON: PixelRects = [
     [-2, -5, 5, 1, COLOURS.hatBand],
     [-4, -4, 9, 1, COLOURS.hat],
 ];
+
+/** How many hats to show for `lives`: one each, or just one with the count beside it when they don't fit. */
+function countHats(lives: number): number {
+    return lives > MAX_HATS ? 1 : lives;
+}
 
 function drawSheepIcon(g: Graphics): void {
     drawPixels(g, SHEEP_ICON);

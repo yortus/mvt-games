@@ -28,9 +28,9 @@ export interface MeadowViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The ground: wild straw-coloured grass where the meadow is open, with wind
- * rippling across it, and green pasture scattered with flowers where it has
- * been fenced off. The ponds and rocks sit in it. Pasture fenced off by the
+ * The ground. Where the meadow is open, it is wild straw-coloured grass
+ * with wind rippling across it. Where it has been fenced off, it is green
+ * pasture scattered with flowers. The ponds and rocks sit in it. Pasture fenced off by the
  * latest wire flashes as it appears. The pasture is redrawn only when a wire
  * is tied off, or a round starts.
  */
@@ -157,9 +157,10 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
     }
 
     /**
-     * A boulder near (x, y): a round stone with a shadow below it and light
-     * on its top left. Its size and place vary with `hash`. Drawn a cell at a
-     * time, top to bottom, the boulders overlap into a rocky outcrop.
+     * Draws a boulder near (x, y). It is a round stone with a shadow below
+     * it and light on its top left, and its size and place vary with
+     * `hash`. Drawn a cell at a time, top to bottom, the boulders overlap into
+     * a rocky outcrop.
      */
     function drawBoulder(x: number, y: number, hash: number): void {
         const radius = 3.5 + (hash % 3) * 0.75;
