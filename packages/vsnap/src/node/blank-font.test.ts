@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as fontkit from 'fontkit';
 import { describe, expect, it } from 'vitest';
-import { buildBlankFont } from './blank-font';
+import { buildBlankFont } from './blank-font.ts';
 
 const bytes = buildBlankFont({ family: 'Visual Blank' });
 const font = fontkit.create(Buffer.from(bytes)) as fontkit.Font;

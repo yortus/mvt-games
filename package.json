@@ -31,15 +31,13 @@
         "prebench": "npm run generate-refresh-copies",
         "bench": "tsx packages/benchmarks/run.ts",
         "pretest": "npm run generate-refresh-copies",
-        "test": "vitest run",
-        "test:watch": "vitest",
+        "test": "vitest run -p unit",
+        "test:watch": "vitest -p unit",
         "pretest:visual": "npm run generate-refresh-copies",
-        "test:visual": "npm run test:visual -w vsnap && npm run test:visual:fixture -w vsnap && npm run test:visual -w @mvtjs/website --",
+        "test:visual": "vitest run -p \"visual-*\"",
         "pretest:visual:update": "npm run generate-refresh-copies",
-        "test:visual:update": "npm run test:visual:update -w vsnap && npm run test:visual:fixture -w vsnap -- --update && npm run test:visual:update -w @mvtjs/website --",
-        "pretest:visual:environment": "npm run generate-refresh-copies",
-        "test:visual:environment": "npm run test:visual:environment -w vsnap --",
-        "test:visual:check-references": "npm run test:visual:check-references -w vsnap && npm run test:visual:fixture -w vsnap -- check-references && npm run test:visual:check-references -w @mvtjs/website",
+        "test:visual:update": "vitest run -p \"visual-*\" -u",
+        "test:vsnap": "npm test -w vsnap",
         "generate-textures": "npm run generate-textures -w @mvtjs/website",
         "audio:render": "npm run render-wav -w @mvtjs/audio --",
         "pregenerate-thumbnails": "npm run generate-refresh-copies",
@@ -69,6 +67,6 @@
         "@rollup/rollup-linux-x64-gnu": "4.59.0"
     },
     "overrides": {
-        "playwright": "1.63.0"
+        "playwright": "~1.63.0"
     }
 }

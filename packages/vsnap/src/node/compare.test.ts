@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compareImages, TOLERANCE } from './compare';
-import type { RgbaImage } from './png';
+import { compareImages, TOLERANCE } from './compare.ts';
+import type { RgbaImage } from './png.ts';
 
 function createFlatImage(width: number, height: number, rgba: readonly number[]): RgbaImage {
     const pixels = new Uint8Array(width * height * 4);

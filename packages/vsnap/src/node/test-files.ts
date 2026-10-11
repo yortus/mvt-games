@@ -1,7 +1,7 @@
 import { type Dirent, globSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import type { VisualKind } from '../protocol';
-import type { VisualLayout } from './layout';
+import type { VisualKind } from '../protocol.ts';
+import type { VisualLayout } from './layout.ts';
 
 // ---------------------------------------------------------------------------
 // Functions

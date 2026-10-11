@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import type { VisualKind } from '../protocol';
+import type { VisualKind } from '../protocol.ts';
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -36,8 +36,8 @@ export interface ReferencePattern {
 // Constants
 // ---------------------------------------------------------------------------
 
-/** By default, visual test files are the `*.visual.ts` and `*.visual.tsx` files under `src/`. */
-export const DEFAULT_INCLUDE: readonly string[] = ['src/**/*.visual.{ts,tsx}'];
+/** By default, visual test files are the `*.visual.test.ts` and `*.visual.test.tsx` files. */
+export const DEFAULT_INCLUDE: readonly string[] = ['**/*.visual.test.{ts,tsx}'];
 
 /** By default, a test file's reference images are in `__references__/<test file name>/`, beside it. */
 export const DEFAULT_REFERENCE_PATH = '{testFileDir}/__references__/{testFileName}/{imageName}.png';

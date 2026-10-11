@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createLayout } from './layout';
-import { findVisualTestFiles } from './test-files';
+import { createLayout } from './layout.ts';
+import { findVisualTestFiles } from './test-files.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-test-files-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

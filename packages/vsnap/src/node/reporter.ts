@@ -1,19 +1,20 @@
 /**
- * The reporter that prints the visual run's summary, after Vitest's own
- * summary. It says how many actual images were produced and how they
- * compared. It says how long the tests took, as the median and 95th
- * percentile for each kind of test, and lists the slowest. It also says how
- * much space the references take, and lists the largest. That way, a slow
- * test or a big reference is noticed when it is added. On GitHub, the summary also goes on
+ * The reporter that prints the visual tests' summary, after Vitest's own
+ * summary. Each `vsnap` call has one, which reports on its own projects
+ * only. It says how many actual images were produced and how they compared.
+ * It says how long the tests took, as the median and 95th percentile for
+ * each kind of test, and lists the slowest. It also says how much space the
+ * references take, and lists the largest. That way, a slow test or a big
+ * reference is noticed when it is added. On GitHub, the summary also goes on
  * the job's summary page.
  *
- * After a full run, the reporter also looks for references that no actual
- * image was compared with. A full run is one in which every test ran, and
- * `src/node/cli/vsnap.ts` says whether a run is full. Such references were
- * left by tests that were renamed or deleted. In compare mode, the reporter
- * lists them and fails the run. In the modes that write references, it
- * deletes them. It looks for references under the root of the project being
- * tested, which is the folder that holds the Vitest config.
+ * After a complete run, in which every visual test ran, the reporter does
+ * two more things. It decodes every reference image, and checks its pixels
+ * against the hash it carries. A run compares only the hashes, so this is
+ * what catches a reference whose pixels were edited without its hash. It
+ * also looks for references that no actual image was compared with, which
+ * tests that were renamed or deleted left behind. Without Vitest's `-u`, it
+ * lists them and fails the run. With it, it deletes them.
  *
  * After every run, it also checks that no two tests share a reference
  * image, which would happen if their names differ only in punctuation. If
@@ -21,40 +22,58 @@
  */
 
 import { appendFileSync } from 'node:fs';
-import type { InlineConfig, Reporter, TestModule, TestRunEndReason } from 'vitest/node';
-import type { VisualTestMeta } from '../protocol';
-import type { VisualRunState } from './commands';
-import { resolveReferencePath, type VisualLayout } from './layout';
-import { toDisplayPath } from './paths';
-import { findOrphans, findReferences, removeReference, toFileKey } from './references';
+import { configDefaults } from 'vitest/config';
+import type { Reporter, TestModule, TestRunEndReason, TestSpecification, Vitest } from 'vitest/node';
+import type { VisualTestMeta } from '../protocol.ts';
+import type { VisualRunState } from './commands.ts';
+import { resolveReferencePath, type VisualLayout } from './layout.ts';
+import { toDisplayPath } from './paths.ts';
+import { checkReference, findOrphans, findReferenceCandidates, findReferences, removeReference, toFileKey } from './references.ts';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/**
- * Returns the reporters for a visual run: Vitest's own, then the visual
- * summary. On GitHub, Vitest's `github-actions` reporter also turns each
- * failure into an annotation on the run.
- */
-export function createVisualReporters(options: { readonly layout: VisualLayout; readonly state: VisualRunState }): NonNullable<InlineConfig['reporters']> {
-    return ['default', ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []), createVisualReporter(options)];
-}
-
-/** Creates the reporter that prints the visual run's summary, and handles references that no test used. */
-export function createVisualReporter(options: { readonly layout: VisualLayout; readonly state: VisualRunState }): Reporter {
-    const { layout, state } = options;
+/** Creates the reporter for one `vsnap` call's projects. */
+export function createVisualReporter(options: {
+    readonly layout: VisualLayout;
+    readonly state: VisualRunState;
+    /** The names of the projects to report on. */
+    readonly projectNames: readonly string[];
+    /** Every visual test file of those projects, as absolute paths. */
+    readonly testFiles: readonly string[];
+    /** The `include` lists that vsnap gave its projects. */
+    readonly includes: readonly string[];
+}): Reporter {
+    const { layout, state, projectNames } = options;
+    const testFiles = options.testFiles.map(toFileKey);
+    let vitest: Vitest | undefined;
     let started = 0;
+    /** The files of this reporter's projects that this run started. */
+    let startedFiles = new Set<string>();
     return {
-        onTestRunStart() {
-            started = performance.now();
+        onInit(v: Vitest) {
+            vitest = v;
+            checkForInheritedLists(v, projectNames, options.includes);
         },
-        onTestRunEnd(testModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
+        onTestRunStart(specifications: readonly TestSpecification[]) {
+            started = performance.now();
+            startedFiles = new Set(specifications.filter((s) => projectNames.includes(s.project.name)).map((s) => toFileKey(s.moduleId)));
+        },
+        onTestRunEnd(allModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
+            const testModules = allModules.filter((m) => projectNames.includes(m.project.name));
+            if (testModules.length === 0) return;
+            const isUpdate = vitest?.config.snapshotOptions.updateSnapshot === 'all' || process.env.VSNAP_MODE === 'environment';
+            const isComplete = reason !== 'interrupted'
+                && vitest?.config.testNamePattern === undefined
+                && testFiles.every((file) => startedFiles.has(file))
+                && testModules.every((m) => m.errors().length === 0 && [...m.children.allTests()].every((t) => t.result().state !== 'skipped'));
             const used = listUsedReferences(layout, testModules);
             const sharedLines = describeSharedReferences(used);
             const orphanLines = [
                 ...sharedLines,
-                ...(sharedLines.length === 0 && isFullRun(testModules, reason) ? settleOrphans({ layout, state, used }) : []),
+                ...(sharedLines.length === 0 && isComplete ? settleOrphans({ layout, state, used, isUpdate }) : []),
+                ...(isComplete ? checkEveryReference(layout, options.testFiles) : []),
             ];
             const images: { name: string; meta: VisualTestMeta; total: number }[] = [];
             for (const module of testModules) {
@@ -71,7 +90,7 @@ export function createVisualReporter(options: { readonly layout: VisualLayout; r
                 return;
             }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
-            const lines = [`The visual tests produced ${images.length} actual images in ${seconds} s.`];
+            const lines = [`The visual tests (${projectNames.join(', ')}) produced ${images.length} actual images in ${seconds} s.`];
             for (const kind of ['canvas', 'html'] as const) {
                 const times = images.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
                 if (times.length === 0) continue;
@@ -117,24 +136,6 @@ const OUTCOMES: Readonly<Record<string, string>> = {
     'size': 'changed size',
     'updated': 'updated',
 };
-
-/**
- * Returns whether every test ran. That is true when the command
- * (`src/node/cli/vsnap.ts`) called the run full because it had no
- * filters, the run was not interrupted, every file loaded, and no test was
- * skipped. Only then is a reference that no actual image was compared with
- * an orphan, rather than a reference whose test did not run this time.
- */
-function isFullRun(testModules: readonly TestModule[], reason: TestRunEndReason): boolean {
-    if (process.env.VSNAP_FULL_RUN !== '1' || reason === 'interrupted') return false;
-    for (const module of testModules) {
-        if (module.errors().length > 0) return false;
-        for (const test of module.children.allTests()) {
-            if (test.result().state === 'skipped') return false;
-        }
-    }
-    return true;
-}
 
 /** A reference, and the full names of the tests that used it in this run. */
 interface UsedReference {
@@ -186,20 +187,69 @@ function settleOrphans(options: {
     readonly layout: VisualLayout;
     readonly state: VisualRunState;
     readonly used: ReadonlyMap<string, UsedReference>;
+    readonly isUpdate: boolean;
 }): string[] {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].map((u) => u.file)];
     const orphans = findOrphans({ references: findReferences(options.layout.root).map((r) => r.file), compared });
     if (orphans.length === 0) return [];
     const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
-    if ((process.env.VSNAP_MODE ?? 'compare') === 'compare') {
+    if (!options.isUpdate) {
         process.exitCode = 1;
         return [
-            `  No test compared with ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${orphans.length === 1 ? 'it' : 'them'} behind, and \`npx vsnap --update\` deletes ${orphans.length === 1 ? 'it' : 'them'}:`,
+            `  No test compared with ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${orphans.length === 1 ? 'it' : 'them'} behind, and a complete run with Vitest's -u deletes ${orphans.length === 1 ? 'it' : 'them'}:`,
             ...names,
         ];
     }
     for (const file of orphans) removeReference(file, options.layout.root);
     return [`  ${countReferences(orphans.length, 'This', 'These')} ${orphans.length === 1 ? 'was' : 'were'} deleted, because no test compared with ${orphans.length === 1 ? 'it' : 'them'}:`, ...names];
+}
+
+/**
+ * Decodes every reference image of a root, and every PNG where a test's
+ * reference could be, and checks each one's pixels against the hash it
+ * carries. Fails the run if any doesn't match, and returns the summary's
+ * lines about them.
+ */
+function checkEveryReference(layout: VisualLayout, testFiles: readonly string[]): string[] {
+    const files = new Map<string, string>();
+    for (const { file } of findReferences(layout.root)) files.set(toFileKey(file), file);
+    for (const testFile of testFiles) {
+        for (const file of findReferenceCandidates(layout, testFile)) files.set(toFileKey(file), file);
+    }
+    const problems: string[] = [];
+    for (const file of files.values()) {
+        const problem = checkReference(file);
+        if (problem !== undefined) problems.push(`    ${toDisplayPath(file)}: ${problem}`);
+    }
+    if (problems.length === 0) return [];
+    process.exitCode = 1;
+    return [`  ${problems.length} of ${files.size} references do not match their hashes. Delete them, then rewrite them from their tests with Vitest's -u:`, ...problems];
+}
+
+/**
+ * Throws if vsnap's projects have file lists that vsnap didn't give them. A
+ * project that inherits the config it is listed in (`extends: true`) also
+ * gets the `include` and `exclude` lists of the config's own `test` block,
+ * which Vitest adds to the project's own. They would send unit tests to a
+ * browser page, or keep visual tests out of it. So it stops the run with a
+ * message that says how to fix it, before any test runs.
+ */
+function checkForInheritedLists(vitest: Vitest, projectNames: readonly string[], includes: readonly string[]): void {
+    const own = new Set(includes);
+    const defaults = new Set(configDefaults.exclude);
+    for (const project of vitest.projects) {
+        if (!projectNames.includes(project.name)) continue;
+        const extra = [
+            ...project.config.include.filter((pattern) => !own.has(pattern)),
+            ...project.config.exclude.filter((pattern) => !defaults.has(pattern)),
+        ];
+        if (extra.length === 0) continue;
+        throw new Error(
+            `vsnap's project ${project.name} inherits the config's own include and exclude lists (${extra.join(', ')}). `
+            + "Move include and exclude out of the config's test block, into the unit project, "
+            + "or name the Vite config that vsnap's projects need, with vsnap({ viteConfig }).",
+        );
+    }
 }
 
 /** Returns 'this reference' or 'these 3 references'. */

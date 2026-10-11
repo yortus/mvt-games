@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { afterAll, describe, expect, it } from 'vitest';
-import { createLayout } from './layout';
-import { encodePng, type RgbaImage } from './png';
-import { checkReference, findOrphans, findReferenceCandidates, findReferences, removeReference } from './references';
+import { createLayout } from './layout.ts';
+import { encodePng, type RgbaImage } from './png.ts';
+import { checkReference, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference } from './references.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-references-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -37,11 +37,11 @@ describe('findReferences', () => {
         expect(found).toEqual([join(root, 'views', 'visual-tests', 'one.png')]);
     });
 
-    it('skips a folder below the root that is a project of its own', () => {
+    it('skips a folder below the root that is a root of visual tests of its own', () => {
         const root = join(dir, 'nested');
         mkdirSync(join(root, 'fixture'), { recursive: true });
         writeFileSync(join(root, 'own.png'), encodePng(createImage(1)));
-        writeFileSync(join(root, 'fixture', 'vsnap.config.ts'), '');
+        registerRoot(join(root, 'fixture'));
         writeFileSync(join(root, 'fixture', 'theirs.png'), encodePng(createImage(2)));
         expect(findReferences(root).map((r) => r.file)).toEqual([join(root, 'own.png')]);
         expect(findReferences(join(root, 'fixture')).map((r) => r.file)).toEqual([join(root, 'fixture', 'theirs.png')]);

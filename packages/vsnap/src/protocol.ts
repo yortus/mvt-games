@@ -52,6 +52,8 @@ export interface VisualVerdict {
     readonly referenceFile: string;
     readonly actualFile?: string;
     readonly diffFile?: string;
+    /** The test file, relative to the repo's root, for the command that a failure message suggests. */
+    readonly testFile?: string;
 }
 
 /**
@@ -148,11 +150,6 @@ declare module 'vitest' {
         visualKind: VisualKind;
         /** The size budget in pixels, provided by the config (`maxPixels`). */
         visualMaxPixels: number;
-        /**
-         * The project's folder, relative to the repository, or '' at its
-         * root. Failure messages say where to run the commands they suggest.
-         */
-        visualProjectDir: string;
     }
 }
 

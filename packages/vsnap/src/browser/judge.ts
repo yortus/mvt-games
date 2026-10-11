@@ -1,5 +1,5 @@
 import { commands } from 'vitest/browser';
-import { expect, inject } from 'vitest';
+import { expect } from 'vitest';
 import { toImageName } from './image-name';
 import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
 
@@ -74,10 +74,9 @@ export function describeDifference(verdict: VisualVerdict): string {
  * the image name. It says what differs, where to look, and what to run.
  */
 export function describeFailure(name: string, verdict: VisualVerdict, kind: VisualKind): string {
-    // The command names the image, which has no spaces or shell characters,
-    // so the command can be copied and run as it is.
-    const dir = inject('visualProjectDir');
-    const update = `\`npx vsnap --update --image ${name}\`${dir === '' ? '' : ` in ${dir}`}`;
+    // The command reruns the test's file with Vitest's update flag. Only the
+    // images that changed are rewritten.
+    const update = verdict.testFile === undefined ? 'Vitest with -u' : `\`npx vitest run ${verdict.testFile} -u\``;
     switch (verdict.outcome) {
         case 'new':
             return `Image '${name}' is new. Run ${update}, and review ${verdict.actualFile ?? verdict.referenceFile}.`;

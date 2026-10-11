@@ -15,8 +15,10 @@
  * fails, its pixels and its diff are written to `.vitest/vsnap/` at the
  * repository's root, in the same directory layout as the repository.
  *
- * The run's mode comes from the `VSNAP_MODE` environment variable
- * (`compare`, `update` or `environment`), which `src/node/cli/vsnap.ts` sets.
+ * The run's mode is `update` when Vitest runs with `-u`, as it is for
+ * snapshots, and `compare` otherwise. This package's own maintainers set
+ * `VSNAP_MODE=environment` to rewrite the environment's fingerprint and the
+ * calibration set (`npm run test:visual:environment -w vsnap`).
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -25,11 +27,11 @@ import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
     VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
-} from '../protocol';
-import { compareImages } from './compare';
-import { ENVIRONMENT_FILE, findCalibrationDir, OUT_DIR, REPO_ROOT, toDisplayPath } from './paths';
-import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout';
-import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png';
+} from '../protocol.ts';
+import { compareImages } from './compare.ts';
+import { ENVIRONMENT_FILE, findCalibrationDir, OUT_DIR, REPO_ROOT, toDisplayPath } from './paths.ts';
+import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout.ts';
+import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -71,7 +73,7 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
                 if (hash !== undefined) hashes[name] = hash;
             }
         }
-        return { mode: MODE, hashes, isCalibrated: scope.calibration !== undefined && state.calibrated.has(scope.calibration) };
+        return { mode: findMode(ctx), hashes, isCalibrated: scope.calibration !== undefined && state.calibrated.has(scope.calibration) };
     };
 
     const recordVisualCalibration: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
@@ -81,7 +83,8 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
 
     const judgeVisualMismatch: BrowserCommand<[VisualImagePayload]> = (ctx, payload): VisualVerdict => {
         const pixels = new Uint8Array(Buffer.from(payload.pixels, 'base64'));
-        return judge(resolveFile(ctx, payload), payload, { width: payload.width, height: payload.height, pixels });
+        const actual = { width: payload.width, height: payload.height, pixels };
+        return judge({ file: resolveFile(ctx, payload), id: payload, actual, mode: findMode(ctx), testFile: ctx.testPath });
     };
 
     const captureVisualImage: BrowserCommand<[VisualCaptureRequest]> = async (ctx, request) => {
@@ -95,7 +98,7 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
         });
         const actual = decodePng(Buffer.from(data, 'base64'));
         const captureMs = performance.now() - started;
-        return { ...judge(resolveFile(ctx, request), request, actual), captureMs };
+        return { ...judge({ file: resolveFile(ctx, request), id: request, actual, mode: findMode(ctx), testFile: ctx.testPath }), captureMs };
     };
 
     /** Returns the folder and file-name pattern of the references in scope. */
@@ -117,7 +120,11 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
 // Internals
 // ---------------------------------------------------------------------------
 
-const MODE = (process.env.VSNAP_MODE ?? 'compare') as VisualMode;
+/** Returns the run's mode, from Vitest's update flag and the environment variable. */
+function findMode(ctx: { readonly project: { readonly vitest: { readonly config: { readonly snapshotOptions: { readonly updateSnapshot: string } } } } }): VisualMode {
+    if (process.env.VSNAP_MODE === 'environment') return 'environment';
+    return ctx.project.vitest.config.snapshotOptions.updateSnapshot === 'all' ? 'update' : 'compare';
+}
 
 const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
     const facts: EnvironmentFile = {
@@ -127,7 +134,7 @@ const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, envir
         timeZone: environment.timeZone,
         devicePixelRatio: environment.devicePixelRatio,
     };
-    if (MODE === 'environment') {
+    if (process.env.VSNAP_MODE === 'environment') {
         writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
         return [];
     }
@@ -167,11 +174,19 @@ function findTestPath(ctx: BrowserCommandContext): string {
  * whose processor rounds a little differently does not keep rewriting the
  * references.
  */
-function judge(file: string, id: VisualImageId, actual: RgbaImage): VisualVerdict {
+function judge(options: {
+    readonly file: string;
+    readonly id: VisualImageId;
+    readonly actual: RgbaImage;
+    readonly mode: VisualMode;
+    readonly testFile?: string;
+}): VisualVerdict {
+    const { file, id, actual, mode } = options;
     const referenceFile = toDisplayPath(file);
+    const testFile = options.testFile === undefined ? undefined : toDisplayPath(options.testFile);
     const hash = hashImage(actual);
     const exists = existsSync(file);
-    const isWritable = id.calibration !== undefined ? MODE === 'environment' : MODE !== 'compare';
+    const isWritable = id.calibration !== undefined ? mode === 'environment' : mode !== 'compare';
     if (exists && readPngHash(file) === hash) return { outcome: 'same', referenceFile };
 
     let expected: RgbaImage | undefined;
@@ -191,9 +206,9 @@ function judge(file: string, id: VisualImageId, actual: RgbaImage): VisualVerdic
     mkdirSync(dirname(outBase), { recursive: true });
     writeFileSync(`${outBase}.actual.png`, encodePng(actual));
     const actualFile = toDisplayPath(`${outBase}.actual.png`);
-    if (expected === undefined) return { outcome: 'new', referenceFile, actualFile };
+    if (expected === undefined) return { outcome: 'new', referenceFile, actualFile, testFile };
     if (comparison === undefined) {
-        return { outcome: 'size', referenceSize: `${expected.width}x${expected.height}`, referenceFile, actualFile };
+        return { outcome: 'size', referenceSize: `${expected.width}x${expected.height}`, referenceFile, actualFile, testFile };
     }
     writeFileSync(`${outBase}.diff.png`, encodePng(comparison.diff));
     return {
@@ -204,6 +219,7 @@ function judge(file: string, id: VisualImageId, actual: RgbaImage): VisualVerdic
         referenceFile,
         actualFile,
         diffFile: toDisplayPath(`${outBase}.diff.png`),
+        testFile,
     };
 }
 

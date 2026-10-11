@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png';
+import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-png-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

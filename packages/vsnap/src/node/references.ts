@@ -13,21 +13,27 @@
 
 import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { CONFIG_FILE } from './config-file';
-import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout';
-import { decodePng, hashImage, readPngHash } from './png';
-import { isSkippedFolder } from './test-files';
+import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout.ts';
+import { decodePng, hashImage, readPngHash } from './png.ts';
+import { isSkippedFolder } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
 
 /**
- * Returns every reference image under a project's root, which means every
- * PNG that carries a pixel hash. It skips installed packages, build output
- * and hidden folders. It also skips any folder below the root that holds a
- * `vsnap.config.ts` of its own, because that folder is another
- * project, with its own references.
+ * Records a root of visual tests, which `vsnap` calls for each set of
+ * projects that it makes. A scan of one root skips another root inside it,
+ * because that folder's reference images belong to its own tests.
+ */
+export function registerRoot(root: string): void {
+    roots.add(toFileKey(root));
+}
+
+/**
+ * Returns every reference image under a root, which means every PNG that
+ * carries a pixel hash. It skips installed packages, build output and
+ * hidden folders. It also skips any other root of visual tests inside it.
  */
 export function findReferences(root: string): { readonly file: string; readonly bytes: number }[] {
     return find(root, true);
@@ -106,9 +112,12 @@ export function toFileKey(file: string): string {
 // Internals
 // ---------------------------------------------------------------------------
 
+/** The roots of visual tests that this process's config made. */
+const roots = new Set<string>();
+
 function find(dir: string, isRoot: boolean): { file: string; bytes: number }[] {
     const entries = readdirSync(dir, { withFileTypes: true });
-    if (!isRoot && entries.some((entry) => entry.isFile() && entry.name === CONFIG_FILE)) return [];
+    if (!isRoot && roots.has(toFileKey(dir))) return [];
     const found: { file: string; bytes: number }[] = [];
     for (const entry of entries) {
         const path = join(dir, entry.name);

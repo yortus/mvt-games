@@ -8,8 +8,8 @@
  * a real change would fail on those images.
  */
 
-import type { VisualRect } from '../protocol';
-import type { RgbaImage } from './png';
+import type { VisualRect } from '../protocol.ts';
+import type { RgbaImage } from './png.ts';
 
 // ---------------------------------------------------------------------------
 // Interface

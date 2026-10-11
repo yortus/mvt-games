@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkReferencePath, createLayout, matchReferenceName, resolveReferencePath, resolveReferencePattern } from './layout';
+import { checkReferencePath, createLayout, matchReferenceName, resolveReferencePath, resolveReferencePattern } from './layout.ts';
 
 const root = join('/', 'project');
 const testFile = join(root, 'src', 'views', 'hud-view.visual.tsx');

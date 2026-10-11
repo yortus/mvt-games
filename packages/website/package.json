@@ -19,10 +19,7 @@
         "preview": "vite preview",
         "generate-textures": "tsx scripts/generate-textures.ts",
         "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
-        "measure-load": "tsx scripts/measure-load.ts",
-        "test:visual": "vsnap",
-        "test:visual:update": "vsnap --update",
-        "test:visual:check-references": "vsnap check-references"
+        "measure-load": "tsx scripts/measure-load.ts"
     },
     "dependencies": {
         "@codemirror/commands": "^6.11.1",

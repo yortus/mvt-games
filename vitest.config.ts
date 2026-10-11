@@ -1,13 +1,25 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
+import { vsnap } from 'vsnap/config';
 
 const ROOT = __dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-// One test run over every workspace in packages/, the website and the checks included.
+// The website's visual tests, in vsnap's projects, `visual-canvas` and
+// `visual-html`. `-p "visual-*"` runs them.
+const website = vsnap({
+    root: resolve(ROOT, 'packages/website'),
+    viteConfig: './vite.config.ts',
+    setup: './vsnap-setup.ts',
+});
+
+// One test run over every workspace in packages/: the unit tests in Node, in
+// the "unit" project, and the website's visual tests in a browser. vsnap is
+// left out, as if it lived in a repo of its own: its own config runs its
+// tests, and the scripts call it.
 export default defineConfig({
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
@@ -17,17 +29,32 @@ export default defineConfig({
         resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
     test: {
-        // .claude/ holds agent worktrees: separate checkouts, tested on their own.
-        // Visual tests in visual-tests folders run with the vsnap command.
-        exclude: [...configDefaults.exclude, '.claude/**', '**/visual-tests/**'],
-        // Node resolves solid-js to its server build, where effects never
-        // run. Tests get the browser build, as a page does, and Vite loads
-        // solid-js and pixi-solid itself so that they share that one copy.
-        alias: [
-            { find: /^solid-js$/, replacement: resolve(ROOT, 'node_modules/solid-js/dist/solid.js') },
-            { find: /^solid-js\/store$/, replacement: resolve(ROOT, 'node_modules/solid-js/store/dist/store.js') },
-            { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },
+        reporters: [
+            'default',
+            ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []),
+            website.reporter,
         ],
-        server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    // .claude/ holds agent worktrees: separate checkouts, tested on
+                    // their own. Visual tests run in vsnap's projects, and vsnap's
+                    // own tests in its own config.
+                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/vsnap/**', '**/*.visual.test.{ts,tsx}'],
+                    // Node resolves solid-js to its server build, where effects never
+                    // run. Tests get the browser build, as a page does, and Vite loads
+                    // solid-js and pixi-solid itself so that they share that one copy.
+                    alias: [
+                        { find: /^solid-js$/, replacement: resolve(ROOT, 'node_modules/solid-js/dist/solid.js') },
+                        { find: /^solid-js\/store$/, replacement: resolve(ROOT, 'node_modules/solid-js/store/dist/store.js') },
+                        { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },
+                    ],
+                    server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
+                },
+            },
+            ...website.projects,
+        ],
     },
 });
