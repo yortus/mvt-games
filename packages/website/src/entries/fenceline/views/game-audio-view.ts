@@ -1,0 +1,136 @@
+import { Container } from 'pixi.js';
+import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { createMusicPlayer, type Audio80 } from '@mvtjs/audio';
+import { createMetronome, watch } from '@mvtjs/utils';
+import {
+    BAA,
+    BLOW_OUT,
+    CREAK,
+    GAME_OVER_TUNE,
+    HATCH,
+    MEADOW_TUNE,
+    ROUND_CLEAR_TUNE,
+    ROUND_START,
+    SNAP,
+    SNAPPED_TUNE,
+    STRING_TICK,
+    TIE_OFF,
+} from '../data';
+import type { GamePhase } from '../models';
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+/** What `GameAudioView` reads about the game. */
+export interface GameAudioViewBindings {
+    /** The chip to play on. It is the view's output, not a query of the model, so it is read once. */
+    readonly sound: Audio80;
+    /** The game's phase. Each change of phase plays its tune. */
+    readonly phase: () => GamePhase;
+    /** Steps of wire strung. Each rise ticks. */
+    readonly wireSteps: () => number;
+    /** Wires tied off. Each rise is a hammer and a run up. */
+    readonly closures: () => number;
+    /** Sheep penned. Each rise bleats. */
+    readonly sheepPenned: () => number;
+    /** Dust devils blown out. Each rise is a rush of wind. */
+    readonly devilsBlownOut: () => number;
+    /** Beetles hatched. Each rise cracks a shell. */
+    readonly beetlesHatched: () => number;
+    /** Whether slack is running along the wire. It creaks while it does. */
+    readonly isSlackRunning: () => boolean;
+    /** The share of the meadow fenced off, and the round's target. The tune quickens as the share nears the target. */
+    readonly share: () => number;
+    readonly targetShare: () => number;
+}
+
+// ---------------------------------------------------------------------------
+// Tempo
+// ---------------------------------------------------------------------------
+
+/** How much faster the meadow tune plays with the round's target reached, as a multiple of its own tempo. */
+export const FULL_FIELD_TEMPO = 1.25;
+
+/** How often the slack creaks while it runs. */
+export const CREAK_PERIOD_MS = 240;
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+/**
+ * The game's music and sounds. A banjo roll plays as each round starts,
+ * then the meadow tune, which quickens as more of the meadow is fenced off.
+ * Each step of wire ticks off the reel, slack creaks as it runs, and a
+ * wire tied off rings out. Penned sheep bleat, dust devils rush away as
+ * they blow out, and beetles crack out of their eggs. A snapped wire
+ * twangs, and tunes play as the round is cleared and as the game ends. The
+ * view draws nothing.
+ */
+export function GameAudioView(bindings: GameAudioViewBindings): Container {
+    const { sound } = bindings;
+    const view = new Container();
+    view.label = 'game-audio';
+    const music = createMusicPlayer({ audio80: sound });
+    const creaks = createMetronome();
+    const watcher = watch({
+        phase: bindings.phase,
+        wireSteps: bindings.wireSteps,
+        closures: bindings.closures,
+        sheepPenned: bindings.sheepPenned,
+        devilsBlownOut: bindings.devilsBlownOut,
+        beetlesHatched: bindings.beetlesHatched,
+        creaks: () => creaks.count,
+    });
+
+    setUpdate(view, (deltaMs) => {
+        creaks.periodMs = bindings.phase() === 'playing' && bindings.isSlackRunning() ? CREAK_PERIOD_MS : 0;
+        creaks.update(deltaMs);
+        music.tempoScale = computeTempo();
+        music.update(deltaMs);
+    });
+    setRefresh(view, refresh);
+    return view;
+
+    function refresh(): void {
+        const w = watcher.poll();
+        // The first poll sees the game start, with no phase before it, so it plays the round's jingle
+        if (w.phase.changed) playPhase(w.phase.value);
+        if (w.wireSteps.increased) sound.play(STRING_TICK);
+        if (w.closures.increased) sound.play(TIE_OFF);
+        if (w.sheepPenned.increased) sound.play(BAA);
+        if (w.devilsBlownOut.increased) sound.play(BLOW_OUT);
+        if (w.beetlesHatched.increased) sound.play(HATCH);
+        if (w.creaks.increased) sound.play(CREAK);
+        music.refresh();
+    }
+
+    /** The meadow tune quickens as the share fenced off nears the round's target. Every other song plays at its own tempo. */
+    function computeTempo(): number {
+        if (music.song !== MEADOW_TUNE) return 1;
+        const progress = Math.min(1, bindings.share() / bindings.targetShare());
+        return 1 + (FULL_FIELD_TEMPO - 1) * progress;
+    }
+
+    function playPhase(phase: GamePhase): void {
+        switch (phase) {
+            case 'ready':
+                music.play(ROUND_START);
+                break;
+            case 'playing':
+                music.play(MEADOW_TUNE);
+                break;
+            case 'snapped':
+                sound.play(SNAP);
+                music.play(SNAPPED_TUNE);
+                break;
+            case 'round-clear':
+                music.play(ROUND_CLEAR_TUNE);
+                break;
+            case 'game-over':
+                music.play(GAME_OVER_TUNE);
+                break;
+        }
+    }
+}
