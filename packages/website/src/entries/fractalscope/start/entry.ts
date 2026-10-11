@@ -34,7 +34,7 @@ export const entry: ArcadeEntry = {
         'Pinch, drag, wheel and double tap turned into moves in the complex plane',
         'One renderer, the DOM: 2D canvases and an HTML panel',
     ],
-    tags: { kind: 'demo', genres: ['ui', 'demoscene'] },
+    tags: { kind: 'demo', genres: ['ui'] },
     // It fills whatever it is given; this is the shape of a typical one.
     screenWidth: 1280,
     screenHeight: 800,
