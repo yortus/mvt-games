@@ -1,4 +1,4 @@
-import type { PaletteName } from '../data';
+import type { PaletteName } from './palette-name';
 
 // ---------------------------------------------------------------------------
 // Interface

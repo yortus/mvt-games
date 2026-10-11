@@ -1,20 +1,21 @@
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import type { PaletteName } from '../data';
-import type { EscapeGrid, PlaneRegion } from '../models';
+import type { ScopeSetting } from '../data';
+import type { PaletteName } from './palette-name';
+import type { EscapeGrid } from './picture';
 import { buildPaletteColors, paintEscapes, type PaletteColors } from './palettes';
-import { MIN_VIEW_MARK, MINIMAP_HEIGHT, MINIMAP_WIDTH } from './view-constants';
+import { MIN_SCOPE_MARK, MINIMAP_HEIGHT, MINIMAP_WIDTH } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
 export interface MinimapViewBindings {
-    /** The whole fractal at a glance, over its home view. The map covers the overview's region. */
+    /** The whole fractal at a glance, taken at its rest setting. The map covers that setting. */
     overview: () => EscapeGrid;
-    /** The region being looked at, marked on the map. */
-    region: () => PlaneRegion;
-    /** The shape of the view the region is seen through, as its width over its height. */
+    /** The scope's setting now, marked on the map. */
+    setting: () => ScopeSetting;
+    /** The shape of the picture the scope's setting is shown in, as its width over its height. */
     aspect: () => number;
     /** The colours the map is drawn in. */
     palette: () => PaletteName;
@@ -25,13 +26,13 @@ export interface MinimapViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole fractal as a small map, with a mark where the view is. The map
- * is the overview, in the palette the image uses, so the two agree.
+ * The whole fractal as a small map, with a mark where the scope is. The map
+ * is the overview, in the palette the picture uses, so the two agree.
  *
- * Zoomed in, the view is a vanishingly small part of the set, so the mark
- * stops shrinking at a few pixels and reads as a pin on the spot. Panned
- * past the edge of the home view, it holds to the edge nearest where the
- * view has gone.
+ * Magnified, the scope takes in a vanishingly small part of the fractal, so
+ * the mark stops shrinking at a few pixels and reads as a pin on the spot.
+ * Moved past the edge of the rest setting, it holds to the edge nearest
+ * where the scope has gone.
  */
 export function MinimapView(bindings: MinimapViewBindings): Element {
     const canvas = document.createElement('canvas');
@@ -79,7 +80,7 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
 
         screen.imageSmoothingEnabled = true;
         screen.drawImage(picture, 0, 0, MINIMAP_WIDTH, MINIMAP_HEIGHT);
-        markView(screen, overview.region);
+        markScope(screen, overview.setting);
     }
 
     function resizePicture(context: CanvasRenderingContext2D, cols: number, rows: number): void {
@@ -91,21 +92,21 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
         paintedRows = rows;
     }
 
-    /** Outlines where the view sits on the map, which covers `map`. */
-    function markView(context: CanvasRenderingContext2D, map: PlaneRegion): void {
-        const looking = bindings.region();
+    /** Outlines what the scope takes in, on the map, which covers `map`. */
+    function markScope(context: CanvasRenderingContext2D, map: ScopeSetting): void {
+        const now = bindings.setting();
         const aspect = bindings.aspect();
-        if (!(looking.span > 0) || !(aspect > 0) || !(map.span > 0)) return;
+        if (!(now.width > 0) || !(aspect > 0) || !(map.width > 0)) return;
 
-        const unitsPerPixel = map.span / MINIMAP_WIDTH;
-        const mapHeight = map.span * (MINIMAP_HEIGHT / MINIMAP_WIDTH);
-        const centerX = (looking.centerRe - (map.centerRe - map.span * 0.5)) / unitsPerPixel;
-        const centerY = (map.centerIm + mapHeight * 0.5 - looking.centerIm) / unitsPerPixel;
-        const width = Math.max(MIN_VIEW_MARK, looking.span / unitsPerPixel);
-        const height = Math.max(MIN_VIEW_MARK, looking.span / aspect / unitsPerPixel);
-        // Held to the map, so that a view panned past its edge still shows.
-        const x = Math.min(MINIMAP_WIDTH, Math.max(0, centerX)) - width * 0.5;
-        const y = Math.min(MINIMAP_HEIGHT, Math.max(0, centerY)) - height * 0.5;
+        const unitsPerPixel = map.width / MINIMAP_WIDTH;
+        const mapHeight = map.width * (MINIMAP_HEIGHT / MINIMAP_WIDTH);
+        const centreX = (now.centreRe - (map.centreRe - map.width * 0.5)) / unitsPerPixel;
+        const centreY = (map.centreIm + mapHeight * 0.5 - now.centreIm) / unitsPerPixel;
+        const width = Math.max(MIN_SCOPE_MARK, now.width / unitsPerPixel);
+        const height = Math.max(MIN_SCOPE_MARK, now.width / aspect / unitsPerPixel);
+        // Held to the map, so that a scope moved past its edge still shows.
+        const x = Math.min(MINIMAP_WIDTH, Math.max(0, centreX)) - width * 0.5;
+        const y = Math.min(MINIMAP_HEIGHT, Math.max(0, centreY)) - height * 0.5;
 
         // A dark line under a light one, so the mark shows over the pale
         // bands as well as the dark ones.

@@ -17,7 +17,7 @@ export type FractalKind =
     | 'julia-spiral'
     | 'phoenix';
 
-/** Every fractal, in the order the panel lists them. The first is where the explorer starts. */
+/** Every fractal, in the order the panel lists them. The scope starts over the first. */
 export const FRACTAL_KINDS: readonly FractalKind[] = [
     'mandelbrot',
     'burning-ship',
@@ -29,26 +29,33 @@ export const FRACTAL_KINDS: readonly FractalKind[] = [
     'phoenix',
 ];
 
-/** A view of the complex plane: where it is centred, and how wide it is. */
-export interface HomeView {
-    readonly centerRe: number;
-    readonly centerIm: number;
-    /** How wide the view is, in units of the complex plane. Its height is three quarters of it. */
-    readonly span: number;
+/**
+ * A setting of the scope: the point of the complex plane it is centred on,
+ * and how wide a patch of the plane it takes in. How tall the patch is
+ * depends on the shape of whatever shows it, so it is not the scope's
+ * business.
+ */
+export interface ScopeSetting {
+    readonly centreRe: number;
+    readonly centreIm: number;
+    /** How wide a patch of the plane the scope takes in, in units of the plane. */
+    readonly width: number;
 }
 
 /**
- * Where each fractal's exploring starts: the whole of it, with a margin. A
- * home view is four units wide for every three tall, the shape of the
+ * The setting the scope rests at for each fractal: centred on it, and wide
+ * enough to take in all of it. The scope starts there, goes back there to
+ * recentre, and measures its magnification against it. Each is wide enough
+ * for a patch three quarters as tall as it is wide, the shape of the
  * minimap, which shows it.
  */
-export const FRACTAL_HOMES: { readonly [K in FractalKind]: HomeView } = {
-    'mandelbrot': { centerRe: -0.6, centerIm: 0, span: 3.2 },
-    'burning-ship': { centerRe: -0.45, centerIm: 0.5, span: 4.4 },
-    'tricorn': { centerRe: -0.4, centerIm: 0, span: 4.6 },
-    'multibrot': { centerRe: 0, centerIm: 0, span: 3.8 },
-    'celtic': { centerRe: -0.75, centerIm: 0, span: 5 },
-    'julia-rabbit': { centerRe: 0, centerIm: 0, span: 3.2 },
-    'julia-spiral': { centerRe: 0, centerIm: 0, span: 3.6 },
-    'phoenix': { centerRe: 0, centerIm: -0.25, span: 3.2 },
+export const REST_SETTINGS: { readonly [K in FractalKind]: ScopeSetting } = {
+    'mandelbrot': { centreRe: -0.6, centreIm: 0, width: 3.2 },
+    'burning-ship': { centreRe: -0.45, centreIm: 0.5, width: 4.4 },
+    'tricorn': { centreRe: -0.4, centreIm: 0, width: 4.6 },
+    'multibrot': { centreRe: 0, centreIm: 0, width: 3.8 },
+    'celtic': { centreRe: -0.75, centreIm: 0, width: 5 },
+    'julia-rabbit': { centreRe: 0, centreIm: 0, width: 3.2 },
+    'julia-spiral': { centreRe: 0, centreIm: 0, width: 3.6 },
+    'phoenix': { centreRe: 0, centreIm: -0.25, width: 3.2 },
 };

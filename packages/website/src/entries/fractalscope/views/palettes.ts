@@ -1,4 +1,4 @@
-import { type PaletteName, PALETTE_NAMES } from '../data';
+import { type PaletteName, PALETTE_NAMES } from './palette-name';
 import { INTERIOR } from '../models';
 import { PALETTE_INTERIORS, PALETTE_LABELS, type PaletteStop, PALETTE_STOPS } from './palette-stops';
 import { BACKDROP_COLOR } from './view-constants';

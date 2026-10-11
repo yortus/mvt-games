@@ -1,7 +1,8 @@
 /** @jsxImportSource @mvtjs/html */
 import { memoiseLast } from '@mvtjs/utils';
-import { FRACTAL_KINDS, type FractalKind, type PaletteName } from '../data';
-import type { EscapeGrid, PlaneRegion } from '../models';
+import { FRACTAL_KINDS, type FractalKind, type ScopeSetting } from '../data';
+import type { PaletteName } from './palette-name';
+import type { EscapeGrid } from './picture';
 import { FRACTAL_LABELS } from './fractal-labels';
 import { MinimapView } from './minimap-view';
 import { PALETTES } from './palettes';
@@ -14,10 +15,10 @@ import { createFixedText, countDigits, formatZoom } from './readouts';
 export interface SidePanelViewBindings {
     /** The fractal being explored. */
     fractal: () => FractalKind;
-    /** The region being looked at: where the readouts come from, and the minimap's mark. */
-    region: () => PlaneRegion;
-    /** How much the region magnifies the fractal's home view. */
-    zoom: () => number;
+    /** The scope's setting now: where the readouts come from, and the minimap's mark. */
+    setting: () => ScopeSetting;
+    /** How strongly the scope magnifies, shown as its zoom. */
+    magnification: () => number;
     /** The whole fractal at a glance, for the minimap. */
     overview: () => EscapeGrid;
     /** The shape of the image, as its width over its height. */
@@ -72,16 +73,17 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
             <div class="scope-map">
                 {MinimapView({
                     overview: bindings.overview,
-                    region: bindings.region,
+                    setting: bindings.setting,
                     aspect: bindings.aspect,
                     palette: bindings.palette,
                 })}
             </div>
 
             <dl class="scope-readout">
-                <ReadingView label="Real" value={() => realText(bindings.region().centerRe, places())} />
-                <ReadingView label="Imaginary" value={() => imaginaryText(bindings.region().centerIm, places())} />
-                <ReadingView label="Zoom" value={() => zoomText(bindings.zoom())} />
+                <ReadingView label="Real" value={() => realText(bindings.setting().centreRe, places())} />
+                <ReadingView label="Imaginary" value={() => imaginaryText(bindings.setting().centreIm, places())} />
+                {/* The panel speaks the visitor's words, so the scope's magnification is its zoom */}
+                <ReadingView label="Zoom" value={() => zoomText(bindings.magnification())} />
                 <ReadingView label="Detail" value={() => iterationsText(bindings.maxIterations())} />
             </dl>
 
@@ -126,7 +128,7 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
 
     /** How many decimal places the coordinates deserve at this depth. */
     function places(): number {
-        return countDigits(bindings.region().span);
+        return countDigits(bindings.setting().width);
     }
 
     /** Reports the fractal the visitor picked from the list. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FRACTAL_HOMES, FRACTAL_KINDS, type FractalKind } from '../data';
+import { FRACTAL_KINDS, type FractalKind, REST_SETTINGS } from '../data';
 import { type EscapeMeasure, INTERIOR, pickKernel } from './fractal-kernels';
 
 // ---------------------------------------------------------------------------
@@ -18,10 +18,10 @@ function escapeOf(kind: FractalKind, re: number, im: number, maxIterations = 500
 // ---------------------------------------------------------------------------
 
 describe('fractal kernels', () => {
-    it('has a kernel and a home view for every fractal', () => {
+    it('has a kernel and a rest setting for every fractal', () => {
         for (const kind of FRACTAL_KINDS) {
             expect(typeof pickKernel(kind), kind).toBe('function');
-            expect(FRACTAL_HOMES[kind].span, kind).toBeGreaterThan(0);
+            expect(REST_SETTINGS[kind].width, kind).toBeGreaterThan(0);
         }
     });
 

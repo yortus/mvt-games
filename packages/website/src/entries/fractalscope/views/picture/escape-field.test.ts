@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { createEscapeField, type EscapeField, INTERIOR, UNKNOWN } from './escape-field';
-import { COARSEST_BLOCK } from './model-constants';
+import { type EscapeMeasure, INTERIOR, pickKernel } from '../../models';
+import { createEscapeField, type EscapeField, UNKNOWN } from './escape-field';
+import { COARSEST_BLOCK } from './picture-constants';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const HOME = { centerRe: -0.6, centerIm: 0, span: 3.2 };
+const HOME = { centreRe: -0.6, centreIm: 0, width: 3.2 };
 
 function createField(cols = 64, rows = 48, maxIterations = 200): EscapeField {
-    return createEscapeField({ fractal: 'mandelbrot', cols, rows, region: HOME, maxIterations });
+    return createEscapeField({ measureEscape: pickKernel('mandelbrot'), cols, rows, setting: HOME, maxIterations });
 }
 
 /** Advances until the field is complete, and returns the iterations spent. */
@@ -22,9 +23,9 @@ function complete(field: EscapeField): number {
 
 /** The escape value at the sample nearest `re` + `im`i. */
 function escapeNear(field: EscapeField, re: number, im: number): number {
-    const unitsPerSample = field.region.span / field.cols;
-    const col = Math.floor((re - field.region.centerRe) / unitsPerSample + field.cols / 2);
-    const row = Math.floor((field.region.centerIm - im) / unitsPerSample + field.rows / 2);
+    const unitsPerSample = field.setting.width / field.cols;
+    const col = Math.floor((re - field.setting.centreRe) / unitsPerSample + field.cols / 2);
+    const row = Math.floor((field.setting.centreIm - im) / unitsPerSample + field.rows / 2);
     return field.escapes[row * field.cols + col];
 }
 
@@ -122,17 +123,17 @@ describe('EscapeField', () => {
         expect(field.revision).toBe(before);
     });
 
-    it('starts again over a new region from its old image, moved to fit', () => {
+    it('starts again over a new setting from its old image, moved to fit', () => {
         const field = createField();
         complete(field);
         const before = Array.from(field.escapes);
         const revision = field.revision;
         // Panned left by exactly four samples
-        const shifted = HOME.centerRe - (4 * HOME.span) / 64;
+        const shifted = HOME.centreRe - (4 * HOME.width) / 64;
 
-        field.restart({ ...HOME, centerRe: shifted }, 300);
+        field.restart({ ...HOME, centreRe: shifted }, 300);
 
-        expect(field.region.centerRe).toBe(shifted);
+        expect(field.setting.centreRe).toBe(shifted);
         expect(field.maxIterations).toBe(300);
         expect(field.blockSize).toBe(COARSEST_BLOCK);
         expect(field.progress).toBe(0);
@@ -148,7 +149,7 @@ describe('EscapeField', () => {
     it('never makes its image blockier as it sharpens again', () => {
         const field = createField();
         complete(field);
-        field.restart({ ...HOME, centerRe: HOME.centerRe - (4 * HOME.span) / 64 }, 200);
+        field.restart({ ...HOME, centreRe: HOME.centreRe - (4 * HOME.width) / 64 }, 200);
         const moved = Array.from(field.escapes);
 
         // The first pass, of 16-sample blocks, fills only the uncovered edge
@@ -168,7 +169,7 @@ describe('EscapeField', () => {
         complete(direct);
         const travelled = createField();
         complete(travelled);
-        travelled.restart({ centerRe: 0.3, centerIm: 0.5, span: 0.1 }, 200);
+        travelled.restart({ centreRe: 0.3, centreIm: 0.5, width: 0.1 }, 200);
         complete(travelled);
         travelled.restart(HOME, 200);
         complete(travelled);
@@ -176,7 +177,7 @@ describe('EscapeField', () => {
         expect(Array.from(travelled.escapes)).toEqual(Array.from(direct.escapes));
     });
 
-    it('resizes, keeping its picture and its region', () => {
+    it('resizes, keeping its picture and its setting', () => {
         const field = createField();
         complete(field);
         const before = escapeNear(field, -1.9, 1.1);
@@ -187,30 +188,43 @@ describe('EscapeField', () => {
         expect(field.rows).toBe(96);
         expect(field.escapes.length).toBe(128 * 96);
         expect(field.rowRevisions.length).toBe(96);
-        expect(field.region).toEqual(HOME);
+        expect(field.setting).toEqual(HOME);
         expect(field.isComplete).toBe(false);
         expect(escapeNear(field, -1.9, 1.1)).toBe(before);
     });
 
-    it('switches fractal, starting again from nothing', () => {
+    it('clears, starting again from nothing', () => {
         const field = createField();
         complete(field);
         const revision = field.revision;
-        const julia = { centerRe: 0, centerIm: 0, span: 3.2 };
+        const elsewhere = { centreRe: 0, centreIm: 0, width: 3.2 };
 
-        field.switchFractal('julia-rabbit', julia, 250);
+        field.clear(elsewhere, 250);
 
-        expect(field.fractal).toBe('julia-rabbit');
-        expect(field.region).toEqual(julia);
+        expect(field.setting).toEqual(elsewhere);
         expect(field.maxIterations).toBe(250);
         expect(field.progress).toBe(0);
         expect(field.revision).toBeGreaterThan(revision);
         expect(field.escapes.every((e) => e === UNKNOWN)).toBe(true);
+    });
 
+    it('asks the kernel it was given about each point', () => {
+        let asked = 0;
+        const field = createEscapeField({
+            measureEscape: (_re: number, _im: number, _maxIterations: number, measure: EscapeMeasure) => {
+                asked++;
+                measure.escape = 3;
+                measure.iterations = 10;
+            },
+            cols: 32,
+            rows: 32,
+            setting: HOME,
+            maxIterations: 100,
+        });
         complete(field);
-        // The rabbit's centre is its own, where the Mandelbrot set's home has it outside
-        expect(escapeNear(field, 0, 0)).toBe(INTERIOR);
-        expect(escapeNear(field, 1.4, 0)).toBeGreaterThan(0);
+
+        expect(asked).toBe(32 * 32);
+        expect(field.escapes.every((e) => e === 3)).toBe(true);
     });
 
     it('handles a grid that is not a whole number of blocks', () => {

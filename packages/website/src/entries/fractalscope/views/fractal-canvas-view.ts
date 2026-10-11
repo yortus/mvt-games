@@ -1,7 +1,8 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import type { FractalKind, PaletteName } from '../data';
-import type { EscapeGrid, PlaneRegion } from '../models';
+import type { FractalKind, ScopeSetting } from '../data';
+import type { PaletteName } from './palette-name';
+import type { EscapeGrid } from './picture';
 import { buildPaletteColors, paintEscapes, type PaletteColors } from './palettes';
 import { createPinchTracker } from './pinch-tracker';
 import { countDigits } from './readouts';
@@ -12,14 +13,14 @@ import { BACKDROP_COLOR, MAX_SAMPLE_DENSITY, MAX_SAMPLES } from './view-constant
 // ---------------------------------------------------------------------------
 
 export interface FractalCanvasViewBindings {
-    /** The image being computed, and the region it covers. */
+    /** The picture being computed, and the scope setting it was taken at. */
     field: () => EscapeGrid;
-    /** The region being looked at, which a gesture moves before the image follows. */
-    region: () => PlaneRegion;
-    /** The fractal being explored, which names a photo. */
+    /** The scope's setting now, which a gesture changes before the picture follows. */
+    setting: () => ScopeSetting;
+    /** The fractal under the scope, which names a photo. */
     fractal: () => FractalKind;
-    /** How much the region magnifies the fractal's home view, which names a photo too. */
-    zoom: () => number;
+    /** How strongly the scope magnifies, which names a photo too. */
+    magnification: () => number;
     /** The colours the image is drawn in. */
     palette: () => PaletteName;
     /** Rises each time a photo is ready. The view then saves what it shows. */
@@ -41,18 +42,20 @@ export interface FractalCanvasViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The image, on a canvas that fills whatever it is given, and the fingers
- * and mouse that move it.
+ * The picture, on a canvas that fills whatever it is given, and the fingers
+ * and mouse that work the scope.
  *
  * It keeps the picture it has coloured on a canvas of its own, one pixel per
  * sample. Each frame it colours the rows that changed, and draws the picture
- * onto the screen where the region being looked at puts it. While a gesture
- * runs, the region has moved and the image has not. So the picture is
- * stretched to fit, and turns blocky as the view closes in. Once the gesture
- * ends, the model computes the image again and it sharpens in place.
+ * onto the screen, scaled and shifted from the setting it was taken at to the
+ * scope's setting now. While a gesture runs, the scope's setting changes and
+ * the picture does not. So the picture is stretched to fit, and turns blocky
+ * as the scope closes in. Once the gesture ends, the picture is taken again
+ * and sharpens in place.
  *
- * The canvas's size and colours are the view's own. Where the view is, it
- * reads from its bindings every frame.
+ * It speaks in gestures, drags and zooms in CSS pixels, turned into moves in
+ * the complex plane. Whoever wires it up turns those into the scope's own
+ * controls. The canvas's size and colours are this view's own.
  */
 export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element {
     const canvas = document.createElement('canvas');
@@ -114,6 +117,10 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     function refresh(): void {
         const field = bindings.field();
         const changes = watcher.poll();
+        // The canvas has a pixel per sample. Resizing it clears it, and the
+        // picture is then coloured and drawn again whole.
+        if (canvas.width !== field.cols) canvas.width = field.cols;
+        if (canvas.height !== field.rows) canvas.height = field.rows;
         if (screen !== undefined && paper !== undefined) {
             const isPainted = paintPicture(paper, field, changes.palette.changed);
             drawPicture(screen, field, isPainted);
@@ -164,25 +171,25 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     }
 
     /**
-     * Draws the picture where the region being looked at puts it. It draws
-     * nothing when the picture has not changed and would land where it did
-     * last frame.
+     * Draws the picture where the scope's setting puts it. It draws nothing
+     * when the picture has not changed and would land where it did last
+     * frame.
      */
     function drawPicture(context: CanvasRenderingContext2D, field: EscapeGrid, isPainted: boolean): void {
         const cols = field.cols;
         const rows = field.rows;
-        const looking = bindings.region();
-        const shown = field.region;
-        if (!(looking.span > 0) || !(shown.span > 0)) return;
+        const now = bindings.setting();
+        const taken = field.setting;
+        if (!(now.width > 0) || !(taken.width > 0)) return;
 
-        // How much wider the picture's region is than the one being looked
-        // at, which is how far the picture must be stretched to fit it.
-        const stretch = shown.span / looking.span;
-        const unitsPerPixel = looking.span / cols;
+        // How much wider a patch the picture was taken of than the scope
+        // takes in now, which is how far the picture must be stretched.
+        const stretch = taken.width / now.width;
+        const unitsPerPixel = now.width / cols;
         const width = cols * stretch;
         const height = rows * stretch;
-        const x = (cols - width) * 0.5 - (looking.centerRe - shown.centerRe) / unitsPerPixel;
-        const y = (rows - height) * 0.5 + (looking.centerIm - shown.centerIm) / unitsPerPixel;
+        const x = (cols - width) * 0.5 - (now.centreRe - taken.centreRe) / unitsPerPixel;
+        const y = (rows - height) * 0.5 + (now.centreIm - taken.centreIm) / unitsPerPixel;
         if (!isPainted && x === drawnX && y === drawnY && width === drawnWidth) return;
         drawnX = x;
         drawnY = y;
@@ -199,12 +206,10 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
         context.drawImage(picture, x, y, width, height);
     }
 
-    /** Sizes the picture, the canvas and the image data to a grid of `cols` by `rows` samples. */
+    /** Sizes the picture and its image data to a grid of `cols` by `rows` samples. */
     function resizePicture(context: CanvasRenderingContext2D, cols: number, rows: number): void {
         picture.width = cols;
         picture.height = rows;
-        canvas.width = cols;
-        canvas.height = rows;
         image = context.createImageData(cols, rows);
         pixels = new Int32Array(image.data.buffer);
         paintedCols = cols;
@@ -230,11 +235,11 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
         );
     }
 
-    /** Turns a drag of the canvas into a move of the region, the other way. */
+    /** Turns a drag of the canvas into a move of the scope's centre, the other way. */
     function reportDrag(deltaX: number, deltaY: number): void {
         if (cssWidth <= 0) return;
-        const unitsPerPoint = bindings.region().span / cssWidth;
-        // The picture follows the fingers, so the view goes the other way.
+        const unitsPerPoint = bindings.setting().width / cssWidth;
+        // The picture follows the fingers, so the centre goes the other way.
         // The imaginary axis points up, and the screen's y axis points down.
         bindings.onDragged?.(-deltaX * unitsPerPoint, deltaY * unitsPerPoint);
     }
@@ -242,19 +247,19 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     /** Turns a zoom about a point of the canvas into a zoom about a point of the plane. */
     function reportZoom(factor: number, x: number, y: number): void {
         if (cssWidth <= 0 || cssHeight <= 0) return;
-        const looking = bindings.region();
-        const unitsPerPoint = looking.span / cssWidth;
+        const now = bindings.setting();
+        const unitsPerPoint = now.width / cssWidth;
         bindings.onZoomed?.(
             factor,
-            looking.centerRe + (x - cssWidth * 0.5) * unitsPerPoint,
-            looking.centerIm - (y - cssHeight * 0.5) * unitsPerPoint,
+            now.centreRe + (x - cssWidth * 0.5) * unitsPerPoint,
+            now.centreIm - (y - cssHeight * 0.5) * unitsPerPoint,
         );
     }
 
     /** Hands the canvas, as it stands, to the browser to save as a PNG. */
     function savePhoto(): void {
         if (canvas.width <= 0 || canvas.height <= 0) return;
-        const name = namePhoto(bindings.fractal(), bindings.region(), bindings.zoom());
+        const name = namePhoto(bindings.fractal(), bindings.setting(), bindings.magnification());
         canvas.toBlob((blob) => {
             // The browser gives nothing where it cannot make the picture.
             if (blob === null) return;
@@ -275,11 +280,11 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
 /** What shows where the picture does not reach, as a CSS colour. */
 const BACKDROP = `#${BACKDROP_COLOR.toString(16).padStart(6, '0')}`;
 
-/** The file name for a photo of `fractal` over `region`, saying which, where it is and how far in. */
-function namePhoto(fractal: FractalKind, region: PlaneRegion, zoom: number): string {
-    const digits = countDigits(region.span);
-    const re = region.centerRe.toFixed(digits);
-    const im = region.centerIm.toFixed(digits);
+/** The file name for a photo of `fractal` at `setting`, saying which, where it is and how far in. */
+function namePhoto(fractal: FractalKind, setting: ScopeSetting, zoom: number): string {
+    const digits = countDigits(setting.width);
+    const re = setting.centreRe.toFixed(digits);
+    const im = setting.centreIm.toFixed(digits);
     const times = zoom.toExponential(1).replace('e+', 'e');
     return `${fractal}_re${re}_im${im}_zoom${times}.png`;
 }

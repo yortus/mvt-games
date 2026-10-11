@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { destroyElement, refreshView } from '@mvtjs/html';
-import { FRACTAL_HOMES, FRACTAL_KINDS } from '../data';
-import { createExplorerModel } from '../models';
-import { ExplorerView } from './explorer-view';
+import { destroyElement, refreshView, updateView } from '@mvtjs/html';
+import { REST_SETTINGS, FRACTAL_KINDS } from '../data';
+import { createScopeModel } from '../models';
+import { ScopeView } from './scope-view';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** The width of the Mandelbrot set's home view, where the explorer starts. */
-const HOME_SPAN = FRACTAL_HOMES['mandelbrot'].span;
+const HOME_SPAN = REST_SETTINGS['mandelbrot'].width;
 
 /** The size the image's canvas is laid out at, in CSS pixels. */
 const WIDTH = 400;
@@ -32,8 +32,8 @@ function FakeResizeObserver(callback: () => void): Pick<ResizeObserver, 'observe
 }
 
 function setup() {
-    const model = createExplorerModel();
-    const view = ExplorerView({ model });
+    const model = createScopeModel();
+    const view = ScopeView({ model });
     document.body.replaceChildren(view);
     refreshView(view);
     const canvas = view.querySelector('.scope-image') as HTMLCanvasElement;
@@ -61,7 +61,7 @@ function setup() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('ExplorerView', () => {
+describe('ScopeView', () => {
     beforeEach(() => {
         vi.stubGlobal('ResizeObserver', FakeResizeObserver);
     });
@@ -69,11 +69,11 @@ describe('ExplorerView', () => {
         vi.unstubAllGlobals();
     });
 
-    it('sizes the image to the canvas, a sample per pixel', () => {
+    it('sizes the picture to the canvas, a sample per pixel', () => {
         const t = setup();
 
-        expect(t.model.field.cols).toBe(WIDTH);
-        expect(t.model.field.rows).toBe(HEIGHT);
+        expect(t.canvas.width).toBe(WIDTH);
+        expect(t.canvas.height).toBe(HEIGHT);
     });
 
     it('shows where the view is, and how far in', () => {
@@ -87,30 +87,26 @@ describe('ExplorerView', () => {
 
     it('drags the view the other way to the finger, in units of the plane', () => {
         const t = setup();
-        const before = t.model.region.centerRe;
+        const before = t.model.centreRe;
         t.pointer('pointerdown', 1, 200, 150);
         t.pointer('pointermove', 1, 300, 150);
 
         // A hundred pixels is a quarter of the width
-        expect(t.model.region.centerRe).toBeCloseTo(before - HOME_SPAN / 4);
-        expect(t.model.isGesturing).toBe(true);
-
-        t.pointer('pointerup', 1, 300, 150);
-        expect(t.model.isGesturing).toBe(false);
+        expect(t.model.centreRe).toBeCloseTo(before - HOME_SPAN / 4);
     });
 
     it('keeps the point under a pinch under the fingers', () => {
         const t = setup();
         // The point a quarter of the way across, at the middle row
-        const re = t.model.region.centerRe - HOME_SPAN / 4;
+        const re = t.model.centreRe - HOME_SPAN / 4;
         t.pointer('pointerdown', 1, 50, 150);
         t.pointer('pointerdown', 2, 150, 150);
         t.pointer('pointermove', 2, 250, 150);
         t.pointer('pointermove', 1, -50, 150);
 
-        expect(t.model.zoom).toBeCloseTo(3);
+        expect(t.model.magnification).toBeCloseTo(3);
         // The fingers' middle is back where it started, a quarter across
-        const pointAtMiddle = t.model.region.centerRe + (100 - WIDTH / 2) * (t.model.region.span / WIDTH);
+        const pointAtMiddle = t.model.centreRe + (100 - WIDTH / 2) * (t.model.width / WIDTH);
         expect(pointAtMiddle).toBeCloseTo(re, 10);
         refreshView(t.view);
         expect(t.reading('Zoom')).toBe('3.00x');
@@ -151,7 +147,6 @@ describe('ExplorerView', () => {
         t.button('Ice').click();
         refreshView(t.view);
 
-        expect(t.model.palette).toBe('ice');
         expect(t.button('Ice').getAttribute('aria-pressed')).toBe('true');
         expect(t.button('Ember').getAttribute('aria-pressed')).toBe('false');
     });
@@ -161,30 +156,33 @@ describe('ExplorerView', () => {
         t.button('Photo').click();
         refreshView(t.view);
 
-        expect(t.model.isPhotoPending).toBe(true);
-        expect(t.view.querySelectorAll('.scope-action')[0].textContent).toBe('Sharpening...');
+        const photoButton = t.view.querySelectorAll('.scope-action')[0];
+        expect(photoButton.textContent).toBe('Sharpening...');
 
-        for (let i = 0; i < 30; i++) t.model.update(16);
+        // The picture is computed in the view's update step
+        for (let i = 0; i < 30; i++) {
+            t.model.update(16);
+            updateView(t.view, 16);
+        }
         refreshView(t.view);
-        expect(t.model.photosTaken).toBe(1);
-        expect(t.button('Photo')).toBeDefined();
+        expect(photoButton.textContent).toBe('Photo');
     });
 
     it('goes home on reset', () => {
         const t = setup();
-        t.model.zoomBy(10, -0.75, 0.1);
+        t.model.magnifyAbout(10, -0.75, 0.1);
         t.button('Reset').click();
 
-        expect(t.model.zoom).toBe(1);
+        expect(t.model.magnification).toBe(1);
     });
 
     it('lets go of the canvas when destroyed', () => {
         const t = setup();
         destroyElement(t.view);
-        const before = t.model.region.centerRe;
+        const before = t.model.centreRe;
         t.pointer('pointerdown', 1, 200, 150);
         t.pointer('pointermove', 1, 300, 150);
 
-        expect(t.model.region.centerRe).toBe(before);
+        expect(t.model.centreRe).toBe(before);
     });
 });

@@ -1,36 +1,33 @@
-import type { FractalKind } from '../data';
-import type { PlaneRegion } from './common';
-import { type EscapeMeasure, INTERIOR, pickKernel } from './fractal-kernels';
-import { COARSEST_BLOCK } from './model-constants';
+import type { ScopeSetting } from '../../data';
+import type { EscapeKernel, EscapeMeasure } from '../../models';
+import { COARSEST_BLOCK } from './picture-constants';
 import { EXACT, reprojectSamples, type SampleGrid, UNKNOWN, UNKNOWN_COARSENESS } from './reproject-samples';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-export { INTERIOR, UNKNOWN };
+export { UNKNOWN };
 
 /**
- * A grid of samples over a region of the complex plane, as a reader sees
- * it, with no way to change it. Each sample holds how fast the point there
+ * A grid of samples taken at a scope setting, over the patch of the complex
+ * plane the scope took in, as a reader sees it, with no way to change it. Each sample holds how fast the point there
  * escapes to infinity under a fractal's rule. A point that never escapes
  * lies inside the fractal's set.
  */
 export interface EscapeGrid {
-    /** The fractal whose rule the samples follow. */
-    readonly fractal: FractalKind;
     /** How many samples wide the grid is. */
     readonly cols: number;
     /** How many samples tall the grid is. Its height in the plane follows from this. */
     readonly rows: number;
-    /** The region the samples are taken over. */
-    readonly region: PlaneRegion;
+    /** The scope setting the samples were taken at. */
+    readonly setting: ScopeSetting;
     /** How many iterations a sample gets before it counts as inside the set. */
     readonly maxIterations: number;
     /**
      * How fast each sample escaped, one per sample, row by row. The value is
      * fractional, so that colours drawn from it have no bands of their own.
-     * A sample that never escaped holds `INTERIOR`, and one nothing is known
+     * A sample that never escaped holds the model's `INTERIOR`, and one nothing is known
      * about yet holds `UNKNOWN`. Read it, never write it.
      */
     readonly escapes: Float32Array;
@@ -54,34 +51,37 @@ export interface EscapeGrid {
 }
 
 /**
- * An escape grid that computes itself, over several passes. The first pass
- * fills blocks of `COARSEST_BLOCK` samples from one sample each, so the
- * whole region has a value within a frame or two. Each pass after it halves
- * the blocks, until every sample is computed at its own point. So a reader
- * always has a whole image to draw, and it grows sharper.
+ * An escape grid that computes itself, over several passes, for a picture to
+ * be drawn from. The first pass fills blocks of `COARSEST_BLOCK` samples from
+ * one sample each, so the whole patch has a value within a frame or two.
+ * Each pass after it halves the blocks, until every sample is computed at
+ * its own point. So a reader always has a whole image to draw, and it grows
+ * sharper.
  *
- * When it moves to a new region or a new size, it starts from the image it
- * had, stretched and shifted to fit. A pass only replaces samples coarser
+ * When it is taken again at a new setting, or resized, it starts from the
+ * image it had, stretched and shifted to fit. A pass only replaces samples coarser
  * than its own blocks. So the image never gets blockier as it sharpens.
  *
- * It is not a model of its own, because it has no sense of time. `advance`
- * buys as much work as the caller pays for, in iterations.
+ * It has no sense of time. `advance` buys as much work as the caller pays
+ * for, in iterations. Which fractal it samples is not its business either:
+ * it asks `measureEscape` about each point.
  */
 export interface EscapeField extends EscapeGrid {
     /**
-     * Moves the grid to `region`, and starts the passes again. The samples
-     * are rebuilt from the image as it was, so a reader's picture holds
-     * still. Parts of the region the old image did not cover are `UNKNOWN`.
+     * Takes the grid again at `setting`, and starts the passes again. The
+     * samples are rebuilt from the image as it was, so a reader's picture
+     * holds still. Parts of the new patch the old image did not cover are
+     * `UNKNOWN`.
      */
-    restart: (region: PlaneRegion, maxIterations: number) => void;
+    restart: (setting: ScopeSetting, maxIterations: number) => void;
     /** Resizes the grid, rebuilding its samples from the image as it was, and starts the passes again. */
     resize: (cols: number, rows: number) => void;
     /**
-     * Switches to the fractal `fractal`, over `region`, and starts the
-     * passes again from nothing. Another fractal's image is no guide, so
-     * every sample becomes `UNKNOWN`.
+     * Takes the grid again at `setting`, and starts the passes from nothing.
+     * Every sample becomes `UNKNOWN`. It is for when the old image is no
+     * guide to the new one, such as when the fractal changes.
      */
-    switchFractal: (fractal: FractalKind, region: PlaneRegion, maxIterations: number) => void;
+    clear: (setting: ScopeSetting, maxIterations: number) => void;
     /** Computes samples until `iterationBudget` iterations are spent. Returns how many it spent. */
     advance: (iterationBudget: number) => number;
 }
@@ -92,12 +92,12 @@ export interface EscapeField extends EscapeGrid {
 
 /** How to make an escape field. */
 export interface EscapeFieldOptions {
-    /** The fractal whose rule the samples follow. */
-    readonly fractal: FractalKind;
+    /** Measures how fast a point escapes, under whatever rule the samples follow. */
+    readonly measureEscape: EscapeKernel;
     readonly cols: number;
     readonly rows: number;
-    /** The region to sample. */
-    readonly region: PlaneRegion;
+    /** The scope setting to take the samples at. */
+    readonly setting: ScopeSetting;
     readonly maxIterations: number;
 }
 
@@ -105,13 +105,12 @@ export interface EscapeFieldOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates an escape field over `options.region`, with nothing known about any sample yet. */
+/** Creates an escape field taken at `options.setting`, with nothing known about any sample yet. */
 export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let cols = Math.max(1, Math.floor(options.cols));
     let rows = Math.max(1, Math.floor(options.rows));
     let maxIterations = options.maxIterations;
-    let fractal = options.fractal;
-    let measureEscape = pickKernel(fractal);
+    const { measureEscape } = options;
     // What the kernel found for the last point, written in place.
     const measure: EscapeMeasure = { escape: 0, iterations: 0 };
 
@@ -124,12 +123,12 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let spareCoarseness = new Uint8Array(cols * rows);
     let rowRevisions = new Float64Array(rows);
 
-    // The one region object, written in place, so that reading it every
+    // The one setting object, written in place, so that reading it every
     // frame allocates nothing.
-    const region = {
-        centerRe: options.region.centerRe,
-        centerIm: options.region.centerIm,
-        span: options.region.span,
+    const setting = {
+        centreRe: options.setting.centreRe,
+        centreIm: options.setting.centreIm,
+        width: options.setting.width,
     };
 
     // Where the passes have got to. The cursor walks the grid in steps of
@@ -144,10 +143,9 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let iterationsSpent = 0;
 
     const field: EscapeField = {
-        get fractal() { return fractal; },
         get cols() { return cols; },
         get rows() { return rows; },
-        get region() { return region; },
+        get setting() { return setting; },
         get maxIterations() { return maxIterations; },
         get escapes() { return escapes; },
         get rowRevisions() { return rowRevisions; },
@@ -158,9 +156,9 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
 
         restart(next, nextMaxIterations) {
             const source = snapshotSamples();
-            region.centerRe = next.centerRe;
-            region.centerIm = next.centerIm;
-            region.span = next.span;
+            setting.centreRe = next.centreRe;
+            setting.centreIm = next.centreIm;
+            setting.width = next.width;
             maxIterations = nextMaxIterations;
             rebuildSamples(source);
         },
@@ -177,12 +175,10 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
             rebuildSamples(source);
         },
 
-        switchFractal(nextFractal, next, nextMaxIterations) {
-            fractal = nextFractal;
-            measureEscape = pickKernel(nextFractal);
-            region.centerRe = next.centerRe;
-            region.centerIm = next.centerIm;
-            region.span = next.span;
+        clear(next, nextMaxIterations) {
+            setting.centreRe = next.centreRe;
+            setting.centreIm = next.centreIm;
+            setting.width = next.width;
             maxIterations = nextMaxIterations;
             escapes.fill(UNKNOWN);
             coarseness.fill(UNKNOWN_COARSENESS);
@@ -219,18 +215,18 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
 
     return field;
 
-    /** The grid as it stands, with a copy of its region, as the source of a rebuild. */
+    /** The grid as it stands, with a copy of its setting, as the source of a rebuild. */
     function snapshotSamples(): SampleGrid {
-        return { cols, rows, region: { ...region }, escapes, coarseness };
+        return { cols, rows, setting: { ...setting }, escapes, coarseness };
     }
 
     /**
-     * Rebuilds the samples from `source` for the grid's region and size, into
+     * Rebuilds the samples from `source` for the grid's setting and size, into
      * the spares, which then swap with the samples. It marks every row
      * changed, and starts the passes again.
      */
     function rebuildSamples(source: SampleGrid): void {
-        reprojectSamples(source, { cols, rows, region, escapes: spareEscapes, coarseness: spareCoarseness });
+        reprojectSamples(source, { cols, rows, setting, escapes: spareEscapes, coarseness: spareCoarseness });
         const oldEscapes = escapes;
         const oldCoarseness = coarseness;
         escapes = spareEscapes;
@@ -262,9 +258,9 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
 
         // The sample sits at the middle of its own cell, so that every pass
         // takes a corner's sample at the same point.
-        const unitsPerSample = region.span / cols;
-        const re = region.centerRe + (col + 0.5 - cols * 0.5) * unitsPerSample;
-        const im = region.centerIm - (row + 0.5 - rows * 0.5) * unitsPerSample;
+        const unitsPerSample = setting.width / cols;
+        const re = setting.centreRe + (col + 0.5 - cols * 0.5) * unitsPerSample;
+        const im = setting.centreIm - (row + 0.5 - rows * 0.5) * unitsPerSample;
         measureEscape(re, im, maxIterations, measure);
         iterationsSpent += measure.iterations;
         const escape = measure.escape;

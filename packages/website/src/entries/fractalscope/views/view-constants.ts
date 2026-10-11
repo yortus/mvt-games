@@ -47,13 +47,13 @@ export const DOUBLE_TAP_SLOP = 30;
 // The minimap
 // ---------------------------------------------------------------------------
 
-/** The minimap's own pixels. It covers the home view, so its shape is the home view's. */
+/** The minimap's own pixels. It covers a fractal's rest setting, four wide for every three tall. */
 export const MINIMAP_WIDTH = 240;
 export const MINIMAP_HEIGHT = 180;
 
 /**
- * The smallest the mark of the current view may be drawn on the minimap, in
- * its pixels. Zoomed in, the view is far smaller than one pixel of the map,
- * and the mark becomes a pin on the spot.
+ * The smallest the mark of what the scope takes in may be drawn on the
+ * minimap, in its pixels. Magnified, the scope takes in far less than one
+ * pixel of the map, and the mark becomes a pin on the spot.
  */
-export const MIN_VIEW_MARK = 7;
+export const MIN_SCOPE_MARK = 7;

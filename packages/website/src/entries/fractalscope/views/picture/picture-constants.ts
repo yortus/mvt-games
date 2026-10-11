@@ -35,7 +35,7 @@ export const MIN_BUDGET_SHARE = 0.25;
 // How much detail a sample gets
 // ---------------------------------------------------------------------------
 
-/** How many iterations a sample gets in the home view. */
+/** How many iterations a sample gets at a fractal's rest setting. */
 export const BASE_ITERATIONS = 180;
 
 /** How many more it gets for each halving of the view's width. */
@@ -49,8 +49,8 @@ export const MAX_ITERATIONS = 4000;
 // ---------------------------------------------------------------------------
 
 /**
- * How long the view waits, after the last pan or zoom, before the image is
- * computed again. It gathers a run of mouse-wheel notches into one.
+ * How long the picture waits, after the scope's setting last changed, before
+ * it is taken again. It gathers a run of mouse-wheel notches into one.
  */
 export const SETTLE_MS = 120;
 
@@ -58,9 +58,17 @@ export const SETTLE_MS = 120;
 // The overview
 // ---------------------------------------------------------------------------
 
-/** The sample grid of the overview, the whole set at a glance. */
+/** The sample grid of the overview, the whole fractal at a glance. */
 export const OVERVIEW_COLS = 160;
 export const OVERVIEW_ROWS = 120;
 
 /** How many iterations the overview's samples get. It only has to show the set's shape. */
 export const OVERVIEW_ITERATIONS = 140;
+
+// ---------------------------------------------------------------------------
+// The start
+// ---------------------------------------------------------------------------
+
+/** The grid the picture is computed on until it is told how big the canvas is. */
+export const STARTING_COLS = 64;
+export const STARTING_ROWS = 48;

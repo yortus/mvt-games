@@ -3,11 +3,11 @@
 // ---------------------------------------------------------------------------
 
 /**
- * How many decimal places a coordinate deserves in a view `span` wide: a few
+ * How many decimal places a coordinate deserves in a patch `width` wide: a few
  * more than the view can tell apart, and never more than a double carries.
  */
-export function countDigits(span: number): number {
-    const needed = Math.ceil(-Math.log10(span)) + 5;
+export function countDigits(width: number): number {
+    const needed = Math.ceil(-Math.log10(width)) + 5;
     return Math.min(MAX_DIGITS, Math.max(MIN_DIGITS, needed));
 }
 

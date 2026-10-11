@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTE_NAMES } from '../data';
+import { PALETTE_NAMES } from './palette-name';
 import { INTERIOR } from '../models';
 import { buildPaletteColors, paintEscapes, PALETTES, RAMP_SIZE } from './palettes';
 import { createFixedText, countDigits, formatZoom } from './readouts';

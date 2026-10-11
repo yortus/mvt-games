@@ -9,14 +9,14 @@ import { EXACT, reprojectSamples, type SampleGrid, UNKNOWN, UNKNOWN_COARSENESS }
 function createSource(): SampleGrid {
     const escapes = new Float32Array(8);
     for (let i = 0; i < 8; i++) escapes[i] = i;
-    return { cols: 4, rows: 2, region: { centerRe: 0, centerIm: 0, span: 4 }, escapes, coarseness: new Uint8Array(8).fill(EXACT) };
+    return { cols: 4, rows: 2, setting: { centreRe: 0, centreIm: 0, width: 4 }, escapes, coarseness: new Uint8Array(8).fill(EXACT) };
 }
 
-function createTarget(cols: number, rows: number, centerRe: number, centerIm: number, span: number): SampleGrid {
+function createTarget(cols: number, rows: number, centreRe: number, centreIm: number, width: number): SampleGrid {
     return {
         cols,
         rows,
-        region: { centerRe, centerIm, span },
+        setting: { centreRe, centreIm, width },
         escapes: new Float32Array(cols * rows),
         coarseness: new Uint8Array(cols * rows),
     };
@@ -27,7 +27,7 @@ function createTarget(cols: number, rows: number, centerRe: number, centerIm: nu
 // ---------------------------------------------------------------------------
 
 describe('reprojectSamples', () => {
-    it('copies a grid onto the same region, as samples one wide', () => {
+    it('copies a grid onto the same setting, as samples one wide', () => {
         const target = createTarget(4, 2, 0, 0, 4);
         reprojectSamples(createSource(), target);
 

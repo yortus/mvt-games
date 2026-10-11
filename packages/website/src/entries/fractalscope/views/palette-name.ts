@@ -3,8 +3,9 @@
 // ---------------------------------------------------------------------------
 
 /**
- * The colour schemes the visitor chooses between. The model holds the chosen
- * name; the colours themselves are the views' business.
+ * The colour schemes the visitor chooses between. A palette is presentation
+ * alone, so the scope never hears of it. The picture's view model holds the
+ * one chosen.
  */
 export type PaletteName = 'ember' | 'ice' | 'ultraviolet' | 'spectrum' | 'slate';
 
