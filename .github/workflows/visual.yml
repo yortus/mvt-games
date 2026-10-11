@@ -65,7 +65,7 @@ jobs:
                   # The harness fixes everything that could differ between systems, such
                   # as the fonts, the HTML rules and the browser's switches. So a change
                   # to it is checked on every system too.
-                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/visual-testing .github/workflows/visual.yml)
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/vsnap .github/workflows/visual.yml)
                   echo "Harness changes: ${harness:-none}"
                   if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
                   else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
@@ -95,7 +95,7 @@ jobs:
               run: |
                   echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
                   echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
-              working-directory: packages/visual-testing
+              working-directory: packages/vsnap
 
             - uses: actions/cache@v4
               with:
@@ -109,7 +109,7 @@ jobs:
             # minutes.
             - name: Playwright's headless shell
               run: npx playwright install chromium-headless-shell
-              working-directory: packages/visual-testing
+              working-directory: packages/vsnap
 
             # The harness's own tests run first, then its fixture project's, then
             # the site's. Weekly and on demand, the tests run in a shuffled order.
@@ -123,7 +123,7 @@ jobs:
               run: |
                   set -o pipefail
                   npm run generate-refresh-copies
-                  { npm run test:visual -w @mvtjs/visual-testing -- $SHUFFLE && npm run test:visual:fixture -w @mvtjs/visual-testing -- $SHUFFLE && npm run test:visual -w @mvtjs/website -- $SHUFFLE; } 2>&1 | tee visual.log || {
+                  { npm run test:visual -w vsnap -- $SHUFFLE && npm run test:visual:fixture -w vsnap -- $SHUFFLE && npm run test:visual -w @mvtjs/website -- $SHUFFLE; } 2>&1 | tee visual.log || {
                       grep -q "Tests .* failed" visual.log ||
                       echo "::error title=Visual tests::$(tail -c 6000 visual.log | sed 's/\x1b\[[0-9;]*m//g; s/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
                       exit 1
@@ -137,5 +137,5 @@ jobs:
               if: failure()
               with:
                   name: visual-${{ matrix.os }}
-                  path: .vitest/visual/
+                  path: .vitest/vsnap/
                   if-no-files-found: ignore

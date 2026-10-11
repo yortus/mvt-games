@@ -1,6 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreeImageOptions, canvasTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/three';
+import { type ThreeImageOptions, canvasTest } from 'vsnap';
 import { createFruitMachineModel } from '../../models';
 import { loadSymbolArt } from '../art';
 import { dressBanditScene, frameBanditCamera } from './bandit-scene';
@@ -23,7 +24,7 @@ describe('BanditView', () => {
         const model = createFruitMachineModel({ seed: SEED });
         const view = BanditView({ model, art: await loadSymbolArt(), dragSurface: document.createElement('div') });
         void model.spin();
-        await advanceTime({ models: [model], views: [view], totalMs: 600 });
+        await advanceTime(600, model, view);
         return view;
     });
 });

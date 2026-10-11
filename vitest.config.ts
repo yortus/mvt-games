@@ -18,7 +18,7 @@ export default defineConfig({
     },
     test: {
         // .claude/ holds agent worktrees: separate checkouts, tested on their own.
-        // Visual tests in visual-tests folders run with the visual-tests command.
+        // Visual tests in visual-tests folders run with the vsnap command.
         exclude: [...configDefaults.exclude, '.claude/**', '**/visual-tests/**'],
         // Node resolves solid-js to its server build, where effects never
         // run. Tests get the browser build, as a page does, and Vite loads

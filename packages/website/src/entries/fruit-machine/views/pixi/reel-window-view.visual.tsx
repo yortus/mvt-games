@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { canvasTest } from '@mvtjs/visual-testing';
+import { canvasTest } from 'vsnap';
 import { REEL_STRIPS } from '../../data';
 import { loadSymbolArt } from '../art';
 import { ReelWindowView } from './reel-window-view';

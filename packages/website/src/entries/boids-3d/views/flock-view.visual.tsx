@@ -1,6 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreeImageOptions, canvasTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/three';
+import { type ThreeImageOptions, canvasTest } from 'vsnap';
 import { createFlockModel, type FlockModel } from '../../boids';
 import { FlockView } from './flock-view';
 
@@ -15,7 +16,7 @@ describe('FlockView', () => {
     canvasTest('two seconds in', IMAGE, async () => {
         const model = createFlock();
         const view = FlockView({ model });
-        await advanceTime({ models: [model], views: [view], totalMs: 2000 });
+        await advanceTime(2000, model, view);
         return view;
     });
 });

@@ -1,6 +1,7 @@
 import { describe } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { advanceTime, canvasTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/pixi';
+import { canvasTest } from 'vsnap';
 import { CAT_SPAWNS, MAZE_DATA, MOUSE_SPAWN, PEN_EXIT, textures } from '../data';
 import { createGameModel } from '../models';
 import { GameView } from './game-view';
@@ -11,7 +12,7 @@ async function poseGame(advanceMs: number): Promise<ReturnType<typeof GameView>>
     const model = createGameModel({ grid: MAZE_DATA, mouseSpawn: MOUSE_SPAWN, catSpawns: CAT_SPAWNS, penExit: PEN_EXIT });
     // A headless chip makes no sound, and an image does not depend on what plays.
     const view = GameView({ model, sound: createHeadlessAudio80().audio80 });
-    await advanceTime({ models: [model], views: [view], totalMs: advanceMs });
+    await advanceTime(advanceMs, model, view);
     return view;
 }
 

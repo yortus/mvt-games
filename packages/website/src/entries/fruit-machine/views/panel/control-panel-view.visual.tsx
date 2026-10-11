@@ -1,5 +1,6 @@
 import { describe } from 'vitest';
-import { advanceTime, htmlTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/html';
+import { htmlTest } from 'vsnap';
 import '../../fruit-machine.css';
 import { createFruitMachineModel } from '../../models';
 import { entry } from '../../start';
@@ -41,7 +42,7 @@ describe('ControlPanelView', () => {
         const model = createFruitMachineModel({ seed: SEED });
         const view = ControlPanelView({ model, art });
         void model.spin();
-        await advanceTime({ models: [model], views: [view], totalMs: 600 });
+        await advanceTime(600, model, view);
         return placeInQuadrant(view);
     });
 });

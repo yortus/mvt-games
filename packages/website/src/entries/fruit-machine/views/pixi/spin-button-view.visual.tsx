@@ -1,5 +1,5 @@
 import { describe } from 'vitest';
-import { canvasTest } from '@mvtjs/visual-testing';
+import { canvasTest } from 'vsnap';
 import { BUTTON_RADIUS } from './pixi-layout';
 import { type SpinButtonMode, SpinButtonView } from './spin-button-view';
 

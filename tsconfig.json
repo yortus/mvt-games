@@ -8,7 +8,7 @@
         { "path": "./packages/three" },
         { "path": "./packages/html" },
         { "path": "./packages/audio" },
-        { "path": "./packages/visual-testing" },
+        { "path": "./packages/vsnap" },
         { "path": "./packages/eslint-plugin" },
         { "path": "./packages/website" },
         { "path": "./packages/benchmarks" },

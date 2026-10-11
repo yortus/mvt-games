@@ -880,8 +880,19 @@ function rendererOf(node: object, name: 'updateView' | 'refreshView'): Renderer 
     );
 }
 
+/**
+ * Returns whether a value is a view of an installed renderer, which is
+ * whether its prototype was registered with `registerRenderer`. It is not
+ * part of the public tick API. `advanceTime` uses it to tell views from
+ * models.
+ */
+export function isView(value: unknown): value is View {
+    if (typeof value !== 'object' || !value) return false;
+    return (value as NodeFields)._mvtRenderer !== undefined;
+}
+
 /** Names a value of unknown kind in an error message. */
-function describeValue(value: unknown): string {
+export function describeValue(value: unknown): string {
     if (typeof value !== 'object' || !value) return String(value);
     const name = (value as { readonly constructor?: { readonly name?: unknown } }).constructor?.name;
     return typeof name === 'string' && name !== 'Object' ? `an object of class ${name}` : 'a plain object';

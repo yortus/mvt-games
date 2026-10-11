@@ -26,9 +26,9 @@ const OWN_BARREL_IMPORT = {
 const TICK_API_FROM_RENDERER = {
     name: '@mvtjs/utils',
     importNames: [
-        'updateView', 'refreshView', 'setUpdate', 'setRefresh', 'hasUpdate', 'hasRefresh', 'SKIP_DESCENDANTS',
+        'updateView', 'refreshView', 'setUpdate', 'setRefresh', 'hasUpdate', 'hasRefresh', 'SKIP_DESCENDANTS', 'advanceTime',
         'addReads', 'countTick', 'tickCounter',
-        'UpdateMethod', 'RefreshMethod', 'TickCounter', 'TickCounts', 'View',
+        'UpdateMethod', 'RefreshMethod', 'TickCounter', 'TickCounts', 'View', 'Advanceable',
     ],
     message: 'Import this from the renderer package (@mvtjs/pixi, @mvtjs/three or @mvtjs/html), which re-exports it.',
 };
@@ -44,6 +44,8 @@ const DEV_FILES = [
     'packages/benchmarks/**',
     'packages/docs/**',
     '**/*.config.{ts,js}',
+    // A visual test project's setup file, which runs in the test page.
+    '**/vsnap-setup.ts',
 ];
 
 export default tseslint.config(
@@ -236,9 +238,9 @@ export default tseslint.config(
             'packages/three/src/object3d-mixin.ts',
             'packages/website/scripts/vite-plugin-spritesheet.ts',
             'packages/audio/src/web/chip-processor.ts',
-            // The visual tests' harness replaces canvas text drawing and patches a Pixi pool.
-            'packages/visual-testing/src/browser/canvas-text.ts',
-            'packages/visual-testing/src/browser/page-state.ts',
+            // vsnap replaces canvas text drawing and patches a Pixi pool.
+            'packages/vsnap/src/browser/canvas-text.ts',
+            'packages/vsnap/src/browser/page-state.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },

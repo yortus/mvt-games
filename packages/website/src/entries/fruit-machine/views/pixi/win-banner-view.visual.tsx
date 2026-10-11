@@ -1,5 +1,6 @@
 import { describe } from 'vitest';
-import { advanceTime, canvasTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/pixi';
+import { canvasTest } from 'vsnap';
 import { WinBannerView } from './win-banner-view';
 
 const WIN = 1250;
@@ -16,7 +17,7 @@ describe('WinBannerView', () => {
         let amount = 0;
         const view = WinBannerView({ isShown: () => true, amount: () => amount, caption: () => CAPTION });
         amount = WIN;
-        await advanceTime({ views: [view], totalMs: 300 });
+        await advanceTime(300, view);
         return view;
     });
 });

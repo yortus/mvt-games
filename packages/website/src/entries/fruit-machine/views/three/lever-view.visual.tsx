@@ -1,6 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
-import { advanceTime, type ThreeImageOptions, canvasTest } from '@mvtjs/visual-testing';
+import { advanceTime } from '@mvtjs/three';
+import { type ThreeImageOptions, canvasTest } from 'vsnap';
 import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from './bandit-layout';
 import { dressBanditScene } from './bandit-scene';
 import { LeverView } from './lever-view';
@@ -23,7 +24,7 @@ async function posePulledLever(totalMs: number): Promise<ReturnType<typeof Lever
     let spinCount = 0;
     const lever = LeverView({ kit: createMaterialKit(), spinCount: () => spinCount });
     spinCount++;
-    await advanceTime({ views: [lever], totalMs });
+    await advanceTime(totalMs, lever);
     return lever;
 }
 
