@@ -44,6 +44,8 @@ export function createVisualReporter(options: {
     readonly testFiles: readonly string[];
     /** The `include` lists that vsnap gave its projects. */
     readonly includes: readonly string[];
+    /** The setup files that vsnap gave its projects. */
+    readonly setupFiles: readonly string[];
 }): Reporter {
     const { layout, state, projectNames } = options;
     const testFiles = options.testFiles.map(toFileKey);
@@ -55,6 +57,7 @@ export function createVisualReporter(options: {
         onInit(v: Vitest) {
             vitest = v;
             checkForInheritedLists(v, projectNames, options.includes);
+            checkForInheritedSetupFiles(v, projectNames, options.setupFiles);
         },
         onTestRunStart(specifications: readonly TestSpecification[]) {
             started = performance.now();
@@ -148,6 +151,26 @@ const OUTCOMES: Readonly<Record<string, string>> = {
     'updated': 'updated',
     'added': 'added',
 };
+
+/**
+ * Throws if a vsnap project inherits setup files from the config that it is
+ * listed in, as a project with Vitest's `extends: true` does. They would
+ * run in the project's browser page, where a setup file written for Node,
+ * or for a simulated DOM, fails in ways that point nowhere near the cause.
+ */
+function checkForInheritedSetupFiles(vitest: Vitest, projectNames: readonly string[], setupFiles: readonly string[]): void {
+    const own = new Set(setupFiles.map(toFileKey));
+    for (const project of vitest.projects) {
+        if (!projectNames.includes(project.name)) continue;
+        const extra = project.config.setupFiles.filter((file) => !own.has(toFileKey(file)));
+        if (extra.length === 0) continue;
+        throw new Error(
+            `vsnap's project ${project.name} inherits setup files from the config (${extra.map(toDisplayPath).join(', ')}), which would run in its browser page. `
+            + "Move setupFiles out of the config's test block, into the unit project, "
+            + "or name the Vite config that vsnap's projects need, with vsnap({ viteConfig }).",
+        );
+    }
+}
 
 /**
  * Returns why a run did not run every visual test, so that the checks of

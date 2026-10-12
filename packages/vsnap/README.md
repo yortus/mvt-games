@@ -341,8 +341,10 @@ vsnap's projects inherit the config that they are listed in, as Vitest's
 `extends: true` does. So the views compile with the same plugins and
 aliases as the rest of the project. Vitest adds the config's own `include`
 and `exclude` lists to an inheriting project's, so keep them in the unit
-project, as above, not in the config's `test` block. A run stops with a
-message if they leak into vsnap's projects.
+project, as above, not in the config's `test` block. The same goes for
+`setupFiles`, which would run in vsnap's browser pages, where a setup file
+written for Node, or for a simulated DOM, fails. A run stops with a message
+if any of them leak into vsnap's projects.
 
 Every option is optional.
 
@@ -354,10 +356,76 @@ Every option is optional.
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for vsnap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
+| `config` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of vsnap's settings are |
 
 The first run downloads the browser, and later runs find it in place. A
 monorepo can call `vsnap` once for each package that has visual tests, with
 its own `root` and `name`, and list all their projects in one config.
+
+When the config loads, vsnap checks `vsnap.config.ts` by its text, without
+running it. A file with no default export stops the run. A file that never
+gives its config's type to vsnap, with `Register`, gets a warning, since
+then `canvasTest`'s types don't know its kinds of view.
+
+When a test fails, vsnap writes its actual image, and a diff for a changed
+image, to `.vitest/vsnap/` at the root of the repository, in folders that
+mirror the reference's path. Add `.vitest/` to `.gitignore`.
+
+### Adding vsnap to a Project
+
+Most projects that already use Vitest have one flat config. These steps
+turn it into the shape above.
+
+1. Install `vsnap` as a dev dependency, beside `vitest`.
+2. Move the config's `test` settings into a project named `unit`, inside
+   `test.projects`. That includes `include`, `exclude`, `environment` and
+   `setupFiles`. Settings for the whole run, such as `reporters` and
+   `coverage`, stay in the `test` block.
+3. Add `'**/*.visual.test.{ts,tsx}'` to the unit project's `exclude`, after
+   `...configDefaults.exclude`.
+4. List vsnap's projects after the unit project: `...vsnap()`.
+5. Create `vsnap.config.ts` beside `vitest.config.ts`, as
+   [Kinds of View](#kinds-of-view) shows, with the kinds of view that the
+   tests pose and the `Register` declaration. Add it to `tsconfig.json`'s
+   `include`.
+6. Add `.vitest/` to `.gitignore`.
+7. Write a test in a `*.visual.test.tsx` file, and run `vitest`. Its image
+   is new, so it is written as its reference image. Look at it, and commit
+   it with the test.
+
+For example, this flat config:
+
+```ts
+export default defineConfig({
+    plugins: [react()],
+    test: { environment: 'jsdom', setupFiles: ['./test-setup.ts'] },
+});
+```
+
+becomes:
+
+```ts
+export default defineConfig({
+    plugins: [react()],
+    test: {
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    environment: 'jsdom',
+                    setupFiles: ['./test-setup.ts'],
+                    exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
+                },
+            },
+            ...vsnap(),
+        ],
+    },
+});
+```
+
+The unit project has `extends: true`, so that it keeps the plugins, as
+vsnap's projects do.
 
 ### Choosing Where Files Go
 

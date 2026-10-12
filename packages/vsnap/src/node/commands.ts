@@ -22,14 +22,14 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
     VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
 import { compareImages } from './compare.ts';
-import { ENVIRONMENT_FILE, findCalibrationDir, OUT_DIR, REPO_ROOT, toDisplayPath } from './paths.ts';
+import { ENVIRONMENT_FILE, findCalibrationDir, toDisplayPath, toOutputBase } from './paths.ts';
 import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout.ts';
 import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png.ts';
 
@@ -207,7 +207,7 @@ function judge(options: {
         return { outcome: exists ? 'updated' : 'added', referenceFile };
     }
 
-    const outBase = join(OUT_DIR, relative(REPO_ROOT, file)).slice(0, -'.png'.length);
+    const outBase = toOutputBase(file);
     mkdirSync(dirname(outBase), { recursive: true });
     writeFileSync(`${outBase}.actual.png`, encodePng(actual));
     const actualFile = toDisplayPath(`${outBase}.actual.png`);

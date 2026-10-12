@@ -107,7 +107,7 @@ Each review finding says how it was checked:
   `src/browser/calibration.ts` and `src/node/commands.ts`, and "add the
   names to SANS_FAMILIES … in the vsnap package" in
   `src/browser/visual-test.ts`.
-- [ ] **P10. The output folder is undocumented.** `.vitest/vsnap` at the
+- [x] **P10. The output folder is undocumented.** `.vitest/vsnap` at the
   git root (`src/node/paths.ts`) isn't mentioned in the README, which
   should say to gitignore it. `toDisplayPath` is relative to a repo root.
   On Windows, a reference on another drive makes `relative()` return an
@@ -123,7 +123,7 @@ Each review finding says how it was checked:
 - [x] **A1. Run-level checks are switched off silently.** One skipped or
   `todo` test turns off the complete-run checks
   (`src/node/reporter.ts`). The summary should say why they didn't run.
-- [ ] **A2. `extends: true` brings in more than `include` and `exclude`.**
+- [x] **A2. `extends: true` brings in more than `include` and `exclude`.**
   It probably also brings the root's `setupFiles`, `globalSetup` and
   `retry` into the browser projects. A Node-only setup file would break
   the page. Check, then warn or strip them.
@@ -165,7 +165,7 @@ Each review finding says how it was checked:
 
 ## Smaller items
 
-- [ ] **S1.** `src/node/config.ts` builds `includes` as a copy of the file
+- [x] **S1.** `src/node/config.ts` builds `includes` as a copy of the file
   list, and spreads every option into `createVisualProject`.
 - [ ] **S2.** `patchPixiPools` (`src/pixi/pixi-views.ts`) patches a Pixi
   8.21 bug, but the peer range is `^8.16`. `_roundPixels`
@@ -201,21 +201,21 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
 - [ ] **U5. Check the tools around Vitest:** the VS Code Vitest extension
   (does it list and run visual tests?), the Vitest UI with browser
   projects, and coverage runs that include them.
-- [ ] **U6. A step-by-step setup guide in the README** for a project whose
+- [x] **U6. A step-by-step setup guide in the README** for a project whose
   config is flat today: moving to projects, moving `include` and
   `exclude` into the unit project, adding `vsnap.config.ts` with
   `Register`, and including it in `tsconfig.json`.
 - [ ] **U9. `canvasTest.each` and `htmlTest.each`,** with Vitest's
   table forms and name formatting (`%s`, `$name`). Until then, a test can
   declare its cases in a loop, as the website's tests do.
-- [ ] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**
+- [x] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**
   `vsnap({ config: './vsnap.config.ts' })`, optional, with today's
   location as the default, so that a reader of the Vitest config sees where
   the rest lives. (Moving the page's config into `vitest.config.ts`, and
   copying it out, was considered and rejected on 2026-10-12: the page's
   parts are functions, which can't be copied out of a running config, and
   copying their source would need fragile code extraction.)
-- [ ] **U8. Check `vsnap.config.ts` when the config loads, in Node,
+- [x] **U8. Check `vsnap.config.ts` when the config loads, in Node,
   without running it:** that it exists when the project has canvas tests of
   kinds other than `'canvas'`, and that it calls `defineVsnapConfig`. A
   plain text check, as for test files, so a missing or misplaced file

@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import type { VisualKind } from '../protocol.ts';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +32,19 @@ export const OUT_DIR = join(REPO_ROOT, '.vitest', 'vsnap');
 /** Returns the folder that holds the reference images of one kind of page's calibration set. */
 export function findCalibrationDir(kind: VisualKind): string {
     return join(PACKAGE_DIR, 'src', 'browser', '__references__', `calibration-${kind}`);
+}
+
+/**
+ * Returns where a failing image's actual image and diff go, from its
+ * reference's path, without `.png`. The output folder mirrors the
+ * repository. A reference outside the repository, or on another drive,
+ * goes under `outside/`, by its absolute path without the drive's colon.
+ */
+export function toOutputBase(file: string, folders: { readonly repo: string; readonly out: string } = { repo: REPO_ROOT, out: OUT_DIR }): string {
+    const inRepo = relative(folders.repo, file);
+    const isOutside = isAbsolute(inRepo) || /^\.\.([\\/]|$)/.test(inRepo);
+    const path = isOutside ? join('outside', resolve(file).replace(/^([A-Za-z]):/, '$1')) : inRepo;
+    return join(folders.out, path).replace(/\.png$/, '');
 }
 
 /** Converts a path to the form that messages show: relative to the repository, with forward slashes. */

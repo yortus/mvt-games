@@ -23,8 +23,8 @@
  * missing, before the browser starts.
  */
 
-import { existsSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
 import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
@@ -79,6 +79,14 @@ export interface VsnapOptions {
      * package's own Vite config names it here.
      */
     readonly viteConfig?: string;
+    /**
+     * The project's `vsnap.config.ts`, relative to the root, which registers
+     * the kinds of view that its tests pose and runs in the test page. By
+     * default, it is `vsnap.config.ts` (or `.mts`, `.js` or `.mjs`) in the
+     * root, if there is one. Naming it shows a reader of the Vitest config
+     * where the rest of vsnap's settings are.
+     */
+    readonly config?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,12 +121,29 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     // A kind of test with no files gets no project.
     const kinds = (['canvas', 'html'] as const).filter((kind) => files[kind].length > 0);
     const projectNames = kinds.map((kind) => `${name}-${kind}`);
-    const viewConfig = findViewConfig(root);
-    const testFiles = [...files.canvas, ...files.html].map((file) => resolve(root, file));
-    const includes = [...files.canvas, ...files.html].map(escapeGlob);
-    const reporter = createVisualReporter({ layout, state, projectNames, testFiles, includes });
+    const viewConfig = findViewConfig(root, options.config);
+    if (viewConfig !== undefined) checkViewConfig(viewConfig);
+    const allFiles = [...files.canvas, ...files.html];
+    const reporter = createVisualReporter({
+        layout,
+        state,
+        projectNames,
+        testFiles: allFiles.map((file) => resolve(root, file)),
+        includes: allFiles.map(escapeGlob),
+        setupFiles: [SETUP_FILE],
+    });
     const plugin = createVsnapPlugin({ reporter, root, files: () => findVisualTestFiles(layout), initialFiles: files });
-    return kinds.map((kind, i) => createVisualProject({ ...options, root, name: projectNames[i], kind, files: files[kind], commands, viewConfig, plugin }));
+    return kinds.map((kind, i) => createVisualProject({
+        root,
+        name: projectNames[i],
+        kind,
+        files: files[kind],
+        commands,
+        viewConfig,
+        plugin,
+        maxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS,
+        viteConfig: options.viteConfig,
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -126,8 +151,10 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
 // ---------------------------------------------------------------------------
 
 /** Creates the Vitest project for one kind of visual test. */
-function createVisualProject(options: VsnapOptions & {
+function createVisualProject(options: {
     readonly root: string;
+    readonly maxPixels: number;
+    readonly viteConfig: string | undefined;
     readonly name: string;
     readonly kind: VisualKind;
     readonly files: readonly string[];
@@ -140,8 +167,8 @@ function createVisualProject(options: VsnapOptions & {
     const isHtml = options.kind === 'html';
     const files = options.files;
     const setupFiles = [SETUP_FILE];
-    // The config file is in the root, as the scan's globs are relative to it.
-    const viewConfig = options.viewConfig === undefined ? [] : [basename(options.viewConfig)];
+    // The scan's globs are relative to the root.
+    const viewConfig = options.viewConfig === undefined ? [] : [escapeGlob(relative(options.root, options.viewConfig).replaceAll('\\', '/'))];
     return {
         root: options.root,
         plugins: [options.plugin],
@@ -182,7 +209,7 @@ function createVisualProject(options: VsnapOptions & {
             testTimeout: 30_000,
             provide: {
                 visualKind: options.kind,
-                visualMaxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS,
+                visualMaxPixels: options.maxPixels,
                 visualHasConfig: options.viewConfig !== undefined,
                 visualConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
             },
@@ -248,8 +275,17 @@ function createVsnapPlugin(options: {
     };
 }
 
-/** Returns the path of a project's `vsnap.config`, in its root, if it has one. */
-function findViewConfig(root: string): string | undefined {
+/**
+ * Returns the path of a project's `vsnap.config`: the one that the `config`
+ * option names, or the one in its root, if it has one. It throws if the
+ * option names a file that doesn't exist.
+ */
+function findViewConfig(root: string, named: string | undefined): string | undefined {
+    if (named !== undefined) {
+        const path = resolve(root, named);
+        if (!existsSync(path)) throw new Error(`vsnap's config option names ${toDisplayPath(path)}, which doesn't exist.`);
+        return path;
+    }
     for (const name of VIEW_CONFIG_NAMES) {
         const path = join(root, name);
         if (existsSync(path)) return path;
@@ -257,11 +293,39 @@ function findViewConfig(root: string): string | undefined {
     return undefined;
 }
 
+/**
+ * Checks a project's `vsnap.config` by its text, without running it, since
+ * it runs in the test page. It throws if the file has no default export,
+ * which vsnap reads. It warns if the file never mentions `Register`, since
+ * then `canvasTest`'s types don't know its kinds of view, and every test of
+ * a registered kind is a type error.
+ */
+function checkViewConfig(file: string): void {
+    const text = readFileSync(file, 'utf8');
+    if (!/\bexport\s+default\b/.test(text)) {
+        throw new Error(`${toDisplayPath(file)} has no default export. It exports its config as default: export default defineVsnapConfig({ ... }).`);
+    }
+    if (!/\bRegister\b/.test(text) && !WARNED.has(file)) {
+        WARNED.add(file);
+        console.warn(
+            `vsnap: ${toDisplayPath(file)} doesn't give its config's type to vsnap, so canvasTest's types don't know its kinds of view. Add:\n`
+            + "    declare module 'vsnap' {\n        interface Register {\n            config: typeof config;\n        }\n    }",
+        );
+    }
+}
+
 /** The settings of a project that has no `vsnap.config`, which register no kinds of view. */
 const NO_CONFIG = resolve(import.meta.dirname, '..', 'browser', 'no-config.ts');
 
 /** Matches the files that can be visual test files. */
 const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
+
+/**
+ * The config files that this process has warned about. Vitest loads its
+ * config several times in one run, each time with a fresh copy of this
+ * module, so the set is kept on the process, and each warning is shown once.
+ */
+const WARNED: Set<string> = ((globalThis as { vsnapWarned?: Set<string> }).vsnapWarned ??= new Set());
 
 /** The names that a project's `vsnap.config` may have. */
 const VIEW_CONFIG_NAMES = ['vsnap.config.ts', 'vsnap.config.mts', 'vsnap.config.js', 'vsnap.config.mjs'];
