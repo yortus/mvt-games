@@ -35,7 +35,7 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
     }
     if (problems.length > 0) {
         const message = `This machine is not the visual tests' reference environment (${kind}). These checks failed: ${problems.join('; ')}. `
-            + 'No test\'s actual image was compared. Check that the project uses the Playwright version that vsnap names. If vsnap\'s own browser was upgraded on purpose, its maintainers run `npm run test:visual:environment -w vsnap` and review the changes.';
+            + 'No test\'s actual image was compared. vsnap draws with the browser of one Playwright version, so check that the project installs the Playwright version that vsnap\'s package.json names, and only one copy of it.';
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }

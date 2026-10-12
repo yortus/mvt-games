@@ -1856,6 +1856,16 @@ project structure page gains `__screenshots__/`, `src/testing/` and
       and HTML only. The new calibration images need a CI run on Linux
       and macOS before they can be trusted there.
 
+    **A configurable tolerance? Not for now (asked 2026-10-11, recorded
+    2026-10-12).** There is one fixed tolerance, `TOLERANCE = 2` in
+    `packages/vsnap/src/node/compare.ts`: no channel of any pixel may differ
+    by more than 2 levels of 255. There never was an option, by design
+    (section 3.6): the environment is fixed, so the tolerance only absorbs
+    arm64 rounding, and a looser one would hide real changes to text.
+    Counting changed pixels was rejected too. A project-wide option would be
+    easy to add if another project's processors round further, but nothing
+    shows the need yet, so it stays out of the first release.
+
     The parts that can follow:
     - **Dependencies.** Ship built JavaScript, as the `@mvtjs` libraries
       do (tsdown, publint, attw), in place of TypeScript run through tsx,

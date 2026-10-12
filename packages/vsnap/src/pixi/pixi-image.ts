@@ -40,8 +40,8 @@ export interface PixiImageOptions {
      *
      * A smooth view tested as `'pixel'` comes out jagged. That is not how its
      * game draws it, but the result is consistent, and plain to see in
-     * review. The games' spritesheets are sampled nearest-neighbour whatever
-     * the style.
+     * review. A texture that sets its own sampling, such as a spritesheet's,
+     * keeps it, whatever the style.
      */
     readonly artStyle?: ArtStyle;
 }

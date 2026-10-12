@@ -42,7 +42,7 @@ Each review finding says how it was checked:
   its kind's check is never disposed (`src/browser/visual-test.ts`), and
   nor is a `'canvas'` pose's canvas, on any path. In the shared page,
   leaked WebGL contexts could push out the renderers' own.
-- [ ] **B6. Run-level failures only set `process.exitCode`** (checked).
+- [x] **B6. Run-level failures only set `process.exitCode`** (checked).
   Shared references, orphans and bad hashes (`src/node/reporter.ts`) leave
   watch mode, the UI and programmatic runs showing a pass.
 - [x] **B7. Non-ASCII test names lose their letters** (checked).
@@ -102,7 +102,7 @@ Each review finding says how it was checked:
   `src/node/png.ts`). It's an in-house name, and changing it after
   publishing would invalidate every reference. Decide it now, perhaps
   `'vsnap'`, and rewrite every reference once.
-- [ ] **P9. Some messages are for vsnap's maintainers, not its users.**
+- [x] **P9. Some messages are for vsnap's maintainers, not its users.**
   `npm run test:visual:environment -w vsnap` in
   `src/browser/calibration.ts` and `src/node/commands.ts`, and "add the
   names to SANS_FAMILIES … in the vsnap package" in
@@ -146,7 +146,7 @@ Each review finding says how it was checked:
   (`src/three/three-image.ts`), so an inline arrow function leaks a scene
   and its environment map on every test. The default disposers don't free
   textures, and `disposeObject` skips lines, points and sprites.
-- [ ] **A9. In-house wording in the package.** `src/pixi/pixi-image.ts`
+- [x] **A9. In-house wording in the package.** `src/pixi/pixi-image.ts`
   mentions "the games' spritesheets".
 - [ ] **A10. One `Register` per TypeScript program.** A monorepo whose
   packages have configs of their own must type-check each package on its
@@ -171,9 +171,9 @@ Each review finding says how it was checked:
   8.21 bug, but the peer range is `^8.16`. `_roundPixels`
   (`src/pixi/pixi-image.ts`) is a private Pixi field. Recheck both on each
   Pixi update.
-- [ ] **S3.** `cdpSessions` (`src/node/commands.ts`) is never cleared in
+- [x] **S3.** `cdpSessions` (`src/node/commands.ts`) is never cleared in
   watch mode.
-- [ ] **S4.** Record the earlier question about a configurable pixel
+- [x] **S4.** Record the earlier question about a configurable pixel
   tolerance (the answer and the decision) in 042.
 
 ## Usability
@@ -195,7 +195,7 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   annotations can carry attachments, which the Vitest UI and HTML reporter
   show. Check that browser mode supports them, then attach the actual,
   reference and diff images.
-- [ ] **U4. vsnap's summary goes to standard output,** even with
+- [x] **U4. vsnap's summary goes to standard output,** even with
   `--reporter=json`, which could corrupt output that another tool reads.
   Print it to standard error, or only beside a human-readable reporter.
 - [ ] **U5. Check the tools around Vitest:** the VS Code Vitest extension

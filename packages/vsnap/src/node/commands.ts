@@ -15,8 +15,9 @@
  * fails, its pixels and its diff are written to `.vitest/vsnap/` at the
  * repository's root, in the same directory layout as the repository.
  *
- * The run's mode is `update` when Vitest runs with `-u`, as it is for
- * snapshots, and `compare` otherwise. This package's own maintainers set
+ * The run's mode follows Vitest's rule for snapshots: `new` by default,
+ * which writes the reference of a new image, `compare` in CI, which writes
+ * none, and `update` with `-u`, which rewrites each changed one. This package's own maintainers set
  * `VSNAP_MODE=environment` to rewrite the environment's fingerprint and the
  * calibration set (`npm run test:visual:environment -w vsnap`).
  */
@@ -47,6 +48,8 @@ import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './
 export interface VisualRunState {
     readonly calibrated: Set<VisualKind>;
     readonly calibrationReferences: Set<string>;
+    /** Each page's DevTools protocol session, by the page's session. The reporter clears it as each run starts, since each run has pages of its own. */
+    readonly cdpSessions: Map<string, Promise<Cdp>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +58,7 @@ export interface VisualRunState {
 
 /** Creates a run's state, which a config's commands and reporter share. */
 export function createRunState(): VisualRunState {
-    return { calibrated: new Set(), calibrationReferences: new Set() };
+    return { calibrated: new Set(), calibrationReferences: new Set(), cdpSessions: new Map() };
 }
 
 /** Creates the browser commands for a project with this layout. */
@@ -89,7 +92,7 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
 
     const captureVisualImage: BrowserCommand<[VisualCaptureRequest]> = async (ctx, request) => {
         const started = performance.now();
-        const cdp = await connectCdp(ctx);
+        const cdp = await connectCdp(ctx, state.cdpSessions);
         const { data } = await cdp.send('Page.captureScreenshot', {
             format: 'png',
             clip: { ...request.rect, scale: 1 },
@@ -141,7 +144,7 @@ const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, envir
         writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
         return [];
     }
-    if (!existsSync(ENVIRONMENT_FILE)) return [`${toDisplayPath(ENVIRONMENT_FILE)} is missing, and \`npm run test:visual:environment -w vsnap\` writes it`];
+    if (!existsSync(ENVIRONMENT_FILE)) return [`vsnap's ${toDisplayPath(ENVIRONMENT_FILE)} is missing, so vsnap's package is incomplete. Install it again`];
     const expected = JSON.parse(readFileSync(ENVIRONMENT_FILE, 'utf8')) as EnvironmentFile;
     const problems: string[] = [];
     for (const key of Object.keys(expected) as (keyof EnvironmentFile)[]) {
@@ -229,14 +232,12 @@ function judge(options: {
 }
 
 /** The part of a DevTools protocol session that this file uses. */
-interface Cdp {
+export interface Cdp {
     send: (method: 'Page.captureScreenshot', params: Record<string, unknown>) => Promise<{ data: string }>;
 }
 
-const cdpSessions = new Map<string, Promise<Cdp>>();
-
 /** Returns the page's DevTools protocol session, which is made once for each page. */
-function connectCdp(ctx: BrowserCommandContext): Promise<Cdp> {
+function connectCdp(ctx: BrowserCommandContext, cdpSessions: Map<string, Promise<Cdp>>): Promise<Cdp> {
     let cdp = cdpSessions.get(ctx.sessionId);
     if (cdp === undefined) {
         const provider = ctx.provider as unknown as { getCDPSession: (sessionId: string) => Promise<Cdp> };

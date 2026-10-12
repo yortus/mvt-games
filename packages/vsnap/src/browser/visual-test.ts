@@ -194,7 +194,7 @@ function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object
         }
         const unpinned = setup.takeUnpinnedFamilies();
         if (unpinned.length > 0) {
-            throw new Error(`The view in '${id.test}' asks for fonts that visual tests can't draw: ${unpinned.join(', ')}. End each font list with sans-serif or monospace, and the text is drawn in the test font of that kind. Or add the names to SANS_FAMILIES or MONO_FAMILIES in src/browser/canvas-text.ts, in the vsnap package.`);
+            throw new Error(`The view in '${id.test}' asks for fonts that visual tests can't draw: ${unpinned.join(', ')}. End each font list with sans-serif or monospace, and the text is drawn in the test font of that kind.`);
         }
         t = performance.now();
         const hash = await hashPixels(image.width, image.height, image.pixels);

@@ -19,6 +19,11 @@
  * After every run, it also checks that no two tests share a reference
  * image, which would happen if their names differ only in punctuation. If
  * they do, it lists them and fails the run.
+ *
+ * These checks run as the last of the projects' test files ends, before
+ * Vitest decides whether the run passed. A check that fails gives Vitest
+ * an error, as a test that fails does, so the run fails in watch mode, in
+ * the UI and for a program that runs Vitest, not only by its exit code.
  */
 
 import { appendFileSync } from 'node:fs';
@@ -53,6 +58,10 @@ export function createVisualReporter(options: {
     let started = 0;
     /** The files of this reporter's projects that this run started. */
     let startedFiles = new Set<string>();
+    /** The test modules of this reporter's projects that have ended in this run. */
+    let ended: TestModule[] = [];
+    /** The summary's lines from the run's checks, once they have run. */
+    let checkLines: string[] | undefined;
     return {
         onInit(v: Vitest) {
             vitest = v;
@@ -62,20 +71,24 @@ export function createVisualReporter(options: {
         onTestRunStart(specifications: readonly TestSpecification[]) {
             started = performance.now();
             startedFiles = new Set(specifications.filter((s) => projectNames.includes(s.project.name)).map((s) => toFileKey(s.moduleId)));
+            ended = [];
+            checkLines = undefined;
+            state.cdpSessions.clear();
+        },
+        onTestModuleEnd(module: TestModule) {
+            if (!projectNames.includes(module.project.name)) return;
+            ended.push(module);
+            if (ended.length < startedFiles.size || vitest === undefined) return;
+            const v = vitest;
+            checkLines = runChecks({ layout, state, vitest: v, testFiles, allTestFiles: options.testFiles, startedFiles, testModules: ended });
         },
         onTestRunEnd(allModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
             const testModules = allModules.filter((m) => projectNames.includes(m.project.name));
             if (testModules.length === 0) return;
-            const isUpdate = vitest?.config.snapshotOptions.updateSnapshot === 'all' || process.env.VSNAP_MODE === 'environment';
-            const incomplete = findIncompleteness({ reason, vitest, testFiles, startedFiles, testModules });
-            const isComplete = incomplete === undefined;
-            const used = listUsedReferences(layout, testModules);
-            const sharedLines = describeSharedReferences(used);
-            const orphanLines = [
-                ...sharedLines,
-                ...(sharedLines.length === 0 && isComplete ? settleOrphans({ layout, state, used, isUpdate }) : []),
-                ...(isComplete ? checkEveryReference(layout, options.testFiles) : []),
-                ...(isComplete ? [] : [`  The reference images were not checked, and no unused ones were looked for, because ${incomplete}. A run of every visual test does both.`]),
+            // The checks run as the last test file ends. A run that ended
+            // before then, such as one that was interrupted, didn't run them
+            const orphanLines = checkLines ?? [
+                `  The reference images were not checked, and no unused ones were looked for, because ${reason === 'interrupted' ? 'the run was interrupted' : 'not every visual test file ended'}. A run of every visual test does both.`,
             ];
             const images: { name: string; meta: VisualTestMeta; total: number }[] = [];
             for (const module of testModules) {
@@ -88,7 +101,7 @@ export function createVisualReporter(options: {
                 }
             }
             if (images.length === 0) {
-                if (orphanLines.length > 0) console.log(`\n${orphanLines.join('\n')}\n`);
+                if (orphanLines.length > 0) print(vitest, `\n${orphanLines.join('\n')}\n`);
                 return;
             }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
@@ -131,7 +144,7 @@ export function createVisualReporter(options: {
             for (const r of largest) {
                 lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${toDisplayPath(r.file)}`);
             }
-            console.log(`\n${lines.join('\n')}\n`);
+            print(vitest, `\n${lines.join('\n')}\n`);
             const summary = process.env.GITHUB_STEP_SUMMARY;
             if (summary !== undefined && summary !== '') appendFileSync(summary, `\`\`\`\n${lines.join('\n')}\n\`\`\`\n`);
         },
@@ -151,6 +164,81 @@ const OUTCOMES: Readonly<Record<string, string>> = {
     'updated': 'updated',
     'added': 'added',
 };
+
+/**
+ * Runs the checks that need every test of the run to have ended, and returns
+ * the summary's lines about them. Each check that fails gives Vitest an
+ * error, which fails the run.
+ */
+function runChecks(options: {
+    readonly layout: VisualLayout;
+    readonly state: VisualRunState;
+    readonly vitest: Vitest;
+    /** Every visual test file of the projects, as file keys. */
+    readonly testFiles: readonly string[];
+    /** Every visual test file of the projects, as absolute paths. */
+    readonly allTestFiles: readonly string[];
+    readonly startedFiles: ReadonlySet<string>;
+    readonly testModules: readonly TestModule[];
+}): string[] {
+    const { layout, state, vitest } = options;
+    const isUpdate = vitest.config.snapshotOptions.updateSnapshot === 'all' || process.env.VSNAP_MODE === 'environment';
+    const incomplete = findIncompleteness({ vitest, testFiles: options.testFiles, startedFiles: options.startedFiles, testModules: options.testModules });
+    const used = listUsedReferences(layout, options.testModules);
+    const results = [
+        describeSharedReferences(used),
+        ...(incomplete === undefined ? [settleOrphans({ layout, state, used, isUpdate }), checkEveryReference(layout, options.allTestFiles)] : []),
+    ];
+    const lines: string[] = [];
+    for (const result of results) {
+        lines.push(...result.lines);
+        if (result.failure !== undefined) vitest.state.catchError(createCheckError(result.failure), 'vsnap');
+    }
+    if (incomplete !== undefined) {
+        lines.push(`  The reference images were not checked, and no unused ones were looked for, because ${incomplete}. A run of every visual test does both.`);
+    }
+    return lines;
+}
+
+/** The lines that a check adds to the summary, and the failure it gives Vitest, if it failed. */
+interface CheckResult {
+    readonly lines: readonly string[];
+    readonly failure?: string;
+}
+
+/** Returns the error that a failed check gives Vitest. It has no stack, since the stack would only show vsnap's own code. */
+function createCheckError(message: string): Error {
+    const error = new Error(message);
+    error.name = 'vsnap';
+    error.stack = `vsnap: ${message}`;
+    return error;
+}
+
+/**
+ * Prints the summary. It goes to standard error when one of the run's
+ * reporters writes machine-readable output to standard output, such as
+ * Vitest's JSON reporter with no output file, so that the summary doesn't
+ * corrupt it.
+ */
+function print(vitest: Vitest | undefined, text: string): void {
+    if (vitest !== undefined && writesMachineOutput(vitest)) console.error(text);
+    else console.log(text);
+}
+
+/** Returns whether one of the run's reporters writes machine-readable output to standard output. */
+function writesMachineOutput(vitest: Vitest): boolean {
+    const outputFile = vitest.config.outputFile;
+    for (const reporter of vitest.config.reporters as unknown[]) {
+        const name = Array.isArray(reporter) ? reporter[0] : reporter;
+        if (typeof name !== 'string' || !MACHINE_REPORTERS.has(name)) continue;
+        const hasFile = typeof outputFile === 'string' || (typeof outputFile === 'object' && outputFile !== null && name in outputFile);
+        if (!hasFile) return true;
+    }
+    return false;
+}
+
+/** Vitest's reporters whose output is for programs, not people. */
+const MACHINE_REPORTERS: ReadonlySet<string> = new Set(['json', 'junit', 'tap', 'tap-flat']);
 
 /**
  * Throws if a vsnap project inherits setup files from the config that it is
@@ -177,14 +265,12 @@ function checkForInheritedSetupFiles(vitest: Vitest, projectNames: readonly stri
  * every reference image can't run, or undefined if it did run them all.
  */
 function findIncompleteness(options: {
-    readonly reason: TestRunEndReason;
-    readonly vitest: Vitest | undefined;
+    readonly vitest: Vitest;
     readonly testFiles: readonly string[];
     readonly startedFiles: ReadonlySet<string>;
     readonly testModules: readonly TestModule[];
 }): string | undefined {
-    if (options.reason === 'interrupted') return 'the run was interrupted';
-    if (options.vitest?.config.testNamePattern !== undefined) return 'a test name pattern (-t) chose the tests';
+    if (options.vitest.config.testNamePattern !== undefined) return 'a test name pattern (-t) chose the tests';
     const missing = options.testFiles.filter((file) => !options.startedFiles.has(file)).length;
     if (missing > 0) return `${count(missing, 'visual test file')} did not run`;
     if (options.testModules.some((m) => m.errors().length > 0)) return 'a test file failed to load';
@@ -223,55 +309,52 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
 
 /**
  * Returns the summary's lines about references that two or more tests
- * share, and fails the run if there are any. Tests share a reference when
+ * share, and a failure if there are any. Tests share a reference when
  * their image names are the same, such as names that differ only in
  * punctuation, or tests with the same names in two files whose references
  * are in one folder.
  */
-function describeSharedReferences(used: ReadonlyMap<string, UsedReference>): string[] {
+function describeSharedReferences(used: ReadonlyMap<string, UsedReference>): CheckResult {
     const lines: string[] = [];
     for (const { file, tests } of used.values()) {
         if (tests.length < 2) continue;
         lines.push(`    ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}`);
     }
-    if (lines.length === 0) return [];
-    process.exitCode = 1;
-    return ['  These tests share a reference image, so each would overwrite the others. Rename all but one of each group:', ...lines];
+    if (lines.length === 0) return { lines: [] };
+    const heading = 'These tests share a reference image, so each would overwrite the others. Rename all but one of each group:';
+    return { lines: [`  ${heading}`, ...lines], failure: [heading, ...lines].join('\n') };
 }
 
 /**
  * Handles the references that no actual image was compared with. In compare
- * mode, it lists them and fails the run. In the modes that write
- * references, it deletes them. It returns the summary's lines about them.
+ * mode, it lists them, with a failure. In the modes that write references,
+ * it deletes them. It returns the summary's lines about them.
  */
 function settleOrphans(options: {
     readonly layout: VisualLayout;
     readonly state: VisualRunState;
     readonly used: ReadonlyMap<string, UsedReference>;
     readonly isUpdate: boolean;
-}): string[] {
+}): CheckResult {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].map((u) => u.file)];
     const orphans = findOrphans({ references: findReferences(options.layout).map((r) => r.file), compared });
-    if (orphans.length === 0) return [];
+    if (orphans.length === 0) return { lines: [] };
     const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
     if (!options.isUpdate) {
-        process.exitCode = 1;
-        return [
-            `  No test compared with ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${orphans.length === 1 ? 'it' : 'them'} behind, and a complete run with Vitest's -u deletes ${orphans.length === 1 ? 'it' : 'them'}:`,
-            ...names,
-        ];
+        const heading = `No test compared with ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${orphans.length === 1 ? 'it' : 'them'} behind, and a complete run with Vitest's -u deletes ${orphans.length === 1 ? 'it' : 'them'}:`;
+        return { lines: [`  ${heading}`, ...names], failure: [heading, ...names].join('\n') };
     }
     for (const file of orphans) removeReference(file, options.layout.root);
-    return [`  ${countReferences(orphans.length, 'This', 'These')} ${orphans.length === 1 ? 'was' : 'were'} deleted, because no test compared with ${orphans.length === 1 ? 'it' : 'them'}:`, ...names];
+    return { lines: [`  ${countReferences(orphans.length, 'This', 'These')} ${orphans.length === 1 ? 'was' : 'were'} deleted, because no test compared with ${orphans.length === 1 ? 'it' : 'them'}:`, ...names] };
 }
 
 /**
  * Decodes every reference image of a root, and every PNG where a test's
  * reference could be, and checks each one's pixels against the hash it
- * carries. Fails the run if any doesn't match, and returns the summary's
- * lines about them.
+ * carries. Returns the summary's lines about any that don't match, with a
+ * failure.
  */
-function checkEveryReference(layout: VisualLayout, testFiles: readonly string[]): string[] {
+function checkEveryReference(layout: VisualLayout, testFiles: readonly string[]): CheckResult {
     const files = new Map<string, string>();
     for (const { file } of findReferences(layout)) files.set(toFileKey(file), file);
     for (const testFile of testFiles) {
@@ -282,9 +365,9 @@ function checkEveryReference(layout: VisualLayout, testFiles: readonly string[])
         const problem = checkReference(file);
         if (problem !== undefined) problems.push(`    ${toDisplayPath(file)}: ${problem}`);
     }
-    if (problems.length === 0) return [];
-    process.exitCode = 1;
-    return [`  ${problems.length} of ${files.size} references do not match their hashes. Delete them, then rewrite them from their tests with Vitest's -u:`, ...problems];
+    if (problems.length === 0) return { lines: [] };
+    const heading = `${problems.length} of ${files.size} references do not match their hashes. Delete them, then rewrite them from their tests with Vitest's -u:`;
+    return { lines: [`  ${heading}`, ...problems], failure: [heading, ...problems].join('\n') };
 }
 
 /**
