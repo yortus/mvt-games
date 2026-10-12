@@ -45,19 +45,23 @@ Each review finding says how it was checked:
 - [ ] **B6. Run-level failures only set `process.exitCode`** (checked).
   Shared references, orphans and bad hashes (`src/node/reporter.ts`) leave
   watch mode, the UI and programmatic runs showing a pass.
-- [ ] **B7. Non-ASCII test names lose their letters** (checked).
+- [x] **B7. Non-ASCII test names lose their letters** (checked).
   `src/browser/image-name.ts` keeps only `[A-Za-z0-9.]`, so `'日本'` gets
   the image name `''`, and `'café'` clashes with `'caf'`.
   Fix: keep Unicode letters and digits, or reject an empty name.
-- [ ] **B8. An HTML view taller or wider than the viewport may be captured
+- [x] **B8. An HTML view taller or wider than the viewport may be captured
   wrongly** (unverified). The viewport is 1280 by 800
   (`src/node/config.ts`), and the capture doesn't go beyond it
   (`src/node/commands.ts`).
   Fix: fail if the view's rectangle goes past the viewport.
-- [ ] **B9. HTML capture waits only for `<img>` elements and fonts**
+  Confirmed and fixed on 2026-10-12: a 1000-pixel-tall view came out white
+  below 800 pixels. It now fails with a message. Growing the page for a big
+  view would be better, but the outer page stays 1280 by 800, so it's a
+  bigger change, left for later.
+- [x] **B9. HTML capture waits only for `<img>` elements and fonts**
   (likely to flake). CSS background images, SVG `<image>` elements and
   video posters aren't waited for (`src/browser/html-image.ts`).
-- [ ] **B10. HTML `prepare` runs before the element is in the page**
+- [x] **B10. HTML `prepare` runs before the element is in the page**
   (checked). `src/browser/visual-test.ts` calls it before
   `captureHtmlImage` mounts the element, so a `prepare` that measures
   layout sees nothing.

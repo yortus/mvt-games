@@ -100,7 +100,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
         const { id } = await startTest(task, 'html');
         const kind = (await loadViewKinds()).html;
         const ms: Record<string, number> = {};
-        let t = performance.now();
+        const t = performance.now();
         const view: unknown = await elementPose();
         ms.pose = performance.now() - t;
         if (!(view instanceof Element)) {
@@ -108,10 +108,10 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
         }
         let captured: Awaited<ReturnType<typeof captureHtmlImage>>;
         try {
-            t = performance.now();
-            kind.prepare?.(view);
-            ms.prepare = performance.now() - t;
-            captured = await captureHtmlImage(view, { ...(image as HtmlImageOptions), maxPixels: inject('visualMaxPixels') }, id);
+            // The capture prepares the element once it is in the page, so that
+            // a prepare step that measures it sees its layout
+            captured = await captureHtmlImage(view, { ...(image as HtmlImageOptions), maxPixels: inject('visualMaxPixels'), prepare: kind.prepare }, id);
+            ms.prepare = captured.prepareMs;
             ms.capture = captured.captureMs;
         }
         finally {

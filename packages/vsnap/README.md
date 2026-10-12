@@ -202,7 +202,9 @@ A visual test passes when its actual image matches its reference image.
 An image's name comes from its test's full name. The full name is the
 names of the test's `describe` blocks, followed by the test's own name.
 Each run of characters other than letters, digits and dots becomes one
-hyphen, and hyphens at either end are dropped. So the first test above,
+hyphen, and hyphens at either end are dropped. Letters and digits of every
+script count, so `日本` stays as it is, and a test whose name has none fails.
+So the first test above,
 whose full name is `HudView > at the start`, has the image name
 `HudView-at-the-start`. By default, its reference image is that name with
 `.png` added, in a folder named after the test file:
@@ -237,6 +239,12 @@ as one that reads a file, should go in a separate test file. A visual test file
 that declares both `canvasTest` and `htmlTest`, or neither, stops the run with an
 error.
 
+An HTML view must fit the test page, whose viewport is 1280 by 800
+pixels, since the part of a view past it isn't drawn. A bigger view fails
+its test, and says so. Before an HTML view's image is taken, the package
+waits for its fonts, its `<img>` elements, and the images that its styles
+use, such as backgrounds.
+
 The package finds the declarations by reading each file's text for
 `canvasTest(` and `htmlTest(`, since Vitest needs each file's project before
 any test code runs. So a file must call `canvasTest` or `htmlTest` by those
@@ -254,7 +262,8 @@ registration.
 
 - **`prepare(view)`** runs after the pose, before the image is taken. A
   framework whose views write their state to the screen in a separate
-  step does that step here.
+  step does that step here. An HTML view is already in the page when it is
+  prepared, so a step that measures its layout sees it.
 - **`dispose(view)`** runs after the image is taken, in place of the plain
   disposal. A framework that runs cleanup of its own when a view is
   destroyed does that here.

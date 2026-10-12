@@ -15,4 +15,13 @@ describe('toImageName', () => {
     it('keeps dots, so sizes and versions read as written', () => {
         expect(toImageName('text > at 13.5 px')).toBe('text-at-13.5-px');
     });
+
+    it('keeps the letters and digits of every script', () => {
+        expect(toImageName('日本 > ロゴ 2')).toBe('日本-ロゴ-2');
+        expect(toImageName('café')).not.toBe(toImageName('caf'));
+    });
+
+    it('throws for a name with no letters or digits', () => {
+        expect(() => toImageName('!!! > ...')).toThrow(/no letters or digits/);
+    });
 });
