@@ -1,4 +1,4 @@
-import { inject, type TaskMeta, test, type TestContext, type TestOptions } from 'vitest';
+import { inject, recordArtifact, type TaskMeta, test, type TestContext, type TestOptions } from 'vitest';
 import { type CanvasImage, checkCanvasBudget, isCanvas, readCanvas } from './canvas-drawing';
 import { captureHtmlImage, type HtmlImageOptions } from './html-image';
 import { describeFailure, hashPixels, isPass, nameImage, openSession, toBase64, visualCommands } from './judge';
@@ -169,7 +169,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
             if (kind.dispose === undefined) view.remove();
             else kind.dispose(view);
         }
-        finishTest(task.meta, { id, verdict: captured, kind: 'html', size: { ...captured, resolution: 1 }, ms });
+        await finishTest(task, { id, verdict: captured, kind: 'html', size: { ...captured, resolution: 1 }, ms });
     });
 }
 
@@ -188,17 +188,29 @@ async function startTest(task: { readonly fullTestName: string; readonly meta: T
 }
 
 /** Records a test's outcome and timings for the run's summary, and fails the test if its image differs. */
-function finishTest(meta: TaskMeta, result: {
+async function finishTest(task: TestContext['task'], result: {
     readonly id: ImageId;
     readonly verdict: VisualVerdict;
     readonly kind: 'canvas' | 'html';
     readonly size: { readonly width: number; readonly height: number; readonly resolution: number };
     readonly ms: Record<string, number>;
-}): void {
+}): Promise<void> {
     const { id, verdict, kind, size, ms } = result;
     const visual: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
-    meta.visual = visual;
-    if (!isPass(verdict)) throw new Error(describeFailure(id.name, verdict, kind));
+    task.meta.visual = visual;
+    if (isPass(verdict)) return;
+    const message = describeFailure(id.name, verdict, kind);
+    if (verdict.images !== undefined && verdict.images.length > 0) {
+        // The same record as Vitest's own screenshot assertion makes, so that
+        // its UI and reports show the reference, actual and diff images
+        await recordArtifact(task, {
+            type: 'internal:toMatchScreenshot',
+            kind: 'visual-regression',
+            message,
+            attachments: verdict.images.map((image) => ({ ...image, contentType: 'image/png' })),
+        });
+    }
+    throw new Error(message);
 }
 
 /**
@@ -256,7 +268,7 @@ function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object
             ? { outcome: 'same', referenceFile: id.name }
             : await visualCommands.judgeVisualMismatch({ ...id, width: image.width, height: image.height, hash, pixels: toBase64(image.pixels) });
         ms.compare = performance.now() - t;
-        finishTest(task.meta, { id, verdict, kind: 'canvas', size: image, ms });
+        await finishTest(task, { id, verdict, kind: 'canvas', size: image, ms });
     });
 }
 

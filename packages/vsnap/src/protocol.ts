@@ -55,6 +55,21 @@ export interface VisualVerdict {
     readonly diffFile?: string;
     /** The test file, relative to the repo's root, for the command that a failure message suggests. */
     readonly testFile?: string;
+    /**
+     * The images of a failed comparison, by absolute path, with their sizes:
+     * the reference image if there is one, the actual image, and the diff if
+     * they are the same size. The test records them for Vitest's UI and
+     * reports.
+     */
+    readonly images?: readonly VisualVerdictImage[];
+}
+
+/** One image of a failed comparison. */
+export interface VisualVerdictImage {
+    readonly name: 'reference' | 'actual' | 'diff';
+    readonly path: string;
+    readonly width: number;
+    readonly height: number;
 }
 
 /**

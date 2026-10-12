@@ -1823,9 +1823,12 @@ project structure page gains `__screenshots__/`, `src/testing/` and
         (the same plugin), so it joins the run. An edit to
         `vsnap.config.ts`, or to vsnap's own page code, reruns the tests
         with the old modules, even after a restart: Vitest's browser mode
-        keeps the setup's modules for the session. The README says to stop
-        and start Vitest for that. Why a restart doesn't clear them is not
-        yet known.
+        keeps the setup's modules for the session. The README said to stop
+        and start Vitest for that. A later check (2026-10-12) found that an
+        edit to `vsnap.config.ts` now reruns the tests with the new config,
+        on a plain rerun: the page imports it through the
+        `virtual:vsnap-config` alias since the review's fixes, so Vite tracks
+        it as a module of the page. The README now says so.
       - **Each canvas test is of one kind, with a default view
         (2026-10-12).** The options name the test's `kind`, so vsnap knows
         the kind before the pose runs: only that kind's `beforePose` runs,

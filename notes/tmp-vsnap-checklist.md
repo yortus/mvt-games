@@ -158,14 +158,20 @@ Each review finding says how it was checked:
 
 ## Watch mode
 
-- [ ] **W1. A change to `vsnap.config.ts`, or to vsnap's page code, needs
+- [x] **W1. A change to `vsnap.config.ts`, or to vsnap's page code, needs
   Vitest stopped and started again.** Vitest's browser mode keeps the
   setup's modules for the session, even across its own restarts, so the
   tests rerun with the old modules. Find out why a restart doesn't clear
   them, and fix it if vsnap can. The README documents the behaviour for
   now.
-- [ ] **W2. Add a scheduled CI run with `--sequence.shuffle`**, to catch
+  Resolved on 2026-10-12: an edit to `vsnap.config.ts` now takes effect on
+  a plain rerun, checked by widening a prepared view, whose test then
+  failed. The alias `virtual:vsnap-config` (added for module identity) lets
+  Vite track the file. The README is corrected.
+- [x] **W2. Add a scheduled CI run with `--sequence.shuffle`**, to catch
   tests that depend on the ones before them in the shared canvas page.
+  Already there: the weekly scheduled run, and manual runs, shuffle the
+  tests, with the seed in the log (`.github/workflows/visual.yml`).
 
 ## Smaller items
 
@@ -194,17 +200,25 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   options** such as `timeout` or `retry`. Users will reach for
   `canvasTest.only(...)`. Add them, and pass Vitest's options through.
   Done on 2026-10-12, except `.each`, which is U9.
-- [ ] **U3. Show the images where Vitest shows results.** A failure names a
+- [x] **U3. Show the images where Vitest shows results.** A failure names a
   PNG under `.vitest/vsnap/`, which the user opens by hand. Vitest's test
   annotations can carry attachments, which the Vitest UI and HTML reporter
   show. Check that browser mode supports them, then attach the actual,
   reference and diff images.
+  Done on 2026-10-12: a failed image records the same
+  `visual-regression` artifact as Vitest's own screenshot assertion, with
+  its reference, actual and diff images, which Vitest copies into its
+  attachments.
 - [x] **U4. vsnap's summary goes to standard output,** even with
   `--reporter=json`, which could corrupt output that another tool reads.
   Print it to standard error, or only beside a human-readable reporter.
 - [ ] **U5. Check the tools around Vitest:** the VS Code Vitest extension
   (does it list and run visual tests?), the Vitest UI with browser
   projects, and coverage runs that include them.
+  Checked on 2026-10-12: the HTML reporter, which uses the UI's client,
+  generates its report with vsnap's projects. Still to check: the UI
+  itself, coverage (no coverage package is installed in this repo), and the
+  VS Code extension.
 - [x] **U6. A step-by-step setup guide in the README** for a project whose
   config is flat today: moving to projects, moving `include` and
   `exclude` into the unit project, adding `vsnap.config.ts` with

@@ -214,12 +214,16 @@ function judge(options: {
     mkdirSync(dirname(outBase), { recursive: true });
     writeFileSync(`${outBase}.actual.png`, encodePng(actual));
     const actualFile = toDisplayPath(`${outBase}.actual.png`);
-    if (expected === undefined) return { outcome: 'new', referenceFile, actualFile, testFile };
+    const actualImage = { name: 'actual', path: `${outBase}.actual.png`, width: actual.width, height: actual.height } as const;
+    if (expected === undefined) return { outcome: 'new', referenceFile, actualFile, testFile, images: [actualImage] };
+    const referenceImage = { name: 'reference', path: file, width: expected.width, height: expected.height } as const;
     if (comparison === undefined) {
-        return { outcome: 'size', referenceSize: `${expected.width}x${expected.height}`, referenceFile, actualFile, testFile };
+        return { outcome: 'size', referenceSize: `${expected.width}x${expected.height}`, referenceFile, actualFile, testFile, images: [referenceImage, actualImage] };
     }
     writeFileSync(`${outBase}.diff.png`, encodePng(comparison.diff));
+    const diffImage = { name: 'diff', path: `${outBase}.diff.png`, width: actual.width, height: actual.height } as const;
     return {
+        images: [referenceImage, actualImage, diffImage],
         outcome: 'differs',
         changed: comparison.changed,
         maxDelta: comparison.maxDelta,

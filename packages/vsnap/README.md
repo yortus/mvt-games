@@ -524,17 +524,12 @@ fingerprint and the calibration set's references.
 ### Watch Mode
 
 In watch mode, Vitest reruns a test file when the file changes, or when a
-module that it imports changes, such as its view. Two other changes work
-differently.
+module that it imports changes, such as its view. A change to
+`vsnap.config.ts` reruns the tests with the new config.
 
-- **A new or deleted test file restarts Vitest.** Each project gets its test
-  files when the config loads, so the restart sends a new file to its kind
-  of page. The browser starts again, which takes a few seconds.
-- **A change to `vsnap.config.ts` needs Vitest stopped and started again.**
-  The test page loads the file in its setup, and Vitest's browser mode keeps
-  the setup's modules for the rest of the session, even across its own
-  restarts. Edits to the modules that `vsnap.config.ts` imports are the
-  same.
+A new or deleted test file restarts Vitest, since each project gets its
+test files when the config loads, and the restart sends a new file to its
+kind of page. The browser starts again, which takes a few seconds.
 
 ## FAQ
 

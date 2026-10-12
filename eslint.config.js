@@ -244,6 +244,7 @@ export default tseslint.config(
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
-        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**'],
+        // .vitest/ holds Vitest's output, such as an HTML report's scripts.
+        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**'],
     },
 );
