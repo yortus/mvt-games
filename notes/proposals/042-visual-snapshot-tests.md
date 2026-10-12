@@ -1886,6 +1886,13 @@ project structure page gains `__screenshots__/`, `src/testing/` and
       The published types still name Pixi and three.js only in the
       subpaths' own declarations, so a project that imports neither
       subpath needs neither library's types.
+      Done on 2026-10-12, except dropping the condition: the build writes
+      `lib/` (not `dist/`, which Vite's scan of entries skips), and
+      `playwright` and `@vitest/browser-playwright` became peers, so that
+      vsnap installs the browser that Vitest launches. vsnap's entry points
+      are left out of Vite's bundling, since a bundled copy loaded beside
+      the setup file's in a packed install. A scratch project from a packed
+      install passed, types included.
     - **A brand and a logo.** Chosen 2026-10-11: a bold V with a sharp
       point, cut through by two clean horizontal gaps, in one colour. It
       reads at 16 pixels, and on light and dark backgrounds. The first idea,

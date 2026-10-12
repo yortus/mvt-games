@@ -68,40 +68,67 @@ Each review finding says how it was checked:
 
 ## Before publishing
 
-- [ ] **P1. The Playwright promise in the README is probably false**
+- [x] **P1. The Playwright promise in the README is probably false**
   (likely). `@vitest/browser-playwright` takes Playwright as a peer with
   the range `*`, so a project with another Playwright version launches
   that version's browser, and the fingerprint check stops the run.
   Fix: make `playwright` a peer of vsnap, or launch vsnap's own copy by
   its executable path. Then correct the README's Requirements.
-- [ ] **P2. `@vitest/browser-playwright` is a caret dependency, but
+  Done on 2026-10-12: confirmed, since the provider imports the project's
+  `playwright` and can't be handed another copy. `playwright` (`~1.63.0`) is
+  now a peer of vsnap, which npm installs with it. The root's `overrides`
+  entry, which hid the problem in this repo, is gone, and the root lists
+  both peers. The README's Requirements and setup steps say so.
+- [x] **P2. `@vitest/browser-playwright` is a caret dependency, but
   requires exactly Vitest 5.0.3** (checked). Make it a peer, as `vitest`
-  is.
-- [ ] **P3. The package works only from source, inside this repo.**
+  is. Done on 2026-10-12. Vitest's own peer range pins it to Vitest's
+  version, so npm installs the matching one.
+- [x] **P3. The package works only from source, inside this repo.**
   `exports` point at `.ts` files, with no `types`, `files` list or build.
   Node-side paths resolve `.ts` siblings and `src/browser/__references__`
   from `import.meta.dirname`. `visual-environment.json` must ship.
   Fix: build with tsdown, check with publint and attw, set `files` and
   `engines` (Node 22 or later).
-- [ ] **P4. Vite's dependency scan ignores `**/dist/**`** (checked in
+  Done on 2026-10-12: `npm run build -w vsnap` builds `lib/` with tsdown
+  (publint and attw pass), and `exports` name `types` and `default` there,
+  with `@mvtjs/source` for the repo. `files` and `engines` are set, and the
+  calibration references and the fonts' licences ship. The Node side finds
+  its sibling files by its own extension. Node ignores the source
+  condition, so the root's `vitest.config.ts` imports vsnap's Node side by
+  path. The package stays private until publishing.
+- [x] **P4. Vite's dependency scan ignores `**/dist/**`** (checked in
   Vite's source by the reviewer). A setup file shipped under `dist/` would
   drop out of `optimizeDeps.entries`, and bring back mid-run reloads.
   Choose the build's output folder with this in mind.
-- [ ] **P5. A packed install may load vsnap's page code twice**
+  Done: the build writes to `lib/`.
+- [x] **P5. A packed install may load vsnap's page code twice**
   (unverified): once pre-bundled by Vite as `vsnap`, once by path as the
   setup file. That would mean two seeded randoms and two page setups.
   Check with a packed install. A possible fix is
   `optimizeDeps.exclude: ['vsnap', 'vsnap/pixi', 'vsnap/three']`.
-- [ ] **P6. Shipping `.ts` source makes projects type-check vsnap's
+  Done on 2026-10-12: confirmed in a scratch project from a packed install.
+  Bundled, the tests' `canvasTest` came from four bundled chunks, while the
+  setup used `lib`'s files. A bundled copy would also hold the project's
+  `vsnap.config.ts`, which `view-kinds` imports. vsnap's projects now
+  exclude its entry points, and include `vsnap > fontkit`, and `pixi.js`
+  and `three` where installed. Every module then loads once.
+- [x] **P6. Shipping `.ts` source makes projects type-check vsnap's
   code**, which needs `vite/client` types and the project's own strictness
-  flags. Ship `.d.ts` files.
-- [ ] **P7. Verify the published types.** The declaration merging on
+  flags. Ship `.d.ts` files. Done: the build ships them, and the scratch
+  project type-checks with `skipLibCheck: false` and no `vite/client`.
+- [x] **P7. Verify the published types.** The declaration merging on
   `Register`, and the derived `canvasTest` types, must work from the built
   `.d.ts` files in a project that imports `vsnap/pixi`.
-- [ ] **P8. The hash marker's keyword is `'mvt-pixels'`** (checked,
+  Done on 2026-10-12: in the scratch project, `Register` merges, a test of
+  an unregistered kind is a type error, and the Pixi, three.js and HTML
+  tests pass, with the calibration set.
+- [x] **P8. The hash marker's keyword is `'mvt-pixels'`** (checked,
   `src/node/png.ts`). It's an in-house name, and changing it after
   publishing would invalidate every reference. Decide it now, perhaps
   `'vsnap'`, and rewrite every reference once.
+  Done on 2026-10-12: the keyword is `'vsnap'`. A one-off script
+  re-encoded the 70 references in the repo with vsnap's encoder. Each is
+  5 bytes smaller, the keyword's difference, with its hash unchanged.
 - [x] **P9. Some messages are for vsnap's maintainers, not its users.**
   `npm run test:visual:environment -w vsnap` in
   `src/browser/calibration.ts` and `src/node/commands.ts`, and "add the
@@ -115,6 +142,10 @@ Each review finding says how it was checked:
 - [x] **P11. The "too big" failure gives no update command**
   (`src/browser/judge.ts`), though the README says failure messages give
   it.
+- [ ] **P13. Leave `@mvtjs/source` out of the published `package.json`,**
+  as 042 plans. The repo needs the condition, so a step at publishing
+  time must remove it, along with the `src` paths it names, which don't
+  ship.
 - [ ] **P12. The new calibration images have run only on Windows.** Push
   the branch, and let the visual CI workflow run on Linux and macOS.
 
@@ -246,6 +277,7 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   favicon, a settled colour, and a wordmark if the README wants one.
 - [ ] Publishing with changesets, as the `@mvtjs` libraries are.
 - [ ] A trial on another project, from a packed install (see P5 and P7).
+  A scratch project passed on 2026-10-12. A real project is still to try.
 - [ ] Publish.
 - [ ] Archive 042, and delete the `visual-tests` worktree.
 
@@ -276,4 +308,5 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   since it ran before every test run and touched a source file each time.
   Left alone: Vitest's check that Playwright's browser is installed costs
   about 0.4 s, but skipping it would be fragile.
+- [ ] vsnap node/browser dir layout and imports reaching past package's defined exports - can this be fixed/improved? eg `from './packages/vsnap/src/node/index.ts'`
 

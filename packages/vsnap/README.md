@@ -26,13 +26,16 @@
   `viteConfig` option at its config. A project that builds with something
   else needs a small Vite config, with the aliases and plugins that its
   views rely on.
-- **Playwright 1.63, any patch release.** vsnap installs it, because its
-  browser draws every image. Each run first checks the browser's
-  fingerprint, which names its exact build, so a patch release that changed
-  the browser would stop the run rather than change the images. A newer
-  minor version of Playwright brings a new browser, so it needs a new
-  release of vsnap. A project that uses another version of Playwright, for
-  other tests, gets both copies.
+- **Playwright 1.63, any patch release,** and Vitest's Playwright
+  provider, `@vitest/browser-playwright`, at the same version as `vitest`.
+  They are peer dependencies, which npm installs with vsnap. vsnap and
+  Vitest must use one copy of Playwright, because vsnap installs the browser
+  that Vitest launches, and that browser draws every image. Each run first
+  checks the browser's fingerprint, which names its exact build, so a patch
+  release that changed the browser would stop the run rather than change
+  the images. A newer minor version of Playwright brings a new browser, so
+  it needs a new release of vsnap. A project that uses Playwright for other
+  tests uses the same version for both.
 - **Node 22 or later.**
 - **No renderer library.** A canvas test can draw with the browser's own
   canvas, and needs no library. vsnap's support for Pixi and three.js views
@@ -347,7 +350,8 @@ prints no summary.
 
 The unit project leaves out the visual test files, which run in vsnap's
 projects instead. Vitest's default `include` matches both kinds of file. A
-project also needs dev dependencies on `vsnap` and `vitest`.
+project also needs dev dependencies on `vsnap` and `vitest`. npm installs
+vsnap's peers, Playwright and Vitest's Playwright provider, with it.
 
 vsnap's projects inherit the config that they are listed in, as Vitest's
 `extends: true` does. So the views compile with the same plugins and
@@ -388,7 +392,10 @@ mirror the reference's path. Add `.vitest/` to `.gitignore`.
 Most projects that already use Vitest have one flat config. These steps
 turn it into the shape above.
 
-1. Install `vsnap` as a dev dependency, beside `vitest`.
+1. Install `vsnap` as a dev dependency, beside `vitest`. npm also installs
+   `playwright` and `@vitest/browser-playwright`, which vsnap needs. A
+   package manager that doesn't install peer dependencies needs them
+   installed too.
 2. Move the config's `test` settings into a project named `unit`, inside
    `test.projects`. That includes `include`, `exclude`, `environment` and
    `setupFiles`. Settings for the whole run, such as `reporters` and
@@ -608,13 +615,25 @@ them are defined once, in `src/protocol.ts`.
 `visual-environment.json` holds the browser's fingerprint, which every
 machine's browser must match.
 
-The package's entry points are its TypeScript source, for now. Vitest
-compiles a config file before it runs it, but leaves the packages that it
-imports to Node. Node runs TypeScript source itself, as long as each
-relative import names its file with `.ts`, so vsnap's Node side writes its
-imports that way, and a config in this repo imports `vsnap/config` by name.
-Node won't do that for a package installed in `node_modules`, so the
-published package will ship built JavaScript.
+`npm run build` builds the package into `lib/`, one JavaScript file and
+one declaration file for each module, with tsdown. That is what a project
+that installs vsnap runs. The folder isn't named `dist`, because Vite leaves
+files under `dist` out of the scan for libraries, and the setup file must
+be scanned.
+
+Inside this repository, nothing needs building. Each entry point has an
+export condition, `@mvtjs/source`, that names its TypeScript source, which
+the repository's Vite configs and TypeScript use. Node doesn't know that
+condition, and Node loads the packages that a Vitest config imports. So the
+repository's configs import vsnap's Node side from its source by path. Node
+runs that source itself, as long as each relative import names its file with
+`.ts`, so vsnap's Node side writes its imports that way.
+
+vsnap's page code is never bundled by Vite, in a project or here. The setup
+file loads it by path, and the tests load it by name. Bundled, it would load
+twice: once for the setup, and once in the bundle for the tests. So vsnap's
+projects leave its entry points out of Vite's bundling, and name the
+libraries that its page code imports instead.
 
 ## Licence
 

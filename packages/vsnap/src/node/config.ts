@@ -24,7 +24,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { dirname, extname, join, relative, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
 import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
@@ -188,8 +188,16 @@ function createVisualProject(options: {
         // test files and the harness's setup for them. It bundles afresh when
         // the sources changed since the last run, and reuses its cache when
         // they didn't, which saves most of a second (see rebundle.ts).
+        //
+        // vsnap itself is never bundled. The setup file loads vsnap's page
+        // code by path, so a bundled copy for the tests would be a second
+        // copy, and it would hold a copy of the project's vsnap.config.ts.
+        // So Vite can't scan vsnap's code for the libraries it imports, and
+        // they are named instead.
         optimizeDeps: {
             entries: [...files.map(escapeGlob), ...setupFiles.map((file) => escapeGlob(file.replaceAll('\\', '/'))), ...viewConfig],
+            exclude: [...PACKAGE_ENTRIES],
+            include: ['vsnap > fontkit', ...RENDERERS.filter((name) => isInstalled(name, options.root))],
             force: options.rebundle,
         },
         test: {
@@ -323,8 +331,28 @@ function checkViewConfig(file: string): void {
     }
 }
 
+/**
+ * Returns whether a package is installed where a project's root can import
+ * it, in a `node_modules` folder in the root or above it.
+ */
+function isInstalled(name: string, root: string): boolean {
+    for (let dir = root; ; dir = dirname(dir)) {
+        if (existsSync(join(dir, 'node_modules', name, 'package.json'))) return true;
+        if (dirname(dir) === dir) return false;
+    }
+}
+
+/** The names of this package's entry points that run in the test page. */
+const PACKAGE_ENTRIES = ['vsnap', 'vsnap/pixi', 'vsnap/three'];
+
+/** The libraries that vsnap's support for Pixi and three.js imports, which a project installs if it uses them. */
+const RENDERERS = ['pixi.js', 'three'];
+
+/** The extension of this package's modules: `.ts` in its source, and `.js` once built. */
+const EXTENSION = extname(import.meta.filename);
+
 /** The settings of a project that has no `vsnap.config`, which register no kinds of view. */
-const NO_CONFIG = resolve(import.meta.dirname, '..', 'browser', 'no-config.ts');
+const NO_CONFIG = resolve(import.meta.dirname, '..', 'browser', `no-config${EXTENSION}`);
 
 /** Matches the files that can be visual test files. */
 const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
@@ -340,10 +368,10 @@ const WARNED: Set<string> = ((globalThis as { vsnapWarned?: Set<string> }).vsnap
 const VIEW_CONFIG_NAMES = ['vsnap.config.ts', 'vsnap.config.mts', 'vsnap.config.js', 'vsnap.config.mjs'];
 
 /** The file that sets each page up before its tests, from this package. */
-const SETUP_FILE = resolve(import.meta.dirname, '..', 'browser', 'setup.ts');
+const SETUP_FILE = resolve(import.meta.dirname, '..', 'browser', `setup${EXTENSION}`);
 
 /** The global setup step that installs the browser if it is missing. */
-const INSTALL_BROWSER = resolve(import.meta.dirname, 'install-browser.ts');
+const INSTALL_BROWSER = resolve(import.meta.dirname, `install-browser${EXTENSION}`);
 
 /**
  * The browser's switches. They fix everything that would otherwise differ

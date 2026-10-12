@@ -1,11 +1,14 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'vsnap/config';
+// vsnap's Node side, from its source. Node loads the packages that a config
+// imports, and Node doesn't know the source condition, so `vsnap/config`
+// would need vsnap built first.
+import { vsnap } from './packages/vsnap/src/node/index.ts';
 
 const ROOT = __dirname;
 
-/** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
+/** The `exports` condition under which each @mvtjs package, and vsnap, resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
 // The website's visual tests, in vsnap's projects, `visual-canvas` and
