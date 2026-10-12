@@ -261,7 +261,19 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
 ## Miscellaneous
 - [ ] Thoroughly review the docs pages that mention visual testing
 - [ ] Thoroughly review the vsnap README and docs in the vsnap package
-- [ ] Address concurrency in visual test runs
+- [x] Address concurrency in visual test runs. Tests within a file already
+  run one at a time (B4), and the canvas and HTML projects already run side
+  by side in one group. Running the HTML files in parallel, in a group of
+  their own, made the run slower (9.7 s against 7.5 s), since each extra
+  page loads its own modules. So the current setup stays.
 - [ ] finalise standard paths for reference images
-- [ ] followup speed checkup - did we make it slower? Can it be faster still?
+- [x] followup speed checkup - did we make it slower? Can it be faster still?
+  Not slower: 7.3-7.5 s against 7.5-7.7 s before, with setup down from 16%
+  to 12% of the run. Faster still: Vite now reuses its bundle of the
+  libraries when no source file changed since the last run, instead of
+  bundling afresh every run, which saves about 0.9 s. That needed the
+  refresh copies' generator to write its file only when the file changes,
+  since it ran before every test run and touched a source file each time.
+  Left alone: Vitest's check that Playwright's browser is installed costs
+  about 0.4 s, but skipping it would be fragile.
 

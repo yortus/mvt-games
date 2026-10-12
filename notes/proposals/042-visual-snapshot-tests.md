@@ -540,9 +540,13 @@ reported example went from 7 s to 600 ms. Here it means:
   optimizer, finding a new dependency mid-run, re-bundles, and the files
   after that point load a second copy of Pixi whose objects are not the
   first's (`Texture.WHITE` among them; text fills throw). The visual
-  projects list every dependency in `optimizeDeps.include`. A stale
-  optimizer cache after a dependency change can still break the first run
-  after it; CI starts cold.
+  projects give Vite the test files and the harness's setup as
+  `optimizeDeps.entries`, so it scans them for every library they import.
+  A cache from an earlier run would skip that scan, so the projects force
+  a fresh bundle whenever a source file has changed since the last run
+  that bundled. A fingerprint of the sources' paths, sizes and times tells
+  (about 100 ms). An unchanged tree reuses the cache, which saves most of
+  a second.
 
 Shared state is the price, and section 5.1 lists what the harness resets
 before every test so that order cannot change a picture. A periodic run

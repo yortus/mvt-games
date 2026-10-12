@@ -9,7 +9,7 @@
  * Usage:  npm run generate-refresh-copies
  */
 
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /** Where the generated module is saved. Not checked in: see `.gitignore`. */
@@ -25,7 +25,11 @@ const COPIES = 17;
 /** Refresh functions are written out for up to this many bindings; more use a loop. */
 const MAX_BINDINGS = 6;
 
-writeFileSync(REFRESH_COPIES_PATH, refreshCopiesSource());
+// The file is written only when its source changes, so that an unchanged
+// file keeps its modification time. Tools that watch the sources, or compare
+// their times between runs, then see no change.
+const source = refreshCopiesSource();
+if (!existsSync(REFRESH_COPIES_PATH) || readFileSync(REFRESH_COPIES_PATH, 'utf8') !== source) writeFileSync(REFRESH_COPIES_PATH, source);
 console.log(`▸ ${REFRESH_COPIES_PATH}`);
 
 // ---------------------------------------------------------------------------

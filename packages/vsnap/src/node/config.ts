@@ -32,6 +32,7 @@ import type { VisualKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
+import { forgetFingerprint, mustRebundle, recordFingerprint } from './rebundle.ts';
 import { registerRoot } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
 import { escapeGlob, findVisualTestFiles } from './test-files.ts';
@@ -132,8 +133,10 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         includes: allFiles.map(escapeGlob),
         setupFiles: [SETUP_FILE],
     });
-    const plugin = createVsnapPlugin({ reporter, root, files: () => findVisualTestFiles(layout), initialFiles: files });
+    const plugin = createVsnapPlugin({ reporter, name, files: () => findVisualTestFiles(layout), initialFiles: files });
+    const rebundle = mustRebundle(name);
     return kinds.map((kind, i) => createVisualProject({
+        rebundle,
         root,
         name: projectNames[i],
         kind,
@@ -152,6 +155,8 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
 
 /** Creates the Vitest project for one kind of visual test. */
 function createVisualProject(options: {
+    /** Whether Vite must bundle the libraries afresh, since the sources changed. */
+    readonly rebundle: boolean;
     readonly root: string;
     readonly maxPixels: number;
     readonly viteConfig: string | undefined;
@@ -179,17 +184,13 @@ function createVisualProject(options: {
         // Vitest's `extends: true` does, unless a Vite config is named.
         extends: options.viteConfig === undefined ? true : resolve(options.root, options.viteConfig),
         // Every file of a kind runs in one page, so Vite must bundle every
-        // library that the tests import before the run starts. If it found one
-        // during the run, it would bundle again, and the files after that
-        // point would load a second copy of a library such as Pixi, whose
-        // objects are not the first copy's. So Vite scans the test files and
-        // the harness's setup for the libraries they import, and bundles them
-        // afresh on every run. A cache from an earlier run would skip the
-        // scan, and miss a library that a test has started to import. The
-        // bundling takes about a second.
+        // library that the tests import before the run starts. Vite scans the
+        // test files and the harness's setup for them. It bundles afresh when
+        // the sources changed since the last run, and reuses its cache when
+        // they didn't, which saves most of a second (see rebundle.ts).
         optimizeDeps: {
             entries: [...files.map(escapeGlob), ...setupFiles.map((file) => escapeGlob(file.replaceAll('\\', '/'))), ...viewConfig],
-            force: true,
+            force: options.rebundle,
         },
         test: {
             name: options.name,
@@ -239,6 +240,9 @@ function createVisualProject(options: {
  * - It adds vsnap's reporter to the run, once, so that a project needn't
  *   add it. A run that filters out vsnap's projects has no reporter of
  *   vsnap's.
+ * - It records the sources' fingerprint, since the projects bundle their
+ *   libraries in this run. In watch mode, a changed script makes the next
+ *   decision read the sources again.
  * - In watch mode, it restarts Vitest when a visual test file is added or
  *   deleted. The projects get their files when the config loads, so a rerun
  *   alone would miss the change. Vitest restarts the same way when its own
@@ -246,7 +250,8 @@ function createVisualProject(options: {
  */
 function createVsnapPlugin(options: {
     readonly reporter: Reporter;
-    readonly root: string;
+    /** The `vsnap` call's name, for its sources' fingerprint. */
+    readonly name: string;
     /** Returns the project's visual test files, read afresh. */
     readonly files: () => Readonly<Record<VisualKind, readonly string[]>>;
     readonly initialFiles: Readonly<Record<VisualKind, readonly string[]>>;
@@ -259,14 +264,18 @@ function createVsnapPlugin(options: {
         configureVitest: ({ vitest }) => {
             const reporters = vitest.config.reporters as unknown[];
             if (!reporters.includes(options.reporter)) reporters.push(options.reporter);
+            // The projects run, and so bundle, in this run.
+            recordFingerprint(options.name);
             const server = vitest.vite;
             if (!vitest.config.watch || watched.has(server)) return;
             watched.add(server);
             server.watcher.on('all', (event, file) => {
-                // Only a script can be a test file, so the actual images that a run
-                // writes don't make it read the files again.
+                // Only a script can be a test file, or import a library, so the
+                // actual images that a run writes are ignored.
+                if (!SCRIPT_FILE.test(file)) return;
+                forgetFingerprint();
                 if (event !== 'add' && event !== 'unlink') return;
-                if (!SCRIPT_FILE.test(file) || listFiles(options.files()) === initial) return;
+                if (listFiles(options.files()) === initial) return;
                 // Vitest makes this restart the whole run, as it does for its
                 // own config.
                 void server.restart();
