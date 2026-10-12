@@ -1,9 +1,9 @@
 import {
     type Camera, NoToneMapping, type Object3D, PCFShadowMap, PerspectiveCamera, Scene, type ShadowMapType, SRGBColorSpace, type ToneMapping,
-    WebGLRenderer,
+    Texture, WebGLRenderer,
 } from 'three';
 import type { CanvasImage } from '../browser';
-import { fitImage, flipRows } from '../shared';
+import { fitImage, flipRows, useCached } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -31,18 +31,20 @@ export interface ThreeImageOptions {
      *
      * Each function is called once per page, not once per actual image,
      * because an environment map takes about a second to make in software
-     * WebGL. Its scene is kept. Each test's view is added to that scene and
-     * taken out after, with the renderer's settings as the function left
-     * them. So the function must dress the scene the same way every time. It
-     * must also be one function shared by the tests (ideally the game's own),
-     * not a new one for each test.
+     * WebGL. Its scene is kept, for the four functions that recent tests
+     * used. Each test's view is added to that scene and taken out after, with
+     * the renderer's settings as the function left them. So the function must
+     * dress the scene the same way every time. It must also be one function
+     * shared by the tests (ideally the game's own), not a new one for each
+     * test, which would dress a new scene for every test.
      */
     readonly scene?: (options: ThreeSceneOptions) => void;
     /**
-     * The colour behind the view where the scene sets no background. By
-     * default, it is the same dark grey as Pixi images.
+     * The colour behind the view where the scene sets no background, as a
+     * number such as `0x202024` or a CSS colour. By default, it is the same
+     * dark grey as Pixi images.
      */
-    readonly background?: number;
+    readonly background?: number | string;
 }
 
 /** The scene that the view goes into, and the renderer that draws it, which the `scene` option sets up. */
@@ -142,16 +144,38 @@ function ensureRenderer(): WebGLRenderer {
 }
 
 function ensureDressedScene(renderer: WebGLRenderer, dress: ((options: ThreeSceneOptions) => void) | undefined): DressedScene {
-    let dressed = dressedScenes.get(dress);
-    if (dressed === undefined) {
-        const scene = new Scene();
-        applySettings(renderer, DEFAULT_SETTINGS);
-        dress?.({ scene, renderer });
-        dressed = { scene, settings: readSettings(renderer) };
-        applySettings(renderer, DEFAULT_SETTINGS);
-        dressedScenes.set(dress, dressed);
-    }
-    return dressed;
+    return useCached(dressedScenes, {
+        key: dress,
+        limit: SCENE_LIMIT,
+        create: () => {
+            const scene = new Scene();
+            applySettings(renderer, DEFAULT_SETTINGS);
+            dress?.({ scene, renderer });
+            const dressed = { scene, settings: readSettings(renderer) };
+            applySettings(renderer, DEFAULT_SETTINGS);
+            return dressed;
+        },
+        release: (dressed) => releaseScene(dressed.scene),
+    });
+}
+
+/**
+ * The most dressed scenes that the page keeps. A test whose `scene` is a new
+ * function each time makes a new scene each time, so the page keeps only the
+ * most recent.
+ */
+const SCENE_LIMIT = 4;
+
+/** Frees what a dressed scene holds on the GPU: its environment map, its background, and its objects' geometries and materials. */
+function releaseScene(scene: Scene): void {
+    scene.environment?.dispose();
+    if (scene.background instanceof Texture) scene.background.dispose();
+    scene.traverse((object) => {
+        const drawn = object as { geometry?: { dispose?: () => void }; material?: { dispose: () => void } | { dispose: () => void }[] };
+        drawn.geometry?.dispose?.();
+        const materials = drawn.material === undefined ? [] : Array.isArray(drawn.material) ? drawn.material : [drawn.material];
+        for (let i = 0; i < materials.length; i++) materials[i].dispose();
+    });
 }
 
 /** The renderer settings that three.js starts with. */

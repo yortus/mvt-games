@@ -11,8 +11,12 @@ export interface HtmlImageOptions {
     /** The image's size in CSS pixels. By default, it is the element's own size, as the element lays itself out. */
     readonly width?: number;
     readonly height?: number;
-    /** The background, as a CSS colour. By default, it is the same dark grey as canvas images. */
-    readonly background?: string;
+    /**
+     * The background, as a CSS colour or a number such as `0x202024`, as
+     * canvas tests take it. By default, it is the same dark grey as canvas
+     * images.
+     */
+    readonly background?: string | number;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,7 +42,7 @@ export async function captureHtmlImage(
     id: VisualImageId,
 ): Promise<VisualVerdict & { readonly captureMs: number; readonly prepareMs: number; readonly width: number; readonly height: number }> {
     const host = document.createElement('div');
-    host.style.cssText = `position:absolute;left:0;top:0;display:inline-block;background:${options.background ?? DEFAULT_BACKGROUND};`;
+    host.style.cssText = `position:absolute;left:0;top:0;display:inline-block;background:${toCssColour(options.background ?? DEFAULT_BACKGROUND)};`;
     if (options.width !== undefined) host.style.width = `${options.width}px`;
     if (options.height !== undefined) host.style.height = `${options.height}px`;
     host.append(element);
@@ -75,6 +79,11 @@ export async function captureHtmlImage(
 // ---------------------------------------------------------------------------
 
 const DEFAULT_BACKGROUND = '#202024';
+
+/** Returns a colour as CSS: a number such as `0x202024` as `#202024`, and a CSS colour as it is. */
+function toCssColour(colour: string | number): string {
+    return typeof colour === 'number' ? `#${colour.toString(16).padStart(6, '0')}` : colour;
+}
 
 /**
  * Throws if the host goes past the page, which is the viewport's size. The

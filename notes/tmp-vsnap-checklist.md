@@ -133,19 +133,23 @@ Each review finding says how it was checked:
   `.each`. Change the wording, or add the support.
 - [ ] **A4. Should `artStyle` default to `'smooth'`?** `'pixel'` suits
   games, not Pixi users generally. A decision for the user.
-- [ ] **A5. A view of one solid colour can't be tested.** The blank check
+- [x] **A5. A view of one solid colour can't be tested.** The blank check
   always fails it, and can't be turned off.
-- [ ] **A6. `background` differs between the kinds.** It's a number for
+- [x] **A6. `background` differs between the kinds.** It's a number for
   canvas kinds, and a CSS string for `htmlTest`.
-- [ ] **A7. `CanvasViewKind`'s defaults make a bare annotation
+- [x] **A7. `CanvasViewKind`'s defaults make a bare annotation
   unusable.** With `V = never, O = never`, `CanvasViewKind` without type
   arguments gives `prepare(view: never)`.
-- [ ] **A8. The caches in the shared page grow without limit.** Pixi keeps
+- [x] **A8. The caches in the shared page grow without limit.** Pixi keeps
   a render target for each distinct size (`src/pixi/pixi-image.ts`).
   three.js keeps a scene for each `scene` function
   (`src/three/three-image.ts`), so an inline arrow function leaks a scene
   and its environment map on every test. The default disposers don't free
   textures, and `disposeObject` skips lines, points and sprites.
+  Done on 2026-10-12: both caches keep only their most recent entries (16
+  render textures, 4 scenes), releasing the rest, and `disposeObject` takes
+  every geometry and material. The default disposers still leave textures,
+  since tests often share them.
 - [x] **A9. In-house wording in the package.** `src/pixi/pixi-image.ts`
   mentions "the games' spritesheets".
 - [ ] **A10. One `Register` per TypeScript program.** A monorepo whose
@@ -205,7 +209,7 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   config is flat today: moving to projects, moving `include` and
   `exclude` into the unit project, adding `vsnap.config.ts` with
   `Register`, and including it in `tsconfig.json`.
-- [ ] **U9. `canvasTest.each` and `htmlTest.each`,** with Vitest's
+- [x] **U9. `canvasTest.each` and `htmlTest.each`,** with Vitest's
   table forms and name formatting (`%s`, `$name`). Until then, a test can
   declare its cases in a loop, as the website's tests do.
 - [x] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**

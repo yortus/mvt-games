@@ -11,7 +11,7 @@ import type { CanvasImage } from './canvas-drawing';
  * is the view's type, `O` is the type of its tests' options, and `N` is
  * the kind's name, which tests give as `kind`.
  */
-export interface CanvasViewKind<V = never, O = never, N extends string = string> {
+export interface CanvasViewKind<V = unknown, O = object, N extends string = string> {
     /** The kind's name, such as `'pixi'`, which a test gives as its `kind`. */
     readonly name: N;
     readonly kind: 'canvas';

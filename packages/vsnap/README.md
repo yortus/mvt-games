@@ -75,7 +75,19 @@ returns it. A pose never waits for real time to pass.
 The options can also hold Vitest's own `timeout`, `retry`, `repeats` and
 `fails`, which work as they do on `test`. So do the modifiers
 `canvasTest.skip`, `canvasTest.only` and `canvasTest.todo`, and the same on
-`htmlTest`. Visual tests never run concurrently, even in a
+`htmlTest`. `.each(cases)` and `.for(cases)` declare a test for each case of
+a table, as Vitest's do, and pass the case to the pose. `.each` spreads a
+case that is an array, and `.for` passes it whole. The name can show the
+case, with `%s` or `$property`:
+
+```ts
+canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({ mode }));
+```
+
+A canvas image that is one colour all over fails its test, since it
+usually means that the view drew nothing. A view that is meant to be one
+colour, such as an empty panel, sets `canBeBlank: true`. Every kind's
+`background` takes a number, such as `0x202024`, or a CSS colour. Visual tests never run concurrently, even in a
 `describe.concurrent` block, because the tests of a page share its
 renderers.
 

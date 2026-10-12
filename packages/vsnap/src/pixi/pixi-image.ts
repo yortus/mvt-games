@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, RenderTexture, TextureSource } from 'pixi.js';
 import type { CanvasImage } from '../browser';
-import { fitImage } from '../shared';
+import { fitImage, useCached } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -14,10 +14,11 @@ export interface PixiImageOptions {
     readonly width?: number;
     readonly height?: number;
     /**
-     * The colour behind the view. By default, it is one opaque dark grey,
-     * the same for every test, so that transparent areas show.
+     * The colour behind the view, as a number such as `0x202024` or a CSS
+     * colour. By default, it is one opaque dark grey, the same for every
+     * test, so that transparent areas show.
      */
-    readonly background?: number;
+    readonly background?: number | string;
     /**
      * How the view's art is drawn. Set it to the style that the view's game
      * draws it in. The default is `'pixel'`.
@@ -148,15 +149,17 @@ async function ensureApp(isSmooth: boolean): Promise<Application> {
 
 /**
  * Returns the render texture for a size, resolution and antialiasing. Each
- * one is made on first use and kept. So the canvas is never resized, and no
- * texture is made for each test.
+ * one is made on first use and kept, for the most recent sizes. So the
+ * canvas is never resized, and no texture is made for each test.
  */
 function ensureTarget(width: number, height: number, resolution: number, isAntialiased: boolean): RenderTexture {
-    const key = `${width}x${height}@${resolution}${isAntialiased ? 'aa' : ''}`;
-    let target = targets.get(key);
-    if (target === undefined) {
-        target = RenderTexture.create({ width, height, resolution, antialias: isAntialiased });
-        targets.set(key, target);
-    }
-    return target;
+    return useCached(targets, {
+        key: `${width}x${height}@${resolution}${isAntialiased ? 'aa' : ''}`,
+        limit: TARGET_LIMIT,
+        create: () => RenderTexture.create({ width, height, resolution, antialias: isAntialiased }),
+        release: (target) => target.destroy(true),
+    });
 }
+
+/** The most render textures that the page keeps, one for each size of image that recent tests drew. */
+const TARGET_LIMIT = 16;

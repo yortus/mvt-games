@@ -1,4 +1,4 @@
-import { type Material, Mesh, Object3D } from 'three';
+import { type Material, Object3D } from 'three';
 import type { CanvasViewKind } from '../browser';
 import { drawThreeImage, type ThreeImageOptions } from './three-image';
 
@@ -45,13 +45,17 @@ export function threeViews(options: ThreeViewsOptions = {}): CanvasViewKind<Obje
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Removes a three.js object from its parent, and disposes of every geometry and material under it. */
+/**
+ * Removes a three.js object from its parent, and disposes of every geometry
+ * and material under it: of meshes, lines, points and sprites. It leaves
+ * textures alone, since tests often share them.
+ */
 function disposeObject(root: Object3D): void {
     root.removeFromParent();
     root.traverse((object) => {
-        if (!(object instanceof Mesh)) return;
-        object.geometry.dispose();
-        const materials: Material[] = Array.isArray(object.material) ? object.material : [object.material];
+        const drawn = object as { geometry?: { dispose?: () => void }; material?: Material | Material[] };
+        drawn.geometry?.dispose?.();
+        const materials = drawn.material === undefined ? [] : Array.isArray(drawn.material) ? drawn.material : [drawn.material];
         for (let i = 0; i < materials.length; i++) materials[i].dispose();
     });
 }

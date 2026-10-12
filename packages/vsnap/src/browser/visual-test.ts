@@ -1,4 +1,4 @@
-import { inject, type TaskMeta, test } from 'vitest';
+import { inject, type TaskMeta, test, type TestContext, type TestOptions } from 'vitest';
 import { type CanvasImage, checkCanvasBudget, isCanvas, readCanvas } from './canvas-drawing';
 import { captureHtmlImage, type HtmlImageOptions } from './html-image';
 import { describeFailure, hashPixels, isPass, nameImage, openSession, toBase64, visualCommands } from './judge';
@@ -21,21 +21,58 @@ import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type Def
  * optional, as Pixi's are. The options may also hold Vitest's `timeout`,
  * `retry`, `repeats` and `fails`.
  */
-export type CanvasTestForms = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K> & VitestTestOptions, pose: Pose<CanvasKinds[K]['view']>) => void)
-    & (object extends CanvasKinds[DefaultView]['options'] ? (name: string, pose: Pose<CanvasKinds[DefaultView]['view']>) => void : unknown);
+export type CanvasTestForms<A extends readonly unknown[] = []> = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K> & CanvasTestExtras, pose: CasePose<CanvasKinds[K]['view'], A>) => void)
+    & (object extends CanvasKinds[DefaultView]['options'] ? (name: string, pose: CasePose<CanvasKinds[DefaultView]['view'], A>) => void : unknown);
 
 /** `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`, `repeats` and `fails`. */
-export interface HtmlTestForms {
-    (name: string, pose: Pose<Element>): void;
-    (name: string, options: HtmlImageOptions & VitestTestOptions, pose: Pose<Element>): void;
+export interface HtmlTestForms<A extends readonly unknown[] = []> {
+    (name: string, pose: CasePose<Element, A>): void;
+    (name: string, options: HtmlImageOptions & VitestTestOptions, pose: CasePose<Element, A>): void;
 }
 
-/** A kind of visual test, with Vitest's modifiers: `.skip`, `.only` and `.todo`, which work as they do on Vitest's `test`. */
+/** The options of a canvas test that are neither its kind's nor Vitest's. */
+export interface CanvasTestExtras extends VitestTestOptions {
+    /**
+     * Whether the image may be one colour all over. By default, such an image
+     * fails, since it usually means that the view drew nothing. A view that
+     * is meant to be one colour, such as an empty panel, sets this.
+     */
+    readonly canBeBlank?: boolean;
+}
+
+/**
+ * A pose that takes the arguments of a case, for `.each` and `.for`, which
+ * declare one test for each case of a table. A plain pose takes none.
+ */
+export type CasePose<V, A extends readonly unknown[]> = (...args: A) => V | Promise<V>;
+
+/** A kind of visual test, with Vitest's modifiers, which work as they do on Vitest's `test`. */
 export type WithModifiers<F> = F & {
     readonly skip: F;
     readonly only: F;
     readonly todo: (name: string) => void;
 };
+
+/**
+ * `canvasTest`, with Vitest's modifiers. `.each(cases)` declares a test for
+ * each case, and passes the case to the pose, spread if it is an array, as
+ * Vitest's `test.each` does. `.for(cases)` passes each case whole, as
+ * `test.for` does. The name can show the case, as Vitest's names do, with
+ * `%s` or `$property`.
+ */
+export type CanvasTestAPI = WithModifiers<CanvasTestForms> & {
+    readonly each: <const T>(cases: readonly T[]) => CanvasTestForms<CaseArgs<T>>;
+    readonly for: <const T>(cases: readonly T[]) => CanvasTestForms<[T]>;
+};
+
+/** `htmlTest`, with Vitest's modifiers. `.each` and `.for` work as they do on `canvasTest`. */
+export type HtmlTestAPI = WithModifiers<HtmlTestForms> & {
+    readonly each: <const T>(cases: readonly T[]) => HtmlTestForms<CaseArgs<T>>;
+    readonly for: <const T>(cases: readonly T[]) => HtmlTestForms<[T]>;
+};
+
+/** The arguments that `.each` passes for a case: the case's items if it is an array, as Vitest's `test.each` spreads them, or else the case. */
+export type CaseArgs<T> = T extends readonly unknown[] ? [...T] : [T];
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -53,7 +90,7 @@ export type WithModifiers<F> = F & {
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export const canvasTest = withModifiers(declareCanvasTest) as WithModifiers<CanvasTestForms>;
+export const canvasTest = withModifiers(declareCanvasTest) as CanvasTestAPI;
 
 /**
  * Declares a visual test of an HTML view. The test prepares the element
@@ -67,7 +104,7 @@ export const canvasTest = withModifiers(declareCanvasTest) as WithModifiers<Canv
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export const htmlTest = withModifiers(declareHtmlTest) as WithModifiers<HtmlTestForms>;
+export const htmlTest = withModifiers(declareHtmlTest) as HtmlTestAPI;
 
 // ---------------------------------------------------------------------------
 // Internals
@@ -76,32 +113,46 @@ export const htmlTest = withModifiers(declareHtmlTest) as WithModifiers<HtmlTest
 type ImageId = ReturnType<typeof nameImage>;
 
 /** Vitest's `test`, or one of its modifiers, `test.skip` and `test.only`, which declares a test as `test` does. */
-type Declare = typeof test.skip;
+/** A pose of any test, which takes its case's arguments, if it has a case. */
+type AnyPose = (...args: readonly unknown[]) => unknown;
 
-/** A function that declares one kind of visual test with one of Vitest's declarers. */
-type DeclareVisualTest = (declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>) => void;
+/**
+ * Declares a test with one of Vitest's declarers. The test's function gets
+ * the arguments of its case, which a plain test has none of, and the test's
+ * context.
+ */
+type Declare = (name: string, options: TestOptions, fn: (args: readonly unknown[], context: TestContext) => Promise<void>) => void;
 
-/** Returns a kind of visual test, with `.skip`, `.only` and `.todo`, from the function that declares it. */
+/** A function that declares one kind of visual test with a declarer. */
+type DeclareVisualTest = (declare: Declare, name: string, optionsOrPose: object | AnyPose, pose?: AnyPose) => void;
+
+/** Returns a kind of visual test, with Vitest's modifiers, from the function that declares it. */
 function withModifiers(declareVisualTest: DeclareVisualTest): unknown {
-    const create = (declare: Declare) => (name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void => {
+    const create = (declare: Declare) => (name: string, optionsOrPose: object | AnyPose, pose?: AnyPose): void => {
         declareVisualTest(declare, name, optionsOrPose, pose);
     };
-    return Object.assign(create(test), {
-        skip: create(test.skip),
-        only: create(test.only),
+    const plain = (declareTest: typeof test.skip): Declare => (name, options, fn) => declareTest(name, options, (context) => fn([], context));
+    const forCases = (cases: readonly unknown[], isSpread: boolean): Declare => (name, options, fn) => {
+        test.for(cases)(name, options, (item, context) => fn(isSpread && Array.isArray(item) ? item : [item], context));
+    };
+    return Object.assign(create(plain(test)), {
+        skip: create(plain(test.skip)),
+        only: create(plain(test.only)),
         todo: (name: string) => test.todo(name),
+        each: (cases: readonly unknown[]) => create(forCases(cases, true)),
+        for: (cases: readonly unknown[]) => create(forCases(cases, false)),
     });
 }
 
-function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
+function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object | AnyPose, pose?: AnyPose): void {
     const [elementPose, options] = sortArguments(optionsOrPose, pose);
     const { test: testOptions, image } = splitTestOptions(options);
-    declare(name, testOptions, async ({ task }) => {
+    declare(name, testOptions, async (args, { task }) => {
         const { id } = await startTest(task, 'html');
         const kind = (await loadViewKinds()).html;
         const ms: Record<string, number> = {};
         const t = performance.now();
-        const view: unknown = await elementPose();
+        const view: unknown = await elementPose(...args);
         ms.pose = performance.now() - t;
         if (!(view instanceof Element)) {
             throw new Error(`'${id.test}' poses ${describeValue(view)}, which is not an HTML element. A view drawn on a canvas is tested with canvasTest.`);
@@ -161,11 +212,11 @@ function sortArguments<P extends Pose<unknown>, O extends object>(optionsOrPose:
     return [pose, optionsOrPose];
 }
 
-function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
+function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object | AnyPose, pose?: AnyPose): void {
     const [viewPose, options] = sortArguments(optionsOrPose, pose);
     const { test: testOptions, image } = splitTestOptions(options);
-    const { kind: kindName, ...imageOptions } = image as { readonly kind?: string };
-    declare(name, testOptions, async ({ task }) => {
+    const { kind: kindName, canBeBlank, ...imageOptions } = image as { readonly kind?: string; readonly canBeBlank?: boolean };
+    declare(name, testOptions, async (args, { task }) => {
         const { setup, id } = await startTest(task, 'canvas');
         const viewKinds = await loadViewKinds();
         const named = kindName ?? viewKinds.defaultView;
@@ -173,7 +224,7 @@ function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object
         const ms: Record<string, number> = {};
         kind?.beforePose?.(imageOptions);
         let t = performance.now();
-        const posed: unknown = await viewPose();
+        const posed: unknown = await viewPose(...args);
         ms.pose = performance.now() - t;
         let image: CanvasImage;
         let blankHint = '';
@@ -189,8 +240,8 @@ function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object
             image = await drawView(kind, posed, imageOptions, ms);
             blankHint = kind.blankHint === undefined ? '' : ` ${kind.blankHint}`;
         }
-        if (isAllOne(image.pixels)) {
-            throw new Error(`The actual image '${id.name}' is blank. The view drew nothing inside it.${blankHint}`);
+        if (canBeBlank !== true && isAllOne(image.pixels)) {
+            throw new Error(`The actual image '${id.name}' is blank. The view drew nothing inside it.${blankHint} A view that is meant to be one colour sets canBeBlank: true.`);
         }
         const unpinned = setup.takeUnpinnedFamilies();
         if (unpinned.length > 0) {
