@@ -11,21 +11,23 @@
  *   each image pixel an exact square of view pixels, so the detail that
  *   is averaged away is regular.
  * - An image over the budget that cannot be scaled gets a problem instead.
- *   The problem says why, and the test fails with it.
+ *   The problem says why, and the test fails with it, and with the advice
+ *   that the caller gives for that kind of image.
  */
 export function fitImage(options: {
     readonly width: number;
     readonly height: number;
     readonly maxPixels: number;
     readonly canScale: boolean;
+    /** What to do about an image that is over the budget and cannot be scaled. An image that can be scaled needs none. */
+    readonly advice?: string;
 }): { readonly resolution: number } | { readonly problem: string } {
     const { width, height, maxPixels, canScale } = options;
     if (width * height <= maxPixels) return { resolution: 1 };
     if (!canScale) {
         return {
             problem: `The image is ${width}x${height}, which is ${count(width * height)} pixels. That is over the budget of ${count(maxPixels)} `
-                + '(maxPixels in vsnap.config.ts). Pixel art and HTML are drawn at full size, so crop the image (width, height) '
-                + 'or pose part of the view. A smooth view (artStyle: \'smooth\') is drawn at a lower resolution to fit instead.',
+                + `(vsnap's maxPixels option). ${options.advice ?? ''}`.trimEnd(),
         };
     }
     let resolution = 1;

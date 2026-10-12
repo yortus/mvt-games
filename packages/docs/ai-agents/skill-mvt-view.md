@@ -575,6 +575,56 @@ once, when the element is built, not per frame.
 | Using `null`                               | Style           | Use `undefined`                               |
 | `array.map()` in `refresh()` hot path      | H-alloc         | Index-based `for` loop                        |
 
+## Visual Tests
+
+**[project convention]** A new or changed view gets a visual test. The
+test goes in a `*.visual.test.tsx` file beside the view. Write
+one declaration for each state the view's bindings can show:
+`canvasTest(name, options?, pose)` for a view drawn on a canvas, such as a
+Pixi or three.js view, or
+`htmlTest(name, options?, pose)` for an HTML view. A file declares
+one kind only. The `pose` function's only job is to return a view that
+has been arranged into the pose that the test describes. It builds a leaf
+view from fixed bindings, and a top-level view from a model in a known
+state. If the view has presentation state, the pose advances it
+with `advanceTime(ms, model, view)`, which updates models before views
+in each step. `canvasTest` and
+`htmlTest` come from `vsnap`. `advanceTime` comes from the renderer
+package, with the rest of the tick API.
+
+```tsx
+describe('WinBannerView', () => {
+    canvasTest('a win, counted', { artStyle: 'smooth' }, () => WinBannerView({
+        isShown: () => true,
+        amount: () => WIN,
+        caption: () => CAPTION,
+    }));
+});
+```
+
+- The website's `vsnap.config.ts` registers Pixi, three.js and HTML views.
+  vsnap refreshes each view before its image is taken, and destroys it the
+  MVT way after, so the pose doesn't. Pixi is the default view, so a Pixi
+  test gives no `kind`.
+- Set `artStyle: 'smooth'` for a view that its game draws with
+  antialiasing. The default is `'pixel'`.
+- A three.js view's options give `kind: 'three'`, the image's `width` and
+  `height`, and a `camera`. If the view is lit by an environment map, pass
+  the game's scene setup function as `scene`.
+- Record the reference images with `npx vitest run <test file> -u`, or
+  run the whole update (`npm run test:visual:update`). Look at each new or
+  changed PNG, and commit it with the view.
+  Never accept a change you have not looked at.
+- `npm run test:visual` must pass before you hand over. A failure gives
+  the paths of the reference image, the actual image and a diff. Read the diff
+  before you decide that the change is intended.
+- You may repeat visual runs freely. Playwright's browser makes no Windows
+  logon attempts. The installed Chrome does, and the thumbnail and
+  load-time scripts use it.
+- Assertions still test behaviour and structure, which is what a view does
+  with its bindings. Visual tests check how it looks. See
+  [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md).
+
 ## Complete Minimal Example
 
 A reusable bullet view, shown in a `<List>` above, with a JSX body:
@@ -626,3 +676,4 @@ export function BulletView(bindings: BulletViewBindings): Container {
 - [Presentation State](../building-with-mvt/adding-visual-polish/presentation-state.md) - view models and presentation state
 - [Architecture Rules](../architecture/rules.md) - all view rules (V-stateless through V-tree)
 - [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `refresh()`
+- [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md) - writing, running and accepting visual tests

@@ -1,5 +1,9 @@
+export { type CanvasImage, readCanvas } from './canvas-drawing';
 export type { HtmlImageOptions } from './html-image';
-export type { ArtStyle, PixiImageOptions } from './pixi-image';
-export type { ThreeImageOptions, ThreeSceneOptions } from './three-image';
-export { canvasTest, htmlTest, type Pose } from './visual-test';
-export { type AnyView, setViewHooks, type ViewHooks } from './view-hooks';
+export type { Pose } from './pose';
+export { fitImage } from '../shared';
+export {
+    type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type DefaultView, defineVsnapConfig, type DrawnImage, type HtmlViewKind, htmlViews, type Register,
+    type ViewKind, type VsnapConfig,
+} from './view-kinds';
+export { canvasTest, type CanvasTest, htmlTest } from './visual-test';

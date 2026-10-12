@@ -12,8 +12,9 @@
 > tests, visual tests must be fast, and must give the same result on every
 > machine. This package runs hundreds of them in seconds. The images come
 > out the same on Windows, Linux and macOS, and nothing needs installing
-> beyond `npm ci`. It covers Pixi, three.js and HTML views. It runs on
-> Vitest's browser mode. It is not published yet.
+> beyond `npm ci`. It covers views drawn on a canvas, by any renderer, and
+> HTML views. It draws Pixi and three.js views itself. It runs on Vitest's
+> browser mode. It is not published yet.
 
 ## Requirements
 
@@ -33,8 +34,10 @@
   release of vsnap. A project that uses another version of Playwright, for
   other tests, gets both copies.
 - **Node 22 or later.**
-- **`pixi.js` and `three`,** which vsnap draws with, as peer dependencies.
-  For now, a project needs both, even if it tests only HTML views.
+- **No renderer library.** A canvas test can draw with the browser's own
+  canvas, and needs no library. vsnap's support for Pixi and three.js views
+  draws with the project's own copy of `pixi.js` or `three`, so a project
+  that uses it installs only the library its views use.
 
 ---
 
@@ -44,7 +47,7 @@ A test is a declaration in a `*.visual.test.ts` or `*.visual.test.tsx`
 file beside the view. The file is a Vitest test file, which runs in a
 browser, and it can hold ordinary tests too. (A project can keep its tests
 elsewhere, as [Choosing Where Files Go](#choosing-where-files-go)
-describes.) A Pixi or three.js view is declared with
+describes.) A view drawn on a canvas is declared with
 `canvasTest(name, options?, pose)`, and an HTML view with
 `htmlTest(name, options?, pose)`. The options (if any) come before the pose,
 as they do in Vitest's `test`. The `pose` function's only job is to return a
@@ -57,13 +60,116 @@ import { HudView } from './hud-view';
 
 describe('HudView', () => {
     canvasTest('at the start', () => HudView({ score: () => 0 }));
-    canvasTest('a high score', () => HudView({ score: () => 98_765 }));
+    canvasTest('a high score', { artStyle: 'smooth' }, () => HudView({ score: () => 98_765 }));
 });
 ```
+
+`HudView` returns a Pixi container here. vsnap knows how to draw it because
+the project registers Pixi views, and makes them its default view, as
+[Kinds of View](#kinds-of-view) describes.
 
 A view that changes over time, such as one that animates, is posed at a
 known moment: the pose advances it by a fixed amount of time before it
 returns it. A pose never waits for real time to pass.
+
+### Kinds of View
+
+Each canvas test is of one kind of view, which its options name as `kind`.
+A kind is one that the project registers, such as `'pixi'`, or `'canvas'`,
+for a canvas that the pose drew. A project registers its kinds in
+`vsnap.config.ts`, which is vsnap's config for the project. It is in
+vsnap's root, beside `vitest.config.ts` in a project with one package.
+
+```ts
+import { defineVsnapConfig } from 'vsnap';
+import { pixiViews } from 'vsnap/pixi';
+import { threeViews } from 'vsnap/three';
+
+const config = defineVsnapConfig({
+    views: [pixiViews(), threeViews()],
+    defaultView: 'pixi',
+});
+
+// Gives canvasTest's types the kinds of view above, and the default view.
+declare module 'vsnap' {
+    interface Register {
+        config: typeof config;
+    }
+}
+
+export default config;
+```
+
+The file runs in the test page, not in Node as `vitest.config.ts` does,
+because what it registers runs on the views: checks of their classes,
+drawing, preparing and disposing. So the settings that Node needs before
+any page exists, such as `maxPixels` and where the files go, are options of
+`vsnap()` in `vitest.config.ts`, as [Configuration](#configuration)
+describes.
+
+- **Pixi views,** registered with `pixiViews()` from `vsnap/pixi`. The pose
+  returns a Pixi container. By default, the image is framed by the view's
+  bounds, and drawn as pixel art, with hard edges and whole pixels. The
+  options can set the image's `width`, `height` and `background`, and
+  `artStyle: 'smooth'` for antialiased art.
+- **three.js views,** registered with `threeViews()` from `vsnap/three`. The
+  pose returns a three.js object. A three.js view has no bounds to frame it
+  by, so the options always set the image's `width` and `height`, and the
+  `camera` to draw it with. They can also dress the `scene` as the view's
+  game does, with its lights, environment and tone mapping.
+- **A canvas that the pose has drawn,** of the kind `'canvas'`, with any
+  renderer, needs no registration. It can be an `HTMLCanvasElement` or an
+  `OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
+  in the page needs `preserveDrawingBuffer: true`, because the browser
+  clears it once it is shown.
+
+`defaultView` names the kind that a test is of when it gives no `kind`.
+Most projects draw most of their views one way, so most of their tests give
+no kind. A test of another kind names it:
+
+```ts
+canvasTest('spinning', { artStyle: 'smooth' }, () => ReelView(...));
+canvasTest('at rest', { kind: 'three', width: 240, height: 300, camera }, () => LeverView(...));
+canvasTest('a bar chart', { kind: 'canvas' }, () => drawChart(SALES));
+```
+
+Without `defaultView`, the default is `'canvas'`. HTML views need no
+registration, unless they need preparing or disposing of, as
+[Preparing and Disposing of Views](#preparing-and-disposing-of-views)
+describes.
+
+The `Register` declaration gives the config's type to `canvasTest`. So each
+test's options are checked against its kind, and its pose must return its
+kind's view. A three.js test that leaves out its `kind` is taken as Pixi,
+so `camera` is a type error, and so is a three.js object from its pose. For
+that, the project's `tsconfig.json` must include `vsnap.config.ts`. One
+TypeScript program holds one `Register`, so a monorepo whose packages have
+configs of their own type-checks each package on its own.
+
+A test also checks its view as it runs, by its kind's check, such as
+`instanceof Container`. A view of another kind fails its test, and the
+message says which kind the view is, and the `kind` to give.
+
+`pixiViews` and `threeViews` each keep one renderer for every image, which
+is much faster than a renderer for each test. Support for another renderer
+can do the same. It is a `CanvasViewKind`: a name, a check of the view, and
+the steps that draw it and dispose of it. Its `draw` can return the canvas
+that it drew on, and vsnap reads it. `vsnap` exports the types, with two
+helpers: `fitImage` says how an image fits the size budget, and
+`readCanvas` reads a canvas that was drawn smaller to fit. Listed in the
+config, the kind joins `canvasTest`'s types through `Register`, as the
+others do.
+
+Each kind is listed once. Two kinds with one name, a kind named
+`'canvas'`, `htmlViews` listed twice, or a `defaultView` that names no
+listed kind, stop the run with an error.
+
+#### If `canvasTest` Rejects Every View
+
+If every canvas test that gives no kind is a type error, such as
+"Container is not assignable to HTMLCanvasElement", `canvasTest`'s types
+have no default view. Check that `vsnap.config.ts` has the `Register`
+declaration, and that `tsconfig.json` includes the file.
 
 ### Tests, Actual Images and Reference Images
 
@@ -103,8 +209,8 @@ of test need their pages arranged differently.
 
 - **Canvas tests share one page.** Every file of canvas tests runs in the
   same page, one file after another. The libraries load once, the shaders
-  compile once, and one renderer draws every actual image. That is what
-  lets hundreds of tests run in seconds.
+  compile once, and `pixi` and `three` each draw every actual image with
+  one renderer. That is what lets hundreds of tests run in seconds.
 - **Each file of HTML tests gets a fresh page.** This is because html views use stylesheets, which can't be unloaded from a page, so the fresh pages ensure that
 each view gets only its own styles.
 
@@ -116,13 +222,20 @@ as one that reads a file, should go in a separate test file. A visual test file
 that declares both `canvasTest` and `htmlTest`, or neither, stops the run with an
 error.
 
+The package finds the declarations by reading each file's text for
+`canvasTest(` and `htmlTest(`, since Vitest needs each file's project before
+any test code runs. So a file must call `canvasTest` or `htmlTest` by those
+names. A file whose tests all go through a helper of its own, which calls
+them, is reported as declaring neither, and a comment that mentions the
+other one, followed by a bracket, counts as a declaration.
+
 ### Preparing and Disposing of Views
 
 By default, the package takes an image of a view just as the pose returns
-it. Afterwards, it disposes of the view the plain way: Pixi's `destroy`,
-three.js's `dispose` on every geometry and material, or removing the HTML
-element. A project whose views need more can set two hooks, with
-`setViewHooks`, in a setup file that the `setup` option names.
+it. Afterwards, it disposes of the view the plain way: removing the HTML
+element, Pixi's `destroy`, or three.js's `dispose` on every geometry and
+material. A project whose views need more says so in each kind's
+registration.
 
 - **`prepare(view)`** runs after the pose, before the image is taken. A
   framework whose views write their state to the screen in a separate
@@ -132,42 +245,52 @@ element. A project whose views need more can set two hooks, with
   destroyed does that here.
 
 For example, views built with [MVT](https://github.com/yortus/mvt-games)
-draw in a refresh step, and are destroyed through MVT, so a project's setup
-file reads:
+draw in a refresh step, and are destroyed through MVT. HTML views are
+registered with `htmlViews`, to prepare and dispose of them too. So a
+project's `vsnap.config.ts` reads:
 
 ```ts
-import { Object3D } from 'three';
 import { destroyElement } from '@mvtjs/html';
 import { refreshView } from '@mvtjs/pixi';
 import { destroyObject } from '@mvtjs/three';
-import { setViewHooks } from 'vsnap';
+import { defineVsnapConfig, htmlViews } from 'vsnap';
+import { pixiViews } from 'vsnap/pixi';
+import { threeViews } from 'vsnap/three';
 
-setViewHooks({
-    prepare: (view) => refreshView(view),
-    dispose: (view) => {
-        if (view instanceof Element) destroyElement(view);
-        else if (view instanceof Object3D) destroyObject(view);
-        else view.destroy({ children: true });
-    },
+const config = defineVsnapConfig({
+    views: [
+        // A Pixi container's own destroy runs MVT's cleanup.
+        pixiViews({ prepare: refreshView }),
+        threeViews({ prepare: refreshView, dispose: destroyObject }),
+        htmlViews({ prepare: refreshView, dispose: destroyElement }),
+    ],
+    defaultView: 'pixi',
 });
+
+declare module 'vsnap' {
+    interface Register {
+        config: typeof config;
+    }
+}
+
+export default config;
 ```
+
+Each `prepare` and `dispose` is typed by its kind's view, so it needs no
+checks of what it was given.
 
 ## Configuration
 
 vsnap's tests run in two Vitest projects, beside a project's unit tests.
-`vsnap(options)` returns the projects, which the config lists, and a
-reporter for the summary, which the config adds:
+`vsnap(options)` returns the projects, which the config lists:
 
 ```ts
 import { configDefaults, defineConfig } from 'vitest/config';
 import { vsnap } from 'vsnap/config';
 
-const visual = vsnap();
-
 export default defineConfig({
     plugins: [/* the plugins that the project's views need */],
     test: {
-        reporters: ['default', visual.reporter],
         projects: [
             {
                 test: {
@@ -175,16 +298,20 @@ export default defineConfig({
                     exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
                 },
             },
-            ...visual.projects,
+            ...vsnap(),
         ],
     },
 });
 ```
 
+The projects bring vsnap's reporter with them, which prints the visual
+tests' summary and checks the reference images. So there is nothing else
+to add, and a run without vsnap's projects, such as `vitest -p unit`,
+prints no summary.
+
 The unit project leaves out the visual test files, which run in vsnap's
 projects instead. Vitest's default `include` matches both kinds of file. A
-project also needs dev dependencies on `vsnap` and `vitest`, and on
-`pixi.js` and `three`, which the package draws with.
+project also needs dev dependencies on `vsnap` and `vitest`.
 
 vsnap's projects inherit the config that they are listed in, as Vitest's
 `extends: true` does. So the views compile with the same plugins and
@@ -198,12 +325,11 @@ Every option is optional.
 | Option | What it sets |
 | --- | --- |
 | `name` | The start of the projects' names, which end in `-canvas` and `-html`. The default is `visual` |
-| `root` | The folder that the other paths are relative to. The default is the folder Vitest runs in |
+| `root` | The folder that the other paths are relative to, and that holds `vsnap.config.ts`. The default is the folder Vitest runs in |
 | `include` | Globs for the test files. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for vsnap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
-| `setup` | A module that runs in the test page before the tests, such as one that calls `setViewHooks` |
 
 The first run downloads the browser, and later runs find it in place. A
 monorepo can call `vsnap` once for each package that has visual tests, with
@@ -270,7 +396,7 @@ includes vsnap's projects starts a browser.
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
 | `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots |
 | `vitest run <file> -u` | Updates the reference images of one test file. A failure message gives this command |
-| `vitest -p "visual-*"` | Watches the visual tests, and reruns a test file when it or its view changes |
+| `vitest -p "visual-*"` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |
 | `vitest run -p "visual-*" --sequence.shuffle` | Runs the visual tests in a random order, which finds any test that depends on the ones before it. Vitest prints the order's seed, and adding `--sequence.seed=<seed>` repeats that order |
 
 A complete run of a project's visual tests, with no filters, does two more
@@ -287,6 +413,21 @@ calibration set, and its fixture project's, which keeps its tests in
 `npm run test:visual` run one half each. After a deliberate upgrade of
 Playwright, `npm run test:visual:environment` rewrites the browser's
 fingerprint and the calibration set's references.
+
+### Watch Mode
+
+In watch mode, Vitest reruns a test file when the file changes, or when a
+module that it imports changes, such as its view. Two other changes work
+differently.
+
+- **A new or deleted test file restarts Vitest.** Each project gets its test
+  files when the config loads, so the restart sends a new file to its kind
+  of page. The browser starts again, which takes a few seconds.
+- **A change to `vsnap.config.ts` needs Vitest stopped and started again.**
+  The test page loads the file in its setup, and Vitest's browser mode keeps
+  the setup's modules for the rest of the session, even across its own
+  restarts. Edits to the modules that `vsnap.config.ts` imports are the
+  same.
 
 ## FAQ
 
@@ -354,7 +495,9 @@ them are defined once, in `src/protocol.ts`.
 
 | Folder | What it holds |
 | --- | --- |
-| `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest` and `setViewHooks`, which the main entry point exports. It also holds the code that produces an image of each kind of view, and the page's setup. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text |
+| `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest`, `defineVsnapConfig` and `htmlViews`, which the main entry point exports, with the types of the kinds of view. It also loads the project's `vsnap.config.ts`. It also reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text. Then it checks the calibration set, which draws with the browser's own canvas 2D and WebGL |
+| `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `vsnap/pixi` and `vsnap/three` export. Only these folders import the libraries |
+| `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
 | `src/node/` | The side that runs in Node. `vsnap/config` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
 | `src/node/cli/` | The maintainers' scripts: the environment's rewrite, and the generator of the blank font |
 | `src/browser/__references__/` | The references for the calibration set, and for this package's own tests |

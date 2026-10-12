@@ -4,7 +4,8 @@ import { checkCalibration } from './calibration';
 import { installCanvasText } from './canvas-text';
 import { monoFontUrl, sansFontUrl } from './fonts';
 import { installHtmlRules } from './html-rules';
-import { installSeededRandom, patchPixiPools } from './page-state';
+import { installSeededRandom } from './page-state';
+import { loadViewKinds } from './view-kinds';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -23,11 +24,12 @@ export interface PageSetup {
 // ---------------------------------------------------------------------------
 
 /**
- * Sets the page up once, and returns the setup. It installs the Pixi patch,
- * the seeded `Math.random`, the test fonts, the canvas text and the HTML
- * rules. Then it checks the environment and the calibration set, once per
- * run, and stops the run if they do not match. Every test file's setup
- * awaits the same promise.
+ * Sets the page up once, and returns the setup. It installs the seeded
+ * `Math.random`, the test fonts, the canvas text and the HTML rules. Then
+ * it checks the environment and the calibration set, once per run, and
+ * stops the run if they do not match. Last, it loads the kinds of view that
+ * the project's `vsnap.config.ts` registers. Every test file's setup awaits
+ * the same promise.
  */
 export function setUpPage(): Promise<PageSetup> {
     setup ??= setUp();
@@ -41,13 +43,16 @@ export function setUpPage(): Promise<PageSetup> {
 let setup: Promise<PageSetup> | undefined;
 
 async function setUp(): Promise<PageSetup> {
-    patchPixiPools();
     const resetRandom = installSeededRandom(SEED);
     const [sans, mono] = await Promise.all([loadFont(sansFontUrl), loadFont(monoFontUrl)]);
     const canvasText = installCanvasText({ sans, mono });
     await installHtmlRules();
     document.body.style.margin = '0';
     await checkCalibration(inject('visualKind'));
+    // The project's vsnap.config.ts, and the modules it imports, load before
+    // random numbers are reset, so that loading them can't shift the numbers
+    // that the first test gets.
+    await loadViewKinds();
     resetRandom();
     canvasText.takeUnpinnedFamilies();
     return { resetForTest: resetRandom, takeUnpinnedFamilies: canvasText.takeUnpinnedFamilies };

@@ -79,25 +79,17 @@ behind the current execution. To keep tests deterministic while still
 allowing internal awaits to resolve, flush the microtask queue after each
 small time step.
 
+The tick API's `advanceTime(ms, ...models)` does both. It comes from
+`@mvtjs/utils`, and the renderer packages re-export it with the rest of
+the tick API. In each step of 16 ms, it calls every model's `update`, in
+the order given, then awaits a resolved promise:
+
 ```ts
-async function advanceTime(
-    model: { update(deltaMs: number): void },
-    totalMs: number,
-    step = 16,
-): Promise<void> {
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const dt = Math.min(step, remaining);
-        model.update(dt);
-        await Promise.resolve(); // flush microtasks
-        remaining -= dt;
-    }
-}
+await advanceTime(3200, game);
 ```
 
-The `await Promise.resolve()` after each `update()` yields to the
-microtask queue, allowing any promises inside the model to settle before
-the next tick. The test remains deterministic - no real timers, no
+Awaiting after each `update()` yields to the microtask queue, allowing any
+promises inside the model to settle before the next tick. The test remains deterministic - no real timers, no
 `setTimeout`, no non-deterministic scheduling. Microtasks resolve in
 insertion order, and each step waits for them before advancing.
 
@@ -115,7 +107,7 @@ it('transitions from wave-clear to playing', async () => {
     const game = createGameModel(options);
     // ... set up conditions for wave clear ...
 
-    await advanceTime(game, 3200);
+    await advanceTime(3200, game);
 
     expect(game.phase).toBe('playing');
 });
@@ -171,7 +163,7 @@ describe('GameModel - scoring', () => {
     it('increments score when bullet hits asteroid', async () => {
         const game = createGameModel(options);
         // ... arrange bullet and asteroid to collide ...
-        await advanceTime(game, 16);
+        await advanceTime(16, game);
         expect(game.score).toBeGreaterThan(0);
     });
 });

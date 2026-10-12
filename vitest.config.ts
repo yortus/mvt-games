@@ -9,11 +9,11 @@ const ROOT = __dirname;
 const SOURCE_CONDITION = '@mvtjs/source';
 
 // The website's visual tests, in vsnap's projects, `visual-canvas` and
-// `visual-html`. `-p "visual-*"` runs them.
+// `visual-html`, which bring vsnap's reporter with them. `-p "visual-*"`
+// runs them.
 const website = vsnap({
     root: resolve(ROOT, 'packages/website'),
     viteConfig: './vite.config.ts',
-    setup: './vsnap-setup.ts',
 });
 
 // One test run over every workspace in packages/: the unit tests in Node, in
@@ -32,7 +32,6 @@ export default defineConfig({
         reporters: [
             'default',
             ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []),
-            website.reporter,
         ],
         projects: [
             {
@@ -54,7 +53,7 @@ export default defineConfig({
                     server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
                 },
             },
-            ...website.projects,
+            ...website,
         ],
     },
 });

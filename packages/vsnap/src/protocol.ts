@@ -150,6 +150,10 @@ declare module 'vitest' {
         visualKind: VisualKind;
         /** The size budget in pixels, provided by the config (`maxPixels`). */
         visualMaxPixels: number;
+        /** Whether the project has a `vsnap.config`, which registers its kinds of view. */
+        visualHasConfig: boolean;
+        /** The path of the project's `vsnap.config`, or where vsnap looked for it, for messages. */
+        visualConfigFile: string;
     }
 }
 

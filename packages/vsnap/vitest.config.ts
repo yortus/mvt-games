@@ -15,7 +15,6 @@ const fixture = vsnap({
 
 export default defineConfig({
     test: {
-        reporters: ['default', visual.reporter, fixture.reporter],
         projects: [
             {
                 test: {
@@ -24,8 +23,8 @@ export default defineConfig({
                     exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
                 },
             },
-            ...visual.projects,
-            ...fixture.projects,
+            ...visual,
+            ...fixture,
         ],
     },
 });

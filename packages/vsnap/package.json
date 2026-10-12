@@ -2,7 +2,7 @@
     "name": "vsnap",
     "version": "0.0.0",
     "private": true,
-    "description": "Fast, consistent visual snapshot tests for Pixi, three.js and HTML views: the same images on Windows, Linux and macOS, with no Docker",
+    "description": "Fast, consistent visual snapshot tests for views drawn on a canvas or in HTML, with support for Pixi and three.js: the same images on Windows, Linux and macOS, with no Docker",
     "license": "MIT",
     "type": "module",
     "sideEffects": false,
@@ -12,6 +12,12 @@
         },
         "./config": {
             "default": "./src/node/index.ts"
+        },
+        "./pixi": {
+            "default": "./src/pixi/index.ts"
+        },
+        "./three": {
+            "default": "./src/three/index.ts"
         }
     },
     "scripts": {
@@ -33,10 +39,20 @@
         "three": "^0.186.1",
         "vitest": "^5.0.3"
     },
+    "peerDependenciesMeta": {
+        "pixi.js": {
+            "optional": true
+        },
+        "three": {
+            "optional": true
+        }
+    },
     "devDependencies": {
         "@types/fontkit": "^2.0.9",
         "@types/pngjs": "^6.0.5",
         "@types/three": "^0.186.0",
+        "pixi.js": "^8.16.0",
+        "three": "^0.186.1",
         "tsx": "^4.21.0",
         "vite": "^8.3.2"
     }

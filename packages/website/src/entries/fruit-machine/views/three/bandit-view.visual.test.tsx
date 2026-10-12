@@ -1,7 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/three';
-import { type ThreeImageOptions, canvasTest } from 'vsnap';
+import { type CanvasTestOptions, canvasTest } from 'vsnap';
 import { createFruitMachineModel } from '../../models';
 import { loadSymbolArt } from '../art';
 import { dressBanditScene, frameBanditCamera } from './bandit-scene';
@@ -9,7 +9,7 @@ import { BanditView } from './bandit-view';
 
 // The bandit is framed and lit as the page does it. The image has the shape
 // that the bandit's quadrant usually has in the machine.
-const IMAGE: ThreeImageOptions = { width: 480, height: 360, camera: createBanditCamera, scene: dressBanditScene };
+const IMAGE = { kind: 'three', width: 480, height: 360, camera: createBanditCamera, scene: dressBanditScene } satisfies CanvasTestOptions<'three'>;
 const SEED = 7;
 
 describe('BanditView', () => {

@@ -2,8 +2,8 @@ import {
     type Camera, NoToneMapping, type Object3D, PCFShadowMap, PerspectiveCamera, Scene, type ShadowMapType, SRGBColorSpace, type ToneMapping,
     WebGLRenderer,
 } from 'three';
-import { fitImage } from './image-budget';
-import { flipRows, isAllOne } from './image-pixels';
+import type { CanvasImage } from '../browser';
+import { fitImage, flipRows } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -51,17 +51,6 @@ export interface ThreeSceneOptions {
     readonly renderer: WebGLRenderer;
 }
 
-/** An actual image's pixels, read back from the renderer. They are RGBA, with rows from the top. */
-export interface ThreeImage {
-    readonly width: number;
-    readonly height: number;
-    readonly pixels: Uint8Array;
-    /** Image pixels per CSS pixel. This is 1, or less for a big image. */
-    readonly resolution: number;
-    /** Whether every pixel is the same, which means the view drew nothing, or nothing that was lit. */
-    readonly isBlank: boolean;
-}
-
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
@@ -79,7 +68,7 @@ export interface ThreeImage {
  * A three.js image is always antialiased. So an image over the size
  * budget is drawn at a lower resolution to fit, as a smooth Pixi one is.
  */
-export function drawThreeImage(view: Object3D, options: ThreeImageOptions & { readonly maxPixels: number }): ThreeImage {
+export function drawThreeImage(view: Object3D, options: ThreeImageOptions & { readonly maxPixels: number }): CanvasImage {
     const { width, height } = options;
     const fit = fitImage({ width, height, maxPixels: options.maxPixels, canScale: true });
     if ('problem' in fit) throw new Error(fit.problem);
@@ -103,7 +92,7 @@ export function drawThreeImage(view: Object3D, options: ThreeImageOptions & { re
         const pixels = new Uint8Array(imageWidth * imageHeight * 4);
         gl.readPixels(0, 0, imageWidth, imageHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
         flipRows(pixels, imageWidth, imageHeight);
-        return { width: imageWidth, height: imageHeight, pixels, resolution: fit.resolution, isBlank: isAllOne(pixels) };
+        return { width: imageWidth, height: imageHeight, pixels, resolution: fit.resolution };
     }
     finally {
         dressed.scene.remove(view);

@@ -15,35 +15,45 @@
 > from the renderer, hashed in the page and compared with a hash the
 > reference file carries; the slow work (PNG files, diffs) happens only
 > when a picture has changed. **Consistency:** the same code gives the
-> same pictures on every machine, CI included, with nothing to install
-> beyond `npm ci`. Everything that differs between machines is pinned
-> inside the browser itself: one Chromium build, fetched by Playwright on
-> first use; software WebGL and software 2D drawing; and test fonts in a
-> format Chrome draws with its own font engine on every operating system,
-> standing in for every font the views name. A fingerprint of that
+> same pictures on Windows, Linux and macOS, CI included, with nothing to
+> install beyond `npm ci`. Everything that differs between machines is
+> pinned inside the browser itself: one Chromium build, fetched by
+> Playwright on first use; software WebGL, 2D drawing and compositing;
+> canvas text drawn as paths from test fonts, by our own code; and HTML
+> text replaced by a blank font that keeps the layout and draws nothing.
+> What remains is rounding in arm64 processors, at most 2 levels of 255
+> per channel, which a small tolerance absorbs. A fingerprint of the
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** proposed. Nothing is built. Both headline goals rest on
-things that can only be measured: how long a picture takes on the fast
-path, and whether the pinned browser gives identical pixels on this
-machine (Windows) and on GitHub's Linux and Windows runners. Text is the
-hard part, and section 5.4 sets out a ladder of ways to pin it, tried in
-order. Step 1 is a spike that measures all of it and records the results
-here before anything else is built.
+**Status:** steps 1 to 9 done; step 10 to do before this proposal is
+marked done. The spike (2026-10-07) measured 1000 pictures in 12.7 s, and
+the same pictures on Windows, Linux x64, Linux arm64 and macOS arm64 (see
+[Spike results](#spike-results)); the design was revised to it
+(2026-10-08). The harness was built on branch `visual-tests` (2026-10-08),
+first in the website, with the first tests, CI on all three systems,
+whole entries, three.js views, orphaned references and the docs (steps 2
+to 8). The branch was fed to `main` in seven reviewable chunks
+(2026-10-09 to 11), and the review reshaped it (step 9): it is now the package
+`@mvtjs/visual-testing`, its words are "actual image" and "reference
+image", and a project can choose where its tests and reference images go.
+On 2026-10-10 the user decided to publish it to npm as a standalone
+package, for other projects too (step 10). Sections 1 to 8 keep the
+words and names of the time they were written ("picture", `visualTest`,
+`__screenshots__`); step 9 lists what replaced them.
 
 **Written:** 2026-10-05; revised 2026-10-06 to put speed and consistency
 first, then again the same day to drop the Docker container for pinning
-inside the browser, so that setup is `npm ci` and nothing else. Against
-branch `036` at `4c3fd85`. Draws on the workshop's version of the same
-idea (`mvt-workshop`, Lab 02, Experiment 2.1,
+inside the browser, so that setup is `npm ci` and nothing else; revised
+2026-10-08 to the spike's results, which replaced the test-font ladder of
+section 5.4 with text drawn as paths (canvas) and a blank font (HTML).
+Against branch `036` at `4c3fd85`; the spike against `vnext` at
+`5afdd2e`. Draws on the workshop's version of the same idea
+(`mvt-workshop`, Lab 02, Experiment 2.1,
 `src/labs/lab-02-testable-models/lab-02-experiments.mdx`), and its
 solution on the workshop's `solutions-and-extras` branch at `604535d`.
-Vitest's, Playwright's and Chrome's behaviour is as their documentation
-and announcements described it on these dates (Vitest 5, the repo has
-5.0.1; Playwright 1.63; Chrome's Fontations rollout as of Chrome 133).
-Nothing was measured for this proposal; every timing in it is an
-estimate, and says so.
+Vitest 5.0.1, Playwright 1.63.0 (Chrome 153.0.8010.12). Timings are the
+spike's measurements unless a sentence says it is an estimate.
 
 **Related:**
 [Testing Views](../../packages/docs/building-with-mvt/iterating-with-confidence/testing-views.md)
@@ -66,20 +76,21 @@ eye because headless Chrome drew the canvas blank),
 | --- | --- | --- |
 | 1 | A visual test is one call, `visualTest(name, pose, options?)`, in a `*.visual.tsx` beside the view. `pose` returns the view, built and advanced. Grouping is Vitest's own `describe` | [3](#3-writing-a-visual-test) |
 | 2 | Time is advanced in the pose with `advanceTime({ models, views, totalMs })`, which ticks models then views in frame-sized steps, as the host does | [3.2](#32-presentation-state-advancetime) |
-| 3 | **Speed budget:** within a few times a unit test. 500 pictures in about 10 s, start-up included; a WebGL picture about 5 ms at the median. Measured at scale in step 1, and printed by every run | [4.1](#41-the-budget) |
-| 4 | **One page for the whole run** (`isolate: false`): modules load once, one WebGL context, shaders compile once, textures load once | [4.3](#43-one-page-one-renderer) |
+| 3 | **Speed budget:** within a few times a unit test. Measured: 1000 pictures of real views in 12.7 s, start-up included; a WebGL picture 6 ms at the median, 22 ms at the 95th percentile. Every run prints the same figures | [4.1](#41-the-budget) |
+| 4 | **One page for the whole run** (`isolate: false`) and **one Pixi renderer**: modules, shaders and textures load once. Every dependency is pre-bundled before the first test, or a mid-run re-bundle loads a second Pixi | [4.3](#43-one-page-one-renderer) |
 | 5 | **No screenshots on the fast path.** Pixi and three.js pictures are read from the renderer (`readPixels`), hashed in the page, and compared with the hash stored in the reference PNG. No PNG is encoded, decoded or sent anywhere unless the hashes differ | [4.4](#44-pixels-from-the-renderer-hashes-not-images) |
-| 6 | HTML views need a real screenshot: a slower path, in a project of their own that isolates each file, since their stylesheets would otherwise leak | [4.5](#45-html-the-slow-path-kept-small) |
-| 7 | **One environment, pinned inside the browser.** Playwright's Chromium (its build fixed by the lockfile, fetched on first use), software WebGL (SwiftShader) and software 2D drawing, locale, time zone and scale. Nothing to install beyond `npm ci` | [5.3](#53-one-environment-pinned-inside-the-browser) |
-| 8 | **Text is pinned by test fonts** that Chrome draws with its own engine (Fontations and Skia) on every operating system, standing in for every family the views name. Fallbacks, in order: test fonts in another such format; glyphs drawn as paths for canvas text; Windows as the one reference system | [5.4](#54-text-the-hard-part) |
+| 6 | HTML views need a real screenshot, taken through the DevTools protocol (35-60 ms), in a project of their own that isolates each file, since their stylesheets would otherwise leak | [4.5](#45-html-the-slow-path-kept-small) |
+| 7 | **One environment, pinned inside the browser.** Playwright's headless shell (its build fixed by the lockfile, fetched on first use), software WebGL (SwiftShader), software 2D drawing and compositing, hinting off, locale, time zone and scale. Nothing to install beyond `npm ci` | [5.3](#53-one-environment-pinned-inside-the-browser) |
+| 8 | **Text is not left to the system.** Canvas text (Pixi) is laid out and drawn as paths by our own code, from test fonts. HTML text uses a blank TrueType font: every character an empty glyph 0.625 em wide, font sizes rounded to quarter pixels, so layout is kept and nothing is drawn. Rotated images are sampled nearest-neighbour and unstyled text fields are 20ch wide | [5.4](#54-text-the-hard-part) |
 | 9 | A committed **fingerprint** (browser build, WebGL renderer, and the hashes of a calibration set of pictures), checked before any comparison. Where it does not match, the tests refuse to compare or update, and say why | [5.5](#55-a-fingerprint-checked-first) |
-| 10 | **Exact first, tolerance second.** A pass is an identical hash. Only on a mismatch is the picture compared with a small tolerance, and a pass within tolerance is reported, not hidden | [5.6](#56-exact-first-tolerance-second) |
+| 10 | **Exact first, tolerance second.** A pass is an identical hash. Only on a mismatch is the picture compared, passing when no channel of any pixel differs by more than 2 levels of 255 (arm64 rounding), and a pass within tolerance is reported, not hidden | [5.6](#56-exact-first-tolerance-second) |
 | 11 | References are PNGs written by our own encoder (byte-identical for identical pixels, on any machine), carrying their pixel hash in a text chunk, with no platform in their names: there is one environment | [5.7](#57-reference-files-the-same-bytes-from-any-machine) |
-| 12 | Containers and VMs (Docker, Podman, Rancher Desktop, WSL) would pin more, but each needs an install, and WSL, on Windows. Kept only as a last resort | [5.8](#58-containers-vms-and-the-other-alternatives) |
-| 13 | Run by Vitest's browser mode with the Playwright provider. A `visual` project apart from `unit`; `npm test` stays browser-free unless step 1 shows visual runs are fast enough to join it | [6](#6-running-them) |
-| 14 | CI runs the visual tests on every push, on Ubuntu, against the same references | [9](#9-ci) |
+| 12 | Containers and VMs (Docker, Podman, Rancher Desktop, WSL) would pin more, but each needs an install, and WSL, on Windows. Kept only as a last resort, and not needed: the spike matched Windows, Linux and macOS without one | [5.8](#58-containers-vms-and-the-other-alternatives) |
+| 13 | Run by Vitest's browser mode with the Playwright provider. Two projects apart from `unit`: `visual` (Pixi and three.js, one shared page) and `visual-html` (a page per file). `npm test` stays browser-free until step 3 has real tests to time | [6](#6-running-them) |
+| 14 | CI runs the visual tests on every push, on Ubuntu, against the same references; a Playwright upgrade also runs them on Windows and macOS | [9](#9-ci) |
 | 15 | Whole entries get a visual test each, from the code the thumbnail page already uses to start and advance them | [10](#10-whole-entries-for-free) |
 | 16 | The existing scene-graph view tests stay. They test behaviour, not looks | [11](#11-what-stays-and-what-changes) |
+| 17 | **Order cannot change a picture.** The harness resets what it shares, patches a Pixi pool that leaks rounding between graphics, and fails a picture that is blank; models keep no state at module level | [5.1](#51-within-a-run) |
 
 ## 1. Background
 
@@ -316,16 +327,17 @@ describe('Crumb Chase GameView', () => {
         const view = GameView({ model });
         await advanceTime({ models: [model], views: [view], totalMs: 2000 });
         return view;
-    }, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: true });
+    }, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT });
 });
 ```
 
 `textures.load()` works because the visual project runs under the
 website's Vite config, whose spritesheet plugin serves the textures. It
 loads once per run, not once per test, since the page lives for the whole
-run (section 4.3). The size is the game's screen, not its bounds, and
-`pixelArt` draws it as its entry does: nearest-neighbour textures, no
-antialiasing.
+run (section 4.3). The size is the game's screen, not its bounds. A
+picture is drawn as pixel art by default (hard edges, whole-pixel
+positions, nearest-neighbour textures), as this game is; a smooth view
+says `artStyle: 'smooth'`.
 
 Six entries' models (eight files) call `Math.random()` without a seed:
 Astrovoid, Boids, Burrow Bust, Dojo Duel, Galaxy Raiders and Kwazy
@@ -350,28 +362,46 @@ describe('ControlPanelView', () => {
 ```
 
 The harness puts the element in a host `<div>` that shrinks to fit it (or
-takes the given size), and photographs the host. HTML pictures take the
-slower path (section 4.5).
+takes the given size), waits for its fonts and every image (lazy ones
+too), and photographs the host. HTML pictures take the slower path
+(section 4.5).
+
+The picture keeps every box, border, background, image and control, and
+no letters: HTML text is drawn in a blank font (section 5.4), so a test
+of an HTML view checks its layout and styling, not its copy. A view whose
+looks depend on its CSS selectors gets the markup round it that its entry
+gives it (the fruit machine's quadrant, the Arcade's `.arcade`), which the
+pose builds.
 
 ### 3.5 A three.js view
 
 A three.js view returns an `Object3D`, and needs a camera, and usually
-light, to be seen. Its options name them:
+light, to be seen. Its options make the camera, and can dress the scene
+the view is drawn in as its entry does:
 
 ```tsx
-visualTest('lever at rest', () => LeverView({ ... }), {
-    width: 320,
-    height: 320,
-    camera: () => cameraLookingAt(LEVER_CENTRE),
-    environment: 'room',
+visualTest('200 ms into a pull', () => pulledFor(200), {
+    width: 240,
+    height: 300,
+    camera: sideCamera,
+    scene: dressBanditScene,
 });
 ```
 
-`environment: 'room'` gives it the `RoomEnvironment` the fruit machine
-lights its bandit with; without one, nothing shines. three.js support is a
-later step (step 6): Pixi and HTML cover most views, and a three.js view's
-look depends on more of its entry's setup, which that step decides how
-much to share. Its pictures take the fast path, like Pixi's.
+`dressBanditScene` is the fruit machine's own: its starter calls it too.
+It sets the tone mapping, the background, and the blurred `RoomEnvironment`
+the bandit's paint and chrome reflect; without one, nothing shines. The
+harness calls a dressing once per page, keeps its scene, and adds each
+picture's view to it (with the renderer settings it chose), because an
+environment map takes a second or more to make in software WebGL. A view
+that brings its own lights (the boids' flock) needs no dressing.
+
+Pictures are drawn on the canvas of one renderer kept for every three.js
+picture, not into a render target, because three.js tone-maps and
+converts colour only on the way to the canvas; the pixels are read
+straight back, before the page composites them, so it is still no
+screenshot. Always antialiased, so a picture over the size budget is drawn
+at a lower resolution, as a smooth Pixi one is.
 
 ### 3.6 The API
 
@@ -384,10 +414,13 @@ export interface PixiPictureOptions {
     readonly height?: number;
     /** Default: one opaque dark grey, the same for every test, so transparent areas show. */
     readonly background?: number;
-    /** Nearest-neighbour textures and no antialiasing, as a pixel-art entry is drawn. Default false. */
-    readonly pixelArt?: boolean;
-    /** Default 1. */
-    readonly resolution?: number;
+    /**
+     * `'pixel'` (the default): hard edges, whole-pixel positions,
+     * nearest-neighbour textures, always full size. `'smooth'`: antialiased
+     * edges, fractional positions, smooth textures, and drawn at a lower
+     * resolution when over the size budget (section 7.3).
+     */
+    readonly artStyle?: 'pixel' | 'smooth';
 }
 
 export interface HtmlPictureOptions {
@@ -400,17 +433,18 @@ export interface ThreePictureOptions {
     readonly width: number;
     readonly height: number;
     readonly camera: () => Camera;
-    readonly environment?: 'room';
+    /** Dresses the scene and renderer as the view's entry does; called once per page. */
+    readonly scene?: (options: { readonly scene: Scene; readonly renderer: WebGLRenderer }) => void;
     readonly background?: number;
 }
 
 export function visualTest(name: string, pose: Pose<Container>, options?: PixiPictureOptions): void;
-export function visualTest(name: string, pose: Pose<HTMLElement>, options?: HtmlPictureOptions): void;
 export function visualTest(name: string, pose: Pose<Object3D>, options: ThreePictureOptions): void;
+export function visualTest(name: string, pose: Pose<Element>, options?: HtmlPictureOptions): void;
 ```
 
 The kind of view is told apart at run time by what the pose returns
-(`instanceof Container`, `Object3D` or `HTMLElement`); the overloads make
+(`instanceof Object3D` or `Element`, else Pixi); the overloads make
 the options match at compile time. A three.js pose without a camera does
 not compile.
 
@@ -436,22 +470,23 @@ whether it should become a package.
 The unit suite: over 1500 tests in about 15 s, about 10 ms a test with
 start-up spread across them. A visual test does strictly more (it draws,
 and reads pixels back), so matching that exactly is not realistic. Within
-a few times it is, and that is the target:
+a few times it is, and that is the target. Measured by the spike on this
+machine (Windows, 14 cores), on 1000 pictures of real views in 100 files:
 
-| Measure | Target |
-| --- | --- |
-| Start-up, once per run: launch the browser, load the page and its modules and fonts, make the renderer, compile shaders | 3 s |
-| A Pixi or three.js picture, median | 5 ms |
-| The same, 95th percentile (whole screens, big textures) | 25 ms |
-| An HTML picture, median | 30 ms |
-| Overhead per test file | 5 ms |
-| 500 pictures, nine in ten of them WebGL, start-up included | 10 s |
-| Watch mode: one edited view's file, re-run | under 1 s |
-| `test:visual:update` with nothing changed | writes no file |
+| Measure | Target | Measured |
+| --- | --- | --- |
+| Start-up, once per run: launch the browser, load the page and its modules and fonts, make the renderer, compile shaders | 3 s | 2.4 s |
+| A Pixi or three.js picture, median | 5 ms | 6.1 ms (a spin button 1.9, a banner with text 6.4) |
+| The same, 95th percentile (whole screens, big textures) | 25 ms | 22.4 ms (whole screens alone: median 38) |
+| An HTML picture | 30 ms | 35-60 ms |
+| Vitest's own cost per test | | 1.5 ms |
+| 1000 pictures, start-up included | 20 s | 12.7 s |
+| Watch mode: one edited view's file, re-run | under 1 s | about 230 ms |
+| `test:visual:update` with nothing changed | writes no file | |
 
-None of these is measured yet. Step 1 measures them at scale, on a
-generated suite of 1000 pictures of real views, and if a target is missed,
-says where the time went. Every run then prints the same figures (start-up,
+Drawing in SwiftShader is 86% of the time in the page, building the views
+10%, hashing 3%. On GitHub's four-core runners the same 1000 took 29 s
+(Ubuntu) and 36 s (Windows). Every run prints the same figures (start-up,
 median and 95th percentile per kind, the ten slowest tests), so a slow
 test is noticed when it is added, not a year later.
 
@@ -474,7 +509,9 @@ budget. Estimated costs, before any drawing:
 
 At 500 pictures in 150 files, that is roughly one to three minutes. Each
 of these costs is avoidable for a WebGL view, and the next sections avoid
-them.
+them. Measured on 100 of the spike's pictures: Vitest's defaults with
+`toMatchScreenshot`, 12.0 s; one shared page with screenshots, 10.4 s; a
+page per file with pixels from the renderer, 4.9 s; this design, 3.1 s.
 
 ### 4.3 One page, one renderer
 
@@ -485,17 +522,27 @@ reported example went from 7 s to 600 ms. Here it means:
 
 - **Modules load once.** Pixi, three.js, the libraries and every view are
   evaluated once per run (per worker, section 4.6), not once per file.
-- **One renderer.** One Pixi `Application` (two if both pixel-art and
-  smooth pictures appear, since antialiasing is fixed when the context is
-  made), one three.js renderer, made on first use and kept. Chrome keeps
-  only about 16 WebGL contexts per page, so this is also what keeps a long
-  run from losing its canvases.
+- **One renderer.** One Pixi `Application` for every picture, pixel art
+  included: MSAA belongs to the render texture each picture is drawn
+  into, and pixel rounding is set per picture. The WebGL context's own
+  `antialias` setting still changes MSAA edges in render textures, so it
+  is fixed (off), not left to a default. One three.js renderer beside it,
+  made on first use; a three.js picture between Pixi pictures changes
+  none of them. Chrome keeps only about 16 WebGL contexts per page, so
+  this is also what keeps a long run from losing its canvases.
 - **Shaders compile once.** Software WebGL compiles them on the CPU, which
   is slow enough to matter if it happened per file.
 - **Textures load once.** Each entry's texture registry keeps what it
   loaded, so `textures.load()` in a pose costs a check after the first.
 - **Fonts load once.** The test fonts (section 5.4) load before the first
   picture.
+- **Every dependency is bundled before the first test.** Vite's
+  optimizer, finding a new dependency mid-run, re-bundles, and the files
+  after that point load a second copy of Pixi whose objects are not the
+  first's (`Texture.WHITE` among them; text fills throw). The visual
+  projects list every dependency in `optimizeDeps.include`. A stale
+  optimizer cache after a dependency change can still break the first run
+  after it; CI starts cold.
 
 Shared state is the price, and section 5.1 lists what the harness resets
 before every test so that order cannot change a picture. A periodic run
@@ -506,12 +553,14 @@ in shuffled order (`--sequence.shuffle`) checks that it does not.
 For a Pixi or three.js view, a picture never needs to be a screenshot.
 The harness:
 
-1. Renders the posed view into a render texture of the picture's size
-   (`RenderTexture` in Pixi, `WebGLRenderTarget` in three.js), kept in a
-   pool by size, so the canvas is never resized and no texture is made per
-   test.
-2. Reads the pixels back (`readPixels`, through Pixi's `extract.pixels`
-   or three.js's `readRenderTargetPixels`). With software WebGL this is a
+1. Renders the posed view: a Pixi view into a `RenderTexture` of the
+   picture's size, kept in a pool by size, so the canvas is never resized
+   and no texture is made per test; a three.js view onto its renderer's
+   canvas, sized to the picture, since three.js tone-maps only on the way
+   to the canvas (section 3.5).
+2. Reads the pixels back (`readPixels`, through Pixi's `getPixels`, or
+   straight from the three.js canvas before the page composites it).
+   With software WebGL this is a
    memory copy; there is no compositor, no colour management and no
    PNG anywhere.
 3. Hashes them in the page: SHA-256 through `crypto.subtle.digest`,
@@ -535,10 +584,14 @@ makes a transparent hole in a view show up as the background colour.
 
 An HTML view has no renderer to read back from; its picture is what the
 browser composites, and only a screenshot sees that. Its pictures go
-through a browser command that takes an element screenshot with
-Playwright (`animations: 'disabled'`, `caret: 'hide'`, scale 1), hashes
-it in Node, and compares it with the reference the same way. Estimated at
-20-40 ms a picture. Two measures keep this path from dragging the rest:
+through a browser command that asks Chrome for a screenshot of the
+element's rectangle through the DevTools protocol
+(`Page.captureScreenshot` with a clip and `optimizeForSpeed`), decodes
+and hashes it in Node, and compares it with the reference the same way:
+35-60 ms a picture, against 90-130 ms through Vitest's `page.screenshot`,
+with identical pixels. The clip is rounded outwards, as Playwright's
+element screenshots are. Two measures keep this path from dragging the
+rest:
 
 - **A project of its own, isolated per file.** An HTML view's stylesheet
   is injected into the page's `<head>` when its file imports it, and
@@ -557,15 +610,15 @@ it in Node, and compares it with the reference the same way. Estimated at
 
 Vitest's browser mode can run several pages at once. Each has its own
 modules and renderer, so start-up is paid once per worker. Software WebGL
-already spreads a draw across CPU cores, so more workers do not
-necessarily mean faster runs. Step 1 measures one, two and four workers
-and picks the default.
+already spreads a draw across CPU cores, so more workers barely help:
+1000 pictures took 10.8 s with one worker, 9.6 s with two and 9.5 s with
+four. One worker is the default.
 
 ### 4.7 Cheap to add
 
 Adding a picture costs one line of code and nothing else: no
 registration, no config, no new file to wire up. The first run reports it
-as new and fails; `npm run test:visual:update -- -t <name>` writes its
+as new and fails; `npm run test:visual:update -- --picture <name>` writes its
 reference; the reference is reviewed like any other change. A view file
 with five pictures adds perhaps 25 ms to a run.
 
@@ -582,15 +635,20 @@ pinned:
 | Model time | Models advance only through `update` | The rules; `advanceTime`'s fixed steps |
 | View presentation time | Views advance only through their update step | The same |
 | Unseeded random numbers | Six entries' models call `Math.random()`. No view does (searched 2026-10-05) | Before each test, the setup file replaces `Math.random` with a small seeded generator, reset to the same seed |
+| State kept at module level | Astrovoid numbered its asteroids' shapes with a module-level counter, so shapes depended on the games before (fixed 2026-10-07: the game model owns it). No other entry has a module-level `let` | The models' rule; a lint rule against module-level `let` in model files would keep it so |
+| A Pixi pool | Pixi 8.21's `BatchableGraphics.reset()` keeps `roundPixels`, so a batch pooled by a pixel-art picture rounds the curves of the next graphics built from the pool (one MSAA sample at rounded corners) | The setup file patches `reset` to clear it, until Pixi fixes it (task 017) |
+| Hooks in a shared module | A `beforeEach` registered by a module two test files import runs for the first file only: the module evaluates once | Per-test resets live in the harness and the setup file, never in a shared module |
+| Dependencies found mid-run | Vite re-bundles, and later files load a second Pixi | Every dependency pre-bundled (section 4.3) |
 | Seeds picked by a page | The fruit machine's load picks its seed with `Math.random()` | Same |
 | Wall clock in a view | None found (`performance.now`, `Date.now`, `requestAnimationFrame` in views) | Lint covers models only; a pose that needs a view's wall clock is a bug in the view |
 | No ticker | Pixi applications tick themselves by default | Made with `autoStart: false`, as the thumbnail page and the fruit machine make theirs; the harness draws once per picture |
-| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Reset before each test, then set from `pixelArt` before the pose runs |
+| Global Pixi defaults | `TextureSource.defaultOptions.scaleMode`, set per entry | Set before each pose runs, from the test's `artStyle` |
 | Left-over views | A failed pose could leave its view mounted | Unmounted and destroyed in a `finally` |
 | Stylesheets | HTML views import CSS that stays in the page | HTML pictures run isolated per file (section 4.5) |
 | CSS transitions and animations | HTML views use them | Screenshots taken with animations disabled; transitions finish at once |
 | Text caret, focus | The Arcade's search box | Caret hidden; poses do not focus unless that is the state photographed |
-| Order of tests | Shared page (section 4.3) | The resets above; a shuffled run in CI each week checks that order changes nothing |
+| Order of tests | Shared page (section 4.3) | The resets above; a shuffled run in CI each week checks that order changes nothing. The spike's shuffled runs found the three rows above it; with them fixed, every order gave the same 1000 pictures |
+| A pose that draws nothing | A view placed out of the picture's frame, or not mounted | A picture that is all background fails ("the view drew nothing inside it") |
 
 ### 5.2 Across machines: what differs
 
@@ -608,7 +666,11 @@ pixels:
 | **Locale and time zone** | Number and date formatting (`toLocaleString`) follow the machine | Text content itself |
 | **Device scale** | High-DPI screens | Picture size |
 | **Colour management** | Display profiles | Screenshots' colours (not `readPixels`) |
-| **CPU** | Software drawing (SwiftShader, Skia) generates or picks code for the CPU it runs on | Possibly nothing on x64 machines; unknown until measured (section 5.6) |
+| **CPU** | Software drawing (SwiftShader, Skia) generates or picks code for the CPU it runs on | Measured: nothing between x64 machines, and nothing in WebGL on arm64. Skia's CPU drawing on arm64 rounds differently, by at most 2 levels of 255 once section 5.4's measures are in (blur, rotated images, some edges) |
+| **Text layout** | Chrome's own font engine rounds each letter's advance to a whole pixel under the default hinting; DirectWrite and macOS keep fractions | Lines of different widths, so wrapping, box sizes and everything after them move |
+| **Fallback fonts** | Characters a page's fonts lack (emoji, ⛶) come from whatever fonts the machine has | Measured: differs even between two Windows machines |
+| **Compositing** | macOS composites transformed boxes its own way | Rotated and 3D boxes' edges (up to 14 levels) |
+| **Form controls** | A text field's default width comes from the font's average character width, which each system works out its own way. Other controls (buttons, checkboxes, radios, sliders, progress bars, meters, selects, textareas) matched everywhere | Unstyled text fields' widths |
 
 The usual answer, one set of references per platform, is the worst of
 both: every visual change needs updating on every platform, and the set
@@ -622,10 +684,11 @@ table inside the browser instead.
 Each row of section 5.2, and what pins it, with nothing installed beyond
 `npm ci`:
 
-- **Browser version: Playwright's Chromium.** Playwright pins one
+- **Browser version: Playwright's headless shell.** Playwright pins one
   Chromium build per Playwright version, and the lockfile pins
   Playwright, so the browser changes only in a commit that changes the
-  lockfile. It is the same Chromium revision on Windows, Linux and macOS.
+  lockfile. It is the same Chromium revision on Windows, Linux and macOS
+  (Chrome 153.0.8010.12 for Playwright 1.63).
   `npm run test:visual` checks that it is installed and, the first time,
   has Playwright download it (its headless shell, about 100 MB) into
   Playwright's cache in the user's profile, which every checkout and
@@ -636,107 +699,122 @@ Each row of section 5.2, and what pins it, with nothing installed beyond
   every operating system. A machine's GPU and driver no longer take part.
   SwiftShader is also what makes the canvas draw at all in a headless
   browser without a GPU, the cause of 018's blank canvas.
-- **2D canvas: on the CPU.** Accelerated 2D canvas is turned off, so
-  Pixi's text, drawn on a 2D canvas before it becomes a texture, is drawn
-  by Skia's software rasteriser: again the same code everywhere.
-- **Fonts and text: test fonts.** The hard part, with a section of its
-  own (5.4).
+- **2D canvas: on the CPU.** Accelerated 2D canvas and GPU
+  rasterisation are turned off, so Pixi's text, drawn on a 2D canvas
+  before it becomes a texture, is drawn by Skia's software rasteriser:
+  again the same code everywhere.
+- **Compositing: in software** (`--disable-gpu --disable-gpu-compositing`),
+  which brings macOS's transformed boxes into line with the others.
+- **Text: not the system's.** Hinting off (`--font-render-hinting=none`),
+  so Linux keeps fractional advances as Windows and macOS do; grayscale
+  antialiasing (`--disable-lcd-text`); and section 5.4's measures.
 - **Locale, time zone, scale, colour:** set in the browser context:
-  locale `en-US`, time zone `UTC`, device scale 1, colour profile sRGB,
-  scrollbars hidden.
-- **CPU:** cannot be pinned, only measured (section 5.6).
+  locale `en-US`, time zone `UTC`, device scale 1, colour profile sRGB
+  (`--force-color-profile=srgb`), scrollbars hidden, reduced motion.
+- **CPU:** cannot be pinned, only measured, and absorbed (section 5.6).
 
 The browser is a native process, launched by Playwright on whatever
-machine runs the tests. On Windows that brings back the failed-logon
-problem, which section 8 deals with.
+machine runs the tests. On Windows, the full Chrome's failed-logon
+problem does not come back: the headless shell makes no logon attempt
+(section 8).
 
 ### 5.4 Text, the hard part
 
 Pinning the browser build and turning off the GPU leaves text: the fonts
-a machine has, and the system's own glyph rasteriser. Fonts can be
-supplied. The rasteriser is the difficulty: for an ordinary font, Chrome
-on Windows hands glyphs to DirectWrite, whose antialiasing differs from
-Linux's, even for the same font file.
+a machine has, how its font engine lays letters out, and how it draws
+them. The first version of this design pinned text with test fonts in
+formats Chrome draws with its own engine everywhere (CFF2, then COLRv1).
+The spike measured that ladder and it does not hold: the same CFF2 font
+is antialiased and positioned differently on Windows, Linux and macOS
+(see [Spike results](#spike-results)). What holds is to take text away
+from the system altogether, in two ways, one for canvases and one for
+HTML.
 
-But not for every font. Chrome has been moving its font handling to
-**Fontations**, its own font engine in Rust, drawing through Skia. Since
-Chrome 133 it handles every web font on Linux, and on Windows and macOS
-it handles the formats the system does not support, among them **CFF2**
-(variable fonts with PostScript outlines) and **COLRv1** (vector colour
-fonts). A web font in one of those formats is therefore drawn by the
-same code, Fontations and Skia, on every operating system. That is the
-opening this design uses.
-
-**The test fonts.** Two variable fonts from Adobe, released under the
-SIL Open Font License, and already in CFF2: **Source Sans 3** and
-**Source Code Pro**. Variable, so every weight the views ask for (bold,
-800, 900) is one file. Committed under `src/testing/fonts/`, like the
-textures. No licence question, no install.
+**Canvas text (Pixi): drawn by us, as paths.** The harness replaces a 2D
+canvas's `fillText`, `strokeText` and `measureText`, for the test fonts,
+with its own layout and drawing: fontkit lays the text out from the test
+font's file (at the weight asked for, with kerning and letter spacing),
+and each glyph's outline is filled or stroked as a `Path2D`. Skia fills
+paths on the CPU the same way everywhere. Fill colours, gradients,
+strokes and drop shadows all apply as they do to text, since they apply
+to paths. Pixi's own measuring goes through the same `measureText`, so
+layout and drawing agree. The test fonts are Adobe's Source Sans 3 and
+Source Code Pro, variable, under the SIL Open Font License, committed
+under `src/testing/fonts/`. With this, every Pixi picture the spike made
+(all 22 entry screens, every fruit machine leaf view) matched on all four
+runners, one 1 level off on arm64.
 
 **Standing in for every family the views name.** The views ask for
 `monospace` (39 times), the fruit machine's
 `"Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif`, the site's
 `-apple-system, BlinkMacSystemFont, 'Segoe UI', ...`, a `ui-monospace`
-stack and a `Georgia, serif` one. Three mechanisms make all of them land
-on the test fonts:
+stack and a `Georgia, serif` one. The harness wraps the canvas's `font`
+setter and rewrites the font string Pixi sets: generic families
+(`monospace`, `sans-serif`, `system-ui`, ...) and named ones (`Segoe UI`,
+`Consolas`, ...) become the test fonts. A family it does not know fails
+the test that used it ("font 'Comic Sans MS' is not pinned: add it to
+the test fonts' names").
 
-- **Named families are shadowed.** An `@font-face` rule for `"Segoe UI"`
-  (and `Helvetica`, `Arial`, `Georgia`, `Consolas` and the rest) wins
-  over an installed font of the same name. The harness declares one for
-  every name the views use, pointing at the test fonts.
-- **Generic families are rewritten.** `monospace`, `sans-serif`, `serif`,
-  `system-ui`, `ui-monospace` and `-apple-system` cannot be shadowed. In
-  CSS, a small Vite plugin, used only by the visual projects, rewrites them
-  in `font-family` declarations to the test families. On a 2D canvas
-  (Pixi's text), the harness wraps the `font` setter of
-  `CanvasRenderingContext2D` to do the same to the font string Pixi sets.
-  That is a rewrite of a name, not of how text is drawn.
-- **Nothing escapes unnoticed.** Any family name the canvas wrapper does
-  not know fails the test that used it ("font 'Comic Sans MS' is not
-  pinned: add it to the test fonts' names"). For HTML pictures, the
-  calibration (section 5.5) and a weekly check ask Chrome, through the
-  DevTools protocol (`CSS.getPlatformFontsForNode`), which fonts it really
-  used, and fail on any that is not a test font.
+**HTML text: a blank font.** DOM text cannot be drawn by our code, and
+nothing tried in the browser makes the system draw it the same way. So
+it is not drawn. One rule, `font-family: "Visual Blank" !important`, on every
+element, pseudo-element, placeholder and form control, puts all HTML
+text in a test font whose every code point (cmap format 13, so nothing
+falls back to a system font, emoji and CJK included) is one empty glyph,
+0.625 em wide, with fixed vertical metrics. Layout is kept, and the
+letters are gone. The font is TrueType: Windows (DirectWrite) and macOS
+lay a TrueType font out with exact fractional advances, and agree with
+each other exactly; with `--font-render-hinting=none`, Linux keeps
+fractions too. (A CFF2 blank font does not work: Chrome's own engine
+rounds its advances on Windows and Linux, macOS does not.) Linux still
+scales a font in 64ths of a pixel where the others use the exact size, so
+two more measures make it agree (found by CI in step 4): the font has
+1024 units per em, a power of two, and the harness rounds every element's
+font size to the nearest quarter pixel before the picture is taken. With
+both, a probe of every eighth of a pixel from 6 to 40 px, in lines of 1
+to 400 characters, matched exactly on all three systems at every quarter
+pixel; with 1000 units per em, Linux was a 64th or two off at most sizes,
+whole pixels included, enough to move a box's edge a pixel. It is written, table by
+table, by `scripts/visual/blank-font.ts` (`npm run generate-blank-font
+-w @mvtjs/website`), its output committed as
+`src/testing/fonts/visual-blank.ttf`; a unit test checks the two agree.
+The spike built it with Python's fontTools; the Node port's tables match
+that font's, but for its name.
 
-The pictures will not look exactly as a visitor sees the site: a Segoe UI
-label is drawn in Source Sans. That is fine. A visual test answers "has
-this changed?", not "is this what a visitor sees?", and it answers the same
-way on every machine.
+What a blank-text picture shows: every box, border, background, image,
+control, bullet and underline, and the layout itself. What it cannot
+show: changes to copy, text colour, weight, style or alignment; and,
+since text takes 0.625 em per character rather than its real width,
+and font sizes are rounded to quarter pixels, lines
+wrap and boxes size differently from the real page, so an overflow that
+only real text causes would not appear. For this repo's HTML views (the
+Arcade's, the fruit machine's panel and terminal, the boids' panel),
+layout and styling are what a visual test is for; the copy is checked,
+where it matters, by scene-graph tests.
 
-**The ladder.** Whether CFF2 test fonts give identical text on Windows and
-Linux is the claim step 1 most needs to check, because one detail could
-spoil it: Skia's text gamma and contrast, applied to glyph coverage, are
-set per platform in Chrome's build. If the CFF2 fonts still differ, the
-next rung is tried, and so on:
+**The rest of HTML.** Three more differences were found, each pinned by a
+rule the harness applies to HTML pictures only:
 
-1. **CFF2 test fonts**, as above. Text behaves exactly like text:
-   colours, gradients, outlines and shadows all apply as they do now.
-2. **The same fonts in COLRv1.** A vector colour font whose glyphs are
-   one layer each, painted in the current text colour. Chrome draws such
-   glyphs as filled paths through Skia, not as glyph masks, so no text
-   gamma applies. Made from the same OFL fonts by a small generator script
-   (adding the `COLR` and `CPAL` tables), its output committed. The cost:
-   colour glyphs ignore some text styling (a canvas `strokeText` outline,
-   a gradient fill, `background-clip: text`), so a view using those would
-   show it.
-3. **Canvas text drawn as paths.** For Pixi's text only: the harness's
-   canvas wrapper draws each glyph's outline, read from the test font,
-   with `fill` and `stroke` on a `Path2D`, and answers `measureText` from
-   the font's own metrics. Skia's path filling, on the CPU, is the same
-   everywhere. DOM text is not covered.
-4. **One reference system: Windows.** If DOM text still differs between
-   Windows and Linux, the references are made on Windows (where the
-   machines that write them are), and CI runs the visual tests on
-   GitHub's `windows-latest` runners. The test fonts still pin which font
-   is used, and the calibration (section 5.5) catches a Windows update that
-   changes how it is drawn. Linux and macOS machines could then run the
-   tests only for pictures without DOM text, or not at all (open question
-   1).
+- **Rotated images are sampled nearest-neighbour.** Smooth sampling under
+  a rotation rounds differently on arm64 (up to 26 levels). The harness
+  sets `image-rendering: pixelated` on each image under a rotating
+  transform, and only those: scaled images stay smooth, which matched
+  everywhere. With it, the difference is 2 levels. The Arcade's tilted
+  card photos look slightly jagged in their pictures.
+- **Unstyled text fields are 20 characters wide by `ch`.** A text field's
+  default width comes from the font's average character width, which
+  each system works out its own way. The rule
+  `:where(input[type=text], ...) { width: 20ch }` has no specificity, so
+  any width a view sets still wins; the repo's text fields set theirs.
+- **Text in an SVG drawn as an image cannot be pinned.** An SVG image
+  cannot use the page's fonts, so its `<text>` is drawn with the
+  system's. Art drawn as SVG images draws words as outlines, as the fruit
+  machine's wild symbol now does (2026-10-07).
 
-Rungs 1 and 2 cover canvas and DOM text alike; rung 3 covers canvas text
-only, which is most of the views' text (39 of the font declarations found
-are Pixi text styles asking for `monospace`). Rung 4 always works, at the cost of tying the references to
-one operating system.
+With all of it, the spike's 38 HTML pictures (13 of single features, 8
+of form controls, 9 of images, 8 of real views) were identical on
+Windows and Linux x64, and within 2 levels per channel on Linux arm64 and
+macOS arm64. Section 5.6 absorbs the 2 levels.
 
 ### 5.5 A fingerprint, checked first
 
@@ -751,16 +829,21 @@ reference environment's fingerprint:
 - the browser's version, and the WebGL renderer string (which names
   ANGLE and SwiftShader, and their versions);
 - the locale, time zone and device scale;
-- the hashes of a **calibration set**: a dozen tiny pictures, each
-  exercising one way a picture can differ. Each test font, at several
-  sizes and weights, in canvas text (Pixi) and in the DOM. An antialiased
-  circle, with and without MSAA. A gradient. A blur filter. A texture
-  sampled linearly and nearest. A lit, shaded three.js sphere.
+- the hashes of a **calibration set**: a couple of dozen small pictures,
+  each exercising one way a picture can differ. Each test font, at
+  several sizes and weights, in canvas text, with a stroke, a gradient
+  and a shadow. An antialiased circle, with and without MSAA. A gradient.
+  A blur filter. A texture sampled linearly and nearest. A lit, shaded
+  three.js sphere. In HTML: blank text at several sizes and fractional
+  sizes (its layout is the most fragile thing pinned, see section 5.9),
+  boxes and shadows, a rotated box and a rotated image, filters, each
+  form control.
 
 At the start of a run, each worker draws the calibration set and compares
-it with the committed fingerprint. If anything differs, the run stops
-before the first test, and says what differed: "the DOM text calibration
-picture differs from the reference: text is not drawn the same way on
+it with the committed fingerprint, with the same tolerance as any
+picture (section 5.6). If anything differs, the run stops before the
+first test, and says what differed: "the HTML text layout calibration
+picture differs from the reference: text is not laid out the same way on
 this machine". One clear error, not three hundred.
 
 The same check guards updating: `test:visual:update` refuses to write
@@ -779,13 +862,20 @@ is an identical hash. That is also what keeps passing tests fast (section
 There is one gap no pinning closes: whether software drawing gives
 bit-identical results on different CPUs. SwiftShader generates its code
 for the CPU it runs on, and Skia picks among code paths by the CPU's
-features. On x64 machines it should make no difference, and step 1
-measures it (this machine against GitHub's runners); on an arm64 machine
-(an Apple Silicon Mac) small differences would not be surprising. If it
-does differ, the answer is not to give up exactness everywhere. On a hash
+features. Measured: between x64 machines, none; on arm64 (Linux, and
+Apple Silicon Macs), WebGL is identical too, but Skia's CPU drawing
+rounds differently in blurs, rotated images and some antialiased edges,
+by at most 2 levels of 255 per channel, sometimes over thousands of
+pixels (a rotated photo: about 1000 pixels at 2 levels; a blurred panel:
+6000 at 1).
+
+So the answer is not to give up exactness everywhere, and the tolerance
+is per channel, not a count of pixels: a count small enough to catch a
+real change (the workshop's "a handful") would fail these, and a count
+large enough to pass them would let a real change through. On a hash
 mismatch, the picture goes to Node, which compares it with the reference
-using pixelmatch with a small tolerance (its default per-pixel colour
-threshold, and a handful of mismatched pixels at most). Then:
+pixel by pixel. It passes if no channel of any pixel differs by more
+than 2 levels. Then:
 
 - **Within tolerance:** the test passes, and the run's summary counts it
   ("12 pictures matched within tolerance, not exactly"). A count that
@@ -795,10 +885,12 @@ threshold, and a handful of mismatched pixels at most). Then:
 
 The tolerance is fixed and small, for the workshop's reason: a loose one
 hides real regressions (2% of mismatched pixels missed a text colour
-change). A real change to a view changes hundreds of pixels, not a
-handful. The fingerprint uses the same rule, so a machine whose
-calibration pictures differ only within tolerance is let through, and
-counted.
+change). A change of colour or position is almost never within 2 levels
+everywhere: moving an edge by a pixel changes its pixels by far more,
+and a colour tweak that small is invisible. On Windows and Linux x64 the
+tolerance never applies; every picture is identical. The fingerprint
+uses the same rule, so a machine whose calibration pictures differ only
+within tolerance is let through, and counted.
 
 ### 5.7 Reference files: the same bytes from any machine
 
@@ -806,11 +898,18 @@ References are PNGs, because people review them, and VS Code's source
 control view shows a PNG's old and new versions side by side. Three
 choices make them consistent too:
 
-- **Written by our encoder, never the browser's.** A small PNG encoder in
-  Node (on `pngjs`, already a dependency) with fixed settings: one filter,
-  one compression level, no timestamps or metadata beyond our own. The same
-  pixels give the same bytes, on any machine, so accepting a picture that
-  did not really change is not a change git sees.
+- **Written by our encoder, never the browser's, and only when the pixels
+  change.** A small PNG encoder in Node, lossless and as small as a
+  simple encoder makes a picture: a palette (1, 2, 4 or 8 bits a pixel)
+  for 256 colours or fewer, otherwise RGB for an opaque picture, each row
+  with whichever of PNG's five filters suits it; one compression level, no
+  timestamps or metadata beyond our own. Against one fixed filter in RGBA,
+  it made the references 30% smaller (the spike's 1000 pictures, 34%;
+  Kwazy Cactii's whole screen, 585 to 353 KB). Node's
+  zlib could still compress the same pixels to different bytes on another
+  version or processor, so the update never rewrites a reference whose
+  pixels match (or match within tolerance): accepting a picture that did
+  not really change is not a change git sees.
 - **The pixel hash travels inside the file**, in a PNG text chunk written
   right after the header. Reading the expected hashes at the start of a
   run is reading the first hundred or so bytes of each reference, not
@@ -828,7 +927,7 @@ three properties of section 1.2:
 
 | Option | Beyond `npm ci` | Licence | Consistency | Speed |
 | --- | --- | --- | --- | --- |
-| **Pinned inside the browser** (recommended) | Nothing; Chromium is fetched on first run | Apache 2.0 (Playwright, SwiftShader), BSD (Chromium), OFL (fonts) | Everything but text by construction; text by section 5.4's ladder | Best: a native browser, nothing in between |
+| **Pinned inside the browser** (recommended) | Nothing; Chromium is fetched on first run | Apache 2.0 (Playwright, SwiftShader), BSD (Chromium), OFL (fonts), MIT (fontkit) | Measured on Windows, Linux and macOS: identical on x64, within 2 levels on arm64. Canvas text drawn by us; HTML text not drawn (section 5.4) | Best: a native browser, nothing in between |
 | Docker Desktop, a Linux container running Playwright's browser server | Docker Desktop, and WSL 2 on Windows | Paid for larger organisations (250 or more staff, or over US$10 million revenue); free for personal use | The most complete: the operating system, fonts and libraries pinned by an image digest | Tests tunnel the page's requests to the container; slower start |
 | Podman, or Rancher Desktop, with the same container | The tool, and WSL 2 on Windows | Apache 2.0, free | As Docker | As Docker |
 | WSL 2 itself, with Playwright's Linux browser | WSL 2 and a distribution | Free | Linux's fonts, but only as pinned as the distribution's packages | Good |
@@ -836,61 +935,56 @@ three properties of section 1.2:
 | References made and checked only in CI | Nothing | Free | Complete | No local check at all: every visual change round-trips through CI |
 
 Containers pin more than this proposal can (the whole operating system,
-with no ladder of rungs to climb for text), and for a team on mixed
+so HTML pictures could keep their letters), and for a team on mixed
 machines they would be the conventional answer. Here they fail the third
 property: every one needs an install, and on Windows each also needs WSL
-2, which this machine does not have. They stay the last resort: if step
-1 finds that text cannot be pinned inside the browser, and rung 4 of the
-ladder (Windows as the one reference system) proves unworkable too, a
-container (Podman, to avoid the licence question) is where this goes
-next.
+2, which this machine does not have. The spike made them unnecessary.
+They stay the last resort, for if a Chromium upgrade breaks the pinning
+of section 5.4 and nothing inside the browser restores it: a container
+(Podman, to avoid the licence question) is where this would go next. Its
+speed (estimated: the same per picture, a few seconds more to start, and
+tens of seconds when the VM is not yet running) would be measured then.
 
 ### 5.9 Will it last?
 
-Pinning inside the browser leans on Chrome's internals, so it is fair to
-ask what could undo it later. Checked against Chromium's source
-(`third_party/blink/renderer/platform/fonts/web_font_typeface_factory.cc`,
-`main`, 2026-10-06):
+Pinning inside the browser leans on how Chromium and the systems under
+it behave, so it is fair to ask what could undo it later. What each
+measure relies on, from the sturdiest:
 
-- **The font routing does not depend on the operating system.** A web
-  font is matched against an ordered list of rules. CFF2 (and COLRv1, CBDT
-  and avar2) go to `MakeFontationsFallbackPreferred`, which always makes a
-  Fontations typeface: no platform `#if`, no runtime check, no feature
-  flag. The CFF2 rule comes before the general variable-font rule, which is
-  the one that does ask the system (on Windows, `MakeVariationsTypeface`
-  hands a variable TrueType font to DirectWrite if
-  `DWriteVersionSupportsVariations()`). So Windows or macOS gaining support
-  for CFF2 changes nothing: Chrome does not ask them. A variable TrueType
-  test font, by contrast, would be drawn by DirectWrite on Windows, which
-  is why the test fonts must be CFF2.
-- **Nothing on the machine can change it.** Fontations, Skia, SwiftShader
-  and the routing rules are all inside Playwright's Chromium, and that is
-  pinned by the lockfile. An operating system update cannot change how a
-  test font or a WebGL picture is drawn. Only upgrading Playwright can, and
-  that is a commit.
+- **Canvas text relies on Skia filling paths.** Drawing glyphs as paths
+  from the font file, with our own layout, involves no font engine and no
+  system. Nothing short of a change to Skia's path filling, inside the
+  pinned Chromium, can move it.
+- **WebGL relies on SwiftShader.** The same CPU implementation everywhere,
+  inside Playwright's Chromium. Since Chrome 137 it takes
+  `--enable-unsafe-swiftshader`; Chrome keeps it for testing and headless
+  use, and ANGLE's own tests depend on it. If it were ever removed, there
+  would be no software WebGL common to every system (Windows has WARP and
+  Linux has llvmpipe, which differ), and WebGL pictures would need one
+  system or a container. This is the largest long-term risk.
+- **HTML text relies on three layout engines agreeing.** The blank font's
+  advances are laid out by DirectWrite on Windows, Core Text on macOS and
+  Chrome's own engine (Fontations) on Linux. They agree because the font
+  is as simple as a font can be (one glyph, one advance, no hinting, no
+  kerning) and hinting is off; but unlike everything else here, two of
+  them belong to the operating system, so an operating system update could
+  in principle change them. Nothing is drawn, so only layout is at stake,
+  and the HTML text calibration pictures (section 5.5) would catch it on
+  the first run.
+- **Software compositing and hinting rely on switches.**
+  `--font-render-hinting` is a switch of the headless shell; the GPU
+  switches are long-standing Chromium switches. A Playwright upgrade that
+  dropped one would show in the calibration pictures.
+- **Nothing on the machine can change the rest.** Skia, SwiftShader and
+  the switches are inside Playwright's Chromium, pinned by the lockfile.
+  Only upgrading Playwright can change them, and that is a commit.
 - **An upgrade is checked where it would show.** A commit that changes
-  Playwright's version runs the visual tests on both Ubuntu and Windows
-  (section 9). If a new Chromium changed the routing or the rasterisation,
-  the calibration pictures disagree between the two, and the upgrade stops
-  there, before any reference is rewritten. The fix is then to climb
-  section 5.4's ladder, or to stay on the older Playwright while deciding.
-- **The direction of travel helps.** Chrome moved to Fontations for memory
-  safety, and has said it will extend it (to system fonts, starting with
-  Linux and ChromeOS). Handing untrusted web fonts back to the system's
-  parser would undo that. If Chrome ever uses Fontations for all web fonts
-  on Windows and macOS, as it already does on Linux, the CFF2 requirement
-  falls away and any test font would do.
-- **The larger long-term risk is SwiftShader, not fonts.** Since Chrome
-  137, Chrome no longer falls back to SwiftShader for WebGL automatically;
-  it takes `--enable-unsafe-swiftshader`. Chrome keeps it for testing and
-  headless use, and ANGLE's own tests depend on it, but if it were ever
-  removed, there would be no software WebGL common to every system
-  (Windows has WARP and Linux has llvmpipe, which differ). Pictures would
-  then have to be made on one system (rung 4's answer, applied to WebGL),
-  or in a container.
-- **Rung 3 depends on no font engine at all.** Drawing canvas glyphs as
-  paths from the font file goes through Skia's path filling only, so it
-  survives any change to how Chrome handles fonts.
+  Playwright's version, or the harness, runs the visual tests on Ubuntu,
+  Windows and macOS (section 9). If a new Chromium changed any of the above, the calibration
+  pictures disagree between the three, and the upgrade stops there, before
+  any reference is rewritten. The fix is then to find the new switch or
+  rule, as the spike found these, or to stay on the older Playwright while
+  deciding. A container is the last resort (section 5.8).
 
 ## 6. Running them
 
@@ -914,34 +1008,41 @@ reporters, in the runner the repo already uses. Vitest's own
 two agree, and names references per platform, which are the three things
 sections 4 and 5 set out to avoid.
 
-Our own runner, on `headless-chrome.ts`, is the fallback if step 1 finds
-Vitest's per-test overhead in browser mode too high to meet the budget.
-It would have to drive Playwright's Chromium rather than the installed
-Chrome, for section 5.3's sake.
+Our own runner, on `headless-chrome.ts`, was the fallback if Vitest's
+per-test overhead in browser mode proved too high. The spike measured it
+at about 1.5 ms a test, so it is not needed.
 
 ### 6.2 Projects, and the commands
 
-The root `vitest.config.ts` becomes three projects:
+The root `vitest.config.ts` stays as it is, the unit tests in Node. The
+visual tests have a config of their own,
+`packages/website/vitest.visual.config.ts`, so `npm test` and an editor's
+Vitest integration see no change. It has two projects
+(`scripts/visual/projects.ts`):
 
-- **`unit`**: everything that runs now, in Node, unchanged.
-- **`visual`**: `**/*.visual.tsx` except `*.html.visual.tsx`, in browser
-  mode, `isolate: false`.
-- **`visual-html`**: `**/*.html.visual.tsx`, the same but isolated per
-  file.
+- **`visual`**: `src/**/*.visual.tsx` except `*.html.visual.tsx`, in
+  browser mode, `isolate: false`.
+- **`visual-html`**: `src/**/*.html.visual.tsx`, the same but isolated
+  per file.
 
 Both visual projects use the website's Vite config, merged, so the
 spritesheet and entry facts plugins serve what the views load, and
 `@mvtjs/source` resolves the libraries to their source as everywhere
-else; they add the font-name plugin (section 5.4). The suffix
-`.visual.tsx` (not `.visual.test.tsx`) keeps the files out of the `unit`
-project's default include.
+else. They add the browser's launch switches (section 5.3), one setup
+file (fonts, the canvas text replacement, the blank font's rule for
+HTML, the seeded `Math.random`, the Pixi patch) and an
+`optimizeDeps.include` listing every dependency (section 4.3). The
+suffix `.visual.tsx` (not `.visual.test.tsx`) keeps the files out of the
+`unit` project's default include.
 
 | Command | Runs |
 | --- | --- |
-| `npm test` | `vitest run --project unit`: as now, no browser |
-| `npm run test:visual` | Installs Playwright's Chromium if missing, checks the fingerprint, runs both visual projects |
+| `npm test` | As now: the unit tests, no browser |
+| `npm run test:visual` | Installs Playwright's headless shell if missing, checks the fingerprint, runs both visual projects (`scripts/visual/run.ts`) |
 | `npm run test:visual:update` | The same, writing a reference for every picture that changed or is new, and none for the rest |
-| `npm run test:visual -- -t SpinButton` | One group, as with any Vitest run |
+| `npm run test:visual:environment` | The same, also rewriting the fingerprint and the calibration set's references, after a deliberate upgrade |
+| `npm run test:visual -- -t SpinButton` | One group, as with any Vitest run; `-- --watch` to watch |
+| `npm run test:visual:update -- --picture SpinButtonView-stop` | The test whose picture has that name, as a failure suggests. A test's full name (`SpinButtonView > stop`) has spaces and shell characters, which npm drops or a shell reinterprets on the way through (the `>` became a redirect in step 3); a picture's name has neither. The runner turns it into the `-t` pattern, and starts Vitest with no shell between |
 
 Whether `npm test` should include the visual projects is open question 2.
 
@@ -956,9 +1057,12 @@ For each test:
 3. Calls `refreshView(view)`.
 4. Works out the picture's size (section 6.5).
 5. **WebGL:** renders the background and the view into a pooled render
-   texture, reads the pixels, hashes them, compares with the reference's
-   hash. **HTML:** mounts the element in a host `<div>`, and asks Node,
-   by a browser command, for the screenshot, its hash and the comparison.
+   texture, reads the pixels, fails the test if they are all background,
+   hashes them, compares with the reference's hash. **HTML:** mounts the
+   element in a host `<div>`, waits for fonts and images (lazy ones made
+   eager), sets nearest-neighbour sampling on rotated images (section
+   5.4), and asks Node, by a browser command, for the screenshot, its
+   hash and the comparison.
 6. On a mismatch, or a missing reference: sends the pixels to Node, and
    fails or passes as Node decides (section 7).
 7. Unmounts and destroys the view (`destroy({ children: true })`,
@@ -975,8 +1079,9 @@ from the page. The harness needs four:
 - `visualMismatch(name, pixels)`: decodes the reference, compares within
   tolerance, writes the actual picture and a diff to `.vitest/visual/`,
   or, when updating, writes the new reference. Returns the verdict.
-- `visualScreenshot(name, selector)`: for HTML, an element screenshot
-  through Playwright, hashed and compared the same way.
+- `visualCapture(name, rect)`: for HTML, a screenshot of the host's
+  rectangle (offset by the test iframe's position) through the DevTools
+  protocol, decoded, hashed and compared the same way.
 - `visualDone(names)`: at the end of a full run, the names of the pictures
   compared, so Node can list references no test used (section 7.4).
 
@@ -985,11 +1090,16 @@ something the page needs to know.
 
 ### 6.5 Sizing
 
-Without a size, the picture is the view's local bounds after its first
+Without a size, the picture is the view's bounds after its first
 refresh, rounded out to whole pixels, plus a small fixed margin (so an
-antialiased edge or a glow at the bounds is in the picture). The view is
-moved by the bounds' top-left, so a view drawn around its origin, like the
-spin button, is framed the same as one drawn from its corner.
+antialiased edge or a glow at the bounds is in the picture). The bounds
+are measured in the view's parent's space (the harness's holder), so the
+view's own position counts: a view's `getLocalBounds()` leaves it out,
+and in the spike framed two views (a banner placed at x = 480, meters at
+y = 464) in empty space, whose blank pictures matched everywhere. The
+view is moved by the bounds' top-left, so a view drawn around its
+origin, like the spin button, is framed the same as one drawn from its
+corner. A picture that is all background fails (section 5.1).
 
 A size, when given, is used as is, and the view stays where it put itself:
 the right thing for a top-level view of a fixed screen.
@@ -1014,8 +1124,9 @@ as well, so its UI shows them (step 2 checks what browser mode supports).
 Then one of two things is true:
 
 - **The change is a regression.** Fix the view, rerun.
-- **The change is intended.** Run `npm run test:visual:update` (with `-t`
-  to accept only the tests meant), and review the changed references
+- **The change is intended.** Run `npm run test:visual:update` (with
+  `--picture <name>`, as the failure prints it, to accept only the
+  pictures meant), and review the changed references
   before staging them. An agent never stages them: as with every change,
   the user stages while reviewing.
 
@@ -1025,7 +1136,7 @@ test that has stopped testing.
 ### 7.2 A new picture
 
 A test with no reference fails, in every mode but update, with "new
-picture: run `npm run test:visual:update -- -t <name>`, and review it".
+picture: run `npm run test:visual:update -- --picture <name>`, and review it".
 It never writes a reference by itself: in CI, a missing reference must be
 a failure, not a file written into a throwaway checkout.
 
@@ -1034,16 +1145,67 @@ a failure, not a file written into a throwaway checkout.
 A leaf view's picture is small (the spin button is about 120 pixels
 across). A top-level view of a pixel-art game is its screen at
 resolution 1 (Crumb Chase's is its maze at 20 pixels a tile, plus its
-HUD), and PNG compresses flat pixel art well. A hundred pictures should
-come to a few megabytes. Step 3 records the real figure. The guidance
-that follows: photograph leaf views, plus one or two whole screens per
-entry, not every frame of every animation.
+HUD), and PNG compresses flat pixel art well. Measured in step 3, with
+the encoder of section 5.7: a spin button 3.5 KB, a game screen 12-17 KB,
+a blurred reel window 85 KB (blur does not compress); the 36 references
+then committed, 305 KB. A hundred pictures come to about 1.5 MB, and git
+keeps every version of each. The guidance that follows: photograph leaf
+views, plus one or two whole screens per entry, not every frame of every
+animation.
+
+Three measures keep size, and so storage and drawing time, in hand
+without making pictures less exact:
+
+- **One option, `artStyle`: `'pixel'` or `'smooth'`.** A picture is
+  drawn as pixel art unless its test says `artStyle: 'smooth'`: hard
+  edges, whole-pixel positions, and
+  nearest-neighbour sampling for the textures a pose makes (the games'
+  spritesheets are always nearest-neighbour). A smooth picture gets
+  antialiased edges, fractional positions and smooth sampling. A test
+  that leaves a smooth view at the default gets a jagged picture: unfaithful,
+  but consistent, and plain to see in review.
+- **A budget, `maxPixels`**, set once in `vitest.visual.config.ts`,
+  default 500,000 (about a 960 by 540 screen). A smooth picture over it is
+  drawn at a lower resolution, halving until it fits (half, a quarter,
+  ...), so each picture pixel is an exact square of view pixels. It stays
+  exact (SwiftShader draws it the same everywhere), but every detail
+  finer than a picture pixel is averaged away, so the summary lists every
+  picture drawn that way. Pixel art is never drawn smaller (it would drop
+  whole texels), nor HTML (the browser's own scaling differs between
+  systems): over the budget, they fail, saying to crop the picture
+  (`width`, `height`), pose part of the view, or give a smooth view
+  `artStyle: 'smooth'`.
+- **The figures, every run.** The summary gives the references' total
+  size and the largest files, beside the timings.
+
+Downscaling every picture after it is drawn was considered and rejected
+(2026-10-08): it saves no time, since drawing, not hashing or diffing, is
+where the time goes (86% of it), and diffing happens only for a picture
+that changed; and averaging makes a change smaller, so that a one-pixel
+change of 8 levels becomes 2 after a 2:1 downscale, inside the tolerance
+arm64 needs. Drawing smooth views over the budget at a lower resolution
+gets the speed, and the summary keeps it in view. So were a per-test
+`resolution` and an opt-out `large` (2026-10-08): one option and one
+budget are simpler, and pixel art is the default because leaving out the
+option should never make a picture less exact.
 
 ### 7.4 Orphaned references
 
-Renaming or deleting a test leaves its reference behind. A full run (no
-`-t`, no file filter) ends by listing the references no test compared
-with, and failing; `test:visual:update` deletes them instead.
+Renaming or deleting a test leaves its reference behind. A full run ends
+by listing the references no test compared with, and failing;
+`test:visual:update` deletes them instead (and a test file's directory,
+and `__screenshots__`, when that empties them).
+
+A full run is one the runner was given no arguments for but
+`--sequence.shuffle` and its seed (so the weekly run counts), not
+interrupted, with every file loaded and no test skipped: only then is an
+unused reference an orphan, not the reference of a test that sat the run
+out. Vitest does not tell reporters a run's file filters, so the runner,
+which sees every argument, says whether a run is full. Each test records
+its picture's name as it starts, so one that fails before drawing still
+counts as using its reference; calibration pictures, drawn as a page is
+set up rather than by tests, are reported to Node by the page with the
+set it compared.
 
 ## 8. The browser on this machine
 
@@ -1053,53 +1215,62 @@ benchmark suite that made a new profile per case locked the user out of
 the machine on 2026-10-02 (fixed in `e433c90`); `headless-chrome.ts` now
 keeps one profile for every launch.
 
-Playwright's default launch makes a new profile in a temporary directory
-each time, which would be a failed logon per run, and per restart in watch
-mode. Vitest's Playwright provider has a `persistentContext` option
-(Vitest 4.1 and later), which keeps the profile between runs, by default
-in `node_modules/.cache/vitest-playwright-user-data`. The visual projects
-turn it on. A checkout's first visual run is then one failed logon, and
-later runs none.
+**Playwright's headless shell does not do it.** Measured in step 1: the
+account's bad-password count stayed at 0 across a new persistent profile,
+Playwright's default fresh temporary profile, and about 80 later runs;
+one launch of the installed Chrome 154 with a fresh profile, as a
+control, raised it by exactly one. The count can be read without admin
+(the Security log cannot):
+`([ADSI]"WinNT://$env:COMPUTERNAME/$env:USERNAME,user").BadPasswordAttempts`.
+So the visual projects use Playwright's default launch, with no
+`persistentContext`, and any number of workers.
 
-What step 1 checks, once, carefully (counting failed logons, event 4625 in
-the Security log, before and after two runs):
-
-- **Whether Playwright's headless shell makes the logon attempt at all.**
-  It is built from the same Chromium, but without most of the browser
-  around it, password manager included. Assume it does until shown
-  otherwise.
-- **Whether a reused profile is enough**, as it is for Chrome.
-- **Whether `persistentContext` combines with the context options**
-  (scale, locale, time zone) and with several workers.
-
-Agents follow the benchmarks' rule: never run visual tests in a loop, and
-keep to a handful of runs per half hour. A new worktree has its own
-`node_modules/`, so its first run costs one logon.
+The rule for agents changes accordingly: visual runs may be repeated
+freely; launches of the installed Chrome (the thumbnail and load-time
+scripts, `headless-chrome.ts`) keep the old care. If a Playwright upgrade
+ever brings a headless shell that does test the password, the first run
+after it will show it in that count, which `npm run test:visual` can
+check on Windows before and after launching, and refuse to go on.
 
 ## 9. CI
 
-The deploy workflows run `npm test` on `ubuntu-latest`, unaffected.
+The deploy workflows run `npm test` on `ubuntu-latest`, unaffected. The
+visual tests have a workflow of their own, `.github/workflows/visual.yml`:
 
-A visual job runs `npm run test:visual` on every push, on
-`ubuntu-latest`, after the same `npm ci`. Playwright's browser cache is
-kept between runs with the cache action, keyed on Playwright's version.
-If step 1's estimates hold, the job costs well under a minute beyond
-`npm ci`. If section 5.4's ladder ends at rung 4, the job runs on
-`windows-latest` instead.
+- **Every push, on Ubuntu.** `npm run test:visual` after the same
+  `npm ci`, with Playwright's browser kept between runs by the cache
+  action, keyed on Playwright's version. About 5 s of tests; the job,
+  `npm ci` and the browser included, takes under a minute. Pull requests
+  from forks run it too (a pull request from a branch here is already
+  run by its push).
+- **All three systems when the pinning could change.** A first job
+  compares the commit with the one before it (a new branch, with `main`):
+  if Playwright's version changed (so Chromium's), or the harness did
+  (`src/testing/`, `scripts/visual/`, the visual config, the fingerprint,
+  the workflow), the tests also run on `windows-latest` and
+  `macos-latest` (arm64). An upgrade or a harness change that draws or
+  lays out differently on one system is caught before it is accepted
+  (section 5.9). Its first run did exactly that: Linux laid the blank
+  font out a fraction of a pixel differently at fractional font sizes,
+  which section 5.4's two measures now pin.
+- **Weekly, and on demand** (Mondays 03:00 UTC, or "Run workflow"): all
+  three systems, since runner images change under us (`ubuntu-latest`
+  moves to Ubuntu 26 on 2026-10-19); the tests in a shuffled order
+  (`--sequence.shuffle`, seeded with the run's id, printed in the log to
+  repeat it), to show no picture depends on the ones before it (section
+  4.3); and `npm run test:visual:check-references`, which decodes every
+  reference and checks its pixels against the hash it carries (section
+  5.7).
 
-A commit that changes Playwright's version (so Chromium's) also runs the
-visual job on `windows-latest`, beside Ubuntu, so an upgrade that draws
-differently on one system is caught before it is accepted (section 5.9).
-
-A weekly scheduled job runs the suite in shuffled order, checks which
-fonts Chrome really used for every HTML picture, and decodes every
-reference to check that its pixels match its stored hash (sections 4.3,
-5.4 and 5.7).
-
-Consistency between this machine and CI is the claim most worth testing
-before relying on it, and step 1 tests it directly: the same spike suite,
-run here and on GitHub's Ubuntu and Windows runners, must give identical
-hashes.
+No job writes references: contributors on any of the three systems (and
+Claude Code's cloud sessions, on Linux) update them on their own machine.
+A changed picture fails its job with an annotation per picture on the
+run's page (Vitest's `github-actions` reporter: how many pixels, by how
+much, the rectangle holding them, and the files), and the actual and diff
+images are uploaded as an artifact for the reviewer. A failure before any
+test (the environment check) has no annotation of its own, so the job
+makes one from the run's last lines. The visual summary (timings, sizes)
+goes on the job's summary page.
 
 ## 10. Whole entries, for free
 
@@ -1108,19 +1279,34 @@ entry headless at its play size, advance it by `thumbnailAdvanceMs` in
 16 ms steps, playing its `thumbnailInput`, and draw one frame. That is a
 visual test of the whole entry, minus the comparison.
 
-One file, `entries/entries.visual.tsx`, can loop over the catalogue and
-make one `visualTest` per entry from the same code. To share it, the
-page's `start` and `advance` move into a module both import. Then every
-entry has a test of its whole screen, written once, catching what no leaf
-test sees: layout, layering, a view left out of its parent.
+One file, `entries/entries.visual.tsx`, loops over the catalogue and
+makes one `visualTest` per Pixi entry from the same code: the runner's
+`startPixiHeadless` and `advanceHeadless`, which the thumbnail page now
+uses too. Every entry has a test of its whole screen, written once,
+catching what no leaf test sees: layout, layering, a view left out of its
+parent. Each is drawn at its thumbnail moment, in its own art style (the
+test file reads the starter's `pixelArt`; the harness knows nothing of
+entries), on black as the host draws round a play area. A smooth entry
+over the size budget is drawn at a lower resolution (Boids, 960 by 605,
+at half); pixel art over it is cropped by the test file (Kwazy Cactii,
+1600 by 2180, to three of its tiles and its score bar). The spike
+did this for all 11 Pixi entries, at their thumbnail moment and two
+seconds in: 22 pictures, about 4 s, identical on all four runners with
+canvas text drawn as paths. Its fruit machine reels and paytables
+differed until the wild symbol's word became outlines (section 5.4), and
+Astrovoid's until its asteroid seeds moved into its model (section 5.1).
 
 Two cautions:
 
-- **Element entries are not instant.** The page gives them 500 ms of real
-  time to lay themselves out and start their renderers: the one
-  wall-clock wait in the pipeline, against both goals of this proposal.
-  Pixi entries come first; element entries follow when they can say when
-  they are ready.
+- **Element entries say when they are ready.** The thumbnail page gave
+  them 500 ms of real time to lay themselves out and start their
+  renderers. Since step 6 an element session has an optional `ready`
+  promise (the fruit machine's settles when its Pixi renderer has
+  started), which both the page and `entries.html.visual.tsx` await, so no
+  wall-clock wait is left. Element entries are HTML pictures, being part
+  DOM; their WebGL canvases appear as on screen. The two over the size
+  budget (the fruit machine, 1280 by 800, and Boids 3D, 960 by 600) are
+  laid out at 880 by 550, as in a smaller window.
 - **These tests fail on any change to an entry.** That is their job, but
   an entry's own commits will often accept a new reference. They
   complement leaf tests, which say what changed; they do not replace them.
@@ -1139,8 +1325,9 @@ anyway.
 Playwright for visual tests; it gains how. `testing-views.md` replaces its
 `/test-harness?view=...` example with `visualTest` and `advanceTime`,
 and gains the problems this proposal is built around (speed, and
-consistency without a container), since they are what a reader adopting
-MVT elsewhere most needs to hear. The view skill (`skill-mvt-view.md`)
+consistency without a container, with its compromises: canvas text drawn
+by the harness, HTML text not drawn at all), since they are what a
+reader adopting MVT elsewhere most needs to hear. The view skill (`skill-mvt-view.md`)
 asks for a `.visual.tsx` beside a new view, with a picture per state its
 bindings can show. AGENTS.md's command table gains the commands, and the
 project structure page gains `__screenshots__/`, `src/testing/` and
@@ -1148,32 +1335,89 @@ project structure page gains `__screenshots__/`, `src/testing/` and
 
 ## 12. Open questions
 
-1. **If the ladder ends at Windows, what about other systems?** Rung 4
-   (section 5.4) ties references to Windows. A Linux or macOS machine
-   could then still run every picture without DOM text (the calibration
-   says which kinds match), or none. Recommendation: decide only if step 1
-   lands there.
-2. **Visual tests in `npm test`?** With no container to start, the only
-   costs are the run's few seconds and the one-time browser download.
-   Recommendation: decide after step 1. If the budget holds, yes.
-3. **A package?** `visualTest` and `advanceTime` are not specific to the
-   website, and `advanceTime` is not specific to visual tests. A private
-   `@mvtjs/testing` would serve the benchmarks or a future package's own
-   views; a published one would serve users of the libraries, and the
-   pinning of section 5 would be most of its value. Recommendation: start
-   in the website, and move it when a second package needs it.
+1. **Is blank HTML text enough?** HTML pictures check layout and
+   styling, not copy, and lay text out 0.625 em per character, not at its
+   real width (section 5.4). For this repo's HTML views that is what a
+   visual test is for. Recommendation: accept it; revisit if an HTML
+   view's looks come to depend on its text (a view whose overflow
+   matters, say), which a scene-graph test or a container would then
+   cover.
+2. **Visual tests in `npm test`?** Measured: 1000 pictures in 12.7 s; a
+   realistic suite of a few hundred would add 4-6 s and a browser launch,
+   plus the one-time download. Recommendation: decide after step 3, with
+   real tests to time; lean towards yes.
+3. ~~**A package?**~~ Settled 2026-10-09: yes, `@mvtjs/visual-testing`
+   (`packages/visual-testing/`, private for now). The harness first grew in
+   the website, as this question recommended, waiting for a second user.
+   By the time it was built, it had its own dependencies, a browser side
+   and a Node side with a protocol between them, and about 4,000 lines that
+   know nothing of games; and the Node side imported the protocol's types
+   from the website's `src/`. The browser side is the main entry point
+   (`visualTest`, `advanceTime`), the Node side is `./node`
+   (`createVisualProject`, `createVisualReporters`), and `visual-tests` is
+   its command. The calibration set and the environment's fingerprint
+   moved with it. The website keeps its tests, their references and a
+   short `vitest.visual.config.ts`. Two details made it work: the Node
+   entry point names its source as the default too, since Vitest bundles a
+   config with no custom conditions, and the command runs Vitest with
+   tsx's loader, so that Node can run the package's TypeScript.
+   The same day, the kind of test moved from the file name into the
+   declaration: `canvasTest` (Pixi and three.js) or
+   `htmlTest`, in any `*.visual.ts` or `*.visual.tsx` file. Vitest
+   assigns files to projects before any test code runs, so the package
+   reads each file's text when the config loads, and fails a file that
+   declares both kinds, or neither. `visualTest` and `*.html.visual.tsx`
+   are gone, and the internal kind `pixi` is now `canvas`.
+   On 2026-10-10 the user decided the package goes public, on npm, as a
+   standalone package (step 10, and questions 7 and 8).
 4. **What if SwiftShader draws something wrongly?** If a view uses a
    feature software WebGL gets wrong, its pictures would be consistently
    wrong, which still catches changes, but would confuse a reviewer.
    Decide when it happens, if it does.
-5. **Resolution 1 or 2 by default?** 1 keeps pictures small and fast, and
-   is what pixel art wants. Smooth views lose detail at 1 that a
-   regression could hide in. Recommendation: 1, with `resolution: 2` for
-   the views that need it.
+5. ~~**Resolution 1 or 2 by default?**~~ Settled 2026-10-08: 1, never
+   more; a smooth picture over the size budget is drawn at less to fit
+   (section 7.3).
+6. ~~**A lint rule against module-level `let` in model files?**~~
+   Settled 2026-10-08: added in step 2 as `@mvtjs/no-module-state`, in
+   the `architecture` preset beside `no-wall-clock`. Astrovoid's shared
+   asteroid counter (section 5.1) was the only case, already fixed.
+7. **The published name: `vsnap` or `v-snap`?** Both are free on npm
+   (2026-10-10), without a scope. Recommendation: `vsnap`.
+   - **One word everywhere.** The name appears in the install, the
+     command, the config file and the imports: `npm i -D vsnap`, `vsnap
+     --update`, `vsnap.config.ts`, `import { canvasTest } from 'vsnap'`.
+     A hyphen in each of those is one more thing to remember, and people
+     would type `vsnap` anyway.
+   - **The logo carries the reading.** "V-snap" explains itself, but the
+     logo's V shows the same thing, so the name doesn't need the hyphen to.
+   - **One name protects the other.** npm refuses a new package whose name
+     matches an existing one once punctuation is removed, so publishing
+     `vsnap` should keep `v-snap` from anyone else. Check this when
+     publishing.
+   - **A basic trademark check found nothing in the way** (2026-10-10).
+     The one VSNAP mark found in the US register (serial 85314820, class
+     42, a video-sharing website) is dead, cancelled in 2019. Nothing was
+     found for V-SNAP or V SNAP. IBM uses "vSnap server" for the backup
+     storage in Spectrum Protect Plus, but no registration was found, and
+     it is a different field (backup appliances, not developer tools).
+     Others using the name: a small Rust crate (`vsnap`, Docker volume
+     snapshots), a hosting company and an Indian IT firm, and personal
+     repos on GitHub. `vsnap`, `v-snap`, `v_snap` and `vsnap-cli` are all
+     free on npm. Not checked: the official USPTO search (it needs a
+     browser), and other countries' registers (WIPO, EUIPO). This is a
+     basic check, not legal advice.
+8. **What does the published package need from MVT?** It imports the
+   tick API from `@mvtjs/pixi`, `@mvtjs/three` and `@mvtjs/html`: a view
+   is refreshed before it is drawn, and `advanceTime` updates views with
+   presentation state. Other projects may not use MVT. Options: optional
+   peer dependencies, with the refresh skipped for a view that has no
+   refresh step; or a hook in the config that prepares a view before it
+   is drawn, with MVT's as the default when its packages are present.
+   Decide in step 10, before the first publish.
 
 ## 13. Implementation steps
 
-1. **Spike, and measure.** Before building anything to keep:
+1. ~~**Spike, and measure.**~~ Done 2026-10-07; see [Spike results](#spike-results). Before building anything to keep:
    - **The browser.** Add `@vitest/browser-playwright` and `playwright`;
      launch Playwright's Chromium headless shell with SwiftShader and
      software 2D canvas, with `persistentContext`. Confirm the canvas is
@@ -1196,14 +1440,52 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    - Record everything here. If the speed targets are missed by far, find
      where the time goes before moving on; if Vitest's own per-test
      overhead is the cause, reconsider section 6.1's fallback.
-2. **The harness.** `#testing` with `visualTest` (Pixi first, then HTML)
-   and `advanceTime`; the setup file and its resets; the test fonts, their
-   `@font-face` names, the font-name Vite plugin and the canvas wrapper;
-   the PNG encoder and its hash chunk; the browser commands; the
-   fingerprint and the calibration set; the three projects; the npm
+2. ~~**The harness**~~ Done 2026-10-08. Browser side in
+   `src/testing/` (`#testing`), Node side in `scripts/visual/`, with unit
+   tests for the font, the PNG files, the comparison, the picture names
+   and `advanceTime`, and its own visual tests
+   (`src/testing/visual-test.visual.tsx` and its `.html.` sibling): ten
+   pictures in about 2 s, start-up included. A changed picture fails with
+   its reference, actual and diff paths and the command to accept it; a
+   wrong environment stops the run in a second, before any picture is
+   compared. Built as listed: from the spike's code (`packages/website/visual-spike/`,
+   in `visual-tests`' history up to `b7f40c3`), rewritten to the repo's conventions. `#testing`
+   with `visualTest` (Pixi first, then HTML) and `advanceTime`; the setup
+   file and its resets, the seeded `Math.random` and the Pixi pool patch;
+   the test fonts, the canvas `font` rewrite and the canvas text drawn as
+   paths (on fontkit); the blank TrueType font and its generator, the HTML
+   rules (blank text, text fields' width) and nearest-neighbour rotated
+   images; the launch switches; the PNG encoder and its hash chunk; the
+   per-channel comparison; the browser commands, the HTML capture through
+   the DevTools protocol among them; the fingerprint and the calibration
+   set; the two visual projects, with every dependency pre-bundled; the npm
    scripts, with the browser installed on first run; `.vitest/` in
-   `.gitignore`. The run's timing summary.
-3. **First tests.** The fruit machine's Pixi leaf views (spin button, win
+   `.gitignore`. The run's timing summary. The lint rule of open
+   question 6.
+3. ~~**First tests.**~~ Done 2026-10-08. Eleven pictures beside their
+   views: the fruit machine's spin button (its three modes), win banner
+   (a win counted, and counting up 300 ms in), reel window (at rest, and
+   spinning), and control panel (HTML: ready, and mid-spin); and Crumb
+   Chase's whole screen (pixel art: at the start, and two seconds in).
+   With the harness's own, 21 pictures in about 2.5 s. References: 220 KB
+   for the eleven, 20 KB each on average (a spin button 3.5 KB, a game
+   screen 17 KB, the blurred reels 95 KB: blur does not compress), so a
+   hundred pictures come to about 2 MB. The deliberate change (the spin
+   button's stop colour) failed only its own picture, with the diff
+   files and the command to accept it, and that command rewrote that one
+   reference and no other. Found on the way:
+   - The suggested `-t "SpinButtonView > stop"` lost its quotes through
+     npm, and its `>` became a shell redirect. Hence `--picture <name>`
+     (section 6.2), and the runner starts Vitest and Playwright with no
+     shell.
+   - HTML views here return `Element`, not `HTMLElement`; `visualTest`
+     takes either.
+   - A view styled by its entry's layout needs that layout round it: the
+     fruit machine's panel sits in a quadrant of a two-by-two grid, so its
+     pose builds one quadrant spanning a machine one quadrant in size, at
+     the size the entry's play area gives it (derived from the entry's
+     `screenWidth` and `screenHeight`).
+   Original plan: the fruit machine's Pixi leaf views (spin button, win
    banner counting, reel window), one pixel-art game screen, and one HTML
    view (the Arcade's card, or the fruit machine's control panel). Make a
    deliberate change to one view, and check that its test fails with a
@@ -1212,17 +1494,717 @@ project structure page gains `__screenshots__/`, `src/testing/` and
    `views/game-view.test.ts` with an "after a restart" pose of its
    `GameView`. That test is a stopgap: it checks that a restart shows the
    new board, not the old one (a bug it once had), by stubbing the textures
-   with `vi.mock` and reading the sprites in order.
-4. **CI.** The visual job on every push; the weekly shuffled and
-   verification job.
-5. **Whole entries.** Move `snapshot.ts`'s `start` and `advance` into a
-   module the page and `entries.visual.tsx` share; one test per Pixi entry.
-6. **three.js.** Camera and environment options, render targets and
-   `readRenderTargetPixels`; the fruit machine's lever and the boids'
-   flock. Element entries in `entries.visual.tsx`, if they can say when
-   they are ready.
-7. **Orphaned references** (section 7.4).
-8. **Docs** (section 11), with the documentation skill.
+   with `vi.mock` and reading the sprites in order. Done 2026-10-09:
+   `views/game-view.visual.tsx` pictures the board at the start and after
+   a restart (the top-left three by three tiles, since the screen is over
+   the size budget). Random numbers are seeded the same in both, so a
+   restart that kept the old board would match the first picture.
+4. ~~**CI.**~~ Done 2026-10-08, as section 9 describes:
+   `.github/workflows/visual.yml`, replacing the spike's workflow, and
+   `npm run test:visual:check-references`; the spike's code deleted. On
+   Ubuntu the job takes about 35 s with its caches warm, 5 s of it tests;
+   Windows and macOS about a minute and a half. Checked: a view change
+   runs Ubuntu only and fails with an annotation per picture and the diff
+   images as an artifact; a harness change runs all three; the weekly
+   path (dispatched by hand) shuffled the order on all three and found
+   all 36 references matching their hashes. Found on the way:
+   - **The first cross-platform run failed, usefully.** Ubuntu stopped at
+     the HTML calibration: one box's edge a pixel off, in the 17.3 px line
+     of `blank-text`. The spike had seen Linux lay the blank font out a
+     fraction of a pixel differently at some fractional sizes, but its
+     real views never crossed a pixel. A probe of every eighth of a pixel
+     from 6 to 40 px, in eight font variants and three `text-rendering`
+     values, showed that Linux scales fonts in 64ths of a pixel; with 1000
+     units per em it was off at most sizes, whole pixels included, and
+     no `text-rendering` value helped. With a power of two (16, 64, 1024
+     or 2048 units per em) all three systems matched exactly at every
+     quarter pixel, in lines of 1 to 400 characters. Hence the blank font
+     at 1024 units per em (0.625 em advances, not 0.6) and font sizes
+     rounded to quarter pixels by the harness (section 5.4). macOS now
+     matches Windows exactly in every picture, without the tolerance.
+   - A failure before any test (the calibration's abort) makes no Vitest
+     annotation, and the logs need a login to read; the job turns the
+     run's last lines into an annotation then. Every difference's message
+     now gives the rectangle holding it.
+   - `npx playwright install --with-deps` took up to ten minutes on a slow
+     Ubuntu mirror, mostly fetching fonts the harness never uses; the
+     runners already have the libraries, so it is not used.
+5. ~~**Whole entries.**~~ Done 2026-10-08, as section 10 describes: the
+   eleven Pixi entries, one picture each, 180 KB of references (Kwazy
+   Cactii's crop 64 KB, Falling Sand 35 KB, the pixel-art games 1 to 3
+   KB). With the rest, 33 pictures in about 4 s here and 7 s on
+   Ubuntu, cold, identical on all three systems. Found on the way: an
+   entry's code brought in `pixi-solid` and Solid, which Vite's optimizer
+   then found mid-run (with a warm cache), the case that loads a second
+   Pixi; they are pre-bundled with the rest now, and the projects'
+   comment says any new dependency of an entry belongs there.
+6. ~~**three.js.**~~ Done 2026-10-08, as sections 3.5 and 10 describe:
+   `camera` and `scene` options (a dressing function in place of the
+   planned `environment: 'room'`, so a view is drawn in its entry's own
+   scene, which the fruit machine's `dressBanditScene` and
+   `frameBanditCamera` now share between its starter and its tests),
+   drawn on a canvas, not a render target (planned), for tone mapping.
+   Two three.js pictures in the calibration set (lights; a room
+   environment, tone-mapped), three in the harness's own tests. Tests:
+   the lever (at rest, 200 and 450 ms into a pull), the bandit (ready, and
+   mid-spin), the flock (at the start, and two seconds in); and the two
+   element entries' whole screens, in `entries.html.visual.tsx`. 45
+   pictures: about 8 s here, 13 s on Ubuntu, identical on Windows and
+   Linux and, for 12 three.js pictures, within the tolerance on macOS.
+   Found on the way:
+   - **An environment map is slow in software WebGL**: a second here, five
+     on a CI runner, and every picture of the bandit paid it until the
+     harness kept each dressing's scene (the lever's later pictures went
+     from a second to 5 ms). `readPixels` is where it shows, since it waits
+     for the work queued before it. Each page still pays it once per
+     dressing; the calibration's own uses a 32-pixel map, the same code
+     for a fraction of the time.
+   - **The texture registry's sampling was never applied.** Shuffling
+     the order (new test files moved the entries' file) changed two entry
+     pictures, Neon Monsoon and Kwazy Cactii: `createTextureRegistry`
+     asked for nearest-neighbour sampling as `data.scaleMode`, which Pixi
+     8's spritesheet loader ignores (it reads `data.textureOptions`). So
+     every pixel-art game's sheet took whatever
+     `TextureSource.defaultOptions.scaleMode` was when it loaded: on the
+     site, smooth for the first game started on a fresh page, nearest for
+     one started after a pixel-art game, and smooth in every thumbnail.
+     Fixed in `@mvtjs/pixi`, with a changeset; Kwazy Cactii, whose art is
+     scaled, now looks the same, slightly crisper, every time, and its
+     thumbnail will change when they are next made.
+7. ~~**Orphaned references**~~ Done 2026-10-08, as section 7.4
+   describes. Checked with two planted orphans, one a test's and one a
+   calibration picture: a full run listed both and failed (every test
+   passing), a filtered run (`--picture`) ignored them, and the update
+   deleted them.
+8. ~~**Docs**~~ Done 2026-10-08, with the documentation skill. A new
+   guide page, `iterating-with-confidence/visual-tests.md` (writing one,
+   for Pixi, presentation state, HTML and three.js views; whole entries;
+   running and accepting; CI; how it stays fast; how it stays consistent,
+   with its compromises), after Testing Views, in the sidebar and the
+   glossary (`Visual test`). `testing-views.md` keeps its general case for
+   pictures, with a `visualTest` and `advanceTime` example in place of
+   the `/test-harness` one; `testing.md` says Vitest runs every test,
+   visual ones in its browser mode. The view skill asks for a
+   `.visual.tsx` beside a new view, a picture per state, recorded and
+   looked at before committing, and says visual runs may be repeated (no
+   Windows logons). AGENTS.md gains the commands, `testing/` and where
+   tests and references sit, and `@mvtjs/no-module-state` beside
+   `no-wall-clock`, as does the model skill's table (under M-isolation).
+   The project structure page gains `testing/`, `__screenshots__/`,
+   `scripts/visual/` and the config; the entries README, the whole-screen
+   picture every entry gets, an element session's `ready`, and a checklist
+   line.
+9. ~~**Revisions in review**~~ Done 2026-10-09 to 10, while the branch was
+   fed to `main` in chunks. Each came from the user's review.
+   - **A package.** The harness moved out of the website into
+     `packages/visual-testing/` (`@mvtjs/visual-testing`, private), with
+     its command scripts in `src/node/cli/` (question 3).
+   - **The kind of test is in the declaration.** `canvasTest` and
+     `htmlTest` replace `visualTest`, in any `*.visual.ts` or
+     `*.visual.tsx` file, and options come before the pose, as in Vitest's
+     `test`.
+   - **New words.** A test renders its view to an *actual image*, which
+     is compared with its *reference image*. Plain "image" means both, as
+     in the *image name*, which comes from the test's full name. "Picture"
+     is gone from the code, the messages and the docs, and the filter is
+     `--image <name>`.
+   - **`__references__`, not `__screenshots__`.** Vitest's own screenshot
+     features write to `__screenshots__`, and a file written there could
+     have been taken for a reference.
+   - **A project chooses where files go.** `createVisualConfig(options)`
+     replaces `createVisualProject` and `createVisualReporters`. Its
+     `include` option takes globs for the test files, and `referencePath`
+     a template (`{testFileDir}`, `{testFileName}`, `{testFilePath}`,
+     `{imageName}`). The defaults keep the layout above. A fixture project,
+     `fixtures/visual-tests-folders/`, uses a `visual-tests` folder inside
+     each view folder, with the reference images beside its tests, and its
+     run checks that layout end to end.
+   - **Reference images are known by their hash.** The check for orphaned
+     references considers only PNGs that carry the package's hash, so it
+     never deletes another PNG, and it finds the references of a deleted
+     test file in any layout. A check after every run fails tests that
+     share a reference image; the check it replaces only fired when both
+     images reached a full comparison.
+   - **The README** gained the relationship between tests, actual images
+     and reference images, a section on speed and consistency, and one on
+     choosing where files go.
+10. **Publish it.** To do before this proposal is marked done. The user
+    decided on 2026-10-10 to publish the package to npm, and has other
+    projects to move onto it. It should read and work as a package of its
+    own, not as part of this repo.
+
+    On 2026-10-11 the user read the new guide page and found that it
+    taught the tool, not MVT. The guide should teach how visual snapshot
+    tests serve MVT games, and link to the package for its interface. So
+    the parts of this step that change how the package is used come first,
+    and the docs are rewritten to match (chunk 7 waits, uncommitted). The
+    user decided:
+    - **The name is `vsnap`** (question 7).
+    - **The package knows nothing of MVT** (question 8). A browser-side
+      setup file, named in the config, calls `setViewHooks` to prepare a
+      view before its image is taken and to dispose of it after. Without
+      hooks, the package disposes of views the plain way. The website's
+      setup file refreshes with MVT's tick API and destroys with MVT's
+      destroy functions. `advanceTime` moves to `@mvtjs/utils`, beside the
+      tick API, and the renderer packages re-export it.
+    - **It stays in this repo,** published with changesets like the
+      `@mvtjs` libraries.
+
+    The parts that come first were done on 2026-10-11, on the branch. The
+    package is `vsnap`, in `packages/vsnap/`, configured by
+    `vsnap.config.ts`, with the `vsnap` command and an MIT licence. It has
+    no MVT code: `setViewHooks` in a setup file prepares and disposes of
+    views, and the website's `vsnap-setup.ts` does both the MVT way.
+    `advanceTime` is in `@mvtjs/utils` (with a changeset). The README reads
+    as a standalone package's, and the guide's Visual Tests page now
+    teaches how MVT's rules make visual tests simple and repeatable, with
+    a short section on vsnap. Every image stayed identical. The parts:
+    - **The name.** `vsnap` (question 7). Rename the package, its folder,
+      its command (`vsnap`), its messages and its docs to match.
+    - **Licence.** MIT, with a `LICENSE` file. The fonts in
+      `src/browser/fonts/` stay under the SIL Open Font License, with its
+      text beside them, and the README says so, in a Licence section
+      beside MIT. (The README's sentence about the fonts went when its FAQ
+      was shortened, on 2026-10-11.)
+    - **Setup and configuration.** A config file of its own,
+      `vsnap.config.ts`, which the command reads and turns into Vitest's
+      config, so a project never writes a Vitest config for its visual
+      tests. It holds `include`, `referencePath`, `maxPixels` and the Vite
+      config to extend. Messages name the package's own commands
+      (`vsnap --update`), not this repo's npm scripts
+      (`npm run test:visual:update`), as they do now. `check-references`
+      reads the same file, which retires the symbol it now reads from the
+      Vitest config.
+    - **README and docs for a standalone package.** A README that assumes
+      no MVT: what it is, a quick start (the fixture project is a good
+      model), the layouts, the commands, speed and consistency, and what it
+      gives up. MVT's guide keeps its page on visual tests, and links to
+      the package for the rest. Decide whether the package keeps a
+      docs site or its README is enough.
+    - **No MVT in the package,** as above.
+    - **Visual tests in ordinary test files, through a Vitest plugin.**
+      Raised 2026-10-11: visual tests are Vitest tests, so a project could
+      declare `canvasTest` and `htmlTest` in its `*.test.ts` files, beside
+      its unit tests, as easily as it adds a `test`. vsnap would become a
+      Vitest plugin in the project's own `vitest.config.ts`, which adds the
+      two browser projects and the reporter, and sends each file that
+      declares a visual test to a browser page. `vitest -u` would update
+      the reference images, and `vsnap.config.ts` and most of the command
+      would go. A project should be able to run its unit tests alone, with
+      no browser starting, and its visual tests alone. A spike checks that
+      a plugin can do all this before the design changes; if it can't,
+      the fallback keeps the command and allows `*.test.ts` names.
+
+      The spike (2026-10-11) says it can. A throwaway project had a unit
+      test file that used `node:path`, and two `*.test.ts` files that
+      each held a unit test beside a `canvasTest` or an `htmlTest`. Its
+      `vitest.config.ts` had only `plugins: [vsnap()]` and its unit
+      `include`. A plain `vitest run`, with no command and no tsx loader,
+      ran the unit file in Node and each mixed file in its browser page,
+      unit tests included, and printed vsnap's summary (2.5 s).
+      - **Switches.** `vitest run --project unit` ran the unit tests alone
+        and started no browser (0.13 s). `vitest run --project 'vsnap-*'`
+        ran the visual tests alone (2.4 s). Both work only when the
+        plugin declares the browser projects in the config: projects that
+        `configureVitest` injects later are invisible to `--project`, which
+        Vitest checks first ("No projects matched the filter").
+      - **How the plugin must do it.** It finds the files that declare a
+        visual test, then replaces the root's tests with a `projects` list:
+        the project's own unit tests (`extends: true`, named after the
+        root's `test.name` or `unit`, with those files excluded), and the
+        two browser projects, in a run group after the unit tests (Vitest
+        requires one, because they run one file at a time). Projects
+        inherit the root's plugins, and Vitest makes a separate instance of
+        the plugin for each, so each browser project carries its own files
+        in its config (`provide`). Vitest merges the root's `include` and
+        `exclude` into each project's after the plugin hooks run, so the
+        plugin's `configureVitest` replaces a browser project's resolved
+        lists. That last step leans on Vitest's internals, so a test of
+        the plugin itself must guard it against Vitest upgrades.
+      - **What the reporter can see.** `vitest -u` shows as the update
+        state `all`, so it can replace `--update`. A file filter shows as
+        fewer files starting than there are visual files, and `-t` shows as
+        a name pattern and skipped tests, so the reporter can tell a full
+        run without the command's help.
+      - **Not yet checked.** Installing the browser from a global setup
+        step, watch mode, the website's own Vite config (`extends`) under
+        the plugin, and a root config that already has `projects`, which
+        needs another way in, such as a helper that returns the browser
+        projects for the project to list itself.
+
+      The user and Claude then weighed the plugin against Vitest's usual
+      setup (2026-10-11). Two parts of it worked against Vitest: choosing
+      a file's environment by reading its contents, so that one
+      `canvasTest` silently moves a unit file into a browser, and a plugin
+      that rebuilds the project's projects and patches Vitest's resolved
+      config. So vsnap was built the explicit way instead, and it is done
+      on the branch:
+      - **`vsnap(options)` returns projects and a reporter,** which the
+        project lists in its own `vitest.config.ts`, beside its unit
+        project. The projects are named `<name>-canvas` and `<name>-html`,
+        with the `name` option `visual` by default, and a named browser
+        instance keeps "(chromium)" off them. So `vitest --project unit`
+        runs the unit tests with no browser, and `vitest --project
+        "visual-*"` runs the visual tests.
+      - **Visual test files are `*.visual.test.ts(x)`,** which Vitest's
+        default `include` matches, and the unit project excludes. A file's
+        name says that it runs in a browser. vsnap still sorts its own
+        files between the canvas and HTML pages by their declarations.
+      - **There is no `vsnap` command, and no `vsnap.config.ts`.** `vitest
+        -u` updates reference images. A global setup step installs the
+        browser before it starts (checked with an empty browser folder).
+        The reporter tells a complete run from what Vitest started, the
+        name pattern and skipped tests, and a complete run also decodes
+        and checks every reference image, so the weekly check went. A
+        failure message suggests `npx vitest run <test file> -u`.
+      - **vsnap's tests live in its own package,** as if in a repo of its
+        own (the user's request). Its `vitest.config.ts` lists its `unit`
+        project, its visual projects and its fixture's (`visual-fixture-*`),
+        and `npm test` in its folder runs them all. The repo's root config
+        leaves `packages/vsnap/` out, lists only the website's projects
+        (`visual-*`), and `npm run test:vsnap` runs vsnap's. The root config
+        imports `vsnap/config` by name: vsnap's Node side writes its relative
+        imports with `.ts`, so Node runs its TypeScript source directly. The
+        published package will still ship JavaScript, since Node won't do
+        that inside `node_modules`. `npm test` runs the unit project, and
+        `npm run test:visual` the website's visual ones. Watch mode reruns a
+        changed test file. Every image stayed identical.
+
+      Next, the user asked why vsnap depends on Pixi or three.js at all
+      (2026-10-11). It should test anything drawn on a canvas or in the
+      DOM. A first step made both optional peers, and loaded each one's
+      support only when the project had installed it, found by the
+      config. That worked in a spike outside the repo, but it kept the
+      libraries in the core, and the calibration set drew with them. So a
+      project with another Pixi version could fail the environment check
+      for the wrong reason. So the core was made renderer-free, and done
+      on the branch:
+      - **A project registers its kinds of view in `vsnap.config.ts`.**
+        On the way there, `pixi` and `three` wrapped each view's pose
+        (`vsnap/pixi`, `vsnap/three`), and then the user asked why
+        `setViewHooks` was still needed when each drawing carried its own
+        `dispose` (2026-10-12). Wrapping every pose a second time, for MVT's
+        refresh, would not fly with anyone, so the user proposed
+        registering each kind of view once: its name, how vsnap knows the
+        view, and what runs before and after the image. The file is
+        `vsnap.config.ts`, in vsnap's root (beside `vitest.config.ts` in a
+        project with one package), and it runs in the test page, since the
+        functions can't travel from Node. `pixiViews()` and `threeViews()`
+        bring the check (`instanceof`), the drawing and the plain disposal,
+        and a project adds `prepare` and `dispose`. `htmlViews()` does the
+        same for HTML, which vsnap knows without it. A pose returns the
+        view itself, or a canvas it drew, and the options come back to
+        `canvasTest(name, options?, pose)`. Exactly one kind must claim each
+        view, or the test fails and names what the pose returned. Each
+        registration adds its kind to `canvasTest`'s types by declaration
+        merging, so a view's options are checked against it: three.js
+        options without a `camera`, or a Pixi view with one, are type
+        errors. `setViewHooks`, the `setup` option and the website's
+        `vsnap-setup.ts` went. The page loads the file before it resets
+        random numbers, since loading it consumed some and changed an
+        entry's reels.
+      - **A review of the design (2026-10-12)** led to four fixes. A
+        missing `vsnap.config.ts` gives a message that says where vsnap
+        looked. Two kinds with one name, or `htmlViews` twice, stop the run.
+        A kind's `draw` may return its canvas, and `fitImage` and
+        `readCanvas` are exported for support of other renderers (a kind
+        of the project's own, in vsnap's `vsnap.config.ts`, tests it). And
+        a test that imported `vsnap.config.ts` got a second copy of it,
+        since the page imported it by URL past Vite: each project now
+        aliases `virtual:vsnap-config` to the file, so both share one
+        module.
+      - **`vsnap()` returns just its projects (2026-10-12),** which add
+        vsnap's reporter themselves: a plugin on each project adds it in
+        `configureVitest`, which Vitest calls before it makes its reporters.
+        Both projects of one call share the reporter, so it is added once.
+        A config can no longer forget it.
+      - **Watch mode, checked (2026-10-12).** An edited view reruns its test
+        with the new image. A new or deleted test file now restarts Vitest
+        (the same plugin), so it joins the run. An edit to
+        `vsnap.config.ts`, or to vsnap's own page code, reruns the tests
+        with the old modules, even after a restart: Vitest's browser mode
+        keeps the setup's modules for the session. The README says to stop
+        and start Vitest for that. Why a restart doesn't clear them is not
+        yet known.
+      - **Each canvas test is of one kind, with a default view
+        (2026-10-12).** The options name the test's `kind`, so vsnap knows
+        the kind before the pose runs: only that kind's `beforePose` runs,
+        and the view is checked against it, with a message that names the
+        kind it is. The user proposed a default, `defaultView` in
+        `defineVsnapConfig({ views, defaultView })` (the user's names, which
+        leave room for more settings), so the tests of a project's main
+        renderer give no kind. `'canvas'` is the built-in kind for a canvas
+        that the pose drew, and the default when none is named. The types
+        come from the config's own type, which the project gives to vsnap's
+        `Register` interface (as TanStack Router does), so the kinds in the
+        types are the kinds that run. The overloads went: a test's `kind`
+        picks its options and its view's type, and a mistake gives a direct
+        error, such as `'camera' does not exist in type
+        'CanvasTestOptions<"pixi">'`.
+      - **The calibration set draws with the browser's own canvas 2D and
+        WebGL:** shapes, images and filters, the test fonts, MSAA on the
+        canvas and in a render target, shader maths, texture sampling and
+        blending, and a half-float target. A blank calibration image fails.
+      - **No detection.** The config no longer looks for installed
+        libraries. Only the subpaths need `pixi.js` and `three`, as
+        optional peers.
+
+      Every existing image stayed identical (14 of vsnap's, 4 of its
+      fixture's, 33 of the website's), and the browser's fingerprint is
+      unchanged. A spike outside the repo, with vsnap copied in, passed
+      four ways: Pixi only, three.js only, a canvas drawn with no library,
+      and HTML only. The new calibration images need a CI run on Linux
+      and macOS before they can be trusted there.
+
+    The parts that can follow:
+    - **Dependencies.** Ship built JavaScript, as the `@mvtjs` libraries
+      do (tsdown, publint, attw), in place of TypeScript run through tsx,
+      and drop the `@mvtjs/source` condition from what is published.
+      Review each dependency: Playwright stays on one minor version
+      (`~1.63.0`), since the environment's fingerprint depends on it.
+      `vitest` is a peer dependency, and `pixi.js` and `three` are
+      optional peers, which only `vsnap/pixi` and `vsnap/three` import.
+      Set `engines` (Node 22 or later, for `fs.globSync`), and a `files`
+      list, so that `tsconfig.json` and the tests stay out of the package.
+      The published types still name Pixi and three.js only in the
+      subpaths' own declarations, so a project that imports neither
+      subpath needs neither library's types.
+    - **A brand and a logo.** Chosen 2026-10-11: a bold V with a sharp
+      point, cut through by two clean horizontal gaps, in one colour. It
+      reads at 16 pixels, and on light and dark backgrounds. The first idea,
+      a person doing a V-snap (a gym exercise, like a sit-up, in which the
+      body folds into a V), looked comic when drawn and was dropped, as
+      were a harp, a wishbone, a pixel-art V and other glitch variations.
+      The colour (`#7c5cff` below) is not settled. Still to do: the final
+      SVG in the repo, an icon size for npm and a favicon, and a wordmark
+      if the README wants one. The design, as drawn:
+
+      ```svg
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 0 120 100">
+        <clipPath id="cuts"><rect x="-10" y="0" width="120" height="36"/><rect x="-10" y="40" width="120" height="12"/><rect x="-10" y="56" width="120" height="44"/></clipPath>
+        <polygon clip-path="url(#cuts)" fill="#7c5cff" points="8,10 31,10 50,62 69,10 92,10 50,96"/>
+      </svg>
+      ```
+    - **Where it lives.** Decided 2026-10-11: this repo, published with
+      changesets, as the `@mvtjs` libraries are.
+    - **Try it elsewhere first.** Move one of the user's other projects
+      onto it before the first publish, and fix what that turns up.
+
+## Spike results
+
+The record of step 1. The design sections above were revised to match on
+2026-10-08; this section keeps what was measured, and how.
+
+Measured 2026-10-07 on branch `visual-tests` (from `vnext` at `5afdd2e`):
+Vitest 5.0.1, `@vitest/browser-playwright` 5.0.1, Playwright 1.63.0, whose
+headless shell is Chrome 153.0.8010.12. This machine: Windows 11, 14
+cores. CI: GitHub's `windows-latest`, `ubuntu-latest`, `ubuntu-24.04-arm`
+and `macos-latest` (arm64). The harness is the design of sections 4 and 6
+in miniature: one shared page (`isolate: false`), one Pixi renderer,
+render textures read with `readPixels`, SHA-256 in the page, and a
+Node-side command only on a mismatch.
+
+### The browser and failed logons (section 8)
+
+**Playwright's headless shell makes no logon attempt.** The account's
+bad-password count (readable without admin through ADSI,
+`[ADSI]"WinNT://<computer>/<user>,user"`, `BadPasswordAttempts`) stayed at
+0 across a brand-new persistent profile, Playwright's default fresh
+temporary profile, and about 80 later runs. As a control, one launch of the
+installed Chrome 154 with a fresh profile raised it by exactly one. So
+`persistentContext` is not needed; the logon problem belongs to the full
+Chrome only. SwiftShader WebGL 2 works headless
+(`ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)...))`), launched
+in about 0.6 s.
+
+### Speed (section 4)
+
+1000 pictures of real views (fruit machine leaf views: spin buttons, win
+banners mid-count, meters, marquee lights, reel windows, paytables, game
+over; and 20 whole entry screens), 100 files, one worker:
+
+| Measure | Target | Measured |
+| --- | --- | --- |
+| 1000 pictures, start-up included | 10 s for 500 | 12.7 s wall |
+| Start-up (Vitest, Vite, browser, page, fonts) | 3 s | about 2.4 s |
+| A WebGL picture, median | 5 ms | 6.1 ms (spin button 1.9, meters 3.9, banner 6.4) |
+| The same, 95th percentile | 25 ms | 22.4 ms (reel window, 592 by 360 with a mask, 22 ms; whole screens median 38 ms) |
+| Vitest's own cost per test | | about 1.5 ms |
+| Watch mode: edit a view, its file re-runs | under 1 s | about 230 ms |
+| HTML picture (element screenshot) | 30 ms | 90-130 ms through `page.screenshot`; 35-60 ms through the DevTools protocol (`Page.captureScreenshot` with a clip, `optimizeForSpeed`), identical pixels |
+| Memory | no leak | about 100 MB after garbage collection, then about 3 MB more per 100 pictures |
+
+Where the time goes: drawing in SwiftShader (86% of in-page time), then
+building the views (10%); hashing is 3%, under 1 ms for a 960 by 540 picture.
+
+Two, four workers: 9.6 s and 9.5 s against 10.8 s for one (before the
+banner fix below). Not worth the extra start-ups and memory: one worker by
+default.
+
+What the design saves, on the same 100 pictures:
+
+| Setup | 100 pictures |
+| --- | --- |
+| Vitest's defaults (a fresh page per file) and `toMatchScreenshot` | 12.0 s |
+| One page, `toMatchScreenshot` | 10.4 s |
+| A fresh page per file, pixels from the renderer | 4.9 s |
+| One page, pixels from the renderer (this design) | 3.1 s |
+
+Screenshots cost about 90 ms a picture; isolation about 180 ms a file.
+1000 pictures done the obvious way would take about two minutes.
+
+### Consistency within a run (section 5.1)
+
+Ten runs in a row, and shuffled runs (`--sequence.shuffle`), give identical
+hashes for every picture, once four things found by the spike were fixed.
+Each is a design change:
+
+1. **Every dependency must be pre-bundled before the first test.** Vite's
+   optimizer found a new dependency mid-run and re-bundled, so files after
+   that point loaded a second copy of Pixi (`Texture.WHITE` was no longer
+   the first copy's, and text fills threw). The visual project lists every
+   dependency in `optimizeDeps.include`. A stale optimizer cache after a
+   dependency change can still break the first run after it; CI starts cold
+   and is not affected.
+2. **A Pixi bug: `BatchableGraphics.reset()` keeps `roundPixels`.** Pooled
+   batches from a pixel-art (rounded) graphic round the next graphics
+   context built from the pool, so a smooth view's curves snapped to whole
+   pixels depending on what was drawn before it (one MSAA sample at
+   rounded corners). Found by shuffling, isolated by probes, fixed in the
+   harness by patching `reset` to clear it. The same can happen in the
+   Arcade when a smooth entry follows a pixel-art one in the same page.
+   Worth reporting to Pixi.
+3. **Module-level state in a model.** Astrovoid's `asteroid-model.ts`
+   keeps `let nextSeed = 1` at module level, so asteroid shapes depend on
+   how many asteroids the page made before. It is the only module-level
+   `let` in any entry. The model should own the counter; a lint rule
+   (no module-level `let` in model files) would keep it so.
+4. **The harness's own.** Pictures are framed by the bounds of a holder
+   around the view, so the view's own position counts (`getLocalBounds()`
+   on the view leaves it out, and framed two views in empty space). A
+   picture that is all background now fails ("the view drew nothing inside
+   it"). Hooks registered in a module shared between files run for the
+   first file only, so per-test cleanup belongs in the harness, never in a
+   shared module.
+
+Also measured: one Pixi renderer serves pixel-art and smooth pictures
+(MSAA is the render texture's, rounding is set per picture); the WebGL
+context's own `antialias` attribute changes MSAA edges in render textures,
+so it must be fixed, not left to default. A three.js picture between Pixi
+pictures changes nothing.
+
+### Consistency across machines (section 5.2 to 5.4)
+
+Two CI rounds on four runners, every picture hashed and compared with the
+references made on this machine.
+
+**Everything but text is bit-identical everywhere.** Graphics with and
+without MSAA, gradients, blur filters, linear and nearest texture
+sampling, stencil masks, three.js lighting, whole pixel-art screens, and
+DOM boxes with gradients, rounded corners, shadows and rotation: the same
+hashes on Windows x64, Linux x64, Linux arm64 and macOS arm64. SwiftShader's
+two code generators (Subzero on x64, LLVM on arm64) agree. The CPU
+question of section 5.6 is answered: no difference for WebGL.
+
+**Windows to Windows is identical, text included**, in every variant:
+GitHub's `windows-latest` matched this machine on all 39 calibration and
+entry pictures and all 1000 speed pictures (bar the two Astrovoid
+pictures, finding 3 above).
+
+**Text, rung by rung (section 5.4):**
+
+| Rung | Canvas text (Pixi) on Linux and macOS | DOM text on Linux and macOS |
+| --- | --- | --- |
+| 1. CFF2 test fonts | Differs: antialiasing (max channel delta 51) and glyph positions (223); macOS lays text out narrower (a 1049-pixel line is 1042) | Differs |
+| 1a. The same, with `--font-render-hinting=none --disable-font-subpixel-positioning` | Worse: sizes differ on Linux too | Differs |
+| 2. COLRv1 test fonts (built by `fonts/build-colr.py`) | Differs; and colour glyphs ignore a gradient fill, as predicted | Differs |
+| 2a. COLRv1 with the flags | Differs | Differs |
+| **3. Canvas text drawn as paths** | **Identical** on Linux x64. On the two arm64 runners, identical except one picture (a drop shadow, 367 pixels off by 1 level of 255) | Not covered |
+
+Rung 3, as built in the spike (`text-paths.ts`, about 200 lines): the
+canvas's `fillText`, `strokeText` and `measureText` are replaced, for the
+test fonts only, by fontkit's layout of the same CFF2 files (at the weight
+asked for, with kerning) and `Path2D` fills. Fill styles, gradients,
+strokes, letter spacing and shadows work unchanged, since they apply to
+paths as to text. With it, all 22 entry screens and every fruit machine
+leaf view match across all four systems.
+
+**Two kinds of text no rung pins:**
+
+- **DOM text.** Nothing tried inside the browser makes it match. Rung 4
+  (Windows as the one reference system) is the answer for HTML pictures:
+  their project runs on Windows only, and in CI on `windows-latest`.
+- **Text inside an SVG drawn as an image.** The fruit machine's wild symbol
+  is an SVG with a `<text>` element in Arial Black; an SVG image cannot
+  use the page's fonts, so it is drawn with the system's. It made 73 reel
+  windows and all 40 paytables differ. The fix belongs in the art: draw the
+  word as outlines.
+
+The off-by-one shadow on arm64 is what section 5.6's tolerance is for: it
+would pass, counted, within tolerance.
+
+### HTML without containers (study, 2026-10-08)
+
+Can HTML pictures match across systems if text is given up? Two CI rounds,
+21 HTML pictures: 13 of single features (8 without text: boxes, borders,
+transforms, filters, images, native form controls, a scrolling box, a
+canvas; 5 with text: wrapping, weights, symbols and emoji, decorations and
+lists, controls with labels), and 8 of real views (the Arcade's card, entry
+info, pause menu and about note; the 3D boids' panel; the fruit machine's
+control panel twice and its terminal). Each file isolated, with its own
+stylesheet. Five ways of treating text, each compared with Windows
+references:
+
+| Text | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| Native (as the page asks) | 20/21: symbols and emoji differ in size | 9/21 | 8/21 | 7/21 |
+| **Blank**: one empty glyph, 0.6 em wide, for every code point | **21/21** | **21/21** | 18/21, the rest within 14 levels of 255 | 10/21 |
+| Block: the same, drawn as bars | 21/21 | 9/21: bar edges antialiased differently | 8/21 | 7/21 |
+| Blank with real widths (the sans test font, outlines removed) | 21/21 | 15/21: buttons a pixel apart | 13/21 | 11/21 |
+| Green text, differ ignoring green | 20/21 | 9/21 | 8/21 | 6/21 |
+
+**Is it only text that differs?** Between Windows and Linux on x64, yes:
+all 8 pictures without text matched exactly, native checkboxes, radios,
+range sliders, progress bars, meters and scroll boxes included. On arm64
+(both systems), blur and backdrop filters differ by 1 level, and a
+rotated, scaled image (the Arcade card's photo) by up to 14: numeric
+differences in Skia's CPU code, which a per-channel tolerance of about 16
+levels would absorb (a count of mismatched pixels would not: the card has
+21,000 of them). macOS differs in more than text, though its form
+controls without labels matched: rotated and 3D-transformed boxes
+antialias differently (98 pixels, up to 14 levels), and the card's
+photo differs by up to 210 levels.
+
+**Why blank works and the others do not.** Text decides layout through
+its glyphs' advances. On Windows and Linux, Chrome rounds each advance of
+the blank font to a whole pixel (13 px text: 0.6 em is 7.8 px, laid out
+as 8), the same on both; macOS keeps fractions (7.802), so lines are
+different widths there. A real font's advances and kerning do not round
+the same way on Windows and Linux (a 22-letter line: 121.984 against
+122.000 pixels), enough to move a button's edge by a pixel. Bars are
+drawn by each system's glyph rasteriser, which antialiases their edges
+differently. Green text keeps the native fonts, so everything laid out
+around the text moves: the entry info panel still differs in 14,000
+pixels that are not green.
+
+**Native text is not stable even between Windows machines.** The symbols
+and emoji picture changed size between this machine and GitHub's Windows
+runner: characters the page's fonts lack (⛶, emoji) come from whatever
+fonts each machine has installed. The Arcade's runner view uses ⛶. With
+the blank font, which maps every code point, nothing reaches a system
+font, and the two agreed.
+
+**What blank text costs.** Pictures keep every box, border, background,
+image, control, bullet, underline and the layout itself, and lose the
+letters: a change to copy, text colour, weight, style or alignment is
+invisible, and text takes 0.6 em per character, so lines wrap and boxes
+size differently from the real page (an overflow that only real text
+causes would not show). Canvas text is unaffected: it keeps rung 3.
+
+**Conclusion.** Blank HTML text gives identical pictures on Windows and
+Linux x64, the systems of this machine, CI and Claude Code's cloud
+sessions; on arm64 Linux, identical within a small per-channel tolerance;
+not on macOS. It also makes the Windows-only route safer, since native
+HTML text differed between two Windows machines.
+
+**Bringing macOS in: fractional advances everywhere.** Who rounds the
+blank font's advances depends on which engine lays it out: Chrome's own
+font engine (every CFF2 font, and on Linux every web font) rounds them
+to whole pixels under the default hinting; DirectWrite (a TrueType font
+on Windows) and macOS keep exact fractions, and agree with each other to
+the 1/64 pixel. `--font-render-hinting=none` makes Linux keep fractions
+too; it changes nothing on Windows. So the blank font is rebuilt as
+TrueType (`fonts/build-blank-variants.py`, `VTBlankTT.ttf`; an empty
+glyph, every code point, which DirectWrite honours) and the browser
+launched with that flag:
+
+| | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| TrueType blank text, `--font-render-hinting=none` | 21/21 | 20/21 | 17/21 | 18/21 |
+
+All 8 real views match on all four, except the Arcade card's photo on
+the two arm64 runners (up to 14 levels). What is left:
+
+- Form controls with text at their default size (13.33 px): Linux's
+  advances differ from Windows' and macOS's by a fraction of a pixel at
+  some fractional sizes (17.3 px: 228.125 against 228.234 for 22
+  characters), enough to move a control's edge. The repo's own controls
+  set `font: inherit`, so its views escaped it here.
+- arm64: blur and backdrop filters (1 level), a wavy underline (1 level),
+  the scaled photo (14 levels).
+- macOS: rotated and 3D-transformed boxes (98 pixels, up to 14 levels).
+
+Every remaining difference but the default-sized controls is within 14
+levels per channel, so a per-channel tolerance of about 16 would pass all
+the real views on all three systems. Next to try: the photo (lossless
+images, or nearest-neighbour scaling), and the default control size.
+
+**The photo, the controls and the compositor** (one more round, 30
+pictures: the 21 above and 9 of images):
+
+- **Rotation, not decoding.** WebP and PNG pictures at natural size,
+  scaled smoothly and scaled pixelated all match on every system. Rotated
+  ones differ on both arm64 runners, identically (up to 26 levels): it is
+  the CPU, not macOS. The Arcade card's photo is tilted, which is all of
+  its difference.
+- **Controls' default size is not the cause.** With
+  `:where(input, button, select, textarea) { font-size: 13px }`, which
+  replaces only the browser's default, the controls-with-text picture
+  still differs on Linux and macOS (the same as before, near enough).
+  Something in the controls themselves (a select's arrow, a text field's
+  inner box) is drawn or sized per system. The repo's controls are a
+  styled button, progress bars and a range slider, and all of them
+  matched.
+- **Software compositing** (`--disable-gpu --disable-gpu-compositing`)
+  fixes macOS's transformed boxes, but adds 1-level differences on both
+  arm64 runners in the fruit machine panel, the entry info and the
+  filters. Not worth it.
+
+With TrueType blank text, hinting off, and nothing else: Windows 30/30,
+Linux x64 29/30 (only the unstyled controls with text), and on arm64 the
+rotated images (26 levels), blur and backdrop filters (1), a wavy
+underline (1), the unstyled controls, and on macOS its transformed boxes
+(14).
+
+**Closing the gap** (two more rounds, 38 pictures: 8 more, one per form
+control):
+
+- Buttons (default, disabled, styled), selects and textareas match
+  everywhere. Only unstyled text fields differ, in width: their default
+  width comes from the font's average character width, which each system
+  works out its own way. A zero-specificity rule sets it to `20ch` (the
+  width of 20 zeros, which lays out the same everywhere); a width the
+  page sets still wins.
+- Rotated images sampled nearest-neighbour (`image-rendering: pixelated`,
+  set by the harness on images under a rotating transform, and only
+  those) cut arm64's difference from 26 levels to 2.
+- Software compositing, despite its 1-level noise on arm64, removes
+  macOS's 14-level transformed boxes.
+
+All of it together, TrueType blank text, `--font-render-hinting=none`,
+nearest-neighbour rotated images, software compositing
+(`--disable-gpu --disable-gpu-compositing`) and the text field width:
+
+| | Windows x64 | Linux x64 | Linux arm64 | macOS arm64 |
+| --- | --- | --- | --- | --- |
+| Identical | 38/38 | 38/38 | 29/38 | 29/38 |
+| Within 2 levels per channel | 38/38 | 38/38 | **38/38** | **38/38** |
+
+macOS and arm64 Linux differ from Windows in the same 9 pictures by the
+same amounts: what is left is the CPU's rounding (rotated images 2
+levels, blur, a wavy underline and a few panel edges 1), not the
+operating system. **HTML pictures can be the same on all three systems
+without containers**, given blank text and a per-channel tolerance of 2
+on arm64. Pixi and three.js pictures, with text drawn as paths, already
+were (one picture 1 level off on arm64).
+
+The compromises, all confined to the visual tests: HTML text draws
+nothing and takes 0.6 em per character (0.625 em since step 4, with font
+sizes in quarter pixels); rotated images are sampled
+nearest-neighbour; the compositor is software (as it effectively is
+headless already); unstyled text fields are 20 characters wide by
+`ch`, not by the font's average; and a tolerance of 2 levels, which a
+real change rarely stays within.
 
 ## Settled
 
@@ -1253,3 +2235,25 @@ Do not reopen without new information.
 - **Hosted visual review services** (Chromatic, Argos and the like). They
   would send the repo's pictures to an outside service, and cost money,
   for what a local run and a review in source control already give.
+- **Test fonts as the way to pin text** (2026-10-07). CFF2 test fonts
+  (drawn by Chrome's own engine everywhere), the same as COLRv1 colour
+  fonts, and either with hinting and subpixel positioning switched off:
+  each still antialiased or positioned text differently on Linux and
+  macOS. Canvas text is drawn as paths instead; HTML text is blank.
+- **Native HTML text, on any system** (2026-10-08). It differed even
+  between this machine and GitHub's Windows runner, where characters came
+  from fallback fonts (emoji, ⛶).
+- **Ways to keep HTML text visible without containers** (2026-10-08):
+  a block font (each character a bar; the bars' edges are antialiased
+  differently); a blank font with real widths and kerning (advances round
+  a fraction of a pixel differently); green text with a differ that
+  ignores green (native fonts move the layout around the text); a CFF2
+  blank font (Windows and Linux round its advances, macOS does not).
+- **Windows as the one reference system.** Considered when HTML text
+  could not be pinned (2026-10-07); superseded by the blank TrueType font,
+  which matches Windows, Linux and macOS, and makes Windows-to-Windows
+  agree too.
+- **A count of mismatched pixels as the tolerance.** arm64's rounding
+  touches thousands of pixels by 1 or 2 levels; a count small enough to
+  catch a real change fails those. The tolerance is per channel (section
+  5.6).

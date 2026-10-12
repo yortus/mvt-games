@@ -12,7 +12,8 @@
 
 The repository is an npm workspace. It has four libraries, published under
 the `@mvtjs` npm scope. Its other packages are private: the sound chip, the
-lint rules, the website, the docs, the benchmarks and the checks.
+visual tests, the lint rules, the website, the docs, the benchmarks and the
+checks.
 
 ```
 packages/
@@ -21,6 +22,7 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+├── vsnap/               vsnap (private for now): visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -46,6 +48,16 @@ packages/website/src/
 ├── playground/          The in-browser editor and the sandbox it runs code in
 └── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
+
+[Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
+sit beside the views they test, in `*.visual.test.tsx` files. Each test
+file's reference images are in a `__references__/<test file>/` directory
+beside it. The tests come from vsnap, the package in `packages/vsnap/`. The
+root `vitest.config.ts` lists vsnap's projects beside the unit tests, and
+the website's `vsnap.config.ts` registers the kinds of view that the tests
+pose, which it refreshes and destroys the MVT way. vsnap's
+[README](https://github.com/yortus/mvt-games/blob/main/packages/vsnap/README.md)
+describes the package.
 
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its

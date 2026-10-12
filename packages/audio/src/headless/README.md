@@ -130,6 +130,12 @@ snapshot keeps it. Vitest stores the snapshots beside the test, in
 `__snapshots__/`, one file for each test file, such as
 `__snapshots__/sounds.test.ts.snap`.
 
+Views have the same kind of test for what they look like. A visual test
+produces an image of a view, and compares a hash of its pixels with the
+hash of a reference image. See
+[Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
+in the MVT guide.
+
 `hashSamples(samples)` returns that hash, as 8 hex digits. It first rounds
 each sample to 16 bits, as a WAV file holds it. So a difference too small
 to hear in a WAV file does not change the hash.

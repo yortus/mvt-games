@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, RenderTexture, TextureSource } from 'pixi.js';
-import { fitImage } from './image-budget';
-import { isAllOne } from './image-pixels';
+import type { CanvasImage } from '../browser';
+import { fitImage } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -26,7 +26,7 @@ export interface PixiImageOptions {
      *   positions are rounded to whole pixels. The textures that the pose
      *   makes are sampled nearest-neighbour, so a magnified image stays
      *   blocky. The image is always drawn at full size. An image over
-     *   the size budget (`maxPixels` in `vsnap.config.ts`) fails,
+     *   the size budget (vsnap's `maxPixels` option) fails,
      *   since drawing pixel art smaller would drop whole texels (texture
      *   pixels). Crop it (`width`, `height`) or pose part of the view
      *   instead.
@@ -49,20 +49,6 @@ export interface PixiImageOptions {
 /** How a view's art is drawn. See `PixiImageOptions.artStyle`. */
 export type ArtStyle = 'pixel' | 'smooth';
 
-/**
- * An actual image's pixels, read back from the renderer. They are opaque RGBA,
- * with rows from the top.
- */
-export interface PixiImage {
-    readonly width: number;
-    readonly height: number;
-    readonly pixels: Uint8Array;
-    /** Image pixels per view pixel. This is 1, or less for a big smooth view. */
-    readonly resolution: number;
-    /** Whether every pixel is the background's, which means the view drew nothing inside the image. */
-    readonly isBlank: boolean;
-}
-
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
@@ -83,7 +69,7 @@ export function preparePixiPose(options: PixiImageOptions): void {
  * compositor or colour management in between. It throws if the image is
  * over the size budget and cannot be drawn smaller.
  */
-export async function drawPixiImage(view: Container, options: PixiImageOptions & { readonly maxPixels: number }): Promise<PixiImage> {
+export async function drawPixiImage(view: Container, options: PixiImageOptions & { readonly maxPixels: number }): Promise<CanvasImage> {
     const isSmooth = options.artStyle === 'smooth';
     const app = await ensureApp(isSmooth);
     holder.position.set(0, 0);
@@ -102,7 +88,7 @@ export async function drawPixiImage(view: Container, options: PixiImageOptions &
             width ??= Math.ceil(bounds.maxX) + MARGIN - x0;
             height ??= Math.ceil(bounds.maxY) + MARGIN - y0;
         }
-        const fit = fitImage({ width, height, maxPixels: options.maxPixels, canScale: isSmooth });
+        const fit = fitImage({ width, height, maxPixels: options.maxPixels, canScale: isSmooth, advice: PIXEL_ART_ADVICE });
         if ('problem' in fit) throw new Error(fit.problem);
         holder.position.set(-x0, -y0);
         backdrop.clear().rect(0, 0, width, height).fill(options.background ?? DEFAULT_BACKGROUND);
@@ -110,7 +96,7 @@ export async function drawPixiImage(view: Container, options: PixiImageOptions &
         app.renderer.render({ container: stage, target, clear: true });
         const read = app.renderer.texture.getPixels(target);
         const pixels = new Uint8Array(read.pixels.buffer, read.pixels.byteOffset, read.pixels.byteLength);
-        return { width: read.width, height: read.height, pixels, resolution: fit.resolution, isBlank: isAllOne(pixels) };
+        return { width: read.width, height: read.height, pixels, resolution: fit.resolution };
     }
     finally {
         holder.removeChildren();
@@ -124,6 +110,9 @@ export async function drawPixiImage(view: Container, options: PixiImageOptions &
 /** The space added around a view's bounds, so that an antialiased edge or a glow at them is in the image. */
 const MARGIN = 4;
 const DEFAULT_BACKGROUND = 0x202024;
+
+const PIXEL_ART_ADVICE = 'Pixel art is drawn at full size, so crop the image (width, height) or pose part of the view. '
+    + 'A smooth view (artStyle: \'smooth\') is drawn at a lower resolution to fit instead.';
 
 /**
  * The stage that every actual image is rendered from. It holds a backdrop, then a

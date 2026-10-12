@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-10-04 |
+| Updated  | 2026-10-11 |
 
 ## Description
 
@@ -185,6 +185,29 @@ Settled questions that should not be reopened without new information are in
   semantics and document the three hazards in `ListBindings.children`;
   cheaper, but a trap. See `gateUpdatesOnceEmpty` in
   `packages/utils/src/jsx/list.ts`, and 034 section 11.4.
+- **Pixi's pooled `BatchableGraphics` keep `roundPixels`.** Found by 042's
+  spike (2026-10-07), in Pixi 8.21: `BatchableGraphics.reset()`
+  (`scene/graphics/shared/BatchableGraphics.mjs`) clears its renderable and
+  topology but not `roundPixels`, so a batch returned to `BigPool` by a
+  rounded graphic (a pixel-art entry, or `roundPixels` on the renderer)
+  rounds the next graphics context built from the pool. A smooth view's
+  curves then snap to whole pixels (one MSAA sample at rounded corners),
+  depending on what was drawn before it. The Arcade can hit it when a
+  smooth entry follows a pixel-art one in the same page. To do: report it
+  to Pixi with a minimal repro (draw a rounded `Graphics`, destroy it, then
+  draw a large smooth `roundRect` and compare with a fresh page), and
+  decide whether the site patches `reset` meanwhile as 042's harness does
+  (`packages/website/visual-spike/setup.ts` on the `visual-tests` branch).
+- **Hand-written time-stepping helpers that `advanceTime` now covers.** The
+  tick API gained `advanceTime(ms, ...items)` (042, step 10). But
+  `building-with-mvt/simulating-the-world/time-management.md` and
+  `ai-agents/skill-mvt-model.md` still teach a hand-written
+  `stepMs(model, totalMs)` helper, and three test files keep their own
+  copy: `entries/boids/models/flock-model.test.ts`,
+  `entries/kwazy-cactii/models/board-model.test.ts` and
+  `packages/utils/src/sequence.test.ts`. Their helpers run synchronously,
+  and `advanceTime` is async, so moving to it means awaiting each call.
+  Teach `advanceTime` in both docs, and switch the tests.
 
 ### Decide
 
@@ -432,6 +455,7 @@ falling-sand demo. Each is a new variant, measured with
 
 - [x] Boids allocation fixed, or its cause measured and recorded
 - [ ] Games' hot-path allocations found, and fixed or recorded
+- [ ] Pixi's `BatchableGraphics` pool bug reported upstream, and patched in the site or left
 - [x] Method-syntax members converted and `method-signature-style` enabled
 - [x] Views that read a getter only once fixed (V-reactive)
 - [ ] Hot path rules decision made, and `AGENTS.md` matches the docs
@@ -507,3 +531,8 @@ falling-sand demo. Each is a new variant, measured with
   found building the fruit machine demo (033).
 - 2026-10-04: Added `<List>` item views' update steps seeing last frame's
   item (Fix), found reviewing the empty-slot update fix made for 034.
+- 2026-10-07: Added Pixi's pooled `BatchableGraphics` keeping `roundPixels`
+  (Fix), found by 042's spike.
+- 2026-10-11: Added the hand-written time-stepping helpers that the tick
+  API's new `advanceTime` covers (Fix), found while giving it its
+  variadic form (042).

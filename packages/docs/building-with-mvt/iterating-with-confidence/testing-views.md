@@ -4,9 +4,10 @@
 > view produce the right visual output for a given set of inputs? The
 > answer is less straightforward than it sounds.
 
+**Previous:** [Testing Models](testing-models.md)
 **Related:** [Views (Learn)](../presenting-the-world/views.md) -
 [Presentation State](../adding-visual-polish/presentation-state.md) -
-[Testing Models](testing-models.md) -
+[Visual Tests](visual-tests.md) -
 [Sound and Music](../presenting-the-world/sound.md)
 
 ---
@@ -133,6 +134,13 @@ a shifted sprite, a missing particle, a wrong tint.
 3. **Update baselines** when the change is intentional. Review the diff,
    confirm it looks correct, and accept the new baseline.
 
+[Visual Tests](visual-tests.md) shows how MVT's rules make each step
+simple and repeatable, for single views and for whole games.
+
+Sounds have the same kind of test. An
+[audio test](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests)
+renders a sound and compares a hash of its samples with a saved one.
+
 ### What snapshots verify
 
 A snapshot answers the question: **does this view still look the same as
@@ -171,21 +179,10 @@ Visual snapshots require discipline to avoid becoming noise:
 ### Testing views with presentation state
 
 Views with `update(deltaMs)` (those holding
-[presentation state](../adding-visual-polish/presentation-state.md)) need time advanced before
-the snapshot is taken. Use the same small-step approach as model tests:
-
-```ts
-test('door view - halfway through fade-in', async ({ page }) => {
-    await page.goto('/test-harness?view=door&isOpen=true&advanceMs=200');
-    await expect(page.locator('canvas')).toHaveScreenshot('door-fade-50.png');
-});
-```
-
-The harness advances the view's `update(deltaMs)` by the specified
-amount, calls `refresh()`, renders, and waits for capture. In this project
-that means `updateView(view, deltaMs)` in small steps, then
-`refreshView(view)`: both work on any container, with no renderer or ticker
-needed.
+[presentation state](../adding-visual-polish/presentation-state.md)) need
+time advanced before the image is taken.
+[Visual Tests](visual-tests.md#posing-a-view-with-presentation-state)
+shows how.
 
 ## Testing Audio Views
 
@@ -232,11 +229,12 @@ some note sounded, still passes when the view plays the wrong one. For
 music, compare the view's notes with those of a music player playing the
 expected song.
 
-Audio tests check the sounds themselves, much as visual snapshots check a
-view's pictures. An audio test renders a sound in memory and compares a
-hash of its samples with a stored hash. A change that alters the sound
-fails the test, until someone has listened to it and accepted the new
-hash.
+Audio tests check the sounds themselves, much as
+[visual tests](visual-tests.md) check what a view looks like. An audio test
+renders a sound in memory and compares a hash of its samples with a stored
+hash. A change that alters the sound fails the test, until someone has
+listened to it and accepted the new hash. See
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests).
 
 ## Choosing an Approach
 
@@ -265,9 +263,13 @@ complement for coarse structural checks and view model testing.
   refactors, and catch regressions that programmatic assertions miss.
 - **Audio views** play on a headless chip that records what it is told to
   play. Assert the exact sound, so that the wrong one fails. Audio tests
-  check the sounds themselves, much as visual snapshots check a view's
-  pictures.
+  check the sounds themselves, much as visual snapshots check what a view
+  looks like.
 - Use controlled, deterministic inputs for both approaches. Fixed
   bindings, fixed canvas size, fixed seeds.
 - Review snapshot diffs carefully. The value comes from the review
   process, not from blind acceptance.
+
+---
+
+**Next:** [Visual Tests](visual-tests.md)

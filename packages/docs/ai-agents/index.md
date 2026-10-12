@@ -23,6 +23,7 @@
 | Project layout and barrels | [Project Structure](../reference/project-structure.md) |
 | Adding a game or demo, and keeping it original | `packages/website/src/entries/README.md` (its Originality section) |
 | Playing sound in a game | [Sound and Music](../building-with-mvt/presenting-the-world/sound.md), then the guides in `packages/audio/docs/` |
+| Writing, running and accepting visual tests | [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md) |
 | All terms defined | [Glossary](../reference/glossary.md) |
 
 ## Skills Files

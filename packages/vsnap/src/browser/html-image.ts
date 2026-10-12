@@ -1,6 +1,6 @@
 import { pixelateRotatedImages, quantizeFontSizes } from './html-rules';
 import { visualCommands } from './judge';
-import { fitImage } from './image-budget';
+import { fitImage } from '../shared';
 import type { VisualImageId, VisualRect, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ export async function captureHtmlImage(
             return image.decode().catch(() => undefined);
         }));
         const rect = measureRect(host);
-        const fit = fitImage({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false });
+        const fit = fitImage({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false, advice: 'HTML is drawn at full size, so give the view a smaller size, or pose part of it.' });
         if ('problem' in fit) throw new Error(fit.problem);
         const verdict = await visualCommands.captureVisualImage({ ...id, rect });
         return { ...verdict, width: rect.width, height: rect.height };

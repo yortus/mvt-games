@@ -1,19 +1,12 @@
 import { inject } from 'vitest';
-import { BlurFilter, Container, FillGradient, Graphics, Sprite, Text, type TextStyleOptions, Texture } from 'pixi.js';
-import {
-    AmbientLight, BoxGeometry, Color, DirectionalLight, Group, Mesh, MeshPhongMaterial, MeshStandardMaterial, NeutralToneMapping,
-    type Object3D, PerspectiveCamera, PMREMGenerator, SphereGeometry,
-} from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { type Calibration, CANVAS_CALIBRATION, type CanvasCalibration, SAMPLE } from './canvas-calibration';
 import { captureHtmlImage } from './html-image';
 import { describeDifference, hashPixels, isPass, openSession, toBase64, visualCommands } from './judge';
-import { drawPixiImage, type PixiImageOptions, preparePixiPose } from './pixi-image';
 import type { VisualEnvironment, VisualKind, VisualVerdict } from '../protocol';
-import { drawThreeImage, type ThreeImageOptions } from './three-image';
-import { disposeObject } from './view-hooks';
+import { isAllOne } from '../shared';
 
 // ---------------------------------------------------------------------------
-// Function
+// Functions
 // ---------------------------------------------------------------------------
 
 /**
@@ -30,8 +23,8 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
     const session = await openSession({ calibration: kind });
     if (session.isCalibrated) return;
     const problems = [...await visualCommands.checkVisualEnvironment(readEnvironment())];
+    const calibrations = kind === 'canvas' ? CANVAS_JUDGED : HTML_CALIBRATION;
     if (problems.length === 0) {
-        const calibrations = kind === 'canvas' ? CANVAS_CALIBRATION : HTML_CALIBRATION;
         for (const [name, draw] of Object.entries(calibrations)) {
             const verdict = await draw(name, session.hashes[name]);
             if (!isPass(verdict)) {
@@ -46,14 +39,35 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }
-    await visualCommands.recordVisualCalibration({ kind, names: Object.keys(kind === 'canvas' ? CANVAS_CALIBRATION : HTML_CALIBRATION) });
+    await visualCommands.recordVisualCalibration({ kind, names: Object.keys(calibrations) });
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-type Calibration = (name: string, expectedHash: string | undefined) => Promise<VisualVerdict>;
+/**
+ * Returns a canvas calibration image that judges itself against its
+ * expected hash. Only an image whose hash differs goes to Node.
+ */
+function judgeCanvasCalibration(draw: CanvasCalibration): Calibration {
+    return async (name, expectedHash): Promise<VisualVerdict> => {
+        const image = draw();
+        // A blank image would hide a drawing that failed, such as a shader
+        // that didn't compile on this machine
+        if (isAllOne(image.pixels)) throw new Error(`The calibration image '${name}' is blank. Something it draws with failed on this machine.`);
+        const hash = await hashPixels(image.width, image.height, image.pixels);
+        if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
+        return visualCommands.judgeVisualMismatch({
+            calibration: 'canvas', name, test: `calibration ${name}`,
+            width: image.width, height: image.height, hash, pixels: toBase64(image.pixels),
+        });
+    };
+}
+
+const CANVAS_JUDGED: Readonly<Record<string, Calibration>> = Object.fromEntries(
+    Object.entries(CANVAS_CALIBRATION).map(([name, draw]) => [name, judgeCanvasCalibration(draw)]),
+);
 
 function readEnvironment(): VisualEnvironment {
     const gl = document.createElement('canvas').getContext('webgl2');
@@ -67,50 +81,6 @@ function readEnvironment(): VisualEnvironment {
     };
 }
 
-/** Creates a calibration image drawn with Pixi. */
-function createPixiCalibration(pose: () => Container, options: PixiImageOptions = {}): Calibration {
-    return async (name, expectedHash) => {
-        preparePixiPose(options);
-        const view = pose();
-        try {
-            return await judgeWebGl(name, expectedHash, await drawPixiImage(view, { ...options, maxPixels: inject('visualMaxPixels') }));
-        }
-        finally {
-            view.destroy({ children: true });
-        }
-    };
-}
-
-/**
- * Creates a calibration image drawn with three.js. It belongs to the WebGL
- * set, with the Pixi images, because it runs in the same page and on the
- * same software WebGL (SwiftShader).
- */
-function createThreeCalibration(pose: () => Object3D, options: ThreeImageOptions): Calibration {
-    return async (name, expectedHash) => {
-        const view = pose();
-        try {
-            return await judgeWebGl(name, expectedHash, drawThreeImage(view, { ...options, maxPixels: inject('visualMaxPixels') }));
-        }
-        finally {
-            disposeObject(view);
-        }
-    };
-}
-
-async function judgeWebGl(
-    name: string,
-    expectedHash: string | undefined,
-    image: { readonly width: number; readonly height: number; readonly pixels: Uint8Array },
-): Promise<VisualVerdict> {
-    const hash = await hashPixels(image.width, image.height, image.pixels);
-    if (hash === expectedHash) return { outcome: 'same', referenceFile: name };
-    return visualCommands.judgeVisualMismatch({
-        calibration: 'canvas', name, test: `calibration ${name}`,
-        width: image.width, height: image.height, hash, pixels: toBase64(image.pixels),
-    });
-}
-
 /** Creates a calibration image made of HTML markup. */
 function createHtmlCalibration(markup: string): Calibration {
     return async (name) => {
@@ -120,121 +90,6 @@ function createHtmlCalibration(markup: string): Calibration {
         return captureHtmlImage(root, { maxPixels: inject('visualMaxPixels') }, { calibration: 'html', name, test: `calibration ${name}` });
     };
 }
-
-const SAMPLE = 'Sphinx of black quartz, judge my vow. 0123456789 $1,250';
-
-function createTextBlock(family: string, extra: Partial<TextStyleOptions> = {}): Container {
-    const root = new Container();
-    let y = 0;
-    for (const weight of ['400', '700', '900'] as const) {
-        for (const size of [10, 13, 16, 24]) {
-            const text = new Text({ text: SAMPLE, style: { fontFamily: family, fontSize: size, fontWeight: weight, fill: 0xffffff, ...extra } });
-            text.y = y;
-            root.addChild(text);
-            y += Math.ceil(size * 1.35);
-        }
-    }
-    return root;
-}
-
-function createCheckerSprite(): Container {
-    const canvas = document.createElement('canvas');
-    canvas.width = 16;
-    canvas.height = 16;
-    const ctx = canvas.getContext('2d');
-    if (ctx === null) throw new Error('The browser gave no 2D canvas context.');
-    for (let i = 0; i < 16; i++) {
-        ctx.fillStyle = ['#ff4f8b', '#ffe45c', '#2a1766', '#5bd1ff'][(i % 4 + Math.floor(i / 4)) % 4];
-        ctx.fillRect((i % 4) * 4, Math.floor(i / 4) * 4, 4, 4);
-    }
-    const sprite = new Sprite(Texture.from(canvas));
-    sprite.scale.set(5.3);
-    sprite.rotation = 0.3;
-    sprite.position.set(30, 4);
-    const root = new Container();
-    root.addChild(sprite);
-    return root;
-}
-
-const SMOOTH: PixiImageOptions = { artStyle: 'smooth' };
-
-/** Creates a sphere and a box, in two kinds of material, for the lighting to show on. */
-function createShapes(): Object3D {
-    const group = new Group();
-    const sphere = new Mesh(new SphereGeometry(1, 48, 32), new MeshStandardMaterial({ color: 0xff4f8b, roughness: 0.35, metalness: 0.2 }));
-    const box = new Mesh(new BoxGeometry(0.9, 0.9, 0.9), new MeshPhongMaterial({ color: 0x5bd1ff, shininess: 80 }));
-    box.position.set(1.6, -0.2, -0.5);
-    box.rotation.set(0.4, 0.7, 0);
-    group.add(sphere, box);
-    return group;
-}
-
-function createShapesCamera(): PerspectiveCamera {
-    const camera = new PerspectiveCamera(45, 1, 0.1, 100);
-    camera.position.set(0.6, 0.4, 5);
-    camera.lookAt(0.4, 0, 0);
-    return camera;
-}
-
-const CANVAS_CALIBRATION: Readonly<Record<string, Calibration>> = {
-    'circle-msaa': createPixiCalibration(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), SMOOTH),
-    'circle-aliased': createPixiCalibration(() => new Graphics().circle(40, 40, 33).fill(0xff4f8b).stroke({ width: 3, color: 0xffe45c }), {}),
-    'gradients': createPixiCalibration(() => {
-        const linear = new FillGradient({
-            type: 'linear', start: { x: 0, y: 0 }, end: { x: 1, y: 0 },
-            colorStops: [{ offset: 0, color: 0xff4f8b }, { offset: 0.5, color: 0xffe45c }, { offset: 1, color: 0x2a1766 }],
-        });
-        return new Graphics().rect(0, 0, 240, 40).fill(linear).roundRect(20, 60, 200, 60, 18).fill(linear);
-    }, SMOOTH),
-    'blur': createPixiCalibration(() => {
-        const shape = new Graphics().star(60, 60, 5, 40, 18).fill(0x5bd1ff).rect(110, 30, 60, 60).fill(0xffe45c);
-        shape.filters = [new BlurFilter({ strength: 6, quality: 4 })];
-        const root = new Container();
-        root.addChild(shape);
-        return root;
-    }, { width: 200, height: 130, artStyle: 'smooth' }),
-    'texture-linear': createPixiCalibration(createCheckerSprite, { width: 120, height: 120, artStyle: 'smooth' }),
-    'texture-nearest': createPixiCalibration(createCheckerSprite, { width: 120, height: 120 }),
-    'text-sans': createPixiCalibration(() => createTextBlock('"Segoe UI", sans-serif'), SMOOTH),
-    'text-mono': createPixiCalibration(() => createTextBlock('monospace'), SMOOTH),
-    'text-effects': createPixiCalibration(() => {
-        const root = new Container();
-        const gradient = new FillGradient({
-            type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local',
-            colorStops: [{ offset: 0, color: 0xffe45c }, { offset: 1, color: 0xff4f8b }],
-        });
-        const a = new Text({ text: 'WIN 1,250', style: { fontFamily: 'sans-serif', fontSize: 44, fontWeight: '900', fill: gradient, stroke: { color: 0x140a38, width: 6 } } });
-        const b = new Text({ text: 'Shadowed, spaced', style: { fontFamily: 'monospace', fontSize: 24, letterSpacing: 3, fill: 0xffffff, dropShadow: { color: 0x000000, blur: 4, distance: 4, angle: Math.PI / 4, alpha: 0.8 } } });
-        const c = new Text({ text: 'Italic text', style: { fontFamily: 'sans-serif', fontSize: 20, fontStyle: 'italic', fill: 0xffffff } });
-        b.y = 60;
-        c.y = 100;
-        root.addChild(a, b, c);
-        return root;
-    }, SMOOTH),
-    'three-lights': createThreeCalibration(() => {
-        const group = createShapes();
-        const light = new DirectionalLight(0xffffff, 2.5);
-        light.position.set(3, 4, 5);
-        group.add(new AmbientLight(0xffffff, 0.3), light);
-        return group;
-    }, { width: 160, height: 120, camera: createShapesCamera }),
-    // This lights the shapes as a game lit by an environment map would be. They
-    // reflect a room, the image is tone-mapped, and the background is coloured. The
-    // environment map is small. It runs the same code as a full-size one, and
-    // takes seconds less to make at start-up in software WebGL.
-    'three-environment': createThreeCalibration(createShapes, {
-        width: 160,
-        height: 120,
-        camera: createShapesCamera,
-        scene: ({ scene, renderer }) => {
-            renderer.toneMapping = NeutralToneMapping;
-            scene.background = new Color(0x15102b);
-            const environment = new PMREMGenerator(renderer);
-            scene.environment = environment.fromScene(new RoomEnvironment(), 0.04, 0.1, 100, { size: 32 }).texture;
-            environment.dispose();
-        },
-    }),
-};
 
 const HTML_CALIBRATION: Readonly<Record<string, Calibration>> = {
     'blank-text': createHtmlCalibration([10, 13, 13.5, 16, 17.3, 24].map((size) => `<div style="font-size:${size}px;width:max-content;border:1px solid #58a6ff;margin:2px 0">${SAMPLE}</div>`).join('')

@@ -250,6 +250,7 @@ Re-export through the directory's barrel file (`index.ts`).
 | Pattern                                | Rule         | Fix                                           |
 | -------------------------------------- | ------------ | --------------------------------------------- |
 | `setTimeout` / `setInterval` in model  | M-time       | Use `update(deltaMs)` with arithmetic or GSAP |
+| Module-level `let` in a model file     | M-isolation  | State in the factory's closure: every model the file makes would share it (lint: `@mvtjs/no-module-state`) |
 | Importing a view or view module        | M-isolation  | Models never reference views                  |
 | Storing pixel coordinates              | M-domain     | Use domain units (row/col, world units)       |
 | Using `class`                          | Style        | Factory function + plain record               |
@@ -268,4 +269,4 @@ Re-export through the directory's barrel file (`index.ts`).
 - [Architecture Rules](../architecture/rules.md) - all model rules (M-time through M-composition)
 - [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
 - [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `update()`
-- [Testing Models](../building-with-mvt/iterating-with-confidence/testing-models.md) - testing models, `advanceTime` helper
+- [Testing Models](../building-with-mvt/iterating-with-confidence/testing-models.md) - testing models, `advanceTime`

@@ -90,15 +90,18 @@ export function createVisualReporter(options: {
                 return;
             }
             const seconds = ((performance.now() - started) / 1000).toFixed(1);
-            const lines = [`The visual tests (${projectNames.join(', ')}) produced ${images.length} actual images in ${seconds} s.`];
+            const lines = [`The visual tests (${projectNames.join(', ')}) produced ${count(images.length, 'actual image')} in ${seconds} s.`];
             for (const kind of ['canvas', 'html'] as const) {
                 const times = images.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
                 if (times.length === 0) continue;
-                lines.push(`  ${times.length} ${kind === 'canvas' ? 'canvas' : 'HTML'} tests took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
+                const tests = count(times.length, `${kind === 'canvas' ? 'canvas' : 'HTML'} test`);
+                lines.push(times.length === 1
+                    ? `  ${tests} took ${formatPercentile(times, 0.5)} ms.`
+                    : `  ${tests} took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
             }
             const counts = new Map<string, number>();
             for (const p of images) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
-            lines.push(`  Compared with their references, ${[...counts].map(([outcome, n]) => `${n} ${OUTCOMES[outcome] ?? outcome}`).join(', ')}.`);
+            lines.push(`  Compared with ${images.length === 1 ? 'its reference' : 'their references'}, ${[...counts].map(([outcome, n]) => `${n} ${OUTCOMES[outcome] ?? outcome}`).join(', ')}.`);
             const within = counts.get('within-tolerance') ?? 0;
             if (within > 0) lines.push(`  ${within} matched within the tolerance but not exactly. That is expected only on arm64 processors.`);
             const reduced = images.filter((p) => p.meta.resolution < 1);
@@ -108,13 +111,16 @@ export function createVisualReporter(options: {
                 for (const p of reduced) lines.push(`    1/${1 / p.meta.resolution}  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             }
             const slowest = [...images].sort((a, b) => b.total - a.total).slice(0, 5);
-            lines.push('  These tests were the slowest:');
+            lines.push(images.length > slowest.length ? '  These tests were the slowest:' : `  ${images.length === 1 ? 'The test' : 'The tests'} took:`);
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             lines.push(...orphanLines);
             const references = findReferences(layout.root);
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
-            lines.push(`  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. These are the largest:`);
-            for (const r of [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3)) {
+            const largest = [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
+            lines.push(references.length === 1
+                ? `  The reference is one file, taking ${formatKilobytes(bytes)}:`
+                : `  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. ${references.length > largest.length ? 'These are the largest:' : 'They are:'}`);
+            for (const r of largest) {
                 lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${toDisplayPath(r.file)}`);
             }
             console.log(`\n${lines.join('\n')}\n`);
@@ -250,6 +256,11 @@ function checkForInheritedLists(vitest: Vitest, projectNames: readonly string[],
             + "or name the Vite config that vsnap's projects need, with vsnap({ viteConfig }).",
         );
     }
+}
+
+/** Returns a count and its noun, such as '1 actual image' or '3 actual images'. */
+function count(n: number, noun: string): string {
+    return `${n} ${noun}${n === 1 ? '' : 's'}`;
 }
 
 /** Returns 'this reference' or 'these 3 references'. */

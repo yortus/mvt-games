@@ -1,5 +1,3 @@
-import { BatchableGraphics } from 'pixi.js';
-
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
@@ -21,20 +19,5 @@ export function installSeededRandom(seed: number): () => void {
     };
     return () => {
         state = seed;
-    };
-}
-
-/**
- * Patches a Pixi bug that lets one actual image change the next. In Pixi 8.21,
- * `BatchableGraphics.reset()` leaves `roundPixels` as it was. So a batch
- * that a rounded (pixel-art) graphic returned to the pool rounds the curves
- * of the next graphics context built from the pool. This patch clears
- * `roundPixels` on reset, until Pixi does that itself.
- */
-export function patchPixiPools(): void {
-    const reset = BatchableGraphics.prototype.reset;
-    BatchableGraphics.prototype.reset = function (this: BatchableGraphics) {
-        reset.call(this);
-        this.roundPixels = 0;
     };
 }

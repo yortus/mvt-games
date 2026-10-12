@@ -341,9 +341,13 @@ entry inside an element the host gives it, and returns a session with two
 more members: `views`, the roots of its views of every renderer, and
 `render()`, which draws a frame. The host still runs each frame in the MVT
 order: the session's `update`, then `updateView` and `refreshView` over its
-`views`, then `render`. See [Boids in 3D](./boids-3d/start/load.ts) for a
-small one, and the [Fruit Machine](./fruit-machine/start/load.ts) for one
-model with views on three renderers.
+`views`, then `render`. Some renderers start asynchronously, as Pixi's
+`init` does. If the entry has one, its session's `ready` is a promise that
+settles once every renderer can draw. A host that produces one image, such
+as the thumbnail script or a visual test, waits for it. See
+[Boids in 3D](./boids-3d/start/load.ts) for a small one, and the
+[Fruit Machine](./fruit-machine/start/load.ts) for one model with views on
+three renderers.
 
 ## Step 5: Describe the Entry (`start/entry.ts`)
 
@@ -433,6 +437,20 @@ npm run generate-thumbnails -- breakout
 It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 `start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
+The entry also gets a visual test of its whole screen, at the same moment,
+without any new code. `pixi-entries.visual.test.tsx` makes one for every
+Pixi entry in the catalogue, and `element-entries.visual.test.tsx` makes one
+for every element entry. Record the test's reference image, look at it, and
+commit it:
+
+```bash
+npx vitest run packages/website/src/entries/pixi-entries.visual.test.tsx -u
+```
+
+Give the views their own visual tests too, with one test for each
+state their bindings can show. See
+[Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
@@ -447,5 +465,6 @@ It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
   starter's
 - Barrel files export public API at each level
 - The entry is listed in `catalogue.ts`, and has its own thumbnail
+- The entry's whole-screen reference image is recorded, and its views have visual tests
 - Model tests exist and pass
 - The title, characters, art and levels are the entry's own (see [Originality](#originality))

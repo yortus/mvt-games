@@ -1,64 +1,53 @@
-import type { Container } from 'pixi.js';
-import { Object3D } from 'three';
-import { inject, test } from 'vitest';
+import { inject, type TaskMeta, test } from 'vitest';
+import { type CanvasImage, checkCanvasBudget, isCanvas, readCanvas } from './canvas-drawing';
 import { captureHtmlImage, type HtmlImageOptions } from './html-image';
 import { describeFailure, hashPixels, isPass, nameCurrentImage, openSession, toBase64, visualCommands } from './judge';
-import { setUpPage } from './page-setup';
-import { drawPixiImage, type PixiImageOptions, preparePixiPose } from './pixi-image';
-import type { VisualKind, VisualTestMeta, VisualVerdict } from '../protocol';
-import { drawThreeImage, type ThreeImageOptions } from './three-image';
-import { disposeView, prepareView } from './view-hooks';
+import { type PageSetup, setUpPage } from './page-setup';
+import type { Pose } from './pose';
+import type { VisualTestMeta, VisualVerdict } from '../protocol';
+import { describeValue, isAllOne } from '../shared';
+import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type DefaultView, loadViewKinds } from './view-kinds';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * A function whose only job is to return a view that has been arranged
- * into the pose that the test describes. If the view has time to advance, the
- * pose advances it too.
+ * `canvasTest`'s forms. The options' `kind` names the kind of view that the
+ * pose returns: one that the project's `vsnap.config.ts` registers, or
+ * `'canvas'` for a canvas that the pose drew. A test of the config's default
+ * view may leave `kind` out, and may leave out its options if they are all
+ * optional, as Pixi's are.
  */
-export type Pose<V> = () => V | Promise<V>;
+export type CanvasTest = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K>, pose: Pose<CanvasKinds[K]['view']>) => void)
+    & (object extends CanvasKinds[DefaultView]['options'] ? (name: string, pose: Pose<CanvasKinds[DefaultView]['view']>) => void : unknown);
 
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
 
 /**
- * Declares a visual test of a Pixi or three.js view, which draws on a canvas.
- * The test refreshes the view that the pose returns, draws it, and compares
- * it with its reference, `__references__/<this file>/<describe blocks>-<name>.png`.
- * Canvas tests run in one page that every such file shares. The options
- * come before the pose, as they do in Vitest's `test`, and may be left out
- * for a Pixi view.
- *
- * - A Pixi view is drawn as pixel art unless its options say
- *   `artStyle: 'smooth'`. See `PixiImageOptions.artStyle` for what each
- *   style means for the image.
- * - A three.js view is drawn with the camera that its options make, in a
- *   scene that they can dress as its game does.
+ * Declares a visual test of a view drawn on a canvas. The pose returns a
+ * view of the kind that the options name, or of the project's default view:
+ * a view of a kind that the project registered, such as a Pixi container,
+ * or a canvas that the pose drew. The test checks the view's kind, draws
+ * it, and compares the actual image with its reference image,
+ * `__references__/<this file>/<describe blocks>-<name>.png`. Canvas tests
+ * run in one page that every such file shares.
  *
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function canvasTest(name: string, pose: Pose<Container>): void;
-export function canvasTest(name: string, options: PixiImageOptions, pose: Pose<Container>): void;
-export function canvasTest(name: string, options: ThreeImageOptions, pose: Pose<Object3D>): void;
-export function canvasTest(
-    name: string,
-    optionsOrPose: PixiImageOptions | ThreeImageOptions | Pose<Container>,
-    pose?: Pose<Container | Object3D>,
-): void {
-    declareVisualTest(name, 'canvas', ...sortArguments(optionsOrPose, pose));
-}
+export const canvasTest = declareCanvasTest as CanvasTest;
 
 /**
- * Declares a visual test of an HTML view. The test refreshes the element
- * that the pose returns, captures it, and compares the actual image with
- * its reference image, `__references__/<this file>/<describe blocks>-<name>.png`.
- * Each file of HTML tests runs in a page of its own, because a stylesheet
- * stays in a page once it is imported. The view's text is drawn blank, so
- * its layout and styling show.
+ * Declares a visual test of an HTML view. The test prepares the element
+ * that the pose returns, as the project's `vsnap.config.ts` says, captures
+ * it, and compares the actual image with its reference image,
+ * `__references__/<this file>/<describe blocks>-<name>.png`. Each file of
+ * HTML tests runs in a page of its own, because a stylesheet stays in a
+ * page once it is imported. The view's text is drawn blank, so its layout
+ * and styling show.
  *
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
@@ -66,92 +55,187 @@ export function canvasTest(
 export function htmlTest(name: string, pose: Pose<Element>): void;
 export function htmlTest(name: string, options: HtmlImageOptions, pose: Pose<Element>): void;
 export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<Element>, pose?: Pose<Element>): void {
-    declareVisualTest(name, 'html', ...sortArguments(optionsOrPose, pose));
+    const [elementPose, options] = sortArguments(optionsOrPose, pose);
+    test(name, async ({ task }) => {
+        const { id } = await startTest(task.meta, 'html');
+        const kind = (await loadViewKinds()).html;
+        const ms: Record<string, number> = {};
+        let t = performance.now();
+        const view: unknown = await elementPose();
+        ms.pose = performance.now() - t;
+        if (!(view instanceof Element)) {
+            throw new Error(`'${id.test}' poses ${describeValue(view)}, which is not an HTML element. A view drawn on a canvas is tested with canvasTest.`);
+        }
+        let captured: Awaited<ReturnType<typeof captureHtmlImage>>;
+        try {
+            t = performance.now();
+            kind.prepare?.(view);
+            ms.prepare = performance.now() - t;
+            captured = await captureHtmlImage(view, { ...options, maxPixels: inject('visualMaxPixels') }, id);
+            ms.capture = captured.captureMs;
+        }
+        finally {
+            if (kind.dispose === undefined) view.remove();
+            else kind.dispose(view);
+        }
+        finishTest(task.meta, { id, verdict: captured, kind: 'html', size: { ...captured, resolution: 1 }, ms });
+    });
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-type AnyPose = Pose<Container | Object3D | Element>;
-type AnyOptions = PixiImageOptions | ThreeImageOptions | HtmlImageOptions;
+type ImageId = ReturnType<typeof nameCurrentImage>;
+
+/** Sets the page up, names the test's image, and checks that the test runs in its kind of page. */
+async function startTest(meta: TaskMeta, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
+    const setup = await setUpPage();
+    const id = nameCurrentImage();
+    meta.visualImage = id.name;
+    const kind = inject('visualKind');
+    if (kind !== declared) {
+        // The config sends each file to the page its declarations ask for,
+        // so this happens only if the declarations are hidden from it
+        throw new Error(`'${id.test}' is ${declared === 'html' ? 'an HTML' : 'a canvas'} visual test, but its file runs in the ${kind} page. A file declares one kind of visual test only.`);
+    }
+    return { setup, id };
+}
+
+/** Records a test's outcome and timings for the run's summary, and fails the test if its image differs. */
+function finishTest(meta: TaskMeta, result: {
+    readonly id: ImageId;
+    readonly verdict: VisualVerdict;
+    readonly kind: 'canvas' | 'html';
+    readonly size: { readonly width: number; readonly height: number; readonly resolution: number };
+    readonly ms: Record<string, number>;
+}): void {
+    const { id, verdict, kind, size, ms } = result;
+    const visual: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
+    meta.visual = visual;
+    if (!isPass(verdict)) throw new Error(describeFailure(id.name, verdict, kind));
+}
 
 /**
  * Returns a declaration's pose and options, in that order. A declaration
  * takes its options before its pose, as Vitest's `test` does, or its pose
  * alone.
  */
-function sortArguments(optionsOrPose: AnyOptions | AnyPose, pose: AnyPose | undefined): [AnyPose, AnyOptions] {
-    if (typeof optionsOrPose === 'function') return [optionsOrPose, {}];
+function sortArguments<P extends Pose<unknown>, O extends object>(optionsOrPose: O | P, pose: P | undefined): [P, O | Record<never, never>] {
+    if (typeof optionsOrPose === 'function') return [optionsOrPose as P, {}];
     if (pose === undefined) throw new Error('A visual test with options needs a pose after them.');
     return [pose, optionsOrPose];
 }
 
-function declareVisualTest(name: string, declared: VisualKind, pose: AnyPose, options: AnyOptions): void {
+function declareCanvasTest(name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
+    const [viewPose, options] = sortArguments(optionsOrPose, pose);
+    const { kind: kindName, ...imageOptions } = options as { readonly kind?: string };
     test(name, async ({ task }) => {
-        const kind = inject('visualKind');
-        const maxPixels = inject('visualMaxPixels');
-        const setup = await setUpPage();
-        const id = nameCurrentImage();
-        task.meta.visualImage = id.name;
-        if (kind !== declared) {
-            // The config sends each file to the page its declarations ask for,
-            // so this happens only if the declarations are hidden from it
-            throw new Error(`'${id.test}' is ${declared === 'html' ? 'an HTML' : 'a canvas'} visual test, but its file runs in the ${kind} page. A file declares one kind of visual test only.`);
-        }
+        const { setup, id } = await startTest(task.meta, 'canvas');
+        const viewKinds = await loadViewKinds();
+        const named = kindName ?? viewKinds.defaultView;
+        const kind = named === 'canvas' ? undefined : findKind(viewKinds, named, id.test);
         const ms: Record<string, number> = {};
-        // The casts of `options` here and below are safe, because each
-        // declaration pairs its kind of view with its own options.
-        if (kind === 'canvas') preparePixiPose(options as PixiImageOptions);
-
+        kind?.beforePose?.(imageOptions);
         let t = performance.now();
-        const view = await pose();
+        const posed: unknown = await viewPose();
         ms.pose = performance.now() - t;
-        let verdict: VisualVerdict;
-        let size: { width: number; height: number; resolution: number };
-        try {
+        let image: CanvasImage;
+        let blankHint = '';
+        if (kind === undefined) {
+            if (!isCanvas(posed)) throw new Error(describeMismatch({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test }));
             t = performance.now();
-            prepareView(view);
-            ms.prepare = performance.now() - t;
-            if (view instanceof Element) {
-                if (kind !== 'html') throw new Error(`'${id.test}' poses an HTML view. HTML views are declared with htmlTest.`);
-                const captured = await captureHtmlImage(view, { ...(options as HtmlImageOptions), maxPixels }, id);
-                ms.capture = captured.captureMs;
-                verdict = captured;
-                size = { width: captured.width, height: captured.height, resolution: 1 };
-            }
-            else {
-                if (kind !== 'canvas') throw new Error(`'${id.test}' poses a Pixi or three.js view. Those views are declared with canvasTest.`);
-                t = performance.now();
-                const image = view instanceof Object3D
-                    ? drawThreeImage(view, { ...(options as ThreeImageOptions), maxPixels })
-                    : await drawPixiImage(view, { ...(options as PixiImageOptions), maxPixels });
-                ms.draw = performance.now() - t;
-                if (image.isBlank) {
-                    const hint = view instanceof Object3D ? ' Is the camera looking at it, and is it lit?' : '';
-                    throw new Error(`The actual image '${id.name}' is blank. The view drew nothing inside it.${hint}`);
-                }
-                const unpinned = setup.takeUnpinnedFamilies();
-                if (unpinned.length > 0) {
-                    throw new Error(`The view in '${id.test}' asks for fonts that visual tests can't draw: ${unpinned.join(', ')}. End each font list with sans-serif or monospace, and the text is drawn in the test font of that kind. Or add the names to SANS_FAMILIES or MONO_FAMILIES in src/browser/canvas-text.ts, in the vsnap package.`);
-                }
-                t = performance.now();
-                const hash = await hashPixels(image.width, image.height, image.pixels);
-                ms.hash = performance.now() - t;
-                const session = await openSession({});
-                t = performance.now();
-                verdict = session.hashes[id.name] === hash
-                    ? { outcome: 'same', referenceFile: id.name }
-                    : await visualCommands.judgeVisualMismatch({ ...id, width: image.width, height: image.height, hash, pixels: toBase64(image.pixels) });
-                ms.compare = performance.now() - t;
-                size = image;
-            }
+            checkCanvasBudget(posed, inject('visualMaxPixels'));
+            image = readCanvas(posed);
+            ms.draw = performance.now() - t;
         }
-        finally {
-            disposeView(view);
+        else {
+            if (!kind.isView(posed)) throw new Error(describeMismatch({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test }));
+            image = await drawView(kind, posed, imageOptions, ms);
+            blankHint = kind.blankHint === undefined ? '' : ` ${kind.blankHint}`;
         }
-        const meta: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
-        task.meta.visual = meta;
-        if (!isPass(verdict)) throw new Error(describeFailure(id.name, verdict, kind));
+        if (isAllOne(image.pixels)) {
+            throw new Error(`The actual image '${id.name}' is blank. The view drew nothing inside it.${blankHint}`);
+        }
+        const unpinned = setup.takeUnpinnedFamilies();
+        if (unpinned.length > 0) {
+            throw new Error(`The view in '${id.test}' asks for fonts that visual tests can't draw: ${unpinned.join(', ')}. End each font list with sans-serif or monospace, and the text is drawn in the test font of that kind. Or add the names to SANS_FAMILIES or MONO_FAMILIES in src/browser/canvas-text.ts, in the vsnap package.`);
+        }
+        t = performance.now();
+        const hash = await hashPixels(image.width, image.height, image.pixels);
+        ms.hash = performance.now() - t;
+        const session = await openSession({});
+        t = performance.now();
+        const verdict: VisualVerdict = session.hashes[id.name] === hash
+            ? { outcome: 'same', referenceFile: id.name }
+            : await visualCommands.judgeVisualMismatch({ ...id, width: image.width, height: image.height, hash, pixels: toBase64(image.pixels) });
+        ms.compare = performance.now() - t;
+        finishTest(task.meta, { id, verdict, kind: 'canvas', size: image, ms });
     });
+}
+
+/** Returns the registered kind of view with a name, and throws if there is none. */
+function findKind(viewKinds: Awaited<ReturnType<typeof loadViewKinds>>, name: string, test: string): CanvasViewKind<unknown, object> {
+    const kind = viewKinds.canvas.find((candidate) => candidate.name === name);
+    if (kind !== undefined) return kind;
+    if (!viewKinds.hasConfig) {
+        throw new Error(`'${test}' is of the kind '${name}', but vsnap looks for the project's kinds of view in ${viewKinds.configFile}, which doesn't exist. Create the file, and register the kind, such as pixiViews() from 'vsnap/pixi'.`);
+    }
+    const names = viewKinds.canvas.map((candidate) => candidate.name).join(', ');
+    throw new Error(`'${test}' is of the kind '${name}', but ${viewKinds.configFile} registers no kind of view with that name. It registers ${names === '' ? 'none' : names}.`);
+}
+
+/**
+ * Describes a view that is not of the kind that its test is of, and says
+ * what to do. If another kind claims the view, it suggests that kind.
+ */
+function describeMismatch(options: {
+    readonly viewKinds: Awaited<ReturnType<typeof loadViewKinds>>;
+    readonly named: string;
+    readonly isDefault: boolean;
+    readonly view: unknown;
+    readonly test: string;
+}): string {
+    const { viewKinds, named, isDefault, view, test } = options;
+    const expected = named === 'canvas' ? 'a canvas' : `a view of the kind '${named}'`;
+    const where = viewKinds.hasConfig ? ` in ${viewKinds.configFile}` : '';
+    const why = isDefault ? ` The test gives no kind, so it is of the default view${where}, '${named}'.` : '';
+    const claimant = isCanvas(view) ? 'canvas' : viewKinds.canvas.find((kind) => kind.isView(view))?.name;
+    let fix: string;
+    if (claimant !== undefined) {
+        fix = ` The view is of the kind '${claimant}', so give the test { kind: '${claimant}' }.`;
+    }
+    else if (!viewKinds.hasConfig) {
+        fix = ` vsnap looks for the project's kinds of view in ${viewKinds.configFile}, which doesn't exist. Create the file, and register the view's kind, such as pixiViews() from 'vsnap/pixi'.`;
+    }
+    else {
+        const names = viewKinds.canvas.map((kind) => kind.name).join(', ');
+        fix = ` No kind that ${viewKinds.configFile} registers (${names === '' ? 'none' : names}) claims it. Register its kind. If it is registered, the project may have a second copy of its library.`;
+    }
+    return `'${test}' poses ${describeValue(view)}, which is not ${expected}.${why}${fix}`;
+}
+
+/** Prepares a view as its kind says, draws it, and disposes of it. */
+async function drawView(kind: CanvasViewKind<unknown, object>, view: unknown, options: object, ms: Record<string, number>): Promise<CanvasImage> {
+    try {
+        let t = performance.now();
+        kind.prepare?.(view);
+        ms.prepare = performance.now() - t;
+        t = performance.now();
+        const maxPixels = inject('visualMaxPixels');
+        const drawn = await kind.draw(view, { ...options, maxPixels });
+        let image: CanvasImage;
+        if (isCanvas(drawn)) {
+            checkCanvasBudget(drawn, maxPixels);
+            image = readCanvas(drawn);
+        }
+        else {
+            image = drawn;
+        }
+        ms.draw = performance.now() - t;
+        return image;
+    }
+    finally {
+        kind.dispose(view);
+    }
 }

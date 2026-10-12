@@ -1,12 +1,15 @@
 // These are the visual test harness's own tests. Each one checks one case
-// of rendering a Pixi or three.js view to an image.
+// of drawing a view on a canvas: a canvas that the pose draws, or a Pixi or
+// three.js view, which this package's vsnap.config.ts registers.
 import { Container, Graphics, Text } from 'pixi.js';
-import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, Object3D, PerspectiveCamera, TorusKnotGeometry } from 'three';
-import { afterAll, beforeAll, describe } from 'vitest';
+import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
+import { describe, expect, it } from 'vitest';
+import config, { type Sketch } from '../../vsnap.config';
+import { loadViewKinds } from './view-kinds';
 import { canvasTest } from './visual-test';
-import { setViewHooks } from './view-hooks';
 
 const SMOOTH = { artStyle: 'smooth' } as const;
+const KNOT = { kind: 'three', width: 200, height: 150, camera: createKnotCamera } as const;
 
 describe('canvasTest', () => {
     canvasTest('framed by its bounds', SMOOTH, () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff));
@@ -28,28 +31,86 @@ describe('canvasTest', () => {
 
     canvasTest('canvas text', SMOOTH, () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }));
 
-    // A project's prepare hook runs after the pose, as a refresh step would.
-    // Without it, the bar would have no width, and the knot would face the
-    // camera square on.
+    // A kind's prepare runs after the pose, as a refresh step would. This
+    // package's vsnap.config.ts prepares the views named for it. Without it,
+    // the bar would have no width, and the knot would face the camera square
+    // on.
     describe('with a prepare hook', () => {
-        beforeAll(() => setViewHooks({
-            prepare: (view) => {
-                if (view instanceof Object3D) view.rotation.y = 0.8;
-                else if (view instanceof Container && view.label === 'bar') view.addChild(new Graphics().rect(0, 0, 42, 12).fill(0xffffff));
-            },
-        }));
-        afterAll(() => setViewHooks({}));
+        let bar: Container | undefined;
+        canvasTest('a Pixi view', SMOOTH, () => (bar = new Container({ label: 'bar' })));
+        canvasTest('a three.js view', KNOT, () => {
+            const knot = createKnot();
+            knot.name = 'turned';
+            return knot;
+        });
 
-        canvasTest('a Pixi view', SMOOTH, () => new Container({ label: 'bar' }));
-        canvasTest('a three.js view', { width: 200, height: 150, camera: createKnotCamera }, () => createKnot());
+        it('disposes of a view with its kind\'s dispose', () => {
+            expect(bar?.label).toBe('bar, disposed by vsnap.config.ts');
+        });
+    });
+
+    // A test that imports the project's vsnap.config.ts gets the module that
+    // the page loaded, not a second copy with state of its own.
+    it('shares vsnap.config.ts with the page', async () => {
+        expect((await loadViewKinds()).canvas).toEqual(config.views);
+        expect((await loadViewKinds()).canvas[0]).toBe(config.views[0]);
     });
 
     describe('three.js', () => {
-        canvasTest('lit by its own lights, with the camera given', { width: 200, height: 150, camera: createKnotCamera }, () => createKnot());
+        canvasTest('lit by its own lights, with the camera given', KNOT, () => createKnot());
 
         // A three.js image is always antialiased. So over the size budget, it
         // is drawn at half resolution, as a smooth Pixi view is.
-        canvasTest('over the budget', { width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b }, () => createKnot());
+        canvasTest('over the budget', { kind: 'three', width: 1200, height: 600, camera: createKnotCamera, background: 0x15102b }, () => createKnot());
+    });
+
+    // A pose may draw a canvas itself, with any renderer, and return it.
+    // A kind that the project registers itself, whose draw returns a canvas.
+    canvasTest('a kind of the project\'s own', { kind: 'sketch', width: 90 }, (): Sketch => ({
+        paint: (ctx) => {
+            ctx.fillStyle = '#5bd1ff';
+            ctx.fillRect(10, 10, 30, 40);
+            ctx.fillStyle = '#ff4f8b';
+            ctx.beginPath();
+            ctx.arc(62, 30, 18, 0, Math.PI * 2);
+            ctx.fill();
+        },
+    }));
+
+    describe('a canvas the pose drew', () => {
+        canvasTest('in 2D', { kind: 'canvas' }, () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 120;
+            canvas.height = 60;
+            const ctx = canvas.getContext('2d');
+            if (ctx === null) throw new Error('The browser gave no 2D canvas context.');
+            ctx.fillStyle = '#202024';
+            ctx.fillRect(0, 0, 120, 60);
+            ctx.fillStyle = '#ffe45c';
+            ctx.beginPath();
+            ctx.arc(30, 30, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '700 16px sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('2D', 62, 36);
+            return canvas;
+        });
+
+        canvasTest('with WebGL', { kind: 'canvas' }, () => {
+            const canvas = new OffscreenCanvas(80, 60);
+            const gl = canvas.getContext('webgl2');
+            if (gl === null) throw new Error('The browser gave no WebGL 2 context.');
+            gl.enable(gl.SCISSOR_TEST);
+            gl.clearColor(0.125, 0.125, 0.14, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.scissor(10, 10, 30, 40);
+            gl.clearColor(1, 0.31, 0.545, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.scissor(46, 24, 24, 24);
+            gl.clearColor(0.357, 0.82, 1, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            return canvas;
+        });
     });
 });
 

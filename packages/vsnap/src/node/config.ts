@@ -1,17 +1,21 @@
 /**
  * vsnap's Vitest projects, which a project lists in its own Vitest config,
- * beside its unit tests. `vsnap(options)` returns two projects and a
- * reporter.
+ * beside its unit tests. `vsnap(options)` returns two projects, which bring
+ * vsnap's reporter with them.
  *
  * - `<name>-canvas` runs the files that declare `canvasTest`, which test
- *   Pixi and three.js views. Every file runs in one shared page.
+ *   views drawn on a canvas. Every file runs in one shared page.
  * - `<name>-html` runs the files that declare `htmlTest`. Each file runs in
  *   a page of its own, since each file brings its own stylesheet.
  *
+ * The project registers the kinds of view that its tests pose, such as Pixi
+ * containers, in a `vsnap.config.ts` in the root. That file runs in the
+ * test page, before the tests.
+ *
  * The name is `visual` by default, so `vitest -p "visual-*"` runs the
  * visual tests alone. Each project gets its files from the declarations in
- * them, read when the config loads. So in watch mode, a new test file joins
- * the run only when Vitest restarts.
+ * them, read when the config loads. So in watch mode, vsnap restarts Vitest
+ * when a visual test file is added or deleted.
  *
  * Both run in Playwright's headless shell, a small build of Chromium for
  * headless use. It is launched with one fixed value for every setting that
@@ -19,32 +23,18 @@
  * missing, before the browser starts.
  */
 
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
-import type { TestProjectInlineConfiguration } from 'vitest/config';
+import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
 import type { VisualKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
+import { toDisplayPath } from './paths.ts';
 import { registerRoot } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
 import { findVisualTestFiles } from './test-files.ts';
-
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
-/** What `vsnap` returns, for a project's Vitest config. */
-export interface Vsnap {
-    /** The Vitest projects, `<name>-canvas` and `<name>-html`. List them in the config's `test.projects`. */
-    readonly projects: TestProjectInlineConfiguration[];
-    /**
-     * The reporter that prints the visual tests' summary. After a complete
-     * run, it also checks every reference image, and handles the reference
-     * images that no test used. Add it to the config's `test.reporters`.
-     */
-    readonly reporter: Reporter;
-}
 
 // ---------------------------------------------------------------------------
 // Options
@@ -89,12 +79,6 @@ export interface VsnapOptions {
      * package's own Vite config names it here.
      */
     readonly viteConfig?: string;
-    /**
-     * A module, relative to the root, that runs in the test page before the
-     * tests. It can call `setViewHooks`, to prepare each view before its
-     * image is taken and to dispose of it after.
-     */
-    readonly setup?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,8 +95,14 @@ export const DEFAULT_NAME = 'visual';
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Returns the Vitest projects and the reporter for a project's visual tests. */
-export function vsnap(options: VsnapOptions = {}): Vsnap {
+/**
+ * Returns the Vitest projects for a project's visual tests, `<name>-canvas`
+ * and `<name>-html`, which the config lists in `test.projects`. They bring
+ * vsnap's reporter with them, which prints the visual tests' summary. After
+ * a complete run, it also checks every reference image, and handles the
+ * reference images that no test used.
+ */
+export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguration[] {
     const root = resolve(options.root ?? process.cwd());
     const name = options.name ?? DEFAULT_NAME;
     const layout = createLayout({ root, include: options.include, referencePath: options.referencePath });
@@ -123,11 +113,12 @@ export function vsnap(options: VsnapOptions = {}): Vsnap {
     // A kind of test with no files gets no project.
     const kinds = (['canvas', 'html'] as const).filter((kind) => files[kind].length > 0);
     const projectNames = kinds.map((kind) => `${name}-${kind}`);
-    const projects = kinds.map((kind, i) => createVisualProject({ ...options, root, name: projectNames[i], kind, files: files[kind], commands }));
+    const viewConfig = findViewConfig(root);
     const testFiles = [...files.canvas, ...files.html].map((file) => resolve(root, file));
     const includes = [...files.canvas, ...files.html];
     const reporter = createVisualReporter({ layout, state, projectNames, testFiles, includes });
-    return { projects, reporter };
+    const plugin = createVsnapPlugin({ reporter, root, files: () => findVisualTestFiles(layout), initialFiles: files });
+    return kinds.map((kind, i) => createVisualProject({ ...options, root, name: projectNames[i], kind, files: files[kind], commands, viewConfig, plugin }));
 }
 
 // ---------------------------------------------------------------------------
@@ -141,12 +132,22 @@ function createVisualProject(options: VsnapOptions & {
     readonly kind: VisualKind;
     readonly files: readonly string[];
     readonly commands: ReturnType<typeof createVisualCommands>;
+    /** The project's `vsnap.config.ts`, if it has one. */
+    readonly viewConfig: string | undefined;
+    /** The plugin that the projects of one `vsnap` call share. */
+    readonly plugin: Plugin;
 }): TestProjectInlineConfiguration {
     const isHtml = options.kind === 'html';
     const files = options.files;
-    const setupFiles = [SETUP_FILE, ...(options.setup === undefined ? [] : [resolve(options.root, options.setup)])];
+    const setupFiles = [SETUP_FILE];
+    // The config file is in the root, as the scan's globs are relative to it.
+    const viewConfig = options.viewConfig === undefined ? [] : [basename(options.viewConfig)];
     return {
         root: options.root,
+        plugins: [options.plugin],
+        // The page imports the project's vsnap.config.ts by this name. Vite
+        // resolves the import as it resolves a test's, so both get one module.
+        resolve: { alias: { 'virtual:vsnap-config': options.viewConfig ?? NO_CONFIG } },
         // The project inherits the config it is listed in, plugins included, as
         // Vitest's `extends: true` does, unless a Vite config is named.
         extends: options.viteConfig === undefined ? true : resolve(options.root, options.viteConfig),
@@ -160,7 +161,7 @@ function createVisualProject(options: VsnapOptions & {
         // scan, and miss a library that a test has started to import. The
         // bundling takes about a second.
         optimizeDeps: {
-            entries: [...files, ...setupFiles],
+            entries: [...files, ...setupFiles, ...viewConfig],
             force: true,
         },
         test: {
@@ -176,7 +177,12 @@ function createVisualProject(options: VsnapOptions & {
             fileParallelism: false,
             setupFiles,
             testTimeout: 30_000,
-            provide: { visualKind: options.kind, visualMaxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS },
+            provide: {
+                visualKind: options.kind,
+                visualMaxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS,
+                visualHasConfig: options.viewConfig !== undefined,
+                visualConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
+            },
             browser: {
                 enabled: true,
                 headless: true,
@@ -194,6 +200,68 @@ function createVisualProject(options: VsnapOptions & {
         },
     };
 }
+
+/**
+ * Returns the plugin that the projects of one `vsnap` call share. Vitest
+ * calls its `configureVitest` for each project, before it makes its
+ * reporters, and again after each restart.
+ *
+ * - It adds vsnap's reporter to the run, once, so that a project needn't
+ *   add it. A run that filters out vsnap's projects has no reporter of
+ *   vsnap's.
+ * - In watch mode, it restarts Vitest when a visual test file is added or
+ *   deleted. The projects get their files when the config loads, so a rerun
+ *   alone would miss the change. Vitest restarts the same way when its own
+ *   config changes.
+ */
+function createVsnapPlugin(options: {
+    readonly reporter: Reporter;
+    readonly root: string;
+    /** Returns the project's visual test files, read afresh. */
+    readonly files: () => Readonly<Record<VisualKind, readonly string[]>>;
+    readonly initialFiles: Readonly<Record<VisualKind, readonly string[]>>;
+}): Plugin {
+    const listFiles = (files: Readonly<Record<VisualKind, readonly string[]>>): string => `${files.canvas.join('\n')}\n|\n${files.html.join('\n')}`;
+    const initial = listFiles(options.initialFiles);
+    const watched = new WeakSet<object>();
+    return {
+        name: 'vsnap',
+        configureVitest: ({ vitest }) => {
+            const reporters = vitest.config.reporters as unknown[];
+            if (!reporters.includes(options.reporter)) reporters.push(options.reporter);
+            const server = vitest.vite;
+            if (!vitest.config.watch || watched.has(server)) return;
+            watched.add(server);
+            server.watcher.on('all', (event, file) => {
+                // Only a script can be a test file, so the actual images that a run
+                // writes don't make it read the files again.
+                if (event !== 'add' && event !== 'unlink') return;
+                if (!SCRIPT_FILE.test(file) || listFiles(options.files()) === initial) return;
+                // Vitest makes this restart the whole run, as it does for its
+                // own config.
+                void server.restart();
+            });
+        },
+    };
+}
+
+/** Returns the path of a project's `vsnap.config`, in its root, if it has one. */
+function findViewConfig(root: string): string | undefined {
+    for (const name of VIEW_CONFIG_NAMES) {
+        const path = join(root, name);
+        if (existsSync(path)) return path;
+    }
+    return undefined;
+}
+
+/** The settings of a project that has no `vsnap.config`, which register no kinds of view. */
+const NO_CONFIG = resolve(import.meta.dirname, '..', 'browser', 'no-config.ts');
+
+/** Matches the files that can be visual test files. */
+const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
+
+/** The names that a project's `vsnap.config` may have. */
+const VIEW_CONFIG_NAMES = ['vsnap.config.ts', 'vsnap.config.mts', 'vsnap.config.js', 'vsnap.config.mjs'];
 
 /** The file that sets each page up before its tests, from this package. */
 const SETUP_FILE = resolve(import.meta.dirname, '..', 'browser', 'setup.ts');

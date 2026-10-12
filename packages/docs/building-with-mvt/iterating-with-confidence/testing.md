@@ -18,9 +18,11 @@ public properties. A view test captures visual output and compares
 against a known baseline. If either layer's internals change, tests
 should not break unless the observable result changes.
 
-This project uses [Vitest](https://vitest.dev/) for model and view model
-tests, and [Playwright](https://playwright.dev/) for visual snapshot
-tests.
+This project uses [Vitest](https://vitest.dev/) for every test. Tests of
+models, view models and scene graphs run in Node.
+[Visual tests](visual-tests.md) run in a browser, through
+[vsnap](https://github.com/yortus/mvt-games/blob/main/packages/vsnap/README.md),
+which uses Vitest's browser mode.
 
 ## Testing by Layer
 
@@ -38,10 +40,12 @@ values.
 ## Quick Links
 
 - [Advancing time deterministically](testing-models.md#advancing-time) -
-  the `advanceTime` helper, microtask flushing, leap safety
+  `advanceTime`, microtask flushing, leap safety
 - [Factory with defaults](testing-models.md#factory-with-defaults) -
   reducing construction noise in tests
 - [Scene graph assertions](testing-views.md#scene-graph-assertions) -
   when they help and when they hurt
 - [Visual snapshot testing](testing-views.md#visual-snapshot-testing) -
   capturing and comparing rendered output
+- [Visual tests](visual-tests.md) - posing leaf views, top-level views
+  and whole games, and keeping their images the same

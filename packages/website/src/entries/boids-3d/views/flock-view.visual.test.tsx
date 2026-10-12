@@ -1,13 +1,13 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/three';
-import { type ThreeImageOptions, canvasTest } from 'vsnap';
+import { type CanvasTestOptions, canvasTest } from 'vsnap';
 import { createFlockModel, type FlockModel } from '../../boids';
 import { FlockView } from './flock-view';
 
 // The camera looks from above and to one side, where the page's orbiting
 // camera starts. The view brings its own lights.
-const IMAGE: ThreeImageOptions = { width: 480, height: 300, camera: createOrbitStartCamera, background: 0x0d1117 };
+const IMAGE = { kind: 'three', width: 480, height: 300, camera: createOrbitStartCamera, background: 0x0d1117 } satisfies CanvasTestOptions<'three'>;
 
 describe('FlockView', () => {
     canvasTest('as the flock starts', IMAGE, () => FlockView({ model: createFlock() }));

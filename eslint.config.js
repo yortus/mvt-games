@@ -38,14 +38,11 @@ const TICK_API_FROM_RENDERER = {
 // peer dependencies.
 const DEV_FILES = [
     '**/*.test.{ts,tsx}',
-    '**/*.visual.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
     'packages/benchmarks/**',
     'packages/docs/**',
     '**/*.config.{ts,js}',
-    // A visual test project's setup file, which runs in the test page.
-    '**/vsnap-setup.ts',
 ];
 
 export default tseslint.config(
@@ -104,9 +101,10 @@ export default tseslint.config(
                     allow: [
                         // Allow intra-directory relative imports (./foo)
                         './*',
-                        // Allow external packages. The @mvtjs packages' own
-                        // `exports` say what can be reached in them
+                        // Allow external packages. The @mvtjs packages' and
+                        // vsnap's own `exports` say what can be reached in them
                         '@mvtjs/**',
+                        'vsnap/**',
                         'pixi.js',
                         'pixi.js/**',
                         'gsap',
@@ -240,7 +238,7 @@ export default tseslint.config(
             'packages/audio/src/web/chip-processor.ts',
             // vsnap replaces canvas text drawing and patches a Pixi pool.
             'packages/vsnap/src/browser/canvas-text.ts',
-            'packages/vsnap/src/browser/page-state.ts',
+            'packages/vsnap/src/pixi/pixi-views.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },

@@ -1,7 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/three';
-import { type ThreeImageOptions, canvasTest } from 'vsnap';
+import { type CanvasTestOptions, canvasTest } from 'vsnap';
 import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from './bandit-layout';
 import { dressBanditScene } from './bandit-scene';
 import { LeverView } from './lever-view';
@@ -10,7 +10,7 @@ import { createMaterialKit } from './material-kit';
 // The camera looks from the side, where the lever's swing towards the player
 // shows as an angle. The lever is drawn in the bandit's own scene, so it
 // shines as it does there.
-const IMAGE: ThreeImageOptions = { width: 240, height: 300, camera: createSideCamera, scene: dressBanditScene };
+const IMAGE = { kind: 'three', width: 240, height: 300, camera: createSideCamera, scene: dressBanditScene } satisfies CanvasTestOptions<'three'>;
 
 describe('LeverView', () => {
     canvasTest('at rest', IMAGE, () => LeverView({ kit: createMaterialKit(), spinCount: () => 0 }));
