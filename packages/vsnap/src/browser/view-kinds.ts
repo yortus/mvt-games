@@ -74,16 +74,32 @@ export interface VsnapConfig<Views extends readonly ViewKind[] = readonly ViewKi
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- a project adds its config by declaration merging
 export interface Register {}
 
-/** The canvas kinds of view that a project's config registers, by name, and the built-in `'canvas'`, each with its view and options. */
-export type CanvasKinds = CanvasKindsOf<RegisteredConfig['views']> & {
+/**
+ * The canvas kinds of view that a config lists, by name, and the built-in
+ * `'canvas'`, each with its view and options. By default, the config is the
+ * one that the project registered.
+ */
+export type CanvasKinds<C extends VsnapConfig = RegisteredConfig> = CanvasKindsOf<C['views']> & {
     readonly canvas: { readonly view: HTMLCanvasElement | OffscreenCanvas; readonly options: Record<never, never> };
 };
 
-/** The name of the kind that a canvas test poses when it gives no `kind`. */
-export type DefaultView = DefaultOf<RegisteredConfig> & keyof CanvasKinds;
+/** The name of the kind that a canvas test poses when it gives no `kind`. By default, the config is the one that the project registered. */
+export type DefaultView<C extends VsnapConfig = RegisteredConfig> = DefaultOf<C> & keyof CanvasKinds<C>;
 
 /** The options of a canvas test of one kind. `kind` may be left out for the default view. */
-export type CanvasTestOptions<K extends keyof CanvasKinds = DefaultView> = { readonly kind?: K } & CanvasKinds[K]['options'];
+export type CanvasTestOptions<K extends keyof CanvasKinds = DefaultView> = KindOptions<RegisteredConfig, K>;
+
+/** The options of a canvas test of one kind of a config. */
+export type KindOptions<C extends VsnapConfig, K extends keyof CanvasKinds<C>> = { readonly kind?: K } & OptionsOf<C, K>;
+
+/** The view of one kind of a config. */
+export type ViewOf<C extends VsnapConfig, K extends keyof CanvasKinds<C>> = CanvasKinds<C>[K] extends { readonly view: infer V } ? V : never;
+
+/** The options of one kind of a config, without `kind`. */
+export type OptionsOf<C extends VsnapConfig, K extends keyof CanvasKinds<C>> = CanvasKinds<C>[K] extends { readonly options: infer O } ? O : never;
+
+/** The config that the project registered, or one with no kinds of view. */
+export type RegisteredConfig = Register extends { readonly config: infer C extends VsnapConfig } ? C : VsnapConfig<readonly [], never>;
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -133,10 +149,9 @@ interface ViewKinds {
     /** Where the project's `vsnap.config.ts` is, or would be, for messages. */
     readonly configFile: string;
     readonly hasConfig: boolean;
+    /** The config itself, which a `canvasTest` that `bindCanvasTest` made checks it was bound to. */
+    readonly config: VsnapConfig;
 }
-
-/** The config that the project registered, or one with no kinds of view. */
-type RegisteredConfig = Register extends { readonly config: infer C extends VsnapConfig } ? C : VsnapConfig<readonly [], never>;
 
 /** The names of the canvas kinds among some kinds of view. */
 type CanvasNamesOf<Views extends readonly ViewKind[]> = Extract<Views[number], { readonly kind: 'canvas' }>['name'];
@@ -177,5 +192,5 @@ async function load(): Promise<ViewKinds> {
     if (defaultView !== 'canvas' && !canvas.some((kind) => kind.name === defaultView)) {
         throw new Error(`${configFile} names '${defaultView}' as its default view, but lists no kind of view with that name.`);
     }
-    return { canvas, html: html ?? htmlViews(), defaultView, configFile, hasConfig: inject('visualHasConfig') };
+    return { canvas, html: html ?? htmlViews(), defaultView, configFile, hasConfig: inject('visualHasConfig'), config };
 }

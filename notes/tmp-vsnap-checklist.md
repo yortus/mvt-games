@@ -142,10 +142,16 @@ Each review finding says how it was checked:
 - [x] **P11. The "too big" failure gives no update command**
   (`src/browser/judge.ts`), though the README says failure messages give
   it.
-- [ ] **P13. Leave `@mvtjs/source` out of the published `package.json`,**
+- [x] **P13. Leave `@mvtjs/source` out of the published `package.json`,**
   as 042 plans. The repo needs the condition, so a step at publishing
   time must remove it, along with the `src` paths it names, which don't
   ship.
+  Done on 2026-10-13, without the condition: the repo's `exports` name the
+  source again, and `prepack` builds `lib/`, then puts a `package.json`
+  whose `exports` name `lib/` in place (`scripts/publish-manifest.ts`), and
+  checks it with publint and attw. `postpack` puts the repo's back, even when
+  a publish fails, so the registry's copy of the metadata names the source,
+  while the tarball's, which installs use, names `lib/`.
 - [ ] **P12. The new calibration images have run only on Windows.** Push
   the branch, and let the visual CI workflow run on Linux and macOS.
 
@@ -183,9 +189,18 @@ Each review finding says how it was checked:
   since tests often share them.
 - [x] **A9. In-house wording in the package.** `src/pixi/pixi-image.ts`
   mentions "the games' spritesheets".
-- [ ] **A10. One `Register` per TypeScript program.** A monorepo whose
+- [x] **A10. One `Register` per TypeScript program.** A monorepo whose
   packages have configs of their own must type-check each package on its
   own. It's documented. Consider whether vsnap can do better.
+  Done on 2026-10-13: `bindCanvasTest(config)` returns `canvasTest` typed by
+  that config, which the config exports and its tests import, so packages
+  that share one program each have their own types. The types take the
+  config as a parameter, with the registered one as the default, so
+  `Register` works as before. As each test runs, a bound `canvasTest` checks
+  that vsnap loaded its config, so a test that imports another package's
+  fails (tested in vsnap's own canvas tests). vsnap's fixture, which shares
+  vsnap's program, uses it. Type tests in `bind-canvas-test.test.ts`; the
+  built types checked in the packed trial. The config check accepts either.
 
 ## Watch mode
 
@@ -208,10 +223,15 @@ Each review finding says how it was checked:
 
 - [x] **S1.** `src/node/config.ts` builds `includes` as a copy of the file
   list, and spreads every option into `createVisualProject`.
-- [ ] **S2.** `patchPixiPools` (`src/pixi/pixi-views.ts`) patches a Pixi
+- [x] **S2.** `patchPixiPools` (`src/pixi/pixi-views.ts`) patches a Pixi
   8.21 bug, but the peer range is `^8.16`. `_roundPixels`
   (`src/pixi/pixi-image.ts`) is a private Pixi field. Recheck both on each
   Pixi update.
+  Done on 2026-10-13: no longer a manual recheck. Unit tests in
+  `src/pixi/pixi-views.test.ts` fail when Pixi clears `roundPixels` on reset
+  (the patch can go) and when the renderer stops reading `_roundPixels`.
+  The field is now set without a cast, since Pixi's types declare it, so a
+  rename fails the type check.
 - [x] **S3.** `cdpSessions` (`src/node/commands.ts`) is never cleared in
   watch mode.
 - [x] **S4.** Record the earlier question about a configurable pixel
@@ -250,6 +270,21 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   generates its report with vsnap's projects. Still to check: the UI
   itself, coverage (no coverage package is installed in this repo), and the
   VS Code extension.
+  Checked on 2026-10-13, in a scratch project from a packed install: the UI
+  (`vitest --watch --ui`) lists vsnap's projects and tests, and a failed
+  image shows Vitest's Visual Regression panel, with Diff, Reference, Actual
+  and Slider views, and the message with its `-u` command. Coverage with
+  `@vitest/coverage-v8` and with `@vitest/coverage-istanbul` both run with
+  the visual tests, whose images still compare identical, and count the
+  views they draw. Still to check: the VS Code extension (the user).
+- [ ] **U10. A failed image's error points into vsnap.** In the UI and the
+  terminal, its stack names `node_modules/vsnap/lib/browser/visual-test.js`,
+  not the `canvasTest` line in the test file, as Vitest's own assertions
+  do. vsnap could keep the declaration's stack and give it to the error.
+- [ ] **U11. The UI's Test Meta panel shows vsnap's internal record** of
+  each test (`visual`: kind, outcome, size, timings), which the reporter
+  reads. Harmless, but noise to a user. Consider a less prominent place, or
+  a shorter record.
 - [x] **U6. A step-by-step setup guide in the README** for a project whose
   config is flat today: moving to projects, moving `include` and
   `exclude` into the unit project, adding `vsnap.config.ts` with
@@ -272,7 +307,21 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
 
 ## The rest of 042, step 10
 
-- [ ] Review each dependency, with P1 and P2.
+- [x] Review each dependency, with P1 and P2.
+  Done on 2026-10-13. Peers: `vitest`, `@vitest/browser-playwright` and
+  `playwright` (P1, P2), and the optional `pixi.js` and `three`.
+  Dependencies, both MIT, both kept:
+  - `fontkit` 2.0.4 draws canvas text from the test fonts: instances of
+    variable fonts (`getVariation`), shaping (`layout`) and glyph outlines.
+    About 9 MB installed with its dependencies, and 0.6 MB of code in each
+    test page, against Pixi's 1.2 MB. opentype.js is smaller, but its
+    support for variable fonts is weaker. No `fontkit` type reaches the
+    published types, so projects need no `@types/fontkit`.
+  - `pngjs` 7.0.0 decodes references, including PNGs that other tools
+    saved; vsnap encodes its own. No dependencies, and Vitest's browser
+    package installs the same version, so it adds nothing.
+  The blank font's generator, which only the maintainers' script and its
+  test use, moved from `src/node/` to `scripts/` with its test.
 - [ ] The final logo: the SVG in the repo, an icon size for npm, a
   favicon, a settled colour, and a wordmark if the README wants one.
 - [ ] Publishing with changesets, as the `@mvtjs` libraries are.
@@ -308,5 +357,26 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   since it ran before every test run and touched a source file each time.
   Left alone: Vitest's check that Playwright's browser is installed costs
   about 0.4 s, but skipping it would be fragile.
-- [ ] vsnap node/browser dir layout and imports reaching past package's defined exports - can this be fixed/improved? eg `from './packages/vsnap/src/node/index.ts'`
+- [x] vsnap node/browser dir layout and imports reaching past package's defined exports - can this be fixed/improved? eg `from './packages/vsnap/src/node/index.ts'`
+  Done on 2026-10-13: the root config imports `vsnap/config` again (see
+  P13), and nothing outside vsnap imports past its exports. The
+  maintainers' scripts moved from `src/node/cli/` to `scripts/`, so `src/`
+  holds only the package, and they run with Node instead of tsx. The rest of
+  the layout stays: each folder imports another through its index.
+  Then, on 2026-10-13, the paths themselves: vsnap's `vitest.config.ts` and
+  `vsnap.config.ts` import vsnap by its own name (`vsnap/config`,
+  `vsnap/pixi`), as a project and the fixture do, not `./src/node`. The
+  scripts find the package's folder themselves instead of importing
+  `../src/node/paths.ts`, and the test of a canvasTest bound to another
+  config builds that config in place instead of importing the fixture's.
+  Lint's barrel rule now covers vsnap's scripts, fixture and root files too,
+  where these paths had gone unchecked. The Node side's `.ts` extensions
+  and its `../protocol.ts` stay: Node runs that source itself in the repo,
+  and Node needs file names, not folders.
+- [x] Found in the packed trial: a reference whose pixels match but which
+  lacks its hash (another tool saved it, or an older vsnap wrote it) was
+  reported as "within the tolerance, expected only on arm64", and `-u`
+  never repaired it. Now it counts as identical, and `-u` adds its hash.
+  The run's check of references still names it. Also, an empty list of
+  references no longer prints "They are:".
 

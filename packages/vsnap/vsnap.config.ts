@@ -2,9 +2,9 @@
 // The preparing and disposing apply only to the views that test them, which
 // are named for it, and leave the other views alone.
 import { Graphics } from 'pixi.js';
-import { type CanvasViewKind, defineVsnapConfig } from './src/browser';
-import { pixiViews } from './src/pixi';
-import { threeViews } from './src/three';
+import { type CanvasViewKind, defineVsnapConfig } from 'vsnap';
+import { pixiViews } from 'vsnap/pixi';
+import { threeViews } from 'vsnap/three';
 
 /**
  * A view of a kind that this file registers itself, as a project does for a

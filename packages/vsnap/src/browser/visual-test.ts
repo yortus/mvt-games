@@ -7,7 +7,9 @@ import type { Pose } from './pose';
 import type { VisualTestMeta, VisualVerdict } from '../protocol';
 import { describeValue, isAllOne } from '../shared';
 import { splitTestOptions, type VitestTestOptions } from './test-options';
-import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type DefaultView, loadViewKinds } from './view-kinds';
+import {
+    type CanvasKinds, type CanvasViewKind, type DefaultView, type KindOptions, loadViewKinds, type OptionsOf, type RegisteredConfig, type ViewOf, type VsnapConfig,
+} from './view-kinds';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -19,10 +21,12 @@ import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type Def
  * `'canvas'` for a canvas that the pose drew. A test of the config's default
  * view may leave `kind` out, and may leave out its options if they are all
  * optional, as Pixi's are. The options may also hold Vitest's `timeout`,
- * `retry`, `repeats` and `fails`.
+ * `retry`, `repeats` and `fails`. By default, the config is the one that the
+ * project registered.
  */
-export type CanvasTestForms<A extends readonly unknown[] = []> = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K> & CanvasTestExtras, pose: CasePose<CanvasKinds[K]['view'], A>) => void)
-    & (object extends CanvasKinds[DefaultView]['options'] ? (name: string, pose: CasePose<CanvasKinds[DefaultView]['view'], A>) => void : unknown);
+export type CanvasTestForms<A extends readonly unknown[] = [], C extends VsnapConfig = RegisteredConfig> =
+    & (<K extends keyof CanvasKinds<C> = DefaultView<C>>(name: string, options: KindOptions<C, K> & CanvasTestExtras, pose: CasePose<ViewOf<C, K>, A>) => void)
+    & (object extends OptionsOf<C, DefaultView<C>> ? (name: string, pose: CasePose<ViewOf<C, DefaultView<C>>, A>) => void : unknown);
 
 /** `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`, `repeats` and `fails`. */
 export interface HtmlTestForms<A extends readonly unknown[] = []> {
@@ -58,11 +62,12 @@ export type WithModifiers<F> = F & {
  * each case, and passes the case to the pose, spread if it is an array, as
  * Vitest's `test.each` does. `.for(cases)` passes each case whole, as
  * `test.for` does. The name can show the case, as Vitest's names do, with
- * `%s` or `$property`.
+ * `%s` or `$property`. By default, its types know the config that the
+ * project registered.
  */
-export type CanvasTestAPI = WithModifiers<CanvasTestForms> & {
-    readonly each: <const T>(cases: readonly T[]) => CanvasTestForms<CaseArgs<T>>;
-    readonly for: <const T>(cases: readonly T[]) => CanvasTestForms<[T]>;
+export type CanvasTestAPI<C extends VsnapConfig = RegisteredConfig> = WithModifiers<CanvasTestForms<[], C>> & {
+    readonly each: <const T>(cases: readonly T[]) => CanvasTestForms<CaseArgs<T>, C>;
+    readonly for: <const T>(cases: readonly T[]) => CanvasTestForms<[T], C>;
 };
 
 /** `htmlTest`, with Vitest's modifiers. `.each` and `.for` work as they do on `canvasTest`. */
@@ -90,7 +95,21 @@ export type CaseArgs<T> = T extends readonly unknown[] ? [...T] : [T];
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export const canvasTest = withModifiers(declareCanvasTest) as CanvasTestAPI;
+export const canvasTest = withModifiers((declare, name, optionsOrPose, pose) => declareCanvasTest({ declare, name, optionsOrPose, pose })) as CanvasTestAPI;
+
+/**
+ * Returns `canvasTest`, with types that know one config's kinds of view and
+ * default view, in place of the config that the project registered. A
+ * project's `vsnap.config.ts` exports it, and its tests import it from
+ * there. A monorepo whose packages have configs of their own needs this,
+ * because one TypeScript program holds one `Register`.
+ *
+ * Each test checks that vsnap loaded this config for the test's project, so
+ * a test that imports another package's `canvasTest` fails.
+ */
+export function bindCanvasTest<const C extends VsnapConfig>(config: C): CanvasTestAPI<C> {
+    return withModifiers((declare, name, optionsOrPose, pose) => declareCanvasTest({ declare, name, optionsOrPose, pose, config })) as CanvasTestAPI<C>;
+}
 
 /**
  * Declares a visual test of an HTML view. The test prepares the element
@@ -224,13 +243,24 @@ function sortArguments<P extends Pose<unknown>, O extends object>(optionsOrPose:
     return [pose, optionsOrPose];
 }
 
-function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object | AnyPose, pose?: AnyPose): void {
-    const [viewPose, options] = sortArguments(optionsOrPose, pose);
-    const { test: testOptions, image } = splitTestOptions(options);
+function declareCanvasTest(options: {
+    readonly declare: Declare;
+    readonly name: string;
+    readonly optionsOrPose: object | AnyPose;
+    readonly pose: AnyPose | undefined;
+    /** The config that `bindCanvasTest` bound this `canvasTest` to, if it did. */
+    readonly config?: VsnapConfig;
+}): void {
+    const { declare, name, config } = options;
+    const [viewPose, testAndImageOptions] = sortArguments(options.optionsOrPose, options.pose);
+    const { test: testOptions, image } = splitTestOptions(testAndImageOptions);
     const { kind: kindName, canBeBlank, ...imageOptions } = image as { readonly kind?: string; readonly canBeBlank?: boolean };
     declare(name, testOptions, async (args, { task }) => {
         const { setup, id } = await startTest(task, 'canvas');
         const viewKinds = await loadViewKinds();
+        if (config !== undefined && config !== viewKinds.config) {
+            throw new Error(`'${id.test}' takes canvasTest from a config other than ${viewKinds.configFile}, which is this project's. Import canvasTest from this project's config.`);
+        }
         const named = kindName ?? viewKinds.defaultView;
         const kind = named === 'canvas' ? undefined : findKind(viewKinds, named, id.test);
         const ms: Record<string, number> = {};

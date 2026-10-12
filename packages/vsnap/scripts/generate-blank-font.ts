@@ -8,8 +8,10 @@
 
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildBlankFont } from '../blank-font.ts';
-import { PACKAGE_DIR } from '../paths.ts';
+import { buildBlankFont } from './blank-font.ts';
+
+/** This package's folder. */
+const PACKAGE_DIR = join(import.meta.dirname, '..');
 
 const out = join(PACKAGE_DIR, 'src', 'browser', 'fonts', 'visual-blank.ttf');
 const font = buildBlankFont({ family: 'Visual Blank' });

@@ -1,7 +1,7 @@
 // Two test files share this folder, and so do their reference images.
 import { Graphics } from 'pixi.js';
 import { describe } from 'vitest';
-import { canvasTest } from 'vsnap';
+import { canvasTest } from '../../../vsnap.config';
 
 describe('Score', () => {
     canvasTest('empty', () => new Graphics().rect(0, 0, 40, 8).stroke({ width: 2, color: 0xffffff }));

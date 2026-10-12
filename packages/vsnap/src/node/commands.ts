@@ -201,6 +201,12 @@ function judge(options: {
     if (exists) expected = decodePng(readFileSync(file));
     const isSameSize = expected !== undefined && expected.width === actual.width && expected.height === actual.height;
     const comparison = expected !== undefined && isSameSize ? compareImages({ expected, actual }) : undefined;
+    // The same pixels, in a file that lacks their hash, such as one that a
+    // paint program saved. A write adds the hash, so that `-u` repairs it.
+    if (comparison?.changed === 0) {
+        if (isWritable) writeFileSync(file, encodePng(actual));
+        return { outcome: 'same', referenceFile };
+    }
     if (comparison?.isWithinTolerance) {
         return { outcome: 'within-tolerance', changed: comparison.changed, maxDelta: comparison.maxDelta, referenceFile };
     }

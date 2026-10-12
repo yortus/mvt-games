@@ -142,8 +142,10 @@ async function ensureApp(isSmooth: boolean): Promise<Application> {
         return made;
     })();
     const ready = await app;
-    // The renderer reads this field every frame. Pixi offers no setter for it.
-    (ready.renderer as unknown as { _roundPixels: number })._roundPixels = isSmooth ? 0 : 1;
+    // The renderer reads this internal field every frame, and Pixi offers no
+    // setter for it. Pixi's types declare it, so a rename fails the type check,
+    // and a test checks that the renderer still reads it.
+    ready.renderer._roundPixels = isSmooth ? 0 : 1;
     return ready;
 }
 

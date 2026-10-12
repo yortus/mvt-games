@@ -4,7 +4,9 @@ import { defineConfig } from 'tsdown';
 // (`unbundle`), so the Node side can find the setup file and the browser
 // install step beside it. The folder is not `dist`, because Vite leaves
 // files under `dist` out of `optimizeDeps.entries`, and the setup file is one
-// of those entries.
+// of those entries. publint and attw check the package after its published
+// package.json is in place (scripts/publish-manifest.ts), since the
+// repository's names the source.
 export default defineConfig({
     entry: {
         'browser/index': 'src/browser/index.ts',
@@ -24,6 +26,4 @@ export default defineConfig({
     deps: { neverBundle: [/\?url$/, 'virtual:vsnap-config'] },
     copy: [{ from: 'src/browser/fonts/*.{ttf,otf}', to: 'lib/browser/fonts' }],
     dts: true,
-    publint: true,
-    attw: { profile: 'esm-only' },
 });

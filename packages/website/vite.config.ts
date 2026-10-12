@@ -2,8 +2,7 @@ import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
-import { entryFactsPlugin } from './scripts/vite-plugin-entry-facts';
-import { spritesheetPlugin } from './scripts/vite-plugin-spritesheet';
+import { entryFactsPlugin, spritesheetPlugin } from './scripts';
 
 const VITEPRESS_DEV_PORT = 5200;
 const SITE_ROOT = __dirname;

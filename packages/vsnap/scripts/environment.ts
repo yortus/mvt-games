@@ -10,7 +10,9 @@
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { PACKAGE_DIR } from '../paths.ts';
+
+/** This package's folder. */
+const PACKAGE_DIR = join(import.meta.dirname, '..');
 
 const require = createRequire(import.meta.url);
 const vitest = join(dirname(require.resolve('vitest/package.json')), 'vitest.mjs');

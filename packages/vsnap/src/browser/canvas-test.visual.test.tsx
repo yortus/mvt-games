@@ -5,8 +5,9 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
 import config, { type Sketch } from '../../vsnap.config';
-import { loadViewKinds } from './view-kinds';
-import { canvasTest } from './visual-test';
+import { pixiViews } from '../pixi';
+import { defineVsnapConfig, loadViewKinds } from './view-kinds';
+import { bindCanvasTest, canvasTest } from './visual-test';
 
 const SMOOTH = { artStyle: 'smooth' } as const;
 const KNOT = { kind: 'three', width: 200, height: 150, camera: createKnotCamera } as const;
@@ -112,6 +113,13 @@ describe('canvasTest', () => {
             return canvas;
         });
     });
+
+    // A canvasTest that bindCanvasTest bound to a config other than this
+    // project's, as another package's would be, fails before its pose, rather
+    // than drawing with this project's kinds. Had it drawn, its image would
+    // have passed as new.
+    const otherCanvasTest = bindCanvasTest(defineVsnapConfig({ views: [pixiViews()], defaultView: 'pixi' }));
+    otherCanvasTest('bound to the config of another project', { fails: true }, () => new Graphics().rect(0, 0, 10, 10).fill(0xffffff));
 });
 
 function createKnot(): Group {

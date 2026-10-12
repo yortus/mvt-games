@@ -138,9 +138,8 @@ export function createVisualReporter(options: {
             const references = findReferences(layout);
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             const largest = [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
-            lines.push(references.length === 1
-                ? `  The reference is one file, taking ${formatKilobytes(bytes)}:`
-                : `  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. ${references.length > largest.length ? 'These are the largest:' : 'They are:'}`);
+            if (references.length === 1) lines.push(`  The reference is one file, taking ${formatKilobytes(bytes)}:`);
+            else if (references.length > 1) lines.push(`  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. ${references.length > largest.length ? 'These are the largest:' : 'They are:'}`);
             for (const r of largest) {
                 lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${toDisplayPath(r.file)}`);
             }

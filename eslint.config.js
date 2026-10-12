@@ -89,7 +89,8 @@ export default tseslint.config(
         },
     },
     {
-        files: ['packages/*/src/**/*.{ts,tsx}'],
+        // Each package's scripts, fixtures and root config files too.
+        files: ['packages/*/src/**/*.{ts,tsx}', 'packages/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*.config.ts'],
         plugins: {
             import: importPlugin,
         },
@@ -121,6 +122,8 @@ export default tseslint.config(
                         // Vitest's own entry points, such as `vitest/browser`, through which
                         // the visual tests' harness talks to Node.
                         'vitest/**',
+                        // publint's entry points, for vsnap's step that checks its package.
+                        'publint/**',
                         // Allow the site's import-map alias. Escaped: the rule
                         // compiles each entry with minimatch, which reads a
                         // leading `#` as a comment, and then crashes on the first
@@ -244,7 +247,8 @@ export default tseslint.config(
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
-        // .vitest/ holds Vitest's output, such as an HTML report's scripts.
-        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**'],
+        // .vitest/ holds Vitest's output, such as an HTML report's scripts, and
+        // packages/vsnap/lib/ its build.
+        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/vsnap/lib/**'],
     },
 );

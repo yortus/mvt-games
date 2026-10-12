@@ -9,6 +9,8 @@
     "include": [
         "src",
         "fixtures",
+        "scripts",
+        "tsdown.config.ts",
         "vitest.config.ts",
         "vsnap.config.ts"
     ]

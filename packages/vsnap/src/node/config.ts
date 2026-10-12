@@ -313,20 +313,21 @@ function findViewConfig(root: string, named: string | undefined): string | undef
 /**
  * Checks a project's `vsnap.config` by its text, without running it, since
  * it runs in the test page. It throws if the file has no default export,
- * which vsnap reads. It warns if the file never mentions `Register`, since
- * then `canvasTest`'s types don't know its kinds of view, and every test of
- * a registered kind is a type error.
+ * which vsnap reads. It warns if the file mentions neither `Register` nor
+ * `bindCanvasTest`, since then `canvasTest`'s types don't know its kinds of
+ * view, and every test of a registered kind is a type error.
  */
 function checkViewConfig(file: string): void {
     const text = readFileSync(file, 'utf8');
     if (!/\bexport\s+default\b/.test(text)) {
         throw new Error(`${toDisplayPath(file)} has no default export. It exports its config as default: export default defineVsnapConfig({ ... }).`);
     }
-    if (!/\bRegister\b/.test(text) && !WARNED.has(file)) {
+    if (!/\b(?:Register|bindCanvasTest)\b/.test(text) && !WARNED.has(file)) {
         WARNED.add(file);
         console.warn(
             `vsnap: ${toDisplayPath(file)} doesn't give its config's type to vsnap, so canvasTest's types don't know its kinds of view. Add:\n`
-            + "    declare module 'vsnap' {\n        interface Register {\n            config: typeof config;\n        }\n    }",
+            + "    declare module 'vsnap' {\n        interface Register {\n            config: typeof config;\n        }\n    }\n"
+            + 'In a monorepo whose packages have configs of their own, export bindCanvasTest(config) instead, and import canvasTest from the config.',
         );
     }
 }

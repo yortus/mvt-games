@@ -8,24 +8,16 @@
     "sideEffects": false,
     "exports": {
         ".": {
-            "@mvtjs/source": "./src/browser/index.ts",
-            "types": "./lib/browser/index.d.ts",
-            "default": "./lib/browser/index.js"
+            "default": "./src/browser/index.ts"
         },
         "./config": {
-            "@mvtjs/source": "./src/node/index.ts",
-            "types": "./lib/node/index.d.ts",
-            "default": "./lib/node/index.js"
+            "default": "./src/node/index.ts"
         },
         "./pixi": {
-            "@mvtjs/source": "./src/pixi/index.ts",
-            "types": "./lib/pixi/index.d.ts",
-            "default": "./lib/pixi/index.js"
+            "default": "./src/pixi/index.ts"
         },
         "./three": {
-            "@mvtjs/source": "./src/three/index.ts",
-            "types": "./lib/three/index.d.ts",
-            "default": "./lib/three/index.js"
+            "default": "./src/three/index.ts"
         }
     },
     "files": [
@@ -39,12 +31,14 @@
     },
     "scripts": {
         "build": "tsdown",
+        "prepack": "tsdown && node scripts/publish-manifest.ts apply",
+        "postpack": "node scripts/publish-manifest.ts restore",
         "test": "vitest run",
         "test:unit": "vitest run -p unit",
         "test:visual": "vitest run -p \"visual-*\"",
         "test:visual:update": "vitest run -p \"visual-*\" -u",
-        "test:visual:environment": "tsx src/node/cli/environment.ts",
-        "generate-blank-font": "tsx src/node/cli/generate-blank-font.ts"
+        "test:visual:environment": "node scripts/environment.ts",
+        "generate-blank-font": "node scripts/generate-blank-font.ts"
     },
     "dependencies": {
         "fontkit": "^2.0.4",
@@ -66,15 +60,16 @@
         }
     },
     "devDependencies": {
+        "@arethetypeswrong/core": "^0.18.5",
         "@types/fontkit": "^2.0.9",
         "@types/pngjs": "^6.0.5",
         "@types/three": "^0.186.0",
         "@vitest/browser-playwright": "^5.0.3",
         "pixi.js": "^8.16.0",
         "playwright": "~1.63.0",
+        "publint": "^0.3.25",
         "three": "^0.186.1",
         "tsdown": "^0.23.0",
-        "tsx": "^4.21.0",
         "vite": "^8.3.2"
     }
 }

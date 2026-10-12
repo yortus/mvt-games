@@ -172,9 +172,31 @@ The `Register` declaration gives the config's type to `canvasTest`. So each
 test's options are checked against its kind, and its pose must return its
 kind's view. A three.js test that leaves out its `kind` is taken as Pixi,
 so `camera` is a type error, and so is a three.js object from its pose. For
-that, the project's `tsconfig.json` must include `vsnap.config.ts`. One
-TypeScript program holds one `Register`, so a monorepo whose packages have
-configs of their own type-checks each package on its own.
+that, the project's `tsconfig.json` must include `vsnap.config.ts`.
+
+One TypeScript program holds one `Register`. So in a monorepo whose
+packages have configs of their own, and share one `tsconfig.json`, each
+package's config binds `canvasTest` to itself instead, and its tests import
+it from there:
+
+```ts
+import { bindCanvasTest, defineVsnapConfig } from 'vsnap';
+import { pixiViews } from 'vsnap/pixi';
+
+const config = defineVsnapConfig({ views: [pixiViews()], defaultView: 'pixi' });
+
+// canvasTest, with types that know this config's kinds of view.
+export const canvasTest = bindCanvasTest(config);
+
+export default config;
+```
+
+```ts
+import { canvasTest } from '../vsnap.config';
+```
+
+Such a `canvasTest` also checks, as each test runs, that it is the config
+of the test's own project, so a test that imports another package's fails.
 
 A test also checks its view as it runs, by its kind's check, such as
 `instanceof Container`. A view of another kind fails its test, and the
@@ -199,7 +221,8 @@ listed kind, stop the run with an error.
 If every canvas test that gives no kind is a type error, such as
 "Container is not assignable to HTMLCanvasElement", `canvasTest`'s types
 have no default view. Check that `vsnap.config.ts` has the `Register`
-declaration, and that `tsconfig.json` includes the file.
+declaration, and that `tsconfig.json` includes the file. A test that
+imports a bound `canvasTest` imports it from the config, not from `vsnap`.
 
 ### Tests, Actual Images and Reference Images
 
@@ -608,26 +631,27 @@ them are defined once, in `src/protocol.ts`.
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `vsnap/pixi` and `vsnap/three` export. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
 | `src/node/` | The side that runs in Node. `vsnap/config` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
-| `src/node/cli/` | The maintainers' scripts: the environment's rewrite, and the generator of the blank font |
+| `scripts/` | The maintainers' scripts: the environment's rewrite, the generator of the blank font, and the step that puts the published `package.json` in place while npm packs the package |
 | `src/browser/__references__/` | The references for the calibration set, and for this package's own tests |
 | `fixtures/visual-tests-folders/` | A small project that keeps its tests in `visual-tests` folders, to check that layout |
 
 `visual-environment.json` holds the browser's fingerprint, which every
 machine's browser must match.
 
-`npm run build` builds the package into `lib/`, one JavaScript file and
-one declaration file for each module, with tsdown. That is what a project
-that installs vsnap runs. The folder isn't named `dist`, because Vite leaves
-files under `dist` out of the scan for libraries, and the setup file must
-be scanned.
+Inside this repository, nothing needs building. The entry points in
+`package.json` name the TypeScript source, and a Vitest config imports
+`vsnap/config` by name. Node runs that source itself, as long as each
+relative import names its file with `.ts`, so vsnap's Node side writes its
+imports that way.
 
-Inside this repository, nothing needs building. Each entry point has an
-export condition, `@mvtjs/source`, that names its TypeScript source, which
-the repository's Vite configs and TypeScript use. Node doesn't know that
-condition, and Node loads the packages that a Vitest config imports. So the
-repository's configs import vsnap's Node side from its source by path. Node
-runs that source itself, as long as each relative import names its file with
-`.ts`, so vsnap's Node side writes its imports that way.
+Node won't run TypeScript inside `node_modules`, so the published package
+is built. `npm pack` and `npm publish` first build it into `lib/` with
+tsdown, one JavaScript file and one declaration file for each module. Then
+`scripts/publish-manifest.ts` puts a `package.json` whose entry points name
+those files in place, checks the package with publint and attw, and puts
+the repository's `package.json` back once the tarball is made. The folder
+isn't named `dist`, because Vite leaves files under `dist` out of the scan
+for libraries, and the setup file must be scanned.
 
 vsnap's page code is never bundled by Vite, in a project or here. The setup
 file loads it by path, and the tests load it by name. Bundled, it would load
