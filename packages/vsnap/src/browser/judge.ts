@@ -57,7 +57,7 @@ export function toBase64(bytes: Uint8Array): string {
  * as the reference.
  */
 export function isPass(verdict: VisualVerdict): boolean {
-    return verdict.outcome === 'same' || verdict.outcome === 'within-tolerance' || verdict.outcome === 'updated';
+    return verdict.outcome === 'same' || verdict.outcome === 'within-tolerance' || verdict.outcome === 'updated' || verdict.outcome === 'added';
 }
 
 /**
@@ -80,9 +80,9 @@ export function describeFailure(name: string, verdict: VisualVerdict, kind: Visu
     const update = verdict.testFile === undefined ? 'Vitest with -u' : `\`npx vitest run ${verdict.testFile} -u\``;
     switch (verdict.outcome) {
         case 'new':
-            return `Image '${name}' is new. Run ${update}, and review ${verdict.actualFile ?? verdict.referenceFile}.`;
+            return `Image '${name}' is new, and this run writes no new reference images, as Vitest writes no new snapshots in CI. Run ${update} where it can, and review ${verdict.actualFile ?? verdict.referenceFile}.`;
         case 'size':
-            return `Image '${name}' changed size from ${verdict.referenceSize}. See ${verdict.actualFile}.`;
+            return `Image '${name}' changed size from ${verdict.referenceSize}. See ${verdict.actualFile}. If the change is intended, run ${update}.`;
         default: {
             const where = `The actual image is ${verdict.actualFile}, the reference image is ${verdict.referenceFile}, and the diff is ${verdict.diffFile}`;
             const kindNote = kind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';

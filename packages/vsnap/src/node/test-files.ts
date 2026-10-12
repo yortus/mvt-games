@@ -55,8 +55,8 @@ export function isSkippedFolder(name: string): boolean {
 // Internals
 // ---------------------------------------------------------------------------
 
-const CANVAS_DECLARATION = /\bcanvasTest\s*\(/;
-const HTML_DECLARATION = /\bhtmlTest\s*\(/;
+const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo))?\s*\(/;
+const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo))?\s*\(/;
 
 /** Returns the files that match the layout's globs, sorted, relative to the root, with forward slashes. */
 function listTestFiles(layout: VisualLayout): string[] {

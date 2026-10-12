@@ -59,6 +59,16 @@ describe('findVisualTestFiles', () => {
         expect(files).toEqual({ canvas: ['src/a.visual.tsx'], html: [] });
     });
 
+    it('counts the modifiers .skip, .only and .todo as declarations', () => {
+        const root = createProject('modifiers', {
+            'src/a.visual.ts': "canvasTest.only('a', () => view);",
+            'src/b.visual.ts': "htmlTest.skip('b', () => element);",
+            'src/c.visual.ts': "canvasTest.todo('c');",
+        });
+        const files = findVisualTestFiles(createLayout({ root, include: ['src/*.visual.ts'] }));
+        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts'], html: ['src/b.visual.ts'] });
+    });
+
     it('throws for a file that declares both kinds, or neither', () => {
         const both = createProject('both', { 'src/a.visual.ts': `${CANVAS}\n${HTML}` });
         expect(() => findVisualTestFiles(createLayout({ root: both, include: ['src/*.visual.ts'] }))).toThrow(/declares both/);

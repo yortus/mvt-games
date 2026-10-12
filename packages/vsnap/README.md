@@ -72,6 +72,18 @@ A view that changes over time, such as one that animates, is posed at a
 known moment: the pose advances it by a fixed amount of time before it
 returns it. A pose never waits for real time to pass.
 
+The options can also hold Vitest's own `timeout`, `retry`, `repeats` and
+`fails`, which work as they do on `test`. So do the modifiers
+`canvasTest.skip`, `canvasTest.only` and `canvasTest.todo`, and the same on
+`htmlTest`. Visual tests never run concurrently, even in a
+`describe.concurrent` block, because the tests of a page share its
+renderers.
+
+The first time a test runs, its image is new, and it is written as the
+test's reference image, as Vitest writes a new snapshot. Look at each new
+reference before committing it. In CI, where Vitest writes no new
+snapshots, a new image fails its test instead.
+
 ### Kinds of View
 
 Each canvas test is of one kind of view, which its options name as `kind`.
@@ -394,7 +406,7 @@ includes vsnap's projects starts a browser.
 
 | Command | What it does |
 | --- | --- |
-| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image |
+| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. A new image is written as its reference, except in CI |
 | `vitest run -p unit` | Runs the unit tests alone. No browser starts |
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
 | `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots |
@@ -408,6 +420,9 @@ hash it carries. A run compares only the hashes, so this catches a
 reference whose pixels were edited without its hash. It also finds
 reference images that no test uses, which renamed or deleted tests left
 behind. Without `-u`, it lists them and fails. With `-u`, it deletes them.
+A run that doesn't run every visual test, such as one with `-t`, or one
+with a test skipped by `.skip`, `.only` or `.todo`, does neither, and its
+summary says why.
 
 vsnap's own `vitest.config.ts` is set up this way too. In its folder,
 `npm test` runs all of its tests: its unit tests, its visual tests and

@@ -123,7 +123,10 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
 /** Returns the run's mode, from Vitest's update flag and the environment variable. */
 function findMode(ctx: { readonly project: { readonly vitest: { readonly config: { readonly snapshotOptions: { readonly updateSnapshot: string } } } } }): VisualMode {
     if (process.env.VSNAP_MODE === 'environment') return 'environment';
-    return ctx.project.vitest.config.snapshotOptions.updateSnapshot === 'all' ? 'update' : 'compare';
+    // Reference images follow Vitest's rule for snapshots. A new one is
+    // written by default, but not in CI, and -u rewrites every changed one.
+    const update = ctx.project.vitest.config.snapshotOptions.updateSnapshot;
+    return update === 'all' ? 'update' : update === 'new' ? 'new' : 'compare';
 }
 
 const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
@@ -186,7 +189,9 @@ function judge(options: {
     const testFile = options.testFile === undefined ? undefined : toDisplayPath(options.testFile);
     const hash = hashImage(actual);
     const exists = existsSync(file);
-    const isWritable = id.calibration !== undefined ? mode === 'environment' : mode !== 'compare';
+    const isWritable = id.calibration !== undefined
+        ? mode === 'environment'
+        : mode === 'update' || mode === 'environment' || (mode === 'new' && !exists);
     if (exists && readPngHash(file) === hash) return { outcome: 'same', referenceFile };
 
     let expected: RgbaImage | undefined;
@@ -199,7 +204,7 @@ function judge(options: {
     if (isWritable) {
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, encodePng(actual));
-        return { outcome: 'updated', referenceFile };
+        return { outcome: exists ? 'updated' : 'added', referenceFile };
     }
 
     const outBase = join(OUT_DIR, relative(REPO_ROOT, file)).slice(0, -'.png'.length);

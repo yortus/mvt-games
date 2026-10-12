@@ -220,8 +220,8 @@ taken, and destroys it through MVT afterwards.
 | Command | What it does |
 | --- | --- |
 | `npm test` | Runs the unit tests alone. No browser starts |
-| `npm run test:visual` | Runs every visual test, and compares each image with its reference image |
-| `npm run test:visual:update` | Also writes each new or changed image as its reference image |
+| `npm run test:visual` | Runs every visual test, and compares each image with its reference image. A new image is written as its reference, except in CI |
+| `npm run test:visual:update` | Also writes each changed image as its reference image |
 | `npx vitest run <test file> -u` | Updates the reference images of one test file |
 
 A failing test's message says what changed, and where. It also gives the

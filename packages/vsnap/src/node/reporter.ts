@@ -64,16 +64,15 @@ export function createVisualReporter(options: {
             const testModules = allModules.filter((m) => projectNames.includes(m.project.name));
             if (testModules.length === 0) return;
             const isUpdate = vitest?.config.snapshotOptions.updateSnapshot === 'all' || process.env.VSNAP_MODE === 'environment';
-            const isComplete = reason !== 'interrupted'
-                && vitest?.config.testNamePattern === undefined
-                && testFiles.every((file) => startedFiles.has(file))
-                && testModules.every((m) => m.errors().length === 0 && [...m.children.allTests()].every((t) => t.result().state !== 'skipped'));
+            const incomplete = findIncompleteness({ reason, vitest, testFiles, startedFiles, testModules });
+            const isComplete = incomplete === undefined;
             const used = listUsedReferences(layout, testModules);
             const sharedLines = describeSharedReferences(used);
             const orphanLines = [
                 ...sharedLines,
                 ...(sharedLines.length === 0 && isComplete ? settleOrphans({ layout, state, used, isUpdate }) : []),
                 ...(isComplete ? checkEveryReference(layout, options.testFiles) : []),
+                ...(isComplete ? [] : [`  The reference images were not checked, and no unused ones were looked for, because ${incomplete}. A run of every visual test does both.`]),
             ];
             const images: { name: string; meta: VisualTestMeta; total: number }[] = [];
             for (const module of testModules) {
@@ -102,6 +101,12 @@ export function createVisualReporter(options: {
             const counts = new Map<string, number>();
             for (const p of images) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
             lines.push(`  Compared with ${images.length === 1 ? 'its reference' : 'their references'}, ${[...counts].map(([outcome, n]) => `${n} ${OUTCOMES[outcome] ?? outcome}`).join(', ')}.`);
+            const added = images.filter((p) => p.meta.outcome === 'added');
+            if (added.length > 0) {
+                const one = added.length === 1;
+                lines.push(`  ${count(added.length, 'new image')} ${one ? 'was' : 'were'} written as ${one ? 'its reference' : 'their references'}, as Vitest writes new snapshots. Look at ${one ? 'it' : 'each'} before committing:`);
+                for (const p of added) lines.push(`    ${p.name}`);
+            }
             const within = counts.get('within-tolerance') ?? 0;
             if (within > 0) lines.push(`  ${within} matched within the tolerance but not exactly. That is expected only on arm64 processors.`);
             const reduced = images.filter((p) => p.meta.resolution < 1);
@@ -141,7 +146,34 @@ const OUTCOMES: Readonly<Record<string, string>> = {
     'new': 'new',
     'size': 'changed size',
     'updated': 'updated',
+    'added': 'added',
 };
+
+/**
+ * Returns why a run did not run every visual test, so that the checks of
+ * every reference image can't run, or undefined if it did run them all.
+ */
+function findIncompleteness(options: {
+    readonly reason: TestRunEndReason;
+    readonly vitest: Vitest | undefined;
+    readonly testFiles: readonly string[];
+    readonly startedFiles: ReadonlySet<string>;
+    readonly testModules: readonly TestModule[];
+}): string | undefined {
+    if (options.reason === 'interrupted') return 'the run was interrupted';
+    if (options.vitest?.config.testNamePattern !== undefined) return 'a test name pattern (-t) chose the tests';
+    const missing = options.testFiles.filter((file) => !options.startedFiles.has(file)).length;
+    if (missing > 0) return `${count(missing, 'visual test file')} did not run`;
+    if (options.testModules.some((m) => m.errors().length > 0)) return 'a test file failed to load';
+    let skipped = 0;
+    for (const module of options.testModules) {
+        for (const test of module.children.allTests()) {
+            if (test.result().state === 'skipped') skipped++;
+        }
+    }
+    if (skipped > 0) return `${count(skipped, 'test')} ${skipped === 1 ? 'was' : 'were'} skipped, by .skip, .only or .todo`;
+    return undefined;
+}
 
 /** A reference, and the full names of the tests that used it in this run. */
 interface UsedReference {

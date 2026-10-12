@@ -6,4 +6,5 @@ export {
     type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type DefaultView, defineVsnapConfig, type DrawnImage, type HtmlViewKind, htmlViews, type Register,
     type ViewKind, type VsnapConfig,
 } from './view-kinds';
-export { canvasTest, type CanvasTest, htmlTest } from './visual-test';
+export { canvasTest, type CanvasTestForms, htmlTest, type HtmlTestForms, type WithModifiers } from './visual-test';
+export type { VitestTestOptions } from './test-options';

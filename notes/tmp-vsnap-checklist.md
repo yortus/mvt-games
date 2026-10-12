@@ -108,7 +108,7 @@ Each review finding says how it was checked:
   should say to gitignore it. `toDisplayPath` is relative to a repo root.
   On Windows, a reference on another drive makes `relative()` return an
   absolute path, which breaks the output path (`src/node/commands.ts`).
-- [ ] **P11. The "too big" failure gives no update command**
+- [x] **P11. The "too big" failure gives no update command**
   (`src/browser/judge.ts`), though the README says failure messages give
   it.
 - [ ] **P12. The new calibration images have run only on Windows.** Push
@@ -116,14 +116,14 @@ Each review finding says how it was checked:
 
 ## API and design
 
-- [ ] **A1. Run-level checks are switched off silently.** One skipped or
+- [x] **A1. Run-level checks are switched off silently.** One skipped or
   `todo` test turns off the complete-run checks
   (`src/node/reporter.ts`). The summary should say why they didn't run.
 - [ ] **A2. `extends: true` brings in more than `include` and `exclude`.**
   It probably also brings the root's `setupFiles`, `globalSetup` and
   `retry` into the browser projects. A Node-only setup file would break
   the page. Check, then warn or strip them.
-- [ ] **A3. The options are not Vitest's options.** The README says they
+- [x] **A3. The options are not Vitest's options.** The README says they
   come first "as they do in Vitest's `test`", but they don't accept
   `timeout`, `retry` or `skip`, and there is no `.skip`, `.only` or
   `.each`. Change the wording, or add the support.
@@ -177,14 +177,15 @@ Each review finding says how it was checked:
 From the usability review of 2026-10-12, from a Vitest user's point of
 view. A1, A2, A4, A5, B1 and P7 also came up there.
 
-- [ ] **U1. New images fail their test.** Vitest writes new snapshots
+- [x] **U1. New images fail their test.** Vitest writes new snapshots
   automatically on a developer's machine, and refuses only in CI. vsnap
   fails every new image until `-u`, so a first test is red for no fault.
   Fix: write new references locally, and fail on them in CI, as Vitest
   does.
-- [ ] **U2. No `.skip`, `.only`, `.todo` or `.each`, and no Vitest test
+- [x] **U2. No `.skip`, `.only`, `.todo` or `.each`, and no Vitest test
   options** such as `timeout` or `retry`. Users will reach for
   `canvasTest.only(...)`. Add them, and pass Vitest's options through.
+  Done on 2026-10-12, except `.each`, which is U9.
 - [ ] **U3. Show the images where Vitest shows results.** A failure names a
   PNG under `.vitest/vsnap/`, which the user opens by hand. Vitest's test
   annotations can carry attachments, which the Vitest UI and HTML reporter
@@ -200,6 +201,9 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   config is flat today: moving to projects, moving `include` and
   `exclude` into the unit project, adding `vsnap.config.ts` with
   `Register`, and including it in `tsconfig.json`.
+- [ ] **U9. `canvasTest.each` and `htmlTest.each`,** with Vitest's
+  table forms and name formatting (`%s`, `$name`). Until then, a test can
+  declare its cases in a loop, as the website's tests do.
 - [ ] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**
   `vsnap({ config: './vsnap.config.ts' })`, optional, with today's
   location as the default, so that a reader of the Vitest config sees where

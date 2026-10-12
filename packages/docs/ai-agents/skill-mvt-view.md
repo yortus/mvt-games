@@ -611,10 +611,11 @@ describe('WinBannerView', () => {
 - A three.js view's options give `kind: 'three'`, the image's `width` and
   `height`, and a `camera`. If the view is lit by an environment map, pass
   the game's scene setup function as `scene`.
-- Record the reference images with `npx vitest run <test file> -u`, or
-  run the whole update (`npm run test:visual:update`). Look at each new or
-  changed PNG, and commit it with the view.
-  Never accept a change you have not looked at.
+- A new test's reference image is written the first time it runs, as a
+  new Vitest snapshot is (except in CI). Accept a changed image with
+  `npx vitest run <test file> -u`, or the whole update
+  (`npm run test:visual:update`). Look at each new or changed PNG, and
+  commit it with the view. Never accept a change you have not looked at.
 - `npm run test:visual` must pass before you hand over. A failure gives
   the paths of the reference image, the actual image and a diff. Read the diff
   before you decide that the change is intended.

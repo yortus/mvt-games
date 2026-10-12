@@ -6,6 +6,7 @@ import { type PageSetup, setUpPage } from './page-setup';
 import type { Pose } from './pose';
 import type { VisualTestMeta, VisualVerdict } from '../protocol';
 import { describeValue, isAllOne } from '../shared';
+import { splitTestOptions, type VitestTestOptions } from './test-options';
 import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type DefaultView, loadViewKinds } from './view-kinds';
 
 // ---------------------------------------------------------------------------
@@ -17,10 +18,24 @@ import { type CanvasKinds, type CanvasTestOptions, type CanvasViewKind, type Def
  * pose returns: one that the project's `vsnap.config.ts` registers, or
  * `'canvas'` for a canvas that the pose drew. A test of the config's default
  * view may leave `kind` out, and may leave out its options if they are all
- * optional, as Pixi's are.
+ * optional, as Pixi's are. The options may also hold Vitest's `timeout`,
+ * `retry`, `repeats` and `fails`.
  */
-export type CanvasTest = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K>, pose: Pose<CanvasKinds[K]['view']>) => void)
+export type CanvasTestForms = (<K extends keyof CanvasKinds = DefaultView>(name: string, options: CanvasTestOptions<K> & VitestTestOptions, pose: Pose<CanvasKinds[K]['view']>) => void)
     & (object extends CanvasKinds[DefaultView]['options'] ? (name: string, pose: Pose<CanvasKinds[DefaultView]['view']>) => void : unknown);
+
+/** `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`, `repeats` and `fails`. */
+export interface HtmlTestForms {
+    (name: string, pose: Pose<Element>): void;
+    (name: string, options: HtmlImageOptions & VitestTestOptions, pose: Pose<Element>): void;
+}
+
+/** A kind of visual test, with Vitest's modifiers: `.skip`, `.only` and `.todo`, which work as they do on Vitest's `test`. */
+export type WithModifiers<F> = F & {
+    readonly skip: F;
+    readonly only: F;
+    readonly todo: (name: string) => void;
+};
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -33,12 +48,12 @@ export type CanvasTest = (<K extends keyof CanvasKinds = DefaultView>(name: stri
  * or a canvas that the pose drew. The test checks the view's kind, draws
  * it, and compares the actual image with its reference image,
  * `__references__/<this file>/<describe blocks>-<name>.png`. Canvas tests
- * run in one page that every such file shares.
+ * run in one page that every such file shares, one at a time.
  *
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export const canvasTest = declareCanvasTest as CanvasTest;
+export const canvasTest = withModifiers(declareCanvasTest) as WithModifiers<CanvasTestForms>;
 
 /**
  * Declares a visual test of an HTML view. The test prepares the element
@@ -52,11 +67,36 @@ export const canvasTest = declareCanvasTest as CanvasTest;
  * A file declares one kind of visual test only, because each kind runs in
  * its own kind of page.
  */
-export function htmlTest(name: string, pose: Pose<Element>): void;
-export function htmlTest(name: string, options: HtmlImageOptions, pose: Pose<Element>): void;
-export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<Element>, pose?: Pose<Element>): void {
+export const htmlTest = withModifiers(declareHtmlTest) as WithModifiers<HtmlTestForms>;
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+type ImageId = ReturnType<typeof nameImage>;
+
+/** Vitest's `test`, or one of its modifiers, `test.skip` and `test.only`, which declares a test as `test` does. */
+type Declare = typeof test.skip;
+
+/** A function that declares one kind of visual test with one of Vitest's declarers. */
+type DeclareVisualTest = (declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>) => void;
+
+/** Returns a kind of visual test, with `.skip`, `.only` and `.todo`, from the function that declares it. */
+function withModifiers(declareVisualTest: DeclareVisualTest): unknown {
+    const create = (declare: Declare) => (name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void => {
+        declareVisualTest(declare, name, optionsOrPose, pose);
+    };
+    return Object.assign(create(test), {
+        skip: create(test.skip),
+        only: create(test.only),
+        todo: (name: string) => test.todo(name),
+    });
+}
+
+function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
     const [elementPose, options] = sortArguments(optionsOrPose, pose);
-    test(name, SERIAL, async ({ task }) => {
+    const { test: testOptions, image } = splitTestOptions(options);
+    declare(name, testOptions, async ({ task }) => {
         const { id } = await startTest(task, 'html');
         const kind = (await loadViewKinds()).html;
         const ms: Record<string, number> = {};
@@ -71,7 +111,7 @@ export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<El
             t = performance.now();
             kind.prepare?.(view);
             ms.prepare = performance.now() - t;
-            captured = await captureHtmlImage(view, { ...options, maxPixels: inject('visualMaxPixels') }, id);
+            captured = await captureHtmlImage(view, { ...(image as HtmlImageOptions), maxPixels: inject('visualMaxPixels') }, id);
             ms.capture = captured.captureMs;
         }
         finally {
@@ -81,19 +121,6 @@ export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<El
         finishTest(task.meta, { id, verdict: captured, kind: 'html', size: { ...captured, resolution: 1 }, ms });
     });
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-type ImageId = ReturnType<typeof nameImage>;
-
-/**
- * The options of every visual test. A test never runs concurrently, even in a
- * `describe.concurrent` block: tests of one page share its renderers and
- * its seeded random numbers.
- */
-const SERIAL = { concurrent: false } as const;
 
 /** Sets the page up, names the test's image, and checks that the test runs in its kind of page. */
 async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
@@ -134,10 +161,11 @@ function sortArguments<P extends Pose<unknown>, O extends object>(optionsOrPose:
     return [pose, optionsOrPose];
 }
 
-function declareCanvasTest(name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
+function declareCanvasTest(declare: Declare, name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
     const [viewPose, options] = sortArguments(optionsOrPose, pose);
-    const { kind: kindName, ...imageOptions } = options as { readonly kind?: string };
-    test(name, SERIAL, async ({ task }) => {
+    const { test: testOptions, image } = splitTestOptions(options);
+    const { kind: kindName, ...imageOptions } = image as { readonly kind?: string };
+    declare(name, testOptions, async ({ task }) => {
         const { setup, id } = await startTest(task, 'canvas');
         const viewKinds = await loadViewKinds();
         const named = kindName ?? viewKinds.defaultView;

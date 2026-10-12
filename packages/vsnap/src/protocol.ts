@@ -18,7 +18,7 @@
  * - `environment` also rewrites the environment's fingerprint (the browser's
  *   facts in `visual-environment.json`) and the calibration set's references.
  */
-export type VisualMode = 'compare' | 'update' | 'environment';
+export type VisualMode = 'compare' | 'new' | 'update' | 'environment';
 
 /**
  * Which project a page belongs to. The `canvas` project renders Pixi and
@@ -34,7 +34,8 @@ export type VisualOutcome =
     | 'differs'
     | 'new' // no reference
     | 'size' // a different size from the reference
-    | 'updated'; // written as the new reference
+    | 'updated' // written as the new reference
+    | 'added'; // written as the reference of a new image
 
 export interface VisualVerdict {
     readonly outcome: VisualOutcome;

@@ -103,8 +103,8 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm test`             | Every workspace's unit tests but vsnap's (Vitest's `unit` project; no browser) |
-| `npm run test:visual`  | Visual tests (the `visual-*` projects): compare each actual image with its reference image (downloads the browser on first run) |
-| `npm run test:visual:update` | Also write changed and new actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
+| `npm run test:visual`  | Visual tests (the `visual-*` projects): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
+| `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
 | `npm run test:vsnap`   | All of vsnap's own tests, unit and visual, from its own config |
 | `npm run test:visual:environment -w vsnap` | Rewrite vsnap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
