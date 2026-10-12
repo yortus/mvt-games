@@ -121,7 +121,10 @@ describes.
   renderer, needs no registration. It can be an `HTMLCanvasElement` or an
   `OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
   in the page needs `preserveDrawingBuffer: true`, because the browser
-  clears it once it is shown.
+  clears it once it is shown. The canvas stays the pose's own: vsnap
+  doesn't dispose of it, since a pose may draw on the same canvas for every
+  test. A pose that makes a new WebGL canvas for each test should release
+  its context, since a page keeps only so many.
 
 `defaultView` names the kind that a test is of when it gives no `kind`.
 Most projects draw most of their views one way, so most of their tests give

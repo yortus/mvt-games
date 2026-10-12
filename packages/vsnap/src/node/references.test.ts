@@ -5,7 +5,7 @@ import { PNG } from 'pngjs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
 import { encodePng, type RgbaImage } from './png.ts';
-import { checkReference, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference } from './references.ts';
+import { checkReference, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference, toReferenceGlob } from './references.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-references-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -27,14 +27,23 @@ function writePlainPng(file: string): void {
 }
 
 describe('findReferences', () => {
-    it('finds the PNGs that carry a hash, in any folder, and no other PNGs', () => {
+    it('finds the PNGs that carry a hash, where the reference path puts them, and no other PNGs', () => {
         const root = join(dir, 'tree');
         mkdirSync(join(root, 'views', 'visual-tests'), { recursive: true });
         writeFileSync(join(root, 'views', 'visual-tests', 'one.png'), encodePng(createImage(1)));
         writePlainPng(join(root, 'views', 'visual-tests', 'texture.png'));
         writePlainPng(join(root, 'views', 'not-a-reference.png'));
-        const found = findReferences(root).map((r) => r.file);
-        expect(found).toEqual([join(root, 'views', 'visual-tests', 'one.png')]);
+        const layout = createLayout({ root, referencePath: '{testFileDir}/{imageName}.png' });
+        expect(findReferences(layout).map((r) => r.file)).toEqual([join(root, 'views', 'visual-tests', 'one.png')]);
+    });
+
+    it('leaves out a PNG with a hash that the reference path could not produce, such as a copy in a docs folder', () => {
+        const root = join(dir, 'outside');
+        mkdirSync(join(root, 'views', '__references__', 'hud.visual.test.tsx'), { recursive: true });
+        mkdirSync(join(root, 'docs'), { recursive: true });
+        writeFileSync(join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'docs', 'Hud.png'), encodePng(createImage(1)));
+        expect(findReferences(createLayout({ root })).map((r) => r.file)).toEqual([join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png')]);
     });
 
     it('skips a folder below the root that is a root of visual tests of its own', () => {
@@ -43,8 +52,17 @@ describe('findReferences', () => {
         writeFileSync(join(root, 'own.png'), encodePng(createImage(1)));
         registerRoot(join(root, 'fixture'));
         writeFileSync(join(root, 'fixture', 'theirs.png'), encodePng(createImage(2)));
-        expect(findReferences(root).map((r) => r.file)).toEqual([join(root, 'own.png')]);
-        expect(findReferences(join(root, 'fixture')).map((r) => r.file)).toEqual([join(root, 'fixture', 'theirs.png')]);
+        const referencePath = '{testFileDir}/{imageName}.png';
+        expect(findReferences(createLayout({ root, referencePath })).map((r) => r.file)).toEqual([join(root, 'own.png')]);
+        expect(findReferences(createLayout({ root: join(root, 'fixture'), referencePath })).map((r) => r.file)).toEqual([join(root, 'fixture', 'theirs.png')]);
+    });
+});
+
+describe('toReferenceGlob', () => {
+    it('matches any folders for a folder variable, and any one name for a name variable', () => {
+        expect(toReferenceGlob('{testFileDir}/__references__/{testFileName}/{imageName}.png')).toBe('**/__references__/*/*.png');
+        expect(toReferenceGlob('{testFileDir}/{imageName}.ref.png')).toBe('**/*.ref.png');
+        expect(toReferenceGlob('visual-references/{testFilePath}/{imageName}.png')).toBe('visual-references/**/*.png');
     });
 });
 

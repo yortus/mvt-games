@@ -34,7 +34,7 @@ import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
 import { registerRoot } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
-import { findVisualTestFiles } from './test-files.ts';
+import { escapeGlob, findVisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -115,7 +115,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     const projectNames = kinds.map((kind) => `${name}-${kind}`);
     const viewConfig = findViewConfig(root);
     const testFiles = [...files.canvas, ...files.html].map((file) => resolve(root, file));
-    const includes = [...files.canvas, ...files.html];
+    const includes = [...files.canvas, ...files.html].map(escapeGlob);
     const reporter = createVisualReporter({ layout, state, projectNames, testFiles, includes });
     const plugin = createVsnapPlugin({ reporter, root, files: () => findVisualTestFiles(layout), initialFiles: files });
     return kinds.map((kind, i) => createVisualProject({ ...options, root, name: projectNames[i], kind, files: files[kind], commands, viewConfig, plugin }));
@@ -161,15 +161,18 @@ function createVisualProject(options: VsnapOptions & {
         // scan, and miss a library that a test has started to import. The
         // bundling takes about a second.
         optimizeDeps: {
-            entries: [...files, ...setupFiles, ...viewConfig],
+            entries: [...files.map(escapeGlob), ...setupFiles.map((file) => escapeGlob(file.replaceAll('\\', '/'))), ...viewConfig],
             force: true,
         },
         test: {
             name: options.name,
-            include: [...files],
+            // Each file is a glob to Vitest, so its name is escaped.
+            include: files.map(escapeGlob),
             // The project runs one file at a time, so it needs a group of its
-            // own, after the projects that run several at once.
-            sequence: { groupOrder: 1 },
+            // own, after the projects that run several at once. Its tests never
+            // run concurrently, whatever the config they inherit says, since
+            // they share a page.
+            sequence: { groupOrder: 1, concurrent: false },
             globalSetup: [INSTALL_BROWSER],
             // An HTML view's stylesheet stays in the page once it is imported,
             // so each HTML file gets a fresh page.

@@ -37,6 +37,15 @@ export function findVisualTestFiles(layout: VisualLayout): Readonly<Record<Visua
     return files;
 }
 
+/**
+ * Returns a path as a glob that matches only that path. Vitest's `include`
+ * and Vite's dependency scan read their entries as globs, so a test file in
+ * a folder such as `[slug]` or `(auth)` would otherwise match nothing.
+ */
+export function escapeGlob(path: string): string {
+    return path.replace(/[\\*?[\]{}()!+@]/g, '\\$&');
+}
+
 /** Returns whether a folder holds no visual test files or reference images: installed packages, build output, and hidden folders such as `.git`. */
 export function isSkippedFolder(name: string): boolean {
     return name === 'node_modules' || name === 'dist' || name.startsWith('.');

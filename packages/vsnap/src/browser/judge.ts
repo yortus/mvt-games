@@ -11,13 +11,14 @@ import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerd
 export const visualCommands = commands as unknown as VisualCommands;
 
 /**
- * Returns the running test's image name, with the test's full name. The
- * image name is the file name of the test's reference image, without
- * `.png`. It joins the test's describe blocks and its name.
+ * Returns a test's image name, with the test's full name, which joins the
+ * test's describe blocks and its name. The image name is the file name of
+ * the test's reference image, without `.png`. It comes from the test's own
+ * name, not from Vitest's state of the running test, which another test
+ * could change.
  */
-export function nameCurrentImage(): { readonly name: string; readonly test: string } {
-    const test = expect.getState().currentTestName ?? 'unnamed';
-    return { name: toImageName(test), test };
+export function nameImage(fullTestName: string): { readonly name: string; readonly test: string } {
+    return { name: toImageName(fullTestName), test: fullTestName };
 }
 
 /**

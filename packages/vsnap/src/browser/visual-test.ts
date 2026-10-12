@@ -1,7 +1,7 @@
 import { inject, type TaskMeta, test } from 'vitest';
 import { type CanvasImage, checkCanvasBudget, isCanvas, readCanvas } from './canvas-drawing';
 import { captureHtmlImage, type HtmlImageOptions } from './html-image';
-import { describeFailure, hashPixels, isPass, nameCurrentImage, openSession, toBase64, visualCommands } from './judge';
+import { describeFailure, hashPixels, isPass, nameImage, openSession, toBase64, visualCommands } from './judge';
 import { type PageSetup, setUpPage } from './page-setup';
 import type { Pose } from './pose';
 import type { VisualTestMeta, VisualVerdict } from '../protocol';
@@ -56,8 +56,8 @@ export function htmlTest(name: string, pose: Pose<Element>): void;
 export function htmlTest(name: string, options: HtmlImageOptions, pose: Pose<Element>): void;
 export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<Element>, pose?: Pose<Element>): void {
     const [elementPose, options] = sortArguments(optionsOrPose, pose);
-    test(name, async ({ task }) => {
-        const { id } = await startTest(task.meta, 'html');
+    test(name, SERIAL, async ({ task }) => {
+        const { id } = await startTest(task, 'html');
         const kind = (await loadViewKinds()).html;
         const ms: Record<string, number> = {};
         let t = performance.now();
@@ -86,13 +86,20 @@ export function htmlTest(name: string, optionsOrPose: HtmlImageOptions | Pose<El
 // Internals
 // ---------------------------------------------------------------------------
 
-type ImageId = ReturnType<typeof nameCurrentImage>;
+type ImageId = ReturnType<typeof nameImage>;
+
+/**
+ * The options of every visual test. A test never runs concurrently, even in a
+ * `describe.concurrent` block: tests of one page share its renderers and
+ * its seeded random numbers.
+ */
+const SERIAL = { concurrent: false } as const;
 
 /** Sets the page up, names the test's image, and checks that the test runs in its kind of page. */
-async function startTest(meta: TaskMeta, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
+async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
     const setup = await setUpPage();
-    const id = nameCurrentImage();
-    meta.visualImage = id.name;
+    const id = nameImage(task.fullTestName);
+    task.meta.visualImage = id.name;
     const kind = inject('visualKind');
     if (kind !== declared) {
         // The config sends each file to the page its declarations ask for,
@@ -130,8 +137,8 @@ function sortArguments<P extends Pose<unknown>, O extends object>(optionsOrPose:
 function declareCanvasTest(name: string, optionsOrPose: object | Pose<unknown>, pose?: Pose<unknown>): void {
     const [viewPose, options] = sortArguments(optionsOrPose, pose);
     const { kind: kindName, ...imageOptions } = options as { readonly kind?: string };
-    test(name, async ({ task }) => {
-        const { setup, id } = await startTest(task.meta, 'canvas');
+    test(name, SERIAL, async ({ task }) => {
+        const { setup, id } = await startTest(task, 'canvas');
         const viewKinds = await loadViewKinds();
         const named = kindName ?? viewKinds.defaultView;
         const kind = named === 'canvas' ? undefined : findKind(viewKinds, named, id.test);
@@ -143,14 +150,14 @@ function declareCanvasTest(name: string, optionsOrPose: object | Pose<unknown>, 
         let image: CanvasImage;
         let blankHint = '';
         if (kind === undefined) {
-            if (!isCanvas(posed)) throw new Error(describeMismatch({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test }));
+            if (!isCanvas(posed)) throw rejectView({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test });
             t = performance.now();
             checkCanvasBudget(posed, inject('visualMaxPixels'));
             image = readCanvas(posed);
             ms.draw = performance.now() - t;
         }
         else {
-            if (!kind.isView(posed)) throw new Error(describeMismatch({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test }));
+            if (!kind.isView(posed)) throw rejectView({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test });
             image = await drawView(kind, posed, imageOptions, ms);
             blankHint = kind.blankHint === undefined ? '' : ` ${kind.blankHint}`;
         }
@@ -183,6 +190,25 @@ function findKind(viewKinds: Awaited<ReturnType<typeof loadViewKinds>>, name: st
     }
     const names = viewKinds.canvas.map((candidate) => candidate.name).join(', ');
     throw new Error(`'${test}' is of the kind '${name}', but ${viewKinds.configFile} registers no kind of view with that name. It registers ${names === '' ? 'none' : names}.`);
+}
+
+/**
+ * Returns the error for a view that is not of the kind that its test is of.
+ * First it disposes of the view, if a registered kind claims it, so that a
+ * rejected view doesn't stay in the page that the tests share. A canvas is
+ * the pose's own, which it may draw on again, so it is left alone.
+ */
+function rejectView(options: Parameters<typeof describeMismatch>[0]): Error {
+    const error = new Error(describeMismatch(options));
+    const claimant = isCanvas(options.view) ? undefined : options.viewKinds.canvas.find((kind) => kind.isView(options.view));
+    try {
+        claimant?.dispose(options.view);
+    }
+    catch {
+        // The error about the view's kind matters more than one from
+        // disposing of it
+    }
+    return error;
 }
 
 /**

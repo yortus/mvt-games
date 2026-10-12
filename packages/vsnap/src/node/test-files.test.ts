@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
-import { findVisualTestFiles } from './test-files.ts';
+import { escapeGlob, findVisualTestFiles } from './test-files.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-test-files-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -20,6 +20,14 @@ function createProject(name: string, files: Record<string, string>): string {
     }
     return root;
 }
+
+describe('escapeGlob', () => {
+    it('escapes the characters that globs give a meaning to, and leaves a plain path alone', () => {
+        expect(escapeGlob('src/hud/hud-view.visual.test.tsx')).toBe('src/hud/hud-view.visual.test.tsx');
+        expect(escapeGlob('src/routes/[slug]/(auth)/view.visual.test.tsx')).toBe('src/routes/\\[slug\\]/\\(auth\\)/view.visual.test.tsx');
+        expect(escapeGlob('a/{b}/c*?!+@.ts')).toBe('a/\\{b\\}/c\\*\\?\\!\\+\\@.ts');
+    });
+});
 
 describe('findVisualTestFiles', () => {
     it('sorts the files that match the globs by the kind of test they declare', () => {

@@ -83,13 +83,14 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
                 else if (SANS_FAMILIES.has(key)) base = options.sans;
                 if (base !== undefined) break;
             }
-            if (base === undefined) {
-                unpinned.add(families[0]);
-                base = options.sans;
-            }
-            font = { font: findVariation(base, weight), size, isItalic: style === 'italic' || style.startsWith('oblique') };
+            const unpinnedFamily = base === undefined ? families[0] : undefined;
+            base ??= options.sans;
+            font = { font: findVariation(base, weight), size, isItalic: style === 'italic' || style.startsWith('oblique'), unpinnedFamily };
             parsed.set(css, font);
         }
+        // Recorded on every use, not only the first, so that every test that
+        // asks for the family fails, whatever order the tests run in
+        if (font.unpinnedFamily !== undefined) unpinned.add(font.unpinnedFamily);
         return font;
     }
 
@@ -113,6 +114,8 @@ interface ParsedFont {
     readonly size: number;
     /** Whether the text is slanted. There is no italic test font, so italic and oblique text is slanted instead. */
     readonly isItalic: boolean;
+    /** The family asked for, if no test font stands in for any family in its list. */
+    readonly unpinnedFamily: string | undefined;
 }
 
 interface Laid {

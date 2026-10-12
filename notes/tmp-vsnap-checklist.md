@@ -13,7 +13,7 @@ Each review finding says how it was checked:
 
 ## Bugs
 
-- [ ] **B1. The unknown-font check depends on test order** (checked).
+- [x] **B1. The unknown-font check depends on test order** (checked).
   `src/browser/canvas-text.ts` records an unknown family only when its CSS
   font string misses the parse cache, so only the first test that uses a
   given string fails. Also, `src/browser/visual-test.ts` drains the set
@@ -21,24 +21,24 @@ Each review finding says how it was checked:
   families for the next test.
   Fix: record on every lookup, clear the set in `resetForTest`, and drain
   it in a `finally`.
-- [ ] **B2. The orphan scan can delete PNGs that aren't references**
+- [x] **B2. The orphan scan can delete PNGs that aren't references**
   (checked). `findReferences` in `src/node/references.ts` walks the whole
   root, and treats any PNG with the hash marker as a reference, so `-u`
   can delete a copy in `docs/`, or a nested package's references that this
   run doesn't load.
   Fix: scan only the paths that the `referencePath` template can produce.
-- [ ] **B3. Test file paths go to Vitest as globs, unescaped** (likely).
+- [x] **B3. Test file paths go to Vitest as globs, unescaped** (likely).
   `src/node/config.ts` passes them to `test.include` and
   `optimizeDeps.entries`. A file such as `src/routes/[slug]/x.visual.test.tsx`
   would never run, and the complete-run checks would silently stop too.
   Fix: escape each path.
-- [ ] **B4. Concurrent tests would break naming and drawing** (checked:
+- [x] **B4. Concurrent tests would break naming and drawing** (checked:
   nothing prevents them). Image names come from the global
   `expect.getState().currentTestName` (`src/browser/judge.ts`), and the
   Pixi stage is one shared object (`src/pixi/pixi-image.ts`).
   Fix: force `sequence.concurrent: false` in vsnap's projects, and name
   images from the test's own task.
-- [ ] **B5. Some views are never disposed** (checked). A view that fails
+- [x] **B5. Some views are never disposed** (checked). A view that fails
   its kind's check is never disposed (`src/browser/visual-test.ts`), and
   nor is a `'canvas'` pose's canvas, on any path. In the shared page,
   leaked WebGL contexts could push out the renderers' own.
@@ -172,6 +172,47 @@ Each review finding says how it was checked:
 - [ ] **S4.** Record the earlier question about a configurable pixel
   tolerance (the answer and the decision) in 042.
 
+## Usability
+
+From the usability review of 2026-10-12, from a Vitest user's point of
+view. A1, A2, A4, A5, B1 and P7 also came up there.
+
+- [ ] **U1. New images fail their test.** Vitest writes new snapshots
+  automatically on a developer's machine, and refuses only in CI. vsnap
+  fails every new image until `-u`, so a first test is red for no fault.
+  Fix: write new references locally, and fail on them in CI, as Vitest
+  does.
+- [ ] **U2. No `.skip`, `.only`, `.todo` or `.each`, and no Vitest test
+  options** such as `timeout` or `retry`. Users will reach for
+  `canvasTest.only(...)`. Add them, and pass Vitest's options through.
+- [ ] **U3. Show the images where Vitest shows results.** A failure names a
+  PNG under `.vitest/vsnap/`, which the user opens by hand. Vitest's test
+  annotations can carry attachments, which the Vitest UI and HTML reporter
+  show. Check that browser mode supports them, then attach the actual,
+  reference and diff images.
+- [ ] **U4. vsnap's summary goes to standard output,** even with
+  `--reporter=json`, which could corrupt output that another tool reads.
+  Print it to standard error, or only beside a human-readable reporter.
+- [ ] **U5. Check the tools around Vitest:** the VS Code Vitest extension
+  (does it list and run visual tests?), the Vitest UI with browser
+  projects, and coverage runs that include them.
+- [ ] **U6. A step-by-step setup guide in the README** for a project whose
+  config is flat today: moving to projects, moving `include` and
+  `exclude` into the unit project, adding `vsnap.config.ts` with
+  `Register`, and including it in `tsconfig.json`.
+- [ ] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**
+  `vsnap({ config: './vsnap.config.ts' })`, optional, with today's
+  location as the default, so that a reader of the Vitest config sees where
+  the rest lives. (Moving the page's config into `vitest.config.ts`, and
+  copying it out, was considered and rejected on 2026-10-12: the page's
+  parts are functions, which can't be copied out of a running config, and
+  copying their source would need fragile code extraction.)
+- [ ] **U8. Check `vsnap.config.ts` when the config loads, in Node,
+  without running it:** that it exists when the project has canvas tests of
+  kinds other than `'canvas'`, and that it calls `defineVsnapConfig`. A
+  plain text check, as for test files, so a missing or misplaced file
+  stops the run before any browser starts.
+
 ## The rest of 042, step 10
 
 - [ ] Review each dependency, with P1 and P2.
@@ -195,4 +236,6 @@ Each review finding says how it was checked:
 - [ ] Thoroughly review the docs pages that mention visual testing
 - [ ] Thoroughly review the vsnap README and docs in the vsnap package
 - [ ] Address concurrency in visual test runs
+- [ ] finalise standard paths for reference images
+- [ ] followup speed checkup - did we make it slower? Can it be faster still?
 

@@ -55,7 +55,15 @@ async function setUp(): Promise<PageSetup> {
     await loadViewKinds();
     resetRandom();
     canvasText.takeUnpinnedFamilies();
-    return { resetForTest: resetRandom, takeUnpinnedFamilies: canvasText.takeUnpinnedFamilies };
+    return {
+        resetForTest: () => {
+            resetRandom();
+            // A test that failed before its font check leaves its families
+            // behind, which the next test must not see
+            canvasText.takeUnpinnedFamilies();
+        },
+        takeUnpinnedFamilies: canvasText.takeUnpinnedFamilies,
+    };
 }
 
 const SEED = 0x5eed;

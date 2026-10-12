@@ -11,7 +11,7 @@
  * it is in.
  */
 
-import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
+import { type Dirent, existsSync, globSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout.ts';
 import { decodePng, hashImage, readPngHash } from './png.ts';
@@ -31,12 +31,37 @@ export function registerRoot(root: string): void {
 }
 
 /**
- * Returns every reference image under a root, which means every PNG that
- * carries a pixel hash. It skips installed packages, build output and
- * hidden folders. It also skips any other root of visual tests inside it.
+ * Returns every reference image of a layout: every PNG that its reference
+ * path could produce, and that carries a pixel hash. A PNG elsewhere, such
+ * as a copy of a reference in a docs folder, is never one, so a run never
+ * deletes it. It skips installed packages, build output and hidden folders,
+ * and any other root of visual tests inside the layout's root.
  */
-export function findReferences(root: string): { readonly file: string; readonly bytes: number }[] {
-    return find(root, true);
+export function findReferences(layout: VisualLayout): { readonly file: string; readonly bytes: number }[] {
+    const entries = globSync(toReferenceGlob(layout.referencePath), {
+        cwd: layout.root,
+        withFileTypes: true,
+        exclude: (entry: Dirent) => entry.isDirectory() && (isSkippedFolder(entry.name) || roots.has(toFileKey(join(entry.parentPath, entry.name)))),
+    });
+    const found: { file: string; bytes: number }[] = [];
+    for (const entry of entries) {
+        const path = join(entry.parentPath, entry.name);
+        if (entry.isFile() && readPngHash(path) !== undefined) found.push({ file: path, bytes: statSync(path).size });
+    }
+    return found.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+}
+
+/**
+ * Returns the glob that matches every path that a reference path template
+ * can produce. A folder variable matches any folders, and a name variable
+ * matches any one name.
+ */
+export function toReferenceGlob(template: string): string {
+    return template
+        .replaceAll('{testFileDir}', '**')
+        .replaceAll('{testFilePath}', '**')
+        .replaceAll('{testFileName}', '*')
+        .replaceAll('{imageName}', '*');
 }
 
 /**
@@ -114,17 +139,3 @@ export function toFileKey(file: string): string {
 
 /** The roots of visual tests that this process's config made. */
 const roots = new Set<string>();
-
-function find(dir: string, isRoot: boolean): { file: string; bytes: number }[] {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    if (!isRoot && roots.has(toFileKey(dir))) return [];
-    const found: { file: string; bytes: number }[] = [];
-    for (const entry of entries) {
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) {
-            if (!isSkippedFolder(entry.name)) found.push(...find(path, false));
-        }
-        else if (entry.name.endsWith('.png') && readPngHash(path) !== undefined) found.push({ file: path, bytes: statSync(path).size });
-    }
-    return found;
-}

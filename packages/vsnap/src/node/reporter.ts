@@ -114,7 +114,7 @@ export function createVisualReporter(options: {
             lines.push(images.length > slowest.length ? '  These tests were the slowest:' : `  ${images.length === 1 ? 'The test' : 'The tests'} took:`);
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             lines.push(...orphanLines);
-            const references = findReferences(layout.root);
+            const references = findReferences(layout);
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             const largest = [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
             lines.push(references.length === 1
@@ -196,7 +196,7 @@ function settleOrphans(options: {
     readonly isUpdate: boolean;
 }): string[] {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].map((u) => u.file)];
-    const orphans = findOrphans({ references: findReferences(options.layout.root).map((r) => r.file), compared });
+    const orphans = findOrphans({ references: findReferences(options.layout).map((r) => r.file), compared });
     if (orphans.length === 0) return [];
     const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
     if (!options.isUpdate) {
@@ -218,7 +218,7 @@ function settleOrphans(options: {
  */
 function checkEveryReference(layout: VisualLayout, testFiles: readonly string[]): string[] {
     const files = new Map<string, string>();
-    for (const { file } of findReferences(layout.root)) files.set(toFileKey(file), file);
+    for (const { file } of findReferences(layout)) files.set(toFileKey(file), file);
     for (const testFile of testFiles) {
         for (const file of findReferenceCandidates(layout, testFile)) files.set(toFileKey(file), file);
     }
