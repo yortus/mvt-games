@@ -48,9 +48,16 @@ Each review finding says how it was checked:
 
 ## Watch mode
 
-- [ ] **W4. The VS Code extension may not see new visual files** unless it
+- [x] **W4. The VS Code extension may not see new visual files** unless it
   runs Vitest in watch mode, since the restart needs `config.watch`
   (unverified).
+  Confirmed by the user on 2026-10-13: it doesn't. The extension matches a
+  new file against each project's `include` and `exclude`, as read when it
+  started, and vsnap's projects list their files explicitly. The Test
+  Explorer's refresh button reads the configs again and shows the file.
+  The README's Watch Mode section says so. Giving the canvas project the
+  real globs was considered and left out: a new HTML file would land in the
+  canvas project, and a new file's libraries would be bundled mid-run.
 
 
 ## Smaller items
@@ -65,6 +72,24 @@ Each review finding says how it was checked:
   generates its report with vsnap's projects. Still to check: the UI
   itself, coverage (no coverage package is installed in this repo), and the
   VS Code extension.
+  2026-10-13: the VS Code extension lists and runs the visual tests (the
+  user). Each website file showed an error at first: Vitest lists a file's
+  tests in Node, and the website's Vite config gave Node no
+  `@mvtjs/source` condition, so `@mvtjs/audio/headless` didn't resolve.
+  Fixed in the website's config (`ssr.resolve.conditions`), with an entry
+  in the README's Troubleshooting. A test declared in a loop shows as its
+  name expression, such as `entry.id`, until it runs, since the listing
+  reads the code without running it.
+- [x] **U11. The names of the whole-entry test files.** The user finds
+  `pixi-entries` and `element-entries` inconsistent, and suggests
+  `pixi-entries` and `html-entries`. Both now name the entry's starter
+  kind (`pixi` or `element`, as `EntryStarter` does), but that reads as a
+  renderer beside an element. An element entry may draw with three.js or
+  Pixi, which `html-entries` would hide; it is captured as HTML, though.
+  `canvas-entries` and `html-entries` would name both by their test kind.
+  Decide, and rename the files and their images.
+  Done on 2026-10-13: `canvas-entries` and `html-entries`, which name both
+  by their test kind, with their images renamed.
   Checked on 2026-10-13, in a scratch project from a packed install: the UI
   (`vitest --watch --ui`) lists vsnap's projects and tests, and a failed
   image shows Vitest's Visual Regression panel, with Diff, Reference, Actual

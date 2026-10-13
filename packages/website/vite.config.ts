@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { defaultClientConditions, defineConfig, type Plugin } from 'vite';
+import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin } from 'vite';
 import { entryFactsPlugin, spritesheetPlugin } from './scripts';
 
 const VITEPRESS_DEV_PORT = 5200;
@@ -48,6 +48,11 @@ export default defineConfig(({ mode }) => ({
     ],
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
+    },
+    // Vitest lists the visual tests in Node, as `vitest list` and editors'
+    // test explorers do, which resolves as a server does.
+    ssr: {
+        resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
     // In development, requests for /docs go to VitePress's dev server. In
     // production, Vite and VitePress both write static files to the top-level

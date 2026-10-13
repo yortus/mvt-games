@@ -708,6 +708,11 @@ kind of page. The browser starts again, which takes a few seconds. A new
 file that declares no test yet, such as an empty one, gets a warning, and
 restarts Vitest once its first test is written.
 
+An editor's test explorer, such as the one that the Vitest extension adds
+to VS Code, reads the projects' test files when it starts. It doesn't see
+a new visual test file until it reads them again: press its refresh
+button.
+
 ## Troubleshooting
 
 Each message below is the start of one that vsnap gives, with what it
@@ -745,6 +750,11 @@ usually means.
 - **"vsnap's root is the folder that Vitest runs in, ... but Vitest's own
   root is ..."** Give `vsnap()` its root, such as
   `root: import.meta.dirname`.
+- **"... is not exported under the conditions ["node", ...]", from
+  `vitest list` or an editor's test explorer.** Vitest lists the tests of
+  a file in Node, without running it, and resolves its imports as a server
+  does. A project that adds conditions to `resolve.conditions` adds them to
+  `ssr.resolve.conditions` too.
 - **A test passes locally but fails in CI as new.** Its reference image
   wasn't committed. Commit the PNG files beside its test file whose names
   start with the file's stem.
