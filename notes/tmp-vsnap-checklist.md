@@ -209,24 +209,50 @@ From the blind review of 2026-10-13.
   each test (`visual`: kind, outcome, size, timings), which the reporter
   reads. Harmless, but noise to a user. Consider a less prominent place, or
   a shorter record.
-- [ ] **U12. The reference checks rarely run in real CI.** They never run
+- [x] **U12. The reference checks rarely run in real CI.** They never run
   under `--shard`, and one lasting `.skip` turns them off for good. The
   hash check doesn't depend on which tests ran, so it could always run;
   skipped tests' references could count as used, by their names.
-- [ ] **U13. Check failures look like crashes:** unused and shared
+  Done on 2026-10-13: every run checks references. A test that recorded no
+  image (skipped by .skip, .only, .todo or -t, or failed early) uses the
+  reference its full name gives, computed in Node by `toImageName`, which
+  moved to `src/image-name.ts` so both sides import it. A run of every file
+  checks every reference; a partial run (a shard, one file, a watch rerun)
+  checks those of the files that ran, leaving out images that a file that
+  didn't run could own. Checked with -t, one file, another file, two
+  shards, and -u on one file.
+- [x] **U13. Check failures look like crashes:** unused and shared
   references print under Vitest's "Unhandled Errors". Give them a heading
   of their own, or fail them in a test module.
+  Done on 2026-10-13: as Vitest's coverage thresholds do, a failed check
+  prints its own block (' FAIL  vsnap's checks ...') after the summary, sets
+  the exit code, and, in GitHub Actions, adds an error annotation. No more
+  "Unhandled Errors". The checks now run in onTestRunEnd, which also fixed
+  them never running under --shard.
 - [ ] **U14. An error in `vsnap.config.ts`** fails each file, as "Failed to
   import test file .../setup.ts", where the README says it stops the run.
-- [ ] **U15. The summary:** "1 differ" should read "1 differs"; "in X s"
+- [x] **U15. The summary:** "1 differ" should read "1 differs"; "in X s"
   counts from the run's start, unit tests included; it's long, repeats on
   every watch rerun, and can't be quietened.
-- [ ] **U16. Speed at scale:** every complete run decodes every reference
+  Done on 2026-10-13: "1 differs"; the time counts from the first visual
+  file's start; a partial run, such as a watch rerun, gets a short summary,
+  without the slowest tests and the largest references. No option to quiet
+  it further.
+- [x] **U16. Speed at scale:** every complete run decodes every reference
   (4.7 ms each, about 2.3 s per 500), and globs the root three times; every
   Vitest start, `-p unit` included, fingerprints the repository and reads
   every visual test file (120 ms here). Cache the checks by size and time.
-- [ ] **U17. The browser install check costs 0.4 s each run,** and prints
+  Done on 2026-10-13: checks that passed are cached by size and time in
+  `.vitest/vsnap/reference-checks.json`, and the run finds its references
+  once, for the checks and the summary. The config-load cost (fingerprint,
+  reading test files) stays.
+- [x] **U17. The browser install check costs 0.4 s each run,** and prints
   to standard output during a download. Check for the executable first.
+  Done on 2026-10-13: the step looks for Playwright's install marker
+  (`chromium_headless_shell-<revision>/INSTALLATION_COMPLETE`, the revision
+  from playwright-core's browsers.json) and runs the installer only when it
+  is missing, or when unsure; 42 ms instead of 0.4 s. The installer's output
+  goes to standard error.
 - [ ] **U18. Smaller:** a headed browser (`--browser.headless=false`) gets
   a message that blames Playwright's version (likely); old actual and diff
   images in `.vitest/vsnap/` are never cleaned; `recordArtifact` uses

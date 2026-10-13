@@ -559,15 +559,24 @@ includes vsnap's projects starts a browser.
 | `vitest -p "visual-*"` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |
 | `vitest run -p "visual-*" --sequence.shuffle` | Runs the visual tests in a random order, which finds any test that depends on the ones before it. Vitest prints the order's seed, and adding `--sequence.seed=<seed>` repeats that order |
 
-A complete run of a project's visual tests, with no filters, does two more
-things. It decodes every reference image, and checks its pixels against the
-hash it carries. A run compares only the hashes, so this catches a
-reference whose pixels were edited without its hash. It also finds
-reference images that no test uses, which renamed or deleted tests left
-behind. Without `-u`, it lists them and fails. With `-u`, it deletes them.
-A run that doesn't run every visual test, such as one with `-t`, or one
-with a test skipped by `.skip`, `.only` or `.todo`, does neither, and its
-summary says why.
+Every run of the visual tests also checks the reference images, in two
+ways, after the tests:
+
+- **Each reference's pixels match the hash it carries.** A run compares
+  only the hashes, so this catches a reference whose pixels were edited
+  without its hash. A reference that passed before, unchanged since, isn't
+  decoded again.
+- **Every reference is used by a test.** Renamed and deleted tests leave
+  references behind. Without `-u`, the run lists them and fails. With `-u`,
+  it deletes them. A test that didn't run, because `.skip`, `.only`, `.todo`
+  or `-t` left it out, still uses its reference.
+
+A run of every visual test file checks every reference, those of deleted
+test files too. A run of some of them, such as a shard (`--shard`), a run of
+one file, or a rerun in watch mode, checks the references of the files that
+ran, and its summary says so. A check that fails prints what it found under
+a heading of its own, after the summary, and the run exits with code 1. In
+GitHub Actions, it also adds an error annotation.
 
 ### Watch Mode
 

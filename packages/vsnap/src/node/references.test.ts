@@ -1,11 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
 import { encodePng, type RgbaImage } from './png.ts';
-import { checkReference, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference, toReferenceGlob } from './references.ts';
+import { checkReference, checkReferences, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference, toReferenceGlob } from './references.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-references-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -138,6 +138,27 @@ describe('checkReference', () => {
     it('fails a PNG that carries no hash', () => {
         const png = new PNG({ width: 2, height: 2 });
         expect(checkReference(write('plain.png', PNG.sync.write(png)))).toMatch(/carries no pixel hash/);
+    });
+});
+
+describe('checkReferences', () => {
+    it('remembers the references that passed, and checks one again once it changes', () => {
+        const cache = join(dir, 'checks', 'cache.json');
+        const file = write('cached.png', encodePng(createImage(7)));
+        expect(checkReferences([file], cache).get(file)).toBeUndefined();
+        expect(existsSync(cache)).toBe(true);
+        // Unchanged, it isn't decoded again: the cache, not the file, passes it.
+        const cached = JSON.parse(readFileSync(cache, 'utf8')) as { passed: Record<string, string> };
+        expect(Object.values(cached.passed)).toHaveLength(1);
+        // A file whose pixels changed, without its hash, has a new time, so it
+        // is checked again, and fails.
+        const original = encodePng(createImage(7));
+        const edited = encodePng(createImage(9));
+        const textEnd = 33 + 12 + new DataView(original.buffer, original.byteOffset).getUint32(33);
+        const editedTextEnd = 33 + 12 + new DataView(edited.buffer, edited.byteOffset).getUint32(33);
+        writeFileSync(file, new Uint8Array([...original.subarray(0, textEnd), ...edited.subarray(editedTextEnd)]));
+        utimesSync(file, new Date(), new Date(Date.now() + 5000));
+        expect(checkReferences([file], cache).get(file)).toMatch(/^its pixels hash to /);
     });
 });
 

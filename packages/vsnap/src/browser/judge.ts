@@ -1,6 +1,6 @@
 import { commands } from 'vitest/browser';
 import { expect } from 'vitest';
-import { toImageName } from './image-name';
+import { toImageName } from '../image-name';
 import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------

@@ -11,8 +11,8 @@
  * it is in.
  */
 
-import { type Dirent, existsSync, globSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
-import { dirname, join, posix, relative, resolve } from 'node:path';
+import { type Dirent, existsSync, globSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, posix, relative, resolve } from 'node:path';
 import picomatch from 'picomatch';
 import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout.ts';
 import { decodePng, hashImage, readPngHash } from './png.ts';
@@ -91,6 +91,36 @@ export function findReferenceCandidates(layout: VisualLayout, testFile: string):
 }
 
 /**
+ * Returns the PNGs that some test files' references could be, as
+ * `findReferenceCandidates` does for each, whether or not they carry a
+ * hash. A PNG that one of `others` could also have, such as one in a folder
+ * that two test files share, is left out, since which file it belongs to
+ * can't be told. A run that ran only some files checks only theirs.
+ */
+export function findCandidatesOfFiles(layout: VisualLayout, files: readonly string[], others: readonly string[]): string[] {
+    const otherPatterns = others.map((file) => resolveReferencePattern(layout, file));
+    const found = new Map<string, string>();
+    for (const file of files) {
+        for (const candidate of findReferenceCandidates(layout, file)) {
+            const dir = toFileKey(dirname(candidate));
+            const name = basename(candidate);
+            if (otherPatterns.some((p) => toFileKey(p.dir) === dir && matchReferenceName(p, name) !== undefined)) continue;
+            found.set(toFileKey(candidate), candidate);
+        }
+    }
+    return [...found.values()].sort();
+}
+
+/** Returns the reference images of some test files: their candidates (see `findCandidatesOfFiles`) that carry a pixel hash, with their sizes. */
+export function findReferencesOfFiles(layout: VisualLayout, files: readonly string[], others: readonly string[]): { readonly file: string; readonly bytes: number }[] {
+    const found: { file: string; bytes: number }[] = [];
+    for (const file of findCandidatesOfFiles(layout, files, others)) {
+        if (readPngHash(file) !== undefined) found.push({ file, bytes: statSync(file).size });
+    }
+    return found;
+}
+
+/**
  * Returns what is wrong with a reference file, or undefined if nothing is.
  * A visual run trusts the hash a reference carries, without decoding the
  * file. So a file whose pixels were edited, or that carries no hash, would
@@ -118,6 +148,41 @@ export function findOrphans(options: { readonly references: readonly string[]; r
     const compared = new Set<string>();
     for (const file of options.compared) compared.add(toFileKey(file));
     return options.references.filter((file) => !compared.has(toFileKey(file)));
+}
+
+/**
+ * Checks references as `checkReference` does, and returns each one's
+ * problem, if it has one. A reference that passed before, and has the same
+ * size and modification time, isn't decoded again: a cache file remembers
+ * the references that passed. An edit of a reference changes its time, so
+ * it is checked again.
+ */
+export function checkReferences(files: readonly string[], cacheFile: string): Map<string, string | undefined> {
+    const cache = readCheckCache(cacheFile);
+    const passed: Record<string, string> = {};
+    const results = new Map<string, string | undefined>();
+    for (const file of files) {
+        const key = toFileKey(file);
+        let stamp: string | undefined;
+        try {
+            const stats = statSync(file);
+            stamp = `${stats.size}:${stats.mtimeMs}`;
+        }
+        catch {
+            stamp = undefined;
+        }
+        const problem = stamp !== undefined && cache[key] === stamp ? undefined : checkReference(file);
+        results.set(file, problem);
+        if (problem === undefined && stamp !== undefined) passed[key] = stamp;
+    }
+    try {
+        mkdirSync(dirname(cacheFile), { recursive: true });
+        writeFileSync(cacheFile, JSON.stringify({ version: CHECK_CACHE_VERSION, passed: { ...cache, ...passed } }));
+    }
+    catch {
+        // The cache only saves time. Without it, the next run decodes again.
+    }
+    return results;
 }
 
 /**
@@ -149,6 +214,20 @@ export function toFileKey(file: string): string {
 
 /** The roots of visual tests that this process's config made. */
 const roots = new Set<string>();
+
+/** The version of the check cache's contents. A change to how references are checked or hashed changes it, so that every reference is checked again. */
+const CHECK_CACHE_VERSION = 1;
+
+/** Returns the references that passed their checks before, by file key, with each one's size and time, or none if the cache is missing or old. */
+function readCheckCache(cacheFile: string): Record<string, string> {
+    try {
+        const cache = JSON.parse(readFileSync(cacheFile, 'utf8')) as { version?: number; passed?: Record<string, string> };
+        return cache.version === CHECK_CACHE_VERSION && cache.passed !== undefined ? cache.passed : {};
+    }
+    catch {
+        return {};
+    }
+}
 
 /**
  * Returns a test of whether an image, by its path relative to the root,
