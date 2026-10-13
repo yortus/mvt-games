@@ -113,7 +113,7 @@ Barrel files solve four problems that arise as a codebase scales:
    below (no declarations in barrels, no self-imports) eliminate the most
    common source of accidental cycles.
 
-This is enforced by ESLint: `import/no-internal-modules` for reaching past
+This is enforced by ESLint: `@mvtjs/no-deep-imports` for reaching past
 a barrel, and `no-restricted-imports` for the self-imports below.
 
 ### Import Rules

@@ -15,39 +15,6 @@ const VIEW_CONVENTION_FILES = [
     'packages/*/src/**/*.{ts,tsx}',
 ];
 
-/** What the barrel rule lets a file import: its own folder's files, and packages by their entry points. */
-const BARREL_ALLOW = [
-    // Allow intra-directory relative imports (./foo)
-    './*',
-    // Allow external packages. The @mvtjs packages' and
-    // vsnap's own `exports` say what can be reached in them
-    '@mvtjs/**',
-    'vsnap/**',
-    'pixi.js',
-    'pixi.js/**',
-    'gsap',
-    'gsap/**',
-    'codemirror',
-    '@codemirror/**',
-    'sucrase',
-    'lz-string',
-    'solid-js',
-    'solid-js/**',
-    'pixi-solid',
-    'three',
-    'three/**',
-    // Vitest's own entry points, such as `vitest/browser`, through which
-    // the visual tests' harness talks to Node.
-    'vitest/**',
-    // publint's entry points, for vsnap's step that checks its package.
-    'publint/**',
-    // Allow the site's import-map alias. Escaped: the rule
-    // compiles each entry with minimatch, which reads a
-    // leading `#` as a comment, and then crashes on the first
-    // violation instead of reporting it.
-    '\\#common',
-];
-
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
 // (packages/docs/reference/project-structure.md).
@@ -130,16 +97,14 @@ export default tseslint.config(
         // Each package's scripts, fixtures and root config files too.
         files: ['packages/*/src/**/*.{ts,tsx}', 'packages/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*.config.ts'],
         plugins: {
-            import: importPlugin,
+            '@mvtjs': mvt,
         },
         rules: {
-            // Enforce barrel imports: disallow reaching past a directory's index.ts
-            'import/no-internal-modules': [
-                'error',
-                {
-                    allow: BARREL_ALLOW,
-                },
-            ],
+            // Enforce barrel imports: no reaching past a folder's index.ts, or
+            // into a package that has no `exports` field. A package's
+            // `exports` field, and its `imports` for `#shared` and the like,
+            // are checked by TypeScript.
+            '@mvtjs/no-deep-imports': 'error',
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT] }],
         },
         settings: {
@@ -157,7 +122,7 @@ export default tseslint.config(
         // file, such as `./scripts/index.ts`.
         files: ['packages/*/*.config.ts'],
         rules: {
-            'import/no-internal-modules': ['error', { allow: [...BARREL_ALLOW, '*/index.ts'] }],
+            '@mvtjs/no-deep-imports': ['error', { allowIndexFile: true }],
         },
     },
     {

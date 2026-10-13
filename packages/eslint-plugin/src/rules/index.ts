@@ -1,3 +1,4 @@
+export { noDeepImports } from './no-deep-imports';
 export { noEmDash } from './no-em-dash';
 export { noModuleState } from './no-module-state';
 export { noNull } from './no-null';

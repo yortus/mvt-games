@@ -1,6 +1,6 @@
 import type { ESLint, Linter } from 'eslint';
 import { version } from '../package.json';
-import { noEmDash, noModuleState, noNull, noThis, noWallClock } from './rules';
+import { noDeepImports, noEmDash, noModuleState, noNull, noThis, noWallClock } from './rules';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -21,6 +21,7 @@ import { noEmDash, noModuleState, noNull, noThis, noWallClock } from './rules';
 const plugin = {
     meta: { name: '@mvtjs/eslint-plugin', version },
     rules: {
+        'no-deep-imports': noDeepImports,
         'no-em-dash': noEmDash,
         'no-module-state': noModuleState,
         'no-null': noNull,

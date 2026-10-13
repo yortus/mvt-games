@@ -78,7 +78,7 @@ import { createTimerModel } from '..';
 import { createTimerModel } from '../timer-model';
 ```
 
-Enforced by ESLint: `import/no-internal-modules` for reaching past a barrel,
+Enforced by ESLint: `@mvtjs/no-deep-imports` for reaching past a barrel,
 and `no-restricted-imports` for importing your own or an ancestor's.
 
 Between packages ([details](../reference/project-structure.md#between-packages)):
