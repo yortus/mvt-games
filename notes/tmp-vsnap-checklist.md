@@ -215,6 +215,12 @@ From the 2026-10-13 review, where the README disagrees with the code.
   recipe, troubleshooting, and how to review a diff in the Vitest UI.
   Lines 93, 257, 269 and 507 aren't wrapped, and "html views" should read
   "HTML views".
+  Partly done on 2026-10-13: the maintainers' material is in a new
+  `CONTRIBUTING.md` (vsnap's own tests, the layout, the environment and
+  upgrading Playwright, the blank font, building and publishing), and the
+  README links to it; the lines are wrapped. Still to write: the options of
+  each kind in one place, a CI recipe, troubleshooting, and reviewing a
+  diff in the Vitest UI.
 
 ## The rest of 042, step 10
 

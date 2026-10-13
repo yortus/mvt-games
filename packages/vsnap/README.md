@@ -90,9 +90,9 @@ canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({ mode }
 A canvas image that is one colour all over fails its test, since it
 usually means that the view drew nothing. A view that is meant to be one
 colour, such as an empty panel, sets `canBeBlank: true`. Every kind's
-`background` takes a number, such as `0x202024`, or a CSS colour. Visual tests never run concurrently, even in a
-`describe.concurrent` block, because the tests of a page share its
-renderers.
+`background` takes a number, such as `0x202024`, or a CSS colour. Visual
+tests never run concurrently, even in a `describe.concurrent` block,
+because the tests of a page share its renderers.
 
 The first time a test runs, its image is new, and it is written as the
 test's reference image, as Vitest writes a new snapshot. Look at each new
@@ -251,10 +251,10 @@ test file. Vitest's own screenshot features write to `__screenshots__`
 folders, so this package uses a name of its own. That way, a file that
 Vitest writes is never mistaken for a reference image.
 
-An image name has no spaces, so it can be typed on a command line.
-Two tests whose full names differ only in
-punctuation would have the same image name, and share one reference
-image. If any tests share a reference image, the run fails and identifies the duplicate tests.
+An image name has no spaces, so it can be typed on a command line. Two
+tests whose full names differ only in punctuation would have the same image
+name, and share one reference image. If any tests share a reference image,
+the run fails, and names the tests.
 
 ### One Kind of Test in Each File
 
@@ -266,14 +266,15 @@ of test need their pages arranged differently.
   same page, one file after another. The libraries load once, the shaders
   compile once, and `pixi` and `three` each draw every actual image with
   one renderer. That is what lets hundreds of tests run in seconds.
-- **Each file of HTML tests gets a fresh page.** This is because html views use stylesheets, which can't be unloaded from a page, so the fresh pages ensure that
-each view gets only its own styles.
+- **Each file of HTML tests gets a fresh page.** HTML views use
+  stylesheets, which can't be unloaded from a page, so a fresh page for
+  each file gives each view only its own styles.
 
-A test file runs in one page, so it should only declare one kind of visual test.
-When the config loads, the package reads each file's declarations, and sends
-the file to the right kind of page. Visual test files may include unit tests,
-but they will also run in the browser page. So a unit test that needs Node, such
-as one that reads a file, should go in a separate test file.
+A test file runs in one page, so it declares one kind of visual test.
+When the config loads, the package reads each file's declarations, and
+sends the file to the right kind of page. Visual test files may hold unit
+tests, but they run in the browser page too. So a unit test that needs
+Node, such as one that reads a file, goes in a separate test file.
 
 A visual test file that declares both `canvasTest` and `htmlTest`, or
 neither, as a new empty file does, can't run. vsnap leaves it out of its
@@ -511,8 +512,8 @@ The unit project must leave out a layout's test files, as it leaves out
 `*.visual.test.ts` files. For the first layout, that is
 `exclude: [...configDefaults.exclude, '**/visual-tests/**']`. Also, any
 other PNG in a `visual-tests` folder would match the reference path, and
-the check of every reference image would report it. Keep such files elsewhere, or give
-the reference images a pattern of their own, such as
+the check of every reference image would report it. Keep such files
+elsewhere, or give the reference images a pattern of their own, such as
 `'{testFileDir}/{imageName}.ref.png'`.
 
 The package tells its reference images from other PNGs by the hash that
@@ -529,8 +530,7 @@ To change layout, change the options, then run the visual tests with
 Vitest's `-u` once. Each test writes its reference image at the new path,
 with the same pixels as before. The old files are at paths that the new
 layout doesn't give, so the run leaves them, and they can be deleted by
-hand. This package's own `fixtures/visual-tests-folders/` project uses the
-first layout, and its run checks that layout end to end.
+hand.
 
 ## Running the Tests
 
@@ -557,14 +557,6 @@ behind. Without `-u`, it lists them and fails. With `-u`, it deletes them.
 A run that doesn't run every visual test, such as one with `-t`, or one
 with a test skipped by `.skip`, `.only` or `.todo`, does neither, and its
 summary says why.
-
-vsnap's own `vitest.config.ts` is set up this way too. In its folder,
-`npm test` runs all of its tests: its unit tests, its visual tests and
-calibration set, and its fixture project's, which keeps its tests in
-`visual-tests` folders (`visual-fixture-*`). `npm run test:unit` and
-`npm run test:visual` run one half each. After a deliberate upgrade of
-Playwright, `npm run test:visual:environment` rewrites the browser's
-fingerprint and the calibration set's references.
 
 ### Watch Mode
 
@@ -636,45 +628,12 @@ Tests must also follow two rules:
   picked from the list. So `'"Press Start 2P", monospace'` works, but
   `'"Press Start 2P"'` alone fails its test.
 
-## How It Is Laid Out
+## Contributing
 
-The tests run in a browser, and the browser talks to Node through Vitest's
-browser commands. So the package has two sides, and the messages between
-them are defined once, in `src/protocol.ts`.
-
-| Folder | What it holds |
-| --- | --- |
-| `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest`, `defineVsnapConfig` and `htmlViews`, which the main entry point exports, with the types of the kinds of view. It also loads the project's `vsnap.config.ts`. It also reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text. Then it checks the calibration set, which draws with the browser's own canvas 2D and WebGL |
-| `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `vsnap/pixi` and `vsnap/three` export. Only these folders import the libraries |
-| `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
-| `src/node/` | The side that runs in Node. `vsnap/config` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
-| `scripts/` | The maintainers' scripts: the environment's rewrite, the generator of the blank font, and the step that puts the published `package.json` in place while npm packs the package |
-| `src/browser/__references__/` | The references for the calibration set, and for this package's own tests |
-| `fixtures/visual-tests-folders/` | A small project that keeps its tests in `visual-tests` folders, to check that layout |
-
-`visual-environment.json` holds the browser's fingerprint, which every
-machine's browser must match.
-
-Inside this repository, nothing needs building. The entry points in
-`package.json` name the TypeScript source, and a Vitest config imports
-`vsnap/config` by name. Node runs that source itself, as long as each
-relative import names its file with `.ts`, so vsnap's Node side writes its
-imports that way.
-
-Node won't run TypeScript inside `node_modules`, so the published package
-is built. `npm pack` and `npm publish` first build it into `lib/` with
-tsdown, one JavaScript file and one declaration file for each module. Then
-`scripts/publish-manifest.ts` puts a `package.json` whose entry points name
-those files in place, checks the package with publint and attw, and puts
-the repository's `package.json` back once the tarball is made. The folder
-isn't named `dist`, because Vite leaves files under `dist` out of the scan
-for libraries, and the setup file must be scanned.
-
-vsnap's page code is never bundled by Vite, in a project or here. The setup
-file loads it by path, and the tests load it by name. Bundled, it would load
-twice: once for the setup, and once in the bundle for the tests. So vsnap's
-projects leave its entry points out of Vite's bundling, and name the
-libraries that its page code imports instead.
+To work on vsnap itself, see [CONTRIBUTING.md](./CONTRIBUTING.md). It says
+how vsnap's own tests run, how the package is laid out, how the test
+environment is checked and upgraded, and how the package is built and
+published.
 
 ## Licence
 

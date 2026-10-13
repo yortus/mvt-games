@@ -57,7 +57,9 @@ root `vitest.config.ts` lists vsnap's projects beside the unit tests, and
 the website's `vsnap.config.ts` registers the kinds of view that the tests
 pose, which it refreshes and destroys the MVT way. vsnap's
 [README](https://github.com/yortus/mvt-games/blob/main/packages/vsnap/README.md)
-describes the package.
+describes the package for its users, and its
+[CONTRIBUTING.md](https://github.com/yortus/mvt-games/blob/main/packages/vsnap/CONTRIBUTING.md)
+describes how it is laid out, tested and published.
 
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its
