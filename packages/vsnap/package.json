@@ -4,6 +4,14 @@
     "private": true,
     "description": "Fast, consistent visual snapshot tests for views drawn on a canvas or in HTML, with support for Pixi and three.js: the same images on Windows, Linux and macOS, with no Docker",
     "license": "MIT",
+    "keywords": ["visual testing", "visual regression", "snapshot", "screenshot", "vitest", "playwright", "pixi", "pixi.js", "three", "canvas"],
+    "homepage": "https://github.com/yortus/mvt-games/tree/main/packages/vsnap#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/vsnap"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
     "sideEffects": false,
     "exports": {
@@ -38,7 +46,8 @@
         "test:visual": "vitest run -p \"visual-*\"",
         "test:visual:update": "vitest run -p \"visual-*\" -u",
         "test:visual:environment": "node scripts/environment.ts",
-        "generate-blank-font": "node scripts/generate-blank-font.ts"
+        "generate-blank-font": "node scripts/generate-blank-font.ts",
+        "bench": "node bench/run.ts"
     },
     "dependencies": {
         "fontkit": "^2.0.4",

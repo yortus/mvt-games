@@ -69,8 +69,30 @@ Each review finding says how it was checked:
 
 ## Documentation
 
-- [ ] **D1. Update the documentation:** Shorten the README to typical public package length and content (eg installation, usage, API, examples, contributing, license - take this list as inspiration only) and moved detailed explanations to separate docs pages. Puts separate docs pages in a `docs` folder or similar location. Ensure there is a ToC.
-- [ ] **D2. More compelling docs:** We need to hook the reader not bore them to death. Start the README with the headline benefits. We need to get the "15x faster" claim back, but this time with evidence and context that make it credible and compelling. Use layout and visuals better. Put the 'Cut V' logo in. Add badges, tables, lists, etc.
+- [x] **D1. Update the documentation:** Shorten the README to typical public package length and content (eg installation, usage, API, examples, contributing, license - take this list as inspiration only) and moved detailed explanations to separate docs pages. Puts separate docs pages in a `docs` folder or similar location. Ensure there is a ToC.
+  Done on 2026-10-13: the README is 228 lines (from 848): benefits, the
+  speed table, a taste, a changed image, a quick start, a Documentation
+  section that lists every guide and what it covers, an API table,
+  requirements, contributing and licence. The rest moved, mostly
+  unchanged, into eight guides in `docs/`, each with its own contents
+  list: getting started, writing tests, kinds of view, configuration,
+  running the tests, how it works, limits and rules, troubleshooting.
+  `package.json` gained `repository`, `homepage`, `bugs` and `keywords`, as
+  the `@mvtjs` libraries have, so that npm can resolve the README's
+  relative links and images.
+- [x] **D2. More compelling docs:** We need to hook the reader not bore them to death. Start the README with the headline benefits. We need to get the "15x faster" claim back, but this time with evidence and context that make it credible and compelling. Use layout and visuals better. Put the 'Cut V' logo in. Add badges, tables, lists, etc.
+  Done on 2026-10-13: the logo (as drawn in 042, `#7c5cff`), a tagline,
+  badges, six headline benefits, and a real failed test's reference,
+  actual image and diff side by side. The speed claim comes from a new
+  benchmark, `npm run bench -w vsnap` (`bench/`), with the same 1000 Pixi
+  images in 100 files checked by vsnap and by Vitest's `toMatchScreenshot`,
+  in the same browser. Medians of 3 runs on this laptop: vsnap 7.8 s
+  (4.0 ms an image); `toMatchScreenshot` in one page 89.9 s (67 ms, so
+  11.5x for the run and 17x an image); with Vitest's defaults, 13 pages at
+  once, 18.0 s (131 ms, 2.3x and 33x). So the README says 17x an image and
+  11.5x like for like, and gives the 2.3x too, with the reason, rather
+  than "15x". The 4-core CI case is reasoned, not measured. Still open: an
+  npm version badge once it's published, and the logo's colour.
 
 ## The rest of 042, step 10
 
@@ -80,6 +102,7 @@ Each review finding says how it was checked:
 - [ ] A trial on another project, from a packed install (see P5 and P7).
   A scratch project passed on 2026-10-12. A real project is still to try.
 - [ ] Publish.
+  UPDATE 2026-10-13: tried and failed to publish. Error: npm error 403 403 Forbidden - PUT https://registry.npmjs.org/vsnap - Package name too similar to existing packages asap,gsap,soap; try renaming your package to '@yortus/vsnap' and publishing with 'npm publish --access=public' instead
 - [ ] Archive 042, and delete the `visual-tests` worktree.
 
 ## Outside vsnap

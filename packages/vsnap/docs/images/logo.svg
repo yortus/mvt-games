@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 0 120 100" width="120" height="100">
+  <title>vsnap</title>
+  <clipPath id="cuts"><rect x="-10" y="0" width="120" height="36"/><rect x="-10" y="40" width="120" height="12"/><rect x="-10" y="56" width="120" height="44"/></clipPath>
+  <polygon clip-path="url(#cuts)" fill="#7c5cff" points="8,10 31,10 50,62 69,10 92,10 50,96"/>
+</svg>

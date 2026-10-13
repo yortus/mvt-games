@@ -35,6 +35,7 @@ In vsnap's folder:
 | `npm run test:visual:environment` | Rewrites the environment's fingerprint and the calibration set's references (see [The Environment](#the-environment)) |
 | `npm run generate-blank-font` | Rewrites the blank font that HTML text is drawn in |
 | `npm run build` | Builds the package into `lib/` (see [Building and Publishing](#building-and-publishing)) |
+| `npm run bench` | Runs the speed benchmark (see [The Speed Benchmark](#the-speed-benchmark)) |
 
 From the repository's root, `npm run test:vsnap` runs `npm test` here. The
 root's own `npm test` runs the other workspaces' unit tests and the
@@ -66,6 +67,8 @@ run, so that its reference still counts as used.
 | `src/browser/calibration-images/` | The calibration set's references, for each kind of page |
 | `scripts/` | The maintainers' scripts: the environment's rewrite, the blank font's generator, and the step that puts the published `package.json` in place while npm packs the package |
 | `fixtures/visual-tests-folders/` | The fixture project (see above) |
+| `bench/` | The speed benchmark (see [The Speed Benchmark](#the-speed-benchmark)) |
+| `docs/` | The guides that the README links to, and the logo |
 
 Each folder imports another through its index file, as everywhere in the
 repository. The Node side is the exception that shows: it names each file
@@ -122,6 +125,28 @@ says why it is TrueType, and how each system lays it out.
 checks that the committed file is what the script builds. Canvas text is
 drawn in the two test fonts, Source Sans 3 and Source Code Pro, which are
 under the SIL Open Font License, whose text is beside them.
+
+## The Speed Benchmark
+
+`npm run bench` checks the speed figures that the README gives. It writes
+1000 tests of Pixi views, in 100 files, into `.vitest/bench/`. It writes
+them twice: once with vsnap's `canvasTest`, and once as a project would
+write them without vsnap, drawing on a canvas in the page and checking it
+with Vitest's own `toMatchScreenshot`. Both run in the same browser,
+launched with the same settings. The screenshot tests run twice, once with
+Vitest's defaults, which run several files at once in pages of their own,
+and once one file at a time.
+
+The script runs each way once to write the reference images, then times
+three runs of each, taking turns, and prints the medians. Each timed run
+compares every image with its reference, and every test must pass.
+`--files`, `--tests` and `--runs` change the numbers, such as
+`npm run bench -- --files 10 --runs 1` for a quick check. It takes about
+20 minutes with the defaults, most of it in the screenshot tests. The
+results are also written to `.vitest/bench/results.json`.
+
+The views are in `bench/views.ts`. Close other work while it runs, since a
+busy machine slows each way by a different amount.
 
 ## Building and Publishing
 
