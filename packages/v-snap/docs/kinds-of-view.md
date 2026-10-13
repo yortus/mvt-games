@@ -219,6 +219,55 @@ the view, and `defaults`, options that every test of the kind gets unless
 it sets its own, as `pixiViews({ background })` does. Its `draw` can return
 the canvas that it drew on, and v-snap reads it.
 
+Here is a small kind, for views that paint themselves on a 2D canvas. For
+brevity, it makes a canvas for each image. A kind for a real renderer would
+make its renderer once, and draw every image with it.
+
+```ts
+// vsnap.config.ts
+import { type CanvasViewKind, defineVsnapConfig } from 'v-snap';
+
+export interface Sketch {
+    readonly paint: (ctx: CanvasRenderingContext2D) => void;
+}
+
+const sketchViews: CanvasViewKind<Sketch, { readonly width?: number; readonly height?: number }, 'sketch'> = {
+    kind: 'sketch',
+    isView: (value) => value instanceof Object && typeof (value as Partial<Sketch>).paint === 'function',
+    draw: (view, options) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = options.width ?? 80;
+        canvas.height = options.height ?? 60;
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = '#202024';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        view.paint(ctx);
+        return canvas;
+    },
+};
+
+const config = defineVsnapConfig({ views: [sketchViews], defaultKind: 'sketch' });
+
+declare module 'v-snap' {
+    interface Register {
+        config: typeof config;
+    }
+}
+
+export default config;
+```
+
+A test then poses a sketch:
+
+```ts
+canvasTest('a red square', { width: 40, height: 40 }, () => ({
+    paint: (ctx) => {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(10, 10, 20, 20);
+    },
+}));
+```
+
 `v-snap` exports the types, with two helpers: `fitImage` says how an image
 fits the size budget, and `readCanvas` reads a canvas's pixels at full
 resolution. A kind that draws an image smaller, to fit the budget, reads

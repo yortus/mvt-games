@@ -31,9 +31,22 @@ usually means.
   v-snap's package, such as when it is installed outside the project. Allow
   its folder in Vite's `server.fs.allow`.
 - **"... matches the visual test files' globs, but it declares no
-  canvasTest or htmlTest yet."** The file is new, or calls the
-  declarations through a helper of its own. Call `canvasTest` or `htmlTest`
-  in the file, or leave it out with `exclude`.
+  canvasTest or htmlTest."** The file is new, imports them under other
+  names, or calls them through a helper of its own. Call `canvasTest` or
+  `htmlTest` in the file, by those names, or leave it out with `exclude`.
+- **"... poses undefined."** The pose returned nothing. A pose with a
+  block body, `() => { ... }`, ends with `return` and its view.
+- **"Image ... has the reference ..., whose name differs ... only in
+  case."** A test was renamed, and only the case of its name changed.
+  macOS and Windows find the old reference, but Linux doesn't. Run the
+  file with `-u`, which renames the reference.
+- **"The reference image ... is a Git LFS pointer."** The checkout has
+  Git LFS's pointer files, not the images. Run `git lfs pull`, or check out
+  with Git LFS, such as with `lfs: true` in `actions/checkout`.
+- **"... references do not match their hashes."** A reference was written
+  by something other than v-snap, such as an image optimiser, or edited
+  since. Run the tests with `-u`, which rewrites each from its test, and
+  look at them before committing them.
 - **"The project ... runs v-snap's visual tests a second time."** The
   config's `browser` settings reach v-snap's projects. Move them into the
   project that needs them.

@@ -33,9 +33,11 @@ and the file `vsnap.config.ts`.
 - **Fast.** A canvas image takes about 4 ms to draw and check, 17 times
   less than a screenshot test in the same browser. 1000 images run in under
   8 seconds, start-up included.
-- **The same images on every machine.** Windows, Linux and macOS, on x64
-  and arm64 processors, draw the same images. A reference made on one
-  passes on the others.
+- **The same images on every machine.** Windows, Linux and macOS draw the
+  same images, so a reference made on one passes on the others. arm64
+  processors round some drawing by a level or two, which a small tolerance
+  covers. v-snap is checked on Windows x64, Linux x64 and arm64, and macOS
+  arm64.
 - **No Docker, no setup.** `npm ci` installs everything but the browser,
   which the first run downloads.
 - **Tests read like unit tests.** One line declares one image, and a new
@@ -46,6 +48,26 @@ and the file `vsnap.config.ts`.
 - **Vitest's tools work.** Watch mode reruns a test when its view changes.
   The Vitest UI shows a failed image beside its reference, and the VS Code
   extension lists and runs the tests.
+
+## What It Gives Up
+
+The images are the same everywhere because v-snap decides how they are
+drawn. That has costs, which [Limits and Rules](docs/limits-and-rules.md)
+lists in full:
+
+- **Canvas text is drawn in v-snap's own fonts.** A view's font is
+  replaced with Source Sans 3 or Source Code Pro, by its font list. Text that a
+  view measures, to wrap or fit it, is measured in those fonts, and a
+  character that they lack, such as ★, an emoji or a Chinese character, is
+  drawn as a box.
+- **HTML text is drawn blank.** Each letter keeps its width but draws
+  nothing, so an HTML image shows layout and styling, not words. A change
+  to the text's colour or weight doesn't show.
+- **Drawing is done in software.** WebGL runs on the processor, so
+  whatever a graphics card would draw differently isn't tested.
+- **One browser build.** Each release of v-snap is checked against the
+  build of Chromium that one Playwright version names, so a project
+  installs that version of Playwright.
 
 ## How Fast?
 
@@ -199,7 +221,7 @@ already has settings, and what v-snap needs.
 | | `htmlTest(name, options?, pose)` | Declares a test of an HTML view, with the same modifiers |
 | | `defineVsnapConfig(config)` | Returns the config that `vsnap.config.ts` exports, with its kinds of view and its default kind |
 | | `bindCanvasTest(config)` | Returns a `canvasTest` whose types know one config's kinds of view, for a monorepo's packages |
-| | `htmlViews(options)` | Returns the kind for HTML views, with steps to prepare and dispose of them, and a background for every test |
+| | `htmlViews(options?)` | Returns the kind for HTML views, with steps to prepare and dispose of them, and a background for every test |
 | | `fitImage`, `readCanvas` | Helpers for support for another renderer: how an image fits the size budget, and a canvas's pixels |
 | `v-snap/vitest` | `vsnap(options?)` | Returns the Vitest projects that run the visual tests, to list in `test.projects` |
 | `v-snap/pixi` | `pixiViews(options?)` | Returns the kind for Pixi views |

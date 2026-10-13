@@ -19,11 +19,18 @@ their images don't change from one run to the next.
 - **Canvas text uses the two test fonts,** not the view's own. A character
   that they lack, such as ★ or an emoji, is drawn as a box with its code
   point inside, so a change from one such character to another still
-  changes the image.
+  changes the image. Text that a view measures, to wrap or fit it, is
+  measured in the test fonts too, so a line that overflows in the view's
+  own font may fit in the image.
+- **Text that reaches a canvas other than through its text calls isn't
+  pinned,** such as Pixi's `HTMLText`, which draws HTML through an SVG
+  image. The system draws it, in its own fonts, so its images can differ
+  between machines. Leave it out of visual tests.
 - **Rotated `<img>` elements look a little jagged,** because smooth
   sampling rounds differently on arm64 processors.
 - **Differences of 2 levels or less pass.** A real change is almost never
-  that small.
+  that small. On a processor other than arm64, Vitest's `-u` still writes
+  such a change to the reference.
 - **The drawing is software's,** so it can differ a little from a real
   graphics card.
 

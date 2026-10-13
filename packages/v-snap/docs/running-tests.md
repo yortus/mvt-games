@@ -21,7 +21,7 @@ browser.
 | `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. A new image is written as its reference, except in CI |
 | `vitest run -p unit` | Runs the unit tests alone. No browser starts |
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
-| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots |
+| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It also repairs references: it renames one whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves the reference of an image within the tolerance as it is |
 | `vitest run <file> -u` | Updates the reference images of one test file. A failure message gives this command |
 | `vitest -p "visual-*"` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |
 | `vitest run -p "visual-*" --sequence.shuffle` | Runs the visual tests in a random order, which finds any test that depends on the ones before it. Vitest prints the order's seed, and adding `--sequence.seed=<seed>` repeats that order |
@@ -45,7 +45,15 @@ test files too. A run of some of them, such as a shard (`--shard`), a run
 of one file, or a rerun in watch mode, checks the references of the files
 that ran, and its summary says so. A check that fails prints what it found
 under a heading of its own, after the summary, and the run exits with
-code 1. In GitHub Actions, it also adds an error annotation.
+code 1. In GitHub Actions, it also adds an error annotation. A check isn't
+a test, so Vitest's own summary, the Vitest UI and Vitest's other reporters,
+such as JUnit's, don't show it, as they don't show a coverage threshold
+that failed.
+
+A sharded run never runs every visual test file, so it never finds the
+references of deleted test files. The visual tests are quick, so CI can
+run them in a job of their own, unsharded, as
+`vitest run -p "visual-*"`, and shard the rest.
 
 ## The Summary
 
@@ -60,15 +68,19 @@ In GitHub Actions, the summary also goes to the job's summary page.
 
 A test whose image changed fails with a message that names its files: the
 reference, the actual image in `.vitest/vsnap/`, and, for an image that
-kept its size, a diff, which shows the reference dimmed and the pixels that
-changed in red. The message ends with the command that accepts the change,
+kept its size, a diff. The diff shows the reference dimmed, the pixels that
+changed by more than the tolerance in red, and those that changed by less
+in dark yellow. The message ends with the command that accepts the change,
 `vitest run <file> -u`. The files of a test that passes again are deleted.
 
 The Vitest UI shows them side by side. Install `@vitest/ui`, at the same
 version as Vitest, run `vitest --ui`, and open the failed test. Its Visual
 Regression panel shows the diff, the reference, the actual image, and a
 slider between the reference and the actual image. Look at each change
-there before accepting it.
+there before accepting it. v-snap fills the panel as Vitest's own
+`toMatchScreenshot` does, in a way that Vitest's documentation doesn't
+promise, so a later version of Vitest may show it differently. The tests'
+results don't depend on it.
 
 ## In CI
 
@@ -95,7 +107,9 @@ downloaded each time. In GitHub Actions:
 GitHub's runners already have the libraries that the browser needs. A
 bare Linux image also needs `npx playwright install-deps chromium`. A
 failed test's actual and diff images are in `.vitest/vsnap/`, which a step
-can upload for the reviewer.
+can upload for the reviewer. A repository that keeps its references in Git
+LFS checks them out with `lfs: true` in `actions/checkout`. Without it,
+each reference is a pointer file, and each test fails and says so.
 
 ## Watch Mode
 

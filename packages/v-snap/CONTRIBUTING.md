@@ -62,7 +62,7 @@ run, so that its reference still counts as used.
 | `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest`, `bindCanvasTest`, `defineVsnapConfig` and `htmlViews`, which the main entry point exports, with the types of the kinds of view. It loads the project's `vsnap.config.ts`, reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text. Then it checks the calibration set |
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `v-snap/pixi` and `v-snap/three` export. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
-| `src/node/` | The side that runs in Node. `v-snap/vitest` exports `v-snap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
+| `src/node/` | The side that runs in Node. `v-snap/vitest` exports `vsnap()`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
 | `src/browser/visual-tests/` | v-snap's own visual tests, and their references |
 | `src/browser/calibration-images/` | The calibration set's references, for each kind of page |
 | `scripts/` | The maintainers' scripts: the environment's rewrite, the blank font's generator, and the step that puts the published `package.json` in place while npm packs the package |
@@ -179,4 +179,7 @@ libraries that its page code imports instead. To check that a change keeps
 this working, pack the package, install the tarball in a scratch project
 outside the repository, and run a few tests there.
 
-The package isn't published yet, and `package.json` marks it private.
+The package is released from this repository with Changesets, on a version
+of its own: a change file names `v-snap` alone. The repository's
+[`.changeset/README.md`](../../.changeset/README.md) says how a release
+goes.

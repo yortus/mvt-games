@@ -117,7 +117,10 @@ that nothing but `npm ci` is needed.
 - **Canvas text** is drawn in two fonts that come with v-snap, Source Sans 3
   and Source Code Pro. v-snap lays the text out and draws each letter as a
   shape, so the system's text engine takes no part. Every system draws
-  shapes alike.
+  shapes alike. This covers the text that the canvas's own text calls
+  draw, such as Pixi's `Text`. Text that reaches a canvas
+  another way, such as Pixi's `HTMLText`, which draws HTML through an SVG
+  image, is drawn by the system, in its fonts.
 - **HTML text** is set in a blank font, whose letters keep their widths
   but draw nothing. Nothing tried inside the browser made HTML text draw
   alike on every system, so the layout is tested, and the words aren't.
@@ -125,7 +128,11 @@ that nothing but `npm ci` is needed.
   that calls `Math.random` draws the same every time.
 - **A tolerance** of 2 levels in 255, for each colour channel, covers the
   rounding of some drawing on arm64 processors. A real change is almost
-  never that small.
+  never that small. On arm64, Vitest's `-u` leaves the reference of an
+  image within the tolerance as it is, so that an arm64 machine doesn't
+  keep rewriting references. Other processors draw exactly, so there a
+  difference within the tolerance is a small real change, and `-u` writes
+  it.
 
 The images were checked on GitHub's Windows x64, Linux x64, Linux arm64
 and macOS arm64 runners. Every image was identical on all four, except for

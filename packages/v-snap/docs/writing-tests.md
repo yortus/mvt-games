@@ -69,6 +69,8 @@ is an array, and `.for` passes it whole. The name can show the case, with
 canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({ mode }));
 ```
 
+They follow the other modifiers too, as in `canvasTest.skip.each(cases)`.
+
 A canvas image that is one colour all over fails its test, since it
 usually means that the view drew nothing. A view that is meant to be one
 colour, such as an empty panel, sets `canBeBlank: true`.
