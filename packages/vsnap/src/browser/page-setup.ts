@@ -69,6 +69,10 @@ async function setUp(): Promise<PageSetup> {
 const SEED = 0x5eed;
 
 async function loadFont(url: string): Promise<fontkit.Font> {
-    const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`vsnap couldn't load its test font from ${url}: the server answered ${response.status} ${response.statusText}. The test page loads it from vsnap's package, so check that Vite may serve files from there (server.fs.allow).`);
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
     return fontkit.create(bytes as unknown as Buffer) as fontkit.Font;
 }

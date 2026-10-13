@@ -81,6 +81,21 @@ export function escapeGlob(path: string): string {
     return path.replace(/[\\*?[\]{}()!+@]/g, '\\$&');
 }
 
+/**
+ * Records the names of a `vsnap` call's projects, and returns every name that
+ * this process's calls recorded. Vitest loads its config several times in a
+ * run, each time with a fresh copy of this module, so the names are kept on
+ * the process.
+ */
+export function recordVsnapProjectNames(names: readonly string[]): void {
+    for (const name of names) listVsnapProjectNames().add(name);
+}
+
+/** Returns the names of every project that a `vsnap` call made in this process. */
+export function listVsnapProjectNames(): Set<string> {
+    return ((globalThis as { vsnapProjectNames?: Set<string> }).vsnapProjectNames ??= new Set());
+}
+
 /** Returns whether a folder holds no visual test files or reference images: installed packages, build output, and hidden folders such as `.git`. */
 export function isSkippedFolder(name: string): boolean {
     return name === 'node_modules' || name === 'dist' || name.startsWith('.');

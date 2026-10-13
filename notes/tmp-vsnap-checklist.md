@@ -78,19 +78,30 @@ From the blind review of 2026-10-13.
   warning when the config loads. A run of the visual tests fails over it,
   after running the others; `-p unit` only warns. Checked with an empty file
   in the website.
-- [ ] **B13. A root `test.browser` leaks into vsnap's projects**
+- [x] **B13. A root `test.browser` leaks into vsnap's projects**
   (reproduced). With `extends: true`, a root `browser.instances` adds
   instances, so each visual file runs again in another browser, uncounted,
   and races vsnap's instance when writing new references. Fix: set
   vsnap's own instances so nothing is added, or stop the run, as for
   inherited `include` and `setupFiles`.
-- [ ] **B14. A long test name fails with a raw ENOENT** (reproduced at 300
+  Done on 2026-10-13: the reporter stops the run when a project that no
+  vsnap() call made runs vsnap's setup file, and says to move the browser
+  settings. Checked in the packed trial with a root browser.instances. A
+  named extra instance is stopped by Vitest itself first, since its name
+  repeats across vsnap's two projects.
+- [x] **B14. A long test name fails with a raw ENOENT** (reproduced at 300
   characters; a name over 255 bytes would fail on Linux). Fix: cap image
   names, with a short hash of the full name, and a clear message.
-- [ ] **B15. Image names that differ only in case collide on macOS**
+  Done on 2026-10-13: a name over 100 bytes (UTF-8) is cut between
+  characters, and an 8-digit hash of the whole name is added. Unit tests,
+  and a 300-character name in the packed trial.
+- [x] **B15. Image names that differ only in case collide on macOS**
   (checked). `toFileKey` folds case only on Windows. Fix: compare names
   case-insensitively on every platform when looking for shared references.
-- [ ] **B16. Smaller bugs** (each checked by reading, or reproduced):
+  Done on 2026-10-13: used references are grouped case-insensitively on
+  every system, so 'Red' and 'red' fail as sharing a reference, with a note
+  about case; both paths still count as used. Checked in the packed trial.
+- [x] **B16. Smaller bugs** (each checked by reading, or reproduced):
   - A font fetch that fails shows as fontkit's "Unknown font format"
     (`src/browser/page-setup.ts`): check `response.ok` and name the URL.
   - `checkViewConfig` rejects `export { config as default }`.
@@ -101,6 +112,13 @@ From the blind review of 2026-10-13.
   - Pixi textures cached by an earlier test keep that test's sampling
     (`TextureSource.defaultOptions.scaleMode`), so images could depend on
     test order (likely). Document it, or detect it.
+  Done on 2026-10-13, all five: the font fetch names the URL and status,
+  and points at server.fs.allow; `export { config as default }` passes the
+  check; engines is `>=22.17`, where Node's release notes list fs.glob as
+  stable; a default root that differs from Vitest's stops the run and asks
+  for `root` (checked with `--root`); and the README says to make a Pixi
+  texture in the pose if pixel art and smooth tests share it. Also, the
+  repository's root shows as '.' in messages.
 
 ## Before publishing
 

@@ -36,7 +36,7 @@
   the images. A newer minor version of Playwright brings a new browser, so
   it needs a new release of vsnap. A project that uses Playwright for other
   tests uses the same version for both.
-- **Node 22 or later.**
+- **Node 22.17 or later,** where Node's file globbing is stable.
 - **No renderer library.** A canvas test can draw with the browser's own
   canvas, and needs no library. vsnap's support for Pixi and three.js views
   draws with the project's own copy of `pixi.js` or `three`, so a project
@@ -253,10 +253,13 @@ test file. Vitest's own screenshot features write to `__screenshots__`
 folders, so this package uses a name of its own. That way, a file that
 Vitest writes is never mistaken for a reference image.
 
-An image name has no spaces, so it can be typed on a command line. Two
-tests whose full names differ only in punctuation would have the same image
-name, and share one reference image. If any tests share a reference image,
-the run fails, and names the tests.
+An image name has no spaces, so it can be typed on a command line. A name
+longer than 100 bytes is cut short, and a short hash of the whole name is
+added, so that file names stay inside every system's limits. Two tests
+whose full names differ only in punctuation would have the same image name,
+and share one reference image. So would two whose names differ only in
+case, since macOS and Windows keep such names in one file. If any tests
+share a reference image, the run fails, and names the tests.
 
 ### One Kind of Test in Each File
 
@@ -404,7 +407,7 @@ Every option is optional.
 | Option | What it sets |
 | --- | --- |
 | `name` | The start of the projects' names, which end in `-canvas` and `-html`. The default is `visual` |
-| `root` | The folder that the other paths are relative to, and that holds `vsnap.config.ts`. The default is the folder Vitest runs in |
+| `root` | The folder that the other paths are relative to, and that holds `vsnap.config.ts`. The default is the folder Vitest runs in. A run whose Vitest root is elsewhere, such as with `vitest --root`, stops and asks for it, such as `root: import.meta.dirname` |
 | `include` | Globs for the test files. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
@@ -631,11 +634,19 @@ Test images give up these details:
 - **The drawing is software's,** so it can differ a little from a real
   graphics card.
 
-Tests must also follow two rules:
+Tests must also follow these rules:
 
 - **Don't leave global state changed, or depend on real time.** Either can
   make images change from one run to the next. Canvas tests share one
   page, so a change that one test leaves behind affects the tests after it.
+  That includes Vitest's `vi.mock` and `vi.stubGlobal`.
+- **Make a Pixi texture in the pose, if pixel art and smooth tests share
+  it.** A texture keeps the sampling that it was made with, which
+  `pixelArt` sets as each pose starts. One that a module makes once and
+  caches keeps the sampling of the test that made it, so a later test of the
+  other kind would draw it differently, and its image would depend on which
+  test ran first. A texture whose sampling is set when it is made, such as a
+  spritesheet's, draws the same in every test.
 - **End each canvas font list with `sans-serif` or `monospace`.** Canvas
   text is drawn in this package's own sans-serif or monospace font,
   picked from the list. So `'"Press Start 2P", monospace'` works, but

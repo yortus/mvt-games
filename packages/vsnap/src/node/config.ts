@@ -35,7 +35,7 @@ import { toDisplayPath } from './paths.ts';
 import { forgetFingerprint, mustRebundle, recordFingerprint } from './rebundle.ts';
 import { registerRoot, toFileKey } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
-import { describeProblems, escapeGlob, findVisualTestFiles, type VisualTestFiles } from './test-files.ts';
+import { describeProblems, escapeGlob, findVisualTestFiles, recordVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -124,6 +124,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     // A kind of test with no files gets no project.
     const kinds = (['canvas', 'html'] as const).filter((kind) => files[kind].length > 0);
     const projectNames = kinds.map((kind) => `${name}-${kind}`);
+    recordVsnapProjectNames(projectNames);
     const viewConfig = findViewConfig(root, options.config);
     if (viewConfig !== undefined) checkViewConfig(viewConfig);
     const allFiles = [...files.canvas, ...files.html];
@@ -136,7 +137,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         setupFiles: [SETUP_FILE],
         problems: files.problems,
     });
-    const plugin = createVsnapPlugin({ reporter, name, root, files: () => findVisualTestFiles(layout), initialFiles: files });
+    const plugin = createVsnapPlugin({ reporter, name, root, isDefaultRoot: options.root === undefined, files: () => findVisualTestFiles(layout), initialFiles: files });
     const rebundle = mustRebundle(name);
     return kinds.map((kind, i) => createVisualProject({
         rebundle,
@@ -266,6 +267,8 @@ function createVsnapPlugin(options: {
     /** The `vsnap` call's name, for its sources' fingerprint. */
     readonly name: string;
     readonly root: string;
+    /** Whether the root is the default, the folder that Vitest runs in. */
+    readonly isDefaultRoot: boolean;
     /** Returns the project's visual test files, read afresh. */
     readonly files: () => VisualTestFiles;
     readonly initialFiles: VisualTestFiles;
@@ -282,6 +285,14 @@ function createVsnapPlugin(options: {
             if (!reporters.includes(options.reporter)) reporters.push(options.reporter);
             // The projects run, and so bundle, in this run.
             recordFingerprint(options.name);
+            // The projects found their files when the config loaded, from the
+            // folder Vitest runs in, before Vitest's own root was known.
+            if (options.isDefaultRoot && toFileKey(vitest.config.root) !== toFileKey(options.root)) {
+                throw new Error(
+                    `vsnap's root is the folder that Vitest runs in, ${toDisplayPath(options.root)}, but Vitest's own root is ${toDisplayPath(vitest.config.root)}, `
+                    + 'as `vitest --root`, or a config in another folder, sets it. Give vsnap the root, such as vsnap({ root: import.meta.dirname }).',
+                );
+            }
             const server = vitest.vite;
             if (!vitest.config.watch || watched.has(server)) return;
             watched.add(server);
@@ -375,7 +386,8 @@ function findViewConfig(root: string, named: string | undefined): string | undef
  */
 function checkViewConfig(file: string): void {
     const text = readFileSync(file, 'utf8');
-    if (!/\bexport\s+default\b/.test(text)) {
+    // `export default config`, or `export { config as default }`.
+    if (!/\bexport\s+default\b|\bas\s+default\b/.test(text)) {
         throw new Error(`${toDisplayPath(file)} has no default export. It exports its config as default: export default defineVsnapConfig({ ... }).`);
     }
     if (!/\b(?:Register|bindCanvasTest)\b/.test(text) && !WARNED.has(file)) {

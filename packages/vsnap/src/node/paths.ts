@@ -49,7 +49,8 @@ export function toOutputBase(file: string, folders: { readonly repo: string; rea
 
 /** Converts a path to the form that messages show: relative to the repository, with forward slashes. */
 export function toDisplayPath(file: string): string {
-    return relative(REPO_ROOT, file).replaceAll('\\', '/');
+    // The repository's root itself shows as '.', not as nothing.
+    return relative(REPO_ROOT, file).replaceAll('\\', '/') || '.';
 }
 
 // ---------------------------------------------------------------------------

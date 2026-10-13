@@ -21,6 +21,21 @@ describe('toImageName', () => {
         expect(toImageName('café')).not.toBe(toImageName('caf'));
     });
 
+    it('cuts a name over 100 bytes short, and adds a hash of the whole name', () => {
+        const long = toImageName(`HudView > ${'a'.repeat(300)}`);
+        expect(new TextEncoder().encode(long).length).toBeLessThanOrEqual(100);
+        expect(long).toMatch(/^HudView-a+-[0-9a-f]{8}$/);
+        expect(toImageName(`HudView > ${'a'.repeat(300)} one`)).not.toBe(toImageName(`HudView > ${'a'.repeat(300)} two`));
+        expect(toImageName(`HudView > ${'a'.repeat(300)}`)).toBe(long);
+    });
+
+    it('counts bytes, not characters, and cuts between characters', () => {
+        const long = toImageName('日本'.repeat(60));
+        expect(new TextEncoder().encode(long).length).toBeLessThanOrEqual(100);
+        expect(long).toMatch(/^(日本)+日?-[0-9a-f]{8}$/u);
+        expect(toImageName('日本'.repeat(16))).toBe('日本'.repeat(16));
+    });
+
     it('throws for a name with no letters or digits', () => {
         expect(() => toImageName('!!! > ...')).toThrow(/no letters or digits/);
     });

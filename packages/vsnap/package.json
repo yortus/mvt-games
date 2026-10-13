@@ -27,7 +27,7 @@
         "visual-environment.json"
     ],
     "engines": {
-        "node": ">=22"
+        "node": ">=22.17"
     },
     "scripts": {
         "build": "tsdown",

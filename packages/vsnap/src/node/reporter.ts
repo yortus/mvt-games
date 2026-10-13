@@ -35,7 +35,7 @@ import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
 import { checkReference, findOrphans, findReferenceCandidates, findReferences, removeReference, toFileKey } from './references.ts';
-import { describeProblems, type VisualTestFiles } from './test-files.ts';
+import { describeProblems, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -73,6 +73,7 @@ export function createVisualReporter(options: {
             vitest = v;
             checkForInheritedLists(v, projectNames, options.includes);
             checkForInheritedSetupFiles(v, projectNames, options.setupFiles);
+            checkForInheritedInstances(v, options.setupFiles);
         },
         onTestRunStart(specifications: readonly TestSpecification[]) {
             started = performance.now();
@@ -272,6 +273,28 @@ function checkForInheritedSetupFiles(vitest: Vitest, projectNames: readonly stri
 }
 
 /**
+ * Throws if a project that no `vsnap` call made runs vsnap's setup file. A
+ * vsnap project inherits the config's `browser` settings (`extends: true`),
+ * and Vitest adds the config's `browser.instances` to the project's own. So
+ * each visual test file would run again, in a browser that vsnap didn't set
+ * up, uncounted in the summary, and racing vsnap's own when it writes a new
+ * reference.
+ */
+function checkForInheritedInstances(vitest: Vitest, setupFiles: readonly string[]): void {
+    const setups = new Set(setupFiles.map(toFileKey));
+    const names = listVsnapProjectNames();
+    for (const project of vitest.projects) {
+        if (names.has(project.name) || !project.config.setupFiles.some((file) => setups.has(toFileKey(file)))) continue;
+        throw new Error(
+            `The project ${project.name} runs vsnap's visual tests a second time, in a browser that vsnap didn't set up. `
+            + "vsnap's projects inherit the config's browser settings, and Vitest adds the config's browser.instances to theirs. "
+            + "Move the browser settings out of the config's test block, into the project that needs them, "
+            + 'or name the Vite config that vsnap\'s projects need, with vsnap({ viteConfig }).',
+        );
+    }
+}
+
+/**
  * Returns why a run did not run every visual test, so that the checks of
  * every reference image can't run, or undefined if it did run them all.
  */
@@ -295,13 +318,19 @@ function findIncompleteness(options: {
     return undefined;
 }
 
-/** A reference, and the full names of the tests that used it in this run. */
+/**
+ * A reference, and the full names of the tests that used it in this run.
+ * Paths that differ only in case are one reference, since they are one file
+ * on macOS and Windows, so it can have more than one path.
+ */
 interface UsedReference {
     readonly file: string;
+    /** Every path that the tests gave the reference, which differ only in case. */
+    readonly files: Set<string>;
     readonly tests: string[];
 }
 
-/** Returns the references that this run's tests used, by their file keys. */
+/** Returns the references that this run's tests used, by their paths in lower case. */
 function listUsedReferences(layout: VisualLayout, testModules: readonly TestModule[]): Map<string, UsedReference> {
     const used = new Map<string, UsedReference>();
     for (const module of testModules) {
@@ -309,8 +338,9 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
             const imageName = test.meta().visualImage;
             if (imageName === undefined) continue;
             const file = resolveReferencePath(layout, module.moduleId, imageName);
-            const key = toFileKey(file);
-            const entry = used.get(key) ?? { file, tests: [] };
+            const key = resolve(file).toLowerCase();
+            const entry = used.get(key) ?? { file, files: new Set<string>(), tests: [] };
+            entry.files.add(file);
             entry.tests.push(test.fullName);
             used.set(key, entry);
         }
@@ -323,13 +353,15 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
  * share, and a failure if there are any. Tests share a reference when
  * their image names are the same, such as names that differ only in
  * punctuation, or tests with the same names in two files whose references
- * are in one folder.
+ * are in one folder. Names that differ only in case share one too, on
+ * every system, since macOS and Windows keep them in one file.
  */
 function describeSharedReferences(used: ReadonlyMap<string, UsedReference>): CheckResult {
     const lines: string[] = [];
-    for (const { file, tests } of used.values()) {
+    for (const { file, files, tests } of used.values()) {
         if (tests.length < 2) continue;
-        lines.push(`    ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}`);
+        const caseNote = files.size > 1 ? ' (their names differ only in case, which macOS and Windows keep in one file)' : '';
+        lines.push(`    ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}${caseNote}`);
     }
     if (lines.length === 0) return { lines: [] };
     const heading = 'These tests share a reference image, so each would overwrite the others. Rename all but one of each group:';
@@ -349,7 +381,7 @@ function settleOrphans(options: {
     /** The files whose reference images are the projects', as absolute paths. */
     readonly ownFiles: readonly string[];
 }): CheckResult {
-    const compared = [...options.state.calibrationReferences, ...[...options.used.values()].map((u) => u.file)];
+    const compared = [...options.state.calibrationReferences, ...[...options.used.values()].flatMap((u) => [...u.files])];
     const orphans = findOrphans({ references: findReferences(options.layout, options.ownFiles).map((r) => r.file), compared });
     if (orphans.length === 0) return { lines: [] };
     const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
