@@ -9,7 +9,7 @@ import type { VisualTestMeta, VisualVerdict } from '../protocol';
 import { describeValue, isAllOne } from '../shared';
 import { splitTestOptions, type VitestTestOptions } from './test-options';
 import {
-    type CanvasKinds, type CanvasViewKind, type DefaultView, type KindOptions, loadViewKinds, type OptionsOf, type RegisteredConfig, type ViewOf, type VsnapConfig,
+    type CanvasKinds, type CanvasViewKind, type DefaultView, type KindOptions, applyDefaults, loadViewKinds, type OptionsOf, type RegisteredConfig, type ViewOf, type VsnapConfig,
 } from './view-kinds';
 
 // ---------------------------------------------------------------------------
@@ -56,6 +56,10 @@ export type WithModifiers<F> = F & {
     readonly skip: F;
     readonly only: F;
     readonly todo: (name: string) => void;
+    /** Skips the test when the condition is true, as Vitest's `test.skipIf` does. */
+    readonly skipIf: (condition: unknown) => F;
+    /** Runs the test only when the condition is true, as Vitest's `test.runIf` does. */
+    readonly runIf: (condition: unknown) => F;
 };
 
 /**
@@ -178,6 +182,8 @@ function withModifiers(declareVisualTest: DeclareVisualTest): unknown {
     return Object.assign(create(plain(test)), {
         skip: create(plain(test.skip)),
         only: create(plain(test.only)),
+        skipIf: (condition: unknown) => create(plain(test.skipIf(condition) as typeof test.skip)),
+        runIf: (condition: unknown) => create(plain(test.runIf(condition) as typeof test.skip)),
         todo: (name: string) => test.todo(name),
         each: (cases: readonly unknown[]) => create(forCases(cases, true)),
         for: (cases: readonly unknown[]) => create(forCases(cases, false)),
@@ -201,7 +207,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
         try {
             // The capture prepares the element once it is in the page, so that
             // a prepare step that measures it sees its layout
-            captured = await captureHtmlImage(view, { ...(image as HtmlImageOptions), maxPixels: inject('visualMaxPixels'), prepare: kind.prepare }, id);
+            captured = await captureHtmlImage(view, { ...applyDefaults({ background: kind.background }, image as HtmlImageOptions), maxPixels: inject('visualMaxPixels'), prepare: kind.prepare }, id);
             ms.prepare = captured.prepareMs;
             ms.capture = captured.captureMs;
         }
@@ -217,7 +223,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
 async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
     const setup = await setUpPage();
     const id = nameImage(task.fullTestName);
-    task.meta.visualImage = id.name;
+    task.meta.vsnap = { image: id.name };
     const kind = inject('visualKind');
     if (kind !== declared) {
         // The config sends each file to the page its declarations ask for,
@@ -237,12 +243,16 @@ async function finishTest(task: TestContext['task'], result: {
 }): Promise<void> {
     const { id, verdict, kind, size, ms } = result;
     const visual: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
-    task.meta.visual = visual;
+    task.meta.vsnap = { image: id.name, result: visual };
     if (isPass(verdict)) return;
     const message = describeFailure(id.name, verdict, kind);
     if (verdict.images !== undefined && verdict.images.length > 0) {
         // The same record as Vitest's own screenshot assertion makes, so that
-        // its UI and reports show the reference, actual and diff images
+        // its UI and reports show the reference, actual and diff images. Its
+        // type is one of Vitest's own, which Vitest's types declare but its
+        // documentation doesn't promise; it is the only one whose images the
+        // UI shows side by side. vsnap's peer range keeps to Vitest 5, and a
+        // change to it in Vitest would show in the UI, not in a run's result.
         await recordArtifact(task, {
             type: 'internal:toMatchScreenshot',
             kind: 'visual-regression',
@@ -275,7 +285,7 @@ function declareCanvasTest(options: {
     const { declare, name, config } = options;
     const [viewPose, testAndImageOptions] = sortArguments(options.optionsOrPose, options.pose);
     const { test: testOptions, image } = splitTestOptions(testAndImageOptions);
-    const { kind: kindName, canBeBlank, ...imageOptions } = image as { readonly kind?: string; readonly canBeBlank?: boolean };
+    const { kind: kindName, canBeBlank, ...testImageOptions } = image as { readonly kind?: string; readonly canBeBlank?: boolean };
     declare(name, testOptions, async (args, { task }) => {
         const { setup, id } = await startTest(task, 'canvas');
         const viewKinds = await loadViewKinds();
@@ -285,6 +295,8 @@ function declareCanvasTest(options: {
         const named = kindName ?? viewKinds.defaultView;
         const kind = named === 'canvas' ? undefined : findKind(viewKinds, named, id.test);
         const ms: Record<string, number> = {};
+        // The kind's defaults, such as the project's background, under the test's own options.
+        const imageOptions = applyDefaults(kind?.defaults, testImageOptions);
         kind?.beforePose?.(imageOptions);
         let t = performance.now();
         const posed: unknown = await viewPose(...args);
@@ -344,7 +356,7 @@ function rejectView(options: Parameters<typeof describeMismatch>[0]): Error {
     const error = new Error(describeMismatch(options));
     const claimant = isCanvas(options.view) ? undefined : options.viewKinds.canvas.find((kind) => kind.isView(options.view));
     try {
-        claimant?.dispose(options.view);
+        claimant?.dispose?.(options.view);
     }
     catch {
         // The error about the view's kind matters more than one from
@@ -404,6 +416,6 @@ async function drawView(kind: CanvasViewKind<unknown, object>, view: unknown, op
         return image;
     }
     finally {
-        kind.dispose(view);
+        kind.dispose?.(view);
     }
 }

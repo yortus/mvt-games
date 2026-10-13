@@ -26,7 +26,7 @@
  * the UI and for a program that runs Vitest, not only by its exit code.
  */
 
-import { appendFileSync, existsSync } from 'node:fs';
+import { appendFileSync, existsSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { configDefaults } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason, Vitest } from 'vitest/node';
@@ -34,7 +34,7 @@ import { toImageName } from '../image-name.ts';
 import type { VisualTestMeta } from '../protocol.ts';
 import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
-import { OUT_DIR, toDisplayPath } from './paths.ts';
+import { OUT_DIR, toDisplayPath, toOutputBase } from './paths.ts';
 import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, removeReference, toFileKey } from './references.ts';
 import { describeProblems, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
@@ -84,6 +84,7 @@ export function createVisualReporter(options: {
             // through its exit code, which Vitest leaves as they set it.
             const failures = options.problems.length > 0 ? [describeProblems(options.problems)] : [];
             const outcome = reason === 'interrupted' ? undefined : runChecks({ layout, state, vitest, testFiles: options.testFiles, ownFiles, testModules });
+            clearPassedOutputs(layout, testModules);
             failures.push(...(outcome?.failures ?? []));
             const lines = describeRun({ projectNames, testModules, outcome, started, reason, ownFiles, layout });
             if (lines.length > 0) print(vitest, `\n${lines.join('\n')}\n`);
@@ -129,7 +130,7 @@ function describeRun(options: {
     const images: { name: string; meta: VisualTestMeta; total: number }[] = [];
     for (const module of options.testModules) {
         for (const test of module.children.allTests()) {
-            const meta = test.meta().visual;
+            const meta = test.meta().vsnap?.result;
             if (meta === undefined) continue;
             let total = 0;
             for (const ms of Object.values(meta.ms)) total += ms;
@@ -194,6 +195,29 @@ function failRun(vitest: Vitest | undefined, failures: readonly string[]): void 
     }
     process.exitCode = 1;
 }
+
+/** The outcomes of an image that passed. */
+const PASSED: ReadonlySet<string> = new Set(['same', 'within-tolerance', 'added', 'updated']);
+
+/**
+ * Deletes the actual and diff images that earlier runs wrote for the tests
+ * whose images passed in this run, so that `.vitest/vsnap/` holds only those
+ * of tests that fail now. A failed test's are kept, since they were just
+ * written.
+ */
+function clearPassedOutputs(layout: VisualLayout, testModules: readonly TestModule[]): void {
+    for (const module of testModules) {
+        for (const test of module.children.allTests()) {
+            const record = test.meta().vsnap;
+            if (record?.result === undefined || !PASSED.has(record.result.outcome)) continue;
+            const base = toOutputBase(resolveReferencePath(layout, module.moduleId, record.image));
+            for (const suffix of OUTPUT_SUFFIXES) rmSync(`${base}${suffix}`, { force: true });
+        }
+    }
+}
+
+/** The ends of the names of the files that a failed test writes beside its output base. */
+const OUTPUT_SUFFIXES = ['.actual.png', '.diff.png'];
 
 /** What a run's checks found. */
 interface CheckOutcome {
@@ -358,7 +382,7 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
     const used = new Map<string, UsedReference>();
     for (const module of testModules) {
         for (const test of module.children.allTests()) {
-            const imageName = test.meta().visualImage;
+            const imageName = test.meta().vsnap?.image;
             if (imageName === undefined) continue;
             const file = resolveReferencePath(layout, module.moduleId, imageName);
             const key = resolve(file).toLowerCase();
@@ -402,7 +426,7 @@ function listNamedReferences(layout: VisualLayout, testModules: readonly TestMod
     const named = new Set<string>();
     for (const module of testModules) {
         for (const test of module.children.allTests()) {
-            if (test.meta().visualImage !== undefined) continue;
+            if (test.meta().vsnap !== undefined) continue;
             let imageName: string;
             try {
                 imageName = toImageName(test.fullName);

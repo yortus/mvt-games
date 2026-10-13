@@ -1,5 +1,6 @@
 import { type Dirent, globSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import picomatch from 'picomatch';
 import type { VisualKind } from '../protocol.ts';
 import type { VisualLayout } from './layout.ts';
 
@@ -105,8 +106,10 @@ export function isSkippedFolder(name: string): boolean {
 // Internals
 // ---------------------------------------------------------------------------
 
-const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo|each|for))?\s*\(/;
-const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo|each|for))?\s*\(/;
+// A test is declared by a call, or by `.skipIf(x)(` and `.runIf(x)(`, whose
+// condition comes first.
+const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo|each|for))?\s*\(|\bcanvasTest\.(skipIf|runIf)\s*\(/;
+const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo|each|for))?\s*\(|\bhtmlTest\.(skipIf|runIf)\s*\(/;
 
 /** Returns the files that match the layout's globs, sorted, relative to the root, with forward slashes. */
 function listTestFiles(layout: VisualLayout): string[] {
@@ -118,8 +121,11 @@ function listTestFiles(layout: VisualLayout): string[] {
         withFileTypes: true,
         exclude: (entry: Dirent) => entry.isDirectory() && isSkippedFolder(entry.name),
     });
+    const isExcluded = picomatch([...layout.exclude]);
     for (const entry of entries) {
-        if (entry.isFile()) found.add(relative(layout.root, join(entry.parentPath, entry.name)).replaceAll('\\', '/'));
+        if (!entry.isFile()) continue;
+        const file = relative(layout.root, join(entry.parentPath, entry.name)).replaceAll('\\', '/');
+        if (layout.exclude.length === 0 || !isExcluded(file)) found.add(file);
     }
     return [...found].sort();
 }

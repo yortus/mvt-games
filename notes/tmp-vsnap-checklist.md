@@ -32,20 +32,36 @@ Each review finding says how it was checked:
   option names `vsnap.config.ts`. Users will look for `defineVsnapConfig`
   in `vsnap/config`. Consider `vsnap/vitest` for the Node side, and
   another name for the option.
-- [ ] **A13. No project-wide defaults for a kind's options,** such as
+- [x] **A13. No project-wide defaults for a kind's options,** such as
   `pixiViews({ artStyle, background })`. With A4.
   The art style done on 2026-10-13, now `pixiViews({ pixelArt })`, and a
   test's own overrides it. `background` is still to do, for every kind.
-- [ ] **A14. The three.js peer range covers one minor version**
+  `background` done on 2026-10-13, for every kind: a `CanvasViewKind` has
+  `defaults`, which vsnap puts under each test's options
+  (`applyDefaults`), so custom kinds get them too; `pixiViews` and
+  `threeViews` take `background` (and `pixelArt`), and `htmlViews` takes
+  `background`.
+- [x] **A14. The three.js peer range covers one minor version**
   (`^0.186.1`), and three releases one a month, so a project on 0.187
   likely gets a conflict. Widen it.
-- [ ] **A15. `CanvasTestOptions` knows only the registered config,** so a
+  Done on 2026-10-13: `>=0.160.0 <1`. 0.186.1 is the newest; 0.160.0
+  type-checks and passes the packed trial's three.js test, with an
+  identical image. The API that vsnap uses dates from r152.
+- [x] **A15. `CanvasTestOptions` knows only the registered config,** so a
   project using `bindCanvasTest` can't name its options' type. Add a
   config parameter.
-- [ ] **A16. Smaller gaps:** no `skipIf` or `runIf`; `.todo` takes no
+  Done on 2026-10-13: `CanvasTestOptions<K, C>`, such as
+  `CanvasTestOptions<'three', typeof config>`, with a type test.
+- [x] **A16. Smaller gaps:** no `skipIf` or `runIf`; `.todo` takes no
   options; a kind's `dispose` is required; no `exclude` option; the fixed
   `groupOrder: 1` can clash with a project's own group 1; the viewport
   and tolerance are fixed.
+  Done on 2026-10-13: `.skipIf(condition)` and `.runIf(condition)` (and
+  the file scan counts them); a kind's `dispose` is optional; `vsnap({
+  exclude })`, which reference ownership honours too; the projects run in
+  group 1000, past a project's own. The viewport and the tolerance stay
+  fixed, as part of what makes images agree; the README says so. `.todo`
+  still takes a name only, as Vitest's does.
 
 ## Watch mode
 
@@ -73,20 +89,30 @@ Each review finding says how it was checked:
   `@vitest/coverage-v8` and with `@vitest/coverage-istanbul` both run with
   the visual tests, whose images still compare identical, and count the
   views they draw. Still to check: the VS Code extension (the user).
-- [ ] **U11. The UI's Test Meta panel shows vsnap's internal record** of
+- [x] **U11. The UI's Test Meta panel shows vsnap's internal record** of
   each test (`visual`: kind, outcome, size, timings), which the reporter
   reads. Harmless, but noise to a user. Consider a less prominent place, or
   a shorter record.
-- [ ] **U18. Smaller:** a headed browser (`--browser.headless=false`) gets
+  Done on 2026-10-13, as far as it goes: task meta is Vitest's one channel
+  from the page to the reporter, and the UI shows all of it; another way
+  would cost a round trip to Node per test. So the record is one entry,
+  `vsnap: { image, result }`, in place of `visual` and `visualImage`, and
+  reads as vsnap's own.
+- [x] **U18. Smaller:** a headed browser (`--browser.headless=false`) gets
   a message that blames Playwright's version (likely); old actual and diff
   images in `.vitest/vsnap/` are never cleaned; `recordArtifact` uses
   Vitest's `'internal:toMatchScreenshot'` type, an internal contract.
+  Done on 2026-10-13: a page whose browser isn't HeadlessChrome stops the
+  run with a message that names the browser and says to run headless (not
+  run here: a headed browser risks the Windows logon lockout); a test whose
+  image passed has its old actual and diff images deleted (checked); and
+  `recordArtifact`'s comment says why it uses Vitest's own type.
 
 ## Documentation
 
 From the 2026-10-13 review, where the README disagrees with the code.
 
-- [ ] **D4. Presentation:** about a quarter of the README is for vsnap's
+- [x] **D4. Presentation:** about a quarter of the README is for vsnap's
   maintainers (its own config, its layout, the build); move it to a
   CONTRIBUTING file. Missing: the options of each kind in one place, a CI
   recipe, troubleshooting, and how to review a diff in the Vitest UI.
@@ -98,6 +124,11 @@ From the 2026-10-13 review, where the README disagrees with the code.
   README links to it; the lines are wrapped. Still to write: the options of
   each kind in one place, a CI recipe, troubleshooting, and reviewing a
   diff in the Vitest UI.
+  Finished on 2026-10-13: "Options of Each Kind" (a table of each kind's
+  test and registration options), "Reviewing a Failed Image" (the files,
+  the -u command, and the Vitest UI's Visual Regression panel), and
+  "Troubleshooting" (the messages a user meets, with what each usually
+  means). The CI recipe came with D2.
 
 ## The rest of 042, step 10
 

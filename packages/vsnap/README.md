@@ -45,8 +45,9 @@
 - **Node 22.17 or later,** where Node's file globbing is stable.
 - **No renderer library.** A canvas test can draw with the browser's own
   canvas, and needs no library. vsnap's support for Pixi and three.js views
-  draws with the project's own copy of `pixi.js` or `three`, so a project
-  that uses it installs only the library its views use.
+  draws with the project's own copy of `pixi.js` (8.16 or later) or
+  `three` (0.160 or later), so a project that uses it installs only the
+  library its views use.
 
 ---
 
@@ -83,8 +84,9 @@ returns it. A pose never waits for real time to pass.
 
 The options can also hold Vitest's own `timeout`, `retry`, `repeats` and
 `fails`, which work as they do on `test`. So do the modifiers
-`canvasTest.skip`, `canvasTest.only` and `canvasTest.todo`, and the same on
-`htmlTest`. `.each(cases)` and `.for(cases)` declare a test for each case of
+`canvasTest.skip`, `canvasTest.only`, `canvasTest.todo`,
+`canvasTest.skipIf(condition)` and `canvasTest.runIf(condition)`, and the
+same on `htmlTest`. `.each(cases)` and `.for(cases)` declare a test for each case of
 a table, as Vitest's do, and pass the case to the pose. `.each` spreads a
 case that is an array, and `.for` passes it whole. The name can show the
 case, with `%s` or `$property`:
@@ -147,12 +149,14 @@ describes.
   image's `width`, `height` and `background`, and `pixelArt: true` for
   pixel art, with hard edges and whole pixels. A project whose views are
   mostly pixel art registers `pixiViews({ pixelArt: true })`, and a test of
-  a smooth view then says `pixelArt: false`.
+  a smooth view then says `pixelArt: false`. `pixiViews({ background })`
+  sets every test's background, unless the test sets its own.
 - **three.js views,** registered with `threeViews()` from `vsnap/three`. The
   pose returns a three.js object. A three.js view has no bounds to frame it
   by, so the options always set the image's `width` and `height`, and the
   `camera` to draw it with. They can also dress the `scene` as the view's
   game does, with its lights, environment and tone mapping.
+  `threeViews({ background })` sets every test's background.
 - **A canvas that the pose has drawn,** of the kind `'canvas'`, with any
   renderer, needs no registration. It can be an `HTMLCanvasElement` or an
   `OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
@@ -175,7 +179,7 @@ canvasTest('a bar chart', { kind: 'canvas' }, () => drawChart(SALES));
 Without `defaultView`, the default is `'canvas'`. HTML views need no
 registration, unless they need preparing or disposing of, as
 [Preparing and Disposing of Views](#preparing-and-disposing-of-views)
-describes.
+describes, or a background for every test, `htmlViews({ background })`.
 
 The `Register` declaration gives the config's type to `canvasTest`. So each
 test's options are checked against its kind, and its pose must return its
@@ -206,6 +210,8 @@ import { canvasTest } from '../vsnap.config';
 
 Such a `canvasTest` also checks, as each test runs, that it is the config
 of the test's own project, so a test that imports another package's fails.
+The type of its tests' options is `CanvasTestOptions<'three', typeof config>`,
+with the config named after the kind.
 
 A test also checks its view as it runs, by its kind's check, such as
 `instanceof Container`. A view of another kind fails its test, and the
@@ -214,7 +220,9 @@ message says which kind the view is, and the `kind` to give.
 `pixiViews` and `threeViews` each keep one renderer for every image, which
 is much faster than a renderer for each test. Support for another renderer
 can do the same. It is a `CanvasViewKind`: a name, a check of the view, and
-the steps that draw it and dispose of it. Its `draw` can return the canvas
+the step that draws it. It can also have steps that prepare and dispose of
+the view, and `defaults`, options that every test of the kind gets unless
+it sets its own, as `pixiViews({ background })` does. Its `draw` can return the canvas
 that it drew on, and vsnap reads it. `vsnap` exports the types, with two
 helpers: `fitImage` says how an image fits the size budget, and
 `readCanvas` reads a canvas's pixels at full resolution. A kind that draws
@@ -237,6 +245,24 @@ If every canvas test that gives no kind is a type error, such as
 have no default view. Check that `vsnap.config.ts` has the `Register`
 declaration, and that `tsconfig.json` includes the file. A test that
 imports a bound `canvasTest` imports it from the config, not from `vsnap`.
+
+### Options of Each Kind
+
+A test's options are those of its kind, with `kind` to name it, Vitest's
+`timeout`, `retry`, `repeats` and `fails`, and, for a canvas test,
+`canBeBlank`. A kind's registration can set the defaults that every test of
+the kind gets, unless the test sets its own.
+
+| Kind | A test's options | The registration's options |
+| --- | --- | --- |
+| Pixi, `pixiViews()` | `width` and `height` (the view's bounds and a margin by default), `background`, `pixelArt` (`false` by default) | `prepare`, `dispose`, `pixelArt`, `background` |
+| three.js, `threeViews()` | `width`, `height` and `camera`, all needed; `scene`, to dress the scene; `background` | `prepare`, `dispose`, `background` |
+| A canvas that the pose drew, `'canvas'` | none | none needed |
+| HTML, `htmlTest` | `width` and `height` (the element's own size by default), `background` | `htmlViews()`: `prepare`, `dispose`, `background` |
+
+A `background` is a number, such as `0x202024`, or a CSS colour. By
+default, it is one dark grey for every kind, so that transparent areas
+show.
 
 ### Tests, Actual Images and Reference Images
 
@@ -301,7 +327,9 @@ such as `vitest -p unit`, only warns, so a half-written file stops no
 other test.
 
 An HTML view must fit the test page, whose viewport is 1280 by 800
-pixels, since the part of a view past it isn't drawn. A bigger view fails
+pixels, since the part of a view past it isn't drawn. The viewport is the
+same in every project, as is the tolerance of 2 levels in 255, since both
+are part of what makes the images the same on every machine. A bigger view fails
 its test, and says so. Before an HTML view's image is taken, the package
 waits for its fonts, its `<img>` elements, and the images that its styles
 use, such as backgrounds. It also brings its animations and transitions to
@@ -375,7 +403,9 @@ checks of what it was given.
 ## Configuration
 
 vsnap's tests run in two Vitest projects, beside a project's unit tests.
-`vsnap(options)` returns the projects, which the config lists:
+They run in a group of their own (Vitest's `sequence.groupOrder`), after the
+project's other projects. `vsnap(options)` returns the projects, which the
+config lists:
 
 ```ts
 import { configDefaults, defineConfig } from 'vitest/config';
@@ -425,6 +455,7 @@ Every option is optional.
 | `name` | The start of the projects' names, which end in `-canvas` and `-html`. The default is `visual` |
 | `root` | The folder that the other paths are relative to, and that holds `vsnap.config.ts`. The default is the folder Vitest runs in. A run whose Vitest root is elsewhere, such as with `vitest --root`, stops and asks for it, such as `root: import.meta.dirname` |
 | `include` | Globs for the test files. See [Choosing Where Files Go](#choosing-where-files-go) |
+| `exclude` | Globs for files that `include` matches but that aren't visual test files, such as fixtures. The default is none |
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for vsnap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
@@ -597,6 +628,20 @@ ran, and its summary says so. A check that fails prints what it found under
 a heading of its own, after the summary, and the run exits with code 1. In
 GitHub Actions, it also adds an error annotation.
 
+### Reviewing a Failed Image
+
+A test whose image changed fails with a message that names its files: the
+reference, the actual image in `.vitest/vsnap/`, and, for an image that
+kept its size, a diff, which shows the reference dimmed and the pixels that
+changed in red. The message ends with the command that
+accepts the change, `vitest run <file> -u`. The files of a test that passes
+again are deleted.
+
+The Vitest UI shows them side by side. Run `vitest --ui`, and open the
+failed test: its Visual Regression panel shows the diff, the reference,
+the actual image, and a slider between the reference and the actual
+image. Look at each change there before accepting it.
+
 ### In CI
 
 In CI, Vitest writes no new snapshots, so a test whose image is new fails,
@@ -635,6 +680,46 @@ test files when the config loads, and the restart sends a new file to its
 kind of page. The browser starts again, which takes a few seconds. A new
 file that declares no test yet, such as an empty one, gets a warning, and
 restarts Vitest once its first test is written.
+
+## Troubleshooting
+
+Each message below is the start of one that vsnap gives, with what it
+usually means.
+
+- **"This machine is not the visual tests' reference environment."** The
+  browser's fingerprint, or one of the calibration images, differs, so no
+  test was compared. Check that the project installs the Playwright version
+  that vsnap names, and only one copy of it (`npm ls playwright`).
+- **"The visual tests run in Playwright's headless Chromium, ... but this
+  page runs in another browser."** The run is headed
+  (`--browser.headless=false`), or the config names another browser. Run
+  the visual tests headless.
+- **"The actual image ... is blank."** The view drew nothing inside the
+  image: it may need its kind's `prepare` step, or a three.js camera that
+  looks at it. A view that is meant to be one colour sets `canBeBlank: true`.
+- **"The view in ... asks for fonts that visual tests can't draw."** A
+  canvas font list names no family that vsnap knows. End it with
+  `sans-serif` or `monospace`.
+- **Every canvas test that gives no kind is a type error.** See
+  [If `canvasTest` Rejects Every View](#if-canvastest-rejects-every-view).
+- **"Failed to import test file" for vsnap's setup file.** The project's
+  `vsnap.config.ts` threw an error as the page loaded it. The cause follows
+  the message.
+- **"vsnap couldn't load its test font."** Vite won't serve files from
+  vsnap's package, such as when it is installed outside the project. Allow
+  its folder in Vite's `server.fs.allow`.
+- **"... matches the visual test files' globs, but it declares no
+  canvasTest or htmlTest yet."** The file is new, or calls the
+  declarations through a helper of its own. Call `canvasTest` or `htmlTest`
+  in the file, or leave it out with `exclude`.
+- **"The project ... runs vsnap's visual tests a second time."** The
+  config's `browser` settings reach vsnap's projects. Move them into the
+  project that needs them.
+- **"vsnap's root is the folder that Vitest runs in, ... but Vitest's own
+  root is ..."** Give `vsnap()` its root, such as
+  `root: import.meta.dirname`.
+- **A test passes locally but fails in CI as new.** Its reference image
+  wasn't committed. Commit the files in its `__references__` folder.
 
 ## FAQ
 

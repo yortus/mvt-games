@@ -150,16 +150,26 @@ export interface VisualTestMeta {
     readonly ms: Readonly<Record<string, number>>;
 }
 
+/**
+ * What vsnap records on each visual test, for its reporter. It is the test's
+ * one entry in Vitest's task meta, which the page hands to Node with the
+ * test, and which the Vitest UI shows as the test's meta.
+ */
+export interface VsnapTestRecord {
+    /**
+     * The test's image name. It is set as the test starts, so a test that
+     * fails before its actual image is produced still counts as using its
+     * reference.
+     */
+    readonly image: string;
+    /** The test's outcome, size and timings, once its image is judged. */
+    readonly result?: VisualTestMeta;
+}
+
 declare module 'vitest' {
     interface TaskMeta {
-        /** A visual test's timings and outcome, for the run's summary. */
-        visual?: VisualTestMeta;
-        /**
-         * The name of a visual test's reference file. It is set as the test
-         * starts, so a test that fails before its actual image is produced still
-         * counts as using the reference.
-         */
-        visualImage?: string;
+        /** What vsnap records on a visual test, for the run's checks and summary. */
+        vsnap?: VsnapTestRecord;
     }
     interface ProvidedContext {
         /** Which project the page belongs to, provided by its config. */

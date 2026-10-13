@@ -237,7 +237,9 @@ function readCheckCache(cacheFile: string): Record<string, string> {
  */
 function createOwnership(layout: VisualLayout, testFiles: readonly string[]): (path: string) => boolean {
     const template = layout.referencePath;
-    const isIncluded = picomatch([...layout.include], { dot: false });
+    const isMatched = picomatch([...layout.include], { dot: false });
+    const isExcluded = layout.exclude.length === 0 ? () => false : picomatch([...layout.exclude]);
+    const isIncluded = (file: string): boolean => isMatched(file) && !isExcluded(file);
     const files = testFiles.map((file) => relative(layout.root, resolve(layout.root, file)).replaceAll('\\', '/'));
     const folders = new Set(files.map((file) => posix.dirname(file)));
     const names = new Set(files.map((file) => posix.basename(file)));

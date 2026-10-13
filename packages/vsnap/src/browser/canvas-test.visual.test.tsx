@@ -22,6 +22,11 @@ describe('canvasTest', () => {
 
     canvasTest('at a fixed size', { width: 100, height: 60 }, () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b));
 
+    // Vitest's skipIf and runIf work on canvasTest as on test: this one is
+    // skipped, and this one runs.
+    canvasTest.skipIf(true)('skipped by skipIf', () => new Graphics().rect(0, 0, 10, 10).fill(0xff0000));
+    canvasTest.runIf(true)('run by runIf', () => new Graphics().rect(0, 0, 12, 12).fill(0x2fd27a));
+
     // Pixel art is drawn with hard edges and whole pixels.
     canvasTest('pixel art', { pixelArt: true }, () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
 

@@ -23,6 +23,8 @@ export interface PixiViewsOptions {
      * See `PixiImageOptions.pixelArt` for what it means for the image.
      */
     readonly pixelArt?: boolean;
+    /** The background of each test whose options don't set one, as a number such as `0x202024` or a CSS colour. */
+    readonly background?: number | string;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,20 +39,18 @@ export interface PixiViewsOptions {
  * say so. Otherwise it is drawn smooth.
  */
 export function pixiViews(options: PixiViewsOptions = {}): CanvasViewKind<Container, PixiImageOptions, 'pixi'> {
-    const { pixelArt } = options;
-    // A test's options, with the project's pixelArt if they don't say.
-    const withPixelArt = <O extends PixiImageOptions>(imageOptions: O): O => (imageOptions.pixelArt === undefined && pixelArt !== undefined ? { ...imageOptions, pixelArt } : imageOptions);
     return {
         name: 'pixi',
         kind: 'canvas',
         isView: (value) => value instanceof Container,
+        defaults: { pixelArt: options.pixelArt, background: options.background },
         // The pose makes its textures with the defaults that this sets.
         beforePose: (imageOptions) => {
             patchPixiPools();
-            preparePixiPose(withPixelArt(imageOptions));
+            preparePixiPose(imageOptions);
         },
         prepare: options.prepare,
-        draw: (view, imageOptions) => drawPixiImage(view, withPixelArt(imageOptions)),
+        draw: drawPixiImage,
         dispose: options.dispose ?? ((view) => view.destroy({ children: true })),
     };
 }

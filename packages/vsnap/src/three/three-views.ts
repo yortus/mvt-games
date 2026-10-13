@@ -16,6 +16,8 @@ export interface ThreeViewsOptions {
      * under it.
      */
     readonly dispose?: (view: Object3D) => void;
+    /** The colour behind each view whose test's options don't set one, where the scene sets no background, as a number such as `0x202024` or a CSS colour. */
+    readonly background?: number | string;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +36,7 @@ export function threeViews(options: ThreeViewsOptions = {}): CanvasViewKind<Obje
         name: 'three',
         kind: 'canvas',
         isView: (value) => value instanceof Object3D,
+        defaults: { background: options.background },
         prepare: options.prepare,
         draw: drawThreeImage,
         dispose: options.dispose ?? disposeObject,

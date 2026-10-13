@@ -17,6 +17,12 @@ export interface CanvasViewKind<V = unknown, O = object, N extends string = stri
     readonly kind: 'canvas';
     /** Returns whether a value that a pose returned is a view of this kind. */
     readonly isView: (value: unknown) => boolean;
+    /**
+     * Options for every test of this kind, which a test's own options
+     * override, such as a project's background. vsnap gives each test its
+     * options with these under them.
+     */
+    readonly defaults?: DefaultsOf<O>;
     /** Runs before the pose of each test of this kind, with the test's options, such as to set the defaults that textures are made with. */
     readonly beforePose?: (options: O) => void;
     /** Prepares a view after its pose returns it, and before its image is taken. */
@@ -27,11 +33,18 @@ export interface CanvasViewKind<V = unknown, O = object, N extends string = stri
      * an image fits the budget, and `readCanvas` reads a canvas.
      */
     readonly draw: (view: V, options: O & { readonly maxPixels: number }) => DrawnImage | Promise<DrawnImage>;
-    /** Disposes of the view after its image is taken. */
-    readonly dispose: (view: V) => void;
+    /** Disposes of the view after its image is taken. A kind without it leaves the view as it is. */
+    readonly dispose?: (view: V) => void;
     /** Something to check, said to a test whose image is blank, such as whether a camera looks at the view. */
     readonly blankHint?: string;
 }
+
+/**
+ * The type of a kind's defaults: some of its options. `ViewKind`, which any
+ * kind fits, has options of type `never`, and its defaults may then be any
+ * object.
+ */
+export type DefaultsOf<O> = [O] extends [never] ? object : Partial<O>;
 
 /** What a kind of view's `draw` returns: an image, or the canvas that it drew on. */
 export type DrawnImage = CanvasImage | HTMLCanvasElement | OffscreenCanvas;
@@ -42,6 +55,8 @@ export interface HtmlViewKind {
     readonly kind: 'html';
     readonly prepare?: (view: Element) => void;
     readonly dispose?: (view: Element) => void;
+    /** The background of every HTML test whose options don't set one. */
+    readonly background?: number | string;
 }
 
 /** Any kind of view that a project can list. */
@@ -86,8 +101,13 @@ export type CanvasKinds<C extends VsnapConfig = RegisteredConfig> = CanvasKindsO
 /** The name of the kind that a canvas test poses when it gives no `kind`. By default, the config is the one that the project registered. */
 export type DefaultView<C extends VsnapConfig = RegisteredConfig> = DefaultOf<C> & keyof CanvasKinds<C>;
 
-/** The options of a canvas test of one kind. `kind` may be left out for the default view. */
-export type CanvasTestOptions<K extends keyof CanvasKinds = DefaultView> = KindOptions<RegisteredConfig, K>;
+/**
+ * The options of a canvas test of one kind. `kind` may be left out for the
+ * default view. By default, the config is the one that the project
+ * registered; a project that uses `bindCanvasTest` names its own, as in
+ * `CanvasTestOptions<'three', typeof config>`.
+ */
+export type CanvasTestOptions<K extends keyof CanvasKinds<C> = DefaultView, C extends VsnapConfig = RegisteredConfig> = KindOptions<C, K>;
 
 /** The options of a canvas test of one kind of a config. */
 export type KindOptions<C extends VsnapConfig, K extends keyof CanvasKinds<C>> = { readonly kind?: K } & OptionsOf<C, K>;
@@ -119,10 +139,29 @@ export function defineVsnapConfig<const Views extends readonly ViewKind[], const
 /**
  * Returns how vsnap treats HTML views. With no options, it removes each
  * element after its image is taken. A project whose views need more
- * prepares and disposes of them its own way.
+ * prepares and disposes of them its own way. `background` is the background
+ * of every HTML test whose options don't set one.
  */
-export function htmlViews(options: { readonly prepare?: (view: Element) => void; readonly dispose?: (view: Element) => void } = {}): HtmlViewKind {
+export function htmlViews(options: {
+    readonly prepare?: (view: Element) => void;
+    readonly dispose?: (view: Element) => void;
+    readonly background?: number | string;
+} = {}): HtmlViewKind {
     return { name: 'html', kind: 'html', ...options };
+}
+
+/**
+ * Returns a test's options with a kind's defaults under them: a default
+ * applies where the test's options leave the option out, or set it to
+ * `undefined`.
+ */
+export function applyDefaults<O extends object>(defaults: Partial<O> | undefined, options: O): O {
+    if (defaults === undefined) return options;
+    const merged: Record<string, unknown> = { ...defaults };
+    for (const [key, value] of Object.entries(options)) {
+        if (value !== undefined) merged[key] = value;
+    }
+    return merged as O;
 }
 
 /**

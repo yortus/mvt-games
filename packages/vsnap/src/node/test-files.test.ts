@@ -59,14 +59,25 @@ describe('findVisualTestFiles', () => {
         expect(files).toEqual({ canvas: ['src/a.visual.tsx'], html: [], problems: [] });
     });
 
-    it('counts the modifiers .skip, .only and .todo as declarations', () => {
+    it('leaves out the files that exclude matches', () => {
+        const root = createProject('exclude', {
+            'src/a.visual.ts': CANVAS,
+            'src/fixtures/b.visual.ts': CANVAS,
+        });
+        const files = findVisualTestFiles(createLayout({ root, include: ['src/**/*.visual.ts'], exclude: ['src/fixtures/**'] }));
+        expect(files).toEqual({ canvas: ['src/a.visual.ts'], html: [], problems: [] });
+    });
+
+    it('counts the modifiers .skip, .only, .todo, .skipIf and .runIf as declarations', () => {
         const root = createProject('modifiers', {
             'src/a.visual.ts': "canvasTest.only('a', () => view);",
             'src/b.visual.ts': "htmlTest.skip('b', () => element);",
             'src/c.visual.ts': "canvasTest.todo('c');",
+            'src/d.visual.ts': "canvasTest.skipIf(isCi)('d', () => view);",
+            'src/e.visual.ts': "htmlTest.runIf(hasFonts)('e', () => element);",
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['src/*.visual.ts'] }));
-        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts'], html: ['src/b.visual.ts'], problems: [] });
+        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts', 'src/d.visual.ts'], html: ['src/b.visual.ts', 'src/e.visual.ts'], problems: [] });
     });
 
     it('leaves out a file that declares both kinds, or neither, such as a new empty one, and says why', () => {

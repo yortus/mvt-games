@@ -56,6 +56,12 @@ export interface VsnapOptions {
      */
     readonly include?: readonly string[];
     /**
+     * Globs for files that `include` matches but that aren't visual test
+     * files, relative to the root, such as a folder of fixtures. By default,
+     * there are none.
+     */
+    readonly exclude?: readonly string[];
+    /**
      * Where each reference image is kept, as a path template relative to the
      * root. The variables are `{testFileDir}`, `{testFileName}`,
      * `{testFilePath}` and `{imageName}`. `{imageName}` must appear once, in
@@ -114,7 +120,7 @@ export const DEFAULT_NAME = 'visual';
 export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguration[] {
     const root = resolve(options.root ?? process.cwd());
     const name = options.name ?? DEFAULT_NAME;
-    const layout = createLayout({ root, include: options.include, referencePath: options.referencePath });
+    const layout = createLayout({ root, include: options.include, exclude: options.exclude, referencePath: options.referencePath });
     registerRoot(root);
     const files = findVisualTestFiles(layout);
     warnOfProblems(files.problems);
@@ -212,7 +218,7 @@ function createVisualProject(options: {
             // own, after the projects that run several at once. Its tests never
             // run concurrently, whatever the config they inherit says, since
             // they share a page.
-            sequence: { groupOrder: 1, concurrent: false },
+            sequence: { groupOrder: GROUP_ORDER, concurrent: false },
             globalSetup: [INSTALL_BROWSER],
             // An HTML view's stylesheet stays in the page once it is imported,
             // so each HTML file gets a fresh page.
@@ -433,6 +439,15 @@ const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
  * module, so the set is kept on the process, and each warning is shown once.
  */
 const WARNED: Set<string> = ((globalThis as { vsnapWarned?: Set<string> }).vsnapWarned ??= new Set());
+
+/**
+ * The group that vsnap's projects run in. Vitest runs groups in order, and
+ * projects that share a group must share how many files run at once. A
+ * project's own projects are in group 0 unless it says otherwise, and some
+ * use 1, 2 and so on, so vsnap's group is well past them, and its projects
+ * run after them.
+ */
+const GROUP_ORDER = 1000;
 
 /** The names that a project's `vsnap.config` may have. */
 const VIEW_CONFIG_NAMES = ['vsnap.config.ts', 'vsnap.config.mts', 'vsnap.config.js', 'vsnap.config.mjs'];

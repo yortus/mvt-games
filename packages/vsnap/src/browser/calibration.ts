@@ -22,6 +22,16 @@ import { isAllOne } from '../shared';
 export async function checkCalibration(kind: VisualKind): Promise<void> {
     const session = await openSession({ calibration: kind });
     if (session.isCalibrated) return;
+    // Only Playwright's headless Chromium, which vsnap sets up, says
+    // HeadlessChrome. A headed browser, as with --browser.headless=false, or
+    // another browser draws differently, which no Playwright version fixes.
+    if (!navigator.userAgent.includes('HeadlessChrome')) {
+        const message = `The visual tests (${kind}) run in Playwright's headless Chromium, which vsnap sets up, but this page runs in another browser (${navigator.userAgent}), `
+            + 'such as a headed one, with --browser.headless=false, or one that the config names. It would draw the images differently, so no actual image of a test was compared. '
+            + 'Run the visual tests headless. To look at a view, open its actual image in .vitest/vsnap/, or the failed test in the Vitest UI.';
+        await visualCommands.abortVisualRun(message);
+        throw new Error(message);
+    }
     const problems = [...await visualCommands.checkVisualEnvironment(readEnvironment())];
     const calibrations = kind === 'canvas' ? CANVAS_JUDGED : HTML_CALIBRATION;
     if (problems.length === 0) {

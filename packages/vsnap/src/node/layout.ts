@@ -18,6 +18,8 @@ export interface VisualLayout {
     readonly root: string;
     /** Globs for the visual test files, relative to the root. */
     readonly include: readonly string[];
+    /** Globs for files that `include` matches but aren't visual test files, relative to the root. */
+    readonly exclude: readonly string[];
     /** The template for each reference image's path, relative to the root. */
     readonly referencePath: string;
 }
@@ -50,11 +52,16 @@ export const DEFAULT_REFERENCE_PATH = '{testFileDir}/__references__/{testFileNam
  * Creates a layout, after checking its reference path. Throws an error
  * that says what is wrong with the template.
  */
-export function createLayout(options: { readonly root: string; readonly include?: readonly string[]; readonly referencePath?: string }): VisualLayout {
+export function createLayout(options: {
+    readonly root: string;
+    readonly include?: readonly string[];
+    readonly exclude?: readonly string[];
+    readonly referencePath?: string;
+}): VisualLayout {
     const referencePath = options.referencePath ?? DEFAULT_REFERENCE_PATH;
     const problem = checkReferencePath(referencePath);
     if (problem !== undefined) throw new Error(`The visual tests' referencePath '${referencePath}' ${problem}.`);
-    return { root: options.root, include: options.include ?? DEFAULT_INCLUDE, referencePath };
+    return { root: options.root, include: options.include ?? DEFAULT_INCLUDE, exclude: options.exclude ?? [], referencePath };
 }
 
 /**

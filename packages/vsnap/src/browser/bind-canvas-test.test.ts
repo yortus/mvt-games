@@ -2,7 +2,7 @@ import { Graphics } from 'pixi.js';
 import { Group, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { threeViews } from '../three';
-import type { VsnapConfig } from './view-kinds';
+import type { CanvasTestOptions, VsnapConfig } from './view-kinds';
 import type { CanvasTestAPI } from './visual-test';
 
 // This package's own vsnap.config.ts registers Pixi, three.js and sketch
@@ -26,5 +26,14 @@ describe('bindCanvasTest', () => {
             bound.each([1, 2])('case %s', { width: 80, height: 60, camera: () => new PerspectiveCamera() }, () => new Graphics());
         };
         expect(declareTests).toBeTypeOf('function');
+    });
+
+    it("names a bound config's options with CanvasTestOptions", () => {
+        const options: CanvasTestOptions<'three', ThreeOnly> = { kind: 'three', width: 80, height: 60, camera: () => new PerspectiveCamera() };
+        // For the type checker only: the bound config has no sketch views.
+        // @ts-expect-error: 'sketch' is not a kind of the bound config.
+        const isSketch = (sketch: CanvasTestOptions<'sketch', ThreeOnly>): boolean => sketch !== undefined;
+        expect(options.kind).toBe('three');
+        expect(isSketch).toBeTypeOf('function');
     });
 });
