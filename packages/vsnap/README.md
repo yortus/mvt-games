@@ -289,7 +289,13 @@ An HTML view must fit the test page, whose viewport is 1280 by 800
 pixels, since the part of a view past it isn't drawn. A bigger view fails
 its test, and says so. Before an HTML view's image is taken, the package
 waits for its fonts, its `<img>` elements, and the images that its styles
-use, such as backgrounds.
+use, such as backgrounds. It also brings its animations and transitions to
+rest, as Playwright's screenshots do with `animations: 'disabled'`: one
+that ends is finished, and one that never ends, such as a spinner, is
+cancelled. A text field's caret is hidden. The text in a view's open
+shadow roots, such as a web component's, is blank too. A closed shadow
+root can't be reached, so its text is drawn in the system's fonts, which
+differ between systems.
 
 The package finds the declarations by reading each file's text for
 `canvasTest(` and `htmlTest(`, since Vitest needs each file's project before
@@ -612,7 +618,12 @@ Test images give up these details:
   words don't. For a game's menus and panels, that is usually what
   matters, and a copy edit doesn't fail a test. Words that matter can be
   checked with assertions.
-- **Canvas text uses the two test fonts,** not the view's own.
+- **HTML views are captured at rest.** Animations are finished or
+  cancelled, so an image shows where one ends, not a moment in it.
+- **Canvas text uses the two test fonts,** not the view's own. A character
+  that they lack, such as ★ or an emoji, is drawn as a box with its code
+  point inside, so a change from one such character to another still
+  changes the image.
 - **Rotated `<img>` elements look a little jagged,** because smooth
   sampling rounds differently on arm64 processors.
 - **Differences of 2 levels or less pass.** A real change is almost never

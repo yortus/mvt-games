@@ -6,8 +6,8 @@ import { blankFontUrl } from './fonts';
 
 /**
  * Installs CSS rules that make HTML views draw the same on every system,
- * where they would otherwise differ. The rules last for the rest of the page's
- * life. There are two of them:
+ * and from one run to the next, where they would otherwise differ. The rules
+ * last for the rest of the page's life. There are three of them:
  *
  * - **Text is blank.** Every element's text is set in the blank font. In
  *   that font, every code point is one empty glyph, 0.625 em wide. So text
@@ -18,22 +18,67 @@ import { blankFontUrl } from './fonts';
  *   default width comes from the font's average character width, which each
  *   system works out its own way. The rule uses `:where()`, which has no
  *   specificity, so a width that the page sets still wins.
+ * - **A text field's caret is hidden,** since it blinks.
+ *
+ * A shadow root's elements don't see the page's rules, so `adoptHtmlRules`
+ * gives them to each open shadow root of a view.
  */
 export async function installHtmlRules(): Promise<void> {
     const face = new FontFace(BLANK_FAMILY, `url(${blankFontUrl})`, { weight: '1 1000' });
     await face.load();
     document.fonts.add(face);
     const style = document.createElement('style');
-    style.textContent = `
-        *, *::before, *::after, ::placeholder, ::marker, input, button, select, textarea {
-            font-family: "${BLANK_FAMILY}" !important;
-            font-synthesis: none !important;
-        }
-        :where(input:not([type]), input[type=text], input[type=search], input[type=number],
-               input[type=email], input[type=password], input[type=url], input[type=tel]) {
-            width: 20ch;
-        }`;
+    style.textContent = HTML_RULES;
     document.head.append(style);
+}
+
+/**
+ * Gives the page's rules (see `installHtmlRules`) to every open shadow root
+ * under the host, such as a web component's, so that its text is blank too.
+ * A closed shadow root can't be reached, and its text draws as the system
+ * draws it.
+ */
+export function adoptHtmlRules(host: HTMLElement): void {
+    for (const root of listShadowRoots(host)) {
+        sheet ??= createSheet();
+        if (!root.adoptedStyleSheets.includes(sheet)) root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+    }
+}
+
+/**
+ * Brings every animation and transition under the host to rest, as
+ * Playwright's screenshots do with `animations: 'disabled'`. One that ends is
+ * finished, so it shows its end. One that never ends is cancelled, so it
+ * shows the element as it is without it. Then it waits for the page to draw
+ * them at rest. Otherwise an image would catch a spinner or a fade at
+ * whatever moment the capture came.
+ */
+export async function settleAnimations(host: HTMLElement): Promise<void> {
+    // Settling one can start another, such as on an `animationend` event.
+    for (let round = 0; round < 3; round++) {
+        const animations = listAnimations(host);
+        if (animations.length === 0) return;
+        for (const animation of animations) {
+            if (animation.effect?.getComputedTiming().iterations === Infinity) animation.cancel();
+            else animation.finish();
+        }
+        for (let i = 0; i < 2; i++) await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+}
+
+/**
+ * Returns the host and every element under it, those in open shadow roots
+ * included, each before the elements inside it.
+ */
+export function listElements(host: HTMLElement): (HTMLElement | SVGElement)[] {
+    const elements: (HTMLElement | SVGElement)[] = [];
+    const visit = (element: Element): void => {
+        if (element instanceof HTMLElement || element instanceof SVGElement) elements.push(element);
+        if (element.shadowRoot !== null) for (const child of element.shadowRoot.children) visit(child);
+        for (const child of element.children) visit(child);
+    };
+    visit(host);
+    return elements;
 }
 
 /**
@@ -44,8 +89,8 @@ export async function installHtmlRules(): Promise<void> {
  * system draws them the same.
  */
 export function pixelateRotatedImages(host: HTMLElement): void {
-    for (const image of host.querySelectorAll('img')) {
-        if (isRotated(image, host)) image.style.imageRendering = 'pixelated';
+    for (const element of listElements(host)) {
+        if (element instanceof HTMLImageElement && isRotated(element, host)) element.style.imageRendering = 'pixelated';
     }
 }
 
@@ -61,7 +106,7 @@ export function pixelateRotatedImages(host: HTMLElement): void {
  * rounded one. Pseudo-elements with sizes of their own are not reached.
  */
 export function quantizeFontSizes(host: HTMLElement): void {
-    const elements = [host, ...host.querySelectorAll<HTMLElement | SVGElement>('*')];
+    const elements = listElements(host);
     const sizes = elements.map((e) => parseFloat(getComputedStyle(e).fontSize));
     for (let i = 0; i < elements.length; i++) {
         const quantized = Math.round(sizes[i] * 4) / 4;
@@ -75,9 +120,54 @@ export function quantizeFontSizes(host: HTMLElement): void {
 
 const BLANK_FAMILY = 'Visual Blank';
 
+/** The rules that `installHtmlRules` describes. */
+const HTML_RULES = `
+    *, *::before, *::after, ::placeholder, ::marker, input, button, select, textarea {
+        font-family: "${BLANK_FAMILY}" !important;
+        font-synthesis: none !important;
+        caret-color: transparent !important;
+    }
+    :where(input:not([type]), input[type=text], input[type=search], input[type=number],
+           input[type=email], input[type=password], input[type=url], input[type=tel]) {
+        width: 20ch;
+    }`;
+
+/** The rules as a sheet that shadow roots adopt, made on first use. */
+let sheet: CSSStyleSheet | undefined;
+
+function createSheet(): CSSStyleSheet {
+    const made = new CSSStyleSheet();
+    made.replaceSync(HTML_RULES);
+    return made;
+}
+
+function listShadowRoots(host: HTMLElement): ShadowRoot[] {
+    const roots: ShadowRoot[] = [];
+    for (const element of listElements(host)) {
+        if (element.shadowRoot !== null) roots.push(element.shadowRoot);
+    }
+    return roots;
+}
+
+/** Returns the animations of the host, the elements under it, their pseudo-elements, and the elements in their open shadow roots. */
+function listAnimations(host: HTMLElement): Animation[] {
+    const animations = new Set(host.getAnimations({ subtree: true }));
+    for (const root of listShadowRoots(host)) {
+        for (const animation of root.getAnimations()) animations.add(animation);
+    }
+    return [...animations];
+}
+
+/** Returns an element's parent, across the edge of a shadow root. */
+function findParent(element: Element): Element | undefined {
+    if (element.parentElement !== null) return element.parentElement;
+    const root = element.getRootNode();
+    return root instanceof ShadowRoot ? root.host : undefined;
+}
+
 /** Returns whether the element, or an ancestor up to the host, is turned by a transform, not only moved or scaled. */
 function isRotated(element: Element, host: Element): boolean {
-    for (let e: Element | null = element; e !== null && e !== host.parentElement; e = e.parentElement) {
+    for (let e: Element | undefined = element; e !== undefined && e !== host.parentElement; e = findParent(e)) {
         const transform = getComputedStyle(e).transform;
         if (transform === 'none') continue;
         const m = new DOMMatrixReadOnly(transform);

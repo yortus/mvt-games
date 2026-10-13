@@ -31,6 +31,21 @@ describe('canvasTest', () => {
 
     canvasTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }));
 
+    // The test fonts lack these characters, so each is drawn as a box with
+    // its code point inside.
+    canvasTest('characters the test fonts lack', () => new Text({ text: 'A ★☆ 😀', style: { fontFamily: 'sans-serif', fontSize: 40, fill: 0xffffff } }));
+
+    it('draws two characters that the test fonts lack differently', () => {
+        const draw = (text: string): Uint8ClampedArray => {
+            const ctx = new OffscreenCanvas(60, 60).getContext('2d');
+            if (ctx === null) throw new Error('The browser gave no 2D context.');
+            ctx.font = '40px sans-serif';
+            ctx.fillText(text, 4, 48);
+            return ctx.getImageData(0, 0, 60, 60).data;
+        };
+        expect(draw('★')).not.toEqual(draw('☆'));
+    });
+
     // A kind's prepare runs after the pose, as a refresh step would. This
     // package's vsnap.config.ts prepares the views named for it. Without it,
     // the bar would have no width, and the knot would face the camera square

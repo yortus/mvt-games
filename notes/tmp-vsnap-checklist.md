@@ -39,23 +39,37 @@ From the blind review of 2026-10-13.
   `references.ts` and the README say copies are safe. Fix: limit the
   folders to those that hold a test file of the call.
   Done on 2026-10-13, with B7: a copy in `docs/` is no longer a reference.
-- [ ] **B9. Missing glyphs pass when they change** (reproduced). The test
+- [x] **B9. Missing glyphs pass when they change** (reproduced). The test
   fonts lack ★ ☆, emoji, CJK and, in the sans font, █. Each draws the same
   empty box (glyph 0), so three filled stars and three empty ones give the
   same image. Fix: fail a test whose canvas text maps a character to
   glyph 0, as unpinned font families fail, naming the characters.
-- [ ] **B10. HTML captures of CSS animations are flaky** (reproduced: 3
+  Done on 2026-10-13, without failing such tests, which would lock out
+  views with symbols or emoji: each missing character is drawn as a box
+  with its code point in hex digits, from the mono test font, as a system's
+  fallback font does. â˜… and â˜† now draw differently (a test checks that),
+  and a visual test shows the boxes.
+- [x] **B10. HTML captures of CSS animations are flaky** (reproduced: 3
   of 4 runs failed). Nothing freezes animations or transitions
   (`src/browser/html-image.ts`); `reducedMotion: 'reduce'` only affects CSS
   that asks for it. Fix: as Playwright's `animations: 'disabled'` does,
   finish finite animations and cancel infinite ones, turn transitions off,
   and wait a frame.
-- [ ] **B11. Text in shadow DOM isn't blanked** (reproduced). The blank
+  Done on 2026-10-13: before an HTML capture, `settleAnimations` finishes
+  each animation and transition that ends, cancels each that never ends,
+  and waits two frames; a text field's caret is hidden. A visual test of a
+  spinner and a fade repeats three times against one reference.
+- [x] **B11. Text in shadow DOM isn't blanked** (reproduced). The blank
   font rule (`src/browser/html-rules.ts`) and the steps that quantize font
   sizes, pixelate rotated images and load style images don't reach into
   shadow roots, so web components draw real text in the system's fonts.
   Fix: add the rules to each open shadow root (`adoptedStyleSheets`), and
   walk shadow roots in those steps.
+  Done on 2026-10-13: each open shadow root adopts the page's rules, and
+  the steps that round font sizes, pixelate rotated images, load style
+  images, decode images and settle animations walk into open shadow roots.
+  A closed shadow root can't be reached; the README says so. Tested with a
+  visual test and a check of the computed font.
 - [x] **B12. One malformed visual test file breaks every run** (reproduced),
   `-p unit` and the VS Code extension's discovery included, because
   `findVisualTestFiles` throws at config load. Fix: report it from vsnap's

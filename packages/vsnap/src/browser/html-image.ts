@@ -1,4 +1,4 @@
-import { pixelateRotatedImages, quantizeFontSizes } from './html-rules';
+import { adoptHtmlRules, listElements, pixelateRotatedImages, quantizeFontSizes, settleAnimations } from './html-rules';
 import { visualCommands } from './judge';
 import { fitImage } from '../shared';
 import type { VisualImageId, VisualRect, VisualVerdict } from '../protocol';
@@ -27,8 +27,9 @@ export interface HtmlImageOptions {
  * Captures an element and returns the verdict. It mounts the element in a
  * host element, which shrinks to fit it or takes the given size, and then
  * prepares it, if the options say how, so that the element is in the page
- * as it is prepared. It waits for the element's fonts, its `<img>` elements
- * and the images that its styles use. Then Node captures the host's
+ * as it is prepared. It gives the page's rules to the element's shadow
+ * roots, brings its animations to rest, and waits for its fonts, its `<img>`
+ * elements and the images that its styles use. Then Node captures the host's
  * rectangle through the DevTools protocol and judges it. Font sizes are
  * rounded to quarter pixels first (`quantizeFontSizes`). The element is
  * removed afterwards, whatever happens. HTML images are always full size,
@@ -51,17 +52,19 @@ export async function captureHtmlImage(
         const prepared = performance.now();
         options.prepare?.(element);
         const prepareMs = performance.now() - prepared;
+        adoptHtmlRules(host);
         await document.fonts.ready;
         pixelateRotatedImages(host);
         quantizeFontSizes(host);
         // Wait until every `<img>` element is loaded and decoded, lazy ones
         // too. A lazy one that is off screen never loads, so each one is made
         // eager.
-        await Promise.all([...host.querySelectorAll('img')].map((image) => {
+        await Promise.all(listElements(host).filter((e) => e instanceof HTMLImageElement).map((image) => {
             image.loading = 'eager';
             return image.decode().catch(() => undefined);
         }));
         await loadStyleImages(host);
+        await settleAnimations(host);
         checkFitsPage(host);
         const rect = measureRect(host);
         const fit = fitImage({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false, advice: 'HTML is drawn at full size, so give the view a smaller size, or pose part of it.' });
@@ -104,7 +107,7 @@ function checkFitsPage(host: HTMLElement): void {
  */
 async function loadStyleImages(host: HTMLElement): Promise<void> {
     const urls = new Set<string>();
-    for (const element of [host, ...host.querySelectorAll('*')]) {
+    for (const element of listElements(host)) {
         for (const pseudo of [undefined, '::before', '::after']) {
             const style = getComputedStyle(element, pseudo);
             for (let i = 0; i < IMAGE_PROPERTIES.length; i++) {

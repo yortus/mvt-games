@@ -1,4 +1,4 @@
-import type { Font, Glyph } from 'fontkit';
+import type { Font, Glyph, PathCommand } from 'fontkit';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -16,6 +16,11 @@ import type { Font, Glyph } from 'fontkit';
  * letter spacing and shadows apply to paths as they do to text. Pixi
  * measures text through the same `measureText`, so its layout agrees with
  * the drawing.
+ *
+ * A character that the test fonts lack, such as ★ or an emoji, is drawn as
+ * a box holding its code point in hex digits, as a system's fallback font
+ * draws it. So each such character draws differently, and a change from
+ * one to another changes the image.
  */
 export interface CanvasText {
     /** Returns the font families asked for since the last call that no test font stands in for. */
@@ -45,10 +50,10 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
 
     for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype] as CanvasRenderingContext2D[]) {
         proto.fillText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
-            this.fill(layOutPath(this, parse(this.font), text, x, y, maxWidth));
+            this.fill(layOutPath({ ctx: this, p: parse(this.font), text, x, y, maxWidth, digits: options.mono }));
         };
         proto.strokeText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
-            this.stroke(layOutPath(this, parse(this.font), text, x, y, maxWidth));
+            this.stroke(layOutPath({ ctx: this, p: parse(this.font), text, x, y, maxWidth, digits: options.mono }));
         };
         proto.measureText = function (this: CanvasRenderingContext2D, text: string) {
             return measure(this, parse(this.font), text);
@@ -184,7 +189,17 @@ function computeBaselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): nu
     }
 }
 
-function layOutPath(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, x: number, y: number, maxWidth: number | undefined): Path2D {
+function layOutPath(options: {
+    readonly ctx: CanvasRenderingContext2D;
+    readonly p: ParsedFont;
+    readonly text: string;
+    readonly x: number;
+    readonly y: number;
+    readonly maxWidth: number | undefined;
+    /** The font whose digits name a character that the font lacks. */
+    readonly digits: Font;
+}): Path2D {
+    const { ctx, p, text, x, y, maxWidth } = options;
     const laid = lay(ctx, p, text);
     // Text wider than maxWidth is squeezed to fit, as the canvas does.
     const squeeze = maxWidth !== undefined && laid.width > maxWidth && laid.width > 0 ? maxWidth / laid.width : 1;
@@ -193,12 +208,20 @@ function layOutPath(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, 
     const s = laid.scale;
     const shear = p.isItalic ? ITALIC_SHEAR : 0;
     const path = new Path2D();
+    // The characters that the font lacks, in order. Each is laid out as the
+    // font's empty glyph, glyph 0, which looks the same for every character.
+    const missing = [...text].map((c) => c.codePointAt(0) ?? 0).filter((code) => !p.font.hasGlyphForCodePoint(code));
+    let nextMissing = 0;
     for (let i = 0; i < laid.glyphs.length; i++) {
         const gx = originX + laid.x[i] * squeeze;
         const gy = originY - laid.y[i];
         const px = (u: number, v: number) => gx + (u * s + v * s * shear) * squeeze;
         const py = (v: number) => gy - v * s;
-        for (const c of laid.glyphs[i].path.commands) {
+        const glyph = laid.glyphs[i];
+        const commands = glyph.id === 0 && nextMissing < missing.length
+            ? drawMissingGlyph({ code: missing[nextMissing++], width: glyph.advanceWidth, height: p.font.capHeight, digits: options.digits })
+            : glyph.path.commands;
+        for (const c of commands) {
             const a = c.args;
             switch (c.command) {
                 case 'moveTo':
@@ -220,6 +243,54 @@ function layOutPath(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string, 
         }
     }
     return path;
+}
+
+/**
+ * Returns the outline of a character that the font lacks, in the font's
+ * units, as a glyph's own commands are: a box as wide as the empty glyph's
+ * advance and as tall as a capital, with the character's code point in hex
+ * digits inside, in two rows.
+ */
+function drawMissingGlyph(options: { readonly code: number; readonly width: number; readonly height: number; readonly digits: Font }): PathCommand[] {
+    const { width, height, digits } = options;
+    const margin = width * 0.08;
+    const line = height * 0.06;
+    const commands: PathCommand[] = [];
+    // The box is a ring: the outer edge one way round, the inner the other,
+    // so that a fill leaves the middle empty.
+    addRect(commands, margin, 0, width - margin, height, false);
+    addRect(commands, margin + line, line, width - margin - line, height - line, true);
+    const hex = options.code.toString(16).toUpperCase().padStart(4, '0');
+    const columns = Math.ceil(hex.length / 2);
+    const rows = [hex.slice(0, columns), hex.slice(columns)];
+    const advance = digits.layout('0').glyphs[0].advanceWidth;
+    const pad = line * 1.5;
+    const gap = height * 0.08;
+    const innerWidth = width - 2 * (margin + line + pad);
+    const innerHeight = height - 2 * (line + pad);
+    const k = Math.min(innerWidth / (columns * advance), (innerHeight - gap) / (2 * digits.capHeight));
+    const left = margin + line + pad + (innerWidth - columns * advance * k) / 2;
+    const bottom = line + pad + (innerHeight - gap - 2 * digits.capHeight * k) / 2;
+    for (let row = 0; row < rows.length; row++) {
+        const baseY = bottom + (rows.length - 1 - row) * (digits.capHeight * k + gap);
+        for (let col = 0; col < rows[row].length; col++) {
+            const glyph = digits.glyphForCodePoint(rows[row].charCodeAt(col));
+            const baseX = left + col * advance * k;
+            for (const c of glyph.path.commands) {
+                const args = c.args.map((v, i) => (i % 2 === 0 ? baseX + v * k : baseY + v * k));
+                commands.push({ command: c.command, args });
+            }
+        }
+    }
+    return commands;
+}
+
+/** Adds a closed rectangle, wound one way or the other. */
+function addRect(commands: PathCommand[], x0: number, y0: number, x1: number, y1: number, isReversed: boolean): void {
+    const corners = isReversed ? [[x0, y0], [x0, y1], [x1, y1], [x1, y0]] : [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    commands.push({ command: 'moveTo', args: corners[0] });
+    for (let i = 1; i < corners.length; i++) commands.push({ command: 'lineTo', args: corners[i] });
+    commands.push({ command: 'closePath', args: [] });
 }
 
 function measure(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): TextMetrics {
