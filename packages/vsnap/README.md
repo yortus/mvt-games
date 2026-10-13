@@ -11,8 +11,9 @@
 > To be as convenient as unit
 > tests, visual tests must be fast, and must give the same result on every
 > machine. This package runs hundreds of them in seconds. The images come
-> out the same on Windows, Linux and macOS, and nothing needs installing
-> beyond `npm ci`. It covers views drawn on a canvas, by any renderer, and
+> out the same on Windows, Linux and macOS, with no Docker: `npm ci`
+> installs everything but the browser, which the first run downloads. It
+> covers views drawn on a canvas, by any renderer, and
 > HTML views. It draws Pixi and three.js views itself. It runs on Vitest's
 > browser mode. It is not published yet.
 
@@ -35,7 +36,12 @@
   release that changed the browser would stop the run rather than change
   the images. A newer minor version of Playwright brings a new browser, so
   it needs a new release of vsnap. A project that uses Playwright for other
-  tests uses the same version for both.
+  tests uses the same version for both, so it upgrades Playwright when vsnap
+  does. The first run downloads the browser, Playwright's Chrome Headless
+  Shell (about 100 MB), into Playwright's cache. A bare Linux system also
+  needs the libraries that the browser uses, which
+  `npx playwright install-deps chromium` installs. [In CI](#in-ci) shows how
+  to keep the browser between runs.
 - **Node 22.17 or later,** where Node's file globbing is stable.
 - **No renderer library.** A canvas test can draw with the browser's own
   canvas, and needs no library. vsnap's support for Pixi and three.js views
@@ -89,8 +95,9 @@ canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({ mode }
 
 A canvas image that is one colour all over fails its test, since it
 usually means that the view drew nothing. A view that is meant to be one
-colour, such as an empty panel, sets `canBeBlank: true`. Every kind's
-`background` takes a number, such as `0x202024`, or a CSS colour. Visual
+colour, such as an empty panel, sets `canBeBlank: true`. The `background`
+of Pixi, three.js and HTML views takes a number, such as `0x202024`, or a
+CSS colour. A canvas that the pose drew has its own background. Visual
 tests never run concurrently, even in a `describe.concurrent` block,
 because the tests of a page share its renderers.
 
@@ -210,13 +217,18 @@ can do the same. It is a `CanvasViewKind`: a name, a check of the view, and
 the steps that draw it and dispose of it. Its `draw` can return the canvas
 that it drew on, and vsnap reads it. `vsnap` exports the types, with two
 helpers: `fitImage` says how an image fits the size budget, and
-`readCanvas` reads a canvas that was drawn smaller to fit. Listed in the
+`readCanvas` reads a canvas's pixels at full resolution. A kind that draws
+an image smaller, to fit the budget, reads its canvas itself, and gives the
+image its resolution. Listed in the
 config, the kind joins `canvasTest`'s types through `Register`, as the
 others do.
 
 Each kind is listed once. Two kinds with one name, a kind named
 `'canvas'`, `htmlViews` listed twice, or a `defaultView` that names no
-listed kind, stop the run with an error.
+listed kind, are errors. `vsnap.config.ts` runs in the test page, so such an
+error, or any other that the file throws, fails every visual test file, with
+the error under "Failed to import test file" and vsnap's setup file. The
+other projects still run.
 
 #### If `canvasTest` Rejects Every View
 
@@ -295,7 +307,9 @@ waits for its fonts, its `<img>` elements, and the images that its styles
 use, such as backgrounds. It also brings its animations and transitions to
 rest, as Playwright's screenshots do with `animations: 'disabled'`: one
 that ends is finished, and one that never ends, such as a spinner, is
-cancelled. A text field's caret is hidden. The text in a view's open
+cancelled. A text field's caret is hidden. The page prefers a dark colour
+scheme and reduced motion, so a view's `prefers-color-scheme: dark` and
+`prefers-reduced-motion: reduce` styles apply. The text in a view's open
 shadow roots, such as a web component's, is blank too. A closed shadow
 root can't be reached, so its text is drawn in the system's fonts, which
 differ between systems.
@@ -372,6 +386,7 @@ export default defineConfig({
     test: {
         projects: [
             {
+                extends: true,
                 test: {
                     name: 'unit',
                     exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
@@ -383,7 +398,8 @@ export default defineConfig({
 });
 ```
 
-The projects bring vsnap's reporter with them, which prints the visual
+The unit project has `extends: true`, so that it keeps the config's
+plugins, as vsnap's projects do. The projects bring vsnap's reporter with them, which prints the visual
 tests' summary and checks the reference images. So there is nothing else
 to add, and a run without vsnap's projects, such as `vitest -p unit`,
 prints no summary.
@@ -578,6 +594,33 @@ ran, and its summary says so. A check that fails prints what it found under
 a heading of its own, after the summary, and the run exits with code 1. In
 GitHub Actions, it also adds an error annotation.
 
+### In CI
+
+In CI, Vitest writes no new snapshots, so a test whose image is new fails,
+as does one whose image changed. Run the visual tests as any other Vitest
+run, and keep Playwright's browser between runs, so that it isn't
+downloaded each time. In GitHub Actions:
+
+```yaml
+- run: npm ci
+- name: Where Playwright keeps its browser
+  id: playwright
+  run: |
+      echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
+      echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+- uses: actions/cache@v4
+  with:
+      path: ${{ runner.temp }}/ms-playwright
+      key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+- run: npx playwright install chromium-headless-shell
+- run: npx vitest run
+```
+
+GitHub's runners already have the libraries that the browser needs. A
+bare Linux image also needs `npx playwright install-deps chromium`. A
+failed test's actual and diff images are in `.vitest/vsnap/`, which a step
+can upload for the reviewer.
+
 ### Watch Mode
 
 In watch mode, Vitest reruns a test file when the file changes, or when a
@@ -594,8 +637,8 @@ restarts Vitest once its first test is written.
 
 ### Q: Why use this instead of Playwright's screenshot tests?
 
-It is up to 15x faster, and it needs no Docker. Just `npm ci` and run the
-tests anywhere.
+It is faster, and it needs no Docker. Just `npm ci` and run the tests
+anywhere.
 
 This package distinguishes between _canvas_ and _HTML_ tests. Canvas tests
 (for Pixi, three.js etc.) are much faster because they read the image
@@ -656,10 +699,15 @@ Tests must also follow these rules:
   other kind would draw it differently, and its image would depend on which
   test ran first. A texture whose sampling is set when it is made, such as a
   spritesheet's, draws the same in every test.
-- **End each canvas font list with `sans-serif` or `monospace`.** Canvas
-  text is drawn in this package's own sans-serif or monospace font,
-  picked from the list. So `'"Press Start 2P", monospace'` works, but
-  `'"Press Start 2P"'` alone fails its test.
+- **Give each canvas font list a family that vsnap knows.** Canvas text
+  is drawn in this package's own sans-serif or monospace font, picked by
+  the first family in the list that vsnap knows. It knows the generic
+  families (`sans-serif`, `serif`, `system-ui`, `monospace` and the like)
+  and the common system fonts, such as Arial, Helvetica, Segoe UI, Roboto,
+  Consolas and Menlo. Serif families are drawn sans-serif. So
+  `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'` alone
+  fails its test. Ending each list with `sans-serif` or `monospace` always
+  works.
 
 ## Contributing
 

@@ -229,8 +229,12 @@ From the blind review of 2026-10-13.
   the exit code, and, in GitHub Actions, adds an error annotation. No more
   "Unhandled Errors". The checks now run in onTestRunEnd, which also fixed
   them never running under --shard.
-- [ ] **U14. An error in `vsnap.config.ts`** fails each file, as "Failed to
+- [x] **U14. An error in `vsnap.config.ts`** fails each file, as "Failed to
   import test file .../setup.ts", where the README says it stops the run.
+  Done on 2026-10-13, in the README: such an error fails every visual
+  test file, under "Failed to import test file", and the other projects
+  still run. Stopping the run instead would need vsnap to run the file in
+  Node, which it avoids, since the file belongs to the page.
 - [x] **U15. The summary:** "1 differ" should read "1 differs"; "in X s"
   counts from the run's start, unit tests included; it's long, repeats on
   every watch rerun, and can't be quietened.
@@ -267,16 +271,26 @@ From the 2026-10-13 review, where the README disagrees with the code.
   Done on 2026-10-13, with B7 and B8. The README also says now that
   after a change of layout the old files are left, to delete by hand: the
   run no longer finds them, as it did only because its globs were too wide.
-- [ ] **D2. "Nothing needs installing beyond `npm ci`"** leaves out the
+- [x] **D2. "Nothing needs installing beyond `npm ci`"** leaves out the
   browser download on the first run (about 100 MB), Linux's system
   libraries (`playwright install-deps`), and caching it in CI.
-- [ ] **D3. Smaller disagreements:** the `canvas` kind takes no
+  Done on 2026-10-13: the intro and Requirements say the first run
+  downloads Chrome Headless Shell (about 100 MB) into Playwright's cache,
+  that a bare Linux system needs `npx playwright install-deps chromium`,
+  and that Playwright upgrades go with vsnap's (A17). A new "In CI"
+  section gives a GitHub Actions recipe, taken from this repo's workflow.
+- [x] **D3. Smaller disagreements:** the `canvas` kind takes no
   `background`; `readCanvas` doesn't read a canvas drawn smaller; the font
   list rule is stricter than the code, and missing glyphs (B9) aren't
   mentioned; the Configuration example's unit project lacks
   `extends: true`; kind errors fail each file, not the run; the dark colour
   scheme and reduced motion that HTML views get aren't mentioned; "up to
   15x faster" has no benchmark behind it.
+  Done on 2026-10-13, each one: background is for Pixi, three.js and HTML
+  views; readCanvas reads at full resolution; the font rule says what the
+  code knows; missing glyphs (with B9); the Configuration example has
+  `extends: true`; kind errors fail each file (with U14); the dark colour
+  scheme and reduced motion are mentioned; "up to 15x" is gone.
 - [ ] **D4. Presentation:** about a quarter of the README is for vsnap's
   maintainers (its own config, its layout, the build); move it to a
   CONTRIBUTING file. Missing: the options of each kind in one place, a CI
