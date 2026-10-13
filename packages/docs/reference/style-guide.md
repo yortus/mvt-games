@@ -258,7 +258,7 @@ than relying on a `this` binding at the call site.
 Enforced by lint: `@mvtjs/no-this`. The few files that have no other way to
 reach their instance, the renderer mixins' methods wrapped onto a library's
 prototype and a Rollup plugin's hooks, are exempted by name in
-`eslint.config.js`.
+`eslint.config.ts`.
 
 ## Function-Valued Properties in Types
 

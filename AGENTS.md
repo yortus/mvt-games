@@ -27,7 +27,7 @@ packages/
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
 ├── vsnap/               vsnap (private for now): visual snapshot tests for canvas and HTML views, as Vitest projects
-├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, built before lint runs
+├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): the documentation (VitePress)

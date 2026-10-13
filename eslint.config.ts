@@ -1,8 +1,13 @@
 import eslint from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
-import mvt from '@mvtjs/eslint-plugin';
 import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
+// This repo's own rules, from their source, through the root package.json's
+// `imports`. ESLint loads this config, and what it imports, through jiti,
+// which compiles TypeScript as it loads it, so nothing needs building first.
+// The package's own name would resolve to its build: jiti reads `exports`
+// with only the `node` and `import` conditions, never `@mvtjs/source`.
+import mvt from '#eslint-plugin';
 
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.

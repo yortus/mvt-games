@@ -164,8 +164,8 @@ writer there is, so the engine cannot inline them.
 **So the refresh code is written out many times.** `refresh-copies.ts` holds
 17 identical copies of a refresh function for each number of bindings, from 1
 to 6. Each copy is separate code, with its own records.
-This package's `scripts/generate-refresh-copies.ts` generates the file on install and before
-dev, build, test and bench; it isn't checked in.
+This package's `scripts/generate-refresh-copies.ts` generates the file, which is checked in.
+A test beside the script fails while the file is out of date.
 
 **Each busy shape takes a copy of its own.** A node's **shape** is its
 sequence of attribute definitions, on one class of node: every sprite built by
@@ -265,7 +265,7 @@ directory beside it:
 | [attributes.ts](./attributes.ts) | Element tables: `attributesOf`, `element`, `defineElements`, write kinds |
 | [jsx-types.ts](./jsx-types.ts) | Types for JSX attributes and children, and `IntrinsicElementsOf` |
 | [refresh-builder.ts](./refresh-builder.ts) | Making each node's refresh method |
-| `refresh-copies.ts` | The copies of the refresh code; generated, not checked in |
+| [refresh-copies.ts](./refresh-copies.ts) | The copies of the refresh code, generated; do not edit by hand |
 | [list.ts](./list.ts), [switch.ts](./switch.ts) | `<List>`, and `<Switch>` with `<Match>` |
 | [conformance/](./conformance/conformance-suite.ts) | The suite every JSX target must pass |
 | [design-notes.md](./design-notes.md) | Settled decisions, and the evidence for them |

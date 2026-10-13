@@ -12,15 +12,18 @@ meant to be published once there are enough of them to be useful to others.
 | `@mvtjs/no-null` | `style` | `null` that our own code or APIs introduce: as a value, or in a type outside a function body. Comparisons and local types, which handle third-party values, are allowed |
 | `@mvtjs/no-this` | `style` | `this` |
 
-The repo's `eslint.config.js` applies `style` to all code and `architecture`
+The repo's `eslint.config.ts` applies `style` to all code and `architecture`
 to model files, and exempts the few files that need `this`.
 
 ## Working on the rules
 
-ESLint loads the plugin through Node, by its package name, which resolves to
-the built `dist/`. The root's `prepare` and `prelint` scripts build it, so
-`npm run lint` always runs the current rules. After editing a rule, rebuild
-it (`npm run build:lint-plugin`) before linting from the editor.
+The repo's `eslint.config.ts` imports the plugin from its source, `src/`, as
+`#eslint-plugin`, which the root `package.json` maps in its `imports`. ESLint
+loads a TypeScript config through jiti, which compiles the config and what it
+imports as it loads them, so nothing needs building first, and
+`npm run lint` always runs the current rules. An editor's ESLint server keeps
+the config it loaded: after editing a rule, restart the server to lint with
+the change. The package's `build` makes `dist/`, for publishing.
 
 Each rule has a test beside it, run with ESLint's `RuleTester` under Vitest
 (`npm test`).

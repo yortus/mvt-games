@@ -25,7 +25,7 @@ Software architecture writing calls tests like these *fitness functions*
 | Belongs here | Goes elsewhere |
 | --- | --- |
 | A property that spans packages, such as every renderer re-exporting the same names from `@mvtjs/utils` | A test of one package's behaviour: beside that package's code |
-| A property of the repo's layout or manifests that lint cannot express | A rule about how a single file is written: lint (`eslint.config.js`) |
+| A property of the repo's layout or manifests that lint cannot express | A rule about how a single file is written: lint (`eslint.config.ts`) |
 
 A check needs this package because it reaches across the others: this
 package depends on each package it checks, and nothing depends on it.
