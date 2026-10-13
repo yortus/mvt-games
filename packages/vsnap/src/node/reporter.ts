@@ -140,7 +140,7 @@ export function createVisualReporter(options: {
             const reduced = images.filter((p) => p.meta.resolution < 1);
             if (reduced.length > 0) {
                 const one = reduced.length === 1;
-                lines.push(`  ${reduced.length} smooth ${one ? 'image' : 'images'} (artStyle 'smooth') ${one ? 'was' : 'were'} over the size budget, so ${one ? 'it was' : 'they were'} rendered at a lower resolution. Any detail finer than an image pixel is averaged away. Here ${one ? 'is its scale, name and size' : 'are their scales, names and sizes'}:`);
+                lines.push(`  ${reduced.length} smooth ${one ? 'image' : 'images'}, not pixel art, ${one ? 'was' : 'were'} over the size budget, so ${one ? 'it was' : 'they were'} rendered at a lower resolution. Any detail finer than an image pixel is averaged away. Here ${one ? 'is its scale, name and size' : 'are their scales, names and sizes'}:`);
                 for (const p of reduced) lines.push(`    1/${1 / p.meta.resolution}  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             }
             const slowest = [...images].sort((a, b) => b.total - a.total).slice(0, 5);

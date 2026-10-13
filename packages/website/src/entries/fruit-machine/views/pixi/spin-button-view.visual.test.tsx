@@ -9,6 +9,6 @@ describe('SpinButtonView', () => {
     // The held-down state comes from the pointer, not from bindings. So a
     // freshly built button is at rest.
     for (const mode of MODES) {
-        canvasTest(mode, { artStyle: 'smooth' }, () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }));
+        canvasTest(mode, { pixelArt: false }, () => SpinButtonView({ mode: () => mode, radius: BUTTON_RADIUS }));
     }
 });

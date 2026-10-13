@@ -594,7 +594,7 @@ package, with the rest of the tick API.
 
 ```tsx
 describe('WinBannerView', () => {
-    canvasTest('a win, counted', { artStyle: 'smooth' }, () => WinBannerView({
+    canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({
         isShown: () => true,
         amount: () => WIN,
         caption: () => CAPTION,
@@ -606,8 +606,9 @@ describe('WinBannerView', () => {
   vsnap refreshes each view before its image is taken, and destroys it the
   MVT way after, so the pose doesn't. Pixi is the default view, so a Pixi
   test gives no `kind`.
-- Set `artStyle: 'smooth'` for a view that its game draws with
-  antialiasing. The default is `'pixel'`.
+- The website's `vsnap.config.ts` draws Pixi views as pixel art, as most
+  of its games are. Set `pixelArt: false` for a view that its game draws
+  with antialiasing.
 - A three.js view's options give `kind: 'three'`, the image's `width` and
   `height`, and a `camera`. If the view is lit by an environment map, pass
   the game's scene setup function as `scene`.

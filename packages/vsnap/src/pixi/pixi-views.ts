@@ -16,6 +16,13 @@ export interface PixiViewsOptions {
     readonly prepare?: (view: Container) => void;
     /** Disposes of a view after its image is taken. By default, it is Pixi's `destroy({ children: true })`. */
     readonly dispose?: (view: Container) => void;
+    /**
+     * Whether the views are pixel art, for each test whose options don't
+     * say. A project whose views are mostly pixel art sets `true` here, and
+     * a test of a smooth view says `pixelArt: false`. The default is `false`.
+     * See `PixiImageOptions.pixelArt` for what it means for the image.
+     */
+    readonly pixelArt?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -26,10 +33,13 @@ export interface PixiViewsOptions {
  * Returns the kind of view for Pixi containers, which a project lists in its
  * `vsnap.config.ts`. Its tests give `kind: 'pixi'`, unless it is the
  * project's default view, and their poses return Pixi containers. A view is
- * drawn as pixel art unless its test's options say `artStyle: 'smooth'`. See
- * `PixiImageOptions.artStyle` for what each style means for the image.
+ * drawn as pixel art if its test's options say so, or else if these options
+ * say so. Otherwise it is drawn smooth.
  */
 export function pixiViews(options: PixiViewsOptions = {}): CanvasViewKind<Container, PixiImageOptions, 'pixi'> {
+    const { pixelArt } = options;
+    // A test's options, with the project's pixelArt if they don't say.
+    const withPixelArt = <O extends PixiImageOptions>(imageOptions: O): O => (imageOptions.pixelArt === undefined && pixelArt !== undefined ? { ...imageOptions, pixelArt } : imageOptions);
     return {
         name: 'pixi',
         kind: 'canvas',
@@ -37,10 +47,10 @@ export function pixiViews(options: PixiViewsOptions = {}): CanvasViewKind<Contai
         // The pose makes its textures with the defaults that this sets.
         beforePose: (imageOptions) => {
             patchPixiPools();
-            preparePixiPose(imageOptions);
+            preparePixiPose(withPixelArt(imageOptions));
         },
         prepare: options.prepare,
-        draw: drawPixiImage,
+        draw: (view, imageOptions) => drawPixiImage(view, withPixelArt(imageOptions)),
         dispose: options.dispose ?? ((view) => view.destroy({ children: true })),
     };
 }

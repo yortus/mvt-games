@@ -13,7 +13,8 @@ import { threeViews } from 'vsnap/three';
 
 const config = defineVsnapConfig({
     views: [
-        pixiViews({ prepare: refreshView }),
+        // Most of the games are pixel art.
+        pixiViews({ pixelArt: true, prepare: refreshView }),
         threeViews({ prepare: refreshView, dispose: destroyObject }),
         htmlViews({ prepare: refreshView, dispose: destroyElement }),
     ],

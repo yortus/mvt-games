@@ -20,35 +20,32 @@ export interface PixiImageOptions {
      */
     readonly background?: number | string;
     /**
-     * How the view's art is drawn. Set it to the style that the view's game
-     * draws it in. The default is `'pixel'`.
+     * Whether the view is pixel art. Set it as the view's game draws it. The
+     * default is the one that `pixiViews` sets for the project, or else
+     * `false`.
      *
-     * - `'pixel'` is for pixel art. Edges are hard (no antialiasing), and
-     *   positions are rounded to whole pixels. The textures that the pose
-     *   makes are sampled nearest-neighbour, so a magnified image stays
-     *   blocky. The image is always drawn at full size. An image over
-     *   the size budget (vsnap's `maxPixels` option) fails,
-     *   since drawing pixel art smaller would drop whole texels (texture
-     *   pixels). Crop it (`width`, `height`) or pose part of the view
-     *   instead.
-     * - `'smooth'` gives antialiased edges and fractional positions, and the
-     *   pose's textures are sampled smoothly. An image over the size budget
-     *   is drawn at a lower resolution to fit it (a half, a quarter and so
-     *   on). That is faster, and the image is smaller. But every detail
-     *   finer than an image pixel is averaged away, so a change that small
-     *   can pass unseen. The run's summary lists every image drawn that
-     *   way.
+     * - Pixel art has hard edges (no antialiasing), and positions rounded to
+     *   whole pixels. The textures that the pose makes are sampled
+     *   nearest-neighbour, so a magnified image stays blocky. The image is
+     *   always drawn at full size. An image over the size budget (vsnap's
+     *   `maxPixels` option) fails, since drawing pixel art smaller would
+     *   drop whole texels (texture pixels). Crop it (`width`, `height`) or
+     *   pose part of the view instead.
+     * - Other art is drawn smooth, with antialiased edges and fractional
+     *   positions, and the pose's textures are sampled smoothly. An image
+     *   over the size budget is drawn at a lower resolution to fit it (a
+     *   half, a quarter and so on). That is faster, and the image is
+     *   smaller. But every detail finer than an image pixel is averaged
+     *   away, so a change that small can pass unseen. The run's summary
+     *   lists every image drawn that way.
      *
-     * A smooth view tested as `'pixel'` comes out jagged. That is not how its
-     * game draws it, but the result is consistent, and plain to see in
-     * review. A texture that sets its own sampling, such as a spritesheet's,
-     * keeps it, whatever the style.
+     * Pixel art drawn smooth comes out blurred, and smooth art drawn as pixel
+     * art comes out jagged. Neither is how the game draws it, but the result
+     * is consistent, and plain to see in review. A texture that sets its own
+     * sampling, such as a spritesheet's, keeps it, either way.
      */
-    readonly artStyle?: ArtStyle;
+    readonly pixelArt?: boolean;
 }
-
-/** How a view's art is drawn. See `PixiImageOptions.artStyle`. */
-export type ArtStyle = 'pixel' | 'smooth';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -61,7 +58,7 @@ export type ArtStyle = 'pixel' | 'smooth';
  * these defaults then do not change.
  */
 export function preparePixiPose(options: PixiImageOptions): void {
-    TextureSource.defaultOptions.scaleMode = options.artStyle === 'smooth' ? 'linear' : 'nearest';
+    TextureSource.defaultOptions.scaleMode = options.pixelArt === true ? 'nearest' : 'linear';
 }
 
 /**
@@ -71,7 +68,7 @@ export function preparePixiPose(options: PixiImageOptions): void {
  * over the size budget and cannot be drawn smaller.
  */
 export async function drawPixiImage(view: Container, options: PixiImageOptions & { readonly maxPixels: number }): Promise<CanvasImage> {
-    const isSmooth = options.artStyle === 'smooth';
+    const isSmooth = options.pixelArt !== true;
     const app = await ensureApp(isSmooth);
     holder.position.set(0, 0);
     holder.addChild(view);
@@ -113,7 +110,7 @@ const MARGIN = 4;
 const DEFAULT_BACKGROUND = 0x202024;
 
 const PIXEL_ART_ADVICE = 'Pixel art is drawn at full size, so crop the image (width, height) or pose part of the view. '
-    + 'A smooth view (artStyle: \'smooth\') is drawn at a lower resolution to fit instead.';
+    + 'A view that isn\'t pixel art (pixelArt: false) is drawn at a lower resolution to fit instead.';
 
 /**
  * The stage that every actual image is rendered from. It holds a backdrop, then a

@@ -63,7 +63,7 @@ import { HudView } from './hud-view';
 
 describe('HudView', () => {
     canvasTest('at the start', () => HudView({ score: () => 0 }));
-    canvasTest('a high score', { artStyle: 'smooth' }, () => HudView({ score: () => 98_765 }));
+    canvasTest('a high score', { width: 320 }, () => HudView({ score: () => 98_765 }));
 });
 ```
 
@@ -136,9 +136,11 @@ describes.
 
 - **Pixi views,** registered with `pixiViews()` from `vsnap/pixi`. The pose
   returns a Pixi container. By default, the image is framed by the view's
-  bounds, and drawn as pixel art, with hard edges and whole pixels. The
-  options can set the image's `width`, `height` and `background`, and
-  `artStyle: 'smooth'` for antialiased art.
+  bounds, and drawn smooth, with antialiased edges. The options can set the
+  image's `width`, `height` and `background`, and `pixelArt: true` for
+  pixel art, with hard edges and whole pixels. A project whose views are
+  mostly pixel art registers `pixiViews({ pixelArt: true })`, and a test of
+  a smooth view then says `pixelArt: false`.
 - **three.js views,** registered with `threeViews()` from `vsnap/three`. The
   pose returns a three.js object. A three.js view has no bounds to frame it
   by, so the options always set the image's `width` and `height`, and the
@@ -158,7 +160,7 @@ Most projects draw most of their views one way, so most of their tests give
 no kind. A test of another kind names it:
 
 ```ts
-canvasTest('spinning', { artStyle: 'smooth' }, () => ReelView(...));
+canvasTest('spinning', () => ReelView(...));
 canvasTest('at rest', { kind: 'three', width: 240, height: 300, camera }, () => LeverView(...));
 canvasTest('a bar chart', { kind: 'canvas' }, () => drawChart(SALES));
 ```

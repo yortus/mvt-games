@@ -95,9 +95,17 @@ From the blind review of 2026-10-13.
 
 ## API and design
 
-- [ ] **A4. Should `artStyle` default to `'smooth'`?** `'pixel'` suits
+- [x] **A4. Should `artStyle` default to `'smooth'`?** `'pixel'` suits
   games, not Pixi users generally. A decision for the user. The 2026-10-13
   review agrees, and adds project-wide defaults (A13).
+  On 2026-10-13, `pixiViews({ artStyle })` became the project's default, so
+  the built-in default matters less. Also open: the name. "Art style" reads
+  as an aesthetic, and `'pixel'` and `'smooth'` aren't parallel. Suggested:
+  `pixelArt: boolean` (default `false`, which also settles this item), or
+  `rendering: 'pixelated' | 'smooth'`, after CSS's `image-rendering`.
+  Decided and done on 2026-10-13: `artStyle` became `pixelArt: boolean`,
+  default `false`. The website and the fixture set `pixiViews({ pixelArt:
+  true })`, and every reference image stayed identical.
 - [ ] **A11. "kind" means two things.** A test's `kind: 'pixi'` matches a
   view kind's `name`, while a `CanvasViewKind`'s own `kind` field is
   `'canvas'` or `'html'`, and `defaultView` names a kind too. Someone
@@ -109,6 +117,8 @@ From the blind review of 2026-10-13.
   another name for the option.
 - [ ] **A13. No project-wide defaults for a kind's options,** such as
   `pixiViews({ artStyle, background })`. With A4.
+  The art style done on 2026-10-13, now `pixiViews({ pixelArt })`, and a
+  test's own overrides it. `background` is still to do, for every kind.
 - [ ] **A14. The three.js peer range covers one minor version**
   (`^0.186.1`), and three releases one a month, so a project on 0.187
   likely gets a conflict. Widen it.

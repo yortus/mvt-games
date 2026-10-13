@@ -9,28 +9,27 @@ import { pixiViews } from '../pixi';
 import { defineVsnapConfig, loadViewKinds } from './view-kinds';
 import { bindCanvasTest, canvasTest } from './visual-test';
 
-const SMOOTH = { artStyle: 'smooth' } as const;
 const KNOT = { kind: 'three', width: 200, height: 150, camera: createKnotCamera } as const;
 
 describe('canvasTest', () => {
-    canvasTest('framed by its bounds', SMOOTH, () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff));
+    canvasTest('framed by its bounds', () => new Graphics().circle(0, 0, 30).fill(0x5bd1ff));
 
-    canvasTest('placed by its own position', SMOOTH, () => {
+    canvasTest('placed by its own position', () => {
         const view = new Graphics().rect(0, 0, 60, 20).fill(0xffe45c);
         view.position.set(400, 300);
         return view;
     });
 
-    canvasTest('at a fixed size', { width: 100, height: 60, artStyle: 'smooth' }, () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b));
+    canvasTest('at a fixed size', { width: 100, height: 60 }, () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b));
 
-    // By default, a view is drawn as pixel art is, with hard edges and whole pixels.
-    canvasTest('pixel art', () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
+    // Pixel art is drawn with hard edges and whole pixels.
+    canvasTest('pixel art', { pixelArt: true }, () => new Graphics().circle(20, 20, 16).fill(0x2fd27a));
 
     // A smooth view over the size budget (500,000 pixels) is drawn at half
     // resolution to fit it.
-    canvasTest('smooth, over the budget', SMOOTH, () => new Graphics().roundRect(0, 0, 1200, 600, 48).fill(0x5bd1ff).circle(600, 300, 200).fill(0xff4f8b));
+    canvasTest('smooth, over the budget', () => new Graphics().roundRect(0, 0, 1200, 600, 48).fill(0x5bd1ff).circle(600, 300, 200).fill(0xff4f8b));
 
-    canvasTest('canvas text', SMOOTH, () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }));
+    canvasTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFamily: '"Segoe UI", sans-serif', fontSize: 24, fontWeight: '900', fill: 0xffffff } }));
 
     // A kind's prepare runs after the pose, as a refresh step would. This
     // package's vsnap.config.ts prepares the views named for it. Without it,
@@ -38,7 +37,7 @@ describe('canvasTest', () => {
     // on.
     describe('with a prepare hook', () => {
         let bar: Container | undefined;
-        canvasTest('a Pixi view', SMOOTH, () => (bar = new Container({ label: 'bar' })));
+        canvasTest('a Pixi view', () => (bar = new Container({ label: 'bar' })));
         canvasTest('a three.js view', KNOT, () => {
             const knot = createKnot();
             knot.name = 'turned';

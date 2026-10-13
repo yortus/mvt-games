@@ -40,7 +40,7 @@ for (const { entry, starter } of loaded) {
     if (starter.kind !== 'pixi') continue;
     const crop = CROPS[entry.id];
     const options: PixiImageOptions = {
-        artStyle: starter.pixelArt === true ? 'pixel' : 'smooth',
+        pixelArt: starter.pixelArt === true,
         width: crop?.width ?? entry.screenWidth,
         height: crop?.height ?? entry.screenHeight,
         // The host draws black round a play area, so the image has a black
