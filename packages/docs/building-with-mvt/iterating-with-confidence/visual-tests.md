@@ -225,6 +225,7 @@ taken, and destroys it through MVT afterwards.
 | --- | --- |
 | `npm test` | Runs every test, unit and visual |
 | `npm run test:unit` | Runs the unit tests alone. No browser starts |
+| `npm run test:ui` | Runs every test in watch mode, and opens the Vitest UI in a browser. A failed visual test shows its reference, its actual image and their diff side by side, with a slider between the two images |
 | `npm run test:visual` | Runs every visual test, and compares each image with its reference image. A new image is written as its reference, except in CI |
 | `npm run test:visual:update` | Also writes each changed image as its reference image |
 | `npx vitest run <test file> -u` | Updates the reference images of one test file |

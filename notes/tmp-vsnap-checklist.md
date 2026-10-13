@@ -70,6 +70,7 @@ Each review finding says how it was checked:
 ## Documentation
 
 - [ ] **D1. Update the documentation:** Shorten the README to typical public package length and content (eg installation, usage, API, examples, contributing, license - take this list as inspiration only) and moved detailed explanations to separate docs pages. Puts separate docs pages in a `docs` folder or similar location. Ensure there is a ToC.
+- [ ] **D2. More compelling docs:** We need to hook the reader not bore them to death. Start the README with the headline benefits. We need to get the "15x faster" claim back, but this time with evidence and context that make it credible and compelling. Use layout and visuals better. Put the 'Cut V' logo in. Add badges, tables, lists, etc.
 
 ## The rest of 042, step 10
 

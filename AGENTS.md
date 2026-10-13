@@ -108,6 +108,7 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm test`             | Every test but vsnap's own: the unit tests and the visual tests (downloads the browser on first run) |
 | `npm run test:unit`    | Every workspace's unit tests but vsnap's (Vitest's `unit` project; no browser): the fast check while working |
 | `npm run test:watch`   | Every test but vsnap's own, in watch mode |
+| `npm run test:ui`      | The same, with the Vitest UI in a browser: each test's result, and a failed image's reference, actual image and diff side by side (for people; agents use the commands above) |
 | `npm run test:visual`  | Visual tests (the `visual-*` projects): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
 | `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
 | `npm run test:vsnap`   | All of vsnap's own tests, unit and visual, from its own config |

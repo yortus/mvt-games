@@ -664,8 +664,8 @@ changed in red. The message ends with the command that
 accepts the change, `vitest run <file> -u`. The files of a test that passes
 again are deleted.
 
-The Vitest UI shows them side by side. Run `vitest --ui`, and open the
-failed test: its Visual Regression panel shows the diff, the reference,
+The Vitest UI shows them side by side. Install `@vitest/ui`, at the same
+version as Vitest, run `vitest --ui`, and open the failed test: its Visual Regression panel shows the diff, the reference,
 the actual image, and a slider between the reference and the actual
 image. Look at each change there before accepting it.
 
