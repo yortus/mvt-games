@@ -94,6 +94,14 @@ export function decodePng(bytes: Uint8Array): RgbaImage {
 }
 
 /**
+ * Returns whether a file's bytes are a Git LFS pointer: a short text file
+ * that a checkout without Git LFS leaves in place of the file it stores.
+ */
+export function isLfsPointer(bytes: Uint8Array): boolean {
+    return new TextDecoder().decode(bytes.subarray(0, LFS_SPEC.length)) === LFS_SPEC;
+}
+
+/**
  * Returns the hash that a reference file carries, read from the file's
  * first bytes. Returns undefined if the file carries no hash, as with a PNG
  * that `encodePng` did not write.
@@ -124,6 +132,9 @@ export function readPngHash(path: string): string | undefined {
 
 const SIGNATURE = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
 const HASH_KEYWORD = 'vsnap';
+
+/** How every Git LFS pointer file starts. */
+const LFS_SPEC = 'version https://git-lfs.github.com/spec/';
 
 interface Indexed {
     readonly bitDepth: number;

@@ -83,6 +83,9 @@ export function describeFailure(name: string, verdict: VisualVerdict, pageKind: 
             return `Image '${name}' is new, and this run writes no new reference images, as Vitest writes no new snapshots in CI. Run ${update} where it can, and review ${verdict.actualFile ?? verdict.referenceFile}.`;
         case 'size':
             return `Image '${name}' changed size from ${verdict.referenceSize}. See ${verdict.actualFile}. If the change is intended, run ${update}.`;
+        case 'case':
+            return `Image '${name}' has the reference ${verdict.caseFile}, whose name differs from ${verdict.referenceFile} only in case, as after a test is renamed so. `
+                + `Linux tells the two names apart, so the test would fail there. Run ${update} to rename the reference.`;
         default: {
             const where = `The actual image is ${verdict.actualFile}, the reference image is ${verdict.referenceFile}, and the diff is ${verdict.diffFile}`;
             const htmlNote = pageKind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';

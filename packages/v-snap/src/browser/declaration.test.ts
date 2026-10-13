@@ -25,6 +25,17 @@ describe('pointAtDeclaration', () => {
         expect(error.stack).toBe("Error: Image 'Hud' differs\n    at http://localhost:63315/src/visual-tests/hud.test.ts?v=1:12:9");
     });
 
+    it("points an error from one of v-snap's browser commands, which Vitest passes to the page, at the declaration", () => {
+        const frames = [
+            '    at CommandsManager.triggerCommand (http://localhost:63315/__vitest_browser__/tester-C2LTsndn.js:1900:68)',
+            '    at Object.judgeVisualMismatch (http://localhost:63315/@id/__x00__vitest/browser:15:78)',
+            `    at ${OWN}browser/visual-test.js:265:28`,
+        ];
+        const error = createError('The reference image is a Git LFS pointer', frames);
+        pointAtDeclaration(error, { declaration: DECLARATION, ownBase: OWN });
+        expect(error.stack).toBe('Error: The reference image is a Git LFS pointer\n    at http://localhost:63315/src/visual-tests/hud.test.ts?v=1:12:9');
+    });
+
     it('leaves an error that the pose threw as it is, since it points at the pose', () => {
         const frames = ['    at pose (http://localhost:63315/src/visual-tests/hud.test.ts?v=1:14:11)', `    at run (${OWN}browser/visual-test.js:260:5)`];
         const error = createError('The score is wrong', frames);

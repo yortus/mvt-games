@@ -34,26 +34,33 @@ export type VisualOutcome =
     | 'differs'
     | 'new' // no reference
     | 'size' // a different size from the reference
-    | 'updated' // written as the new reference
-    | 'added'; // written as the reference of a new image
+    | 'updated' // written as the new reference, or renamed to the test's case
+    | 'added' // written as the reference of a new image
+    | 'case'; // a reference whose name differs from the image's only in case
 
 export interface VisualVerdict {
     readonly outcome: VisualOutcome;
-    /** The number of pixels that differ, and the largest difference in any channel (0 to 255). */
+    /**
+     * The number of pixels that differ (by more than the tolerance, for an
+     * image that differs), and the largest difference in any channel (0 to
+     * 255).
+     */
     readonly changed?: number;
     readonly maxDelta?: number;
-    /** The smallest rectangle holding every pixel that differs. */
+    /** The smallest rectangle holding every pixel that differs (by more than the tolerance, for an image that differs). */
     readonly changedRect?: VisualRect;
     /** The reference's size, when it differs. */
     readonly referenceSize?: string;
+    /** The reference whose name differs from the image's only in case, relative to the folder that Vitest runs in. */
+    readonly caseFile?: string;
     /**
      * The reference's path, and the paths that the actual image and the
-     * diff were written to. Each path is relative to the repo's root.
+     * diff were written to. Each path is relative to the folder that Vitest runs in.
      */
     readonly referenceFile: string;
     readonly actualFile?: string;
     readonly diffFile?: string;
-    /** The test file, relative to the repo's root, for the command that a failure message suggests. */
+    /** The test file, relative to the folder that Vitest runs in, for the command that a failure message suggests. */
     readonly testFile?: string;
     /**
      * The images of a failed comparison, by absolute path, with their sizes:

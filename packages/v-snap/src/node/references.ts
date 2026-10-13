@@ -15,7 +15,7 @@ import { type Dirent, existsSync, globSync, mkdirSync, readdirSync, readFileSync
 import { basename, dirname, join, posix, relative, resolve } from 'node:path';
 import picomatch from 'picomatch';
 import { matchReferenceName, resolveReferencePattern, STEM_SUFFIXES, toFileStem, type VisualLayout } from './layout.ts';
-import { decodePng, hashImage, readPngHash } from './png.ts';
+import { decodePng, hashImage, isLfsPointer, readPngHash } from './png.ts';
 import { isSkippedFolder } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
@@ -128,17 +128,22 @@ export function findReferencesOfFiles(layout: VisualLayout, files: readonly stri
  * pass the run unnoticed.
  */
 export function checkReference(file: string): string | undefined {
+    const bytes = readFileSync(file);
+    if (isLfsPointer(bytes)) return LFS_PROBLEM;
     const stored = readPngHash(file);
     if (stored === undefined) return 'carries no pixel hash, so the visual tests did not write it';
     let actual: string;
     try {
-        actual = hashImage(decodePng(readFileSync(file)));
+        actual = hashImage(decodePng(bytes));
     }
     catch (error) {
         return `cannot be decoded (${error instanceof Error ? error.message : String(error)})`;
     }
     return actual === stored ? undefined : `its pixels hash to ${actual}, but the hash it carries is ${stored}`;
 }
+
+/** What `checkReference` returns for a Git LFS pointer file, which a checkout without Git LFS leaves in place of an image. */
+export const LFS_PROBLEM = 'is a Git LFS pointer, not an image';
 
 /**
  * Returns the references, of those given, that no actual image was
@@ -201,12 +206,14 @@ export function removeReference(file: string, root: string): void {
 
 /**
  * Returns a path in a form that can be compared. The path is resolved. On
- * Windows, where paths ignore case, it is also lower-cased, because Vitest
- * writes paths as `V:/...` and Node writes them as `v:\...`.
+ * Windows and macOS, where paths ignore case, it is also lower-cased. On
+ * Windows, Vitest writes paths as `V:/...` and Node writes them as `v:\...`.
+ * On both, a reference named in another case than its test's image is the
+ * same file, which must not look unused, and so be deleted.
  */
 export function toFileKey(file: string): string {
     const resolved = resolve(file);
-    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+    return process.platform === 'win32' || process.platform === 'darwin' ? resolved.toLowerCase() : resolved;
 }
 
 // ---------------------------------------------------------------------------

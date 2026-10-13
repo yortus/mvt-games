@@ -22,17 +22,18 @@
  * calibration set (`npm run test:visual:environment -w v-snap`).
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
     VisualCalibration, VisualCaptureRequest, VisualEnvironment, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
-import { compareImages } from './compare.ts';
-import { ENVIRONMENT_FILE, findCalibrationDir, toDisplayPath, toOutputBase } from './paths.ts';
+import { compareImages, DRAWS_EXACTLY } from './compare.ts';
+import { CHECK_CACHE_FILE, ENVIRONMENT_FILE, findCalibrationDir, toDisplayPath, toOutputBase } from './paths.ts';
 import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout.ts';
-import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png.ts';
+import { decodePng, encodePng, hashImage, isLfsPointer, type RgbaImage, readPngHash } from './png.ts';
+import { checkReferences } from './references.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -67,16 +68,26 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
 
     const openVisualSession: BrowserCommand<[VisualScope]> = (ctx, scope): VisualSession => {
         const pattern = resolvePattern(ctx, scope);
+        const mode = findMode(ctx);
         const hashes: Record<string, string> = {};
+        const files = new Map<string, string>();
         if (existsSync(pattern.dir)) {
             for (const file of readdirSync(pattern.dir)) {
                 const name = matchReferenceName(pattern, file);
                 if (name === undefined) continue;
                 const hash = readPngHash(join(pattern.dir, file));
                 if (hash !== undefined) hashes[name] = hash;
+                files.set(join(pattern.dir, file), name);
             }
         }
-        return { mode: findMode(ctx), hashes, isCalibrated: scope.calibration !== undefined && state.calibrated.has(scope.calibration) };
+        // A run that rewrites references trusts no hash that its pixels don't
+        // match, so that each such reference is judged, and rewritten.
+        if (isRewriting(mode)) {
+            for (const [file, problem] of checkReferences([...files.keys()], CHECK_CACHE_FILE)) {
+                if (problem !== undefined) delete hashes[files.get(file) ?? ''];
+            }
+        }
+        return { mode, hashes, isCalibrated: scope.calibration !== undefined && state.calibrated.has(scope.calibration) };
     };
 
     const recordVisualCalibration: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
@@ -132,6 +143,11 @@ function findMode(ctx: { readonly project: { readonly vitest: { readonly config:
     return update === 'all' ? 'update' : update === 'new' ? 'new' : 'compare';
 }
 
+/** Returns whether a mode rewrites references that changed. */
+function isRewriting(mode: VisualMode): boolean {
+    return mode === 'update' || mode === 'environment';
+}
+
 const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
     const facts: EnvironmentFile = {
         browser: environment.browser,
@@ -175,10 +191,15 @@ function findTestPath(ctx: BrowserCommandContext): string {
 
 /**
  * Compares an actual image with its reference, or writes it as the
- * reference. When the actual image is within the tolerance, the reference is
- * never rewritten. That way, a machine
- * whose processor rounds a little differently does not keep rewriting the
- * references.
+ * reference. When the actual image is within the tolerance, `-u` rewrites
+ * the reference only on a processor that draws exactly (see
+ * `src/node/compare.ts`). That way, an arm64 machine, which rounds a little
+ * differently, does not keep rewriting the references.
+ *
+ * A reference whose name differs from the test's image name only in case,
+ * after a test was renamed so, is renamed by `-u`, and fails the test
+ * otherwise. macOS and Windows would find it under either name, but Linux
+ * wouldn't, so a test that passes on one would fail on the other.
  */
 function judge(options: {
     readonly file: string;
@@ -190,24 +211,32 @@ function judge(options: {
     const { file, id, actual, mode } = options;
     const referenceFile = toDisplayPath(file);
     const testFile = options.testFile === undefined ? undefined : toDisplayPath(options.testFile);
+    const isUpdate = isRewriting(mode);
+    const twin = id.calibration === undefined ? findCaseTwin(file) : undefined;
+    if (twin !== undefined) {
+        if (!isUpdate) return { outcome: 'case', referenceFile, caseFile: toDisplayPath(twin), testFile };
+        renameSync(twin, file);
+    }
+    // A renamed reference is reported as updated, so that the summary shows it.
+    const same = twin === undefined ? 'same' : 'updated';
     const hash = hashImage(actual);
     const exists = existsSync(file);
-    const isWritable = id.calibration !== undefined
-        ? mode === 'environment'
-        : mode === 'update' || mode === 'environment' || (mode === 'new' && !exists);
-    if (exists && readPngHash(file) === hash) return { outcome: 'same', referenceFile };
+    const isWritable = id.calibration !== undefined ? mode === 'environment' : isUpdate || (mode === 'new' && !exists);
+    // A run that rewrites references trusts the hash only if the pixels match it.
+    const isTrusted = !isWritable || !exists || checkReferences([file], CHECK_CACHE_FILE).get(file) === undefined;
+    if (exists && readPngHash(file) === hash && isTrusted) return { outcome: same, referenceFile };
 
     let expected: RgbaImage | undefined;
-    if (exists) expected = decodePng(readFileSync(file));
+    if (exists) expected = readReference({ file, referenceFile, isWritable, testFile });
     const isSameSize = expected !== undefined && expected.width === actual.width && expected.height === actual.height;
     const comparison = expected !== undefined && isSameSize ? compareImages({ expected, actual }) : undefined;
     // The same pixels, in a file that lacks their hash, such as one that a
     // paint program saved. A write adds the hash, so that `-u` repairs it.
     if (comparison?.changed === 0) {
         if (isWritable) writeFileSync(file, encodePng(actual));
-        return { outcome: 'same', referenceFile };
+        return { outcome: same, referenceFile };
     }
-    if (comparison?.isWithinTolerance) {
+    if (comparison?.isWithinTolerance && !(isWritable && DRAWS_EXACTLY)) {
         return { outcome: 'within-tolerance', changed: comparison.changed, maxDelta: comparison.maxDelta, referenceFile };
     }
     if (isWritable) {
@@ -231,7 +260,7 @@ function judge(options: {
     return {
         images: [referenceImage, actualImage, diffImage],
         outcome: 'differs',
-        changed: comparison.changed,
+        changed: comparison.exceeded,
         maxDelta: comparison.maxDelta,
         changedRect: comparison.changedRect,
         referenceFile,
@@ -239,6 +268,50 @@ function judge(options: {
         diffFile: toDisplayPath(`${outBase}.diff.png`),
         testFile,
     };
+}
+
+/**
+ * Returns the reference image in a file whose name differs from the path's
+ * only in case, as an absolute path, if there is one and no file has the
+ * path's own name. Only a file that carries a pixel hash counts, so that a
+ * PNG that v-snap didn't write is never renamed.
+ */
+function findCaseTwin(file: string): string | undefined {
+    const dir = dirname(file);
+    if (!existsSync(dir)) return undefined;
+    const name = basename(file);
+    const lower = name.toLowerCase();
+    let twin: string | undefined;
+    for (const entry of readdirSync(dir)) {
+        if (entry === name) return undefined;
+        if (entry.toLowerCase() === lower) twin = entry;
+    }
+    return twin === undefined || readPngHash(join(dir, twin)) === undefined ? undefined : join(dir, twin);
+}
+
+/**
+ * Returns a reference's pixels. A file that can't be decoded throws an error
+ * that says what to do, unless the run may rewrite it, when it returns
+ * undefined, so that the actual image replaces it. A Git LFS pointer always
+ * throws, since the image it stands for is in Git LFS, not missing.
+ */
+function readReference(options: { readonly file: string; readonly referenceFile: string; readonly isWritable: boolean; readonly testFile: string | undefined }): RgbaImage | undefined {
+    const bytes = readFileSync(options.file);
+    if (isLfsPointer(bytes)) {
+        throw new Error(
+            `The reference image ${options.referenceFile} is a Git LFS pointer, not an image, so this checkout doesn't have the images that Git LFS stores. `
+            + 'Run git lfs pull, or check out with Git LFS, such as with lfs: true in actions/checkout.',
+        );
+    }
+    try {
+        return decodePng(bytes);
+    }
+    catch (error) {
+        if (options.isWritable) return undefined;
+        const update = options.testFile === undefined ? 'Vitest with -u' : `npx vitest run ${options.testFile} -u`;
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(`The reference image ${options.referenceFile} is not a PNG that can be read (${reason}). Run ${update} to rewrite it from its test.`);
+    }
 }
 
 /** The part of a DevTools protocol session that this file uses. */

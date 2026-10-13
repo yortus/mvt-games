@@ -47,4 +47,24 @@ describe('compareImages', () => {
         expect([...c.diff.pixels.subarray(4, 8)]).toEqual([255, 0, 0, 255]);
         expect(c.diff.pixels[0]).toBe(0);
     });
+
+    it('keeps differences within the tolerance out of the rectangle when a larger one is found', () => {
+        // Rounding all over, and one real change in one pixel
+        const actual = createFlatImage(8, 8, [100 + TOLERANCE, 100, 100, 255]);
+        actual.pixels.set([0, 0, 0, 255], (5 * 8 + 6) * 4);
+        const c = compareImages({ expected: createFlatImage(8, 8, [100, 100, 100, 255]), actual });
+        expect(c.changed).toBe(64);
+        expect(c.exceeded).toBe(1);
+        expect(c.changedRect).toEqual({ x: 6, y: 5, width: 1, height: 1 });
+    });
+
+    it('marks differences within the tolerance in a colour other than red', () => {
+        const actual = createFlatImage(2, 1, [0, 0, 0, 255]);
+        actual.pixels[0] = TOLERANCE;
+        actual.pixels[4] = TOLERANCE + 1;
+        const c = compareImages({ expected: createFlatImage(2, 1, [0, 0, 0, 255]), actual });
+        expect([...c.diff.pixels.subarray(4, 8)]).toEqual([255, 0, 0, 255]);
+        expect([...c.diff.pixels.subarray(0, 4)]).not.toEqual([255, 0, 0, 255]);
+        expect(c.diff.pixels[0]).toBeGreaterThan(0);
+    });
 });

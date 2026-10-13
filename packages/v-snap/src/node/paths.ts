@@ -16,14 +16,14 @@ export const PACKAGE_DIR = resolve(import.meta.dirname, '..', '..');
  */
 export const ENVIRONMENT_FILE = join(PACKAGE_DIR, 'visual-environment.json');
 
-/**
- * The root of the repository that the tests run in. Paths in messages are
- * relative to it, so that an editor can open them.
- */
+/** The root of the repository that the tests run in. */
 export const REPO_ROOT = findRepoRoot(process.cwd());
 
 /** Where a failing actual image and its diff are written, mirroring the repository. */
 export const OUT_DIR = join(REPO_ROOT, '.vitest', 'vsnap');
+
+/** The cache of the references that passed their checks, with each one's size and time, so that a reference isn't decoded again until it changes. */
+export const CHECK_CACHE_FILE = join(OUT_DIR, 'reference-checks.json');
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -47,10 +47,14 @@ export function toOutputBase(file: string, folders: { readonly repo: string; rea
     return join(folders.out, path).replace(/\.png$/, '');
 }
 
-/** Converts a path to the form that messages show: relative to the repository, with forward slashes. */
+/**
+ * Converts a path to the form that messages show: relative to the folder
+ * that Vitest runs in, with forward slashes. That way, a terminal can open
+ * it, and a command that a message suggests runs where Vitest did.
+ */
 export function toDisplayPath(file: string): string {
-    // The repository's root itself shows as '.', not as nothing.
-    return relative(REPO_ROOT, file).replaceAll('\\', '/') || '.';
+    // The folder itself shows as '.', not as nothing.
+    return relative(process.cwd(), file).replaceAll('\\', '/') || '.';
 }
 
 // ---------------------------------------------------------------------------

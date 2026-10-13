@@ -20,23 +20,25 @@
  * image, which would happen if their names differ only in punctuation. If
  * they do, it lists them and fails the run.
  *
- * These checks run as the last of the projects' test files ends, before
- * Vitest decides whether the run passed. A check that fails gives Vitest
- * an error, as a test that fails does, so the run fails in watch mode, in
- * the UI and for a program that runs Vitest, not only by its exit code.
+ * These checks run once the run's test files have ended. A check that
+ * fails is printed under a heading of its own, after the summary, and sets
+ * the exit code, as Vitest's coverage thresholds do. It isn't a test
+ * failure, so Vitest's own summary, its UI and its other reporters don't
+ * show it. In GitHub Actions, it is also an error annotation.
  */
 
 import { appendFileSync, existsSync, rmSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 import { configDefaults } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason, Vitest } from 'vitest/node';
 import { toImageName } from '../image-name.ts';
 import type { VisualTestMeta } from '../protocol.ts';
 import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
+import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
-import { OUT_DIR, shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
-import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, removeReference, toFileKey } from './references.ts';
+import { CHECK_CACHE_FILE, shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
+import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, LFS_PROBLEM, removeReference, toFileKey } from './references.ts';
 import { describeProblems, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
@@ -115,6 +117,7 @@ const OUTCOMES: Readonly<Record<string, { readonly word: string; readonly isPass
     'differs': { word: 'differ', isPass: false },
     'size': { word: 'changed size', isPass: false },
     'new': { word: 'new', isPass: false },
+    'case': { word: 'named in another case', isPass: false },
 };
 
 /** One actual image of the run, for the summary. */
@@ -154,11 +157,12 @@ function describeRun(options: {
     const notes = outcome?.notes ?? ['The reference images were not checked, and no unused ones were looked for, because the run was interrupted.'];
     const deleted = outcome?.deleted ?? [];
     const images = listImages(options.layout, options.testModules);
-    if (images.length === 0 && notes.length === 0 && deleted.length === 0) return [];
+    const unjudged = countUnjudged(options.testModules);
+    if (images.length === 0 && unjudged === 0 && notes.length === 0 && deleted.length === 0) return [];
     const lines = [` ${paint.badge(' v-snap ')} ${paint.dim(options.projectNames.join(', '))}`];
     const rows: (readonly [string, string])[] = [];
+    if (images.length > 0 || unjudged > 0) rows.push(['Images', describeOutcomes(images, unjudged, paint)]);
     if (images.length > 0) {
-        rows.push(['Images', describeOutcomes(images, paint)]);
         const times: string[][] = [];
         for (const pageKind of ['canvas', 'html'] as const) {
             const sorted = images.filter((p) => p.meta.pageKind === pageKind).map((p) => p.total).sort((a, b) => a - b);
@@ -174,7 +178,7 @@ function describeRun(options: {
         const bytes = outcome.references.reduce((sum, r) => sum + r.bytes, 0);
         rows.push(['References', `${count(outcome.references.length, 'file')}, ${formatKilobytes(bytes)}`]);
     }
-    if (images.length > 0) rows.push(['Duration', `${options.seconds.toFixed(1)} s`]);
+    if (images.length > 0) rows.push(['Duration', options.seconds < 1 ? `${Math.round(options.seconds * 1000)} ms` : `${options.seconds.toFixed(1)} s`]);
     const width = Math.max(...rows.map(([label]) => label.length));
     lines.push('', ...rows.map(([label, value]) => ` ${paint.dim(label.padStart(width))}  ${value}`));
     if (notes.length > 0) lines.push('', ...notes.map((note) => ` ${paint.dim(note)}`));
@@ -190,7 +194,10 @@ function describeRun(options: {
         lines.push(...describeSection(paint, { title: 'Deleted references', rows: deleted.map((file) => fitRow({ paint, columns, path: toRootPath(root, file) })) }));
     }
     if (images.some((p) => p.meta.outcome === 'within-tolerance')) {
-        lines.push('', ` ${paint.dim('Images within tolerance matched their references closely, but not exactly. That is expected only on arm64 processors.')}`);
+        const why = DRAWS_EXACTLY
+            ? "This processor draws exactly, so each is a small change, or a reference written on arm64, and Vitest's -u rewrites it."
+            : 'arm64 processors round some drawing so, and Vitest\'s -u leaves those references as they are.';
+        lines.push('', ` ${paint.dim(`Images within tolerance matched their references closely, but not exactly. ${why}`)}`);
     }
     // The downsampled references come last, after the slowest tests and the
     // largest references of a complete run.
@@ -239,8 +246,27 @@ function listImages(layout: VisualLayout, testModules: readonly TestModule[]): R
     return images;
 }
 
-/** Returns how the images compared, such as `33 identical, 2 differ (35)`, each outcome coloured by whether it passed. */
-function describeOutcomes(images: readonly RunImage[], paint: Paint): string {
+/**
+ * Returns the number of visual tests that failed before their image was
+ * judged, such as one whose pose threw, or whose view drew nothing.
+ */
+function countUnjudged(testModules: readonly TestModule[]): number {
+    let n = 0;
+    for (const module of testModules) {
+        for (const test of module.children.allTests()) {
+            const record = test.meta().vsnap;
+            if (record !== undefined && record.result === undefined && test.result().state === 'failed') n++;
+        }
+    }
+    return n;
+}
+
+/**
+ * Returns how the images compared, such as `33 identical | 2 differ (35)`,
+ * each outcome coloured by whether it passed, and the tests that failed
+ * before their image was judged.
+ */
+function describeOutcomes(images: readonly RunImage[], unjudged: number, paint: Paint): string {
     const counts = new Map<string, number>();
     for (const p of images) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
     const parts = [...counts].map(([name, n]) => {
@@ -248,7 +274,8 @@ function describeOutcomes(images: readonly RunImage[], paint: Paint): string {
         const text = `${n} ${outcome?.word ?? name}`;
         return outcome?.isPass === false ? paint.bold(paint.red(text)) : paint.bold(paint.green(text));
     });
-    return `${parts.join(paint.dim(' | '))} ${paint.dim(`(${images.length})`)}`;
+    if (unjudged > 0) parts.push(paint.bold(paint.red(`${unjudged} failed before comparing`)));
+    return `${parts.join(paint.dim(' | '))} ${paint.dim(`(${images.length + unjudged})`)}`;
 }
 
 /** The indent of a section's rows. */
@@ -419,7 +446,7 @@ function runChecks(options: {
     for (const module of options.testModules) {
         if (!loadedKeys.has(toFileKey(module.moduleId))) notes.push(`${toDisplayPath(module.moduleId)} failed to load, so its references were not checked.`);
     }
-    if (!isComplete) {
+    if (!isComplete && loaded.length > 0) {
         const files = loaded.length === 1 ? 'the visual test file' : `the ${loaded.length} visual test files`;
         notes.push(`Only the references of ${files} that ran were checked. A run of every visual test file checks them all, and also finds the references of deleted test files.`);
     }
@@ -611,12 +638,17 @@ function checkEveryReference(files: readonly string[]): CheckResult {
     // A reference that the run deleted, as unused, is gone.
     for (const file of files) if (existsSync(file)) unique.set(toFileKey(file), file);
     const problems: string[] = [];
-    for (const [file, problem] of checkReferences([...unique.values()], join(OUT_DIR, 'reference-checks.json'))) {
+    for (const [file, problem] of checkReferences([...unique.values()], CHECK_CACHE_FILE)) {
         if (problem !== undefined) problems.push(`  ${toDisplayPath(file)}: ${problem}`);
     }
     if (problems.length === 0) return {};
-    const heading = `${problems.length} of ${unique.size} references do not match their hashes. Delete them, then rewrite them from their tests with Vitest's -u:`;
-    return { failure: [heading, ...problems].join('\n') };
+    const heading = `${problems.length} of ${unique.size} references do not match their hashes, so they weren't written by v-snap, or were changed since:`;
+    const lfs = problems.filter((problem) => problem.endsWith(LFS_PROBLEM)).length;
+    const advice = [
+        ...lfs < problems.length ? ["A run with Vitest's -u rewrites each from its test. Look at each before committing it."] : [],
+        ...lfs > 0 ? ['Git LFS pointers stand for images that this checkout lacks. Run git lfs pull, or check out with Git LFS, such as with lfs: true in actions/checkout.'] : [],
+    ];
+    return { failure: [heading, ...problems, '', ...advice].join('\n') };
 }
 
 /**
