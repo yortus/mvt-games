@@ -1,6 +1,6 @@
 {
     "name": "v-snap",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "description": "Fast, consistent visual snapshot tests for views drawn on a canvas or in HTML, with support for Pixi and three.js: the same images on Windows, Linux and macOS, with no Docker",
     "license": "MIT",
     "keywords": ["visual testing", "visual regression", "snapshot", "screenshot", "vitest", "playwright", "pixi", "pixi.js", "three", "canvas"],

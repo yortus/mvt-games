@@ -1,5 +1,22 @@
 # @mvtjs/html
 
+## 0.3.0
+
+### Minor Changes
+
+- d991d62: There is a new `advanceTime(ms, ...items)`, beside the tick API, and the renderer packages re-export it. It advances models and views by `ms` milliseconds, as a game loop does, in steps of 16 ms, for a test or any other run without a loop. An item is a view of an installed renderer, or anything with an `update` method, such as a model. Each step updates every model, then every view, each in the order given, then awaits a microtask, so that a model with an internal `await` moves on. A view is told apart by its renderer, so a view with an `update` method of its own is still updated as a view. It does not refresh, so refresh the views once afterwards. A test can use it to show a view with presentation state, such as a banner counting up, at a known moment: `await advanceTime(300, banner)`.
+
+### Patch Changes
+
+- 9d87b9d: `value` and `valueAsNumber` are now skipped while focused only for text-like fields (text, number, date, `<textarea>`), so a refresh never overwrites what the user is typing. Sliders, colour pickers and `<select>` are now written even while focused, so a change the model makes elsewhere (such as a mute button setting a volume slider to 0) shows at once, not when the field loses focus.
+  
+  Such fields should report the user's changes through `onInput`. `onChange` fires only when a slider is let go or a colour picker closes, and until then each refresh puts the model's value back.
+- Updated dependencies [d991d62]
+- Updated dependencies [4023035]
+- Updated dependencies [12cd9ed]
+- Updated dependencies [4023035]
+  - @mvtjs/utils@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
