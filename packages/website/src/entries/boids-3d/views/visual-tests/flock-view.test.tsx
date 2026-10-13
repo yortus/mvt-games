@@ -1,24 +1,21 @@
 import { PerspectiveCamera } from 'three';
-import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/three';
 import { type CanvasTestOptions, canvasTest } from 'vsnap';
-import { createFlockModel, type FlockModel } from '../../boids';
-import { FlockView } from './flock-view';
+import { createFlockModel, type FlockModel } from '../../../boids';
+import { FlockView } from '../flock-view';
 
 // The camera looks from above and to one side, where the page's orbiting
 // camera starts. The view brings its own lights.
 const IMAGE = { kind: 'three', width: 480, height: 300, camera: createOrbitStartCamera, background: 0x0d1117 } satisfies CanvasTestOptions<'three'>;
 
-describe('FlockView', () => {
-    canvasTest('as the flock starts', IMAGE, () => FlockView({ model: createFlock() }));
+canvasTest('as the flock starts', IMAGE, () => FlockView({ model: createFlock() }));
 
-    // By now the boids have formed groups that head the same way.
-    canvasTest('two seconds in', IMAGE, async () => {
-        const model = createFlock();
-        const view = FlockView({ model });
-        await advanceTime(2000, model, view);
-        return view;
-    });
+// By now the boids have formed groups that head the same way.
+canvasTest('two seconds in', IMAGE, async () => {
+    const model = createFlock();
+    const view = FlockView({ model });
+    await advanceTime(2000, model, view);
+    return view;
 });
 
 function createFlock(): FlockModel {

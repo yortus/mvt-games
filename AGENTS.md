@@ -51,12 +51,15 @@ packages/website/src/
 └── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
 ```
 
-Visual tests (`*.visual.test.tsx`) sit beside the views they test, and declare
-`canvasTest` or `htmlTest`, from `vsnap` (`packages/vsnap/`).
+Visual tests are in a `visual-tests/` folder beside the views they test, one
+`<view file's name>.test.tsx` for each view, and declare `canvasTest` or
+`htmlTest`, from `vsnap` (`packages/vsnap/`).
 A pose returns the view arranged into one state: fixed bindings for a leaf
 view, a model brought into a state through its actions for a top-level view,
-and `advanceTime` (tick API) for presentation state. Reference images are in
-`__references__/`, beside the tests. See
+and `advanceTime` (tick API) for presentation state. Reference images are
+beside the tests, named for the test file's stem and the image, such as
+`hud-view.at-the-start.png`, so a test needs no `describe` block that only
+names its view. See
 [Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`

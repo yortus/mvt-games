@@ -7,7 +7,7 @@ const OWN = 'http://localhost:63315/node_modules/vsnap/lib/';
 const DECLARATION = [
     'Error',
     `    at create (${OWN}browser/visual-test.js:150:29)`,
-    '    at http://localhost:63315/src/hud.visual.test.ts?v=1:12:9',
+    '    at http://localhost:63315/src/visual-tests/hud.test.ts?v=1:12:9',
     '    at collect (http://localhost:63315/node_modules/.vite/vitest/abc/deps/plugins.js?v=2:5191:52)',
 ].join('\n');
 
@@ -22,11 +22,11 @@ describe('pointAtDeclaration', () => {
         const error = createError("Image 'Hud' differs", [`    at finishTest (${OWN}browser/visual-test.js:346:11)`]);
         const pointed = pointAtDeclaration(error, { declaration: DECLARATION, ownBase: OWN });
         expect(pointed).toBe(error);
-        expect(error.stack).toBe("Error: Image 'Hud' differs\n    at http://localhost:63315/src/hud.visual.test.ts?v=1:12:9");
+        expect(error.stack).toBe("Error: Image 'Hud' differs\n    at http://localhost:63315/src/visual-tests/hud.test.ts?v=1:12:9");
     });
 
     it('leaves an error that the pose threw as it is, since it points at the pose', () => {
-        const frames = ['    at pose (http://localhost:63315/src/hud.visual.test.ts?v=1:14:11)', `    at run (${OWN}browser/visual-test.js:260:5)`];
+        const frames = ['    at pose (http://localhost:63315/src/visual-tests/hud.test.ts?v=1:14:11)', `    at run (${OWN}browser/visual-test.js:260:5)`];
         const error = createError('The score is wrong', frames);
         const stack = error.stack;
         pointAtDeclaration(error, { declaration: DECLARATION, ownBase: OWN });

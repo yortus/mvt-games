@@ -64,14 +64,12 @@ bindings can show.
 ```tsx
 const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
 
-describe('SpinButtonView', () => {
-    for (const mode of MODES) {
-        canvasTest(mode, () => SpinButtonView({
-            mode: () => mode,
-            radius: BUTTON_RADIUS,
-        }));
-    }
-});
+for (const mode of MODES) {
+    canvasTest(mode, () => SpinButtonView({
+        mode: () => mode,
+        radius: BUTTON_RADIUS,
+    }));
+}
 ```
 
 Choose the states that a player could tell apart. Each distinct mode of
@@ -205,8 +203,14 @@ found a bug. Accepting new images without looking defeats the purpose.
 
 ## In This Project: vsnap
 
-vsnap is a package in this repo. A test file sits beside the view it
-tests, and is named `*.visual.test.tsx`. `canvasTest` and `htmlTest` come
+vsnap is a package in this repo. A test file is in a `visual-tests` folder
+beside the view it tests, and is named for the view, such as
+`visual-tests/hud-view.test.tsx` for `hud-view.tsx`. Its reference images
+are beside it, named for its stem and the image, such as
+`hud-view.at-the-start.png`. The file and the images already name the
+view, so the tests need no `describe` block that names it. Use a
+`describe` block only to group tests by something more specific, such as
+a state that they share, or leave the tests at the top of the file. `canvasTest` and `htmlTest` come
 from vsnap. `advanceTime` comes from the renderer package that the view
 uses, with the rest of the tick API.
 

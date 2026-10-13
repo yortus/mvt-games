@@ -438,13 +438,13 @@ It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 `start/thumbnail.webp`. Run it again whenever the entry's look changes.
 
 The entry also gets a visual test of its whole screen, at the same moment,
-without any new code. `pixi-entries.visual.test.tsx` makes one for every
-Pixi entry in the catalogue, and `element-entries.visual.test.tsx` makes one
+without any new code. `visual-tests/pixi-entries.test.tsx` makes one for every
+Pixi entry in the catalogue, and `visual-tests/element-entries.test.tsx` makes one
 for every element entry. Record the test's reference image, look at it, and
 commit it:
 
 ```bash
-npx vitest run packages/website/src/entries/pixi-entries.visual.test.tsx -u
+npx vitest run packages/website/src/entries/visual-tests/pixi-entries.test.tsx -u
 ```
 
 Give the views their own visual tests too, with one test for each

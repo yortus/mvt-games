@@ -98,5 +98,12 @@ Each review finding says how it was checked:
 ## Miscellaneous
 - [ ] Thoroughly review the docs pages that mention visual testing
 - [ ] Thoroughly review the vsnap README and docs in the vsnap package
-- [ ] finalise standard paths for reference images
+- [x] finalise standard paths for reference images
+  Done: tests are in `visual-tests/` folders beside the views
+  (`visual-tests/hud-view.test.tsx`), and each image is beside its test,
+  named for the file's stem (`hud-view.HudView-at-the-start.png`). The new
+  `{testFileStem}` variable keeps ownership exact from the path, and two
+  files with one stem are refused. Helpers in the folder aren't test files,
+  since they don't end in `.test.ts(x)`. The calibration sets moved to
+  `src/browser/calibration-images/`.
 

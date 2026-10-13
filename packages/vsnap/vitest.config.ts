@@ -3,13 +3,13 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import { vsnap } from 'vsnap/vitest';
 
 // vsnap's own tests: its unit tests in Node, its visual tests and calibration
-// set, and the fixture project, which keeps its tests in visual-tests
-// folders with their reference images beside them. `npm test` runs them all.
-const visual = vsnap({ root: import.meta.dirname });
+// set, and the fixture project. The fixture's reference images are named
+// without their test file's stem, so each one belongs to its folder, not to
+// one file. `npm test` runs them all.
+const visual = vsnap({ root: import.meta.dirname, exclude: ['fixtures/**'] });
 const fixture = vsnap({
     name: 'visual-fixture',
     root: resolve(import.meta.dirname, 'fixtures/visual-tests-folders'),
-    include: ['src/**/visual-tests/*.test.ts'],
     referencePath: '{testFileDir}/{imageName}.png',
 });
 
@@ -20,7 +20,7 @@ export default defineConfig({
                 test: {
                     name: 'unit',
                     include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
-                    exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
+                    exclude: [...configDefaults.exclude, '**/visual-tests/**'],
                 },
             },
             ...visual,

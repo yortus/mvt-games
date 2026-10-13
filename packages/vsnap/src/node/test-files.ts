@@ -2,7 +2,7 @@ import { type Dirent, globSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import picomatch from 'picomatch';
 import type { PageKind } from '../protocol.ts';
-import type { VisualLayout } from './layout.ts';
+import { toFileStem, type VisualLayout } from './layout.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -61,7 +61,9 @@ export function findVisualTestFiles(layout: VisualLayout): VisualTestFiles {
             problems.push({ file, problem: "matches the visual test files' globs (include), but it declares no canvasTest or htmlTest yet" });
         }
         else {
-            files[isHtml ? 'html' : 'canvas'].push(file);
+            const twin = findStemTwin(layout, file, [...files.canvas, ...files.html]);
+            if (twin === undefined) files[isHtml ? 'html' : 'canvas'].push(file);
+            else problems.push({ file, problem: `has the same stem as ${twin}, so the two would share their reference images. Rename one` });
         }
     }
     return { ...files, problems };
@@ -110,6 +112,23 @@ export function isSkippedFolder(name: string): boolean {
 // condition comes first.
 const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo|each|for))?\s*\(|\bcanvasTest\.(skipIf|runIf)\s*\(/;
 const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo|each|for))?\s*\(|\bhtmlTest\.(skipIf|runIf)\s*\(/;
+
+/**
+ * Returns a test file that has the same folder and stem as a file, such as
+ * `hud-view.test.ts` for `hud-view.test.tsx`, if the reference path names
+ * images by the stem. Otherwise, or if there is none, it returns undefined.
+ */
+function findStemTwin(layout: VisualLayout, file: string, others: readonly string[]): string | undefined {
+    if (!layout.referencePath.includes('{testFileStem}')) return undefined;
+    const key = toStemKey(file);
+    return others.find((other) => toStemKey(other) === key);
+}
+
+/** Returns a file's folder and stem, for comparing two files. */
+function toStemKey(file: string): string {
+    const slash = file.lastIndexOf('/');
+    return `${file.slice(0, slash + 1)}${toFileStem(file.slice(slash + 1))}`.toLowerCase();
+}
 
 /** Returns the files that match the layout's globs, sorted, relative to the root, with forward slashes. */
 function listTestFiles(layout: VisualLayout): string[] {

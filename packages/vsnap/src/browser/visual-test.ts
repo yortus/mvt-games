@@ -93,8 +93,8 @@ export type CaseArgs<T> = T extends readonly unknown[] ? [...T] : [T];
  * view of the kind that the options name, or of the project's default kind:
  * a view of a kind that the project registered, such as a Pixi container,
  * or a canvas that the pose drew. The test checks the view's kind, draws
- * it, and compares the actual image with its reference image,
- * `__references__/<this file>/<describe blocks>-<name>.png`. Canvas tests
+ * it, and compares the actual image with its reference image, by default
+ * `<this file's stem>.<describe blocks>-<name>.png` beside it. Canvas tests
  * run in one page that every such file shares, one at a time.
  *
  * A file declares one kind of visual test only, because each kind runs in
@@ -119,8 +119,8 @@ export function bindCanvasTest<const C extends VsnapConfig>(config: C): CanvasTe
 /**
  * Declares a visual test of an HTML view. The test prepares the element
  * that the pose returns, as the project's `vsnap.config.ts` says, captures
- * it, and compares the actual image with its reference image,
- * `__references__/<this file>/<describe blocks>-<name>.png`. Each file of
+ * it, and compares the actual image with its reference image, by default
+ * `<this file's stem>.<describe blocks>-<name>.png` beside it. Each file of
  * HTML tests runs in a page of its own, because a stylesheet stays in a
  * page once it is imported. The view's text is drawn blank, so its layout
  * and styling show.

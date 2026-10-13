@@ -14,7 +14,7 @@
 import { type Dirent, existsSync, globSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, relative, resolve } from 'node:path';
 import picomatch from 'picomatch';
-import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout.ts';
+import { matchReferenceName, resolveReferencePattern, STEM_SUFFIXES, toFileStem, type VisualLayout } from './layout.ts';
 import { decodePng, hashImage, readPngHash } from './png.ts';
 import { isSkippedFolder } from './test-files.ts';
 
@@ -71,6 +71,7 @@ export function toReferenceGlob(template: string): string {
         .replaceAll('{testFileDir}', '**')
         .replaceAll('{testFilePath}', '**')
         .replaceAll('{testFileName}', '*')
+        .replaceAll('{testFileStem}', '*')
         .replaceAll('{imageName}', '*');
 }
 
@@ -243,12 +244,24 @@ function createOwnership(layout: VisualLayout, testFiles: readonly string[]): (p
     const files = testFiles.map((file) => relative(layout.root, resolve(layout.root, file)).replaceAll('\\', '/'));
     const folders = new Set(files.map((file) => posix.dirname(file)));
     const names = new Set(files.map((file) => posix.basename(file)));
+    const stems = new Set(files.map((file) => `${posix.dirname(file)}/${toFileStem(posix.basename(file))}`));
     const parse = toTemplateRegExp(template);
+    // A stem and an image name can both hold dots, so where one ends can't
+    // be told from the path alone. Each test file's own pattern settles it.
+    const patterns = template.includes('{testFileStem}') ? testFiles.map((file) => resolveReferencePattern(layout, resolve(layout.root, file))) : [];
     return (path) => {
+        const absolute = resolve(layout.root, path);
+        if (patterns.some((p) => toFileKey(p.dir) === toFileKey(dirname(absolute)) && matchReferenceName(p, basename(absolute)) !== undefined)) return true;
         const match = parse.exec(path);
         if (match === null) return false;
-        const { dir = '.', name, file } = match.groups ?? {};
+        const { dir = '.', name, stem, file } = match.groups ?? {};
         if (file !== undefined) return isIncluded(file);
+        if (stem !== undefined) {
+            // A test file that was deleted still owns its images, if a name
+            // that the stem could have had matches the globs.
+            const prefix = template.includes('{testFileDir}') && dir !== '.' ? `${dir}/` : '';
+            return stems.has(`${dir}/${stem}`) || STEM_SUFFIXES.some((suffix) => isIncluded(`${prefix}${stem}${suffix}`));
+        }
         if (name !== undefined && template.includes('{testFileDir}')) return isIncluded(dir === '.' ? name : `${dir}/${name}`);
         if (name !== undefined) return names.has(name);
         if (template.includes('{testFileDir}')) return folders.has(dir);
@@ -291,5 +304,6 @@ function toTemplateRegExp(template: string): RegExp {
 const GROUPS: Readonly<Record<string, { readonly name: string; readonly pattern: string }>> = {
     testFileDir: { name: 'dir', pattern: '.+?' },
     testFileName: { name: 'name', pattern: '[^/]+' },
+    testFileStem: { name: 'stem', pattern: '[^/]+?' },
     testFilePath: { name: 'file', pattern: '.+' },
 };

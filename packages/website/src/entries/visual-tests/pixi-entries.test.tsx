@@ -15,9 +15,9 @@ import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { canvasTest } from 'vsnap';
 import type { PixiImageOptions } from 'vsnap/pixi';
-import type { ArcadeEntry, PixiEntryStarter } from '../entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../runner';
-import { CATALOGUE } from './catalogue';
+import type { ArcadeEntry, PixiEntryStarter } from '../../entry-types';
+import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../../runner';
+import { CATALOGUE } from '../catalogue';
 
 /**
  * Crops for pixel-art entries whose screens are over the size budget. Pixel

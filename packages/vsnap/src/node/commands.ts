@@ -8,10 +8,10 @@
  *
  * Where a test file's references live is set by the project's layout
  * (`src/node/layout.ts`). By default, they are beside it, in
- * `__references__/<test file>/<image name>.png`. The calibration set is
- * a set of small images that checks this machine draws like the reference
+ * `<test file's stem>.<image name>.png`. The calibration set is a set of
+ * small images that checks this machine draws like the reference
  * environment. Its references live in this package, in
- * `src/browser/__references__/calibration-<kind>/`. When an actual image
+ * `src/browser/calibration-images/<kind of page>/`. When an actual image
  * fails, its pixels and its diff are written to `.vitest/vsnap/` at the
  * repository's root, in the same directory layout as the repository.
  *

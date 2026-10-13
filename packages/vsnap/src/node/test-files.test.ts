@@ -49,6 +49,25 @@ describe('findVisualTestFiles', () => {
         expect(files).toEqual({ canvas: ['src/hud/visual-tests/hud.test.ts'], html: [], problems: [] });
     });
 
+    it('by default, finds the test files in visual-tests folders, but not their helpers, nor tests elsewhere', () => {
+        const root = createProject('defaults', {
+            'src/hud/visual-tests/hud-view.test.tsx': CANVAS,
+            'src/hud/visual-tests/poses.ts': CANVAS,
+            'src/hud/hud-view.test.ts': CANVAS,
+        });
+        expect(findVisualTestFiles(createLayout({ root }))).toEqual({ canvas: ['src/hud/visual-tests/hud-view.test.tsx'], html: [], problems: [] });
+    });
+
+    it('leaves out a test file with the same stem as another in its folder, whose images would mix with its own', () => {
+        const root = createProject('stems', {
+            'src/visual-tests/hud.test.ts': CANVAS,
+            'src/visual-tests/hud.test.tsx': CANVAS,
+        });
+        const files = findVisualTestFiles(createLayout({ root }));
+        expect(files.canvas).toEqual(['src/visual-tests/hud.test.ts']);
+        expect(files.problems).toEqual([{ file: 'src/visual-tests/hud.test.tsx', problem: expect.stringMatching(/same stem as src\/visual-tests\/hud\.test\.ts/) }]);
+    });
+
     it('ignores a folder that matches the globs, and installed packages', () => {
         const root = createProject('folders-matched', {
             'src/a.visual.tsx': CANVAS,

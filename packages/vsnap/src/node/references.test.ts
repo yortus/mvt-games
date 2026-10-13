@@ -39,12 +39,26 @@ describe('findReferences', () => {
 
     it('leaves out a PNG with a hash that the reference path could not produce, such as a copy in a docs folder, and keeps those of a deleted test file', () => {
         const root = join(dir, 'outside');
-        mkdirSync(join(root, 'views', '__references__', 'hud.visual.test.tsx'), { recursive: true });
+        mkdirSync(join(root, 'views', 'visual-tests'), { recursive: true });
         mkdirSync(join(root, 'docs'), { recursive: true });
-        writeFileSync(join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png'), encodePng(createImage(1)));
-        writeFileSync(join(root, 'docs', 'Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'views', 'visual-tests', 'hud.Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'docs', 'hud.Hud.png'), encodePng(createImage(1)));
         // No test file is left, but the image is still the reference of one, unused.
-        expect(findReferences(createLayout({ root }), []).map((r) => r.file)).toEqual([join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png')]);
+        expect(findReferences(createLayout({ root }), []).map((r) => r.file)).toEqual([join(root, 'views', 'visual-tests', 'hud.Hud.png')]);
+    });
+
+    it('tells which test file an image is of by its stem, when stems and image names hold dots', () => {
+        const root = join(dir, 'stems');
+        const tests = join(root, 'views', 'visual-tests');
+        mkdirSync(tests, { recursive: true });
+        writeFileSync(join(tests, 'hud.view.Hud-three.js-lit.png'), encodePng(createImage(1)));
+        writeFileSync(join(tests, 'menu.Menu-open.png'), encodePng(createImage(2)));
+        writeFileSync(join(tests, 'no-stem.png'), encodePng(createImage(3)));
+        writePlainPng(join(tests, 'hud.view.texture.png'));
+        const files = findReferences(createLayout({ root }), ['views/visual-tests/hud.view.test.ts']).map((r) => r.file);
+        // menu.test.ts was deleted, and its image is unused. A PNG without a
+        // stem is not a reference, nor is one without a hash.
+        expect(files).toEqual([join(tests, 'hud.view.Hud-three.js-lit.png'), join(tests, 'menu.Menu-open.png')]);
     });
 
     it('skips a folder below the root that is a root of visual tests of its own', () => {
@@ -64,8 +78,9 @@ describe('findReferences', () => {
         mkdirSync(join(root, 'b', '__references__', 'y.visual.test.ts'), { recursive: true });
         writeFileSync(join(root, 'a', '__references__', 'x.visual.test.ts', 'A.png'), encodePng(createImage(1)));
         writeFileSync(join(root, 'b', '__references__', 'y.visual.test.ts', 'B.png'), encodePng(createImage(2)));
-        const a = createLayout({ root, include: ['a/**/*.visual.test.ts'] });
-        const b = createLayout({ root, include: ['b/**/*.visual.test.ts'] });
+        const referencePath = '{testFileDir}/__references__/{testFileName}/{imageName}.png';
+        const a = createLayout({ root, include: ['a/**/*.visual.test.ts'], referencePath });
+        const b = createLayout({ root, include: ['b/**/*.visual.test.ts'], referencePath });
         expect(findReferences(a, ['a/x.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'a', '__references__', 'x.visual.test.ts', 'A.png')]);
         expect(findReferences(b, ['b/y.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'b', '__references__', 'y.visual.test.ts', 'B.png')]);
     });
@@ -86,7 +101,7 @@ describe('findReferences', () => {
         mkdirSync(join(root, 'refs', 'other', 'menu.spec.ts'), { recursive: true });
         writeFileSync(join(root, 'refs', 'src', 'hud.visual.test.ts', 'Hud.png'), encodePng(createImage(1)));
         writeFileSync(join(root, 'refs', 'other', 'menu.spec.ts', 'Menu.png'), encodePng(createImage(2)));
-        const byPath = createLayout({ root, referencePath: 'refs/{testFilePath}/{imageName}.png' });
+        const byPath = createLayout({ root, include: ['src/**/*.visual.test.ts'], referencePath: 'refs/{testFilePath}/{imageName}.png' });
         expect(findReferences(byPath, []).map((r) => r.file)).toEqual([join(root, 'refs', 'src', 'hud.visual.test.ts', 'Hud.png')]);
         const byName = createLayout({ root, include: ['src/*.visual.test.ts'], referencePath: 'shots/{testFileName}-{imageName}.png' });
         mkdirSync(join(root, 'shots'), { recursive: true });

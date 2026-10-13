@@ -1,6 +1,6 @@
 /**
  * These tests draw every element entry's whole screen at its thumbnail
- * moment, as `pixi-entries.visual.test.tsx` does for Pixi entries. Each entry is
+ * moment, as `pixi-entries.test.tsx` does for Pixi entries. Each entry is
  * started in an element of its play size. Once its renderers are ready, it
  * is advanced as its thumbnail is, and then captured. Each test is an
  * `htmlTest`, since these entries are partly DOM. Their text is blank, and
@@ -10,9 +10,9 @@
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { htmlTest } from 'vsnap';
-import type { ElementEntryStarter } from '../entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs } from '../runner';
-import { CATALOGUE } from './catalogue';
+import type { ElementEntryStarter } from '../../entry-types';
+import { advanceHeadless, findThumbnailAdvanceMs } from '../../runner';
+import { CATALOGUE } from '../catalogue';
 
 /**
  * Smaller play areas for entries whose play area is over the size budget.

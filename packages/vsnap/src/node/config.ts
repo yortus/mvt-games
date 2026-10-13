@@ -51,8 +51,8 @@ export interface VsnapOptions {
     readonly root?: string;
     /**
      * Globs for the visual test files, relative to the root. The default is
-     * `DEFAULT_INCLUDE`, the `*.visual.test.ts` and `*.visual.test.tsx`
-     * files.
+     * `DEFAULT_INCLUDE`, the `*.test.ts` and `*.test.tsx` files in
+     * `visual-tests` folders.
      */
     readonly include?: readonly string[];
     /**
@@ -64,10 +64,10 @@ export interface VsnapOptions {
     /**
      * Where each reference image is kept, as a path template relative to the
      * root. The variables are `{testFileDir}`, `{testFileName}`,
-     * `{testFilePath}` and `{imageName}`. `{imageName}` must appear once, in
-     * the file name, which ends in `.png`. The default is
-     * `DEFAULT_REFERENCE_PATH`, a `__references__` folder beside each test
-     * file.
+     * `{testFileStem}`, `{testFilePath}` and `{imageName}`. `{imageName}`
+     * must appear once, in the file name, which ends in `.png`. The default
+     * is `DEFAULT_REFERENCE_PATH`: beside each test file, named for the
+     * file's stem and the image.
      */
     readonly referencePath?: string;
     /**

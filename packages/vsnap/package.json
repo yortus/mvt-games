@@ -22,7 +22,7 @@
     },
     "files": [
         "lib",
-        "src/browser/__references__/calibration-*/**",
+        "src/browser/calibration-images/**",
         "src/browser/fonts/LICENSE-*",
         "visual-environment.json"
     ],

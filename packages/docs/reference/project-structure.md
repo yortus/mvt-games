@@ -50,9 +50,10 @@ packages/website/src/
 ```
 
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
-sit beside the views they test, in `*.visual.test.tsx` files. Each test
-file's reference images are in a `__references__/<test file>/` directory
-beside it. The tests come from vsnap, the package in `packages/vsnap/`. The
+are in a `visual-tests/` directory beside the views they test, one
+`<view>.test.tsx` file for each view. Each test file's reference images
+are beside it, named for the file's stem and the image, such as
+`hud-view.at-the-start.png`. The tests come from vsnap, the package in `packages/vsnap/`. The
 root `vitest.config.ts` lists vsnap's projects beside the unit tests, and
 the website's `vsnap.config.ts` registers the kinds of view that the tests
 pose, which it refreshes and destroys the MVT way. vsnap's

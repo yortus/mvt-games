@@ -41,7 +41,7 @@ export default defineConfig({
                     // .claude/ holds agent worktrees: separate checkouts, tested on
                     // their own. Visual tests run in vsnap's projects, and vsnap's
                     // own tests in its own config.
-                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/vsnap/**', '**/*.visual.test.{ts,tsx}'],
+                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/vsnap/**', '**/visual-tests/**'],
                     // Node resolves solid-js to its server build, where effects never
                     // run. Tests get the browser build, as a page does, and Vite loads
                     // solid-js and pixi-solid itself so that they share that one copy.

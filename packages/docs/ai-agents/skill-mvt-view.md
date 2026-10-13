@@ -578,7 +578,8 @@ once, when the element is built, not per frame.
 ## Visual Tests
 
 **[project convention]** A new or changed view gets a visual test. The
-test goes in a `*.visual.test.tsx` file beside the view. Write
+test goes in a `visual-tests` folder beside the view, in a file named for
+the view, such as `visual-tests/hud-view.test.tsx` for `hud-view.tsx`. Write
 one declaration for each state the view's bindings can show:
 `canvasTest(name, options?, pose)` for a view drawn on a canvas, such as a
 Pixi or three.js view, or
@@ -593,15 +594,17 @@ in each step. `canvasTest` and
 package, with the rest of the tick API.
 
 ```tsx
-describe('WinBannerView', () => {
-    canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({
-        isShown: () => true,
-        amount: () => WIN,
-        caption: () => CAPTION,
-    }));
-});
+canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({
+    isShown: () => true,
+    amount: () => WIN,
+    caption: () => CAPTION,
+}));
 ```
 
+- The test file and its reference images are named for the view, so don't
+  wrap the tests in a `describe` block that only names the view, which
+  would repeat it in every image's name. Use a `describe` block only for
+  something more specific, such as a state that several tests share.
 - The website's `vsnap.config.ts` registers Pixi, three.js and HTML views.
   vsnap refreshes each view before its image is taken, and destroys it the
   MVT way after, so the pose doesn't. Pixi is the default kind, so a Pixi

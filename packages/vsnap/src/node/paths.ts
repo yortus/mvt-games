@@ -31,7 +31,7 @@ export const OUT_DIR = join(REPO_ROOT, '.vitest', 'vsnap');
 
 /** Returns the folder that holds the reference images of one kind of page's calibration set. */
 export function findCalibrationDir(pageKind: PageKind): string {
-    return join(PACKAGE_DIR, 'src', 'browser', '__references__', `calibration-${pageKind}`);
+    return join(PACKAGE_DIR, 'src', 'browser', 'calibration-images', pageKind);
 }
 
 /**

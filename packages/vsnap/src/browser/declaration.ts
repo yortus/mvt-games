@@ -35,7 +35,7 @@ export function pointAtDeclaration(error: unknown, options: { readonly declarati
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Returns the lines of a stack that are frames, such as `    at pose (http://.../hud.visual.test.ts:12:5)`. */
+/** Returns the lines of a stack that are frames, such as `    at pose (http://.../visual-tests/hud.test.ts:12:5)`. */
 function listFrames(stack: string): string[] {
     return stack.split('\n').filter((line) => /^\s+at /.test(line));
 }

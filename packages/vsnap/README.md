@@ -53,26 +53,29 @@
 
 ## Writing a Test
 
-A test is a declaration in a `*.visual.test.ts` or `*.visual.test.tsx`
-file beside the view. The file is a Vitest test file, which runs in a
-browser, and it can hold ordinary tests too. (A project can keep its tests
-elsewhere, as [Choosing Where Files Go](#choosing-where-files-go)
-describes.) A view drawn on a canvas is declared with
+A test is a declaration in a `*.test.ts` or `*.test.tsx` file in a
+`visual-tests` folder beside the view, such as `visual-tests/hud-view.test.tsx`
+for `hud-view.tsx`. The file is a Vitest test file, which runs in a
+browser, and it can hold ordinary tests too. Other files in the folder,
+such as poses that several tests share, are not test files. (A project can
+keep its tests elsewhere, as
+[Choosing Where Files Go](#choosing-where-files-go) describes.) A view drawn on a canvas is declared with
 `canvasTest(name, options?, pose)`, and an HTML view with
 `htmlTest(name, options?, pose)`. The options (if any) come before the pose,
 as they do in Vitest's `test`. The `pose` function's only job is to return a
 view that has been arranged into the pose that the test describes.
 
 ```tsx
-import { describe } from 'vitest';
 import { canvasTest } from 'vsnap';
-import { HudView } from './hud-view';
+import { HudView } from '../hud-view';
 
-describe('HudView', () => {
-    canvasTest('at the start', () => HudView({ score: () => 0 }));
-    canvasTest('a high score', { width: 320 }, () => HudView({ score: () => 98_765 }));
-});
+canvasTest('at the start', () => HudView({ score: () => 0 }));
+canvasTest('a high score', { width: 320 }, () => HudView({ score: () => 98_765 }));
 ```
+
+The test file is named for its view, and so is each of its images, so the
+tests need no `describe` block that names the view. A `describe` block can
+group tests by something more specific, such as a state that they share.
 
 `HudView` returns a Pixi container here. vsnap knows how to draw it because
 the project registers Pixi views, and makes them its default kind, as
@@ -283,13 +286,13 @@ Each run of characters other than letters, digits and dots becomes one
 hyphen, and hyphens at either end are dropped. Letters and digits of every
 script count, so `日本` stays as it is, and a test whose name has none fails.
 So the first test above,
-whose full name is `HudView > at the start`, has the image name
-`HudView-at-the-start`. By default, its reference image is that name with
-`.png` added, in a folder named after the test file:
-`__references__/hud-view.visual.test.tsx/HudView-at-the-start.png`, beside the
-test file. Vitest's own screenshot features write to `__screenshots__`
-folders, so this package uses a name of its own. That way, a file that
-Vitest writes is never mistaken for a reference image.
+whose full name is `at the start`, has the image name `at-the-start`, and
+a test named `with a new best` in a `describe('after a game over')` block
+has the image name `after-a-game-over-with-a-new-best`. By default, a
+reference image is beside the test file, named for the file's stem and
+the image name: `visual-tests/hud-view.at-the-start.png`. A test file's stem is its
+name without `.test` and its extension. So each test file's images sort
+together, beside it, and the name says which file each image belongs to.
 
 An image name has no spaces, so it can be typed on a command line. A name
 longer than 100 bytes is cut short, and a short hash of the whole name is
@@ -419,7 +422,7 @@ export default defineConfig({
                 extends: true,
                 test: {
                     name: 'unit',
-                    exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
+                    exclude: [...configDefaults.exclude, '**/visual-tests/**'],
                 },
             },
             ...vsnap(),
@@ -492,17 +495,19 @@ turn it into the shape above.
    `test.projects`. That includes `include`, `exclude`, `environment` and
    `setupFiles`. Settings for the whole run, such as `reporters` and
    `coverage`, stay in the `test` block.
-3. Add `'**/*.visual.test.{ts,tsx}'` to the unit project's `exclude`, after
-   `...configDefaults.exclude`.
+3. Add `'**/visual-tests/**'` to the unit project's `exclude`, after
+   `...configDefaults.exclude`. Vitest's own `include` matches the visual
+   test files, which end in `.test.tsx`, and vsnap's projects run them.
 4. List vsnap's projects after the unit project: `...vsnap()`.
 5. Create `vsnap.config.ts` beside `vitest.config.ts`, as
    [Kinds of View](#kinds-of-view) shows, with the kinds of view that the
    tests pose and the `Register` declaration. Add it to `tsconfig.json`'s
    `include`.
 6. Add `.vitest/` to `.gitignore`.
-7. Write a test in a `*.visual.test.tsx` file, and run `vitest`. Its image
-   is new, so it is written as its reference image. Look at it, and commit
-   it with the test.
+7. Write a test in a `visual-tests` folder, such as
+   `src/hud/visual-tests/hud-view.test.tsx`, and run `vitest`. Its image is
+   new, so it is written as its reference image. Look at it, and commit it
+   with the test.
 
 For example, this flat config:
 
@@ -526,7 +531,7 @@ export default defineConfig({
                     name: 'unit',
                     environment: 'jsdom',
                     setupFiles: ['./test-setup.ts'],
-                    exclude: [...configDefaults.exclude, '**/*.visual.test.{ts,tsx}'],
+                    exclude: [...configDefaults.exclude, '**/visual-tests/**'],
                 },
             },
             ...vsnap(),
@@ -544,45 +549,67 @@ Two options say where a project keeps its visual test files and their
 reference images. Both are relative to the root.
 
 - **`include`** is a list of globs for the test files. The default,
-  `DEFAULT_INCLUDE`, is `['**/*.visual.test.{ts,tsx}']`.
+  `DEFAULT_INCLUDE`, is `['**/visual-tests/*.test.{ts,tsx}']`.
 - **`referencePath`** is a template for each reference image's path. Its
-  variables are `{testFileDir}`, `{testFileName}`, `{testFilePath}` and
+  variables are `{testFileDir}`, `{testFileName}`, `{testFileStem}` (the
+  name without `.test` or `.spec` and its extension), `{testFilePath}` and
   `{imageName}`. The default, `DEFAULT_REFERENCE_PATH`, is
-  `'{testFileDir}/__references__/{testFileName}/{imageName}.png'`.
+  `'{testFileDir}/{testFileStem}.{imageName}.png'`.
+
+```
+src/hud/
+  hud-view.tsx
+  visual-tests/
+    hud-view.test.tsx
+    hud-view.at-the-start.png
+    hud-view.a-high-score.png
+    poses.ts
+```
+
+Two test files in one folder with one stem, such as `hud-view.test.ts` and
+`hud-view.test.tsx`, would share their images, so vsnap leaves the second
+out, and says why. In VS Code, the explorer can fold each test file's
+images under it, with these settings:
+
+```json
+"explorer.fileNesting.enabled": true,
+"explorer.fileNesting.patterns": { "*.test.tsx": "${capture}.*.png", "*.test.ts": "${capture}.*.png" }
+```
 
 `{imageName}` must appear once, in the file name, and the file name must
 end in `.png`. A template that breaks these rules stops the run when the
 config loads. Two other layouts are common.
 
 ```ts
-// Tests in a visual-tests folder inside each view folder, with their
-// reference images beside them:
-//   src/hud/visual-tests/hud-view.test.ts
-//   src/hud/visual-tests/HudView-at-the-start.png
+// Tests beside their views, with each test file's reference images in a
+// folder of their own:
+//   src/hud/hud-view.visual.test.tsx
+//   src/hud/__references__/hud-view.visual.test.tsx/at-the-start.png
 vsnap({
-    include: ['src/**/visual-tests/*.test.ts'],
-    referencePath: '{testFileDir}/{imageName}.png',
+    include: ['**/*.visual.test.{ts,tsx}'],
+    referencePath: '{testFileDir}/__references__/{testFileName}/{imageName}.png',
 });
 
 // Every reference image in one folder, which mirrors the source tree:
-//   visual-references/src/hud/hud-view.visual.test.tsx/HudView-at-the-start.png
+//   visual-references/src/hud/visual-tests/hud-view.test.tsx/at-the-start.png
 vsnap({ referencePath: 'visual-references/{testFilePath}/{imageName}.png' });
 ```
 
-The unit project must leave out a layout's test files, as it leaves out
-`*.visual.test.ts` files. For the first layout, that is
-`exclude: [...configDefaults.exclude, '**/visual-tests/**']`. Also, any
-other PNG in a `visual-tests` folder would match the reference path, and
-the check of every reference image would report it. Keep such files
-elsewhere, or give the reference images a pattern of their own, such as
-`'{testFileDir}/{imageName}.ref.png'`.
+The unit project must leave out a layout's test files. For the default
+layout, that is `'**/visual-tests/**'` in its `exclude`, and for the first
+layout above, `'**/*.visual.test.{ts,tsx}'`. Also, any other PNG whose name
+starts with a test file's stem and a dot, beside the test file, would match
+the reference path, and the check of every reference image would report
+it. Keep such files elsewhere, or name them otherwise.
 
 The package tells its reference images from other PNGs by the hash that
 each one carries, and by where its reference path would put an image of
 one of its test files. A file that the `include` globs match owns its
 images even once it is deleted, so they are reported as unused. A template
-without `{testFileName}` or `{testFilePath}` can't say which file an image
-is for, so only the folders that hold a test file have images. So the
+without `{testFileName}`, `{testFileStem}` or `{testFilePath}` can't say
+which file an image is for, so only the folders that hold a test file have
+images, and a run of some test files checks only the images that are
+theirs alone. So the
 check for references that no test uses never deletes a PNG without a hash,
 a copy of a reference in another folder such as `docs`, or the images of
 another `vsnap` call's tests.
@@ -719,7 +746,8 @@ usually means.
   root is ..."** Give `vsnap()` its root, such as
   `root: import.meta.dirname`.
 - **A test passes locally but fails in CI as new.** Its reference image
-  wasn't committed. Commit the files in its `__references__` folder.
+  wasn't committed. Commit the PNG files beside its test file whose names
+  start with the file's stem.
 
 ## FAQ
 

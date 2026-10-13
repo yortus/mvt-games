@@ -1,24 +1,21 @@
 import { PerspectiveCamera } from 'three';
-import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/three';
 import { type CanvasTestOptions, canvasTest } from 'vsnap';
-import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from './bandit-layout';
-import { dressBanditScene } from './bandit-scene';
-import { LeverView } from './lever-view';
-import { createMaterialKit } from './material-kit';
+import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from '../bandit-layout';
+import { dressBanditScene } from '../bandit-scene';
+import { LeverView } from '../lever-view';
+import { createMaterialKit } from '../material-kit';
 
 // The camera looks from the side, where the lever's swing towards the player
 // shows as an angle. The lever is drawn in the bandit's own scene, so it
 // shines as it does there.
 const IMAGE = { kind: 'three', width: 240, height: 300, camera: createSideCamera, scene: dressBanditScene } satisfies CanvasTestOptions<'three'>;
 
-describe('LeverView', () => {
-    canvasTest('at rest', IMAGE, () => LeverView({ kit: createMaterialKit(), spinCount: () => 0 }));
+canvasTest('at rest', IMAGE, () => LeverView({ kit: createMaterialKit(), spinCount: () => 0 }));
 
-    // A spin pulls the lever. It goes down fast, then springs back past upright.
-    canvasTest('200 ms into a pull', IMAGE, () => posePulledLever(200));
-    canvasTest('450 ms into a pull', IMAGE, () => posePulledLever(450));
-});
+// A spin pulls the lever. It goes down fast, then springs back past upright.
+canvasTest('200 ms into a pull', IMAGE, () => posePulledLever(200));
+canvasTest('450 ms into a pull', IMAGE, () => posePulledLever(450));
 
 async function posePulledLever(totalMs: number): Promise<ReturnType<typeof LeverView>> {
     let spinCount = 0;

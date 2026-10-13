@@ -15,13 +15,13 @@ set up its own: a unit project, then the projects that `vsnap()` returns.
 It calls `vsnap()` twice:
 
 - **`visual-canvas` and `visual-html`** run vsnap's own visual tests, in
-  `src/browser/*.visual.test.tsx`, with the kinds of view that its
+  `src/browser/visual-tests/`, with the kinds of view that its
   `vsnap.config.ts` registers. They also run the calibration set (see
   [The Environment](#the-environment)).
 - **`visual-fixture-*`** run a small project in
-  `fixtures/visual-tests-folders/`. It keeps its tests in `visual-tests`
-  folders, with their reference images beside them, so its run checks that
-  layout end to end. It also binds `canvasTest` to its own config, since it
+  `fixtures/visual-tests-folders/`. Its reference images are named without
+  their test file's stem, so its run checks a layout whose images belong to
+  a folder, not to one file, end to end. It also binds `canvasTest` to its own config, since it
   shares vsnap's TypeScript program, as a monorepo's packages can.
 
 In vsnap's folder:
@@ -62,7 +62,8 @@ run, so that its reference still counts as used.
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `vsnap/pixi` and `vsnap/three` export. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
 | `src/node/` | The side that runs in Node. `vsnap/vitest` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
-| `src/browser/__references__/` | The calibration set's references, and those of vsnap's own visual tests |
+| `src/browser/visual-tests/` | vsnap's own visual tests, and their references |
+| `src/browser/calibration-images/` | The calibration set's references, for each kind of page |
 | `scripts/` | The maintainers' scripts: the environment's rewrite, the blank font's generator, and the step that puts the published `package.json` in place while npm packs the package |
 | `fixtures/visual-tests-folders/` | The fixture project (see above) |
 
@@ -86,8 +87,7 @@ runs, in `src/browser/calibration.ts`.
   exercises one way that drawing can differ between machines: shapes,
   images, text, WebGL shading and textures, and HTML boxes, controls,
   filters and rotation. Their references are in
-  `src/browser/__references__/calibration-canvas/` and
-  `calibration-html/`.
+  `src/browser/calibration-images/canvas/` and `html/`.
 
 If anything differs beyond the tolerance, the run stops with one error that
 says what differs, rather than failing every test for a reason nobody can

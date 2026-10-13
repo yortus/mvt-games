@@ -1,11 +1,10 @@
-import { describe } from 'vitest';
 import { advanceTime } from '@mvtjs/html';
 import { htmlTest } from 'vsnap';
-import '../../fruit-machine.css';
-import { createFruitMachineModel } from '../../models';
-import { entry } from '../../start';
-import { loadSymbolArt } from '../art';
-import { ControlPanelView } from './control-panel-view';
+import '../../../fruit-machine.css';
+import { createFruitMachineModel } from '../../../models';
+import { entry } from '../../../start';
+import { loadSymbolArt } from '../../art';
+import { ControlPanelView } from '../control-panel-view';
 
 const SEED = 12345;
 
@@ -30,19 +29,17 @@ function placeInQuadrant(view: Element): HTMLElement {
     return root;
 }
 
-describe('ControlPanelView', () => {
-    htmlTest('ready to spin', async () => {
-        const art = await loadSymbolArt();
-        const model = createFruitMachineModel({ seed: SEED });
-        return placeInQuadrant(ControlPanelView({ model, art }));
-    });
+htmlTest('ready to spin', async () => {
+    const art = await loadSymbolArt();
+    const model = createFruitMachineModel({ seed: SEED });
+    return placeInQuadrant(ControlPanelView({ model, art }));
+});
 
-    htmlTest('mid-spin', async () => {
-        const art = await loadSymbolArt();
-        const model = createFruitMachineModel({ seed: SEED });
-        const view = ControlPanelView({ model, art });
-        void model.spin();
-        await advanceTime(600, model, view);
-        return placeInQuadrant(view);
-    });
+htmlTest('mid-spin', async () => {
+    const art = await loadSymbolArt();
+    const model = createFruitMachineModel({ seed: SEED });
+    const view = ControlPanelView({ model, art });
+    void model.spin();
+    await advanceTime(600, model, view);
+    return placeInQuadrant(view);
 });

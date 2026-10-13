@@ -38,11 +38,15 @@ export interface ReferencePattern {
 // Constants
 // ---------------------------------------------------------------------------
 
-/** By default, visual test files are the `*.visual.test.ts` and `*.visual.test.tsx` files. */
-export const DEFAULT_INCLUDE: readonly string[] = ['**/*.visual.test.{ts,tsx}'];
+/** By default, visual test files are the `*.test.ts` and `*.test.tsx` files in `visual-tests` folders. */
+export const DEFAULT_INCLUDE: readonly string[] = ['**/visual-tests/*.test.{ts,tsx}'];
 
-/** By default, a test file's reference images are in `__references__/<test file name>/`, beside it. */
-export const DEFAULT_REFERENCE_PATH = '{testFileDir}/__references__/{testFileName}/{imageName}.png';
+/**
+ * By default, a test file's reference images are beside it, each named for
+ * the file's stem and the image, such as `hud-view.at-the-start.png`
+ * for `hud-view.test.tsx`.
+ */
+export const DEFAULT_REFERENCE_PATH = '{testFileDir}/{testFileStem}.{imageName}.png';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -102,6 +106,26 @@ export function resolveReferencePattern(layout: VisualLayout, testFile: string):
     return { dir: join(layout.root, path.slice(0, Math.max(slash, 0))), prefix, suffix };
 }
 
+/**
+ * Returns a test file's stem: its name without `.test` or `.spec` and its
+ * extension, such as `hud-view` for `hud-view.test.tsx`, or else without its
+ * extension.
+ */
+export function toFileStem(fileName: string): string {
+    const suffix = STEM_SUFFIXES.find((s) => fileName.endsWith(s) && fileName.length > s.length);
+    if (suffix !== undefined) return fileName.slice(0, -suffix.length);
+    const dot = fileName.lastIndexOf('.');
+    return dot > 0 ? fileName.slice(0, dot) : fileName;
+}
+
+/**
+ * The endings that a test file's stem leaves out, longest first. Reading a
+ * reference's path backwards, vsnap tries each of them after the stem to
+ * find the test file's name.
+ */
+export const STEM_SUFFIXES: readonly string[] = ['test', 'spec'].flatMap((word) => ['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs'].map((ext) => `.${word}.${ext}`))
+    .sort((a, b) => b.length - a.length);
+
 /** Returns the image name in a reference's file name, or undefined if the file name doesn't match the pattern. */
 export function matchReferenceName(pattern: ReferencePattern, fileName: string): string | undefined {
     const isMatch = fileName.length > pattern.prefix.length + pattern.suffix.length
@@ -114,7 +138,7 @@ export function matchReferenceName(pattern: ReferencePattern, fileName: string):
 // Internals
 // ---------------------------------------------------------------------------
 
-const VARIABLES = ['testFileDir', 'testFileName', 'testFilePath', 'imageName'];
+const VARIABLES = ['testFileDir', 'testFileName', 'testFileStem', 'testFilePath', 'imageName'];
 
 /** Fills in every variable but `{imageName}`, giving a path relative to the root. */
 function fillTemplate(layout: VisualLayout, testFile: string): string {
@@ -125,6 +149,7 @@ function fillTemplate(layout: VisualLayout, testFile: string): string {
         .replaceAll('{testFilePath}', testFilePath)
         .replaceAll('{testFileDir}', testFileDir)
         .replaceAll('{testFileName}', testFileName)
+        .replaceAll('{testFileStem}', toFileStem(testFileName))
         // A test file at the root has the folder '.', which leaves './' at
         // the start of the path.
         .replace(/^\.\//, '');
