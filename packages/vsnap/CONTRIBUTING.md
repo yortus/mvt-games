@@ -37,9 +37,9 @@ In vsnap's folder:
 | `npm run build` | Builds the package into `lib/` (see [Building and Publishing](#building-and-publishing)) |
 
 From the repository's root, `npm run test:vsnap` runs `npm test` here. The
-root's own `npm test` leaves vsnap out, as if it lived in a repository of
-its own, and `npm run test:visual` runs the website's visual tests, which
-are vsnap's biggest user.
+root's own `npm test` runs the other workspaces' unit tests and the
+website's visual tests, which are vsnap's biggest user. It leaves vsnap's
+own tests out, as if vsnap lived in a repository of its own.
 
 Some unit tests check details of the libraries that vsnap relies on but
 that the libraries don't promise. `src/pixi/pixi-views.test.ts` fails when
