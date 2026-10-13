@@ -22,7 +22,7 @@
  */
 
 import { PNG } from 'pngjs';
-import { launchHeadlessChrome } from './headless-chrome';
+import { launchHeadlessChrome } from './headless-chrome.ts';
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--'));

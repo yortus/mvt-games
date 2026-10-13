@@ -3,7 +3,7 @@ import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 import { vsnap } from 'vsnap/vitest';
 
-const ROOT = __dirname;
+const ROOT = import.meta.dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';

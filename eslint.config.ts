@@ -15,6 +15,39 @@ const VIEW_CONVENTION_FILES = [
     'packages/*/src/**/*.{ts,tsx}',
 ];
 
+/** What the barrel rule lets a file import: its own folder's files, and packages by their entry points. */
+const BARREL_ALLOW = [
+    // Allow intra-directory relative imports (./foo)
+    './*',
+    // Allow external packages. The @mvtjs packages' and
+    // vsnap's own `exports` say what can be reached in them
+    '@mvtjs/**',
+    'vsnap/**',
+    'pixi.js',
+    'pixi.js/**',
+    'gsap',
+    'gsap/**',
+    'codemirror',
+    '@codemirror/**',
+    'sucrase',
+    'lz-string',
+    'solid-js',
+    'solid-js/**',
+    'pixi-solid',
+    'three',
+    'three/**',
+    // Vitest's own entry points, such as `vitest/browser`, through which
+    // the visual tests' harness talks to Node.
+    'vitest/**',
+    // publint's entry points, for vsnap's step that checks its package.
+    'publint/**',
+    // Allow the site's import-map alias. Escaped: the rule
+    // compiles each entry with minimatch, which reads a
+    // leading `#` as a comment, and then crashes on the first
+    // violation instead of reporting it.
+    '\\#common',
+];
+
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
 // (packages/docs/reference/project-structure.md).
@@ -104,37 +137,7 @@ export default tseslint.config(
             'import/no-internal-modules': [
                 'error',
                 {
-                    allow: [
-                        // Allow intra-directory relative imports (./foo)
-                        './*',
-                        // Allow external packages. The @mvtjs packages' and
-                        // vsnap's own `exports` say what can be reached in them
-                        '@mvtjs/**',
-                        'vsnap/**',
-                        'pixi.js',
-                        'pixi.js/**',
-                        'gsap',
-                        'gsap/**',
-                        'codemirror',
-                        '@codemirror/**',
-                        'sucrase',
-                        'lz-string',
-                        'solid-js',
-                        'solid-js/**',
-                        'pixi-solid',
-                        'three',
-                        'three/**',
-                        // Vitest's own entry points, such as `vitest/browser`, through which
-                        // the visual tests' harness talks to Node.
-                        'vitest/**',
-                        // publint's entry points, for vsnap's step that checks its package.
-                        'publint/**',
-                        // Allow the site's import-map alias. Escaped: the rule
-                        // compiles each entry with minimatch, which reads a
-                        // leading `#` as a comment, and then crashes on the first
-                        // violation instead of reporting it.
-                        '\\#common',
-                    ],
+                    allow: BARREL_ALLOW,
                 },
             ],
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT] }],
@@ -146,6 +149,15 @@ export default tseslint.config(
                     noWarnOnMultipleProjects: true,
                 },
             },
+        },
+    },
+    {
+        // A package's config files are loaded by Node itself, which imports a
+        // file, not a folder. So they import a folder's barrel by its index
+        // file, such as `./scripts/index.ts`.
+        files: ['packages/*/*.config.ts'],
+        rules: {
+            'import/no-internal-modules': ['error', { allow: [...BARREL_ALLOW, '*/index.ts'] }],
         },
     },
     {

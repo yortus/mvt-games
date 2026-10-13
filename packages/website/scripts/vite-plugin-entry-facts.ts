@@ -8,7 +8,7 @@
 
 import { resolve, sep } from 'node:path';
 import type { Plugin } from 'vite';
-import { ENTRIES_DIR, readEntryFacts } from './entry-facts';
+import { ENTRIES_DIR, readEntryFacts } from './entry-facts.ts';
 
 // ---------------------------------------------------------------------------
 // Plugin

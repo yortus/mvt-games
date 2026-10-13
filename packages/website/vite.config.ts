@@ -2,10 +2,10 @@ import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin } from 'vite';
-import { entryFactsPlugin, spritesheetPlugin } from './scripts';
+import { entryFactsPlugin, spritesheetPlugin } from './scripts/index.ts';
 
 const VITEPRESS_DEV_PORT = 5200;
-const SITE_ROOT = __dirname;
+const SITE_ROOT = import.meta.dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';

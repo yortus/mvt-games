@@ -15,8 +15,8 @@
 import { writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { createServer } from 'vite';
-import { findEntryDirectories } from './entry-facts';
-import { launchHeadlessChrome } from './headless-chrome';
+import { findEntryDirectories } from './entry-facts.ts';
+import { launchHeadlessChrome } from './headless-chrome.ts';
 
 /** A card's photo at its largest, at twice the density of a typical card's width in CSS pixels. */
 const CROP_PIXELS = 600;
