@@ -443,7 +443,10 @@ then `canvasTest`'s types don't know its kinds of view.
 
 When a test fails, vsnap writes its actual image, and a diff for a changed
 image, to `.vitest/vsnap/` at the root of the repository, in folders that
-mirror the reference's path. Add `.vitest/` to `.gitignore`.
+mirror the reference's path. Add `.vitest/` to `.gitignore`. The failure
+points at the test's `canvasTest` or `htmlTest` line in its file, as a
+failed assertion points at its line. An error that the pose threw points at
+the pose's own code.
 
 ### Adding vsnap to a Project
 

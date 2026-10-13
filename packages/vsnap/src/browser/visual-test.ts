@@ -1,5 +1,6 @@
 import { inject, recordArtifact, type TaskMeta, test, type TestContext, type TestOptions } from 'vitest';
 import { type CanvasImage, checkCanvasBudget, isCanvas, readCanvas } from './canvas-drawing';
+import { pointAtDeclaration } from './declaration';
 import { captureHtmlImage, type HtmlImageOptions } from './html-image';
 import { describeFailure, hashPixels, isPass, nameImage, openSession, toBase64, visualCommands } from './judge';
 import { type PageSetup, setUpPage } from './page-setup';
@@ -131,6 +132,13 @@ export const htmlTest = withModifiers(declareHtmlTest) as HtmlTestAPI;
 
 type ImageId = ReturnType<typeof nameImage>;
 
+/**
+ * The start of the URLs of vsnap's modules in the test page: the folder that
+ * holds `browser/`, `pixi/`, `three/` and `shared/`, whether it is the
+ * package's source or its build.
+ */
+const OWN_BASE = new URL('..', import.meta.url).href;
+
 /** Vitest's `test`, or one of its modifiers, `test.skip` and `test.only`, which declares a test as `test` does. */
 /** A pose of any test, which takes its case's arguments, if it has a case. */
 type AnyPose = (...args: readonly unknown[]) => unknown;
@@ -145,10 +153,23 @@ type Declare = (name: string, options: TestOptions, fn: (args: readonly unknown[
 /** A function that declares one kind of visual test with a declarer. */
 type DeclareVisualTest = (declare: Declare, name: string, optionsOrPose: object | AnyPose, pose?: AnyPose) => void;
 
-/** Returns a kind of visual test, with Vitest's modifiers, from the function that declares it. */
+/**
+ * Returns a kind of visual test, with Vitest's modifiers, from the function
+ * that declares it. Each declaration keeps its stack, the call in the test
+ * file, so that an error that vsnap throws points there.
+ */
 function withModifiers(declareVisualTest: DeclareVisualTest): unknown {
     const create = (declare: Declare) => (name: string, optionsOrPose: object | AnyPose, pose?: AnyPose): void => {
-        declareVisualTest(declare, name, optionsOrPose, pose);
+        const declaration = new Error().stack;
+        const pointed: Declare = (testName, options, fn) => declare(testName, options, async (args, context) => {
+            try {
+                await fn(args, context);
+            }
+            catch (error) {
+                throw pointAtDeclaration(error, { declaration, ownBase: OWN_BASE });
+            }
+        });
+        declareVisualTest(pointed, name, optionsOrPose, pose);
     };
     const plain = (declareTest: typeof test.skip): Declare => (name, options, fn) => declareTest(name, options, (context) => fn([], context));
     const forCases = (cases: readonly unknown[], isSpread: boolean): Declare => (name, options, fn) => {

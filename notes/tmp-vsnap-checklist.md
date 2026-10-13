@@ -203,10 +203,17 @@ From the blind review of 2026-10-13.
   `@vitest/coverage-v8` and with `@vitest/coverage-istanbul` both run with
   the visual tests, whose images still compare identical, and count the
   views they draw. Still to check: the VS Code extension (the user).
-- [ ] **U10. A failed image's error points into vsnap.** In the UI and the
+- [x] **U10. A failed image's error points into vsnap.** In the UI and the
   terminal, its stack names `node_modules/vsnap/lib/browser/visual-test.js`,
   not the `canvasTest` line in the test file, as Vitest's own assertions
   do. vsnap could keep the declaration's stack and give it to the error.
+  Done on 2026-10-13: each declaration keeps its stack (the call in the
+  test file), and an error that vsnap threw, such as a changed or blank
+  image or a view of the wrong kind, takes that stack, without vsnap's
+  frames or the runner's (`src/browser/declaration.ts`). So Vitest's code
+  frame shows the `canvasTest` line, in the terminal and the UI. An error
+  that the pose or a library threw keeps its own stack. Checked in the
+  website (a changed image, a pose that throws) and from a packed install.
 - [ ] **U11. The UI's Test Meta panel shows vsnap's internal record** of
   each test (`visual`: kind, outcome, size, timings), which the reporter
   reads. Harmless, but noise to a user. Consider a less prominent place, or
