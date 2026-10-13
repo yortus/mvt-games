@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'vsnap/config';
+import { vsnap } from 'vsnap/vitest';
 
 // vsnap's own tests: its unit tests in Node, its visual tests and calibration
 // set, and the fixture project, which keeps its tests in visual-tests

@@ -48,7 +48,7 @@ async function setUp(): Promise<PageSetup> {
     const canvasText = installCanvasText({ sans, mono });
     await installHtmlRules();
     document.body.style.margin = '0';
-    await checkCalibration(inject('visualKind'));
+    await checkCalibration(inject('visualPageKind'));
     // The project's vsnap.config.ts, and the modules it imports, load before
     // random numbers are reset, so that loading them can't shift the numbers
     // that the first test gets.

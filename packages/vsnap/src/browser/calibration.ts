@@ -2,7 +2,7 @@ import { inject } from 'vitest';
 import { type Calibration, CANVAS_CALIBRATION, type CanvasCalibration, SAMPLE } from './canvas-calibration';
 import { captureHtmlImage } from './html-image';
 import { describeDifference, hashPixels, isPass, openSession, toBase64, visualCommands } from './judge';
-import type { VisualEnvironment, VisualKind, VisualVerdict } from '../protocol';
+import type { VisualEnvironment, PageKind, VisualVerdict } from '../protocol';
 import { isAllOne } from '../shared';
 
 // ---------------------------------------------------------------------------
@@ -19,21 +19,21 @@ import { isAllOne } from '../shared';
  * the facts and the calibration set's references instead. It runs once per
  * run for each kind of page.
  */
-export async function checkCalibration(kind: VisualKind): Promise<void> {
-    const session = await openSession({ calibration: kind });
+export async function checkCalibration(pageKind: PageKind): Promise<void> {
+    const session = await openSession({ calibration: pageKind });
     if (session.isCalibrated) return;
     // Only Playwright's headless Chromium, which vsnap sets up, says
     // HeadlessChrome. A headed browser, as with --browser.headless=false, or
     // another browser draws differently, which no Playwright version fixes.
     if (!navigator.userAgent.includes('HeadlessChrome')) {
-        const message = `The visual tests (${kind}) run in Playwright's headless Chromium, which vsnap sets up, but this page runs in another browser (${navigator.userAgent}), `
+        const message = `The visual tests (${pageKind}) run in Playwright's headless Chromium, which vsnap sets up, but this page runs in another browser (${navigator.userAgent}), `
             + 'such as a headed one, with --browser.headless=false, or one that the config names. It would draw the images differently, so no actual image of a test was compared. '
             + 'Run the visual tests headless. To look at a view, open its actual image in .vitest/vsnap/, or the failed test in the Vitest UI.';
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }
     const problems = [...await visualCommands.checkVisualEnvironment(readEnvironment())];
-    const calibrations = kind === 'canvas' ? CANVAS_JUDGED : HTML_CALIBRATION;
+    const calibrations = pageKind === 'canvas' ? CANVAS_JUDGED : HTML_CALIBRATION;
     if (problems.length === 0) {
         for (const [name, draw] of Object.entries(calibrations)) {
             const verdict = await draw(name, session.hashes[name]);
@@ -44,12 +44,12 @@ export async function checkCalibration(kind: VisualKind): Promise<void> {
         }
     }
     if (problems.length > 0) {
-        const message = `This machine is not the visual tests' reference environment (${kind}). These checks failed: ${problems.join('; ')}. `
+        const message = `This machine is not the visual tests' reference environment (${pageKind}). These checks failed: ${problems.join('; ')}. `
             + 'No test\'s actual image was compared. vsnap draws with the browser of one Playwright version, so check that the project installs the Playwright version that vsnap\'s package.json names, and only one copy of it.';
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }
-    await visualCommands.recordVisualCalibration({ kind, names: Object.keys(calibrations) });
+    await visualCommands.recordVisualCalibration({ pageKind, names: Object.keys(calibrations) });
 }
 
 // ---------------------------------------------------------------------------

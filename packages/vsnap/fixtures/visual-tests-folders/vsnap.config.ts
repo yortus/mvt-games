@@ -7,7 +7,7 @@ import { bindCanvasTest, defineVsnapConfig } from 'vsnap';
 import { pixiViews } from 'vsnap/pixi';
 
 // The fixture's views are pixel art.
-const config = defineVsnapConfig({ views: [pixiViews({ pixelArt: true })], defaultView: 'pixi' });
+const config = defineVsnapConfig({ views: [pixiViews({ pixelArt: true })], defaultKind: 'pixi' });
 
 export const canvasTest = bindCanvasTest(config);
 

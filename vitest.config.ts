@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'vsnap/config';
+import { vsnap } from 'vsnap/vitest';
 
 const ROOT = __dirname;
 

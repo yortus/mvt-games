@@ -137,7 +137,7 @@ describe('canvasTest', () => {
     // project's, as another package's would be, fails before its pose, rather
     // than drawing with this project's kinds. Had it drawn, its image would
     // have passed as new.
-    const otherCanvasTest = bindCanvasTest(defineVsnapConfig({ views: [pixiViews()], defaultView: 'pixi' }));
+    const otherCanvasTest = bindCanvasTest(defineVsnapConfig({ views: [pixiViews()], defaultKind: 'pixi' }));
     otherCanvasTest('bound to the config of another project', { fails: true }, () => new Graphics().rect(0, 0, 10, 10).fill(0xffffff));
 });
 

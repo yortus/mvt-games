@@ -5,11 +5,11 @@ import { captureHtmlImage, type HtmlImageOptions } from './html-image';
 import { describeFailure, hashPixels, isPass, nameImage, openSession, toBase64, visualCommands } from './judge';
 import { type PageSetup, setUpPage } from './page-setup';
 import type { Pose } from './pose';
-import type { VisualTestMeta, VisualVerdict } from '../protocol';
+import type { PageKind, VisualTestMeta, VisualVerdict } from '../protocol';
 import { describeValue, isAllOne } from '../shared';
 import { splitTestOptions, type VitestTestOptions } from './test-options';
 import {
-    type CanvasKinds, type CanvasViewKind, type DefaultView, type KindOptions, applyDefaults, loadViewKinds, type OptionsOf, type RegisteredConfig, type ViewOf, type VsnapConfig,
+    type CanvasKinds, type CanvasViewKind, type DefaultKind, type KindOptions, applyDefaults, loadViewKinds, type OptionsOf, type RegisteredConfig, type ViewOf, type VsnapConfig,
 } from './view-kinds';
 
 // ---------------------------------------------------------------------------
@@ -26,8 +26,8 @@ import {
  * project registered.
  */
 export type CanvasTestForms<A extends readonly unknown[] = [], C extends VsnapConfig = RegisteredConfig> =
-    & (<K extends keyof CanvasKinds<C> = DefaultView<C>>(name: string, options: KindOptions<C, K> & CanvasTestExtras, pose: CasePose<ViewOf<C, K>, A>) => void)
-    & (object extends OptionsOf<C, DefaultView<C>> ? (name: string, pose: CasePose<ViewOf<C, DefaultView<C>>, A>) => void : unknown);
+    & (<K extends keyof CanvasKinds<C> = DefaultKind<C>>(name: string, options: KindOptions<C, K> & CanvasTestExtras, pose: CasePose<ViewOf<C, K>, A>) => void)
+    & (object extends OptionsOf<C, DefaultKind<C>> ? (name: string, pose: CasePose<ViewOf<C, DefaultKind<C>>, A>) => void : unknown);
 
 /** `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`, `repeats` and `fails`. */
 export interface HtmlTestForms<A extends readonly unknown[] = []> {
@@ -90,7 +90,7 @@ export type CaseArgs<T> = T extends readonly unknown[] ? [...T] : [T];
 
 /**
  * Declares a visual test of a view drawn on a canvas. The pose returns a
- * view of the kind that the options name, or of the project's default view:
+ * view of the kind that the options name, or of the project's default kind:
  * a view of a kind that the project registered, such as a Pixi container,
  * or a canvas that the pose drew. The test checks the view's kind, draws
  * it, and compares the actual image with its reference image,
@@ -104,7 +104,7 @@ export const canvasTest = withModifiers((declare, name, optionsOrPose, pose) => 
 
 /**
  * Returns `canvasTest`, with types that know one config's kinds of view and
- * default view, in place of the config that the project registered. A
+ * default kind, in place of the config that the project registered. A
  * project's `vsnap.config.ts` exports it, and its tests import it from
  * there. A monorepo whose packages have configs of their own needs this,
  * because one TypeScript program holds one `Register`.
@@ -215,20 +215,20 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
             if (kind.dispose === undefined) view.remove();
             else kind.dispose(view);
         }
-        await finishTest(task, { id, verdict: captured, kind: 'html', size: { ...captured, resolution: 1 }, ms });
+        await finishTest(task, { id, verdict: captured, pageKind: 'html', size: { ...captured, resolution: 1 }, ms });
     });
 }
 
 /** Sets the page up, names the test's image, and checks that the test runs in its kind of page. */
-async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: 'canvas' | 'html'): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
+async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: PageKind): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
     const setup = await setUpPage();
     const id = nameImage(task.fullTestName);
     task.meta.vsnap = { image: id.name };
-    const kind = inject('visualKind');
-    if (kind !== declared) {
+    const pageKind = inject('visualPageKind');
+    if (pageKind !== declared) {
         // The config sends each file to the page its declarations ask for,
         // so this happens only if the declarations are hidden from it
-        throw new Error(`'${id.test}' is ${declared === 'html' ? 'an HTML' : 'a canvas'} visual test, but its file runs in the ${kind} page. A file declares one kind of visual test only.`);
+        throw new Error(`'${id.test}' is ${declared === 'html' ? 'an HTML' : 'a canvas'} visual test, but its file runs in the ${pageKind} page. A file declares one kind of visual test only.`);
     }
     return { setup, id };
 }
@@ -237,15 +237,15 @@ async function startTest(task: { readonly fullTestName: string; readonly meta: T
 async function finishTest(task: TestContext['task'], result: {
     readonly id: ImageId;
     readonly verdict: VisualVerdict;
-    readonly kind: 'canvas' | 'html';
+    readonly pageKind: PageKind;
     readonly size: { readonly width: number; readonly height: number; readonly resolution: number };
     readonly ms: Record<string, number>;
 }): Promise<void> {
-    const { id, verdict, kind, size, ms } = result;
-    const visual: VisualTestMeta = { kind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
+    const { id, verdict, pageKind, size, ms } = result;
+    const visual: VisualTestMeta = { pageKind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
     task.meta.vsnap = { image: id.name, result: visual };
     if (isPass(verdict)) return;
-    const message = describeFailure(id.name, verdict, kind);
+    const message = describeFailure(id.name, verdict, pageKind);
     if (verdict.images !== undefined && verdict.images.length > 0) {
         // The same record as Vitest's own screenshot assertion makes, so that
         // its UI and reports show the reference, actual and diff images. Its
@@ -292,7 +292,7 @@ function declareCanvasTest(options: {
         if (config !== undefined && config !== viewKinds.config) {
             throw new Error(`'${id.test}' takes canvasTest from a config other than ${viewKinds.configFile}, which is this project's. Import canvasTest from this project's config.`);
         }
-        const named = kindName ?? viewKinds.defaultView;
+        const named = kindName ?? viewKinds.defaultKind;
         const kind = named === 'canvas' ? undefined : findKind(viewKinds, named, id.test);
         const ms: Record<string, number> = {};
         // The kind's defaults, such as the project's background, under the test's own options.
@@ -331,18 +331,18 @@ function declareCanvasTest(options: {
             ? { outcome: 'same', referenceFile: id.name }
             : await visualCommands.judgeVisualMismatch({ ...id, width: image.width, height: image.height, hash, pixels: toBase64(image.pixels) });
         ms.compare = performance.now() - t;
-        await finishTest(task, { id, verdict, kind: 'canvas', size: image, ms });
+        await finishTest(task, { id, verdict, pageKind: 'canvas', size: image, ms });
     });
 }
 
 /** Returns the registered kind of view with a name, and throws if there is none. */
 function findKind(viewKinds: Awaited<ReturnType<typeof loadViewKinds>>, name: string, test: string): CanvasViewKind<unknown, object> {
-    const kind = viewKinds.canvas.find((candidate) => candidate.name === name);
+    const kind = viewKinds.canvas.find((candidate) => candidate.kind === name);
     if (kind !== undefined) return kind;
     if (!viewKinds.hasConfig) {
         throw new Error(`'${test}' is of the kind '${name}', but vsnap looks for the project's kinds of view in ${viewKinds.configFile}, which doesn't exist. Create the file, and register the kind, such as pixiViews() from 'vsnap/pixi'.`);
     }
-    const names = viewKinds.canvas.map((candidate) => candidate.name).join(', ');
+    const names = viewKinds.canvas.map((candidate) => candidate.kind).join(', ');
     throw new Error(`'${test}' is of the kind '${name}', but ${viewKinds.configFile} registers no kind of view with that name. It registers ${names === '' ? 'none' : names}.`);
 }
 
@@ -379,8 +379,8 @@ function describeMismatch(options: {
     const { viewKinds, named, isDefault, view, test } = options;
     const expected = named === 'canvas' ? 'a canvas' : `a view of the kind '${named}'`;
     const where = viewKinds.hasConfig ? ` in ${viewKinds.configFile}` : '';
-    const why = isDefault ? ` The test gives no kind, so it is of the default view${where}, '${named}'.` : '';
-    const claimant = isCanvas(view) ? 'canvas' : viewKinds.canvas.find((kind) => kind.isView(view))?.name;
+    const why = isDefault ? ` The test gives no kind, so it is of the default kind${where}, '${named}'.` : '';
+    const claimant = isCanvas(view) ? 'canvas' : viewKinds.canvas.find((kind) => kind.isView(view))?.kind;
     let fix: string;
     if (claimant !== undefined) {
         fix = ` The view is of the kind '${claimant}', so give the test { kind: '${claimant}' }.`;
@@ -389,7 +389,7 @@ function describeMismatch(options: {
         fix = ` vsnap looks for the project's kinds of view in ${viewKinds.configFile}, which doesn't exist. Create the file, and register the view's kind, such as pixiViews() from 'vsnap/pixi'.`;
     }
     else {
-        const names = viewKinds.canvas.map((kind) => kind.name).join(', ');
+        const names = viewKinds.canvas.map((kind) => kind.kind).join(', ');
         fix = ` No kind that ${viewKinds.configFile} registers (${names === '' ? 'none' : names}) claims it. Register its kind. If it is registered, the project may have a second copy of its library.`;
     }
     return `'${test}' poses ${describeValue(view)}, which is not ${expected}.${why}${fix}`;

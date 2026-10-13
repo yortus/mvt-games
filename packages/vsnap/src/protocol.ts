@@ -21,11 +21,11 @@
 export type VisualMode = 'compare' | 'new' | 'update' | 'environment';
 
 /**
- * Which project a page belongs to. The `canvas` project renders Pixi and
- * three.js views to images in one shared page. The `html` project captures
- * HTML views, in a page for each file.
+ * The kind of page that a visual test runs in, and so its project. Canvas
+ * tests draw their views to images in one page that they share. HTML tests
+ * capture their views in a page for each file.
  */
-export type VisualKind = 'canvas' | 'html';
+export type PageKind = 'canvas' | 'html';
 
 /** How an actual image compares with its reference. */
 export type VisualOutcome =
@@ -78,7 +78,7 @@ export interface VisualVerdictImage {
  * calibration set, which is checked before any test.
  */
 export interface VisualScope {
-    readonly calibration?: VisualKind;
+    readonly calibration?: PageKind;
 }
 
 /** Identifies an image by the file name of its reference and the full name of the test that produces it. */
@@ -132,15 +132,15 @@ export interface VisualSession {
     readonly isCalibrated: boolean;
 }
 
-/** A calibration set that matched. It gives the set's kind and the names of the calibration images compared. */
+/** A calibration set that matched. It gives the set's kind of page and the names of the calibration images compared. */
 export interface VisualCalibration {
-    readonly kind: VisualKind;
+    readonly pageKind: PageKind;
     readonly names: readonly string[];
 }
 
 /** A visual test's timings and outcome. They are attached to each test for the run's summary. */
 export interface VisualTestMeta {
-    readonly kind: VisualKind;
+    readonly pageKind: PageKind;
     readonly outcome: VisualOutcome;
     readonly width: number;
     readonly height: number;
@@ -172,8 +172,8 @@ declare module 'vitest' {
         vsnap?: VsnapTestRecord;
     }
     interface ProvidedContext {
-        /** Which project the page belongs to, provided by its config. */
-        visualKind: VisualKind;
+        /** The kind of page, provided by its project's config. */
+        visualPageKind: PageKind;
         /** The size budget in pixels, provided by the config (`maxPixels`). */
         visualMaxPixels: number;
         /** Whether the project has a `vsnap.config`, which registers its kinds of view. */

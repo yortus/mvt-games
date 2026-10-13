@@ -28,7 +28,7 @@ import { dirname, extname, join, relative, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
 import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
-import type { VisualKind } from '../protocol.ts';
+import type { PageKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
@@ -93,7 +93,7 @@ export interface VsnapOptions {
      * root, if there is one. Naming it shows a reader of the Vitest config
      * where the rest of vsnap's settings are.
      */
-    readonly config?: string;
+    readonly vsnapConfig?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,11 +127,11 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     claimTestFiles(name, [...files.canvas, ...files.html].map((file) => resolve(root, file)));
     const state = createRunState();
     const commands = createVisualCommands({ layout, state });
-    // A kind of test with no files gets no project.
-    const kinds = (['canvas', 'html'] as const).filter((kind) => files[kind].length > 0);
-    const projectNames = kinds.map((kind) => `${name}-${kind}`);
+    // A kind of page with no test files gets no project.
+    const pageKinds = (['canvas', 'html'] as const).filter((pageKind) => files[pageKind].length > 0);
+    const projectNames = pageKinds.map((pageKind) => `${name}-${pageKind}`);
     recordVsnapProjectNames(projectNames);
-    const viewConfig = findViewConfig(root, options.config);
+    const viewConfig = findViewConfig(root, options.vsnapConfig);
     if (viewConfig !== undefined) checkViewConfig(viewConfig);
     const allFiles = [...files.canvas, ...files.html];
     const reporter = createVisualReporter({
@@ -145,12 +145,12 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     });
     const plugin = createVsnapPlugin({ reporter, name, root, isDefaultRoot: options.root === undefined, files: () => findVisualTestFiles(layout), initialFiles: files });
     const rebundle = mustRebundle(name);
-    return kinds.map((kind, i) => createVisualProject({
+    return pageKinds.map((pageKind, i) => createVisualProject({
         rebundle,
         root,
         name: projectNames[i],
-        kind,
-        files: files[kind],
+        pageKind,
+        files: files[pageKind],
         commands,
         viewConfig,
         plugin,
@@ -163,7 +163,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Creates the Vitest project for one kind of visual test. */
+/** Creates the Vitest project for one kind of page. */
 function createVisualProject(options: {
     /** Whether Vite must bundle the libraries afresh, since the sources changed. */
     readonly rebundle: boolean;
@@ -171,7 +171,7 @@ function createVisualProject(options: {
     readonly maxPixels: number;
     readonly viteConfig: string | undefined;
     readonly name: string;
-    readonly kind: VisualKind;
+    readonly pageKind: PageKind;
     readonly files: readonly string[];
     readonly commands: ReturnType<typeof createVisualCommands>;
     /** The project's `vsnap.config.ts`, if it has one. */
@@ -179,7 +179,7 @@ function createVisualProject(options: {
     /** The plugin that the projects of one `vsnap` call share. */
     readonly plugin: Plugin;
 }): TestProjectInlineConfiguration {
-    const isHtml = options.kind === 'html';
+    const isHtml = options.pageKind === 'html';
     const files = options.files;
     const setupFiles = [SETUP_FILE];
     // The scan's globs are relative to the root.
@@ -227,7 +227,7 @@ function createVisualProject(options: {
             setupFiles,
             testTimeout: 30_000,
             provide: {
-                visualKind: options.kind,
+                visualPageKind: options.pageKind,
                 visualMaxPixels: options.maxPixels,
                 visualHasConfig: options.viewConfig !== undefined,
                 visualConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
@@ -366,14 +366,14 @@ function warnOfProblems(problems: VisualTestFiles['problems']): void {
 }
 
 /**
- * Returns the path of a project's `vsnap.config`: the one that the `config`
- * option names, or the one in its root, if it has one. It throws if the
- * option names a file that doesn't exist.
+ * Returns the path of a project's `vsnap.config`: the one that the
+ * `vsnapConfig` option names, or the one in its root, if it has one. It
+ * throws if the option names a file that doesn't exist.
  */
 function findViewConfig(root: string, named: string | undefined): string | undefined {
     if (named !== undefined) {
         const path = resolve(root, named);
-        if (!existsSync(path)) throw new Error(`vsnap's config option names ${toDisplayPath(path)}, which doesn't exist.`);
+        if (!existsSync(path)) throw new Error(`vsnap's vsnapConfig option names ${toDisplayPath(path)}, which doesn't exist.`);
         return path;
     }
     for (const name of VIEW_CONFIG_NAMES) {

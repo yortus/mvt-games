@@ -140,10 +140,10 @@ function describeRun(options: {
     if (images.length === 0) return [...checkLines];
     const seconds = (((performance.now() - (options.started ?? performance.now()))) / 1000).toFixed(1);
     const lines = [`The visual tests (${options.projectNames.join(', ')}) produced ${count(images.length, 'actual image')} in ${seconds} s.`];
-    for (const kind of ['canvas', 'html'] as const) {
-        const times = images.filter((p) => p.meta.kind === kind).map((p) => p.total).sort((a, b) => a - b);
+    for (const pageKind of ['canvas', 'html'] as const) {
+        const times = images.filter((p) => p.meta.pageKind === pageKind).map((p) => p.total).sort((a, b) => a - b);
         if (times.length === 0) continue;
-        const tests = count(times.length, `${kind === 'canvas' ? 'canvas' : 'HTML'} test`);
+        const tests = count(times.length, `${pageKind === 'canvas' ? 'canvas' : 'HTML'} test`);
         lines.push(times.length === 1
             ? `  ${tests} took ${formatPercentile(times, 0.5)} ms.`
             : `  ${tests} took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);

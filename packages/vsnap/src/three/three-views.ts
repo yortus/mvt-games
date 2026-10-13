@@ -27,14 +27,13 @@ export interface ThreeViewsOptions {
 /**
  * Returns the kind of view for three.js objects, which a project lists in
  * its `vsnap.config.ts`. Its tests give `kind: 'three'`, unless it is the
- * project's default view, and their poses return three.js objects. A
+ * project's default kind, and their poses return three.js objects. A
  * three.js view has no bounds to frame it by, so its test's options always
  * give the image's size and the camera.
  */
 export function threeViews(options: ThreeViewsOptions = {}): CanvasViewKind<Object3D, ThreeImageOptions, 'three'> {
     return {
-        name: 'three',
-        kind: 'canvas',
+        kind: 'three',
         isView: (value) => value instanceof Object3D,
         defaults: { background: options.background },
         prepare: options.prepare,

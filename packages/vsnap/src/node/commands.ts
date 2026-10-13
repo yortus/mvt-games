@@ -26,7 +26,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
-    VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
+    VisualCalibration, VisualCaptureRequest, VisualEnvironment, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
 import { compareImages } from './compare.ts';
@@ -46,7 +46,7 @@ import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './
  * learns of them here.
  */
 export interface VisualRunState {
-    readonly calibrated: Set<VisualKind>;
+    readonly calibrated: Set<PageKind>;
     readonly calibrationReferences: Set<string>;
     /** Each page's DevTools protocol session, by the page's session. The reporter clears it as each run starts, since each run has pages of its own. */
     readonly cdpSessions: Map<string, Promise<Cdp>>;
@@ -80,8 +80,8 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
     };
 
     const recordVisualCalibration: BrowserCommand<[VisualCalibration]> = (_ctx, calibration) => {
-        state.calibrated.add(calibration.kind);
-        for (const name of calibration.names) state.calibrationReferences.add(join(findCalibrationDir(calibration.kind), `${name}.png`));
+        state.calibrated.add(calibration.pageKind);
+        for (const name of calibration.names) state.calibrationReferences.add(join(findCalibrationDir(calibration.pageKind), `${name}.png`));
     };
 
     const judgeVisualMismatch: BrowserCommand<[VisualImagePayload]> = (ctx, payload): VisualVerdict => {

@@ -14,15 +14,15 @@ describe('bindCanvasTest', () => {
     it("types canvasTest by the bound config's kinds, not the registered config's", () => {
         // Declarations for the type checker only: this function is never called.
         const declareTests = (canvasTest: CanvasTestAPI, bound: CanvasTestAPI<ThreeOnly>): void => {
-            canvasTest('the registered default view', () => new Graphics());
+            canvasTest('the registered default kind', () => new Graphics());
             canvasTest('a registered kind', { kind: 'sketch' }, () => ({ paint: () => {} }));
 
-            bound('the bound default view', { width: 80, height: 60, camera: () => new PerspectiveCamera() }, () => new Group());
-            // @ts-expect-error: three.js views need a size and a camera, so the default view can't leave out its options.
+            bound('the bound default kind', { width: 80, height: 60, camera: () => new PerspectiveCamera() }, () => new Group());
+            // @ts-expect-error: three.js views need a size and a camera, so the default kind can't leave out its options.
             bound('no options', () => new Group());
             // @ts-expect-error: the bound config has no sketch views.
             bound('a kind of the registered config only', { kind: 'sketch' }, () => ({ paint: () => {} }));
-            // @ts-expect-error: the bound default view is three.js, so a Pixi view is the wrong kind.
+            // @ts-expect-error: the bound default kind is three.js, so a Pixi view is the wrong kind.
             bound.each([1, 2])('case %s', { width: 80, height: 60, camera: () => new PerspectiveCamera() }, () => new Graphics());
         };
         expect(declareTests).toBeTypeOf('function');

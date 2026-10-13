@@ -1,7 +1,7 @@
 import { commands } from 'vitest/browser';
 import { expect } from 'vitest';
 import { toImageName } from '../image-name';
-import type { VisualCommands, VisualKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
+import type { VisualCommands, PageKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -74,7 +74,7 @@ export function describeDifference(verdict: VisualVerdict): string {
  * Returns the error message for a test whose actual image didn't pass, given
  * the image name. It says what differs, where to look, and what to run.
  */
-export function describeFailure(name: string, verdict: VisualVerdict, kind: VisualKind): string {
+export function describeFailure(name: string, verdict: VisualVerdict, pageKind: PageKind): string {
     // The command reruns the test's file with Vitest's update flag. Only the
     // images that changed are rewritten.
     const update = verdict.testFile === undefined ? 'Vitest with -u' : `\`npx vitest run ${verdict.testFile} -u\``;
@@ -85,8 +85,8 @@ export function describeFailure(name: string, verdict: VisualVerdict, kind: Visu
             return `Image '${name}' changed size from ${verdict.referenceSize}. See ${verdict.actualFile}. If the change is intended, run ${update}.`;
         default: {
             const where = `The actual image is ${verdict.actualFile}, the reference image is ${verdict.referenceFile}, and the diff is ${verdict.diffFile}`;
-            const kindNote = kind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';
-            return `Image '${name}' differs from its reference in ${describeDifference(verdict)}${kindNote}. ${where}. If the change is intended, run ${update}.`;
+            const htmlNote = pageKind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';
+            return `Image '${name}' differs from its reference in ${describeDifference(verdict)}${htmlNote}. ${where}. If the change is intended, run ${update}.`;
         }
     }
 }

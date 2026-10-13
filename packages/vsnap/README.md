@@ -75,7 +75,7 @@ describe('HudView', () => {
 ```
 
 `HudView` returns a Pixi container here. vsnap knows how to draw it because
-the project registers Pixi views, and makes them its default view, as
+the project registers Pixi views, and makes them its default kind, as
 [Kinds of View](#kinds-of-view) describes.
 
 A view that changes over time, such as one that animates, is posed at a
@@ -123,10 +123,10 @@ import { threeViews } from 'vsnap/three';
 
 const config = defineVsnapConfig({
     views: [pixiViews(), threeViews()],
-    defaultView: 'pixi',
+    defaultKind: 'pixi',
 });
 
-// Gives canvasTest's types the kinds of view above, and the default view.
+// Gives canvasTest's types the kinds of view above, and the default kind.
 declare module 'vsnap' {
     interface Register {
         config: typeof config;
@@ -166,7 +166,7 @@ describes.
   test. A pose that makes a new WebGL canvas for each test should release
   its context, since a page keeps only so many.
 
-`defaultView` names the kind that a test is of when it gives no `kind`.
+`defaultKind` names the kind that a test is of when it gives no `kind`.
 Most projects draw most of their views one way, so most of their tests give
 no kind. A test of another kind names it:
 
@@ -176,7 +176,7 @@ canvasTest('at rest', { kind: 'three', width: 240, height: 300, camera }, () => 
 canvasTest('a bar chart', { kind: 'canvas' }, () => drawChart(SALES));
 ```
 
-Without `defaultView`, the default is `'canvas'`. HTML views need no
+Without `defaultKind`, the default is `'canvas'`. HTML views need no
 registration, unless they need preparing or disposing of, as
 [Preparing and Disposing of Views](#preparing-and-disposing-of-views)
 describes, or a background for every test, `htmlViews({ background })`.
@@ -196,7 +196,7 @@ it from there:
 import { bindCanvasTest, defineVsnapConfig } from 'vsnap';
 import { pixiViews } from 'vsnap/pixi';
 
-const config = defineVsnapConfig({ views: [pixiViews()], defaultView: 'pixi' });
+const config = defineVsnapConfig({ views: [pixiViews()], defaultKind: 'pixi' });
 
 // canvasTest, with types that know this config's kinds of view.
 export const canvasTest = bindCanvasTest(config);
@@ -219,8 +219,8 @@ message says which kind the view is, and the `kind` to give.
 
 `pixiViews` and `threeViews` each keep one renderer for every image, which
 is much faster than a renderer for each test. Support for another renderer
-can do the same. It is a `CanvasViewKind`: a name, a check of the view, and
-the step that draws it. It can also have steps that prepare and dispose of
+can do the same. It is a `CanvasViewKind`: its name, as `kind`, a check of
+the view, and the step that draws it. It can also have steps that prepare and dispose of
 the view, and `defaults`, options that every test of the kind gets unless
 it sets its own, as `pixiViews({ background })` does. Its `draw` can return the canvas
 that it drew on, and vsnap reads it. `vsnap` exports the types, with two
@@ -232,8 +232,8 @@ config, the kind joins `canvasTest`'s types through `Register`, as the
 others do.
 
 Each kind is listed once. Two kinds with one name, a kind named
-`'canvas'`, `htmlViews` listed twice, or a `defaultView` that names no
-listed kind, are errors. `vsnap.config.ts` runs in the test page, so such an
+`'canvas'` or `'html'`, `htmlViews` listed twice, or a `defaultKind` that
+names no listed kind, are errors. `vsnap.config.ts` runs in the test page, so such an
 error, or any other that the file throws, fails every visual test file, with
 the error under "Failed to import test file" and vsnap's setup file. The
 other projects still run.
@@ -242,7 +242,7 @@ other projects still run.
 
 If every canvas test that gives no kind is a type error, such as
 "Container is not assignable to HTMLCanvasElement", `canvasTest`'s types
-have no default view. Check that `vsnap.config.ts` has the `Register`
+have no default kind. Check that `vsnap.config.ts` has the `Register`
 declaration, and that `tsconfig.json` includes the file. A test that
 imports a bound `canvasTest` imports it from the config, not from `vsnap`.
 
@@ -385,7 +385,7 @@ const config = defineVsnapConfig({
         threeViews({ prepare: refreshView, dispose: destroyObject }),
         htmlViews({ prepare: refreshView, dispose: destroyElement }),
     ],
-    defaultView: 'pixi',
+    defaultKind: 'pixi',
 });
 
 declare module 'vsnap' {
@@ -409,7 +409,7 @@ config lists:
 
 ```ts
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'vsnap/config';
+import { vsnap } from 'vsnap/vitest';
 
 export default defineConfig({
     plugins: [/* the plugins that the project's views need */],
@@ -459,7 +459,7 @@ Every option is optional.
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for vsnap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
-| `config` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of vsnap's settings are |
+| `vsnapConfig` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of vsnap's settings are |
 
 The first run downloads the browser, and later runs find it in place. A
 monorepo can call `vsnap` once for each package that has visual tests, with

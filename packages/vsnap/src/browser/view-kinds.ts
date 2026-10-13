@@ -9,12 +9,11 @@ import type { CanvasImage } from './canvas-drawing';
  * A kind of view drawn on a canvas, such as Pixi's or three.js's. It says
  * how vsnap knows the view, prepares it, draws it and disposes of it. `V`
  * is the view's type, `O` is the type of its tests' options, and `N` is
- * the kind's name, which tests give as `kind`.
+ * the kind's name, which tests give as their `kind`.
  */
 export interface CanvasViewKind<V = unknown, O = object, N extends string = string> {
     /** The kind's name, such as `'pixi'`, which a test gives as its `kind`. */
-    readonly name: N;
-    readonly kind: 'canvas';
+    readonly kind: N;
     /** Returns whether a value that a pose returned is a view of this kind. */
     readonly isView: (value: unknown) => boolean;
     /**
@@ -51,7 +50,6 @@ export type DrawnImage = CanvasImage | HTMLCanvasElement | OffscreenCanvas;
 
 /** How vsnap prepares an HTML view before its image is taken, and disposes of it after. */
 export interface HtmlViewKind {
-    readonly name: 'html';
     readonly kind: 'html';
     readonly prepare?: (view: Element) => void;
     readonly dispose?: (view: Element) => void;
@@ -70,13 +68,13 @@ export interface VsnapConfig<Views extends readonly ViewKind[] = readonly ViewKi
      * The kind of canvas view that a canvas test poses when it gives no
      * `kind`. The default is `'canvas'`: a canvas that the pose drew.
      */
-    readonly defaultView?: D;
+    readonly defaultKind?: D;
 }
 
 /**
  * What a project's `vsnap.config.ts` tells vsnap's types. The project adds
  * its config's type here, so that `canvasTest` knows its kinds of view and
- * its default view:
+ * its default kind:
  *
  * ```ts
  * declare module 'vsnap' {
@@ -98,16 +96,16 @@ export type CanvasKinds<C extends VsnapConfig = RegisteredConfig> = CanvasKindsO
     readonly canvas: { readonly view: HTMLCanvasElement | OffscreenCanvas; readonly options: Record<never, never> };
 };
 
-/** The name of the kind that a canvas test poses when it gives no `kind`. By default, the config is the one that the project registered. */
-export type DefaultView<C extends VsnapConfig = RegisteredConfig> = DefaultOf<C> & keyof CanvasKinds<C>;
+/** The kind that a canvas test poses when it gives no `kind`. By default, the config is the one that the project registered. */
+export type DefaultKind<C extends VsnapConfig = RegisteredConfig> = DefaultOf<C> & keyof CanvasKinds<C>;
 
 /**
  * The options of a canvas test of one kind. `kind` may be left out for the
- * default view. By default, the config is the one that the project
+ * default kind. By default, the config is the one that the project
  * registered; a project that uses `bindCanvasTest` names its own, as in
  * `CanvasTestOptions<'three', typeof config>`.
  */
-export type CanvasTestOptions<K extends keyof CanvasKinds<C> = DefaultView, C extends VsnapConfig = RegisteredConfig> = KindOptions<C, K>;
+export type CanvasTestOptions<K extends keyof CanvasKinds<C> = DefaultKind, C extends VsnapConfig = RegisteredConfig> = KindOptions<C, K>;
 
 /** The options of a canvas test of one kind of a config. */
 export type KindOptions<C extends VsnapConfig, K extends keyof CanvasKinds<C>> = { readonly kind?: K } & OptionsOf<C, K>;
@@ -131,7 +129,7 @@ export type RegisteredConfig = Register extends { readonly config: infer C exten
  * `canvasTest`.
  */
 export function defineVsnapConfig<const Views extends readonly ViewKind[], const D extends CanvasNamesOf<Views> = never>(
-    config: { readonly views: Views; readonly defaultView?: D },
+    config: { readonly views: Views; readonly defaultKind?: D },
 ): VsnapConfig<Views, D> {
     return config;
 }
@@ -147,7 +145,7 @@ export function htmlViews(options: {
     readonly dispose?: (view: Element) => void;
     readonly background?: number | string;
 } = {}): HtmlViewKind {
-    return { name: 'html', kind: 'html', ...options };
+    return { kind: 'html', ...options };
 }
 
 /**
@@ -166,10 +164,10 @@ export function applyDefaults<O extends object>(defaults: Partial<O> | undefined
 
 /**
  * Returns the kinds of view that the project registered in its
- * `vsnap.config.ts`, which the config found, its default view, and where the
+ * `vsnap.config.ts`, which the config found, its default kind, and where the
  * file is. It loads them once for each page. A project with no such file
  * has none. It throws if two kinds have one name, or two say how to treat
- * HTML views, or if the default view is not one of the kinds.
+ * HTML views, or if the default kind is not one of the kinds.
  */
 export async function loadViewKinds(): Promise<ViewKinds> {
     kinds ??= load();
@@ -183,8 +181,8 @@ export async function loadViewKinds(): Promise<ViewKinds> {
 interface ViewKinds {
     readonly canvas: readonly CanvasViewKind<unknown, object>[];
     readonly html: HtmlViewKind;
-    /** The name of the kind that a canvas test poses when it gives no `kind`. */
-    readonly defaultView: string;
+    /** The kind that a canvas test poses when it gives no `kind`. */
+    readonly defaultKind: string;
     /** Where the project's `vsnap.config.ts` is, or would be, for messages. */
     readonly configFile: string;
     readonly hasConfig: boolean;
@@ -193,17 +191,17 @@ interface ViewKinds {
 }
 
 /** The names of the canvas kinds among some kinds of view. */
-type CanvasNamesOf<Views extends readonly ViewKind[]> = Extract<Views[number], { readonly kind: 'canvas' }>['name'];
+type CanvasNamesOf<Views extends readonly ViewKind[]> = Exclude<Views[number], HtmlViewKind>['kind'];
 
 /** The canvas kinds among some kinds of view, by name, each with its view and options. */
 type CanvasKindsOf<Views extends readonly ViewKind[]> = {
-    readonly [K in Extract<Views[number], { readonly kind: 'canvas' }> as K['name']]: K extends CanvasViewKind<infer V, infer O, string>
+    readonly [K in Exclude<Views[number], HtmlViewKind> as K['kind']]: K extends CanvasViewKind<infer V, infer O, string>
         ? { readonly view: V; readonly options: O }
         : never;
 };
 
-/** A config's default view, or `'canvas'` if it names none. */
-type DefaultOf<C> = C extends { readonly defaultView?: infer D } ? ([Exclude<D, undefined>] extends [never] ? 'canvas' : Exclude<D, undefined>) : 'canvas';
+/** A config's default kind, or `'canvas'` if it names none. */
+type DefaultOf<C> = C extends { readonly defaultKind?: infer D } ? ([Exclude<D, undefined>] extends [never] ? 'canvas' : Exclude<D, undefined>) : 'canvas';
 
 let kinds: Promise<ViewKinds> | undefined;
 
@@ -217,19 +215,29 @@ async function load(): Promise<ViewKinds> {
     const canvas: CanvasViewKind<unknown, object>[] = [];
     let html: HtmlViewKind | undefined;
     for (const view of config.views) {
-        if (view.kind === 'html') {
+        // Only a canvas kind draws, so a canvas kind named 'html' is not taken
+        // for the HTML kind.
+        if (!isCanvasKind(view)) {
             if (html !== undefined) throw new Error(`${configFile} lists htmlViews more than once. List it once.`);
             html = view;
         }
         else {
-            if (view.name === 'canvas') throw new Error(`${configFile} lists a kind of view named 'canvas', which is vsnap's own name for a canvas that a pose drew. Give the kind another name.`);
-            if (canvas.some((kind) => kind.name === view.name)) throw new Error(`${configFile} lists two kinds of view named '${view.name}'. List each kind once.`);
+            if (view.kind === 'canvas' || view.kind === 'html') {
+                const what = view.kind === 'canvas' ? 'a canvas that a pose drew' : 'HTML views';
+                throw new Error(`${configFile} lists a kind of view named '${view.kind}', which is vsnap's own name for ${what}. Give the kind another name.`);
+            }
+            if (canvas.some((kind) => kind.kind === view.kind)) throw new Error(`${configFile} lists two kinds of view named '${view.kind}'. List each kind once.`);
             canvas.push(view as CanvasViewKind<unknown, object>);
         }
     }
-    const defaultView = config.defaultView ?? 'canvas';
-    if (defaultView !== 'canvas' && !canvas.some((kind) => kind.name === defaultView)) {
-        throw new Error(`${configFile} names '${defaultView}' as its default view, but lists no kind of view with that name.`);
+    const defaultKind = config.defaultKind ?? 'canvas';
+    if (defaultKind !== 'canvas' && !canvas.some((kind) => kind.kind === defaultKind)) {
+        throw new Error(`${configFile} names '${defaultKind}' as its default kind, but lists no kind of view with that name.`);
     }
-    return { canvas, html: html ?? htmlViews(), defaultView, configFile, hasConfig: inject('visualHasConfig'), config };
+    return { canvas, html: html ?? htmlViews(), defaultKind, configFile, hasConfig: inject('visualHasConfig'), config };
+}
+
+/** Returns whether a kind of view is a canvas kind: one that draws its views. */
+function isCanvasKind(view: ViewKind): view is CanvasViewKind<never, never, string> {
+    return 'draw' in view;
 }

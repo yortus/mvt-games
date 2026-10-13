@@ -4,7 +4,7 @@
  *
  * In this repository, each entry point in `exports` names its TypeScript
  * source, so nothing needs building to run the tests, and a Vitest config
- * can import `vsnap/config` by name. Node runs TypeScript itself, but never
+ * can import `vsnap/vitest` by name. Node runs TypeScript itself, but never
  * inside `node_modules`, so the published package names the built files in
  * `lib/` instead, with their declarations.
  *

@@ -604,7 +604,7 @@ describe('WinBannerView', () => {
 
 - The website's `vsnap.config.ts` registers Pixi, three.js and HTML views.
   vsnap refreshes each view before its image is taken, and destroys it the
-  MVT way after, so the pose doesn't. Pixi is the default view, so a Pixi
+  MVT way after, so the pose doesn't. Pixi is the default kind, so a Pixi
   test gives no `kind`.
 - The website's `vsnap.config.ts` draws Pixi views as pixel art, as most
   of its games are. Set `pixelArt: false` for a view that its game draws

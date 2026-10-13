@@ -34,14 +34,13 @@ export interface PixiViewsOptions {
 /**
  * Returns the kind of view for Pixi containers, which a project lists in its
  * `vsnap.config.ts`. Its tests give `kind: 'pixi'`, unless it is the
- * project's default view, and their poses return Pixi containers. A view is
+ * project's default kind, and their poses return Pixi containers. A view is
  * drawn as pixel art if its test's options say so, or else if these options
  * say so. Otherwise it is drawn smooth.
  */
 export function pixiViews(options: PixiViewsOptions = {}): CanvasViewKind<Container, PixiImageOptions, 'pixi'> {
     return {
-        name: 'pixi',
-        kind: 'canvas',
+        kind: 'pixi',
         isView: (value) => value instanceof Container,
         defaults: { pixelArt: options.pixelArt, background: options.background },
         // The pose makes its textures with the defaults that this sets.

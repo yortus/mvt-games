@@ -27,8 +27,7 @@ function isSketch(value: unknown): boolean {
 
 /** The kind for sketches. Its `draw` returns the canvas that it drew on, which vsnap reads. */
 const sketchViews: CanvasViewKind<Sketch, SketchOptions, 'sketch'> = {
-    name: 'sketch',
-    kind: 'canvas',
+    kind: 'sketch',
     isView: isSketch,
     draw: (view, options) => {
         const canvas = document.createElement('canvas');
@@ -64,10 +63,10 @@ const config = defineVsnapConfig({
         }),
     ],
     // Most of the tests pose Pixi views, as most of a project's tests would.
-    defaultView: 'pixi',
+    defaultKind: 'pixi',
 });
 
-// Gives canvasTest's types the kinds of view above, and the default view.
+// Gives canvasTest's types the kinds of view above, and the default kind.
 // The fixture's tests are in this package's TypeScript program too, so they
 // are checked against this config.
 declare module './src/browser' {

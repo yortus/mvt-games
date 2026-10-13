@@ -61,7 +61,7 @@ run, so that its reference still counts as used.
 | `src/browser/` | The side that runs in the test page. It holds `canvasTest`, `htmlTest`, `bindCanvasTest`, `defineVsnapConfig` and `htmlViews`, which the main entry point exports, with the types of the kinds of view. It loads the project's `vsnap.config.ts`, reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers the same way every time, draws canvas text from two test fonts, and blanks HTML text. Then it checks the calibration set |
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, `pixiViews` and `threeViews`, which `vsnap/pixi` and `vsnap/three` export. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
-| `src/node/` | The side that runs in Node. `vsnap/config` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
+| `src/node/` | The side that runs in Node. `vsnap/vitest` exports `vsnap`, which makes the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter and the step that installs the browser |
 | `src/browser/__references__/` | The calibration set's references, and those of vsnap's own visual tests |
 | `scripts/` | The maintainers' scripts: the environment's rewrite, the blank font's generator, and the step that puts the published `package.json` in place while npm packs the package |
 | `fixtures/visual-tests-folders/` | The fixture project (see above) |
@@ -127,7 +127,7 @@ under the SIL Open Font License, whose text is beside them.
 
 Inside this repository, nothing needs building. The entry points in
 `package.json` name the TypeScript source, and a Vitest config imports
-`vsnap/config` by name, as the root's does.
+`vsnap/vitest` by name, as the root's does.
 
 Node won't run TypeScript inside `node_modules`, so the published package
 is built. `npm pack` and `npm publish` first run `prepack`, which builds

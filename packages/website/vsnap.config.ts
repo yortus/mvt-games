@@ -19,10 +19,10 @@ const config = defineVsnapConfig({
         htmlViews({ prepare: refreshView, dispose: destroyElement }),
     ],
     // Most of the site's views are Pixi views, so their tests give no kind.
-    defaultView: 'pixi',
+    defaultKind: 'pixi',
 });
 
-// Gives canvasTest's types the kinds of view above, and the default view.
+// Gives canvasTest's types the kinds of view above, and the default kind.
 declare module 'vsnap' {
     interface Register {
         config: typeof config;

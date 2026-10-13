@@ -10,7 +10,7 @@
         ".": {
             "default": "./src/browser/index.ts"
         },
-        "./config": {
+        "./vitest": {
             "default": "./src/node/index.ts"
         },
         "./pixi": {

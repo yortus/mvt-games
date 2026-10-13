@@ -1,7 +1,7 @@
 import { type Dirent, globSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import picomatch from 'picomatch';
-import type { VisualKind } from '../protocol.ts';
+import type { PageKind } from '../protocol.ts';
 import type { VisualLayout } from './layout.ts';
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ export interface VisualTestFiles {
  * the project's root, is a problem, not a test file.
  */
 export function findVisualTestFiles(layout: VisualLayout): VisualTestFiles {
-    const files: Record<VisualKind, string[]> = { canvas: [], html: [] };
+    const files: Record<PageKind, string[]> = { canvas: [], html: [] };
     const problems: { file: string; problem: string }[] = [];
     for (const file of listTestFiles(layout)) {
         if (file.startsWith('../')) {

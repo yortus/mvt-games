@@ -18,20 +18,33 @@ Each review finding says how it was checked:
 
 ## Before publishing
 
-- [ ] **P12. The new calibration images have run only on Windows.** Push
+- [x] **P12. The new calibration images have run only on Windows.** Push
   the branch, and let the visual CI workflow run on Linux and macOS.
+  Done on 2026-10-13: the visual workflow passed on Ubuntu, Windows and
+  macOS for every change to the calibration images: d991d62 (run
+  38127515803), 5b7e922 (run 38231974275), and the hash marker's
+  re-encoding with today's changes, at daa95b1 (run 38374158216).
 
 ## API and design
 
-- [ ] **A11. "kind" means two things.** A test's `kind: 'pixi'` matches a
+- [x] **A11. "kind" means two things.** A test's `kind: 'pixi'` matches a
   view kind's `name`, while a `CanvasViewKind`'s own `kind` field is
   `'canvas'` or `'html'`, and `defaultView` names a kind too. Someone
   writing a kind will set `kind: 'sketch'`. Consider renaming the field.
-- [ ] **A12. The entry points' names.** `defineVsnapConfig` comes from
+  Done: a kind's name is now its `kind` (`{ kind: 'sketch', isView, draw }`),
+  the field that said `'canvas'` or `'html'` is gone (only a canvas kind
+  has `draw`), and the config's `defaultView` is `defaultKind`. The kind of
+  page is `PageKind` inside vsnap, and `pageKind` in each test's meta, so
+  every bare `kind` names a kind of view. `'html'` is reserved, as
+  `'canvas'` was.
+- [x] **A12. The entry points' names.** `defineVsnapConfig` comes from
   `vsnap` and `vsnap()` from `vsnap/config`, and `vsnap()`'s `config`
   option names `vsnap.config.ts`. Users will look for `defineVsnapConfig`
   in `vsnap/config`. Consider `vsnap/vitest` for the Node side, and
   another name for the option.
+  Done: the Node side is `vsnap/vitest`, named for the file it goes in, as
+  unplugin's `<package>/vite` is. The option is `vsnapConfig`, beside
+  `viteConfig`. Every "config" in vsnap now means `vsnap.config.ts`.
 
 ## Watch mode
 
