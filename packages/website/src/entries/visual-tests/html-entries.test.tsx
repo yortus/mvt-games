@@ -11,7 +11,7 @@ import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { htmlTest } from 'vsnap';
 import type { ElementEntryStarter } from '../../entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs } from '../../runner';
+import { advanceHeadless, findThumbnailAdvanceMs, waitForLayout } from '../../runner';
 import { CATALOGUE } from '../catalogue';
 
 /**
@@ -60,6 +60,8 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     // view twice is harmless.
     onTestFinished(() => session.destroy());
     await session.ready;
+    // An entry that sizes itself to its element learns its size here.
+    await waitForLayout();
     advanceHeadless({ session, views: session.views, controls, totalMs: findThumbnailAdvanceMs(starter) });
     session.render();
     return element;

@@ -2,7 +2,7 @@ import { Application, TextureSource } from 'pixi.js';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { CATALOGUE, findEntry } from './entries';
 import { type ArcadeEntry, thumbnailCropOf } from './entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from './runner';
+import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless, waitForLayout } from './runner';
 
 // This is the snapshot page (`snapshot.html`). Only
 // `scripts/generate-thumbnails.ts` uses it. The dev server serves it, and the
@@ -103,8 +103,10 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.height = `${entry.screenHeight}px`;
     const { audio80, controls } = createHeadlessAudio80();
     const session = starter.start({ element: root, sound: audio80 });
-    // Some renderers start asynchronously, so this waits until they can draw.
+    // Some renderers start asynchronously, so this waits until they can draw,
+    // and until an entry that sizes itself to its element knows its size.
     await session.ready;
+    await waitForLayout();
     advanceHeadless({ session, views: session.views, controls, totalMs });
     session.render();
 }

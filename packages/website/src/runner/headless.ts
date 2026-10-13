@@ -46,6 +46,20 @@ export function startPixiHeadless(options: StartPixiHeadlessOptions): EntrySessi
 }
 
 /**
+ * Waits until the browser has laid the page out and told any resize
+ * observers the sizes they watch, as it does within an entry's first frames
+ * on a real page. An element entry that sizes its drawing to its element,
+ * through a `ResizeObserver`, learns its size only then. A headless run
+ * advances every frame before the browser gets a turn, so it waits for this
+ * first. A frame's callbacks run before its layout and its resize
+ * observers, so it waits for the frame after.
+ */
+export async function waitForLayout(): Promise<void> {
+    await waitForFrame();
+    await waitForFrame();
+}
+
+/**
  * Advances a session by `totalMs`, in the order that the host uses. Each
  * frame-sized step plays the input, if any, then updates the session's
  * models, its chip's clock and its views. At the end, the views are
@@ -79,3 +93,7 @@ export function findThumbnailAdvanceMs(starter: EntryStarter): number {
 
 /** One frame at 60 frames a second, rounded down. */
 export const FRAME_MS = 16;
+
+function waitForFrame(): Promise<number> {
+    return new Promise((resolve) => requestAnimationFrame(resolve));
+}

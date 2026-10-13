@@ -84,7 +84,7 @@ Each review finding says how it was checked:
 
 ## Outside vsnap
 
-- [ ] Rerun the website's thumbnail script, which changed with the
+- [x] Rerun the website's thumbnail script, which changed with the
   whole-entry tests. The user runs it, since it launches the installed
   Chrome, and each new Chrome profile risks a failed Windows logon.
 - [ ] Commit chunk 10 and the rounds since it in main (the user).
