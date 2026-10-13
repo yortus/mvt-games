@@ -4,6 +4,25 @@ import type { VisualKind } from '../protocol.ts';
 import type { VisualLayout } from './layout.ts';
 
 // ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+/**
+ * A project's visual test files, by kind, as paths relative to its root,
+ * with forward slashes, as Vitest's `include` takes them.
+ */
+export interface VisualTestFiles {
+    readonly canvas: readonly string[];
+    readonly html: readonly string[];
+    /**
+     * The files that match the globs but can't run, each with what is wrong
+     * with it. vsnap leaves them out of its projects, and reports them, so
+     * that one half-written file stops no other test.
+     */
+    readonly problems: readonly { readonly file: string; readonly problem: string }[];
+}
+
+// ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
 
@@ -13,28 +32,44 @@ import type { VisualLayout } from './layout.ts';
  * Canvas tests and HTML tests run in different kinds of page, so each file
  * goes to the Vitest project for its kind. Vitest gives each project its
  * files before any test code runs, so the declarations are read from each
- * file's text. Throws if a file declares both kinds, or neither, or is
- * outside the project's root. Returns paths relative to the root, with
- * forward slashes, as Vitest's `include` takes them.
+ * file's text. A file that declares both kinds, or neither, or is outside
+ * the project's root, is a problem, not a test file.
  */
-export function findVisualTestFiles(layout: VisualLayout): Readonly<Record<VisualKind, readonly string[]>> {
+export function findVisualTestFiles(layout: VisualLayout): VisualTestFiles {
     const files: Record<VisualKind, string[]> = { canvas: [], html: [] };
-    for (const path of listTestFiles(layout)) {
-        if (path.startsWith('../')) {
-            throw new Error(`${path} matches the visual test files' globs (include), but it is outside the project's root.`);
+    const problems: { file: string; problem: string }[] = [];
+    for (const file of listTestFiles(layout)) {
+        if (file.startsWith('../')) {
+            problems.push({ file, problem: "matches the visual test files' globs (include), but it is outside the project's root" });
+            continue;
         }
-        const text = readFileSync(join(layout.root, path), 'utf8');
+        let text: string;
+        try {
+            text = readFileSync(join(layout.root, file), 'utf8');
+        }
+        catch {
+            // Deleted since the glob found it.
+            continue;
+        }
         const isCanvas = CANVAS_DECLARATION.test(text);
         const isHtml = HTML_DECLARATION.test(text);
         if (isCanvas && isHtml) {
-            throw new Error(`${path} declares both canvas and HTML visual tests. The two kinds run in different pages, so split them into two files.`);
+            problems.push({ file, problem: 'declares both canvas and HTML visual tests. The two kinds run in different pages, so split them into two files' });
         }
-        if (!isCanvas && !isHtml) {
-            throw new Error(`${path} matches the visual test files' globs (include), but it declares no canvasTest or htmlTest.`);
+        else if (!isCanvas && !isHtml) {
+            problems.push({ file, problem: "matches the visual test files' globs (include), but it declares no canvasTest or htmlTest yet" });
         }
-        files[isHtml ? 'html' : 'canvas'].push(path);
+        else {
+            files[isHtml ? 'html' : 'canvas'].push(file);
+        }
     }
-    return files;
+    return { ...files, problems };
+}
+
+/** Returns a message that lists the visual test files that can't run, and why. */
+export function describeProblems(problems: VisualTestFiles['problems']): string {
+    const lines = problems.map((p) => `  ${p.file} ${p.problem}.`);
+    return `${problems.length === 1 ? 'A file matches' : `${problems.length} files match`} the visual test files' globs but can't run, so vsnap left ${problems.length === 1 ? 'it' : 'them'} out:\n${lines.join('\n')}`;
 }
 
 /**

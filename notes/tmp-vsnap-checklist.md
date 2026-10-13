@@ -2,7 +2,7 @@
 
 A working list for proposal 042 (vsnap), to be worked through over several
 rounds and deleted when it is empty. It holds the findings of the fresh
-review of 2026-10-12 and every other open item. Paths are relative to
+reviews of 2026-10-12 and 2026-10-13 and every other open item. Paths are relative to
 `packages/vsnap/` unless they start with `packages/` or `notes/`.
 
 Each review finding says how it was checked:
@@ -10,259 +10,141 @@ Each review finding says how it was checked:
 - **Checked**: the code was read, and the finding holds.
 - **Likely**: the reasoning holds, but a run is needed to prove it.
 - **Unverified**: not yet checked.
+- **Reproduced**: the 2026-10-13 review made it happen, in a scratch
+  project or a run.
 
 ## Bugs
 
-- [x] **B1. The unknown-font check depends on test order** (checked).
-  `src/browser/canvas-text.ts` records an unknown family only when its CSS
-  font string misses the parse cache, so only the first test that uses a
-  given string fails. Also, `src/browser/visual-test.ts` drains the set
-  only after the blank check, so a test that throws before then leaves its
-  families for the next test.
-  Fix: record on every lookup, clear the set in `resetForTest`, and drain
-  it in a `finally`.
-- [x] **B2. The orphan scan can delete PNGs that aren't references**
-  (checked). `findReferences` in `src/node/references.ts` walks the whole
-  root, and treats any PNG with the hash marker as a reference, so `-u`
-  can delete a copy in `docs/`, or a nested package's references that this
-  run doesn't load.
-  Fix: scan only the paths that the `referencePath` template can produce.
-- [x] **B3. Test file paths go to Vitest as globs, unescaped** (likely).
-  `src/node/config.ts` passes them to `test.include` and
-  `optimizeDeps.entries`. A file such as `src/routes/[slug]/x.visual.test.tsx`
-  would never run, and the complete-run checks would silently stop too.
-  Fix: escape each path.
-- [x] **B4. Concurrent tests would break naming and drawing** (checked:
-  nothing prevents them). Image names come from the global
-  `expect.getState().currentTestName` (`src/browser/judge.ts`), and the
-  Pixi stage is one shared object (`src/pixi/pixi-image.ts`).
-  Fix: force `sequence.concurrent: false` in vsnap's projects, and name
-  images from the test's own task.
-- [x] **B5. Some views are never disposed** (checked). A view that fails
-  its kind's check is never disposed (`src/browser/visual-test.ts`), and
-  nor is a `'canvas'` pose's canvas, on any path. In the shared page,
-  leaked WebGL contexts could push out the renderers' own.
-- [x] **B6. Run-level failures only set `process.exitCode`** (checked).
-  Shared references, orphans and bad hashes (`src/node/reporter.ts`) leave
-  watch mode, the UI and programmatic runs showing a pass.
-- [x] **B7. Non-ASCII test names lose their letters** (checked).
-  `src/browser/image-name.ts` keeps only `[A-Za-z0-9.]`, so `'日本'` gets
-  the image name `''`, and `'café'` clashes with `'caf'`.
-  Fix: keep Unicode letters and digits, or reject an empty name.
-- [x] **B8. An HTML view taller or wider than the viewport may be captured
-  wrongly** (unverified). The viewport is 1280 by 800
-  (`src/node/config.ts`), and the capture doesn't go beyond it
-  (`src/node/commands.ts`).
-  Fix: fail if the view's rectangle goes past the viewport.
-  Confirmed and fixed on 2026-10-12: a 1000-pixel-tall view came out white
-  below 800 pixels. It now fails with a message. Growing the page for a big
-  view would be better, but the outer page stays 1280 by 800, so it's a
-  bigger change, left for later.
-- [x] **B9. HTML capture waits only for `<img>` elements and fonts**
-  (likely to flake). CSS background images, SVG `<image>` elements and
-  video posters aren't waited for (`src/browser/html-image.ts`).
-- [x] **B10. HTML `prepare` runs before the element is in the page**
-  (checked). `src/browser/visual-test.ts` calls it before
-  `captureHtmlImage` mounts the element, so a `prepare` that measures
-  layout sees nothing.
+From the blind review of 2026-10-13.
+
+- [x] **B7. Two `vsnap()` calls with one root delete each other's
+  references** (reproduced). Each call's reporter counts every hashed PNG
+  under its root as its own (`src/node/references.ts` `findReferences`,
+  `src/node/reporter.ts` `settleOrphans`), and `registerRoot` only skips
+  roots nested inside another. Two calls split by `include`, with the
+  default root, each report the other's references as unused, and `-u`
+  deletes them all. Fix: refuse two calls whose roots are the same or
+  overlap, or limit each call's references to its own test files.
+  Done on 2026-10-13: an image belongs to a call only if the reference
+  path, read backwards, gives a test file that the call's `include` globs
+  match (so a deleted file still owns its images, which are then unused), or,
+  for a template without the file's name, a folder that holds one of its
+  test files. Two calls whose globs match one file stop the run. Checked in
+  the packed trial: two calls with one root keep both images through `-u`.
+- [x] **B8. With a non-default `referencePath`, `-u` deletes copies of
+  references elsewhere** (reproduced). `toReferenceGlob` turns
+  `{testFileDir}` into `**`, so with `{testFileDir}/{imageName}.png` any
+  hashed PNG under the root, such as a copy in `docs/`, counts as a
+  reference, is reported as unused, and `-u` deletes it. The comment at
+  `references.ts` and the README say copies are safe. Fix: limit the
+  folders to those that hold a test file of the call.
+  Done on 2026-10-13, with B7: a copy in `docs/` is no longer a reference.
+- [ ] **B9. Missing glyphs pass when they change** (reproduced). The test
+  fonts lack ★ ☆, emoji, CJK and, in the sans font, █. Each draws the same
+  empty box (glyph 0), so three filled stars and three empty ones give the
+  same image. Fix: fail a test whose canvas text maps a character to
+  glyph 0, as unpinned font families fail, naming the characters.
+- [ ] **B10. HTML captures of CSS animations are flaky** (reproduced: 3
+  of 4 runs failed). Nothing freezes animations or transitions
+  (`src/browser/html-image.ts`); `reducedMotion: 'reduce'` only affects CSS
+  that asks for it. Fix: as Playwright's `animations: 'disabled'` does,
+  finish finite animations and cancel infinite ones, turn transitions off,
+  and wait a frame.
+- [ ] **B11. Text in shadow DOM isn't blanked** (reproduced). The blank
+  font rule (`src/browser/html-rules.ts`) and the steps that quantize font
+  sizes, pixelate rotated images and load style images don't reach into
+  shadow roots, so web components draw real text in the system's fonts.
+  Fix: add the rules to each open shadow root (`adoptedStyleSheets`), and
+  walk shadow roots in those steps.
+- [x] **B12. One malformed visual test file breaks every run** (reproduced),
+  `-p unit` and the VS Code extension's discovery included, because
+  `findVisualTestFiles` throws at config load. Fix: report it from vsnap's
+  projects instead, so other projects still run.
+  Done on 2026-10-13: such a file is left out of the projects, with a
+  warning when the config loads. A run of the visual tests fails over it,
+  after running the others; `-p unit` only warns. Checked with an empty file
+  in the website.
+- [ ] **B13. A root `test.browser` leaks into vsnap's projects**
+  (reproduced). With `extends: true`, a root `browser.instances` adds
+  instances, so each visual file runs again in another browser, uncounted,
+  and races vsnap's instance when writing new references. Fix: set
+  vsnap's own instances so nothing is added, or stop the run, as for
+  inherited `include` and `setupFiles`.
+- [ ] **B14. A long test name fails with a raw ENOENT** (reproduced at 300
+  characters; a name over 255 bytes would fail on Linux). Fix: cap image
+  names, with a short hash of the full name, and a clear message.
+- [ ] **B15. Image names that differ only in case collide on macOS**
+  (checked). `toFileKey` folds case only on Windows. Fix: compare names
+  case-insensitively on every platform when looking for shared references.
+- [ ] **B16. Smaller bugs** (each checked by reading, or reproduced):
+  - A font fetch that fails shows as fontkit's "Unknown font format"
+    (`src/browser/page-setup.ts`): check `response.ok` and name the URL.
+  - `checkViewConfig` rejects `export { config as default }`.
+  - `engines` says `>=22`, but `fs.globSync` with `withFileTypes` needs
+    22.2, and stops being experimental in 22.17 (likely).
+  - The default `root` is the working folder, not the config's folder, so
+    `vitest --root` or `--config` elsewhere scans the wrong tree (likely).
+  - Pixi textures cached by an earlier test keep that test's sampling
+    (`TextureSource.defaultOptions.scaleMode`), so images could depend on
+    test order (likely). Document it, or detect it.
 
 ## Before publishing
 
-- [x] **P1. The Playwright promise in the README is probably false**
-  (likely). `@vitest/browser-playwright` takes Playwright as a peer with
-  the range `*`, so a project with another Playwright version launches
-  that version's browser, and the fingerprint check stops the run.
-  Fix: make `playwright` a peer of vsnap, or launch vsnap's own copy by
-  its executable path. Then correct the README's Requirements.
-  Done on 2026-10-12: confirmed, since the provider imports the project's
-  `playwright` and can't be handed another copy. `playwright` (`~1.63.0`) is
-  now a peer of vsnap, which npm installs with it. The root's `overrides`
-  entry, which hid the problem in this repo, is gone, and the root lists
-  both peers. The README's Requirements and setup steps say so.
-- [x] **P2. `@vitest/browser-playwright` is a caret dependency, but
-  requires exactly Vitest 5.0.3** (checked). Make it a peer, as `vitest`
-  is. Done on 2026-10-12. Vitest's own peer range pins it to Vitest's
-  version, so npm installs the matching one.
-- [x] **P3. The package works only from source, inside this repo.**
-  `exports` point at `.ts` files, with no `types`, `files` list or build.
-  Node-side paths resolve `.ts` siblings and `src/browser/__references__`
-  from `import.meta.dirname`. `visual-environment.json` must ship.
-  Fix: build with tsdown, check with publint and attw, set `files` and
-  `engines` (Node 22 or later).
-  Done on 2026-10-12: `npm run build -w vsnap` builds `lib/` with tsdown
-  (publint and attw pass), and `exports` name `types` and `default` there,
-  with `@mvtjs/source` for the repo. `files` and `engines` are set, and the
-  calibration references and the fonts' licences ship. The Node side finds
-  its sibling files by its own extension. Node ignores the source
-  condition, so the root's `vitest.config.ts` imports vsnap's Node side by
-  path. The package stays private until publishing.
-- [x] **P4. Vite's dependency scan ignores `**/dist/**`** (checked in
-  Vite's source by the reviewer). A setup file shipped under `dist/` would
-  drop out of `optimizeDeps.entries`, and bring back mid-run reloads.
-  Choose the build's output folder with this in mind.
-  Done: the build writes to `lib/`.
-- [x] **P5. A packed install may load vsnap's page code twice**
-  (unverified): once pre-bundled by Vite as `vsnap`, once by path as the
-  setup file. That would mean two seeded randoms and two page setups.
-  Check with a packed install. A possible fix is
-  `optimizeDeps.exclude: ['vsnap', 'vsnap/pixi', 'vsnap/three']`.
-  Done on 2026-10-12: confirmed in a scratch project from a packed install.
-  Bundled, the tests' `canvasTest` came from four bundled chunks, while the
-  setup used `lib`'s files. A bundled copy would also hold the project's
-  `vsnap.config.ts`, which `view-kinds` imports. vsnap's projects now
-  exclude its entry points, and include `vsnap > fontkit`, and `pixi.js`
-  and `three` where installed. Every module then loads once.
-- [x] **P6. Shipping `.ts` source makes projects type-check vsnap's
-  code**, which needs `vite/client` types and the project's own strictness
-  flags. Ship `.d.ts` files. Done: the build ships them, and the scratch
-  project type-checks with `skipLibCheck: false` and no `vite/client`.
-- [x] **P7. Verify the published types.** The declaration merging on
-  `Register`, and the derived `canvasTest` types, must work from the built
-  `.d.ts` files in a project that imports `vsnap/pixi`.
-  Done on 2026-10-12: in the scratch project, `Register` merges, a test of
-  an unregistered kind is a type error, and the Pixi, three.js and HTML
-  tests pass, with the calibration set.
-- [x] **P8. The hash marker's keyword is `'mvt-pixels'`** (checked,
-  `src/node/png.ts`). It's an in-house name, and changing it after
-  publishing would invalidate every reference. Decide it now, perhaps
-  `'vsnap'`, and rewrite every reference once.
-  Done on 2026-10-12: the keyword is `'vsnap'`. A one-off script
-  re-encoded the 70 references in the repo with vsnap's encoder. Each is
-  5 bytes smaller, the keyword's difference, with its hash unchanged.
-- [x] **P9. Some messages are for vsnap's maintainers, not its users.**
-  `npm run test:visual:environment -w vsnap` in
-  `src/browser/calibration.ts` and `src/node/commands.ts`, and "add the
-  names to SANS_FAMILIES … in the vsnap package" in
-  `src/browser/visual-test.ts`.
-- [x] **P10. The output folder is undocumented.** `.vitest/vsnap` at the
-  git root (`src/node/paths.ts`) isn't mentioned in the README, which
-  should say to gitignore it. `toDisplayPath` is relative to a repo root.
-  On Windows, a reference on another drive makes `relative()` return an
-  absolute path, which breaks the output path (`src/node/commands.ts`).
-- [x] **P11. The "too big" failure gives no update command**
-  (`src/browser/judge.ts`), though the README says failure messages give
-  it.
-- [x] **P13. Leave `@mvtjs/source` out of the published `package.json`,**
-  as 042 plans. The repo needs the condition, so a step at publishing
-  time must remove it, along with the `src` paths it names, which don't
-  ship.
-  Done on 2026-10-13, without the condition: the repo's `exports` name the
-  source again, and `prepack` builds `lib/`, then puts a `package.json`
-  whose `exports` name `lib/` in place (`scripts/publish-manifest.ts`), and
-  checks it with publint and attw. `postpack` puts the repo's back, even when
-  a publish fails, so the registry's copy of the metadata names the source,
-  while the tarball's, which installs use, names `lib/`.
 - [ ] **P12. The new calibration images have run only on Windows.** Push
   the branch, and let the visual CI workflow run on Linux and macOS.
 
 ## API and design
 
-- [x] **A1. Run-level checks are switched off silently.** One skipped or
-  `todo` test turns off the complete-run checks
-  (`src/node/reporter.ts`). The summary should say why they didn't run.
-- [x] **A2. `extends: true` brings in more than `include` and `exclude`.**
-  It probably also brings the root's `setupFiles`, `globalSetup` and
-  `retry` into the browser projects. A Node-only setup file would break
-  the page. Check, then warn or strip them.
-- [x] **A3. The options are not Vitest's options.** The README says they
-  come first "as they do in Vitest's `test`", but they don't accept
-  `timeout`, `retry` or `skip`, and there is no `.skip`, `.only` or
-  `.each`. Change the wording, or add the support.
 - [ ] **A4. Should `artStyle` default to `'smooth'`?** `'pixel'` suits
-  games, not Pixi users generally. A decision for the user.
-- [x] **A5. A view of one solid colour can't be tested.** The blank check
-  always fails it, and can't be turned off.
-- [x] **A6. `background` differs between the kinds.** It's a number for
-  canvas kinds, and a CSS string for `htmlTest`.
-- [x] **A7. `CanvasViewKind`'s defaults make a bare annotation
-  unusable.** With `V = never, O = never`, `CanvasViewKind` without type
-  arguments gives `prepare(view: never)`.
-- [x] **A8. The caches in the shared page grow without limit.** Pixi keeps
-  a render target for each distinct size (`src/pixi/pixi-image.ts`).
-  three.js keeps a scene for each `scene` function
-  (`src/three/three-image.ts`), so an inline arrow function leaks a scene
-  and its environment map on every test. The default disposers don't free
-  textures, and `disposeObject` skips lines, points and sprites.
-  Done on 2026-10-12: both caches keep only their most recent entries (16
-  render textures, 4 scenes), releasing the rest, and `disposeObject` takes
-  every geometry and material. The default disposers still leave textures,
-  since tests often share them.
-- [x] **A9. In-house wording in the package.** `src/pixi/pixi-image.ts`
-  mentions "the games' spritesheets".
-- [x] **A10. One `Register` per TypeScript program.** A monorepo whose
-  packages have configs of their own must type-check each package on its
-  own. It's documented. Consider whether vsnap can do better.
-  Done on 2026-10-13: `bindCanvasTest(config)` returns `canvasTest` typed by
-  that config, which the config exports and its tests import, so packages
-  that share one program each have their own types. The types take the
-  config as a parameter, with the registered one as the default, so
-  `Register` works as before. As each test runs, a bound `canvasTest` checks
-  that vsnap loaded its config, so a test that imports another package's
-  fails (tested in vsnap's own canvas tests). vsnap's fixture, which shares
-  vsnap's program, uses it. Type tests in `bind-canvas-test.test.ts`; the
-  built types checked in the packed trial. The config check accepts either.
+  games, not Pixi users generally. A decision for the user. The 2026-10-13
+  review agrees, and adds project-wide defaults (A13).
+- [ ] **A11. "kind" means two things.** A test's `kind: 'pixi'` matches a
+  view kind's `name`, while a `CanvasViewKind`'s own `kind` field is
+  `'canvas'` or `'html'`, and `defaultView` names a kind too. Someone
+  writing a kind will set `kind: 'sketch'`. Consider renaming the field.
+- [ ] **A12. The entry points' names.** `defineVsnapConfig` comes from
+  `vsnap` and `vsnap()` from `vsnap/config`, and `vsnap()`'s `config`
+  option names `vsnap.config.ts`. Users will look for `defineVsnapConfig`
+  in `vsnap/config`. Consider `vsnap/vitest` for the Node side, and
+  another name for the option.
+- [ ] **A13. No project-wide defaults for a kind's options,** such as
+  `pixiViews({ artStyle, background })`. With A4.
+- [ ] **A14. The three.js peer range covers one minor version**
+  (`^0.186.1`), and three releases one a month, so a project on 0.187
+  likely gets a conflict. Widen it.
+- [ ] **A15. `CanvasTestOptions` knows only the registered config,** so a
+  project using `bindCanvasTest` can't name its options' type. Add a
+  config parameter.
+- [ ] **A16. Smaller gaps:** no `skipIf` or `runIf`; `.todo` takes no
+  options; a kind's `dispose` is required; no `exclude` option; the fixed
+  `groupOrder: 1` can clash with a project's own group 1; the viewport
+  and tolerance are fixed.
+- [ ] **A17. Playwright `~1.63.0` makes upgrades lockstep** for projects
+  that use Playwright for other tests. A deliberate trade-off: say so
+  plainly in the README's Requirements.
 
 ## Watch mode
 
-- [x] **W1. A change to `vsnap.config.ts`, or to vsnap's page code, needs
-  Vitest stopped and started again.** Vitest's browser mode keeps the
-  setup's modules for the session, even across its own restarts, so the
-  tests rerun with the old modules. Find out why a restart doesn't clear
-  them, and fix it if vsnap can. The README documents the behaviour for
-  now.
-  Resolved on 2026-10-12: an edit to `vsnap.config.ts` now takes effect on
-  a plain rerun, checked by widening a prepared view, whose test then
-  failed. The alias `virtual:vsnap-config` (added for module identity) lets
-  Vite track the file. The README is corrected.
-- [x] **W2. Add a scheduled CI run with `--sequence.shuffle`**, to catch
-  tests that depend on the ones before them in the shared canvas page.
-  Already there: the weekly scheduled run, and manual runs, shuffle the
-  tests, with the seed in the log (`.github/workflows/visual.yml`).
+- [x] **W3. Watch mode crashes when a new visual test file is empty**
+  (reproduced). VS Code's "New File" makes one. The watcher re-reads every
+  test file on an add or delete (`src/node/config.ts`), and the error that
+  `findVisualTestFiles` throws becomes an unhandled rejection, which ends
+  Vitest. Fix: catch it, say what is wrong, and keep watching; restart
+  once the files are valid again. With B12.
+  Done on 2026-10-13: the watcher no longer throws (and catches anything
+  else), warns about the new file, and re-reads the lists when a known or
+  problem file changes, so the file's first test restarts Vitest. Checked:
+  an empty file, then a test written into it, in a watch run.
+- [ ] **W4. The VS Code extension may not see new visual files** unless it
+  runs Vitest in watch mode, since the restart needs `config.watch`
+  (unverified).
+
 
 ## Smaller items
 
-- [x] **S1.** `src/node/config.ts` builds `includes` as a copy of the file
-  list, and spreads every option into `createVisualProject`.
-- [x] **S2.** `patchPixiPools` (`src/pixi/pixi-views.ts`) patches a Pixi
-  8.21 bug, but the peer range is `^8.16`. `_roundPixels`
-  (`src/pixi/pixi-image.ts`) is a private Pixi field. Recheck both on each
-  Pixi update.
-  Done on 2026-10-13: no longer a manual recheck. Unit tests in
-  `src/pixi/pixi-views.test.ts` fail when Pixi clears `roundPixels` on reset
-  (the patch can go) and when the renderer stops reading `_roundPixels`.
-  The field is now set without a cast, since Pixi's types declare it, so a
-  rename fails the type check.
-- [x] **S3.** `cdpSessions` (`src/node/commands.ts`) is never cleared in
-  watch mode.
-- [x] **S4.** Record the earlier question about a configurable pixel
-  tolerance (the answer and the decision) in 042.
 
 ## Usability
 
-From the usability review of 2026-10-12, from a Vitest user's point of
-view. A1, A2, A4, A5, B1 and P7 also came up there.
-
-- [x] **U1. New images fail their test.** Vitest writes new snapshots
-  automatically on a developer's machine, and refuses only in CI. vsnap
-  fails every new image until `-u`, so a first test is red for no fault.
-  Fix: write new references locally, and fail on them in CI, as Vitest
-  does.
-- [x] **U2. No `.skip`, `.only`, `.todo` or `.each`, and no Vitest test
-  options** such as `timeout` or `retry`. Users will reach for
-  `canvasTest.only(...)`. Add them, and pass Vitest's options through.
-  Done on 2026-10-12, except `.each`, which is U9.
-- [x] **U3. Show the images where Vitest shows results.** A failure names a
-  PNG under `.vitest/vsnap/`, which the user opens by hand. Vitest's test
-  annotations can carry attachments, which the Vitest UI and HTML reporter
-  show. Check that browser mode supports them, then attach the actual,
-  reference and diff images.
-  Done on 2026-10-12: a failed image records the same
-  `visual-regression` artifact as Vitest's own screenshot assertion, with
-  its reference, actual and diff images, which Vitest copies into its
-  attachments.
-- [x] **U4. vsnap's summary goes to standard output,** even with
-  `--reporter=json`, which could corrupt output that another tool reads.
-  Print it to standard error, or only beside a human-readable reporter.
 - [ ] **U5. Check the tools around Vitest:** the VS Code Vitest extension
   (does it list and run visual tests?), the Vitest UI with browser
   projects, and coverage runs that include them.
@@ -285,43 +167,57 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
   each test (`visual`: kind, outcome, size, timings), which the reporter
   reads. Harmless, but noise to a user. Consider a less prominent place, or
   a shorter record.
-- [x] **U6. A step-by-step setup guide in the README** for a project whose
-  config is flat today: moving to projects, moving `include` and
-  `exclude` into the unit project, adding `vsnap.config.ts` with
-  `Register`, and including it in `tsconfig.json`.
-- [x] **U9. `canvasTest.each` and `htmlTest.each`,** with Vitest's
-  table forms and name formatting (`%s`, `$name`). Until then, a test can
-  declare its cases in a loop, as the website's tests do.
-- [x] **U7. Let `vitest.config.ts` name `vsnap.config.ts`:**
-  `vsnap({ config: './vsnap.config.ts' })`, optional, with today's
-  location as the default, so that a reader of the Vitest config sees where
-  the rest lives. (Moving the page's config into `vitest.config.ts`, and
-  copying it out, was considered and rejected on 2026-10-12: the page's
-  parts are functions, which can't be copied out of a running config, and
-  copying their source would need fragile code extraction.)
-- [x] **U8. Check `vsnap.config.ts` when the config loads, in Node,
-  without running it:** that it exists when the project has canvas tests of
-  kinds other than `'canvas'`, and that it calls `defineVsnapConfig`. A
-  plain text check, as for test files, so a missing or misplaced file
-  stops the run before any browser starts.
+- [ ] **U12. The reference checks rarely run in real CI.** They never run
+  under `--shard`, and one lasting `.skip` turns them off for good. The
+  hash check doesn't depend on which tests ran, so it could always run;
+  skipped tests' references could count as used, by their names.
+- [ ] **U13. Check failures look like crashes:** unused and shared
+  references print under Vitest's "Unhandled Errors". Give them a heading
+  of their own, or fail them in a test module.
+- [ ] **U14. An error in `vsnap.config.ts`** fails each file, as "Failed to
+  import test file .../setup.ts", where the README says it stops the run.
+- [ ] **U15. The summary:** "1 differ" should read "1 differs"; "in X s"
+  counts from the run's start, unit tests included; it's long, repeats on
+  every watch rerun, and can't be quietened.
+- [ ] **U16. Speed at scale:** every complete run decodes every reference
+  (4.7 ms each, about 2.3 s per 500), and globs the root three times; every
+  Vitest start, `-p unit` included, fingerprints the repository and reads
+  every visual test file (120 ms here). Cache the checks by size and time.
+- [ ] **U17. The browser install check costs 0.4 s each run,** and prints
+  to standard output during a download. Check for the executable first.
+- [ ] **U18. Smaller:** a headed browser (`--browser.headless=false`) gets
+  a message that blames Playwright's version (likely); old actual and diff
+  images in `.vitest/vsnap/` are never cleaned; `recordArtifact` uses
+  Vitest's `'internal:toMatchScreenshot'` type, an internal contract.
+
+## Documentation
+
+From the 2026-10-13 review, where the README disagrees with the code.
+
+- [x] **D1. "Copies of references are never deleted"** is false for
+  non-default layouts (B8), in the README and in `references.ts`.
+  Done on 2026-10-13, with B7 and B8. The README also says now that
+  after a change of layout the old files are left, to delete by hand: the
+  run no longer finds them, as it did only because its globs were too wide.
+- [ ] **D2. "Nothing needs installing beyond `npm ci`"** leaves out the
+  browser download on the first run (about 100 MB), Linux's system
+  libraries (`playwright install-deps`), and caching it in CI.
+- [ ] **D3. Smaller disagreements:** the `canvas` kind takes no
+  `background`; `readCanvas` doesn't read a canvas drawn smaller; the font
+  list rule is stricter than the code, and missing glyphs (B9) aren't
+  mentioned; the Configuration example's unit project lacks
+  `extends: true`; kind errors fail each file, not the run; the dark colour
+  scheme and reduced motion that HTML views get aren't mentioned; "up to
+  15x faster" has no benchmark behind it.
+- [ ] **D4. Presentation:** about a quarter of the README is for vsnap's
+  maintainers (its own config, its layout, the build); move it to a
+  CONTRIBUTING file. Missing: the options of each kind in one place, a CI
+  recipe, troubleshooting, and how to review a diff in the Vitest UI.
+  Lines 93, 257, 269 and 507 aren't wrapped, and "html views" should read
+  "HTML views".
 
 ## The rest of 042, step 10
 
-- [x] Review each dependency, with P1 and P2.
-  Done on 2026-10-13. Peers: `vitest`, `@vitest/browser-playwright` and
-  `playwright` (P1, P2), and the optional `pixi.js` and `three`.
-  Dependencies, both MIT, both kept:
-  - `fontkit` 2.0.4 draws canvas text from the test fonts: instances of
-    variable fonts (`getVariation`), shaping (`layout`) and glyph outlines.
-    About 9 MB installed with its dependencies, and 0.6 MB of code in each
-    test page, against Pixi's 1.2 MB. opentype.js is smaller, but its
-    support for variable fonts is weaker. No `fontkit` type reaches the
-    published types, so projects need no `@types/fontkit`.
-  - `pngjs` 7.0.0 decodes references, including PNGs that other tools
-    saved; vsnap encodes its own. No dependencies, and Vitest's browser
-    package installs the same version, so it adds nothing.
-  The blank font's generator, which only the maintainers' script and its
-  test use, moved from `src/node/` to `scripts/` with its test.
 - [ ] The final logo: the SVG in the repo, an icon size for npm, a
   favicon, a settled colour, and a wordmark if the README wants one.
 - [ ] Publishing with changesets, as the `@mvtjs` libraries are.
@@ -342,41 +238,5 @@ view. A1, A2, A4, A5, B1 and P7 also came up there.
 ## Miscellaneous
 - [ ] Thoroughly review the docs pages that mention visual testing
 - [ ] Thoroughly review the vsnap README and docs in the vsnap package
-- [x] Address concurrency in visual test runs. Tests within a file already
-  run one at a time (B4), and the canvas and HTML projects already run side
-  by side in one group. Running the HTML files in parallel, in a group of
-  their own, made the run slower (9.7 s against 7.5 s), since each extra
-  page loads its own modules. So the current setup stays.
 - [ ] finalise standard paths for reference images
-- [x] followup speed checkup - did we make it slower? Can it be faster still?
-  Not slower: 7.3-7.5 s against 7.5-7.7 s before, with setup down from 16%
-  to 12% of the run. Faster still: Vite now reuses its bundle of the
-  libraries when no source file changed since the last run, instead of
-  bundling afresh every run, which saves about 0.9 s. That needed the
-  refresh copies' generator to write its file only when the file changes,
-  since it ran before every test run and touched a source file each time.
-  Left alone: Vitest's check that Playwright's browser is installed costs
-  about 0.4 s, but skipping it would be fragile.
-- [x] vsnap node/browser dir layout and imports reaching past package's defined exports - can this be fixed/improved? eg `from './packages/vsnap/src/node/index.ts'`
-  Done on 2026-10-13: the root config imports `vsnap/config` again (see
-  P13), and nothing outside vsnap imports past its exports. The
-  maintainers' scripts moved from `src/node/cli/` to `scripts/`, so `src/`
-  holds only the package, and they run with Node instead of tsx. The rest of
-  the layout stays: each folder imports another through its index.
-  Then, on 2026-10-13, the paths themselves: vsnap's `vitest.config.ts` and
-  `vsnap.config.ts` import vsnap by its own name (`vsnap/config`,
-  `vsnap/pixi`), as a project and the fixture do, not `./src/node`. The
-  scripts find the package's folder themselves instead of importing
-  `../src/node/paths.ts`, and the test of a canvasTest bound to another
-  config builds that config in place instead of importing the fixture's.
-  Lint's barrel rule now covers vsnap's scripts, fixture and root files too,
-  where these paths had gone unchecked. The Node side's `.ts` extensions
-  and its `../protocol.ts` stay: Node runs that source itself in the repo,
-  and Node needs file names, not folders.
-- [x] Found in the packed trial: a reference whose pixels match but which
-  lacks its hash (another tool saved it, or an older vsnap wrote it) was
-  reported as "within the tolerance, expected only on arm64", and `-u`
-  never repaired it. Now it counts as identical, and `-u` adds its hash.
-  The run's check of references still names it. Also, an empty list of
-  references no longer prints "They are:".
 

@@ -33,9 +33,9 @@ import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
 import { forgetFingerprint, mustRebundle, recordFingerprint } from './rebundle.ts';
-import { registerRoot } from './references.ts';
+import { registerRoot, toFileKey } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
-import { escapeGlob, findVisualTestFiles } from './test-files.ts';
+import { describeProblems, escapeGlob, findVisualTestFiles, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -117,6 +117,8 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     const layout = createLayout({ root, include: options.include, referencePath: options.referencePath });
     registerRoot(root);
     const files = findVisualTestFiles(layout);
+    warnOfProblems(files.problems);
+    claimTestFiles(name, [...files.canvas, ...files.html].map((file) => resolve(root, file)));
     const state = createRunState();
     const commands = createVisualCommands({ layout, state });
     // A kind of test with no files gets no project.
@@ -132,8 +134,9 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         testFiles: allFiles.map((file) => resolve(root, file)),
         includes: allFiles.map(escapeGlob),
         setupFiles: [SETUP_FILE],
+        problems: files.problems,
     });
-    const plugin = createVsnapPlugin({ reporter, name, files: () => findVisualTestFiles(layout), initialFiles: files });
+    const plugin = createVsnapPlugin({ reporter, name, root, files: () => findVisualTestFiles(layout), initialFiles: files });
     const rebundle = mustRebundle(name);
     return kinds.map((kind, i) => createVisualProject({
         rebundle,
@@ -251,21 +254,26 @@ function createVisualProject(options: {
  * - It records the sources' fingerprint, since the projects bundle their
  *   libraries in this run. In watch mode, a changed script makes the next
  *   decision read the sources again.
- * - In watch mode, it restarts Vitest when a visual test file is added or
- *   deleted. The projects get their files when the config loads, so a rerun
- *   alone would miss the change. Vitest restarts the same way when its own
- *   config changes.
+ * - In watch mode, it restarts Vitest when the visual test files change:
+ *   when one is added or deleted, or when a file that matches the globs
+ *   starts or stops declaring tests, as a new empty file does once its first
+ *   test is written. The projects get their files when the config loads, so
+ *   a rerun alone would miss the change. Vitest restarts the same way when
+ *   its own config changes.
  */
 function createVsnapPlugin(options: {
     readonly reporter: Reporter;
     /** The `vsnap` call's name, for its sources' fingerprint. */
     readonly name: string;
+    readonly root: string;
     /** Returns the project's visual test files, read afresh. */
-    readonly files: () => Readonly<Record<VisualKind, readonly string[]>>;
-    readonly initialFiles: Readonly<Record<VisualKind, readonly string[]>>;
+    readonly files: () => VisualTestFiles;
+    readonly initialFiles: VisualTestFiles;
 }): Plugin {
-    const listFiles = (files: Readonly<Record<VisualKind, readonly string[]>>): string => `${files.canvas.join('\n')}\n|\n${files.html.join('\n')}`;
+    const listFiles = (files: VisualTestFiles): string => `${files.canvas.join('\n')}\n|\n${files.html.join('\n')}`;
     const initial = listFiles(options.initialFiles);
+    /** The files that match the globs, test files or not, by their paths relative to the root. */
+    let known = listKnownFiles(options.initialFiles);
     const watched = new WeakSet<object>();
     return {
         name: 'vsnap',
@@ -282,14 +290,62 @@ function createVsnapPlugin(options: {
                 // actual images that a run writes are ignored.
                 if (!SCRIPT_FILE.test(file)) return;
                 forgetFingerprint();
-                if (event !== 'add' && event !== 'unlink') return;
-                if (listFiles(options.files()) === initial) return;
+                // A change matters only to a file that matches the globs, whose
+                // declarations decide its project.
+                if (event === 'change' && !known.has(relative(options.root, file).replaceAll('\\', '/'))) return;
+                if (event !== 'add' && event !== 'unlink' && event !== 'change') return;
+                // An error here would end Vitest, so it is reported instead.
+                let files: VisualTestFiles;
+                try {
+                    files = options.files();
+                }
+                catch (error) {
+                    console.warn(`vsnap: couldn't read the visual test files after ${file} changed, so it kept the files it had: ${error instanceof Error ? error.message : String(error)}`);
+                    return;
+                }
+                known = listKnownFiles(files);
+                warnOfProblems(files.problems);
+                if (listFiles(files) === initial) return;
                 // Vitest makes this restart the whole run, as it does for its
                 // own config.
                 void server.restart();
             });
         },
     };
+}
+
+/**
+ * Records a `vsnap` call's test files, and throws if another call, with
+ * another name, already has one of them. Each would run the file in its
+ * own projects, and the two would write the same reference images.
+ */
+function claimTestFiles(name: string, files: readonly string[]): void {
+    const owners = ((globalThis as { vsnapTestFiles?: Map<string, string> }).vsnapTestFiles ??= new Map());
+    for (const file of files) {
+        const owner = owners.get(toFileKey(file));
+        if (owner !== undefined && owner !== name) {
+            throw new Error(`vsnap: ${toDisplayPath(file)} is a visual test file of two vsnap calls, '${owner}' and '${name}', whose include globs both match it. Give the calls includes that don't overlap.`);
+        }
+    }
+    for (const file of files) owners.set(toFileKey(file), name);
+}
+
+/** Returns the paths of the files that match the globs, test files or not. */
+function listKnownFiles(files: VisualTestFiles): Set<string> {
+    return new Set([...files.canvas, ...files.html, ...files.problems.map((p) => p.file)]);
+}
+
+/**
+ * Warns once about each visual test file that can't run. The run fails over
+ * them only when vsnap's projects run, through the reporter, so a run of
+ * the project's other tests, or a tool that lists the tests, isn't stopped
+ * by a file that is half written.
+ */
+function warnOfProblems(problems: VisualTestFiles['problems']): void {
+    const fresh = problems.filter((p) => !WARNED.has(`${p.file}: ${p.problem}`));
+    if (fresh.length === 0) return;
+    for (const p of fresh) WARNED.add(`${p.file}: ${p.problem}`);
+    console.warn(`vsnap: ${describeProblems(fresh)}`);
 }
 
 /**
@@ -359,7 +415,8 @@ const NO_CONFIG = resolve(import.meta.dirname, '..', 'browser', `no-config${EXTE
 const SCRIPT_FILE = /\.[cm]?[jt]sx?$/;
 
 /**
- * The config files that this process has warned about. Vitest loads its
+ * What this process has warned about: config files, and visual test files
+ * that can't run. Vitest loads its
  * config several times in one run, each time with a fresh copy of this
  * module, so the set is kept on the process, and each warning is shown once.
  */

@@ -34,16 +34,17 @@ describe('findReferences', () => {
         writePlainPng(join(root, 'views', 'visual-tests', 'texture.png'));
         writePlainPng(join(root, 'views', 'not-a-reference.png'));
         const layout = createLayout({ root, referencePath: '{testFileDir}/{imageName}.png' });
-        expect(findReferences(layout).map((r) => r.file)).toEqual([join(root, 'views', 'visual-tests', 'one.png')]);
+        expect(findReferences(layout, ['views/visual-tests/hud.test.ts']).map((r) => r.file)).toEqual([join(root, 'views', 'visual-tests', 'one.png')]);
     });
 
-    it('leaves out a PNG with a hash that the reference path could not produce, such as a copy in a docs folder', () => {
+    it('leaves out a PNG with a hash that the reference path could not produce, such as a copy in a docs folder, and keeps those of a deleted test file', () => {
         const root = join(dir, 'outside');
         mkdirSync(join(root, 'views', '__references__', 'hud.visual.test.tsx'), { recursive: true });
         mkdirSync(join(root, 'docs'), { recursive: true });
         writeFileSync(join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png'), encodePng(createImage(1)));
         writeFileSync(join(root, 'docs', 'Hud.png'), encodePng(createImage(1)));
-        expect(findReferences(createLayout({ root })).map((r) => r.file)).toEqual([join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png')]);
+        // No test file is left, but the image is still the reference of one, unused.
+        expect(findReferences(createLayout({ root }), []).map((r) => r.file)).toEqual([join(root, 'views', '__references__', 'hud.visual.test.tsx', 'Hud.png')]);
     });
 
     it('skips a folder below the root that is a root of visual tests of its own', () => {
@@ -53,8 +54,45 @@ describe('findReferences', () => {
         registerRoot(join(root, 'fixture'));
         writeFileSync(join(root, 'fixture', 'theirs.png'), encodePng(createImage(2)));
         const referencePath = '{testFileDir}/{imageName}.png';
-        expect(findReferences(createLayout({ root, referencePath })).map((r) => r.file)).toEqual([join(root, 'own.png')]);
-        expect(findReferences(createLayout({ root: join(root, 'fixture'), referencePath })).map((r) => r.file)).toEqual([join(root, 'fixture', 'theirs.png')]);
+        expect(findReferences(createLayout({ root, referencePath }), ['own.test.ts']).map((r) => r.file)).toEqual([join(root, 'own.png')]);
+        expect(findReferences(createLayout({ root: join(root, 'fixture'), referencePath }), ['theirs.test.ts']).map((r) => r.file)).toEqual([join(root, 'fixture', 'theirs.png')]);
+    });
+
+    it('gives each of two vsnap calls with one root only the images of the test files that its include matches', () => {
+        const root = join(dir, 'two-calls');
+        mkdirSync(join(root, 'a', '__references__', 'x.visual.test.ts'), { recursive: true });
+        mkdirSync(join(root, 'b', '__references__', 'y.visual.test.ts'), { recursive: true });
+        writeFileSync(join(root, 'a', '__references__', 'x.visual.test.ts', 'A.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'b', '__references__', 'y.visual.test.ts', 'B.png'), encodePng(createImage(2)));
+        const a = createLayout({ root, include: ['a/**/*.visual.test.ts'] });
+        const b = createLayout({ root, include: ['b/**/*.visual.test.ts'] });
+        expect(findReferences(a, ['a/x.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'a', '__references__', 'x.visual.test.ts', 'A.png')]);
+        expect(findReferences(b, ['b/y.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'b', '__references__', 'y.visual.test.ts', 'B.png')]);
+    });
+
+    it('gives a template without the test file name only the images in the folders of its test files, not a copy in a docs folder', () => {
+        const root = join(dir, 'folders');
+        mkdirSync(join(root, 'views'), { recursive: true });
+        mkdirSync(join(root, 'docs'), { recursive: true });
+        writeFileSync(join(root, 'views', 'Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'docs', 'Hud.png'), encodePng(createImage(1)));
+        const layout = createLayout({ root, referencePath: '{testFileDir}/{imageName}.png' });
+        expect(findReferences(layout, ['views/hud.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'views', 'Hud.png')]);
+    });
+
+    it('reads a template that names the whole test file path, and one with folders around the test file name', () => {
+        const root = join(dir, 'templates');
+        mkdirSync(join(root, 'refs', 'src', 'hud.visual.test.ts'), { recursive: true });
+        mkdirSync(join(root, 'refs', 'other', 'menu.spec.ts'), { recursive: true });
+        writeFileSync(join(root, 'refs', 'src', 'hud.visual.test.ts', 'Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'refs', 'other', 'menu.spec.ts', 'Menu.png'), encodePng(createImage(2)));
+        const byPath = createLayout({ root, referencePath: 'refs/{testFilePath}/{imageName}.png' });
+        expect(findReferences(byPath, []).map((r) => r.file)).toEqual([join(root, 'refs', 'src', 'hud.visual.test.ts', 'Hud.png')]);
+        const byName = createLayout({ root, include: ['src/*.visual.test.ts'], referencePath: 'shots/{testFileName}-{imageName}.png' });
+        mkdirSync(join(root, 'shots'), { recursive: true });
+        writeFileSync(join(root, 'shots', 'hud.visual.test.ts-Hud.png'), encodePng(createImage(1)));
+        writeFileSync(join(root, 'shots', 'gone.visual.test.ts-Old.png'), encodePng(createImage(2)));
+        expect(findReferences(byName, ['src/hud.visual.test.ts']).map((r) => r.file)).toEqual([join(root, 'shots', 'hud.visual.test.ts-Hud.png')]);
     });
 });
 

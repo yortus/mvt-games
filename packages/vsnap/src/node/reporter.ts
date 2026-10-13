@@ -27,6 +27,7 @@
  */
 
 import { appendFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { configDefaults } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason, TestSpecification, Vitest } from 'vitest/node';
 import type { VisualTestMeta } from '../protocol.ts';
@@ -34,6 +35,7 @@ import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
 import { checkReference, findOrphans, findReferenceCandidates, findReferences, removeReference, toFileKey } from './references.ts';
+import { describeProblems, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -51,9 +53,13 @@ export function createVisualReporter(options: {
     readonly includes: readonly string[];
     /** The setup files that vsnap gave its projects. */
     readonly setupFiles: readonly string[];
+    /** The files that match the globs but can't run, which fail every run of the projects. */
+    readonly problems: VisualTestFiles['problems'];
 }): Reporter {
     const { layout, state, projectNames } = options;
     const testFiles = options.testFiles.map(toFileKey);
+    /** The files whose reference images are this reporter's: its test files, and those that can't run yet, as absolute paths. */
+    const ownFiles = [...options.testFiles, ...options.problems.map((p) => resolve(layout.root, p.file))];
     let vitest: Vitest | undefined;
     let started = 0;
     /** The files of this reporter's projects that this run started. */
@@ -78,9 +84,15 @@ export function createVisualReporter(options: {
         onTestModuleEnd(module: TestModule) {
             if (!projectNames.includes(module.project.name)) return;
             ended.push(module);
+            // Reported as the run's first file ends: Vitest clears the run's
+            // errors after it starts the run, and an error after the run ends
+            // doesn't count towards its result.
+            if (ended.length === 1 && options.problems.length > 0 && vitest !== undefined) {
+                vitest.state.catchError(createCheckError(describeProblems(options.problems)), 'vsnap');
+            }
             if (ended.length < startedFiles.size || vitest === undefined) return;
             const v = vitest;
-            checkLines = runChecks({ layout, state, vitest: v, testFiles, allTestFiles: options.testFiles, startedFiles, testModules: ended });
+            checkLines = runChecks({ layout, state, vitest: v, testFiles, ownFiles, startedFiles, testModules: ended });
         },
         onTestRunEnd(allModules: readonly TestModule[], _errors: readonly unknown[], reason: TestRunEndReason) {
             const testModules = allModules.filter((m) => projectNames.includes(m.project.name));
@@ -135,7 +147,7 @@ export function createVisualReporter(options: {
             lines.push(images.length > slowest.length ? '  These tests were the slowest:' : `  ${images.length === 1 ? 'The test' : 'The tests'} took:`);
             for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
             lines.push(...orphanLines);
-            const references = findReferences(layout);
+            const references = findReferences(layout, ownFiles);
             const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
             const largest = [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
             if (references.length === 1) lines.push(`  The reference is one file, taking ${formatKilobytes(bytes)}:`);
@@ -175,8 +187,8 @@ function runChecks(options: {
     readonly vitest: Vitest;
     /** Every visual test file of the projects, as file keys. */
     readonly testFiles: readonly string[];
-    /** Every visual test file of the projects, as absolute paths. */
-    readonly allTestFiles: readonly string[];
+    /** The files whose reference images are the projects', as absolute paths. */
+    readonly ownFiles: readonly string[];
     readonly startedFiles: ReadonlySet<string>;
     readonly testModules: readonly TestModule[];
 }): string[] {
@@ -186,7 +198,7 @@ function runChecks(options: {
     const used = listUsedReferences(layout, options.testModules);
     const results = [
         describeSharedReferences(used),
-        ...(incomplete === undefined ? [settleOrphans({ layout, state, used, isUpdate }), checkEveryReference(layout, options.allTestFiles)] : []),
+        ...(incomplete === undefined ? [settleOrphans({ layout, state, used, isUpdate, ownFiles: options.ownFiles }), checkEveryReference(layout, options.ownFiles)] : []),
     ];
     const lines: string[] = [];
     for (const result of results) {
@@ -334,9 +346,11 @@ function settleOrphans(options: {
     readonly state: VisualRunState;
     readonly used: ReadonlyMap<string, UsedReference>;
     readonly isUpdate: boolean;
+    /** The files whose reference images are the projects', as absolute paths. */
+    readonly ownFiles: readonly string[];
 }): CheckResult {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].map((u) => u.file)];
-    const orphans = findOrphans({ references: findReferences(options.layout).map((r) => r.file), compared });
+    const orphans = findOrphans({ references: findReferences(options.layout, options.ownFiles).map((r) => r.file), compared });
     if (orphans.length === 0) return { lines: [] };
     const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
     if (!options.isUpdate) {
@@ -355,7 +369,7 @@ function settleOrphans(options: {
  */
 function checkEveryReference(layout: VisualLayout, testFiles: readonly string[]): CheckResult {
     const files = new Map<string, string>();
-    for (const { file } of findReferences(layout)) files.set(toFileKey(file), file);
+    for (const { file } of findReferences(layout, testFiles)) files.set(toFileKey(file), file);
     for (const testFile of testFiles) {
         for (const file of findReferenceCandidates(layout, testFile)) files.set(toFileKey(file), file);
     }

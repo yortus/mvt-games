@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
-import { escapeGlob, findVisualTestFiles } from './test-files.ts';
+import { describeProblems, escapeGlob, findVisualTestFiles } from './test-files.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-test-files-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -37,7 +37,7 @@ describe('findVisualTestFiles', () => {
             'src/c.test.ts': CANVAS,
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['src/**/*.visual.{ts,tsx}'] }));
-        expect(files).toEqual({ canvas: ['src/b.visual.tsx'], html: ['src/a.visual.ts'] });
+        expect(files).toEqual({ canvas: ['src/b.visual.tsx'], html: ['src/a.visual.ts'], problems: [] });
     });
 
     it('finds tests in visual-tests folders, by another glob', () => {
@@ -46,7 +46,7 @@ describe('findVisualTestFiles', () => {
             'src/hud/hud.test.ts': 'it(\'is a unit test\', () => {});',
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['src/**/visual-tests/*.test.ts'] }));
-        expect(files).toEqual({ canvas: ['src/hud/visual-tests/hud.test.ts'], html: [] });
+        expect(files).toEqual({ canvas: ['src/hud/visual-tests/hud.test.ts'], html: [], problems: [] });
     });
 
     it('ignores a folder that matches the globs, and installed packages', () => {
@@ -56,7 +56,7 @@ describe('findVisualTestFiles', () => {
             'node_modules/lib/x.visual.tsx': CANVAS,
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['**/*.visual.tsx'] }));
-        expect(files).toEqual({ canvas: ['src/a.visual.tsx'], html: [] });
+        expect(files).toEqual({ canvas: ['src/a.visual.tsx'], html: [], problems: [] });
     });
 
     it('counts the modifiers .skip, .only and .todo as declarations', () => {
@@ -66,13 +66,21 @@ describe('findVisualTestFiles', () => {
             'src/c.visual.ts': "canvasTest.todo('c');",
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['src/*.visual.ts'] }));
-        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts'], html: ['src/b.visual.ts'] });
+        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts'], html: ['src/b.visual.ts'], problems: [] });
     });
 
-    it('throws for a file that declares both kinds, or neither', () => {
-        const both = createProject('both', { 'src/a.visual.ts': `${CANVAS}\n${HTML}` });
-        expect(() => findVisualTestFiles(createLayout({ root: both, include: ['src/*.visual.ts'] }))).toThrow(/declares both/);
-        const neither = createProject('neither', { 'src/a.visual.ts': 'export {};' });
-        expect(() => findVisualTestFiles(createLayout({ root: neither, include: ['src/*.visual.ts'] }))).toThrow(/declares no canvasTest or htmlTest/);
+    it('leaves out a file that declares both kinds, or neither, such as a new empty one, and says why', () => {
+        const root = createProject('problems', {
+            'src/both.visual.ts': `${CANVAS}\n${HTML}`,
+            'src/empty.visual.ts': '',
+            'src/fine.visual.ts': CANVAS,
+        });
+        const files = findVisualTestFiles(createLayout({ root, include: ['src/*.visual.ts'] }));
+        expect(files.canvas).toEqual(['src/fine.visual.ts']);
+        expect(files.html).toEqual([]);
+        expect(files.problems.map((p) => p.file)).toEqual(['src/both.visual.ts', 'src/empty.visual.ts']);
+        expect(files.problems[0].problem).toMatch(/declares both/);
+        expect(files.problems[1].problem).toMatch(/declares no canvasTest or htmlTest/);
+        expect(describeProblems(files.problems)).toMatch(/^2 files match .* left them out:\n {2}src\/both\.visual\.ts declares both/);
     });
 });

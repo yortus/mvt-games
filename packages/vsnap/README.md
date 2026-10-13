@@ -273,9 +273,14 @@ A test file runs in one page, so it should only declare one kind of visual test.
 When the config loads, the package reads each file's declarations, and sends
 the file to the right kind of page. Visual test files may include unit tests,
 but they will also run in the browser page. So a unit test that needs Node, such
-as one that reads a file, should go in a separate test file. A visual test file
-that declares both `canvasTest` and `htmlTest`, or neither, stops the run with an
-error.
+as one that reads a file, should go in a separate test file.
+
+A visual test file that declares both `canvasTest` and `htmlTest`, or
+neither, as a new empty file does, can't run. vsnap leaves it out of its
+projects, and says why when the config loads. A run of the visual tests
+then fails, after running the others. A run of the project's other tests,
+such as `vitest -p unit`, only warns, so a half-written file stops no
+other test.
 
 An HTML view must fit the test page, whose viewport is 1280 by 800
 pixels, since the part of a view past it isn't drawn. A bigger view fails
@@ -399,7 +404,9 @@ Every option is optional.
 
 The first run downloads the browser, and later runs find it in place. A
 monorepo can call `vsnap` once for each package that has visual tests, with
-its own `root` and `name`, and list all their projects in one config.
+its own `root` and `name`, and list all their projects in one config. Two
+calls can also share a root, with `include` globs that don't overlap. A
+test file that the globs of two calls match stops the run.
 
 When the config loads, vsnap checks `vsnap.config.ts` by its text, without
 running it. A file with no default export stops the run. A file that never
@@ -509,13 +516,21 @@ the reference images a pattern of their own, such as
 `'{testFileDir}/{imageName}.ref.png'`.
 
 The package tells its reference images from other PNGs by the hash that
-each one carries. So the check for references that no test uses never
-deletes another PNG, whatever folder it is in. To change layout, change the
-options, then run the visual tests with Vitest's `-u` once. Each test writes its
-reference image at the new path, with the same pixels as before. The same
-run deletes the old files, because no test uses them. This package's own
-`fixtures/visual-tests-folders/` project uses the first layout, and its run
-checks that layout end to end.
+each one carries, and by where its reference path would put an image of
+one of its test files. A file that the `include` globs match owns its
+images even once it is deleted, so they are reported as unused. A template
+without `{testFileName}` or `{testFilePath}` can't say which file an image
+is for, so only the folders that hold a test file have images. So the
+check for references that no test uses never deletes a PNG without a hash,
+a copy of a reference in another folder such as `docs`, or the images of
+another `vsnap` call's tests.
+
+To change layout, change the options, then run the visual tests with
+Vitest's `-u` once. Each test writes its reference image at the new path,
+with the same pixels as before. The old files are at paths that the new
+layout doesn't give, so the run leaves them, and they can be deleted by
+hand. This package's own `fixtures/visual-tests-folders/` project uses the
+first layout, and its run checks that layout end to end.
 
 ## Running the Tests
 
@@ -559,7 +574,9 @@ module that it imports changes, such as its view. A change to
 
 A new or deleted test file restarts Vitest, since each project gets its
 test files when the config loads, and the restart sends a new file to its
-kind of page. The browser starts again, which takes a few seconds.
+kind of page. The browser starts again, which takes a few seconds. A new
+file that declares no test yet, such as an empty one, gets a warning, and
+restarts Vitest once its first test is written.
 
 ## FAQ
 

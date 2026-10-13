@@ -12,7 +12,8 @@
  */
 
 import { type Dirent, existsSync, globSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, posix, relative, resolve } from 'node:path';
+import picomatch from 'picomatch';
 import { matchReferenceName, resolveReferencePattern, type VisualLayout } from './layout.ts';
 import { decodePng, hashImage, readPngHash } from './png.ts';
 import { isSkippedFolder } from './test-files.ts';
@@ -31,13 +32,20 @@ export function registerRoot(root: string): void {
 }
 
 /**
- * Returns every reference image of a layout: every PNG that its reference
- * path could produce, and that carries a pixel hash. A PNG elsewhere, such
- * as a copy of a reference in a docs folder, is never one, so a run never
- * deletes it. It skips installed packages, build output and hidden folders,
- * and any other root of visual tests inside the layout's root.
+ * Returns every reference image of a layout's test files: every PNG that
+ * carries a pixel hash, and that the reference path would give one of its
+ * test files. Those are the files that its `include` globs match, so a test
+ * file that was deleted still owns its images, which are then unused. A
+ * template that doesn't name the test file, such as
+ * `{testFileDir}/{imageName}.png`, gives each image to a folder instead, so
+ * only a folder that holds one of `testFiles` has images. So a copy of a
+ * reference in a docs folder, or an image of another `vsnap` call's tests,
+ * is never one, and a run never deletes it. It skips installed packages,
+ * build output and hidden folders, and any other root of visual tests
+ * inside the layout's root.
  */
-export function findReferences(layout: VisualLayout): { readonly file: string; readonly bytes: number }[] {
+export function findReferences(layout: VisualLayout, testFiles: readonly string[]): { readonly file: string; readonly bytes: number }[] {
+    const isOwn = createOwnership(layout, testFiles);
     const entries = globSync(toReferenceGlob(layout.referencePath), {
         cwd: layout.root,
         withFileTypes: true,
@@ -46,7 +54,9 @@ export function findReferences(layout: VisualLayout): { readonly file: string; r
     const found: { file: string; bytes: number }[] = [];
     for (const entry of entries) {
         const path = join(entry.parentPath, entry.name);
-        if (entry.isFile() && readPngHash(path) !== undefined) found.push({ file: path, bytes: statSync(path).size });
+        if (entry.isFile() && isOwn(relative(layout.root, path).replaceAll('\\', '/')) && readPngHash(path) !== undefined) {
+            found.push({ file: path, bytes: statSync(path).size });
+        }
     }
     return found.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
 }
@@ -139,3 +149,66 @@ export function toFileKey(file: string): string {
 
 /** The roots of visual tests that this process's config made. */
 const roots = new Set<string>();
+
+/**
+ * Returns a test of whether an image, by its path relative to the root,
+ * belongs to one of a layout's test files. It reads the reference path
+ * template backwards, to find the test file, or its folder, that would put
+ * an image there.
+ */
+function createOwnership(layout: VisualLayout, testFiles: readonly string[]): (path: string) => boolean {
+    const template = layout.referencePath;
+    const isIncluded = picomatch([...layout.include], { dot: false });
+    const files = testFiles.map((file) => relative(layout.root, resolve(layout.root, file)).replaceAll('\\', '/'));
+    const folders = new Set(files.map((file) => posix.dirname(file)));
+    const names = new Set(files.map((file) => posix.basename(file)));
+    const parse = toTemplateRegExp(template);
+    return (path) => {
+        const match = parse.exec(path);
+        if (match === null) return false;
+        const { dir = '.', name, file } = match.groups ?? {};
+        if (file !== undefined) return isIncluded(file);
+        if (name !== undefined && template.includes('{testFileDir}')) return isIncluded(dir === '.' ? name : `${dir}/${name}`);
+        if (name !== undefined) return names.has(name);
+        if (template.includes('{testFileDir}')) return folders.has(dir);
+        // A template with no variable but the image name puts every image in
+        // one folder, which belongs to every test file.
+        return true;
+    };
+}
+
+/**
+ * Returns a regular expression that matches the paths that a reference path
+ * template gives, with the groups `dir`, `name` and `file` for the template's
+ * variables. A `{testFileDir}/` at the start is optional, since a test file
+ * at the root has none.
+ */
+function toTemplateRegExp(template: string): RegExp {
+    const seen = new Set<string>();
+    let source = '';
+    for (const part of template.split(/(\{[^}]+\}\/?)/)) {
+        const variable = /^\{([^}]+)\}(\/?)$/.exec(part);
+        if (variable === null) {
+            source += part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            continue;
+        }
+        const [, name, slash] = variable;
+        const group = GROUPS[name];
+        if (group === undefined) {
+            source += `[^/]+${slash}`;
+            continue;
+        }
+        const isRepeat = seen.has(group.name);
+        seen.add(group.name);
+        const capture = isRepeat ? `\\k<${group.name}>` : `(?<${group.name}>${group.pattern})`;
+        source += name === 'testFileDir' && slash === '/' && source === '' ? `(?:${capture}/)?` : `${capture}${slash}`;
+    }
+    return new RegExp(`^${source}$`);
+}
+
+/** The groups that the template's variables give, other than `{imageName}`, which matches any one name. */
+const GROUPS: Readonly<Record<string, { readonly name: string; readonly pattern: string }>> = {
+    testFileDir: { name: 'dir', pattern: '.+?' },
+    testFileName: { name: 'name', pattern: '[^/]+' },
+    testFilePath: { name: 'file', pattern: '.+' },
+};
