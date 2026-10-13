@@ -20,13 +20,15 @@ describe('fingerprintSources', () => {
         expect(fingerprintSources(dir)).not.toBe(edited);
     });
 
-    it('leaves out installed packages, hidden folders and files that are not sources', () => {
+    it('leaves out installed packages, hidden folders, coverage reports and files that are not sources', () => {
         writeFileSync(join(dir, 'notes.md'), 'no imports\n');
         const before = fingerprintSources(dir);
         mkdirSync(join(dir, 'node_modules', 'lib'), { recursive: true });
         writeFileSync(join(dir, 'node_modules', 'lib', 'index.js'), 'export {};\n');
         mkdirSync(join(dir, '.vitest'), { recursive: true });
         writeFileSync(join(dir, '.vitest', 'out.js'), 'export {};\n');
+        mkdirSync(join(dir, 'coverage'), { recursive: true });
+        writeFileSync(join(dir, 'coverage', 'prettify.js'), 'export {};\n');
         writeFileSync(join(dir, 'notes.md'), 'still no imports\n');
         utimesSync(join(dir, 'notes.md'), new Date(), new Date());
         expect(fingerprintSources(dir)).toBe(before);

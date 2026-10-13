@@ -19,7 +19,22 @@ import { createHash } from 'node:crypto';
 import { type Dirent, existsSync, globSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { OUT_DIR, REPO_ROOT } from './paths.ts';
+import { toFileKey } from './references.ts';
 import { isSkippedFolder } from './test-files.ts';
+
+// ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+/**
+ * A `vsnap` call, by its name and its root. Each has a cache of bundled
+ * libraries of its own, so each has a fingerprint of its own, even when
+ * two configs' calls share a name.
+ */
+export interface VsnapCall {
+    readonly name: string;
+    readonly root: string;
+}
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -31,21 +46,21 @@ import { isSkippedFolder } from './test-files.ts';
  * that bundled them. Within one process, the answer for unchanged sources
  * stays the same, since Vitest loads its config several times in a run.
  */
-export function mustRebundle(name: string): boolean {
+export function mustRebundle(call: VsnapCall): boolean {
     const fingerprint = findFingerprint();
-    const known = memory().decisions.get(name);
+    const file = fingerprintFile(call);
+    const known = memory().decisions.get(file);
     if (known !== undefined && known.fingerprint === fingerprint) return known.mustRebundle;
-    const file = fingerprintFile(name);
     const recorded = known === undefined && existsSync(file) ? readFileSync(file, 'utf8') : undefined;
     const decision = { fingerprint, mustRebundle: recorded !== fingerprint };
-    memory().decisions.set(name, decision);
+    memory().decisions.set(file, decision);
     return decision.mustRebundle;
 }
 
 /** Records the sources' fingerprint for a `vsnap` call whose projects are about to run, and so to bundle. */
-export function recordFingerprint(name: string): void {
+export function recordFingerprint(call: VsnapCall): void {
     mkdirSync(OUT_DIR, { recursive: true });
-    writeFileSync(fingerprintFile(name), findFingerprint());
+    writeFileSync(fingerprintFile(call), findFingerprint());
 }
 
 /** Forgets the fingerprint, after a source file changed in watch mode, so that the next decision reads the sources again. */
@@ -62,7 +77,8 @@ export function fingerprintSources(root: string): string {
     const entries = globSync(`**/*.{${SOURCE_EXTENSIONS}}`, {
         cwd: root,
         withFileTypes: true,
-        exclude: (entry: Dirent) => entry.isDirectory() && isSkippedFolder(entry.name),
+        // A coverage report holds scripts, which every run with coverage rewrites.
+        exclude: (entry: Dirent) => entry.isDirectory() && (isSkippedFolder(entry.name) || entry.name === 'coverage'),
     });
     const files = entries.filter((entry) => entry.isFile()).map((entry) => join(entry.parentPath, entry.name)).sort();
     const hash = createHash('sha256');
@@ -83,7 +99,7 @@ const SOURCE_EXTENSIONS = 'ts,tsx,mts,cts,js,jsx,mjs,cjs,vue,svelte';
 interface Memory {
     /** The sources' fingerprint, read once in a process until a source changes. */
     fingerprint: string | undefined;
-    /** Each `vsnap` call's decision, with the fingerprint it was made for. */
+    /** Each `vsnap` call's decision, by its fingerprint file, with the fingerprint it was made for. */
     readonly decisions: Map<string, { readonly fingerprint: string; readonly mustRebundle: boolean }>;
 }
 
@@ -104,6 +120,8 @@ function findFingerprint(): string {
     return remembered.fingerprint;
 }
 
-function fingerprintFile(name: string): string {
-    return join(OUT_DIR, `${name}.sources-fingerprint`);
+/** Returns the file that holds a call's fingerprint, named for the call and a hash of its root. */
+function fingerprintFile(call: VsnapCall): string {
+    const root = createHash('sha256').update(toFileKey(call.root)).digest('hex').slice(0, 8);
+    return join(OUT_DIR, `${call.name}-${root}.sources-fingerprint`);
 }

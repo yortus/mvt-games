@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
-import { describeProblems, escapeGlob, findVisualTestFiles } from './test-files.ts';
+import { claimTestFiles, describeProblems, escapeGlob, findVisualTestFiles, forgetVsnapCalls } from './test-files.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-test-files-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -87,16 +87,22 @@ describe('findVisualTestFiles', () => {
         expect(files).toEqual({ canvas: ['src/a.visual.ts'], html: [], problems: [] });
     });
 
-    it('counts the modifiers .skip, .only, .todo, .skipIf and .runIf as declarations', () => {
+    it('counts the modifiers .skip, .only, .todo, .skipIf and .runIf as declarations, with .each and .for after them', () => {
         const root = createProject('modifiers', {
             'src/a.visual.ts': "canvasTest.only('a', () => view);",
             'src/b.visual.ts': "htmlTest.skip('b', () => element);",
             'src/c.visual.ts': "canvasTest.todo('c');",
             'src/d.visual.ts': "canvasTest.skipIf(isCi)('d', () => view);",
             'src/e.visual.ts': "htmlTest.runIf(hasFonts)('e', () => element);",
+            'src/f.visual.ts': "canvasTest.skip.each([1, 2])('f %s', () => view);",
+            'src/g.visual.ts': "htmlTest.only.for([1])('g', () => element);",
         });
         const files = findVisualTestFiles(createLayout({ root, include: ['src/*.visual.ts'] }));
-        expect(files).toEqual({ canvas: ['src/a.visual.ts', 'src/c.visual.ts', 'src/d.visual.ts'], html: ['src/b.visual.ts', 'src/e.visual.ts'], problems: [] });
+        expect(files).toEqual({
+            canvas: ['src/a.visual.ts', 'src/c.visual.ts', 'src/d.visual.ts', 'src/f.visual.ts'],
+            html: ['src/b.visual.ts', 'src/e.visual.ts', 'src/g.visual.ts'],
+            problems: [],
+        });
     });
 
     it('leaves out a file that declares both kinds, or neither, such as a new empty one, and says why', () => {
@@ -112,5 +118,24 @@ describe('findVisualTestFiles', () => {
         expect(files.problems[0].problem).toMatch(/declares both/);
         expect(files.problems[1].problem).toMatch(/declares no canvasTest or htmlTest/);
         expect(describeProblems(files.problems)).toMatch(/^2 files match .* left them out:\n {2}src\/both\.visual\.ts declares both/);
+    });
+});
+
+describe('claimTestFiles', () => {
+    const file = { key: '/work/src/visual-tests/hud.test.ts', file: '/work/src/visual-tests/hud.test.ts' };
+
+    it('throws when two vsnap calls with different names claim one file', () => {
+        forgetVsnapCalls();
+        claimTestFiles('visual', [file]);
+        claimTestFiles('visual', [file]);
+        expect(() => claimTestFiles('ui', [file])).toThrow(/two vsnap calls, 'visual' and 'ui'/);
+    });
+
+    it('lets a call claim its files under a new name after Vitest restarts', () => {
+        forgetVsnapCalls();
+        claimTestFiles('visual', [file]);
+        forgetVsnapCalls();
+        expect(() => claimTestFiles('ui', [file])).not.toThrow();
+        forgetVsnapCalls();
     });
 });

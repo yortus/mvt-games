@@ -7,7 +7,7 @@ export {
     type ViewKind, type VsnapConfig,
 } from './view-kinds';
 export {
-    bindCanvasTest, type CanvasTestAPI, type CanvasTestExtras, type CanvasTestForms, canvasTest, type CaseArgs, type CasePose, htmlTest, type HtmlTestAPI, type HtmlTestForms,
-    type WithModifiers,
+    bindCanvasTest, type CanvasTestAPI, type CanvasTestDeclarer, type CanvasTestExtras, type CanvasTestForms, canvasTest, type CaseArgs, type CasePose, htmlTest, type HtmlTestAPI,
+    type HtmlTestDeclarer, type HtmlTestForms, type WithModifiers,
 } from './visual-test';
 export type { VitestTestOptions } from './test-options';

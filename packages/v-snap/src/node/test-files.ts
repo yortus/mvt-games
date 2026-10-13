@@ -3,6 +3,7 @@ import { join, relative } from 'node:path';
 import picomatch from 'picomatch';
 import type { PageKind } from '../protocol.ts';
 import { toFileStem, type VisualLayout } from './layout.ts';
+import { toDisplayPath } from './paths.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -58,7 +59,11 @@ export function findVisualTestFiles(layout: VisualLayout): VisualTestFiles {
             problems.push({ file, problem: 'declares both canvas and HTML visual tests. The two kinds run in different pages, so split them into two files' });
         }
         else if (!isCanvas && !isHtml) {
-            problems.push({ file, problem: "matches the visual test files' globs (include), but it declares no canvasTest or htmlTest yet" });
+            problems.push({
+                file,
+                problem: "matches the visual test files' globs (include), but it declares no canvasTest or htmlTest. "
+                    + 'v-snap looks for those names in the text, so it misses a test declared under another name, such as an alias, or in a helper',
+            });
         }
         else {
             const twin = findStemTwin(layout, file, [...files.canvas, ...files.html]);
@@ -99,6 +104,33 @@ export function listVsnapProjectNames(): Set<string> {
     return ((globalThis as { vsnapProjectNames?: Set<string> }).vsnapProjectNames ??= new Set());
 }
 
+/**
+ * Records a `vsnap` call's test files, by their file keys, and throws if
+ * another call, with another name, already has one of them. Each would run
+ * the file in its own projects, and the two would write the same reference
+ * images. The records are kept on the process, as the project names are.
+ */
+export function claimTestFiles(name: string, files: readonly { readonly key: string; readonly file: string }[]): void {
+    const owners = listOwners();
+    for (const { key, file } of files) {
+        const owner = owners.get(key);
+        if (owner !== undefined && owner !== name) {
+            throw new Error(`v-snap: ${toDisplayPath(file)} is a visual test file of two vsnap calls, '${owner}' and '${name}', whose include globs both match it. Give the calls includes that don't overlap.`);
+        }
+    }
+    for (const { key } of files) owners.set(key, name);
+}
+
+/**
+ * Forgets the test files that `vsnap` calls claimed, and the names of their
+ * projects, before Vitest restarts and loads its config again. A call whose
+ * name or globs changed then claims its files afresh.
+ */
+export function forgetVsnapCalls(): void {
+    listOwners().clear();
+    listVsnapProjectNames().clear();
+}
+
 /** Returns whether a folder holds no visual test files or reference images: installed packages, build output, and hidden folders such as `.git`. */
 export function isSkippedFolder(name: string): boolean {
     return name === 'node_modules' || name === 'dist' || name.startsWith('.');
@@ -108,10 +140,16 @@ export function isSkippedFolder(name: string): boolean {
 // Internals
 // ---------------------------------------------------------------------------
 
-// A test is declared by a call, or by `.skipIf(x)(` and `.runIf(x)(`, whose
+/** Returns the name of the `vsnap` call that claimed each test file, by its file key, kept on the process. */
+function listOwners(): Map<string, string> {
+    return ((globalThis as { vsnapTestFiles?: Map<string, string> }).vsnapTestFiles ??= new Map());
+}
+
+// A test is declared by a call, such as `canvasTest(` or
+// `canvasTest.skip.each(`, or by `.skipIf(x)(` and `.runIf(x)(`, whose
 // condition comes first.
-const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo|each|for))?\s*\(|\bcanvasTest\.(skipIf|runIf)\s*\(/;
-const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo|each|for))?\s*\(|\bhtmlTest\.(skipIf|runIf)\s*\(/;
+const CANVAS_DECLARATION = /\bcanvasTest(\.(skip|only|todo|each|for))*\s*\(|\bcanvasTest\.(skipIf|runIf)\s*\(/;
+const HTML_DECLARATION = /\bhtmlTest(\.(skip|only|todo|each|for))*\s*\(|\bhtmlTest\.(skipIf|runIf)\s*\(/;
 
 /**
  * Returns a test file that has the same folder and stem as a file, such as

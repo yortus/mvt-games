@@ -51,35 +51,44 @@ export interface CanvasTestExtras extends VitestTestOptions {
  */
 export type CasePose<V, A extends readonly unknown[]> = (...args: A) => V | Promise<V>;
 
-/** A kind of visual test, with Vitest's modifiers, which work as they do on Vitest's `test`. */
-export type WithModifiers<F> = F & {
-    readonly skip: F;
-    readonly only: F;
+/**
+ * A kind of visual test, with Vitest's modifiers, which work as they do on
+ * Vitest's `test`. `D` is the kind's declarer, with `each` and `for`, which
+ * each modifier but `todo` gives too, as in `canvasTest.skip.each(cases)`.
+ */
+export type WithModifiers<D> = D & {
+    readonly skip: D;
+    readonly only: D;
     readonly todo: (name: string) => void;
     /** Skips the test when the condition is true, as Vitest's `test.skipIf` does. */
-    readonly skipIf: (condition: unknown) => F;
+    readonly skipIf: (condition: unknown) => D;
     /** Runs the test only when the condition is true, as Vitest's `test.runIf` does. */
-    readonly runIf: (condition: unknown) => F;
+    readonly runIf: (condition: unknown) => D;
 };
 
 /**
- * `canvasTest`, with Vitest's modifiers. `.each(cases)` declares a test for
- * each case, and passes the case to the pose, spread if it is an array, as
- * Vitest's `test.each` does. `.for(cases)` passes each case whole, as
- * `test.for` does. The name can show the case, as Vitest's names do, with
- * `%s` or `$property`. By default, its types know the config that the
- * project registered.
+ * `canvasTest`'s forms, with `.each` and `.for`. `.each(cases)` declares a
+ * test for each case, and passes the case to the pose, spread if it is an
+ * array, as Vitest's `test.each` does. `.for(cases)` passes each case
+ * whole, as `test.for` does. The name can show the case, as Vitest's names
+ * do, with `%s` or `$property`.
  */
-export type CanvasTestAPI<C extends VsnapConfig = RegisteredConfig> = WithModifiers<CanvasTestForms<[], C>> & {
+export type CanvasTestDeclarer<C extends VsnapConfig = RegisteredConfig> = CanvasTestForms<[], C> & {
     readonly each: <const T>(cases: readonly T[]) => CanvasTestForms<CaseArgs<T>, C>;
     readonly for: <const T>(cases: readonly T[]) => CanvasTestForms<[T], C>;
 };
 
-/** `htmlTest`, with Vitest's modifiers. `.each` and `.for` work as they do on `canvasTest`. */
-export type HtmlTestAPI = WithModifiers<HtmlTestForms> & {
+/** `htmlTest`'s forms, with `.each` and `.for`, which work as they do on `canvasTest`. */
+export type HtmlTestDeclarer = HtmlTestForms & {
     readonly each: <const T>(cases: readonly T[]) => HtmlTestForms<CaseArgs<T>>;
     readonly for: <const T>(cases: readonly T[]) => HtmlTestForms<[T]>;
 };
+
+/** `canvasTest`, with Vitest's modifiers. By default, its types know the config that the project registered. */
+export type CanvasTestAPI<C extends VsnapConfig = RegisteredConfig> = WithModifiers<CanvasTestDeclarer<C>>;
+
+/** `htmlTest`, with Vitest's modifiers. */
+export type HtmlTestAPI = WithModifiers<HtmlTestDeclarer>;
 
 /** The arguments that `.each` passes for a case: the case's items if it is an array, as Vitest's `test.each` spreads them, or else the case. */
 export type CaseArgs<T> = T extends readonly unknown[] ? [...T] : [T];
@@ -176,17 +185,20 @@ function withModifiers(declareVisualTest: DeclareVisualTest): unknown {
         declareVisualTest(pointed, name, optionsOrPose, pose);
     };
     const plain = (declareTest: typeof test.skip): Declare => (name, options, fn) => declareTest(name, options, (context) => fn([], context));
-    const forCases = (cases: readonly unknown[], isSpread: boolean): Declare => (name, options, fn) => {
-        test.for(cases)(name, options, (item, context) => fn(isSpread && Array.isArray(item) ? item : [item], context));
+    const forCases = (declareTest: typeof test.skip, cases: readonly unknown[], isSpread: boolean): Declare => (name, options, fn) => {
+        declareTest.for(cases)(name, options, (item, context) => fn(isSpread && Array.isArray(item) ? item : [item], context));
     };
-    return Object.assign(create(plain(test)), {
-        skip: create(plain(test.skip)),
-        only: create(plain(test.only)),
-        skipIf: (condition: unknown) => create(plain(test.skipIf(condition) as typeof test.skip)),
-        runIf: (condition: unknown) => create(plain(test.runIf(condition) as typeof test.skip)),
+    // A declarer, with `each` and `for`, from one of Vitest's.
+    const declarer = (declareTest: typeof test.skip) => Object.assign(create(plain(declareTest)), {
+        each: (cases: readonly unknown[]) => create(forCases(declareTest, cases, true)),
+        for: (cases: readonly unknown[]) => create(forCases(declareTest, cases, false)),
+    });
+    return Object.assign(declarer(test), {
+        skip: declarer(test.skip),
+        only: declarer(test.only),
+        skipIf: (condition: unknown) => declarer(test.skipIf(condition) as typeof test.skip),
+        runIf: (condition: unknown) => declarer(test.runIf(condition) as typeof test.skip),
         todo: (name: string) => test.todo(name),
-        each: (cases: readonly unknown[]) => create(forCases(cases, true)),
-        for: (cases: readonly unknown[]) => create(forCases(cases, false)),
     });
 }
 
@@ -200,6 +212,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
         const t = performance.now();
         const view: unknown = await elementPose(...args);
         ms.pose = performance.now() - t;
+        if (view === undefined) throw new Error(describeNothingPosed(id.test));
         if (!(view instanceof Element)) {
             throw new Error(`'${id.test}' poses ${describeValue(view)}, which is not an HTML element. A view drawn on a canvas is tested with canvasTest.`);
         }
@@ -207,7 +220,7 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
         try {
             // The capture prepares the element once it is in the page, so that
             // a prepare step that measures it sees its layout
-            captured = await captureHtmlImage(view, { ...applyDefaults({ background: kind.background }, image as HtmlImageOptions), maxPixels: inject('visualMaxPixels'), prepare: kind.prepare }, id);
+            captured = await captureHtmlImage(view, { ...applyDefaults({ background: kind.background }, image as HtmlImageOptions), maxPixels: inject('vsnapMaxPixels'), prepare: kind.prepare }, id);
             ms.prepare = captured.prepareMs;
             ms.capture = captured.captureMs;
         }
@@ -224,7 +237,7 @@ async function startTest(task: { readonly fullTestName: string; readonly meta: T
     const setup = await setUpPage();
     const id = nameImage(task.fullTestName);
     task.meta.vsnap = { image: id.name };
-    const pageKind = inject('visualPageKind');
+    const pageKind = inject('vsnapPageKind');
     if (pageKind !== declared) {
         // The config sends each file to the page its declarations ask for,
         // so this happens only if the declarations are hidden from it
@@ -306,7 +319,7 @@ function declareCanvasTest(options: {
         if (kind === undefined) {
             if (!isCanvas(posed)) throw rejectView({ viewKinds, named, isDefault: kindName === undefined, view: posed, test: id.test });
             t = performance.now();
-            checkCanvasBudget(posed, inject('visualMaxPixels'));
+            checkCanvasBudget(posed, inject('vsnapMaxPixels'));
             image = readCanvas(posed);
             ms.draw = performance.now() - t;
         }
@@ -377,6 +390,7 @@ function describeMismatch(options: {
     readonly test: string;
 }): string {
     const { viewKinds, named, isDefault, view, test } = options;
+    if (view === undefined) return describeNothingPosed(test);
     const expected = named === 'canvas' ? 'a canvas' : `a view of the kind '${named}'`;
     const where = viewKinds.hasConfig ? ` in ${viewKinds.configFile}` : '';
     const why = isDefault ? ` The test gives no kind, so it is of the default kind${where}, '${named}'.` : '';
@@ -395,6 +409,11 @@ function describeMismatch(options: {
     return `'${test}' poses ${describeValue(view)}, which is not ${expected}.${why}${fix}`;
 }
 
+/** Describes a pose that returned nothing, which is usually one that forgot to return its view. */
+function describeNothingPosed(test: string): string {
+    return `'${test}' poses undefined. A pose returns its view, so a pose with a block body ends with return.`;
+}
+
 /** Prepares a view as its kind says, draws it, and disposes of it. */
 async function drawView(kind: CanvasViewKind<unknown, object>, view: unknown, options: object, ms: Record<string, number>): Promise<CanvasImage> {
     try {
@@ -402,7 +421,7 @@ async function drawView(kind: CanvasViewKind<unknown, object>, view: unknown, op
         kind.prepare?.(view);
         ms.prepare = performance.now() - t;
         t = performance.now();
-        const maxPixels = inject('visualMaxPixels');
+        const maxPixels = inject('vsnapMaxPixels');
         const drawn = await kind.draw(view, { ...options, maxPixels });
         let image: CanvasImage;
         if (isCanvas(drawn)) {

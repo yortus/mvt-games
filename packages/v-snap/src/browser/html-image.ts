@@ -65,6 +65,9 @@ export async function captureHtmlImage(
         }));
         await loadStyleImages(host);
         await settleAnimations(host);
+        // The host is at the page's top left. A pose or an earlier test that
+        // focused an element lower down may have scrolled the page.
+        scrollTo(0, 0);
         checkFitsPage(host);
         const rect = measureRect(host);
         const fit = fitImage({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false, advice: 'HTML is drawn at full size, so give the view a smaller size, or pose part of it.' });
@@ -94,7 +97,7 @@ function toCssColour(colour: string | number): string {
  */
 function checkFitsPage(host: HTMLElement): void {
     const box = host.getBoundingClientRect();
-    if (box.right <= innerWidth && box.bottom <= innerHeight) return;
+    if (box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight) return;
     throw new Error(`The view is ${Math.ceil(box.width)}x${Math.ceil(box.height)}, which goes past the test page's ${innerWidth}x${innerHeight} viewport, so the part past it can't be captured. Give the view a smaller size, or pose part of it.`);
 }
 

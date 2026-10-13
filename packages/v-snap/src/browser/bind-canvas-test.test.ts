@@ -28,6 +28,19 @@ describe('bindCanvasTest', () => {
         expect(declareTests).toBeTypeOf('function');
     });
 
+    it('chains each and for after skip, only, skipIf and runIf, as Vitest does', () => {
+        // Declarations for the type checker only: this function is never called.
+        const declareTests = (canvasTest: CanvasTestAPI): void => {
+            canvasTest.skip.each([1, 2])('skipped case %s', (n) => new Graphics().rect(0, 0, n, n));
+            canvasTest.only.for([{ n: 1 }])('only case $n', ({ n }) => new Graphics().rect(0, 0, n, n));
+            canvasTest.skipIf(true).each([[1, 'a']])('case %s', (n, s) => new Graphics().rect(0, 0, n, s.length));
+            canvasTest.runIf(false).for([1])('case %s', (n) => new Graphics().rect(0, 0, n, n));
+            // @ts-expect-error: the case is a number, so the pose can't take a string.
+            canvasTest.skip.each([1])('wrong case %s', (s: string) => new Graphics().rect(0, 0, s.length, 1));
+        };
+        expect(declareTests).toBeTypeOf('function');
+    });
+
     it("names a bound config's options with CanvasTestOptions", () => {
         const options: CanvasTestOptions<'three', ThreeOnly> = { kind: 'three', width: 80, height: 60, camera: () => new PerspectiveCamera() };
         // For the type checker only: the bound config has no sketch views.

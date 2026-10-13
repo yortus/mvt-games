@@ -180,13 +180,13 @@ declare module 'vitest' {
     }
     interface ProvidedContext {
         /** The kind of page, provided by its project's config. */
-        visualPageKind: PageKind;
+        vsnapPageKind: PageKind;
         /** The size budget in pixels, provided by the config (`maxPixels`). */
-        visualMaxPixels: number;
+        vsnapMaxPixels: number;
         /** Whether the project has a `vsnap.config`, which registers its kinds of view. */
-        visualHasConfig: boolean;
+        vsnapHasConfig: boolean;
         /** The path of the project's `vsnap.config`, or where v-snap looked for it, for messages. */
-        visualConfigFile: string;
+        vsnapConfigFile: string;
     }
 }
 

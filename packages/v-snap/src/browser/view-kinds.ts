@@ -206,7 +206,7 @@ type DefaultOf<C> = C extends { readonly defaultKind?: infer D } ? ([Exclude<D, 
 let kinds: Promise<ViewKinds> | undefined;
 
 async function load(): Promise<ViewKinds> {
-    const configFile = inject('visualConfigFile');
+    const configFile = inject('vsnapConfigFile');
     // Vite resolves this name to the project's file, as it resolves the
     // project's own imports of it, so a test that imports the file gets this
     // same module.
@@ -234,7 +234,7 @@ async function load(): Promise<ViewKinds> {
     if (defaultKind !== 'canvas' && !canvas.some((kind) => kind.kind === defaultKind)) {
         throw new Error(`${configFile} names '${defaultKind}' as its default kind, but lists no kind of view with that name.`);
     }
-    return { canvas, html: html ?? htmlViews(), defaultKind, configFile, hasConfig: inject('visualHasConfig'), config };
+    return { canvas, html: html ?? htmlViews(), defaultKind, configFile, hasConfig: inject('vsnapHasConfig'), config };
 }
 
 /** Returns whether a kind of view is a canvas kind: one that draws its views. */

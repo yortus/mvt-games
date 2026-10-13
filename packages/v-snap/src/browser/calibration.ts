@@ -97,7 +97,7 @@ function createHtmlCalibration(markup: string): Calibration {
         const root = document.createElement('div');
         root.style.cssText = 'padding:8px;color:#e6edf3;font-size:14px;';
         root.innerHTML = markup;
-        return captureHtmlImage(root, { maxPixels: inject('visualMaxPixels') }, { calibration: 'html', name, test: `calibration ${name}` });
+        return captureHtmlImage(root, { maxPixels: inject('vsnapMaxPixels') }, { calibration: 'html', name, test: `calibration ${name}` });
     };
 }
 

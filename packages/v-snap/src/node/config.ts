@@ -35,7 +35,7 @@ import { toDisplayPath } from './paths.ts';
 import { forgetFingerprint, mustRebundle, recordFingerprint } from './rebundle.ts';
 import { registerRoot, toFileKey } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
-import { describeProblems, escapeGlob, findVisualTestFiles, recordVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
+import { claimTestFiles, describeProblems, escapeGlob, findVisualTestFiles, recordVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -124,7 +124,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     registerRoot(root);
     const files = findVisualTestFiles(layout);
     warnOfProblems(files.problems);
-    claimTestFiles(name, [...files.canvas, ...files.html].map((file) => resolve(root, file)));
+    claimTestFiles(name, [...files.canvas, ...files.html].map((file) => ({ key: toFileKey(resolve(root, file)), file: resolve(root, file) })));
     const state = createRunState();
     const commands = createVisualCommands({ layout, state });
     // A kind of page with no test files gets no project.
@@ -144,7 +144,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         problems: files.problems,
     });
     const plugin = createVsnapPlugin({ reporter, name, root, isDefaultRoot: options.root === undefined, files: () => findVisualTestFiles(layout), initialFiles: files });
-    const rebundle = mustRebundle(name);
+    const rebundle = mustRebundle({ name, root });
     return pageKinds.map((pageKind, i) => createVisualProject({
         rebundle,
         root,
@@ -227,10 +227,10 @@ function createVisualProject(options: {
             setupFiles,
             testTimeout: 30_000,
             provide: {
-                visualPageKind: options.pageKind,
-                visualMaxPixels: options.maxPixels,
-                visualHasConfig: options.viewConfig !== undefined,
-                visualConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
+                vsnapPageKind: options.pageKind,
+                vsnapMaxPixels: options.maxPixels,
+                vsnapHasConfig: options.viewConfig !== undefined,
+                vsnapConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
             },
             browser: {
                 enabled: true,
@@ -290,7 +290,7 @@ function createVsnapPlugin(options: {
             const reporters = vitest.config.reporters as unknown[];
             if (!reporters.includes(options.reporter)) reporters.push(options.reporter);
             // The projects run, and so bundle, in this run.
-            recordFingerprint(options.name);
+            recordFingerprint({ name: options.name, root: options.root });
             // The projects found their files when the config loaded, from the
             // folder Vitest runs in, before Vitest's own root was known.
             if (options.isDefaultRoot && toFileKey(vitest.config.root) !== toFileKey(options.root)) {
@@ -329,22 +329,6 @@ function createVsnapPlugin(options: {
             });
         },
     };
-}
-
-/**
- * Records a `vsnap` call's test files, and throws if another call, with
- * another name, already has one of them. Each would run the file in its
- * own projects, and the two would write the same reference images.
- */
-function claimTestFiles(name: string, files: readonly string[]): void {
-    const owners = ((globalThis as { vsnapTestFiles?: Map<string, string> }).vsnapTestFiles ??= new Map());
-    for (const file of files) {
-        const owner = owners.get(toFileKey(file));
-        if (owner !== undefined && owner !== name) {
-            throw new Error(`v-snap: ${toDisplayPath(file)} is a visual test file of two vsnap calls, '${owner}' and '${name}', whose include globs both match it. Give the calls includes that don't overlap.`);
-        }
-    }
-    for (const file of files) owners.set(toFileKey(file), name);
 }
 
 /** Returns the paths of the files that match the globs, test files or not. */

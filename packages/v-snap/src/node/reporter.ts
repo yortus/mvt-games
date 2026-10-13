@@ -39,7 +39,7 @@ import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
 import { CHECK_CACHE_FILE, shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
 import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, LFS_PROBLEM, removeReference, toFileKey } from './references.ts';
-import { describeProblems, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
+import { describeProblems, forgetVsnapCalls, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -76,6 +76,11 @@ export function createVisualReporter(options: {
         onTestRunStart() {
             started = undefined;
             state.cdpSessions.clear();
+        },
+        onServerRestart() {
+            // Vitest loads the config again, whose vsnap calls may have new
+            // names or globs.
+            forgetVsnapCalls();
         },
         onTestModuleStart(module: TestModule) {
             if (projectNames.includes(module.project.name)) started ??= performance.now();
