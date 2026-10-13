@@ -27,14 +27,15 @@
  */
 
 import { appendFileSync, existsSync, rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { configDefaults } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason, Vitest } from 'vitest/node';
 import { toImageName } from '../image-name.ts';
 import type { VisualTestMeta } from '../protocol.ts';
 import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
-import { OUT_DIR, toDisplayPath, toOutputBase } from './paths.ts';
+import { createPaint, isColourOn, type Paint } from './paint.ts';
+import { OUT_DIR, shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
 import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, removeReference, toFileKey } from './references.ts';
 import { describeProblems, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
@@ -86,10 +87,16 @@ export function createVisualReporter(options: {
             const outcome = reason === 'interrupted' ? undefined : runChecks({ layout, state, vitest, testFiles: options.testFiles, ownFiles, testModules });
             clearPassedOutputs(layout, testModules);
             failures.push(...(outcome?.failures ?? []));
-            const lines = describeRun({ projectNames, testModules, outcome, started, reason, ownFiles, layout });
-            if (lines.length > 0) print(vitest, `\n${lines.join('\n')}\n`);
+            const seconds = (performance.now() - (started ?? performance.now())) / 1000;
+            const run = { projectNames, testModules, outcome, seconds, layout };
+            const stream = selectStream(vitest);
+            // In a terminal, each row fits its width.
+            const lines = describeRun({ ...run, paint: createPaint(isColourOn(stream)), columns: stream.isTTY ? stream.columns : undefined });
+            if (lines.length > 0) stream.write(`\n${lines.join('\n')}\n`);
             const summary = process.env.GITHUB_STEP_SUMMARY;
-            if (summary !== undefined && summary !== '' && lines.length > 0) appendFileSync(summary, `\`\`\`\n${lines.join('\n')}\n\`\`\`\n`);
+            if (summary !== undefined && summary !== '' && lines.length > 0) {
+                appendFileSync(summary, `\`\`\`\n${describeRun({ ...run, paint: createPaint(false), columns: undefined }).join('\n')}\n\`\`\`\n`);
+            }
             if (failures.length > 0) failRun(vitest, failures);
         },
     };
@@ -99,85 +106,203 @@ export function createVisualReporter(options: {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** The words for each outcome in the summary, for one image and for several. */
-const OUTCOMES: Readonly<Record<string, readonly [string, string]>> = {
-    'same': ['identical', 'identical'],
-    'within-tolerance': ['within tolerance', 'within tolerance'],
-    'differs': ['differs', 'differ'],
-    'new': ['new', 'new'],
-    'size': ['changed size', 'changed size'],
-    'updated': ['updated', 'updated'],
-    'added': ['added', 'added'],
+/** The words for each outcome in the summary, and whether it passed. */
+const OUTCOMES: Readonly<Record<string, { readonly word: string; readonly isPass: boolean }>> = {
+    'same': { word: 'identical', isPass: true },
+    'within-tolerance': { word: 'within tolerance', isPass: true },
+    'added': { word: 'added', isPass: true },
+    'updated': { word: 'updated', isPass: true },
+    'differs': { word: 'differ', isPass: false },
+    'size': { word: 'changed size', isPass: false },
+    'new': { word: 'new', isPass: false },
 };
 
+/** One actual image of the run, for the summary. */
+interface RunImage {
+    /** The test's file, relative to the project's root, such as `src/hud/visual-tests/hud-view.test.tsx`. */
+    readonly file: string;
+    /** The test's full name, such as `at the start`. */
+    readonly name: string;
+    /** The test's reference image, as an absolute path. */
+    readonly reference: string;
+    readonly meta: VisualTestMeta;
+    /** The test's time, in milliseconds. */
+    readonly total: number;
+}
+
 /**
- * Returns the summary's lines: the actual images and their times, what the
- * checks found, and the references. A run that didn't run every visual test
- * file, such as a rerun in watch mode, gets a short summary, without the
- * slowest tests and the largest references.
+ * Returns the summary's lines, laid out as Vitest's own summary is: a
+ * heading, a table of the actual images, the tests' times and the
+ * references, then a section for each list, such as the new references and
+ * the slowest tests. A run that didn't run every visual test file, such as
+ * a rerun in watch mode, gets a short summary, without the slowest tests and
+ * the largest references.
  */
 function describeRun(options: {
     readonly projectNames: readonly string[];
     readonly testModules: readonly TestModule[];
     readonly outcome: CheckOutcome | undefined;
-    readonly started: number | undefined;
-    readonly reason: TestRunEndReason;
-    readonly ownFiles: readonly string[];
+    /** How long the visual test files took, from the first one's start. */
+    readonly seconds: number;
     readonly layout: VisualLayout;
+    readonly paint: Paint;
+    /** The terminal's width, which each row fits, or undefined for rows of any length. */
+    readonly columns: number | undefined;
 }): string[] {
-    const { outcome } = options;
-    const checkLines = outcome?.lines ?? ['  The reference images were not checked, and no unused ones were looked for, because the run was interrupted.'];
-    const images: { name: string; meta: VisualTestMeta; total: number }[] = [];
-    for (const module of options.testModules) {
-        for (const test of module.children.allTests()) {
-            const meta = test.meta().vsnap?.result;
-            if (meta === undefined) continue;
-            let total = 0;
-            for (const ms of Object.values(meta.ms)) total += ms;
-            images.push({ name: test.fullName, meta, total });
+    const { outcome, paint, columns } = options;
+    const root = options.layout.root;
+    const notes = outcome?.notes ?? ['The reference images were not checked, and no unused ones were looked for, because the run was interrupted.'];
+    const deleted = outcome?.deleted ?? [];
+    const images = listImages(options.layout, options.testModules);
+    if (images.length === 0 && notes.length === 0 && deleted.length === 0) return [];
+    const lines = [` ${paint.badge(' vsnap ')} ${paint.dim(options.projectNames.join(', '))}`];
+    const rows: (readonly [string, string])[] = [];
+    if (images.length > 0) {
+        rows.push(['Images', describeOutcomes(images, paint)]);
+        const times: string[][] = [];
+        for (const pageKind of ['canvas', 'html'] as const) {
+            const sorted = images.filter((p) => p.meta.pageKind === pageKind).map((p) => p.total).sort((a, b) => a - b);
+            if (sorted.length === 0) continue;
+            const high = sorted.length === 1 ? ['', ''] : ['95th percentile', `${formatPercentile(sorted, 0.95)} ms`];
+            times.push([pageKind === 'canvas' ? 'Canvas tests' : 'HTML tests', String(sorted.length), 'median', `${formatPercentile(sorted, 0.5)} ms`, ...high]);
+        }
+        for (const [label, n, ...cells] of alignColumns(times, ['start', 'end', 'start', 'end', 'start', 'end'])) {
+            rows.push([label.trim(), `${n}   ${paint.dim(cells[0])} ${cells[1]}   ${paint.dim(cells[2])} ${cells[3]}`.trimEnd()]);
         }
     }
-    if (images.length === 0) return [...checkLines];
-    const seconds = (((performance.now() - (options.started ?? performance.now()))) / 1000).toFixed(1);
-    const lines = [`The visual tests (${options.projectNames.join(', ')}) produced ${count(images.length, 'actual image')} in ${seconds} s.`];
-    for (const pageKind of ['canvas', 'html'] as const) {
-        const times = images.filter((p) => p.meta.pageKind === pageKind).map((p) => p.total).sort((a, b) => a - b);
-        if (times.length === 0) continue;
-        const tests = count(times.length, `${pageKind === 'canvas' ? 'canvas' : 'HTML'} test`);
-        lines.push(times.length === 1
-            ? `  ${tests} took ${formatPercentile(times, 0.5)} ms.`
-            : `  ${tests} took a median of ${formatPercentile(times, 0.5)} ms, with a 95th percentile of ${formatPercentile(times, 0.95)} ms.`);
+    if (outcome?.isComplete === true && outcome.references.length > 0) {
+        const bytes = outcome.references.reduce((sum, r) => sum + r.bytes, 0);
+        rows.push(['References', `${count(outcome.references.length, 'file')}, ${formatKilobytes(bytes)}`]);
     }
-    const counts = new Map<string, number>();
-    for (const p of images) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
-    const outcomes = [...counts].map(([name, n]) => `${n} ${OUTCOMES[name]?.[n === 1 ? 0 : 1] ?? name}`);
-    lines.push(`  Compared with ${images.length === 1 ? 'its reference' : 'their references'}, ${outcomes.join(', ')}.`);
+    if (images.length > 0) rows.push(['Duration', `${options.seconds.toFixed(1)} s`]);
+    const width = Math.max(...rows.map(([label]) => label.length));
+    lines.push('', ...rows.map(([label, value]) => ` ${paint.dim(label.padStart(width))}  ${value}`));
+    if (notes.length > 0) lines.push('', ...notes.map((note) => ` ${paint.dim(note)}`));
     const added = images.filter((p) => p.meta.outcome === 'added');
     if (added.length > 0) {
-        const one = added.length === 1;
-        lines.push(`  ${count(added.length, 'new image')} ${one ? 'was' : 'were'} written as ${one ? 'its reference' : 'their references'}, as Vitest writes new snapshots. Look at ${one ? 'it' : 'each'} before committing:`);
-        for (const p of added) lines.push(`    ${p.name}`);
+        lines.push(...describeSection(paint, {
+            title: 'New references',
+            note: 'Look at each before committing it.',
+            rows: added.map((p) => fitRow({ paint, columns, path: toRootPath(root, p.reference) })),
+        }));
     }
-    const within = counts.get('within-tolerance') ?? 0;
-    if (within > 0) lines.push(`  ${within} matched within the tolerance but not exactly. That is expected only on arm64 processors.`);
+    if (deleted.length > 0) {
+        lines.push(...describeSection(paint, { title: 'Deleted references', rows: deleted.map((file) => fitRow({ paint, columns, path: toRootPath(root, file) })) }));
+    }
+    if (images.some((p) => p.meta.outcome === 'within-tolerance')) {
+        lines.push('', ` ${paint.dim('Images within tolerance matched their references closely, but not exactly. That is expected only on arm64 processors.')}`);
+    }
+    // The downsampled references come last, after the slowest tests and the
+    // largest references of a complete run.
     const reduced = images.filter((p) => p.meta.resolution < 1);
-    if (reduced.length > 0) {
-        const one = reduced.length === 1;
-        lines.push(`  ${reduced.length} smooth ${one ? 'image' : 'images'}, not pixel art, ${one ? 'was' : 'were'} over the size budget, so ${one ? 'it was' : 'they were'} rendered at a lower resolution. Any detail finer than an image pixel is averaged away. Here ${one ? 'is its scale, name and size' : 'are their scales, names and sizes'}:`);
-        for (const p of reduced) lines.push(`    1/${1 / p.meta.resolution}  ${p.name}  (${p.meta.width}x${p.meta.height})`);
-    }
-    if (outcome?.isComplete !== true) return [...lines, ...checkLines];
+    const downsampled = reduced.length === 0
+        ? []
+        : describeSection(paint, {
+                title: 'Downsampled references',
+                rows: alignColumns(reduced.map((p) => [`1/${1 / p.meta.resolution}`, formatSize(p.meta)]), ['start', 'end'])
+                    .map((cells, i) => fitTestRow({ paint, columns, cells: `${cells.join('   ')}   `, image: reduced[i] })),
+            });
+    if (outcome?.isComplete !== true) return [...lines, ...downsampled];
     const slowest = [...images].sort((a, b) => b.total - a.total).slice(0, 5);
-    lines.push(images.length > slowest.length ? '  These tests were the slowest:' : `  ${images.length === 1 ? 'The test' : 'The tests'} took:`);
-    for (const p of slowest) lines.push(`    ${p.total.toFixed(1).padStart(7)} ms  ${p.name}  (${p.meta.width}x${p.meta.height})`);
-    lines.push(...checkLines);
-    const references = outcome.references;
-    const bytes = references.reduce((sum, r) => sum + r.bytes, 0);
-    const largest = [...references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
-    if (references.length === 1) lines.push(`  The reference is one file, taking ${formatKilobytes(bytes)}:`);
-    else if (references.length > 1) lines.push(`  The references are ${references.length} files, taking ${formatKilobytes(bytes)} in all. ${references.length > largest.length ? 'These are the largest:' : 'They are:'}`);
-    for (const r of largest) lines.push(`    ${formatKilobytes(r.bytes).padStart(9)}  ${toDisplayPath(r.file)}`);
-    return lines;
+    if (slowest.length > 0) {
+        const rows = alignColumns(slowest.map((p) => [`${p.total.toFixed(1)} ms`, formatSize(p.meta)]), ['end', 'end']);
+        const title = images.length > slowest.length ? 'Slowest tests' : 'Tests';
+        lines.push(...describeSection(paint, { title, rows: rows.map((cells, i) => fitTestRow({ paint, columns, cells: `${cells.join('   ')}   `, image: slowest[i] })) }));
+    }
+    const largest = [...outcome.references].sort((a, b) => b.bytes - a.bytes).slice(0, 3);
+    if (largest.length > 0) {
+        const title = outcome.references.length > largest.length ? 'Largest references' : 'References';
+        const rows = alignColumns(largest.map((r) => [formatKilobytes(r.bytes)]), ['end']);
+        lines.push(...describeSection(paint, { title, rows: rows.map((cells, i) => fitRow({ paint, columns, cells: `${cells[0]}   `, path: toRootPath(root, largest[i].file) })) }));
+    }
+    return [...lines, ...downsampled];
+}
+
+/** Returns the run's actual images, each with its test's file and name, since two files' tests can share a name. */
+function listImages(layout: VisualLayout, testModules: readonly TestModule[]): RunImage[] {
+    const images: RunImage[] = [];
+    for (const module of testModules) {
+        for (const test of module.children.allTests()) {
+            const record = test.meta().vsnap;
+            if (record?.result === undefined) continue;
+            let total = 0;
+            for (const ms of Object.values(record.result.ms)) total += ms;
+            images.push({
+                file: toRootPath(layout.root, module.moduleId),
+                name: test.fullName,
+                reference: resolveReferencePath(layout, module.moduleId, record.image),
+                meta: record.result,
+                total,
+            });
+        }
+    }
+    return images;
+}
+
+/** Returns how the images compared, such as `33 identical, 2 differ (35)`, each outcome coloured by whether it passed. */
+function describeOutcomes(images: readonly RunImage[], paint: Paint): string {
+    const counts = new Map<string, number>();
+    for (const p of images) counts.set(p.meta.outcome, (counts.get(p.meta.outcome) ?? 0) + 1);
+    const parts = [...counts].map(([name, n]) => {
+        const outcome = OUTCOMES[name];
+        const text = `${n} ${outcome?.word ?? name}`;
+        return outcome?.isPass === false ? paint.bold(paint.red(text)) : paint.bold(paint.green(text));
+    });
+    return `${parts.join(paint.dim(' | '))} ${paint.dim(`(${images.length})`)}`;
+}
+
+/** The indent of a section's rows. */
+const ROW_INDENT = '   ';
+
+/**
+ * Returns a section's row: its cells, which are plain text, then a path,
+ * then the rest. In a terminal, the path is shortened in the middle, if the
+ * row would be wider than the terminal, so that the row doesn't wrap.
+ */
+function fitRow(options: {
+    readonly paint: Paint;
+    readonly columns: number | undefined;
+    readonly cells?: string;
+    readonly path: string;
+    /** What follows the path, as plain text and as it is shown. */
+    readonly rest?: { readonly text: string; readonly shown: string };
+    readonly isPathDim?: boolean;
+}): string {
+    const cells = options.cells ?? '';
+    const rest = options.rest ?? { text: '', shown: '' };
+    // The last column is left empty, since some terminals wrap a full line.
+    const room = options.columns === undefined ? Infinity : options.columns - 1 - ROW_INDENT.length - cells.length - rest.text.length;
+    const path = shortenPath(options.path, room);
+    return `${cells}${options.isPathDim === true ? options.paint.dim(path) : path}${rest.shown}`;
+}
+
+/** Returns a section's row about a test: its cells, then its file and name, as `file > name`, the file shortened to fit. */
+function fitTestRow(options: { readonly paint: Paint; readonly columns: number | undefined; readonly cells: string; readonly image: RunImage }): string {
+    const { paint, image } = options;
+    const rest = { text: ` > ${image.name}`, shown: `${paint.dim(' >')} ${image.name}` };
+    return fitRow({ paint, columns: options.columns, cells: options.cells, path: image.file, rest, isPathDim: true });
+}
+
+/** Returns a file's path relative to the project's root, with forward slashes, as Vitest shows its test files. */
+function toRootPath(root: string, file: string): string {
+    return relative(root, file).replaceAll('\\', '/');
+}
+
+/** Returns a section of the summary: a blank line, its title, a note that explains it, if any, and its rows, indented. */
+function describeSection(paint: Paint, section: { readonly title: string; readonly note?: string; readonly rows: readonly string[] }): string[] {
+    const note = section.note === undefined ? [] : [` ${paint.dim(section.note)}`];
+    return ['', ` ${paint.bold(section.title)}`, ...note, ...section.rows.map((row) => `${ROW_INDENT}${row}`)];
+}
+
+/** Returns the rows with each column padded to its widest cell, at the end or the start, so that the columns line up. */
+function alignColumns(rows: readonly (readonly string[])[], sides: readonly ('start' | 'end')[]): string[][] {
+    const widths = sides.map((_, i) => Math.max(0, ...rows.map((row) => row[i].length)));
+    return rows.map((row) => row.map((cell, i) => sides[i] === 'end' ? cell.padStart(widths[i]) : cell.padEnd(widths[i])));
+}
+
+/** Returns an image's size, such as `480x303`. */
+function formatSize(meta: VisualTestMeta): string {
+    return `${meta.width}x${meta.height}`;
 }
 
 /**
@@ -188,8 +313,13 @@ function describeRun(options: {
  * error annotation.
  */
 function failRun(vitest: Vitest | undefined, failures: readonly string[]): void {
-    const blocks = failures.map((failure) => failure.split('\n').map((line) => `  ${line}`).join('\n'));
-    print(vitest, `\n FAIL  vsnap's checks of the reference images failed, so the run fails:\n\n${blocks.join('\n\n')}\n`);
+    const stream = selectStream(vitest);
+    const paint = createPaint(isColourOn(stream));
+    const blocks = failures.map((failure) => {
+        const [heading, ...rest] = failure.split('\n');
+        return [` ${paint.bold(heading)}`, ...rest.map((line) => ` ${line}`)].join('\n');
+    });
+    stream.write(`\n ${paint.failBadge(' FAIL ')} ${paint.red("vsnap's checks of the reference images failed, so the run fails.")}\n\n${blocks.join('\n\n')}\n`);
     if (process.env.GITHUB_ACTIONS === 'true') {
         for (const failure of failures) console.error(`::error title=vsnap::${failure.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`);
     }
@@ -221,8 +351,10 @@ const OUTPUT_SUFFIXES = ['.actual.png', '.diff.png'];
 
 /** What a run's checks found. */
 interface CheckOutcome {
-    /** The summary's lines about the checks. */
-    readonly lines: readonly string[];
+    /** Sentences for the summary, such as that only some files' references were checked. */
+    readonly notes: readonly string[];
+    /** The references that the run deleted, as unused, with `-u`, as absolute paths. */
+    readonly deleted: readonly string[];
     /** The checks that failed, each a heading and its lines. */
     readonly failures: readonly string[];
     /** The references that the checks covered, with their sizes, found once for the summary too. */
@@ -231,10 +363,10 @@ interface CheckOutcome {
     readonly isComplete: boolean;
 }
 
-/** The lines that a check adds to the summary, and its failure, if it failed. */
+/** What a check found: its failure, if it failed, and the references it deleted, if any. */
 interface CheckResult {
-    readonly lines: readonly string[];
     readonly failure?: string;
+    readonly deleted?: readonly string[];
 }
 
 /**
@@ -281,31 +413,29 @@ function runChecks(options: {
         settleOrphans({ layout, state, references: references.map((r) => r.file), used, named, isUpdate, isComplete }),
         checkEveryReference([...references.map((r) => r.file), ...candidates]),
     ];
-    const lines: string[] = [];
-    const failures: string[] = [];
-    for (const result of results) {
-        if (result.failure !== undefined) failures.push(result.failure);
-        else lines.push(...result.lines);
-    }
+    const notes: string[] = [];
+    const failures = results.flatMap((result) => result.failure === undefined ? [] : [result.failure]);
+    const deleted = results.flatMap((result) => result.deleted ?? []);
     for (const module of options.testModules) {
-        if (!loadedKeys.has(toFileKey(module.moduleId))) lines.push(`  ${toDisplayPath(module.moduleId)} failed to load, so its references were not checked.`);
+        if (!loadedKeys.has(toFileKey(module.moduleId))) notes.push(`${toDisplayPath(module.moduleId)} failed to load, so its references were not checked.`);
     }
     if (!isComplete) {
         const files = loaded.length === 1 ? 'the visual test file' : `the ${loaded.length} visual test files`;
-        lines.push(`  Only the references of ${files} that ran were checked. A run of every visual test file checks them all, and also finds the references of deleted test files.`);
+        notes.push(`Only the references of ${files} that ran were checked. A run of every visual test file checks them all, and also finds the references of deleted test files.`);
     }
-    return { lines, failures, references, isComplete };
+    // The references that the run deleted are gone, so the summary leaves them out.
+    const kept = deleted.length === 0 ? references : references.filter((r) => existsSync(r.file));
+    return { notes, deleted, failures, references: kept, isComplete };
 }
 
 /**
- * Prints the summary. It goes to standard error when one of the run's
- * reporters writes machine-readable output to standard output, such as
- * Vitest's JSON reporter with no output file, so that the summary doesn't
+ * Returns the stream for the summary. It is standard error when one of the
+ * run's reporters writes machine-readable output to standard output, such
+ * as Vitest's JSON reporter with no output file, so that the summary doesn't
  * corrupt it.
  */
-function print(vitest: Vitest | undefined, text: string): void {
-    if (vitest !== undefined && writesMachineOutput(vitest)) console.error(text);
-    else console.log(text);
+function selectStream(vitest: Vitest | undefined): NodeJS.WriteStream {
+    return vitest !== undefined && writesMachineOutput(vitest) ? process.stderr : process.stdout;
 }
 
 /** Returns whether one of the run's reporters writes machine-readable output to standard output. */
@@ -408,11 +538,11 @@ function describeSharedReferences(used: ReadonlyMap<string, UsedReference>): Che
     for (const { file, files, tests } of used.values()) {
         if (tests.length < 2) continue;
         const caseNote = files.size > 1 ? ' (their names differ only in case, which macOS and Windows keep in one file)' : '';
-        lines.push(`    ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}${caseNote}`);
+        lines.push(`  ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}${caseNote}`);
     }
-    if (lines.length === 0) return { lines: [] };
+    if (lines.length === 0) return {};
     const heading = 'These tests share a reference image, so each would overwrite the others. Rename all but one of each group:';
-    return { lines: [`  ${heading}`, ...lines], failure: [heading, ...lines].join('\n') };
+    return { failure: [heading, ...lines].join('\n') };
 }
 
 /**
@@ -460,15 +590,14 @@ function settleOrphans(options: {
 }): CheckResult {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].flatMap((u) => [...u.files])];
     const orphans = findOrphans({ references: options.references, compared }).filter((file) => !options.named.has(toFileKey(file)));
-    if (orphans.length === 0) return { lines: [] };
-    const names = orphans.map((file) => `    ${toDisplayPath(file)}`);
+    if (orphans.length === 0) return {};
     if (!options.isUpdate) {
         const it = orphans.length === 1 ? 'it' : 'them';
         const heading = `No test uses ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${it} behind, and a run with Vitest's -u deletes ${it}:`;
-        return { lines: [`  ${heading}`, ...names], failure: [heading, ...names].join('\n') };
+        return { failure: [heading, ...orphans.map((file) => `  ${toDisplayPath(file)}`)].join('\n') };
     }
     for (const file of orphans) removeReference(file, options.layout.root);
-    return { lines: [`  ${countReferences(orphans.length, 'This', 'These')} ${orphans.length === 1 ? 'was' : 'were'} deleted, because no test uses ${orphans.length === 1 ? 'it' : 'them'}:`, ...names] };
+    return { deleted: orphans };
 }
 
 /**
@@ -483,11 +612,11 @@ function checkEveryReference(files: readonly string[]): CheckResult {
     for (const file of files) if (existsSync(file)) unique.set(toFileKey(file), file);
     const problems: string[] = [];
     for (const [file, problem] of checkReferences([...unique.values()], join(OUT_DIR, 'reference-checks.json'))) {
-        if (problem !== undefined) problems.push(`    ${toDisplayPath(file)}: ${problem}`);
+        if (problem !== undefined) problems.push(`  ${toDisplayPath(file)}: ${problem}`);
     }
-    if (problems.length === 0) return { lines: [] };
+    if (problems.length === 0) return {};
     const heading = `${problems.length} of ${unique.size} references do not match their hashes. Delete them, then rewrite them from their tests with Vitest's -u:`;
-    return { lines: [`  ${heading}`, ...problems], failure: [heading, ...problems].join('\n') };
+    return { failure: [heading, ...problems].join('\n') };
 }
 
 /**

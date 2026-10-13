@@ -460,7 +460,7 @@ Every option is optional.
 | `include` | Globs for the test files. See [Choosing Where Files Go](#choosing-where-files-go) |
 | `exclude` | Globs for files that `include` matches but that aren't visual test files, such as fixtures. The default is none |
 | `referencePath` | Where each reference image is kept. See [Choosing Where Files Go](#choosing-where-files-go) |
-| `maxPixels` | The size budget, which is the most pixels an image may have. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
+| `maxPixels` | The size budget, which is the most pixels an image may have. A smooth view over the budget is downsampled to fit: drawn at half its size, a quarter, and so on, so that detail finer than an image pixel is averaged away. The run's summary lists them as downsampled references, with their scales. Pixel art and HTML are drawn at full size, so they fail when over the budget. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for vsnap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
 | `vsnapConfig` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of vsnap's settings are |
 

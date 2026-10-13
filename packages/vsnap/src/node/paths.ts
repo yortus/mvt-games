@@ -68,3 +68,19 @@ function findRepoRoot(start: string): string {
         if (dirname(dir) === dir) return resolve(start);
     }
 }
+
+/**
+ * Returns a path no longer than `room`, if it can: its middle folders give
+ * way to `…`, from the start's side, so that its first folder and as much of
+ * its end as fits are kept, such as `src/…/visual-tests/hud-view.test.tsx`.
+ * A path that is too long even as `…/` and its file name is returned so.
+ */
+export function shortenPath(path: string, room: number): string {
+    if (path.length <= room) return path;
+    const parts = path.split('/');
+    for (let kept = parts.length - 2; kept >= 1; kept--) {
+        const shortened = `${parts[0]}/…/${parts.slice(-kept).join('/')}`;
+        if (shortened.length <= room) return shortened;
+    }
+    return `…/${parts[parts.length - 1]}`;
+}
