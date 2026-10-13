@@ -98,11 +98,27 @@ Each review finding says how it was checked:
 
 - [ ] The final logo: the SVG in the repo, an icon size for npm, a
   favicon, a settled colour, and a wordmark if the README wants one.
-- [ ] Publishing with changesets, as the `@mvtjs` libraries are.
+- [x] Publishing with changesets, as the `@mvtjs` libraries are.
+  Done on 2026-10-13: `.changeset/v-snap-first-release.md` bumps v-snap
+  from 0.0.0 to 0.1.0, on a version of its own, outside the `@mvtjs` fixed
+  group. The release workflow also runs v-snap's unit tests, and
+  `changeset publish` runs its prepack (the build, the published
+  package.json, publint and attw). `.changeset/README.md` says so.
 - [ ] A trial on another project, from a packed install (see P5 and P7).
   A scratch project passed on 2026-10-12. A real project is still to try.
 - [ ] Publish.
   UPDATE 2026-10-13: tried and failed to publish. Error: npm error 403 403 Forbidden - PUT https://registry.npmjs.org/vsnap - Package name too similar to existing packages asap,gsap,soap; try renaming your package to '@yortus/vsnap' and publishing with 'npm publish --access=public' instead
+  The user published `v-snap` instead (0.0.0-stage and 0.0.0), as a
+  placeholder: its code still named itself `vsnap`, so it doesn't work
+  installed. The package is now `v-snap` everywhere a person reads or types
+  it (folder `packages/v-snap`, imports, messages, docs); the code's names
+  stay `vsnap` (`vsnap()`, `defineVsnapConfig`, `vsnap.config.ts`,
+  `.vitest/vsnap/`, the PNG keyword). A packed install that imports
+  `v-snap`, `v-snap/vitest` and `v-snap/pixi` passed on 2026-10-13.
+  Left for the user: set trusted publishing for `v-snap` on npmjs.com
+  (repository `yortus/mvt-games`, workflow `release.yml`); run
+  `npm run release`, commit, push to `main`; then
+  `npm deprecate v-snap@"<0.1.0" "A placeholder. Use 0.1.0 or later."`
 - [ ] Archive 042, and delete the `visual-tests` worktree.
 
 ## Outside vsnap

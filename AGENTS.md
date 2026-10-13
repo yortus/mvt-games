@@ -16,8 +16,9 @@ Full reference: [Architecture Overview](packages/docs/architecture/index.md) -
 
 ## Project Structure
 
-An npm workspace: four libraries published under `@mvtjs`, and private
-packages for everything else, including `@mvtjs/audio` for now.
+An npm workspace: four libraries published under `@mvtjs`, the visual
+testing package `v-snap`, published on its own, and private packages for
+everything else, including `@mvtjs/audio` for now.
 
 ```
 packages/
@@ -26,7 +27,7 @@ packages/
 ├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 ├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
 ├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
-├── vsnap/               vsnap (private for now): visual snapshot tests for canvas and HTML views, as Vitest projects
+├── v-snap/              v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
@@ -53,7 +54,7 @@ packages/website/src/
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or
-`htmlTest`, from `vsnap` (`packages/vsnap/`).
+`htmlTest`, from `v-snap` (`packages/v-snap/`).
 A pose returns the view arranged into one state: fixed bindings for a leaf
 view, a model brought into a state through its actions for a top-level view,
 and `advanceTime` (tick API) for presentation state. Reference images are
@@ -105,14 +106,14 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run build`        | Type-check + production build |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
-| `npm test`             | Every test but vsnap's own: the unit tests and the visual tests (downloads the browser on first run) |
-| `npm run test:unit`    | Every workspace's unit tests but vsnap's (Vitest's `unit` project; no browser): the fast check while working |
-| `npm run test:watch`   | Every test but vsnap's own, in watch mode |
+| `npm test`             | Every test but v-snap's own: the unit tests and the visual tests (downloads the browser on first run) |
+| `npm run test:unit`    | Every workspace's unit tests but v-snap's (Vitest's `unit` project; no browser): the fast check while working |
+| `npm run test:watch`   | Every test but v-snap's own, in watch mode |
 | `npm run test:ui`      | The same, with the Vitest UI in a browser: each test's result, and a failed image's reference, actual image and diff side by side (for people; agents use the commands above) |
 | `npm run test:visual`  | Visual tests (the `visual-*` projects): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
 | `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
-| `npm run test:vsnap`   | All of vsnap's own tests, unit and visual, from its own config |
-| `npm run test:visual:environment -w vsnap` | Rewrite vsnap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
+| `npm run test:vsnap`   | All of v-snap's own tests, unit and visual, from its own config |
+| `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/checks/](packages/checks/README.md)) |

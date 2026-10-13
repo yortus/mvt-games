@@ -1,15 +1,15 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'vsnap/vitest';
+import { vsnap } from 'v-snap/vitest';
 
 const ROOT = import.meta.dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-// The website's visual tests, in vsnap's projects, `visual-canvas` and
-// `visual-html`, which bring vsnap's reporter with them. `-p "visual-*"`
+// The website's visual tests, in v-snap's projects, `visual-canvas` and
+// `visual-html`, which bring v-snap's reporter with them. `-p "visual-*"`
 // runs them.
 const website = vsnap({
     root: resolve(ROOT, 'packages/website'),
@@ -17,7 +17,7 @@ const website = vsnap({
 });
 
 // One test run over every workspace in packages/: the unit tests in Node, in
-// the "unit" project, and the website's visual tests in a browser. vsnap is
+// the "unit" project, and the website's visual tests in a browser. v-snap is
 // left out, as if it lived in a repo of its own: its own config runs its
 // tests, and the scripts call it.
 export default defineConfig({
@@ -39,9 +39,9 @@ export default defineConfig({
                 test: {
                     name: 'unit',
                     // .claude/ holds agent worktrees: separate checkouts, tested on
-                    // their own. Visual tests run in vsnap's projects, and vsnap's
+                    // their own. Visual tests run in v-snap's projects, and v-snap's
                     // own tests in its own config.
-                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/vsnap/**', '**/visual-tests/**'],
+                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/v-snap/**', '**/visual-tests/**'],
                     // Node resolves solid-js to its server build, where effects never
                     // run. Tests get the browser build, as a page does, and Vite loads
                     // solid-js and pixi-solid itself so that they share that one copy.

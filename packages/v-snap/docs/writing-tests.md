@@ -1,0 +1,189 @@
+# Writing Tests
+
+A visual test builds a view in a known state, renders it to an image, and
+compares that image with a reference image. This page shows how to declare
+one, and what v-snap does with it.
+
+- [Declaring a Test](#declaring-a-test)
+- [Views That Change Over Time](#views-that-change-over-time)
+- [Options and Modifiers](#options-and-modifiers)
+- [New Images](#new-images)
+- [Tests, Actual Images and Reference Images](#tests-actual-images-and-reference-images)
+- [Image Names](#image-names)
+- [One Kind of Test in Each File](#one-kind-of-test-in-each-file)
+- [How HTML Views Are Captured](#how-html-views-are-captured)
+
+## Declaring a Test
+
+A test is a declaration in a `*.test.ts` or `*.test.tsx` file in a
+`visual-tests` folder beside the view, such as
+`visual-tests/hud-view.test.tsx` for `hud-view.tsx`. The file is a Vitest
+test file, which runs in a browser, and it can hold ordinary tests too.
+Other files in the folder, such as poses that several tests share, are not
+test files. (A project can keep its tests elsewhere, as
+[Where Files Go](configuration.md#where-files-go) describes.)
+
+A view drawn on a canvas is declared with
+`canvasTest(name, options?, pose)`, and an HTML view with
+`htmlTest(name, options?, pose)`. The options (if any) come before the
+pose, as they do in Vitest's `test`. The `pose` function's only job is to
+return a view that has been arranged into the pose that the test
+describes.
+
+```tsx
+import { canvasTest } from 'v-snap';
+import { HudView } from '../hud-view';
+
+canvasTest('at the start', () => HudView({ score: () => 0 }));
+canvasTest('a high score', { width: 320 }, () => HudView({ score: () => 98_765 }));
+```
+
+The test file is named for its view, and so is each of its images, so the
+tests need no `describe` block that names the view. A `describe` block can
+group tests by something more specific, such as a state that they share.
+
+`HudView` returns a Pixi container here. v-snap knows how to draw it because
+the project registers Pixi views, and makes them its default kind, as
+[Kinds of View](kinds-of-view.md) describes.
+
+## Views That Change Over Time
+
+A view that changes over time, such as one that animates, is posed at a
+known moment: the pose advances it by a fixed amount of time before it
+returns it. A pose never waits for real time to pass.
+
+## Options and Modifiers
+
+The options can hold Vitest's own `timeout`, `retry`, `repeats` and
+`fails`, which work as they do on `test`. So do the modifiers
+`canvasTest.skip`, `canvasTest.only`, `canvasTest.todo`,
+`canvasTest.skipIf(condition)` and `canvasTest.runIf(condition)`, and the
+same on `htmlTest`.
+
+`.each(cases)` and `.for(cases)` declare a test for each case of a table,
+as Vitest's do, and pass the case to the pose. `.each` spreads a case that
+is an array, and `.for` passes it whole. The name can show the case, with
+`%s` or `$property`:
+
+```ts
+canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({ mode }));
+```
+
+A canvas image that is one colour all over fails its test, since it
+usually means that the view drew nothing. A view that is meant to be one
+colour, such as an empty panel, sets `canBeBlank: true`.
+
+The `background` of Pixi, three.js and HTML views takes a number, such as
+`0x202024`, or a CSS colour. A canvas that the pose drew has its own
+background. [Options of Each Kind](kinds-of-view.md#options-of-each-kind)
+lists the other options.
+
+Visual tests never run concurrently, even in a `describe.concurrent`
+block, because the tests of a page share its renderers.
+
+## New Images
+
+The first time a test runs, its image is new, and it is written as the
+test's reference image, as Vitest writes a new snapshot. Look at each new
+reference before committing it. In CI, where Vitest writes no new
+snapshots, a new image fails its test instead.
+
+## Tests, Actual Images and Reference Images
+
+Each test renders its view to one image. These docs keep three terms
+apart:
+
+- A **test** is one `canvasTest` or `htmlTest` declaration. A test runs,
+  and passes or fails.
+- An **actual image** is the image that a test renders during a run.
+- A **reference image**, or just a **reference**, is an image that has been
+  accepted, and committed as a PNG file.
+
+A visual test passes when its actual image matches its reference image.
+
+## Image Names
+
+An image's name comes from its test's full name. The full name is the
+names of the test's `describe` blocks, followed by the test's own name.
+Each run of characters other than letters, digits and dots becomes one
+hyphen, and hyphens at either end are dropped. Letters and digits of every
+script count, so `日本` stays as it is, and a test whose name has none
+fails.
+
+So the first test above, whose full name is `at the start`, has the image
+name `at-the-start`, and a test named `with a new best` in a
+`describe('after a game over')` block has the image name
+`after-a-game-over-with-a-new-best`.
+
+By default, a reference image is beside the test file, named for the
+file's stem and the image name: `visual-tests/hud-view.at-the-start.png`.
+A test file's stem is its name without `.test` and its extension. So each
+test file's images sort together, beside it, and the name says which file
+each image belongs to.
+
+An image name has no spaces, so it can be typed on a command line. A name
+longer than 100 bytes is cut short, and a short hash of the whole name is
+added, so that file names stay inside every system's limits. Two tests
+whose full names differ only in punctuation would have the same image
+name, and share one reference image. So would two whose names differ only
+in case, since macOS and Windows keep such names in one file. If any tests
+share a reference image, the run fails, and names the tests.
+
+## One Kind of Test in Each File
+
+The tests run in a browser. Vitest loads each test file into a browser
+page, much like a tab, and the views are drawn in that page. The two kinds
+of test need their pages arranged differently.
+
+- **Canvas tests share one page.** Every file of canvas tests runs in the
+  same page, one file after another. The libraries load once, the shaders
+  compile once, and `pixi` and `three` each draw every actual image with
+  one renderer. That is what lets hundreds of tests run in seconds.
+- **Each file of HTML tests gets a fresh page.** HTML views use
+  stylesheets, which can't be unloaded from a page, so a fresh page for
+  each file gives each view only its own styles.
+
+A test file runs in one page, so it declares one kind of visual test.
+When the config loads, the package reads each file's declarations, and
+sends the file to the right kind of page. Visual test files may hold unit
+tests, but they run in the browser page too. So a unit test that needs
+Node, such as one that reads a file, goes in a separate test file.
+
+A visual test file that declares both `canvasTest` and `htmlTest`, or
+neither, as a new empty file does, can't run. v-snap leaves it out of its
+projects, and says why when the config loads. A run of the visual tests
+then fails, after running the others. A run of the project's other tests,
+such as `vitest -p unit`, only warns, so a half-written file stops no
+other test.
+
+The package finds the declarations by reading each file's text for
+`canvasTest(` and `htmlTest(`, since Vitest needs each file's project
+before any test code runs. So a file must call `canvasTest` or `htmlTest`
+by those names. A file whose tests all go through a helper of its own,
+which calls them, is reported as declaring neither, and a comment that
+mentions the other one, followed by a bracket, counts as a declaration.
+
+## How HTML Views Are Captured
+
+An HTML view must fit the test page, whose viewport is 1280 by 800
+pixels, since the part of a view past it isn't drawn. The viewport is the
+same in every project, as is the tolerance of 2 levels in 255, since both
+are part of what makes the images the same on every machine. A bigger view
+fails its test, and says so.
+
+Before an HTML view's image is taken, the package waits for its fonts, its
+`<img>` elements, and the images that its styles use, such as backgrounds.
+It also brings its animations and transitions to rest, as Playwright's
+screenshots do with `animations: 'disabled'`: one that ends is finished,
+and one that never ends, such as a spinner, is cancelled. A text field's
+caret is hidden.
+
+The page prefers a dark colour scheme and reduced motion, so a view's
+`prefers-color-scheme: dark` and `prefers-reduced-motion: reduce` styles
+apply.
+
+HTML text is drawn blank, as
+[Limits and Rules](limits-and-rules.md#what-the-images-leave-out)
+explains. The text in a view's open shadow roots, such as a web
+component's, is blank too. A closed shadow root can't be reached, so its
+text is drawn in the system's fonts, which differ between systems.

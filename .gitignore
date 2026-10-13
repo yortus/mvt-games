@@ -20,9 +20,9 @@ dist-ssr
 packages/docs/.vitepress/cache
 packages/docs/.vitepress/dist
 
-# vsnap's build, for publishing, and its package.json while the published one is in place
-packages/vsnap/lib
-packages/vsnap/package.repo.json
+# v-snap's build, for publishing, and its package.json while the published one is in place
+packages/v-snap/lib
+packages/v-snap/package.repo.json
 
 # Editor directories and files
 .vscode/*

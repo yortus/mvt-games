@@ -1,5 +1,5 @@
 import { advanceTime } from '@mvtjs/html';
-import { htmlTest } from 'vsnap';
+import { htmlTest } from 'v-snap';
 import '../../../fruit-machine.css';
 import { createFruitMachineModel } from '../../../models';
 import { entry } from '../../../start';

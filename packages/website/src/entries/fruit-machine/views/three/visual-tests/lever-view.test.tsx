@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { advanceTime } from '@mvtjs/three';
-import { type CanvasTestOptions, canvasTest } from 'vsnap';
+import { type CanvasTestOptions, canvasTest } from 'v-snap';
 import { LEVER_LENGTH, LEVER_X, LEVER_Y, LEVER_Z } from '../bandit-layout';
 import { dressBanditScene } from '../bandit-scene';
 import { LeverView } from '../lever-view';

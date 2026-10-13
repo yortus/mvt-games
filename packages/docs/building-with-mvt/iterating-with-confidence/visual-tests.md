@@ -41,12 +41,12 @@ and compares it.
 
 ::: info About the examples
 The examples on this page use
-[vsnap](https://github.com/yortus/mvt-games/blob/main/packages/vsnap/README.md),
-the visual testing tool that this project uses by convention. In vsnap, a
+[v-snap](https://github.com/yortus/mvt-games/blob/main/packages/v-snap/README.md),
+the visual testing tool that this project uses by convention. In v-snap, a
 test of a view drawn on a canvas, such as a Pixi or three.js view, is a
 call to `canvasTest`, and a test of an HTML view is a call to `htmlTest`. Each takes the test's **pose**: a
-function that returns the view, posed. vsnap takes the image and compares
-it. [In This Project: vsnap](#in-this-project-vsnap) says how this project
+function that returns the view, posed. v-snap takes the image and compares
+it. [In This Project: v-snap](#in-this-project-v-snap) says how this project
 sets it up.
 
 Other tools work too, such as Playwright's and Vitest's screenshot
@@ -103,7 +103,7 @@ canvasTest('counting up, 300 ms in', async () => {
 loop does. In each step it updates the models, then the views, whatever
 order they are passed in. It does not refresh. The view is refreshed once,
 just before its image is taken, as the game loop refreshes once a frame.
-In this project, the website's `vsnap.config.ts` tells vsnap to do that
+In this project, the website's `vsnap.config.ts` tells v-snap to do that
 refresh. `advanceTime` is the
 same idea as [`advanceTime` for models](testing-models.md#advancing-time).
 
@@ -187,7 +187,7 @@ rules keep most of the causes out, and a few habits keep out the rest.
 - **Random numbers are repeatable.** A test tool can seed `Math.random`
   the same before every test, so a model that deals a random board deals
   the same one each time.
-- **A test leaves nothing behind.** Some tools, vsnap among them, run many
+- **A test leaves nothing behind.** Some tools, v-snap among them, run many
   tests in one page, for speed. There, a test that changes a library's
   defaults changes the images of the tests after it.
 
@@ -201,9 +201,9 @@ When a test fails, look at the difference before accepting it. If the
 change was intended, accept the new image. If it wasn't, the test has
 found a bug. Accepting new images without looking defeats the purpose.
 
-## In This Project: vsnap
+## In This Project: v-snap
 
-vsnap is a package in this repo. A test file is in a `visual-tests` folder
+v-snap is a package in this repo. A test file is in a `visual-tests` folder
 beside the view it tests, and is named for the view, such as
 `visual-tests/hud-view.test.tsx` for `hud-view.tsx`. Its reference images
 are beside it, named for its stem and the image, such as
@@ -211,12 +211,12 @@ are beside it, named for its stem and the image, such as
 view, so the tests need no `describe` block that names it. Use a
 `describe` block only to group tests by something more specific, such as
 a state that they share, or leave the tests at the top of the file. `canvasTest` and `htmlTest` come
-from vsnap. `advanceTime` comes from the renderer package that the view
+from v-snap. `advanceTime` comes from the renderer package that the view
 uses, with the rest of the tick API.
 
 The visual tests run in Vitest projects beside the unit tests, listed in
 the repo's root `vitest.config.ts`. Their names all start with `visual-`.
-vsnap knows nothing about MVT. The website's `vsnap.config.ts` connects
+v-snap knows nothing about MVT. The website's `vsnap.config.ts` connects
 the two. It registers the kinds of view that the tests pose: Pixi, three.js
 and HTML views. For each kind, it refreshes the view before its image is
 taken, and destroys it through MVT afterwards.
@@ -231,7 +231,7 @@ taken, and destroys it through MVT afterwards.
 | `npx vitest run <test file> -u` | Updates the reference images of one test file |
 
 A failing test's message says what changed, and where. It also gives the
-command that accepts the new image. vsnap's README covers its options,
+command that accepts the new image. v-snap's README covers its options,
 where it keeps files, and how it stays fast and gives the same images on
 Windows, Linux and macOS.
 

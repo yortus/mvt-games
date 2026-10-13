@@ -221,16 +221,16 @@ export default tseslint.config(
             'packages/three/src/object3d-mixin.ts',
             'packages/website/scripts/vite-plugin-spritesheet.ts',
             'packages/audio/src/web/chip-processor.ts',
-            // vsnap replaces canvas text drawing and patches a Pixi pool.
-            'packages/vsnap/src/browser/canvas-text.ts',
-            'packages/vsnap/src/pixi/pixi-views.ts',
+            // v-snap replaces canvas text drawing and patches a Pixi pool.
+            'packages/v-snap/src/browser/canvas-text.ts',
+            'packages/v-snap/src/pixi/pixi-views.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
         // .vitest/ holds Vitest's output, such as an HTML report's scripts, and
-        // packages/vsnap/lib/ its build.
-        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/vsnap/lib/**'],
+        // packages/v-snap/lib/ its build.
+        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/v-snap/lib/**'],
     },
 );

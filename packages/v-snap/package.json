@@ -1,0 +1,85 @@
+{
+    "name": "v-snap",
+    "version": "0.0.0",
+    "description": "Fast, consistent visual snapshot tests for views drawn on a canvas or in HTML, with support for Pixi and three.js: the same images on Windows, Linux and macOS, with no Docker",
+    "license": "MIT",
+    "keywords": ["visual testing", "visual regression", "snapshot", "screenshot", "vitest", "playwright", "pixi", "pixi.js", "three", "canvas"],
+    "homepage": "https://github.com/yortus/mvt-games/tree/main/packages/v-snap#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/v-snap"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "default": "./src/browser/index.ts"
+        },
+        "./vitest": {
+            "default": "./src/node/index.ts"
+        },
+        "./pixi": {
+            "default": "./src/pixi/index.ts"
+        },
+        "./three": {
+            "default": "./src/three/index.ts"
+        }
+    },
+    "files": [
+        "lib",
+        "src/browser/calibration-images/**",
+        "src/browser/fonts/LICENSE-*",
+        "visual-environment.json"
+    ],
+    "engines": {
+        "node": ">=22.17"
+    },
+    "scripts": {
+        "build": "tsdown",
+        "prepack": "tsdown && node scripts/publish-manifest.ts apply",
+        "postpack": "node scripts/publish-manifest.ts restore",
+        "test": "vitest run",
+        "test:unit": "vitest run -p unit",
+        "test:visual": "vitest run -p \"visual-*\"",
+        "test:visual:update": "vitest run -p \"visual-*\" -u",
+        "test:visual:environment": "node scripts/environment.ts",
+        "generate-blank-font": "node scripts/generate-blank-font.ts",
+        "bench": "node bench/run.ts"
+    },
+    "dependencies": {
+        "fontkit": "^2.0.4",
+        "picomatch": "^4.0.7",
+        "pngjs": "^7.0.0"
+    },
+    "peerDependencies": {
+        "@vitest/browser-playwright": "^5.0.3",
+        "pixi.js": "^8.16.0",
+        "playwright": "~1.63.0",
+        "three": ">=0.160.0 <1",
+        "vitest": "^5.0.3"
+    },
+    "peerDependenciesMeta": {
+        "pixi.js": {
+            "optional": true
+        },
+        "three": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@arethetypeswrong/core": "^0.18.5",
+        "@types/fontkit": "^2.0.9",
+        "@types/picomatch": "^4.0.3",
+        "@types/pngjs": "^6.0.5",
+        "@types/three": "^0.186.0",
+        "@vitest/browser-playwright": "^5.0.3",
+        "pixi.js": "^8.16.0",
+        "playwright": "~1.63.0",
+        "publint": "^0.3.25",
+        "three": "^0.186.1",
+        "tsdown": "^0.23.0",
+        "vite": "^8.3.2"
+    }
+}

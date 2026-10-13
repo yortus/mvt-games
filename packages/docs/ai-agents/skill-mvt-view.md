@@ -590,7 +590,7 @@ view from fixed bindings, and a top-level view from a model in a known
 state. If the view has presentation state, the pose advances it
 with `advanceTime(ms, model, view)`, which updates models before views
 in each step. `canvasTest` and
-`htmlTest` come from `vsnap`. `advanceTime` comes from the renderer
+`htmlTest` come from `v-snap`. `advanceTime` comes from the renderer
 package, with the rest of the tick API.
 
 ```tsx
@@ -606,7 +606,7 @@ canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({
   would repeat it in every image's name. Use a `describe` block only for
   something more specific, such as a state that several tests share.
 - The website's `vsnap.config.ts` registers Pixi, three.js and HTML views.
-  vsnap refreshes each view before its image is taken, and destroys it the
+  v-snap refreshes each view before its image is taken, and destroys it the
   MVT way after, so the pose doesn't. Pixi is the default kind, so a Pixi
   test gives no `kind`.
 - The website's `vsnap.config.ts` draws Pixi views as pixel art, as most

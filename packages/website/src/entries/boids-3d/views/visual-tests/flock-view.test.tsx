@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { advanceTime } from '@mvtjs/three';
-import { type CanvasTestOptions, canvasTest } from 'vsnap';
+import { type CanvasTestOptions, canvasTest } from 'v-snap';
 import { createFlockModel, type FlockModel } from '../../../boids';
 import { FlockView } from '../flock-view';
 

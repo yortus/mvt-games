@@ -3,13 +3,13 @@
 // in its refresh step, so each view is refreshed once before its image is
 // taken, as the game loop refreshes once a frame. Afterwards it is destroyed
 // the MVT way, which runs the cleanup that its views registered. A Pixi
-// container's own destroy does that, so Pixi keeps vsnap's disposal.
+// container's own destroy does that, so Pixi keeps v-snap's disposal.
 import { destroyElement } from '@mvtjs/html';
 import { refreshView } from '@mvtjs/pixi';
 import { destroyObject } from '@mvtjs/three';
-import { defineVsnapConfig, htmlViews } from 'vsnap';
-import { pixiViews } from 'vsnap/pixi';
-import { threeViews } from 'vsnap/three';
+import { defineVsnapConfig, htmlViews } from 'v-snap';
+import { pixiViews } from 'v-snap/pixi';
+import { threeViews } from 'v-snap/three';
 
 const config = defineVsnapConfig({
     views: [
@@ -23,7 +23,7 @@ const config = defineVsnapConfig({
 });
 
 // Gives canvasTest's types the kinds of view above, and the default kind.
-declare module 'vsnap' {
+declare module 'v-snap' {
     interface Register {
         config: typeof config;
     }

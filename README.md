@@ -75,7 +75,8 @@ Learn the architecture, conventions, and patterns:
 ## Project Structure
 
 An npm workspace: the libraries, published under the `@mvtjs` npm scope,
-and private packages for everything else.
+the visual testing package `v-snap`, and private packages for everything
+else.
 
 ```
 packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,

@@ -9,7 +9,7 @@
 
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { htmlTest } from 'vsnap';
+import { htmlTest } from 'v-snap';
 import type { ElementEntryStarter } from '../../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs, waitForLayout } from '../../runner';
 import { CATALOGUE } from '../catalogue';

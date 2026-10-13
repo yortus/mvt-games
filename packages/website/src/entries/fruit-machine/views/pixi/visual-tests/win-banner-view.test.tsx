@@ -1,5 +1,5 @@
 import { advanceTime } from '@mvtjs/pixi';
-import { canvasTest } from 'vsnap';
+import { canvasTest } from 'v-snap';
 import { WinBannerView } from '../win-banner-view';
 
 const WIN = 1250;

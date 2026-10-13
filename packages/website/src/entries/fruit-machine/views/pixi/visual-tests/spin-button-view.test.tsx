@@ -1,4 +1,4 @@
-import { canvasTest } from 'vsnap';
+import { canvasTest } from 'v-snap';
 import { BUTTON_RADIUS } from '../pixi-layout';
 import { type SpinButtonMode, SpinButtonView } from '../spin-button-view';
 

@@ -31,6 +31,8 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test:unit
+            # v-snap's own unit tests. Its visual tests run in visual.yml.
+            - run: npm run test:unit -w v-snap
             - run: npm run build:packages
 
             # Changesets tags each published version with an annotated tag,

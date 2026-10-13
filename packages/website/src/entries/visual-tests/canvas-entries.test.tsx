@@ -13,8 +13,8 @@
 import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { canvasTest } from 'vsnap';
-import type { PixiImageOptions } from 'vsnap/pixi';
+import { canvasTest } from 'v-snap';
+import type { PixiImageOptions } from 'v-snap/pixi';
 import type { ArcadeEntry, PixiEntryStarter } from '../../entry-types';
 import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../../runner';
 import { CATALOGUE } from '../catalogue';

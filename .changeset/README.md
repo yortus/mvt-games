@@ -5,6 +5,9 @@ The four libraries, `@mvtjs/utils`, `@mvtjs/pixi`, `@mvtjs/three` and
 [Changesets](https://github.com/changesets/changesets). They share one
 version: a change to any of them releases all four.
 
+v-snap, the visual testing package, is released from here too, on a
+version of its own. A change file for it names `v-snap` alone.
+
 Each `.md` file here, other than this one, is a change waiting to be released:
 how big a bump it needs, and a line for the changelogs.
 
@@ -40,3 +43,9 @@ each library's first version, 0.1.0, is published by hand, once:
    Actions, repository `yortus/mvt-games`, workflow `release.yml`.
 
 From then on, releases go through the workflow.
+
+v-snap's first version on npm, 0.0.0, is a placeholder that was published
+by hand, so the package already exists. Its trusted publishing is set the
+same way (step 4), and its first real version, 0.1.0, goes through the
+workflow. Once that is out, the placeholder is deprecated:
+`npm deprecate v-snap@"<0.1.0" "A placeholder. Use 0.1.0 or later."`

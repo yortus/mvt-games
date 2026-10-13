@@ -1,6 +1,6 @@
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { advanceTime } from '@mvtjs/pixi';
-import { canvasTest } from 'vsnap';
+import { canvasTest } from 'v-snap';
 import { textures } from '../../data';
 import { createGameModel } from '../../models';
 import { GameView } from '../game-view';
