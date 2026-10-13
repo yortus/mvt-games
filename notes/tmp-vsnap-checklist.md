@@ -161,9 +161,11 @@ From the blind review of 2026-10-13.
   options; a kind's `dispose` is required; no `exclude` option; the fixed
   `groupOrder: 1` can clash with a project's own group 1; the viewport
   and tolerance are fixed.
-- [ ] **A17. Playwright `~1.63.0` makes upgrades lockstep** for projects
+- [x] **A17. Playwright `~1.63.0` makes upgrades lockstep** for projects
   that use Playwright for other tests. A deliberate trade-off: say so
   plainly in the README's Requirements.
+  Done on 2026-10-13, with D2: Requirements says a project that uses
+  Playwright for other tests upgrades it when vsnap does.
 
 ## Watch mode
 

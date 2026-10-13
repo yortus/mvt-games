@@ -51,7 +51,10 @@ vsnap's code must change with the library.
 
 The tests run in a browser, and the browser talks to Node through Vitest's
 browser commands. So the package has two sides, and the messages between
-them are defined once, in `src/protocol.ts`.
+them are defined once, in `src/protocol.ts`. `src/image-name.ts` holds the
+rule that turns a test's name into its image's name, which both sides use:
+the page names each image, and Node names the image of a test that didn't
+run, so that its reference still counts as used.
 
 | Folder | What it holds |
 | --- | --- |
