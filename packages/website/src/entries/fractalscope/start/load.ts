@@ -1,0 +1,46 @@
+import { destroyElement } from '@mvtjs/html';
+import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
+import { createScopeModel } from '../models';
+import { ScopeView } from '../views';
+import '../fractalscope.css';
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns how to start Fractalscope, which has no assets to load. It is
+ * drawn with the DOM alone, with the image and the minimap on 2D canvases
+ * and the panel in HTML. The host runs each frame the MVT way. The model
+ * has nothing to advance. Then `updateView` computes a little more of the
+ * picture, in the views' update step, and `refreshView` colours what changed
+ * and draws it.
+ */
+export async function load(): Promise<ElementEntryStarter> {
+    return {
+        kind: 'element',
+        // Long enough for the picture at the rest setting to come out sharp
+        thumbnailAdvanceMs: 1500,
+        start({ element }): ElementEntrySession {
+            element.classList.add('fractalscope-host');
+            const model = createScopeModel();
+            const view = ScopeView({ model });
+            element.append(view);
+
+            return {
+                views: [view],
+                update(deltaMs: number): void {
+                    model.update(deltaMs);
+                },
+                render(): void {
+                    // The page is the renderer: the views draw as they refresh.
+                },
+                destroy(): void {
+                    destroyElement(view);
+                    element.replaceChildren();
+                    element.classList.remove('fractalscope-host');
+                },
+            };
+        },
+    };
+}

@@ -15,6 +15,7 @@ import {
     compactColumns,
     countEmptyTop,
     hasAvailableMove,
+    wouldMatchAfterSwap,
 } from './grid-helpers';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +43,11 @@ export interface BoardModel {
     readonly swapCell2: CactusCell | undefined;
     /** Linear 0-1 progress through swap/reverse phase. 0 outside those phases. */
     readonly swapProgress: number;
+    /**
+     * Whether the swap now under way makes a line, so that it stands rather
+     * than being undone. False outside the 'swapping' phase.
+     */
+    readonly isSwapMatching: boolean;
     /** Linear 0-1 progress through settling phase. 0 outside 'settling' phase. */
     readonly settleProgress: number;
     /**
@@ -94,6 +100,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     let currentMatchedCells: CactusCell[] = [];
     let swapCell1: CactusCell | undefined;
     let swapCell2: CactusCell | undefined;
+    let isSwapMatching = false;
     let phaseDurationSec = 0;
     let phaseElapsed = 0;
     let isGameOver = false;
@@ -125,6 +132,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get matchDurationMs() { return MATCH_PHASE_DURATION_MS; },
         get swapCell1() { return swapCell1; },
         get swapCell2() { return swapCell2; },
+        get isSwapMatching() { return isSwapMatching; },
         get swapProgress() {
             if (boardPhase !== 'swapping' && boardPhase !== 'reversing') return 0;
             if (phaseDurationSec <= 0) return 0;
@@ -166,6 +174,8 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         boardPhase = 'swapping';
         swapCell1 = cell1;
         swapCell2 = cell2;
+        // Whether the swap makes a line is settled as it starts, even though the board acts on it when the swap ends
+        isSwapMatching = wouldMatchAfterSwap(cells, rowCount, colCount, cell1.row, cell1.col, cell2.row, cell2.col);
         cascadeStep = 0;
         phaseElapsed = 0;
         phaseDurationSec = SWAP_DURATION_MS * 0.001;
@@ -182,6 +192,8 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         cells[r2][c2] = createCell(kind1, r2, c2);
         swapCell1 = cells[r1][c1];
         swapCell2 = cells[r2][c2];
+
+        isSwapMatching = false;
 
         const matches = findMatches(cells, rowCount, colCount);
         if (matches.length > 0) {

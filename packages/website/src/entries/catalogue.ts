@@ -6,9 +6,11 @@ import { entry as burrowBustEntry } from './burrow-bust';
 import { entry as crumbChaseEntry } from './crumb-chase';
 import { entry as dojoDuelEntry } from './dojo-duel';
 import { entry as fallingSandEntry } from './falling-sand';
+import { entry as fencelineEntry } from './fenceline';
 import { entry as fruitMachineEntry } from './fruit-machine';
 import { entry as fuelRunEntry } from './fuel-run';
 import { entry as galaxyRaidersEntry } from './galaxy-raiders';
+import { entry as fractalscopeEntry } from './fractalscope';
 import { entry as kwazyCactiiEntry } from './kwazy-cactii';
 import { entry as neonMonsoonEntry } from './neon-monsoon';
 import { entry as reorderingListsEntry } from './reordering-lists';
@@ -35,6 +37,8 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     reorderingListsEntry,
     fuelRunEntry,
     astrovoidEntry,
+    fractalscopeEntry,
+    fencelineEntry,
 ];
 
 /** The entry with `id`, if there is one. */

@@ -21,10 +21,11 @@ import { CATALOGUE } from './catalogue';
  * given, as it would in a smaller window.
  */
 const SIZES: Readonly<Record<string, Size>> = {
-    // The play areas are 1280 by 800 and 960 by 600. Both are drawn at 880 by
+    // The play areas are 1280 by 800 and 960 by 600. Each is drawn at 880 by
     // 550, which has the same 16 by 10 shape.
     'fruit-machine': { width: 880, height: 550 },
     'boids-3d': { width: 880, height: 550 },
+    'fractalscope': { width: 880, height: 550 },
 };
 
 // Each entry's code is loaded before its test is declared. Only then is it

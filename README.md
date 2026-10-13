@@ -18,6 +18,7 @@ MVT too, in HTML.
 | Burrow Bust    | Dig tunnels, pump up moles and salamanders       |
 | Crumb Chase    | Gather crumbs in a hedge maze, dodge the cats    |
 | Dojo Duel      | Karate duel, first to three points               |
+| Fenceline      | Fence off a meadow, pen sheep, dodge dust devils |
 | Fuel Run       | Side-scrolling shooter; bomb fuel to keep flying |
 | Galaxy Raiders | Shoot down waves of diving drones                |
 | Kwazy Cactii   | Match three or more cactii                       |

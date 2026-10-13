@@ -2,7 +2,9 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <!-- Safari ignores `user-scalable=no`, so its own pinch-zoom gestures are turned down here -->
+        <script>['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});</script>
         <title>MVT Arcade</title>
         <meta name="description" content="Games, demos and art, each built with Model-View-Ticker, an architecture for games and interactive apps." />
         <link rel="stylesheet" href="/src/shared/nav.css" />

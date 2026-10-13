@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fenceline sounds > BAA sounds as it did, audible and unclipped 1`] = `"499e53f5"`;
+
+exports[`fenceline sounds > BLOW_OUT sounds as it did, audible and unclipped 1`] = `"b27e751a"`;
+
+exports[`fenceline sounds > CREAK sounds as it did, audible and unclipped 1`] = `"579af9a2"`;
+
+exports[`fenceline sounds > GAME_OVER_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"1654b99a"`;
+
+exports[`fenceline sounds > HATCH sounds as it did, audible and unclipped 1`] = `"ae3e2c1b"`;
+
+exports[`fenceline sounds > MEADOW_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f21e90ca"`;
+
+exports[`fenceline sounds > ROUND_CLEAR_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"67d9a424"`;
+
+exports[`fenceline sounds > ROUND_START sounds as it did, audible and unclipped, as loud as every other song 1`] = `"0fdcc22b"`;
+
+exports[`fenceline sounds > SNAP sounds as it did, audible and unclipped 1`] = `"f8d88308"`;
+
+exports[`fenceline sounds > SNAPPED_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"68185cb7"`;
+
+exports[`fenceline sounds > STRING_TICK sounds as it did, audible and unclipped 1`] = `"fca5f925"`;
+
+exports[`fenceline sounds > TIE_OFF sounds as it did, audible and unclipped 1`] = `"2c7d8591"`;

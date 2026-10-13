@@ -8,12 +8,13 @@ import * as sounds from './sounds';
 // sound makes that sound's test fail. Listen to the new sound first, with
 // `npm run audio:render`. Then update the snapshot with `vitest -u`.
 
-const fanfares = Object.fromEntries(sounds.CASCADE_FANFARES.map((fanfare, i) => [`CASCADE_FANFARES[${i}]`, fanfare]));
-const { songs, effects } = findSounds({ ...sounds, ...fanfares });
+const whistles = Object.fromEntries(sounds.CASCADE_WHISTLES.map((whistle, i) => [`CASCADE_WHISTLES[${i}]`, whistle]));
+const crackles = Object.fromEntries(sounds.CASCADE_CRACKLES.map((crackle, i) => [`CASCADE_CRACKLES[${i}]`, crackle]));
+const { songs, effects } = findSounds({ ...sounds, ...whistles, ...crackles });
 
 describe('kwazy cactii sounds', () => {
     it('has effects to test, and no music', () => {
-        expect(effects.length).toBeGreaterThan(sounds.CASCADE_FANFARES.length);
+        expect(effects.length).toBeGreaterThan(sounds.CASCADE_WHISTLES.length);
         expect(songs).toHaveLength(0);
     });
 
