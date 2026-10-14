@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GAMES } from '../highscores';
 import { ENTRY_KINDS, ERAS, GENRES, thumbnailCropOf } from '../entry-types';
 import { CATALOGUE, findEntry } from './catalogue';
 
@@ -56,6 +57,12 @@ describe('the catalogue', () => {
             expect(crop.x + crop.width, entry.id).toBeLessThanOrEqual(entry.screenWidth);
             expect(crop.y + crop.height, entry.id).toBeLessThanOrEqual(entry.screenHeight);
         }
+    });
+
+    it('keeps highscores for exactly the games the highscores Worker has tables for', () => {
+        const withTables = CATALOGUE.filter((entry) => entry.hasHighscores === true);
+        expect(withTables.map((entry) => entry.id).sort()).toEqual(Object.keys(GAMES).sort());
+        for (const entry of withTables) expect(entry.tags.kind, entry.id).toBe('game');
     });
 
     it('finds an entry by id', () => {

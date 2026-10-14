@@ -41,5 +41,6 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The colour of its hills
     cardColor: 'mint',
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

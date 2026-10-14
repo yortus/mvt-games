@@ -36,5 +36,6 @@ export const entry: ArcadeEntry = {
     screenHeight: 430,
     inspiredBy: { title: 'Asteroids', maker: 'Atari', year: 1979 },
     thumbnail,
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

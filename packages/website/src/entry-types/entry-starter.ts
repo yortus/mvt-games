@@ -62,7 +62,7 @@ export interface PixiEntryStarter {
 }
 
 /** How to start a Pixi entry. */
-export interface PixiStartOptions {
+export interface PixiStartOptions extends StartOptions {
     /** The container to add the entry's view to. */
     readonly stage: Container;
     /** The application the entry runs in. Absent when it is started headless. */
@@ -73,6 +73,16 @@ export interface PixiStartOptions {
      * headless, or where audio cannot start.
      */
     readonly sound: Audio80;
+}
+
+/** What the host gives an entry of either kind as it starts. */
+export interface StartOptions {
+    /**
+     * For a game with a highscore table: the best score in it, for a HUD's
+     * "HI". 0 while the table is empty, loading or out of reach. Absent when
+     * the game is started headless, or outside the Arcade.
+     */
+    readonly bestScore?: () => number;
 }
 
 /** The Pixi application an entry runs in, for entries that measure it (`createPerformanceMetrics`). */
@@ -98,7 +108,7 @@ export interface ElementEntryStarter {
 }
 
 /** How to start an element entry. */
-export interface ElementStartOptions {
+export interface ElementStartOptions extends StartOptions {
     /** The element to build the entry in. */
     readonly element: HTMLElement;
     /** The Audio80 that the entry's audio views play on, as for a Pixi entry. */
@@ -119,6 +129,20 @@ export interface EntrySession {
     readonly destroy: () => void;
     /** The controls the entry takes, for the host's keyboard and touch input. Games have them. */
     readonly inputConfig?: EntryInputConfig;
+    /** For a game with a highscore table (`hasHighscores`): its score, and when its run ends. */
+    readonly scoring?: EntryScoring;
+}
+
+/**
+ * What a game tells the Arcade so it can keep the game's highscores. Query
+ * bindings, read every frame: the Arcade sees `isOver` turn true, and reads
+ * `score` then.
+ */
+export interface EntryScoring {
+    /** The score so far; once the run is over, its final score. */
+    readonly score: () => number;
+    /** Whether the run has ended, by losing or by winning, until the game starts another. */
+    readonly isOver: () => boolean;
 }
 
 /** A running element entry. */

@@ -44,6 +44,11 @@ export async function load(): Promise<PixiEntryStarter> {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                scoring: {
+                    score: () => gameModel.score,
+                    // A run ends by being caught, or by eating every crumb
+                    isOver: () => gameModel.phase !== 'playing',
+                },
                 inputConfig: {
                     showDpad: true,
                     onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },

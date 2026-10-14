@@ -35,5 +35,6 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The colour of its crumbs
     cardColor: 'lemon',
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

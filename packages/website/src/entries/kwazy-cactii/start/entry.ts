@@ -34,5 +34,6 @@ export const entry: ArcadeEntry = {
         'and new ones fall from above.',
         'Chain combos for bonus points!',
     ].join('\n'),
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

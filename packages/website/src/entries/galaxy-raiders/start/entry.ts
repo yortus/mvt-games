@@ -40,5 +40,6 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The colour of its raiders
     cardColor: 'lavender',
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

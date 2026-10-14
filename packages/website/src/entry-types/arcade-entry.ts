@@ -49,6 +49,11 @@ export interface ArcadeEntry {
      * one picked from its id, the same every time.
      */
     readonly cardColor?: CardColor;
+    /**
+     * Whether the entry keeps a highscore table: a game whose sessions report
+     * their `scoring`, and whose id is in the highscores Worker's games.
+     */
+    readonly hasHighscores?: boolean;
     /** Imports the entry's code, and loads its assets. */
     readonly load: () => Promise<EntryStarter>;
 }

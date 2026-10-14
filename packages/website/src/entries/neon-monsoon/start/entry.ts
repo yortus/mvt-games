@@ -40,5 +40,6 @@ export const entry: ArcadeEntry = {
         'Bullets that brush past score',
         'as grazes.',
     ].join('\n'),
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

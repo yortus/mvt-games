@@ -35,6 +35,10 @@ export async function load(): Promise<PixiEntryStarter> {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                scoring: {
+                    score: () => gameModel.score,
+                    isOver: () => gameModel.phase === 'game-over',
+                },
                 inputConfig: {
                     showDpad: false,
                     onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },

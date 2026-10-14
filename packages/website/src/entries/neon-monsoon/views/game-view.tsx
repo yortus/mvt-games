@@ -32,6 +32,12 @@ export interface GameViewBindings {
     model: GameModel;
     /** The chip the game's sound plays on. It is the view's output, not model state, so the view reads it once. */
     sound: Audio80;
+    /**
+     * The best score in the Arcade's table for the game, from everyone who
+     * has played it. The HUD's "HI" shows it, or this session's best if that
+     * is higher. Absent outside the Arcade: "HI" is this session's best.
+     */
+    bestScore?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,7 +55,7 @@ export interface GameViewBindings {
  * `BulletLayerView`, reading its field by index.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, sound, bestScore = () => 0 } = bindings;
     const { scoring, ship, boss, stage, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
@@ -212,7 +218,7 @@ export function GameView(bindings: GameViewBindings): Container {
             />
             <HudView
                 score={() => scoring.score}
-                highScore={() => scoring.highScore}
+                highScore={() => Math.max(scoring.highScore, bestScore())}
                 lives={() => model.lives}
                 bombs={() => model.bombs}
                 chain={() => scoring.chain}

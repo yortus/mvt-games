@@ -20,9 +20,9 @@ export async function load(): Promise<PixiEntryStarter> {
         // Long enough for the first kites to fly in.
         thumbnailAdvanceMs: 9000,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, sound, bestScore }): EntrySession {
             const gameModel = createGameModel({ events: STAGE_EVENTS, bossAttacks: BOSS_ATTACKS });
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, sound, bestScore });
             stage.addChild(gameView);
             const input = gameModel.playerInput;
 
@@ -34,6 +34,11 @@ export async function load(): Promise<PixiEntryStarter> {
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
+                },
+                scoring: {
+                    score: () => gameModel.scoring.score,
+                    // A run ends by losing every life, or by clearing both loops
+                    isOver: () => gameModel.phase === 'game-over' || gameModel.phase === 'all-clear',
                 },
                 inputConfig: {
                     showDpad: true,

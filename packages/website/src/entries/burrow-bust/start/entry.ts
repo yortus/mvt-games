@@ -44,5 +44,6 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The colour of its earth
     cardColor: 'peach',
+    hasHighscores: true,
     load: async () => (await import('./load')).load(),
 };

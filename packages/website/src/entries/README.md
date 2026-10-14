@@ -451,6 +451,47 @@ Give the views their own visual tests too, with one test for each
 state their bindings can show. See
 [Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
+## Keeping Highscores
+
+A game with a score can have a highscore table in the Arcade. The table
+holds the ten best scores from everyone who plays, and the Arcade asks for a
+player's initials when their score places. The game itself only says what
+its score is, and when a run ends. It changes no model.
+
+First, the session reports its score as `scoring`, in `start/load.ts`. Both
+members are query bindings, which the Arcade reads every frame. It watches
+`isOver` turn true, and reads `score` then:
+
+```ts
+return {
+    // update, destroy and inputConfig, as before
+    scoring: {
+        score: () => gameModel.score,
+        // True from the run's end until the game starts another
+        isOver: () => gameModel.phase === 'game-over',
+    },
+};
+```
+
+A run that can also end in a win counts that as over too, as
+`gameModel.phase !== 'playing'` does in Crumb Chase.
+
+Next, `start/entry.ts` says the entry has a table, with
+`hasHighscores: true`. Last, the game needs a table in the Worker that
+keeps them. Add it to `GAMES` in
+[`highscores/rules/games.ts`](../highscores/rules/games.ts), with a cap
+that no real score could reach, and deploy the Worker, as
+[its README](../../highscores-worker/README.md#looking-after-the-tables)
+says. Tests check that the entries
+with `hasHighscores` and the games in `GAMES` are the same, and start each
+of those games to check that it reports its score.
+
+A game whose HUD shows a best score can show the best in the Arcade's table
+instead. The start options give it as `bestScore`, which returns 0 while
+the table is empty or out of reach. It is absent when the game runs outside
+the Arcade, as in its thumbnail. Neon Monsoon's HUD shows the higher of
+`bestScore` and its own best this session.
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
@@ -467,4 +508,6 @@ state their bindings can show. See
 - The entry is listed in `catalogue.ts`, and has its own thumbnail
 - The entry's whole-screen reference image is recorded, and its views have visual tests
 - Model tests exist and pass
+- A game with a score reports it as `scoring`, says `hasHighscores: true`,
+  and has a table in `GAMES` (see [Keeping Highscores](#keeping-highscores))
 - The title, characters, art and levels are the entry's own (see [Originality](#originality))
