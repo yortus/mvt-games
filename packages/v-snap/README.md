@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Playwright-1.63-2EAD33" alt="Playwright 1.63">
   <img src="https://img.shields.io/badge/Node-22.17%2B-5FA04E?logo=nodedotjs&logoColor=white" alt="Node 22.17 or later">
   <img src="https://img.shields.io/badge/types-TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript types">
-  <img src="https://img.shields.io/badge/licence-MIT-7c5cff" alt="MIT licence">
+  <img src="https://img.shields.io/badge/licence-MIT-e8456b" alt="MIT licence">
 </p>
 
 `v-snap` makes visual testing as convenient as unit testing. A visual test

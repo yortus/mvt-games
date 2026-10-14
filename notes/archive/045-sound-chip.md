@@ -99,7 +99,7 @@ figures are estimates until the spike.
 [Originality](../../packages/website/src/entries/README.md#originality) -
 [035](../proposals/035-demoscene-demo.md) section 8 (music deferred to "an audio view", which this would provide) -
 [008](../proposals/008-watch-builder-spike.md) (`watch`, which audio views lean on) -
-[042](../proposals/042-visual-snapshot-tests.md) (visual snapshots; section 10.5 here is their audio cousin)
+[042](042-visual-snapshot-tests.md) (visual snapshots; section 10.5 here is their audio cousin)
 
 ---
 

@@ -26,8 +26,11 @@
 > environment is committed and checked before anything is compared. Runs
 > on Vitest's browser mode. No Docker, no VM, no licences.
 
-**Status:** steps 1 to 9 done; step 10 to do before this proposal is
-marked done. The spike (2026-10-07) measured 1000 pictures in 12.7 s, and
+**Status:** done (2026-10-14). Step 10 published the package to npm as
+`v-snap`, version 0.1.0, from `packages/v-snap`. npm refused the name
+`vsnap` as too close to other packages', so the package and its name in
+prose became `v-snap`; its code's names stay `vsnap` (`vsnap()`,
+`defineVsnapConfig`, `vsnap.config.ts`). The spike (2026-10-07) measured 1000 pictures in 12.7 s, and
 the same pictures on Windows, Linux x64, Linux arm64 and macOS arm64 (see
 [Spike results](#spike-results)); the design was revised to it
 (2026-10-08). The harness was built on branch `visual-tests` (2026-10-08),
