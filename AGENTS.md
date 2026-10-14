@@ -32,7 +32,7 @@ packages/
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): the documentation (VitePress)
-└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin)
+└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
 notes/                   Proposals and tasks
 ```
 
@@ -47,6 +47,7 @@ packages/website/src/
 │       └── views/       Presentation (Pixi, three.js or HTML)
 ├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
+├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
 └── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
@@ -71,7 +72,7 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 ## The Arcade and Its Entries
 
 - **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, description, tags, screenWidth, screenHeight, thumbnail, load }`. Metadata only, so listing every entry loads no entry's code; `load()` imports `start/load.ts`
-- **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games
+- **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games, and `scoring` for a game with a highscore table
 - **CATALOGUE** - every entry, in `packages/website/src/entries/catalogue.ts`
 - **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
 - To add a game or demo: create `packages/website/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/website/src/entries/README.md#originality). See [Adding an Entry](packages/website/src/entries/README.md)

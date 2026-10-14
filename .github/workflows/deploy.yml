@@ -31,6 +31,8 @@ jobs:
             - run: npm run build:website
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
+                  # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)
+                  VITE_HIGHSCORES_URL: https://highscores.yortus.workers.dev
             - run: npm run build:docs
               env:
                   BASE_URL: /${{ github.event.repository.name }}/

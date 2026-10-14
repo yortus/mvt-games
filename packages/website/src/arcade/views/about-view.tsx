@@ -21,8 +21,8 @@ export interface AboutViewBindings {
 
 /**
  * An (i) button by the arcade's title, and the note it opens beneath it: what
- * the arcade is, a link to the docs, the keys, a word on the highscore
- * tables, and one on the classics its games credit. Escape, or a press anywhere else, dismisses the note.
+ * the arcade is, a link to the docs, the keys, and a word on the classics its
+ * games credit. Escape, or a press anywhere else, dismisses the note.
  */
 export function AboutView(bindings: AboutViewBindings): Element {
     let root: HTMLElement | undefined;

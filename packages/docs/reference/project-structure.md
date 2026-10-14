@@ -27,7 +27,7 @@ packages/
 ├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
 ├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
 ├── docs/                @mvtjs/docs (private): this documentation (VitePress)
-└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite)
+└── website/             @mvtjs/website (private): the Arcade, its games and demos, the playground (Vite), and the Cloudflare Worker that keeps the highscore tables
 notes/                   Proposals and tasks
 ```
 
@@ -44,6 +44,7 @@ packages/website/src/
 │       └── views/       Presentation and user-input handling
 ├── device/              What the visitor's device supports, such as touch
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
+├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          The in-browser editor and the sandbox it runs code in
 └── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`

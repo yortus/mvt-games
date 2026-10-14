@@ -54,7 +54,7 @@ by a deployed spike, on the same day (section 4.6).
 | 6 | Who decides a score places | The Arcade's model, against the table it last fetched; the Worker has the final say and returns the table as it now stands | [6.1](#61-the-arcades-model) |
 | 7 | Initials | Three characters from A-Z, 0-9, space and full stop (38, one new glyph), not all spaces, no blocklisted words. Entered with up and down to change a letter, as a cabinet did, or by typing | [7](#7-entering-initials) |
 | 8 | Where tables are shown | After a run places (its row flashing), in the pause menu, and in the entry's info panel | [6.2](#62-the-views) |
-| 9 | Cheating | Plausibility checks only: a cap per game, a rate limit, an allowed origin. Stated plainly in the About panel. Replay checks are a later, separate step | [8](#8-what-it-cannot-stop) |
+| 9 | Cheating | Plausibility checks only: a cap per game, a rate limit, an allowed origin. Replay checks are a later, separate step | [8](#8-what-it-cannot-stop) |
 | 10 | A game's rules change | Each game's table has a version in the Worker's config; bumping it starts a fresh table | [4.3](#43-the-games-config) |
 | 11 | The world's best, in the game | Start options gain `bestScore: () => number`, the top of the entry's table. Neon Monsoon's HUD shows it as "HI", as a cabinet's did | [6.4](#64-the-worlds-best-in-the-game) |
 
@@ -444,8 +444,9 @@ All in HTML JSX, so they work over an entry of any renderer:
 - **`PixelTextView`** drew fixed text, once. Its `text` and `label` are now
   `ValueOrGetter<string>`: changing text is redrawn when it changes, and
   fixed text still has no refresh step.
-- The **About** panel says, in a line, that the tables are shared and check
-  only that a score is plausible (section 8.1).
+- The **About** panel was to say, in a line, that the tables are shared and
+  check only that a score is plausible. The line was left out on review
+  (2026-10-15).
 
 Escape belongs to the placing view while a score places: the Arcade's own
 Escape (close a panel, pause, leave) stands aside.
@@ -525,8 +526,10 @@ a pure helper with its own tests, as `card-wall-keys.ts` is.
 Whatever the browser can send, anyone can send. The Worker can refuse
 nonsense (a score over the cap, a flood from one address), but not a
 plausible lie: a request saying `ACE` scored 41,230 at Astrovoid looks the
-same whether it was earned or typed. The About panel should say so in a
-line, so a forged score does not look like an endorsement.
+same whether it was earned or typed. The Worker enforces its checks on
+Cloudflare, so nothing in the browser can get round them, but they are only
+as strong as their rules: a cap stops only scores above it, and the
+blocklist only the words on it.
 
 ### 8.2 In practice
 

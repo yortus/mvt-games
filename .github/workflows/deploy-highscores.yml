@@ -1,0 +1,45 @@
+name: Deploy the highscores Worker
+
+# Deploys the Cloudflare Worker that keeps the Arcade's highscore tables
+# (packages/website/highscores-worker). A push to main deploys production, at
+# highscores.yortus.workers.dev, for the site on GitHub Pages. A push to test,
+# or a manual run on any other branch, deploys the test environment, at
+# highscores-test.yortus.workers.dev, for the site on Surge. Each has tables
+# of its own. It runs only when the Worker, or the code it shares with the
+# site (packages/website/src/highscores), changes. It needs two secrets:
+# CLOUDFLARE_API_TOKEN, from the "Edit Cloudflare Workers" template, and
+# CLOUDFLARE_ACCOUNT_ID.
+
+on:
+    push:
+        branches: [main, test]
+        paths:
+            - packages/website/highscores-worker/**
+            - packages/website/src/highscores/**
+            - .github/workflows/deploy-highscores.yml
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: highscores-${{ github.ref_name }}
+    cancel-in-progress: false
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - run: npm ci
+            - run: npx vitest run -p unit packages/website/highscores-worker packages/website/src/highscores
+            - run: npm run ${{ github.ref_name == 'main' && 'highscores:deploy' || 'highscores:deploy:test' }} -w @mvtjs/website
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

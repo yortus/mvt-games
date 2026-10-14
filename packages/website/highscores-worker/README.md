@@ -78,7 +78,7 @@ address is stored.
 
 Anything a browser can send, anyone can send. The Worker refuses scores that
 are impossible, and floods from one address. It cannot tell an earned score
-from a plausible one that someone typed. The Arcade's About panel says so.
+from a plausible one that someone typed.
 
 ## Environments
 
