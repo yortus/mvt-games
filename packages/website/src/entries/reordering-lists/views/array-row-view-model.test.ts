@@ -27,6 +27,14 @@ function settle(vm: { update: (deltaMs: number) => void }): void {
 // ---------------------------------------------------------------------------
 
 describe('array row view model', () => {
+    it('has every card entering before its first update, as a refresh may come first', () => {
+        const { vm } = setup([0, 1, 2]);
+
+        expect(vm.xAt(2)).toBe(2 * PITCH);
+        expect(vm.alphaAt(2)).toBe(0);
+        expect(vm.scaleAt(2)).toBeLessThan(1);
+    });
+
     it('starts an entering card at its position, transparent, and fades it in', () => {
         const { vm } = setup([0, 1, 2]);
 

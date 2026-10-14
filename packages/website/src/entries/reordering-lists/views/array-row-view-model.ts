@@ -57,6 +57,9 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
 
     // Counts updates, so a card can tell whether it was in the row last frame.
     let frame = 0;
+    // A step of no time starts the cards already in the row entering, so the
+    // first refresh, which can come before the first update, has state to read.
+    update(0);
 
     return {
         xAt: (index) => indexX[index],

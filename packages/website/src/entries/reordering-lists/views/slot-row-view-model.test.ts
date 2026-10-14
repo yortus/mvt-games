@@ -26,6 +26,15 @@ function settle(vm: { update: (deltaMs: number) => void }, frames = 200): void {
 // ---------------------------------------------------------------------------
 
 describe('slot row view model', () => {
+    it('has every card entering before its first update, as a refresh may come first', () => {
+        const { vm } = setup(['A', 'B', 'C']);
+
+        expect(vm.xAt(2)).toBe(2 * PITCH);
+        expect(vm.yAt(2)).toBe(0);
+        expect(vm.alphaAt(2)).toBe(0);
+        expect(vm.scaleAt(2)).toBeLessThan(1);
+    });
+
     it('starts an entering card at its position, transparent, and fades it in', () => {
         const { vm } = setup(['A', 'B', 'C']);
 

@@ -49,6 +49,9 @@ export function createSlotRowViewModel(options: SlotRowViewModelOptions): SlotRo
 
     // Presentation state per storage slot, indexed as `slots` is.
     const cosmetics: SlotCosmetic[] = [];
+    // A step of no time starts the cards already in the row entering, so the
+    // first refresh, which can come before the first update, has state to read.
+    update(0);
 
     return {
         xAt: (index) => cosmetics[index].x,
