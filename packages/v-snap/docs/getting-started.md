@@ -44,27 +44,22 @@ already uses Vitest. The [README](../README.md) has the short version.
 
 v-snap's tests run in two Vitest projects of their own, beside the
 project's unit tests. Most projects that already use Vitest have one flat
-config. These steps turn it into a config with projects.
+config, with no projects. `withVsnap()` adds v-snap's projects to it, so
+the config keeps its shape.
 
 1. Install `v-snap` as a dev dependency, beside `vitest`. npm also installs
    `playwright` and `@vitest/browser-playwright`, which v-snap needs. A
    package manager that doesn't install peer dependencies needs them
    installed too.
-2. Move the config's `test` settings into a project named `unit`, inside
-   `test.projects`. That includes `include`, `exclude`, `environment` and
-   `setupFiles`. Settings for the whole run, such as `reporters` and
-   `coverage`, stay in the `test` block.
-3. Add `'**/visual-tests/**'` to the unit project's `exclude`, after
-   `...configDefaults.exclude`. Vitest's own `include` matches the visual
-   test files, which end in `.test.tsx`, and v-snap's projects run them.
-4. List v-snap's projects after the unit project: `...vsnap()`.
-5. Create `vsnap.config.ts` beside `vitest.config.ts`, as
+2. Wrap the config in `withVsnap()`, from `v-snap/vitest`, inside
+   `defineConfig`, as [An Example](#an-example) shows.
+3. Create `vsnap.config.ts` beside `vitest.config.ts`, as
    [Kinds of View](kinds-of-view.md) shows, with the kinds of view that the
    tests pose and the `Register` declaration. Add it to `tsconfig.json`'s
    `include`.
-6. Add `.vitest/` to `.gitignore`. v-snap writes a failed test's images
+4. Add `.vitest/` to `.gitignore`. v-snap writes a failed test's images
    there.
-7. Write a test, and run `vitest`, as [Your First Test](#your-first-test)
+5. Write a test, and run `vitest`, as [Your First Test](#your-first-test)
    shows.
 
 ## An Example
@@ -81,6 +76,32 @@ export default defineConfig({
 becomes:
 
 ```ts
+import { defineConfig } from 'vitest/config';
+import { withVsnap } from 'v-snap/vitest';
+
+export default defineConfig(withVsnap({
+    plugins: [react()],
+    test: { environment: 'jsdom', setupFiles: ['./test-setup.ts'] },
+}));
+```
+
+`withVsnap()` moves the unit tests' settings, such as `environment` and
+`setupFiles`, into a project named `unit`, which leaves out the visual
+test files, and adds v-snap's projects after it. The rest stays where it
+is: settings for the whole run, such as `reporters` and `coverage`, and
+Vite's settings, such as `plugins`, which v-snap's projects inherit.
+`vitest -p unit` runs the unit tests alone, and `vitest -p "visual-*"` the
+visual tests. v-snap's own options go in the config, under `vsnap`, such
+as `vsnap: { root: import.meta.dirname }`.
+[Configuration](configuration.md#options) lists them.
+
+A config that has projects already lists v-snap's projects itself, after
+its own, with `...vsnap()`, as
+[Configuration](configuration.md#vsnaps-projects) shows. So does a project
+that would rather see the projects in its config. `withVsnap()` turns the
+example above into this:
+
+```ts
 import { configDefaults, defineConfig } from 'vitest/config';
 import { vsnap } from 'v-snap/vitest';
 
@@ -94,7 +115,7 @@ export default defineConfig({
                     name: 'unit',
                     environment: 'jsdom',
                     setupFiles: ['./test-setup.ts'],
-                    exclude: [...configDefaults.exclude, '**/visual-tests/**'],
+                    exclude: [...configDefaults.exclude, '**/visual-tests/*.test.{ts,tsx}'],
                 },
             },
             ...vsnap(),
@@ -106,7 +127,7 @@ export default defineConfig({
 The unit project has `extends: true`, so that it keeps the plugins, as
 v-snap's projects do. [Configuration](configuration.md) explains why the
 `include`, `exclude` and `setupFiles` settings must stay in the unit
-project, and lists `vsnap()`'s options.
+project.
 
 And a project whose views are drawn with Pixi has this `vsnap.config.ts`:
 

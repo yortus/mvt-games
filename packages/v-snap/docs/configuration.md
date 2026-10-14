@@ -17,8 +17,30 @@ covers the first.
 
 v-snap's tests run in two Vitest projects, beside a project's unit tests.
 They run in a group of their own (Vitest's `sequence.groupOrder`), after the
-project's other projects. `vsnap(options)` returns the projects, which the
-config lists:
+project's other projects. There are two ways to add them.
+
+`withVsnap(config)` adds them to a config as it is, as
+[Getting Started](getting-started.md#an-example) shows. Its options go in
+the config, under `vsnap`, and are left out of the config that it
+returns:
+
+```ts
+export default defineConfig(withVsnap({
+    vsnap: { root: import.meta.dirname },
+    plugins: [/* the plugins that the project's views need */],
+    test: { environment: 'jsdom' },
+}));
+```
+
+A flat config's
+unit test settings (`name`, `include`, `exclude`, `includeSource`,
+`environment`, `environmentOptions`, `setupFiles` and `browser`) move into
+a project named `unit`, with `extends: true`, whose `exclude` also leaves
+out the visual test files. The rest of the config stays where it is. A
+config that has projects keeps them, and v-snap's are added after them;
+its projects must leave out the visual test files themselves.
+
+Or `vsnap(options)` returns the projects, which the config lists itself:
 
 ```ts
 import { configDefaults, defineConfig } from 'vitest/config';
@@ -60,14 +82,15 @@ aliases as the rest of the project.
 
 Vitest adds the config's own `include` and `exclude` lists to an
 inheriting project's, so keep them in the unit project, as above, not in
-the config's `test` block. The same goes for `setupFiles`, which would run
+the config's `test` block. `withVsnap()` moves them there. The same goes for `setupFiles`, which would run
 in v-snap's browser pages, where a setup file written for Node, or for a
 simulated DOM, fails. A run stops with a message if any of them leak into
 v-snap's projects.
 
 ## Options
 
-Every option is optional.
+`vsnap(options)` and the `vsnap` of `withVsnap()`'s config take the same
+options. Every option is optional.
 
 | Option | What it sets |
 | --- | --- |

@@ -503,7 +503,7 @@ function checkForInheritedSetupFiles(vitest: Vitest, projectNames: readonly stri
         if (extra.length === 0) continue;
         throw new Error(
             `v-snap's project ${project.name} inherits setup files from the config (${extra.map(toDisplayPath).join(', ')}), which would run in its browser page. `
-            + "Move setupFiles out of the config's test block, into the unit project, "
+            + "Move setupFiles out of the config's test block, into the unit project (withVsnap(config) does that for a flat config), "
             + "or name the Vite config that v-snap's projects need, with vsnap({ viteConfig }).",
         );
     }
@@ -661,7 +661,7 @@ function checkForInheritedLists(vitest: Vitest, projectNames: readonly string[],
         if (extra.length === 0) continue;
         throw new Error(
             `v-snap's project ${project.name} inherits the config's own include and exclude lists (${extra.join(', ')}). `
-            + "Move include and exclude out of the config's test block, into the unit project, "
+            + "Move include and exclude out of the config's test block, into the unit project (withVsnap(config) does that for a flat config), "
             + "or name the Vite config that v-snap's projects need, with vsnap({ viteConfig }).",
         );
     }

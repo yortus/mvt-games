@@ -64,7 +64,7 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   renames its reference. The two config files and the `Register`
   declaration are real learning cost. Probably keep, but worth a
   conscious decision.
-- [ ] **A4: Don't make a project restructure its Vitest config.** Today a
+- [x] **A4: Don't make a project restructure its Vitest config.** Today a
   project with a flat config must move to `test.projects`, put its own
   settings in a `unit` project that excludes `**/visual-tests/**`, then
   list `...vsnap()`. That is the biggest step in adopting v-snap, and it
@@ -78,6 +78,20 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   that already has projects, and what `-p`, watch mode, the VS Code
   extension and the inherited-settings checks make of injected projects.
   Keep `...vsnap()` in `test.projects` as the other form.
+  Done on 2026-10-14 (branch `v-snap-checks`, `aa307c9`), as a config
+  wrapper, not a plugin: `defineConfig(withVsnap(config, options))`. A
+  plugin's `configureVitest` runs only for projects that pass `-p`, and a
+  flat config's one project has no name, so `vitest -p "visual-*"` would
+  inject nothing and stop with "No projects matched the filter". Its
+  injected projects would also inherit the config's `include`, `exclude`
+  and `setupFiles`. `withVsnap` moves a flat config's unit test settings
+  (`name`, `include`, `exclude`, `includeSource`, `environment`,
+  `environmentOptions`, `setupFiles`, `browser`) into a `unit` project with
+  `extends: true` and an exclude for the visual tests, and appends v-snap's
+  projects. A config with projects gets v-snap's appended. Checked with a
+  scratch flat config (a Node unit test, a root setup file and a canvas
+  test) under `vitest run`, `-p unit` and `-p "visual-*"`. Not checked: the
+  VS Code extension and watch mode with the wrapper.
 
 ## Watch mode
 

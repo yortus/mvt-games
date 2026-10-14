@@ -1,26 +1,26 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { vsnap } from 'v-snap/vitest';
+import { withVsnap } from 'v-snap/vitest';
 
 const ROOT = import.meta.dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so tests need no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
 
-// The website's visual tests, in v-snap's projects, `visual-canvas` and
-// `visual-html`, which bring v-snap's reporter with them. `-p "visual-*"`
-// runs them.
-const website = vsnap({
-    root: resolve(ROOT, 'packages/website'),
-    viteConfig: './vite.config.ts',
-});
-
-// One test run over every workspace in packages/: the unit tests in Node, in
-// the "unit" project, and the website's visual tests in a browser. v-snap is
-// left out, as if it lived in a repo of its own: its own config runs its
-// tests, and the scripts call it.
-export default defineConfig({
+// One test run over every workspace in packages/: the unit tests in Node, and
+// the website's visual tests in a browser. withVsnap moves the unit tests'
+// settings into the "unit" project, which leaves out the visual tests, and
+// adds v-snap's projects, `visual-canvas` and `visual-html`, which bring
+// v-snap's reporter with them. `-p unit` and `-p "visual-*"` run each alone.
+// v-snap is left out, as if it lived in a repo of its own: its own config
+// runs its tests, and the scripts call it.
+export default defineConfig(withVsnap({
+    // The website's visual tests, which build its views with its own Vite config
+    vsnap: {
+        root: resolve(ROOT, 'packages/website'),
+        viteConfig: './vite.config.ts',
+    },
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
     },
@@ -33,27 +33,17 @@ export default defineConfig({
             'default',
             ...(process.env.GITHUB_ACTIONS === 'true' ? ['github-actions' as const] : []),
         ],
-        projects: [
-            {
-                extends: true,
-                test: {
-                    name: 'unit',
-                    // .claude/ holds agent worktrees: separate checkouts, tested on
-                    // their own. Visual tests run in v-snap's projects, and v-snap's
-                    // own tests in its own config.
-                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/v-snap/**', '**/visual-tests/**'],
-                    // Node resolves solid-js to its server build, where effects never
-                    // run. Tests get the browser build, as a page does, and Vite loads
-                    // solid-js and pixi-solid itself so that they share that one copy.
-                    alias: [
-                        { find: /^solid-js$/, replacement: resolve(ROOT, 'node_modules/solid-js/dist/solid.js') },
-                        { find: /^solid-js\/store$/, replacement: resolve(ROOT, 'node_modules/solid-js/store/dist/store.js') },
-                        { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },
-                    ],
-                    server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
-                },
-            },
-            ...website,
+        // .claude/ holds agent worktrees: separate checkouts, tested on their
+        // own. v-snap's own tests run in its own config.
+        exclude: [...configDefaults.exclude, '.claude/**', 'packages/v-snap/**'],
+        // Node resolves solid-js to its server build, where effects never run.
+        // Tests get the browser build, as a page does, and Vite loads solid-js
+        // and pixi-solid itself so that they share that one copy.
+        alias: [
+            { find: /^solid-js$/, replacement: resolve(ROOT, 'node_modules/solid-js/dist/solid.js') },
+            { find: /^solid-js\/store$/, replacement: resolve(ROOT, 'node_modules/solid-js/store/dist/store.js') },
+            { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },
         ],
+        server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
     },
-});
+}));

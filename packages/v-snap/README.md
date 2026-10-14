@@ -141,27 +141,19 @@ three images, with a slider between the reference and the actual image.
    npm install --save-dev v-snap vitest
    ```
 
-2. List v-snap's projects in `vitest.config.ts`, after a project for the
-   unit tests, which leaves out the visual tests.
+2. Wrap the config in `vitest.config.ts` in `withVsnap()`, which adds
+   v-snap's projects to it. The unit tests keep their settings, in a
+   project of their own that leaves out the visual tests.
 
    ```ts
-   import { configDefaults, defineConfig } from 'vitest/config';
-   import { vsnap } from 'v-snap/vitest';
+   import { defineConfig } from 'vitest/config';
+   import { withVsnap } from 'v-snap/vitest';
 
-   export default defineConfig({
+   export default defineConfig(withVsnap({
        test: {
-           projects: [
-               {
-                   extends: true,
-                   test: {
-                       name: 'unit',
-                       exclude: [...configDefaults.exclude, '**/visual-tests/**'],
-                   },
-               },
-               ...vsnap(),
-           ],
+           // The unit tests' settings, as before.
        },
-   });
+   }));
    ```
 
 3. Register the kinds of view that the tests pose in `vsnap.config.ts`,
@@ -223,7 +215,8 @@ already has settings, and what v-snap needs.
 | | `bindCanvasTest(config)` | Returns a `canvasTest` whose types know one config's kinds of view, for a monorepo's packages |
 | | `htmlViews(options?)` | Returns the kind for HTML views, with steps to prepare and dispose of them, and a background for every test |
 | | `fitImage`, `readCanvas` | Helpers for support for another renderer: how an image fits the size budget, and a canvas's pixels |
-| `v-snap/vitest` | `vsnap(options?)` | Returns the Vitest projects that run the visual tests, to list in `test.projects` |
+| `v-snap/vitest` | `withVsnap(config)` | Returns the Vitest config with v-snap's projects added, and its options, under `vsnap`, taken out. A flat config's unit test settings move into a `unit` project |
+| | `vsnap(options?)` | Returns the Vitest projects that run the visual tests, to list in `test.projects` by hand |
 | `v-snap/pixi` | `pixiViews(options?)` | Returns the kind for Pixi views |
 | `v-snap/three` | `threeViews(options?)` | Returns the kind for three.js views |
 
