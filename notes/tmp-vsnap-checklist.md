@@ -18,20 +18,6 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
 
 ## Bugs
 
-- [x] **B1: Check failures show only in v-snap's own block** (2026-10-14 B1,
-  checked). Unused references and hash mismatches print after the summary
-  and set the exit code, as coverage thresholds do. Vitest's summary, the
-  UI, the IDE extension and the JSON and JUnit reporters show the run as
-  passed. Reporting them through Vitest, as an unhandled error or a
-  synthetic failed test, would fix that, but U13 (2026-10-13) moved them
-  out of "Unhandled Errors" on purpose. The reporter's header and
-  `docs/running-tests.md` now describe the current behaviour. Decide
-  whether to keep it.
-  Done on 2026-10-14 (option 4b), on branch `v-snap-checks`, `9a2cbd7`: a
-  hash mismatch fails its own test, two tests of a file with one image name
-  fail the second, and a run outside CI deletes unused references as it
-  writes new ones. Only unused references in CI, and references shared
-  across files, still fail the run from v-snap's own block.
 
 ## Before publishing
 
@@ -64,34 +50,6 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   renames its reference. The two config files and the `Register`
   declaration are real learning cost. Probably keep, but worth a
   conscious decision.
-- [x] **A4: Don't make a project restructure its Vitest config.** Today a
-  project with a flat config must move to `test.projects`, put its own
-  settings in a `unit` project that excludes `**/visual-tests/**`, then
-  list `...vsnap()`. That is the biggest step in adopting v-snap, and it
-  touches a file the project owns. An earlier review raised it; U6 (closed
-  2026-10-13) only documented the steps, in `docs/getting-started.md`.
-  Vitest 5 lets a plugin add projects (`injectTestProjects` in
-  `configureVitest`), so v-snap could be a plugin, `plugins: [vsnap()]`,
-  that adds its projects to a flat config, and leaves the visual test files
-  out of the config's own tests. To check: whether the root project's
-  `exclude` can be extended from the plugin, how it behaves with a config
-  that already has projects, and what `-p`, watch mode, the VS Code
-  extension and the inherited-settings checks make of injected projects.
-  Keep `...vsnap()` in `test.projects` as the other form.
-  Done on 2026-10-14 (branch `v-snap-checks`, `aa307c9`), as a config
-  wrapper, not a plugin: `defineConfig(withVsnap(config, options))`. A
-  plugin's `configureVitest` runs only for projects that pass `-p`, and a
-  flat config's one project has no name, so `vitest -p "visual-*"` would
-  inject nothing and stop with "No projects matched the filter". Its
-  injected projects would also inherit the config's `include`, `exclude`
-  and `setupFiles`. `withVsnap` moves a flat config's unit test settings
-  (`name`, `include`, `exclude`, `includeSource`, `environment`,
-  `environmentOptions`, `setupFiles`, `browser`) into a `unit` project with
-  `extends: true` and an exclude for the visual tests, and appends v-snap's
-  projects. A config with projects gets v-snap's appended. Checked with a
-  scratch flat config (a Node unit test, a root setup file and a canvas
-  test) under `vitest run`, `-p unit` and `-p "visual-*"`. Not checked: the
-  VS Code extension and watch mode with the wrapper.
 
 ## Watch mode
 
@@ -122,24 +80,9 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   such as the kinds' naming rules, would scan better as lists or tables,
   and the `vsnap.config.ts` sample is repeated three times. Fold into the
   docs review under Miscellaneous.
-- [x] **D2:** Thoroughly review the docs pages that mention visual testing
 - [ ] **D3:** Thoroughly review the vsnap README and docs in the vsnap package
 
 ## Miscellaneous
 
-- [x] **M1:** Commit chunk 10 and the rounds since it in main (the user).
-- [x] **M2:** Stop the docs dev server that serves the worktree, when it's no
-  longer needed.
-  Stopped on 2026-10-14.
-- [x] **M3:** The final logo: the SVG in the repo, an icon size for npm, a
-  favicon, a settled colour, and a wordmark if the README wants one.
-  Settled on 2026-10-14: the Ember scheme, amber `#ffb547`, coral
-  `#ff7a50` and rose `#e8456b`, top to bottom, in
-  `packages/v-snap/docs/images/logo.svg`; the README's licence badge takes
-  the rose. No separate wordmark: the README's centred heading is one. npm
-  has no package icon, and v-snap has no site of its own, so no icon sizes
-  or favicon are needed. The amber top layer is faint on white (1.8:1); a
-  light-page variant through `<picture>` is possible later.
 - [ ] **M4:** A trial on another project, from a packed install (see P5 and P7).
   A scratch project passed on 2026-10-12. A real project is still to try.
-- [x] **M5:** Archive 042, and delete the `visual-tests` worktree.
