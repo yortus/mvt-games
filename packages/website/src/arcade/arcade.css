@@ -816,15 +816,16 @@ button { font: inherit; color: inherit; }
  */
 .hs-status { padding: 6px 0; font-size: 13px; color: var(--site-text-muted, #8b949e); }
 .hs-rows { list-style: none; display: grid; gap: 7px; }
-.hs-row { display: grid; grid-template-columns: 52px 46px 1fr; align-items: center; gap: 10px; }
-.hs-row .pixel-text { display: block; height: 12px; width: auto; }
+.hs-row { display: grid; grid-template-columns: 62px 50px 1fr; align-items: center; gap: 10px; }
+/* Two screen pixels to a cell of the font's seven rows, so each cell is sharp, not smeared across pixels */
+.hs-row .pixel-text { display: block; height: 14px; width: auto; }
 .hs-score .pixel-text { margin-left: auto; }
-.hs-row:nth-child(5n + 1) { color: #ff7b72; }
-.hs-row:nth-child(5n + 2) { color: #ffa657; }
-.hs-row:nth-child(5n + 3) { color: #ffd83d; }
-.hs-row:nth-child(5n + 4) { color: #7ee787; }
-.hs-row:nth-child(5n + 5) { color: #79c0ff; }
-.hs-row.is-empty { opacity: 0.3; }
+.hs-row:nth-child(5n + 1) { color: #ff4f4f; }
+.hs-row:nth-child(5n + 2) { color: #ff9a1f; }
+.hs-row:nth-child(5n + 3) { color: #ffe21f; }
+.hs-row:nth-child(5n + 4) { color: #3dff74; }
+.hs-row:nth-child(5n + 5) { color: #2ed9ff; }
+.hs-row.is-empty { opacity: 0.55; }
 .hs-row.is-new { color: #ffd83d; }
 .hs-row.is-new.is-lit { color: #fff; }
 .info-section .hs-table { max-width: 300px; }
