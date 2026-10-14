@@ -12,6 +12,7 @@
         { "path": "./packages/eslint-plugin" },
         { "path": "./packages/website" },
         { "path": "./packages/benchmarks" },
+        { "path": "./packages/website/highscores-worker" },
         { "path": "./packages/checks" }
     ]
 }

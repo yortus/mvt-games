@@ -1,0 +1,43 @@
+# The highscores Worker: `npm run highscores:deploy:test -w @mvtjs/website` for
+# the test site's tables, `npm run highscores:deploy -w @mvtjs/website` for the
+# Arcade's.
+# Bindings and vars are not inherited by an environment, so `test` repeats them.
+
+name = "highscores"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ALLOWED_ORIGINS = "https://yortus.github.io,https://yortus.com"
+
+[[durable_objects.bindings]]
+name = "HIGHSCORES"
+class_name = "HighscoresObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["HighscoresObject"]
+
+[[ratelimits]]
+name = "POST_LIMIT"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
+# highscores-test.yortus.workers.dev: the Surge test site, and the site in development
+[env.test]
+workers_dev = true
+preview_urls = false
+
+[env.test.vars]
+ALLOWED_ORIGINS = "https://mvt-games-test.surge.sh,http://localhost:*,https://localhost:*,http://127.0.0.1:*"
+
+[[env.test.durable_objects.bindings]]
+name = "HIGHSCORES"
+class_name = "HighscoresObject"
+
+[[env.test.ratelimits]]
+name = "POST_LIMIT"
+namespace_id = "1002"
+simple = { limit = 5, period = 60 }

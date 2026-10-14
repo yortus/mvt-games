@@ -1,0 +1,11 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        // The Worker runs on Cloudflare's runtime, not in a browser: its types
+        // come from `wrangler types` (worker-configuration.d.ts), and the DOM's
+        // are left out. Node's are for the tests, which run there.
+        "lib": ["ES2022"],
+        "types": ["node"]
+    },
+    "include": ["."]
+}

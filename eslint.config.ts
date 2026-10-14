@@ -230,7 +230,11 @@ export default tseslint.config(
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
         // .vitest/ holds Vitest's output, such as an HTML report's scripts, and
-        // packages/v-snap/lib/ its build.
-        ignores: ['**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/v-snap/lib/**'],
+        // packages/v-snap/lib/ its build. .wrangler/ holds Wrangler's local
+        // state, and worker-configuration.d.ts the Worker types it generates.
+        ignores: [
+            '**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/v-snap/lib/**',
+            '**/.wrangler/**', '**/worker-configuration.d.ts',
+        ],
     },
 );

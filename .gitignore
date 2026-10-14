@@ -13,6 +13,9 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# Wrangler's local state (`wrangler dev`), and its caches
+.wrangler
+
 # WAV files written by `npm run audio:render`, for listening
 /renders
 
