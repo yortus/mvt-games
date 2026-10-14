@@ -1,13 +1,15 @@
+import { inject } from 'vitest';
+import { page } from 'vitest/browser';
 import { adoptHtmlRules, listElements, pixelateRotatedImages, quantizeFontSizes, settleAnimations } from './html-rules';
 import { visualCommands } from './judge';
 import { fitImage } from '../shared';
-import type { VisualImageId, VisualRect, VisualVerdict } from '../protocol';
+import type { ColorScheme, VisualImageId, VisualRect, VisualVerdict } from '../protocol';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-export interface HtmlImageOptions {
+export interface HtmlImageOptions<E extends Element = Element> {
     /** The image's size in CSS pixels. By default, it is the element's own size, as the element lays itself out. */
     readonly width?: number;
     readonly height?: number;
@@ -17,6 +19,23 @@ export interface HtmlImageOptions {
      * images.
      */
     readonly background?: string | number;
+    /**
+     * A step that acts on the view once it is in the page, after the kind's
+     * `prepare`, and before its image is taken: hovering over it, focusing
+     * it or opening a menu, such as with Vitest's `userEvent`, or measuring
+     * its layout. After the image, the pointer is moved off the page, so
+     * that a hover doesn't reach the next test.
+     */
+    readonly act?: (view: E) => void | Promise<void>;
+    /**
+     * The test page's viewport, in CSS pixels, for a view whose layout
+     * depends on it, such as through media queries. It can't be bigger than
+     * the page, which `vsnap()`'s `viewport` option sets. By default, it is
+     * the page's size.
+     */
+    readonly viewport?: { readonly width: number; readonly height: number };
+    /** The colour scheme that the page's `prefers-color-scheme` media queries see. By default, it is `vsnap()`'s `colorScheme`, `dark` unless set. */
+    readonly colorScheme?: ColorScheme;
 }
 
 // ---------------------------------------------------------------------------
@@ -24,10 +43,11 @@ export interface HtmlImageOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Captures an element and returns the verdict. It mounts the element in a
+ * Captures an element and returns the verdict. It sets the page's viewport
+ * and colour scheme, if the options give them. It mounts the element in a
  * host element, which shrinks to fit it or takes the given size, and then
- * prepares it, if the options say how, so that the element is in the page
- * as it is prepared. It gives the page's rules to the element's shadow
+ * prepares it, if the options say how, and runs the test's `act` step, so
+ * that the element is in the page for both. It gives the page's rules to the element's shadow
  * roots, brings its animations to rest, and waits for its fonts, its `<img>`
  * elements and the images that its styles use. Then Node captures the host's
  * rectangle through the DevTools protocol and judges it. Font sizes are
@@ -42,6 +62,7 @@ export async function captureHtmlImage(
     options: HtmlImageOptions & { readonly maxPixels: number; readonly prepare?: (element: Element) => void },
     id: VisualImageId,
 ): Promise<VisualVerdict & { readonly captureMs: number; readonly prepareMs: number; readonly width: number; readonly height: number }> {
+    const restorePage = await setUpPage(options);
     const host = document.createElement('div');
     host.style.cssText = `position:absolute;left:0;top:0;display:inline-block;background:${toCssColour(options.background ?? DEFAULT_BACKGROUND)};`;
     if (options.width !== undefined) host.style.width = `${options.width}px`;
@@ -51,6 +72,7 @@ export async function captureHtmlImage(
     try {
         const prepared = performance.now();
         options.prepare?.(element);
+        await options.act?.(element);
         const prepareMs = performance.now() - prepared;
         adoptHtmlRules(host);
         await document.fonts.ready;
@@ -77,6 +99,7 @@ export async function captureHtmlImage(
     }
     finally {
         host.remove();
+        await restorePage();
     }
 }
 
@@ -85,6 +108,32 @@ export async function captureHtmlImage(
 // ---------------------------------------------------------------------------
 
 const DEFAULT_BACKGROUND = '#202024';
+
+/**
+ * Sets the page up as a test's options say: its viewport and colour scheme,
+ * if they differ from the page's own. Returns a step that puts the page back
+ * as it was, and moves the pointer off the page if the test acted on its
+ * view, so that the next test starts from the same page.
+ */
+async function setUpPage(options: HtmlImageOptions): Promise<() => Promise<void>> {
+    const defaults = { viewport: inject('vsnapViewport'), colorScheme: inject('vsnapColorScheme') };
+    const viewport = options.viewport;
+    const isResized = viewport !== undefined && (viewport.width !== defaults.viewport.width || viewport.height !== defaults.viewport.height);
+    if (viewport !== undefined && (viewport.width > defaults.viewport.width || viewport.height > defaults.viewport.height)) {
+        throw new Error(
+            `The test's viewport, ${viewport.width}x${viewport.height}, is bigger than the test page, ${defaults.viewport.width}x${defaults.viewport.height}, which would scale the image. `
+            + "Give vsnap's viewport option a bigger page.",
+        );
+    }
+    const isRecoloured = options.colorScheme !== undefined && options.colorScheme !== defaults.colorScheme;
+    if (isResized) await page.viewport(viewport.width, viewport.height);
+    if (isRecoloured) await visualCommands.setVisualColorScheme(options.colorScheme);
+    return async () => {
+        if (isResized) await page.viewport(defaults.viewport.width, defaults.viewport.height);
+        if (isRecoloured) await visualCommands.setVisualColorScheme(defaults.colorScheme);
+        if (options.act !== undefined) await visualCommands.moveVisualPointerAway();
+    };
+}
 
 /** Returns a colour as CSS: a number such as `0x202024` as `#202024`, and a CSS colour as it is. */
 function toCssColour(colour: string | number): string {

@@ -24,20 +24,33 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
 
 ## API and design
 
-- [ ] **A1: A step for an HTML test after its view is in the page**
+- [x] **A1: A step for an HTML test after its view is in the page**
   (2026-10-14 A1, checked). The pose runs before the element is mounted,
   and `prepare` belongs to the kind, not the test. So a test can't pose
   `:hover`, `:focus-visible`, an open dropdown, `userEvent` or anything
   that measures layout. To decide: the option's name, and whether it runs
   before or after the kind's `prepare`. (`src/browser/visual-test.ts`,
   `html-image.ts`)
-- [ ] **A2: A configurable viewport and colour scheme** (2026-10-14 A2,
+  Done on 2026-10-14 (branch `v-snap-act`, `7cff50f`): `act`, after the
+  kind's `prepare`, typed by the pose's element. The pointer is moved off
+  the page (CDP mouse move to -1, -1) after a test that acted. Visual tests
+  cover a hover, the next test not hovered, and keyboard focus.
+- [x] **A2: A configurable viewport and colour scheme** (2026-10-14 A2,
   checked). The viewport (1280x800), `colorScheme: 'dark'`,
   `reducedMotion` and `testTimeout: 30_000` are fixed, and `vsnap()`
   passes no project options through, so breakpoints and light themes can't
   be tested. Either changes the environment that the calibration set
   checks, so each would join the environment fingerprint.
   (`src/node/config.ts`)
+  Done on 2026-10-14 (`7cff50f`), both per project and per test:
+  `vsnap()`'s `viewport` and `colorScheme`, and a test's own, which can't be
+  bigger than the page's (Vitest would scale it). A test's colour scheme is
+  CDP media emulation; the page returns to its own after. Neither joins the
+  fingerprint: `prefers-color-scheme` only switches media queries. Form
+  controls are drawn dark by CSS's `color-scheme`, not by the preference,
+  so the calibration set gained `controls-dark`. Checked on Windows only;
+  the cross-platform workflow will check Linux and macOS. `reducedMotion`
+  stays fixed, and `testTimeout` stays 30 s (a test's `timeout` overrides it).
 - [ ] **A3: A policy for other browser builds** (2026-10-14 F3). The peer
   range `playwright: ~1.63.0` and the exact `HeadlessChrome` build in
   `visual-environment.json` mean a project pinned to another Playwright

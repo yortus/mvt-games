@@ -1,6 +1,7 @@
 // These are the visual test harness's own tests. Each one checks one case
 // of capturing an HTML view.
 import { expect, it } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { adoptHtmlRules, settleAnimations } from '../html-rules';
 import { htmlTest } from '../visual-test';
 
@@ -39,6 +40,59 @@ htmlTest('text in a shadow root, drawn blank', () => {
     const shadow = block.attachShadow({ mode: 'open' });
     shadow.innerHTML = '<style>p { font-family: Arial, sans-serif; font-size: 17.3px; margin: 0; width: 160px }</style><p>Text in a web component, long enough to wrap.</p>';
     return block;
+});
+
+// A test's act step runs once the view is in the page, after its kind's
+// prepare step. After the image, the pointer leaves the page, so the second
+// button, where the first one was, isn't hovered.
+const BUTTON = `<style>
+        .test-button { font: inherit; padding: 6px 14px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #c9d1d9 }
+        .test-button:hover { background: #ff4f8b }
+        .test-button:focus-visible { outline: 3px solid #5bd1ff; outline-offset: 2px }
+    </style>
+    <button class="test-button">Spin</button>`;
+
+htmlTest('a button, hovered', {
+    act: async (block) => {
+        expect(block.isConnected).toBe(true);
+        await userEvent.hover(block.querySelector('button') as HTMLElement);
+    },
+}, () => createBlock(BUTTON));
+
+htmlTest('a button, after a hovered one', () => createBlock(BUTTON));
+
+htmlTest('a button, focused from the keyboard', { act: () => userEvent.tab() }, () => createBlock(BUTTON));
+
+it('leaves nothing hovered after a test that acted', () => {
+    const cover = createBlock('');
+    cover.style.cssText = 'position:fixed;inset:0';
+    document.body.append(cover);
+    try {
+        expect(cover.matches(':hover')).toBe(false);
+    }
+    finally {
+        cover.remove();
+    }
+});
+
+// A test's viewport and colour scheme reach its media queries, and the page
+// returns to its own afterwards.
+const RESPONSIVE = `<style>
+        .test-box { width: 60px; height: 30px; background: #5bd1ff }
+        @media (max-width: 500px) { .test-box { background: #ffe45c } }
+        @media (prefers-color-scheme: light) { .test-box { border: 4px solid #ff4f8b } }
+    </style>
+    <div class="test-box"></div>`;
+
+htmlTest('a media query, at a narrow viewport', { viewport: { width: 400, height: 300 } }, () => createBlock(RESPONSIVE));
+
+htmlTest('a media query, in the light colour scheme', { colorScheme: 'light' }, () => createBlock(RESPONSIVE));
+
+htmlTest('a media query, with the page as it was', () => createBlock(RESPONSIVE));
+
+it('returns to the page\'s own viewport and colour scheme after a test', () => {
+    expect([innerWidth, innerHeight]).toEqual([1280, 800]);
+    expect(matchMedia('(prefers-color-scheme: dark)').matches).toBe(true);
 });
 
 it('gives the page rules to an open shadow root', () => {

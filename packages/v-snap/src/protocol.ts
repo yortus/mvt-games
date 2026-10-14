@@ -27,6 +27,9 @@ export type VisualMode = 'compare' | 'new' | 'update' | 'environment';
  */
 export type PageKind = 'canvas' | 'html';
 
+/** A colour scheme, as CSS's `prefers-color-scheme` names it. */
+export type ColorScheme = 'light' | 'dark';
+
 /** How an actual image compares with its reference. */
 export type VisualOutcome =
     | 'same' // identical pixels
@@ -190,6 +193,10 @@ declare module 'vitest' {
         vsnapHasConfig: boolean;
         /** The path of the project's `vsnap.config`, or where v-snap looked for it, for messages. */
         vsnapConfigFile: string;
+        /** The test page's viewport, provided by the config (`viewport`), which a test's viewport returns to. */
+        vsnapViewport: { readonly width: number; readonly height: number };
+        /** The page's colour scheme, provided by the config (`colorScheme`), which a test's colour scheme returns to. */
+        vsnapColorScheme: ColorScheme;
     }
 }
 
@@ -217,4 +224,8 @@ export interface VisualCommands {
     recordVisualCalibration: (calibration: VisualCalibration) => Promise<void>;
     /** Stops the run before any more tests, with one error. */
     abortVisualRun: (message: string) => Promise<void>;
+    /** Sets the colour scheme that the page's `prefers-color-scheme` media queries see. */
+    setVisualColorScheme: (scheme: ColorScheme) => Promise<void>;
+    /** Moves the pointer off the page, so that no element stays hovered after a test that acted on its view. */
+    moveVisualPointerAway: () => Promise<void>;
 }

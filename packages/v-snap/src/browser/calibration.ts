@@ -116,8 +116,16 @@ const HTML_CALIBRATION: Readonly<Record<string, Calibration>> = {
         <div style="width:50px;height:50px;background:#ffe45c;filter:blur(3px)"></div>
         <div style="width:50px;height:50px;background:#5bd1ff;filter:drop-shadow(4px 4px 3px #000)"></div>
         <div style="width:50px;height:50px;backdrop-filter:blur(4px);border:1px solid #fff"></div></div>`),
-    'controls': createHtmlCalibration(`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;width:520px">
+    'controls': createHtmlCalibration(createControlsMarkup('light')),
+    // A page that asks for dark controls, with CSS's color-scheme, gets the
+    // browser's dark ones
+    'controls-dark': createHtmlCalibration(createControlsMarkup('dark')),
+};
+
+/** Returns markup with one of each kind of form control, in a colour scheme. */
+function createControlsMarkup(scheme: 'light' | 'dark'): string {
+    return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;width:520px;color-scheme:${scheme}">
         <input type="checkbox" checked><input type="radio" checked><input type="range" value="30">
         <progress value="0.4"></progress><button>Button</button><select><option>Option</option></select>
-        <input type="text" value="Text field"><textarea rows="2" cols="12">Two lines</textarea></div>`),
-};
+        <input type="text" value="Text field"><textarea rows="2" cols="12">Two lines</textarea></div>`;
+}

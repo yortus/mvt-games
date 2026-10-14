@@ -29,10 +29,14 @@ export type CanvasTestForms<A extends readonly unknown[] = [], C extends VsnapCo
     & (<K extends keyof CanvasKinds<C> = DefaultKind<C>>(name: string, options: KindOptions<C, K> & CanvasTestExtras, pose: CasePose<ViewOf<C, K>, A>) => void)
     & (object extends OptionsOf<C, DefaultKind<C>> ? (name: string, pose: CasePose<ViewOf<C, DefaultKind<C>>, A>) => void : unknown);
 
-/** `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`, `repeats` and `fails`. */
+/**
+ * `htmlTest`'s forms. The options may also hold Vitest's `timeout`, `retry`,
+ * `repeats` and `fails`. Their `act` takes the element that the pose
+ * returns, with its type.
+ */
 export interface HtmlTestForms<A extends readonly unknown[] = []> {
-    (name: string, pose: CasePose<Element, A>): void;
-    (name: string, options: HtmlImageOptions & VitestTestOptions, pose: CasePose<Element, A>): void;
+    <E extends Element>(name: string, pose: CasePose<E, A>): void;
+    <E extends Element>(name: string, options: HtmlImageOptions<E> & VitestTestOptions, pose: CasePose<E, A>): void;
 }
 
 /** The options of a canvas test that are neither its kind's nor Vitest's. */

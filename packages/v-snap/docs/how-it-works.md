@@ -147,8 +147,8 @@ its exact build, the WebGL renderer, the locale, the time zone and the
 screen's scale, with the fingerprint that v-snap was released with. Then it
 draws a calibration set. That is a set of small images, each of which
 tests one way that drawing can differ between machines: shapes, images,
-text, WebGL shading and textures, and HTML boxes, controls, filters and
-rotation.
+text, WebGL shading and textures, and HTML boxes, light and dark controls,
+filters and rotation.
 
 If anything differs beyond the tolerance, the run stops with one error
 that says what differs. That is better than every test failing for a

@@ -168,10 +168,30 @@ mentions the other one, followed by a bracket, counts as a declaration.
 ## How HTML Views Are Captured
 
 An HTML view must fit the test page, whose viewport is 1280 by 800
-pixels, since the part of a view past it isn't drawn. The viewport is the
-same in every project, as is the tolerance of 2 levels in 255, since both
-are part of what makes the images the same on every machine. A bigger view
-fails its test, and says so.
+pixels unless `vsnap()`'s `viewport` option says otherwise, since the part
+of a view past it isn't drawn. A bigger view fails its test, and says so.
+The tolerance of 2 levels in 255 is the same in every project, since it is
+part of what makes the images the same on every machine.
+
+The pose builds the view before it is in the page. A test's `act` step
+acts on it once it is, after its kind's `prepare` step, and before its
+image is taken: it can hover over it, focus it or open a menu, with
+Vitest's `userEvent`, or measure its layout. After the image, v-snap moves
+the pointer off the page, so that the next test's view isn't hovered.
+
+```ts
+import { userEvent } from 'vitest/browser';
+
+htmlTest('the menu, open', {
+    act: (menu) => userEvent.click(menu.querySelector('button')!),
+}, () => Menu());
+```
+
+A test's `viewport` and `colorScheme` set what the view's media queries
+see, for one test: `viewport: { width: 400, height: 600 }` for a narrow
+layout, and `colorScheme: 'light'` for a light theme. A test's viewport
+can't be bigger than the page's, since a bigger one would be scaled. The
+page returns to its own after the test.
 
 Before an HTML view's image is taken, the package waits for its fonts, its
 `<img>` elements, and the images that its styles use, such as backgrounds.
@@ -180,9 +200,11 @@ screenshots do with `animations: 'disabled'`: one that ends is finished,
 and one that never ends, such as a spinner, is cancelled. A text field's
 caret is hidden.
 
-The page prefers a dark colour scheme and reduced motion, so a view's
+The page prefers a dark colour scheme, unless `vsnap()`'s `colorScheme`
+option or the test's own says otherwise, and reduced motion. So a view's
 `prefers-color-scheme: dark` and `prefers-reduced-motion: reduce` styles
-apply.
+apply. Form controls are drawn light or dark by CSS's `color-scheme`, as
+in any page, and both are calibrated.
 
 HTML text is drawn blank, as
 [Limits and Rules](limits-and-rules.md#what-the-images-leave-out)

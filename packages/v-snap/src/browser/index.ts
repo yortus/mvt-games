@@ -1,5 +1,6 @@
 export { type CanvasImage, readCanvas } from './canvas-drawing';
 export type { HtmlImageOptions } from './html-image';
+export type { ColorScheme } from '../protocol';
 export type { Pose } from './pose';
 export { fitImage } from '../shared';
 export {

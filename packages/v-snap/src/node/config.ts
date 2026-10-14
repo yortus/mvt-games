@@ -28,7 +28,7 @@ import { dirname, extname, join, relative, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
 import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
-import type { PageKind } from '../protocol.ts';
+import type { ColorScheme, PageKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
@@ -94,6 +94,18 @@ export interface VsnapOptions {
      * where the rest of v-snap's settings are.
      */
     readonly vsnapConfig?: string;
+    /**
+     * The test page's viewport, in CSS pixels. An HTML view must fit inside
+     * it, and a test's own `viewport` can't be bigger. The default is
+     * `DEFAULT_VIEWPORT`, 1280 by 800.
+     */
+    readonly viewport?: { readonly width: number; readonly height: number };
+    /**
+     * The colour scheme that the page's `prefers-color-scheme` media queries
+     * see, unless a test's own `colorScheme` says otherwise. The default is
+     * `dark`.
+     */
+    readonly colorScheme?: ColorScheme;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,6 +114,9 @@ export interface VsnapOptions {
 
 /** The default size budget, which is about a 960 by 540 screen. */
 export const DEFAULT_MAX_PIXELS = 500_000;
+
+/** The test page's default viewport, in CSS pixels. */
+export const DEFAULT_VIEWPORT: { readonly width: number; readonly height: number } = { width: 1280, height: 800 };
 
 /** The default start of the projects' names. */
 export const DEFAULT_NAME = 'visual';
@@ -155,6 +170,8 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         viewConfig,
         plugin,
         maxPixels: options.maxPixels ?? DEFAULT_MAX_PIXELS,
+        viewport: options.viewport ?? DEFAULT_VIEWPORT,
+        colorScheme: options.colorScheme ?? 'dark',
         viteConfig: options.viteConfig,
     }));
 }
@@ -169,6 +186,8 @@ function createVisualProject(options: {
     readonly rebundle: boolean;
     readonly root: string;
     readonly maxPixels: number;
+    readonly viewport: { readonly width: number; readonly height: number };
+    readonly colorScheme: ColorScheme;
     readonly viteConfig: string | undefined;
     readonly name: string;
     readonly pageKind: PageKind;
@@ -231,16 +250,18 @@ function createVisualProject(options: {
                 vsnapMaxPixels: options.maxPixels,
                 vsnapHasConfig: options.viewConfig !== undefined,
                 vsnapConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
+                vsnapViewport: options.viewport,
+                vsnapColorScheme: options.colorScheme,
             },
             browser: {
                 enabled: true,
                 headless: true,
                 screenshotFailures: false,
                 dependencySourcemaps: false,
-                viewport: { width: 1280, height: 800 },
+                viewport: options.viewport,
                 provider: playwright({
                     launchOptions: { args: BROWSER_ARGS },
-                    contextOptions: { locale: 'en-US', timezoneId: 'UTC', deviceScaleFactor: 1, colorScheme: 'dark', reducedMotion: 'reduce' },
+                    contextOptions: { locale: 'en-US', timezoneId: 'UTC', deviceScaleFactor: 1, colorScheme: options.colorScheme, reducedMotion: 'reduce' },
                 }),
                 // Named, so that the project's name has no "(chromium)" after it.
                 instances: [{ browser: 'chromium', name: options.name }],

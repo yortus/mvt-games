@@ -102,6 +102,8 @@ options. Every option is optional.
 | `maxPixels` | The size budget, which is the most pixels an image may have. A smooth view over the budget is downsampled to fit: drawn at half its size, a quarter, and so on, so that detail finer than an image pixel is averaged away. The run's summary lists them as downsampled references, with their scales. Pixel art and HTML are drawn at full size, so they fail when over the budget. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
 | `viteConfig` | A Vite config for v-snap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
 | `vsnapConfig` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, or `vsnap.config.mts`, `.js` or `.mjs`, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of v-snap's settings are |
+| `viewport` | The test page's viewport, as `{ width, height }` in CSS pixels. An HTML view must fit inside it, and a test's own `viewport` can't be bigger. The default, `DEFAULT_VIEWPORT`, is 1280 by 800 |
+| `colorScheme` | `'light'` or `'dark'`: what the page's `prefers-color-scheme` media queries see, unless a test's own `colorScheme` says otherwise. The default is `'dark'` |
 
 A monorepo can call `vsnap()` once for each package that has visual tests,
 with its own `root` and `name`, and list all their projects in one config.

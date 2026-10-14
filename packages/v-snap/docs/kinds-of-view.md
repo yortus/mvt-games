@@ -150,7 +150,7 @@ the kind gets, unless the test sets its own.
 | Pixi, `pixiViews()` | `width` and `height` (the view's bounds and a margin by default), `background`, `pixelArt` (`false` by default) | `prepare`, `dispose`, `pixelArt`, `background` |
 | three.js, `threeViews()` | `width`, `height` and `camera`, all needed; `scene`, to dress the scene; `background` | `prepare`, `dispose`, `background` |
 | A canvas that the pose drew, `'canvas'` | none | none needed |
-| HTML, `htmlTest` | `width` and `height` (the element's own size by default), `background` | `htmlViews()`: `prepare`, `dispose`, `background` |
+| HTML, `htmlTest` | `width` and `height` (the element's own size by default), `background`; `act`, a step on the view once it is in the page; `viewport` and `colorScheme`, for its media queries (see [How HTML Views Are Captured](writing-tests.md#how-html-views-are-captured)) | `htmlViews()`: `prepare`, `dispose`, `background` |
 
 A `background` is a number, such as `0x202024`, or a CSS colour. By
 default, it is one dark grey for every kind, so that transparent areas

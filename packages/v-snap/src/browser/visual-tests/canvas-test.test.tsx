@@ -54,7 +54,9 @@ it('draws two characters that the test fonts lack differently', () => {
 // package's vsnap.config.ts prepares the views named for it. Without it,
 // the bar would have no width, and the knot would face the camera square
 // on.
-describe('with a prepare hook', () => {
+// The last test checks what the first one's view became, so they keep their
+// order in a shuffled run.
+describe('with a prepare hook', { shuffle: false }, () => {
     let bar: Container | undefined;
     canvasTest('a Pixi view', () => (bar = new Container({ label: 'bar' })));
     canvasTest('a three.js view', KNOT, () => {

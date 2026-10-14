@@ -26,7 +26,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFile
 import { basename, dirname, join } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
-    VisualCalibration, VisualCaptureRequest, VisualEnvironment, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
+    ColorScheme, VisualCalibration, VisualCaptureRequest, VisualEnvironment, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
 import { compareImages, DRAWS_EXACTLY } from './compare.ts';
@@ -129,7 +129,21 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
         return resolveReferencePath(layout, findTestPath(ctx), id.name);
     }
 
-    return { openVisualSession, judgeVisualMismatch, captureVisualImage, checkVisualEnvironment, recordVisualCalibration, abortVisualRun };
+    const setVisualColorScheme: BrowserCommand<[ColorScheme]> = async (ctx, scheme) => {
+        const cdp = await connectCdp(ctx, state.cdpSessions);
+        await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
+    };
+
+    const moveVisualPointerAway: BrowserCommand<[]> = async (ctx) => {
+        // A point outside the page, so that no element is under the pointer
+        const cdp = await connectCdp(ctx, state.cdpSessions);
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: -1, y: -1 });
+    };
+
+    return {
+        openVisualSession, judgeVisualMismatch, captureVisualImage, checkVisualEnvironment, recordVisualCalibration, abortVisualRun, setVisualColorScheme,
+        moveVisualPointerAway,
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -322,7 +336,9 @@ function readReference(options: { readonly file: string; readonly referenceFile:
 
 /** The part of a DevTools protocol session that this file uses. */
 export interface Cdp {
-    send: (method: 'Page.captureScreenshot', params: Record<string, unknown>) => Promise<{ data: string }>;
+    send:
+        & ((method: 'Page.captureScreenshot', params: Record<string, unknown>) => Promise<{ data: string }>)
+        & ((method: 'Emulation.setEmulatedMedia' | 'Input.dispatchMouseEvent', params: Record<string, unknown>) => Promise<unknown>);
 }
 
 /** Returns the page's DevTools protocol session, which is made once for each page. */
