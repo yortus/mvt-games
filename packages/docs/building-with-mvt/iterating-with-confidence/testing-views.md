@@ -181,7 +181,7 @@ Visual snapshots require discipline to avoid becoming noise:
 Views with `update(deltaMs)` (those holding
 [presentation state](../adding-visual-polish/presentation-state.md)) need
 time advanced before the image is taken.
-[Visual Tests](visual-tests.md#posing-a-view-with-presentation-state)
+[Visual Tests](visual-tests.md#advancing-time)
 shows how.
 
 ## Testing Audio Views

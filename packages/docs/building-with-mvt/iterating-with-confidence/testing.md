@@ -37,6 +37,19 @@ objects with a public API and no rendering dependency. Views are a
 fundamentally different problem because their output is pixels, not
 values.
 
+## Tests That Compare With an Accepted Copy
+
+A kind of test called a **snapshot test** compares what a previous run produced to what the next run produces. For games, two common snapshop tests are visual and audio tests, where a view produces output that is compared with a previously accepted copy.
+
+- A [visual test](visual-tests.md) takes an image of a view and compares
+  it with a reference image.
+- An [audio test](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests)
+  renders a sound in memory and compares a hash of its samples with a
+  stored hash.
+
+Either fails on any change to its output. It keeps failing until someone
+has seen or heard the change and accepted it as the new reference.
+
 ## Quick Links
 
 - [Advancing time deterministically](testing-models.md#advancing-time) -
@@ -47,5 +60,5 @@ values.
   when they help and when they hurt
 - [Visual snapshot testing](testing-views.md#visual-snapshot-testing) -
   capturing and comparing rendered output
-- [Visual tests](visual-tests.md) - posing leaf views, top-level views
-  and whole games, and keeping their images the same
+- [Visual tests](visual-tests.md) - posing views, advancing time, and
+  keeping images the same

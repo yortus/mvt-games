@@ -122,7 +122,7 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   such as the kinds' naming rules, would scan better as lists or tables,
   and the `vsnap.config.ts` sample is repeated three times. Fold into the
   docs review under Miscellaneous.
-- [ ] **D2:** Thoroughly review the docs pages that mention visual testing
+- [x] **D2:** Thoroughly review the docs pages that mention visual testing
 - [ ] **D3:** Thoroughly review the vsnap README and docs in the vsnap package
 
 ## Miscellaneous

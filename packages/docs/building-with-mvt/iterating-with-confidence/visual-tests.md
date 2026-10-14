@@ -4,8 +4,8 @@
 > known state, takes an image of it, and compares that image with an
 > accepted one. MVT's rules make these tests unusually cheap and reliable:
 > a view is a function of its bindings, and time moves only when the game
-> loop says so. This page shows how to use those rules to test leaf views,
-> top-level views and whole games.
+> loop says so. This page shows how to use those rules to test any view,
+> from a single button to a game's whole screen.
 
 **Previous:** [Testing Views](testing-views.md)
 **Related:** [Testing](testing.md) -
@@ -18,7 +18,7 @@
 
 *Assumes familiarity with [Testing Views](testing-views.md). That page
 explains visual snapshot testing in general, and when an image is the
-right check.*
+right thing to check.*
 
 ## Why MVT Views Suit Visual Tests
 
@@ -42,42 +42,47 @@ and compares it.
 ::: info About the examples
 The examples on this page use
 [v-snap](https://github.com/yortus/mvt-games/blob/main/packages/v-snap/README.md),
-the visual testing tool that this project uses by convention. In v-snap, a
-test of a view drawn on a canvas, such as a Pixi or three.js view, is a
-call to `canvasTest`, and a test of an HTML view is a call to `htmlTest`. Each takes the test's **pose**: a
-function that returns the view, posed. v-snap takes the image and compares
-it. [In This Project: v-snap](#in-this-project-v-snap) says how this project
-sets it up.
+a visual testing tool that runs on Vitest. This project uses it by
+convention. Each v-snap test has a name, and a function that returns the posed view. A view drawn on a canvas, such as a
+Pixi or three.js view, is tested with `canvasTest`. An HTML view is tested
+with `htmlTest`. v-snap takes the view's image and compares it with the
+test's [reference image](../../reference/glossary.md), an accepted image
+stored beside the test.
 
 Other tools work too, such as Playwright's and Vitest's screenshot
-comparisons. They organise tests in their own ways, and they differ in
-speed, and in how they keep images the same from one machine to another.
+comparisons. [Choosing a Tool](#choosing-a-tool) says how they differ.
 The approach on this page applies to any of them.
 :::
 
-## Posing a Leaf View
+## Posing a View
 
-A leaf view takes [bindings](../../reference/glossary.md). To pose it,
-pass bindings that return fixed values. Write one test for each state the
-bindings can show.
+A view reads what it shows through its bindings. To pose it, pass
+bindings that always give the same values. This test poses a button in
+each of its modes.
 
 ```tsx
-const MODES: readonly SpinButtonMode[] = ['spin', 'stop', 'disabled'];
+const MODES: readonly PlayButtonMode[] = ['play', 'pause', 'disabled'];
 
 for (const mode of MODES) {
-    canvasTest(mode, () => SpinButtonView({
+    canvasTest(mode, () => PlayButtonView({
         mode: () => mode,
         radius: BUTTON_RADIUS,
     }));
 }
 ```
 
-Choose the states that a player could tell apart. Each distinct mode of
-the view needs a test. So do values at the edges of what the view must
-show, such as an empty meter, a full one, or the longest number a counter
-must fit. Two states that look the same need only one test.
+A top-level view is posed the same way. Its binding is its model, which
+it reads once. To pose it, create the model and bring it into a known state
+through its public actions, as a player would.
 
-## Posing a View With Presentation State
+A good place to start is the states that a player can tell apart, such as
+each mode of a button. Values at the edges of what a view must show are
+often worth a test too, such as an empty meter, a full one, or the longest
+number a counter must fit. These are suggestions, not a checklist. Even a
+few tests catch a lot, and more can be added where a view proves easy to
+break.
+
+## Advancing Time
 
 Some views hold [presentation state](../adding-visual-polish/presentation-state.md),
 such as a banner that counts up, or a flash that fades. Such a view has an
@@ -87,13 +92,13 @@ advance time by a fixed amount with `advanceTime`, from the tick API.
 ```tsx
 canvasTest('counting up, 300 ms in', async () => {
     let amount = 0;
-    const view = WinBannerView({
+    const view = BonusAwardView({
         isShown: () => true,
-        amount: () => amount,
+        bonus: () => amount,
         caption: () => CAPTION,
     });
-    // The win arrives after the banner is built. The count then catches up.
-    amount = WIN;
+    // The view tweens up to the new bonus amount.
+    amount = BONUS;
     await advanceTime(300, view);
     return view;
 });
@@ -103,20 +108,12 @@ canvasTest('counting up, 300 ms in', async () => {
 loop does. In each step it updates the models, then the views, whatever
 order they are passed in. It does not refresh. The view is refreshed once,
 just before its image is taken, as the game loop refreshes once a frame.
-In this project, the website's `vsnap.config.ts` tells v-snap to do that
-refresh. `advanceTime` is the
-same idea as [`advanceTime` for models](testing-models.md#advancing-time).
+It is the same `advanceTime` that [model tests](testing-models.md#advancing-time)
+use.
 
-Pose the moments that matter: the start of a transition, a point part of
-the way through, and its end. A view that never stops moving can still be
-tested at any moment, because nothing moves between the pose and the
-image.
-
-## Posing a Top-Level View Through Its Model
-
-A top-level view takes its model, not bindings. To pose one, make the
-model, bring it into a known state through its public actions, as a
-player would, and advance both the model and the view.
+A top-level view and its model are advanced together. This test shows a
+game's board after a restart. The view first shows the board that the game
+starts with, and then the one that the restart deals.
 
 ```tsx
 canvasTest('after a restart', async () => {
@@ -129,46 +126,48 @@ canvasTest('after a restart', async () => {
 });
 ```
 
-Drive the model only through its interface. A test that reaches into the
-model's internals breaks when they change, even though nothing a player
-sees has changed.
+Pose the moments that matter: the start of a transition, a point part of
+the way through, and its end. A view that never stops moving can still be
+tested at any moment, because nothing moves between the pose and the
+image.
 
-A big screen can be cropped, so that its image shows the part that the
-test is about. Smaller images are faster, and their failures are easier
-to read.
+::: tip A whole game's screen
+A test of a game's top-level view is a test of its whole screen. It
+catches what a single view's test cannot see, such as layout, layering,
+or a view left out of its parent. But it also changes with almost any
+change to the game. So one or two for each game are usually enough. A big
+screen can be cropped to the part that the test is about. Smaller images
+are faster, and their failures are easier to read.
+:::
 
-## Whole Games
+## What a Visual Test Checks, and What It Doesn't
 
-A game's whole screen can be tested at one moment too. Make the game as
-it starts, advance it by a fixed amount of time, and take one image.
-Because models never read the clock, that moment is the same on every
-run.
-
-These tests catch what a single view's test cannot see: layout, layering,
-and a view left out of its parent. They also change with almost any
-change to the game. So keep one or two for each game, and let the tests
-of single views carry the detail.
-
-In this project, every game and demo gets one whole-screen test without
-any new code. Two test files make one for each game and demo in the
-Arcade, at the same moment that its thumbnail shows.
-
-## What an Image Checks, and What It Doesn't
-
-An image checks how a view looks. Some things are better checked another
-way.
+A visual test checks how a view looks. Some things are better checked
+another way.
 
 | To check | Use |
 | --- | --- |
 | How a view looks in a state | A visual test |
 | The exact words and numbers a view shows | An assertion on the bindings, or on the view model |
-| Which sound a view plays | An assertion on a recording chip ([Testing Audio Views](testing-views.md#testing-audio-views)) |
+| Which sound a view plays | An spy on sound calls, or an assertion on a recording chip |
 | What the game does | [Model tests](testing-models.md) |
 
-Words are worth checking separately because visual test tools often draw
-text in their own fonts, or not at all, so that images match on every
-machine. The image then checks where text is and how much room it takes,
-and an assertion checks what it says.
+## Choosing a Tool
+
+Different projects need different things from their visual tests. The
+tools make different trade-offs.
+
+| | v-snap | Screenshot tools, such as Playwright's and Vitest's |
+| --- | --- | --- |
+| Speed | About 4 ms for each image, so 1000 images run in about 8 seconds | Over ten times as long for each image |
+| The same images on every machine | Yes, with no extra setup | Requires Docker or similar to provide an identical system and fonts on every run |
+| Text | Canvas text is drawn in v-snap's own fonts. HTML text is drawn blank | Drawn as the browser draws it |
+
+v-snap suits many small, fast tests of the parts of a game, which is what
+this project needs. It gets its speed and its matching images by drawing
+text its own way. So if the exact look of words matters to a project, such
+as its fonts or how its text wraps, a screenshot tool shows them as a
+player would see them.
 
 ## Keeping Images the Same
 
@@ -179,11 +178,7 @@ rules keep most of the causes out, and a few habits keep out the rest.
   timed itself with `setTimeout`, would be at a different moment in every
   run. The lint rule `@mvtjs/no-wall-clock` reports it.
 - **Models keep no state at module level.** A counter at the top of a
-  model file is shared by every game played on the page, so a game's
-  first image would depend on the games before it. This happened in one
-  of this project's games, whose asteroid shapes depended on how many
-  asteroids the page had made before. Running many games' tests in one
-  page showed it. The lint rule `@mvtjs/no-module-state` now reports it.
+  model file means models may behave differently over time, even with the same inputs. The lint rule `@mvtjs/no-module-state` reports it.
 - **Random numbers are repeatable.** A test tool can seed `Math.random`
   the same before every test, so a model that deals a random board deals
   the same one each time.
@@ -193,52 +188,13 @@ rules keep most of the causes out, and a few habits keep out the rest.
 
 ## Reviewing a Change
 
-Reference images are committed beside their tests. Whoever changes how a
-view looks updates its reference images, looks at them, and commits them
-with the code. Reviewers then see the old and new images side by side.
+In visual testing, reference images are usually committed near their tests. 
+When a code change affects how a view looks, the next test run will generate a new image that doesn't match the committed reference image. The test will report this mismatch. 
 
-When a test fails, look at the difference before accepting it. If the
+The developer then reviews the new image against the reference image. If the change is correct, the developer updates the reference image and commits it with the code. Reviewers then see the old and new images side by side.
+
+When a visual test fails, look at the difference before accepting it. If the
 change was intended, accept the new image. If it wasn't, the test has
 found a bug. Accepting new images without looking defeats the purpose.
 
-## In This Project: v-snap
 
-v-snap is a package in this repo. A test file is in a `visual-tests` folder
-beside the view it tests, and is named for the view, such as
-`visual-tests/hud-view.test.tsx` for `hud-view.tsx`. Its reference images
-are beside it, named for its stem and the image, such as
-`hud-view.at-the-start.png`. The file and the images already name the
-view, so the tests need no `describe` block that names it. Use a
-`describe` block only to group tests by something more specific, such as
-a state that they share, or leave the tests at the top of the file. `canvasTest` and `htmlTest` come
-from v-snap. `advanceTime` comes from the renderer package that the view
-uses, with the rest of the tick API.
-
-The visual tests run in Vitest projects beside the unit tests, listed in
-the repo's root `vitest.config.ts`. Their names all start with `visual-`.
-v-snap knows nothing about MVT. The website's `vsnap.config.ts` connects
-the two. It registers the kinds of view that the tests pose: Pixi, three.js
-and HTML views. For each kind, it refreshes the view before its image is
-taken, and destroys it through MVT afterwards.
-
-| Command | What it does |
-| --- | --- |
-| `npm test` | Runs every test, unit and visual |
-| `npm run test:unit` | Runs the unit tests alone. No browser starts |
-| `npm run test:ui` | Runs every test in watch mode, and opens the Vitest UI in a browser. A failed visual test shows its reference, its actual image and their diff side by side, with a slider between the two images |
-| `npm run test:visual` | Runs every visual test, and compares each image with its reference image. A new image is written as its reference, except in CI |
-| `npm run test:visual:update` | Also writes each changed image as its reference image |
-| `npx vitest run <test file> -u` | Updates the reference images of one test file |
-
-A failing test's message says what changed, and where. It also gives the
-command that accepts the new image. v-snap's README covers its options,
-where it keeps files, and how it stays fast and gives the same images on
-Windows, Linux and macOS.
-
-## Sounds Have the Same Kind of Test
-
-Sounds can be tested the same way. An
-[audio test](https://github.com/yortus/mvt-games/blob/main/packages/audio/src/headless/README.md#audio-tests)
-renders a sound in memory, and compares a hash of its samples with an
-accepted one. A change that alters the sound fails the test, until
-someone has listened to it and accepted it.
