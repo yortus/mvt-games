@@ -20,6 +20,7 @@
 | [`main.ts`](./main.ts) | The page: makes the model, the views and the entry host, and runs the one loop |
 | [`models/arcade-model.ts`](./models/arcade-model.ts) | `ArcadeModel`: the search, the tags chosen, the phase, the entry launched |
 | [`models/arcade-query.ts`](./models/arcade-query.ts) | The search as a URL query, and back |
+| [`models/highscores-model.ts`](./models/highscores-model.ts) | `HighscoresModel`: every game's highscore table, and a score that places in one, from asking for initials to showing the table |
 | [`models/sound-settings.ts`](./models/sound-settings.ts) | The visitor's sound settings, their defaults, and how they are saved and read back |
 | [`data/sounds.ts`](./data/sounds.ts) | The Arcade's own sound effects, and the pause menu's two previews |
 | [`views/arcade-view.tsx`](./views/arcade-view.tsx) | The top-level view: takes the model, wires the rest |
@@ -28,6 +29,7 @@
 | [`views/transition-view-model.ts`](./views/transition-view-model.ts), [`transition-view.tsx`](./views/transition-view.tsx) | View model and view: the way into an entry and back out |
 | [`views/search-bar-view.tsx`](./views/search-bar-view.tsx), [`search-suggestions.ts`](./views/search-suggestions.ts) | The search box, its tag tokens and suggestions |
 | [`views/runner-view.tsx`](./views/runner-view.tsx), [`pause-menu-view.tsx`](./views/pause-menu-view.tsx) | The bar over a running entry, and the pause menu |
+| [`views/placing-view.tsx`](./views/placing-view.tsx), [`highscore-table-view.tsx`](./views/highscore-table-view.tsx) | The prompt for a player's initials when their score places, and a game's highscore table, in the pixel font |
 | [`views/*-audio-view.ts`](./views/) | The views that play the Arcade's own sounds and the pause menu's previews of the volumes. They load on the visitor's first press |
 | [`../runner/`](../runner/) | The entry host, which runs one entry of any renderer |
 
@@ -98,7 +100,7 @@ nothing has happened since.
 
 ## 4. View Models, Tested on Their Own
 
-Five parts of the views are complex enough to test without a browser, so
+Six parts of the views are complex enough to test without a browser, so
 each is a view model or a pure helper, with its own tests:
 
 | View model | Test | What it decides |
@@ -108,6 +110,7 @@ each is a view model or a pure helper, with its own tests:
 | [`search-suggestions.ts`](./views/search-suggestions.ts) | [`search-suggestions.test.ts`](./views/search-suggestions.test.ts) | Which tags match what was typed, and which one the arrow keys move to |
 | [`card-wall-keys.ts`](./views/card-wall-keys.ts) | [`card-wall-keys.test.ts`](./views/card-wall-keys.test.ts) | Which card the arrow keys move to, across columns |
 | [`attract-view-model.ts`](./views/attract-view-model.ts) | [`attract-view-model.test.ts`](./views/attract-view-model.test.ts) | Attract mode: which card plays its entry live, once it has stayed selected a second |
+| [`initials-view-model.ts`](./views/initials-view-model.ts) | [`initials-view-model.test.ts`](./views/initials-view-model.test.ts) | The initials prompt: the three letters, the blinking cursor, and what each key does to them |
 
 The transition is the clearest example. It is a few hundred lines of
 phases, each advanced by `update(deltaMs)` and read by the transition view
@@ -197,6 +200,37 @@ steps write them. Until a card has been measured, the layout uses an
 estimate (`estimatedHeightAt`). The measuring happens in the observer's
 callback, between frames, never in a refresh: a refresh that read layout
 after writing it would make the browser lay out the page there and then.
+
+## 8. Highscores: A Model Whose Answers Arrive Late
+
+Each game with a score has a highscore table, kept by a server on
+Cloudflare that everyone's browser reaches
+([`highscores-worker/`](../../highscores-worker/README.md)).
+[`createHighscoresModel`](./models/highscores-model.ts) holds the tables,
+and a score that places in one. The Arcade's model makes it, and holds it
+as `model.highscores`.
+
+Like the Arcade's own model, nothing in it moves with time. Its answers
+come from the server whenever they arrive, so it guards them as `launch`
+does (section 3). Each request is counted, and an answer is taken only if
+nothing has happened since it was asked for. A table asked for before a
+score was entered is not taken after it. Otherwise it could put back the
+table without the visitor's new row.
+
+A game does not know about tables. Its session reports its score, and
+whether its run is over, as two query bindings (`scoring`). The page watches
+`isOver` turn true, and tells the model the score. If the score would place,
+the model asks for initials, and the game stands still behind the prompt.
+The Arcade's model says so with `isEntryFrozen`, which the page passes to
+the entry host. A frozen game also gets no keys. So the Enter that closes
+the prompt cannot restart the game behind it.
+
+The prompt itself is presentation. Its letters, its blinking cursor and
+what each key does are a view model
+([`initials-view-model.ts`](./views/initials-view-model.ts)). The letters
+become the visitor's initials only when they are sent. The page remembers
+the last initials in `localStorage`, so the next time the prompt opens on
+them.
 
 ## Where It Bends the Rules
 

@@ -1,9 +1,11 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
 import { memoiseLast } from '@mvtjs/utils';
+import type { HighscoreRow } from '../../highscores';
 import type { ArcadeEntry, EntryFacts, Inspiration } from '../../entry-types';
-import { TAG_GROUPS, tagValuesOf } from '../models';
+import { type HighscoresStatus, TAG_GROUPS, tagValuesOf } from '../models';
 import { focusOnOpen } from './focus-on-open';
+import { HighscoreTableView } from './highscore-table-view';
 import { GROUP_LABELS, sizeLabel, SOURCE_ROOT, tagLabel } from './labels';
 
 // ---------------------------------------------------------------------------
@@ -14,6 +16,10 @@ export interface EntryInfoViewBindings {
     /** The entry to tell about, or none, when the panel is closed. */
     readonly entry: () => ArcadeEntry | undefined;
     readonly factsFor: (id: string) => EntryFacts | undefined;
+    /** The table of the entry with `id`, best first, for an entry that keeps one. */
+    readonly highscoreRowsFor: (id: string) => readonly HighscoreRow[];
+    /** Whether the tables are here, on their way, or out of reach. */
+    readonly highscoresStatus: () => HighscoresStatus;
     readonly onClosePressed?: () => void;
     readonly onPlayPressed?: (id: string) => void;
 }
@@ -24,7 +30,8 @@ export interface EntryInfoViewBindings {
 
 /**
  * An entry's info panel, over the wall: everything the card leaves out. What
- * it is, the classic it is inspired by, how to play it, the techniques it
+ * it is, the classic it is inspired by, its highscores, if it keeps them, how
+ * to play it, the techniques it
  * shows, its tags (the renderers it draws with among them), its size, and a
  * link to its source.
  */
@@ -66,6 +73,13 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                     <List items={() => paragraphsFor(bindings.entry()?.id)}>
                         {(paragraph) => <p class="info-description" text={paragraph} />}
                     </List>
+                    <div class="info-section" visible={() => bindings.entry()?.hasHighscores === true}>
+                        <h3 text="Highscores" />
+                        <HighscoreTableView
+                            rows={() => bindings.highscoreRowsFor(bindings.entry()?.id ?? '')}
+                            status={bindings.highscoresStatus}
+                        />
+                    </div>
                     <div class="info-section" visible={() => bindings.entry()?.instructions !== undefined}>
                         <h3 text="How to play" />
                         <pre class="info-instructions" text={() => bindings.entry()?.instructions ?? ''} />

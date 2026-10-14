@@ -69,6 +69,9 @@ function setUp(): { runner: Element; state: { isPlaying: boolean; isSoundOn: boo
         title: () => 'Entry',
         instructions: () => undefined,
         isLandscape: () => false,
+        hasHighscores: () => false,
+        highscoreRows: () => [],
+        highscoresStatus: () => 'ready',
     });
     document.body.replaceChildren(runner);
     refreshView(runner);

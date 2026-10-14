@@ -3,7 +3,8 @@
  * (`--site-*`, in `shared/nav.css`). Stacking, bottom to top: the page and its
  * wall; the canvas that burns and develops the cards (30); the nav (9999);
  * the stage an entry plays on (10000); the transition's backdrop and picture
- * (10001); the runner's bar (10002); its pause menu (10003).
+ * (10001); the runner's bar (10002); its pause menu (10003); a score that
+ * places, asking for initials (10004).
  */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -803,6 +804,114 @@ button { font: inherit; color: inherit; }
     font-size: 13px;
     line-height: 1.5;
     white-space: pre-wrap;
+}
+.pause-highscores .hs-table { padding: 10px 12px; border-radius: 6px; background: #0d1117; }
+
+/* --- Highscores ----------------------------------------------------------- */
+
+/*
+ * A game's table, in the pixel font: a rank, initials and a score on each
+ * line, each place in its own colour, as a cabinet's were. Places not yet
+ * taken show dim. The row just entered flashes white and gold.
+ */
+.hs-status { padding: 6px 0; font-size: 13px; color: var(--site-text-muted, #8b949e); }
+.hs-rows { list-style: none; display: grid; gap: 7px; }
+.hs-row { display: grid; grid-template-columns: 52px 46px 1fr; align-items: center; gap: 10px; }
+.hs-row .pixel-text { display: block; height: 12px; width: auto; }
+.hs-score .pixel-text { margin-left: auto; }
+.hs-row:nth-child(5n + 1) { color: #ff7b72; }
+.hs-row:nth-child(5n + 2) { color: #ffa657; }
+.hs-row:nth-child(5n + 3) { color: #ffd83d; }
+.hs-row:nth-child(5n + 4) { color: #7ee787; }
+.hs-row:nth-child(5n + 5) { color: #79c0ff; }
+.hs-row.is-empty { opacity: 0.3; }
+.hs-row.is-new { color: #ffd83d; }
+.hs-row.is-new.is-lit { color: #fff; }
+.info-section .hs-table { max-width: 300px; }
+
+/* A score that places, over the held entry: above the runner's bar and its pause menu */
+.placing-layer { display: contents; }
+.placing {
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10004;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.7);
+}
+.placing-panel {
+    width: 100%;
+    max-width: 360px;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 24px 22px;
+    border-radius: 12px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    text-align: center;
+}
+.placing-panel:focus { outline: none; }
+.placing-ask, .placing-shown { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.placing-panel .pixel-text { display: block; width: auto; margin: 0 auto; }
+.placing-title { color: #ffd83d; }
+.placing-title .pixel-text { height: 20px; }
+.placing-score { color: #fff; }
+.placing-score .pixel-text { height: 26px; }
+.placing-place { color: #7ee787; }
+.placing-place .pixel-text { height: 13px; }
+.placing-shown .hs-table { width: 100%; max-width: 250px; text-align: left; }
+
+.initials { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.initials-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.initials button { cursor: pointer; }
+.initials button:disabled { cursor: default; opacity: 0.4; }
+.initials-step { padding: 2px 12px; border: none; background: none; font-size: 13px; color: var(--site-text-muted, #8b949e); }
+.initials-step:hover:not(:disabled) { color: #e6edf3; }
+.initials-letter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 56px;
+    border: none;
+    border-bottom: 3px solid #30363d;
+    border-radius: 4px 4px 0 0;
+    background: #161b22;
+    color: #e6edf3;
+}
+.initials-letter .pixel-text { height: 28px; }
+.initials-letter.is-cursor { border-bottom-color: #ffd83d; }
+.initials-letter.is-cursor.is-lit { color: #ffd83d; }
+.initials-ok {
+    height: 56px;
+    padding: 0 14px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: #21262d;
+    color: #e6edf3;
+}
+.initials-ok .pixel-text { height: 16px; }
+.initials-ok.is-cursor { border-color: #ffd83d; }
+.initials-ok.is-cursor.is-lit { background: #ffd83d; color: #161b22; }
+
+.placing-hint { min-height: 2.8em; font-size: 13px; line-height: 1.4; color: var(--site-text-muted, #8b949e); }
+.placing-skip { border: none; background: none; font-size: 13px; color: var(--site-text-muted, #8b949e); text-decoration: underline; cursor: pointer; }
+.placing-skip:disabled { visibility: hidden; }
+.placing-message { font-size: 13px; line-height: 1.4; color: #e6edf3; }
+.placing-continue {
+    padding: 9px 24px;
+    border-radius: 6px;
+    border: 1px solid #2ea043;
+    background: #238636;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .runner-rotate-hint {

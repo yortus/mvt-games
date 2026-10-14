@@ -12,6 +12,7 @@ import { EntryInfoView } from './entry-info-view';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
+import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
 import { RunnerView } from './runner-view';
 import { TransitionView } from './transition-view';
@@ -98,7 +99,7 @@ export interface ArcadeViewBindings {
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
-    const { entries } = model;
+    const { entries, highscores } = model;
 
     const layout = createCardWallLayout({
         count: entries.length,
@@ -193,6 +194,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             <EntryInfoView
                 entry={() => model.infoEntry}
                 factsFor={model.factsFor}
+                highscoreRowsFor={highscores.tableFor}
+                highscoresStatus={() => highscores.status}
                 onClosePressed={model.closeInfo}
                 onPlayPressed={(id) => {
                     const index = entries.findIndex((e) => e.id === id);
@@ -232,6 +235,20 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 onPausePressed={() => { model.isPaused = true; }}
                 onResumePressed={() => { model.isPaused = false; }}
                 onRestartPressed={model.restart}
+                hasHighscores={() => model.activeEntry?.hasHighscores === true}
+                highscoreRows={() => highscores.tableFor(model.activeEntry?.id ?? '')}
+                highscoresStatus={() => highscores.status}
+            />
+            <PlacingView
+                placing={() => highscores.placing}
+                score={() => highscores.placingScore}
+                rank={() => highscores.placingRank}
+                problem={() => highscores.placingProblem}
+                rows={() => highscores.tableFor(highscores.placingEntryId ?? '')}
+                rememberedInitials={() => highscores.lastInitials}
+                onInitialsEntered={highscores.submitInitials}
+                onSkipPressed={highscores.close}
+                onContinuePressed={highscores.close}
             />
             <TransitionView
                 transition={transition}
@@ -351,8 +368,13 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         goToSearch();
     }
 
-    /** Escape closes the info panel, pauses or resumes the entry playing (a game or a demo, alike), or leaves one still loading. */
+    /**
+     * Escape closes the info panel, pauses or resumes the entry playing (a
+     * game or a demo, alike), or leaves one still loading. Not while a score
+     * places: the placing view has the keys then.
+     */
     function stepBack(e: KeyboardEvent): void {
+        if (highscores.placing !== 'none') return;
         if (model.infoEntry !== undefined) model.closeInfo();
         else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();

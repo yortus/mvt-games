@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import type { HighscoreRow } from '../../highscores';
 import { refreshView, updateView } from '@mvtjs/html';
 import { PauseMenuView } from './pause-menu-view';
 
@@ -147,6 +148,34 @@ describe('PauseMenuView', () => {
         expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
     });
 
+    it('has a highscores tab only for a game with a table, between the menu and how to play', () => {
+        const { menu, state } = setUp();
+        expect(isShown(menu, '#pause-tab-highscores')).toBe(false);
+        state.hasHighscores = true;
+        refreshView(menu);
+        expect(isShown(menu, '#pause-tab-highscores')).toBe(true);
+        click(menu, '#pause-tab-highscores');
+        refreshView(menu);
+        expect(isShown(menu, '#pause-page-highscores')).toBe(true);
+        expect(menu.querySelector('#pause-page-highscores .hs-initials svg')?.getAttribute('aria-label')).toBe(state.rows[0].initials);
+    });
+
+    it('steps through every tab shown with left and right, round, the highscores\' among them for a game with a table', () => {
+        const { menu, state } = setUp();
+        focus(menu, '.pause-restart');
+        press('ArrowRight');
+        refreshView(menu);
+        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
+        state.hasHighscores = true;
+        press('ArrowLeft');
+        refreshView(menu);
+        expect(isShown(menu, '#pause-page-highscores')).toBe(true);
+        press('ArrowLeft');
+        press('ArrowLeft');
+        refreshView(menu);
+        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
+    });
+
     it('shows each choice the key that presses it', () => {
         const { menu } = setUp();
         const keys = [...menu.querySelectorAll('.pause-page button')]
@@ -166,6 +195,8 @@ function setUp(initial: { isOpen?: boolean } = {}) {
         instructions: 'Shoot everything.' as string | undefined,
         musicVolume: 0.5,
         effectsVolume: 0.5,
+        hasHighscores: false,
+        rows: [{ initials: 'TJG', score: 4200, at: 0 }] as readonly HighscoreRow[],
     };
     const reports = { musicVolume: -1, effectsIconPresses: 0, restarts: 0, exits: 0 };
     const menu = PauseMenuView({
@@ -173,6 +204,9 @@ function setUp(initial: { isOpen?: boolean } = {}) {
         instructions: () => state.instructions,
         musicVolume: () => state.musicVolume,
         effectsVolume: () => state.effectsVolume,
+        hasHighscores: () => state.hasHighscores,
+        highscoreRows: () => state.rows,
+        highscoresStatus: () => 'ready',
         onMusicVolumeChanged: (volume) => { reports.musicVolume = volume; },
         onEffectsIconPressed: () => { reports.effectsIconPresses++; },
         onRestartPressed: () => { reports.restarts++; },

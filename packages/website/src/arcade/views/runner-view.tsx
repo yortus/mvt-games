@@ -1,4 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
+import type { HighscoreRow } from '../../highscores';
+import type { HighscoresStatus } from '../models';
 import { PauseMenuView } from './pause-menu-view';
 
 // ---------------------------------------------------------------------------
@@ -39,6 +41,10 @@ export interface RunnerViewBindings {
     readonly onResumePressed?: () => void;
     /** Reported as the pause menu's Restart is pressed. */
     readonly onRestartPressed?: () => void;
+    /** Whether the entry keeps a highscore table, which the pause menu shows, and the table. */
+    readonly hasHighscores: () => boolean;
+    readonly highscoreRows: () => readonly HighscoreRow[];
+    readonly highscoresStatus: () => HighscoresStatus;
     /** Reported with the new volume, from 0 to 1, as the music's slider moves. */
     readonly onMusicVolumeChanged?: (volume: number) => void;
     /** Reported as the music's icon is pressed. */
@@ -124,6 +130,9 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
                 onResumePressed={bindings.onResumePressed}
                 onRestartPressed={bindings.onRestartPressed}
                 onExitPressed={bindings.onBackPressed}
+                hasHighscores={bindings.hasHighscores}
+                highscoreRows={bindings.highscoreRows}
+                highscoresStatus={bindings.highscoresStatus}
             />
         </div>
     );

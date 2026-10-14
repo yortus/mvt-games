@@ -1,5 +1,6 @@
-// The arcade's pixel font, which both its letterings are set in: the cards'
-// titles (`PixelTextView`) and its own name (`WordmarkView`).
+// The arcade's pixel font, which its letterings are set in: the cards'
+// titles and the highscore tables (`PixelTextView`), and its own name
+// (`WordmarkView`).
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -60,6 +61,8 @@ export const PIXEL_FONT: Readonly<Record<string, readonly string[]>> = {
     '7': ['#####', '....#', '...#.', '..#..', '.#...', '.#...', '.#...'],
     '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
     '9': ['.###.', '#...#', '#...#', '.####', '....#', '...#.', '.##..'],
+    // For initials, as an 80s cabinet allowed them
+    '.': ['.', '.', '.', '.', '.', '.', '#'],
 };
 
 /** How many rows tall each character is. */

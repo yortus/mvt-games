@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { INITIALS_CHARACTERS } from '../../highscores';
 import { CATALOGUE } from '../../entries';
 import { PIXEL_FONT, PIXEL_HEIGHT, pixelTextWidth } from './pixel-font';
 
@@ -17,6 +18,10 @@ describe('the pixel font', () => {
         for (const entry of CATALOGUE) {
             for (const char of entry.name.toUpperCase().replaceAll(' ', '')) expect(PIXEL_FONT[char], `${entry.id}: ${char}`).toBeDefined();
         }
+    });
+
+    it('has every character initials may use, but the space, which it leaves a gap for', () => {
+        for (const char of INITIALS_CHARACTERS.replaceAll(' ', '')) expect(PIXEL_FONT[char], char).toBeDefined();
     });
 
     it('has every character of the arcade\'s name', () => {

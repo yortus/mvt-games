@@ -1,5 +1,8 @@
 /** @jsxImportSource @mvtjs/html */
+import type { HighscoreRow } from '../../highscores';
+import type { HighscoresStatus } from '../models';
 import { focusOnOpen } from './focus-on-open';
+import { HighscoreTableView } from './highscore-table-view';
 import { SoundControlView } from './sound-control-view';
 
 // ---------------------------------------------------------------------------
@@ -22,6 +25,10 @@ export interface PauseMenuViewBindings {
     readonly onRestartPressed?: () => void;
     /** Reported as Exit, or X, is pressed. */
     readonly onExitPressed?: () => void;
+    /** Whether the entry keeps a highscore table, and the table, to look at while paused. */
+    readonly hasHighscores: () => boolean;
+    readonly highscoreRows: () => readonly HighscoreRow[];
+    readonly highscoresStatus: () => HighscoresStatus;
     /** Reported with the new volume, from 0 to 1, as the music's slider moves. */
     readonly onMusicVolumeChanged?: (volume: number) => void;
     /** Reported as the music's icon is pressed, or Enter on its slider. */
@@ -37,10 +44,10 @@ export interface PauseMenuViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Shows the menu over a paused entry, in two tabs. The first tab has Resume,
- * Restart, the music's and the sound effects' volumes, and Exit. The second
- * tab says how to play. The menu is in HTML, so it works over an entry of
- * any renderer.
+ * Shows the menu over a paused entry, in tabs. The first tab has Resume,
+ * Restart, the music's and the sound effects' volumes, and Exit. For a game
+ * with a highscore table, the next tab shows the table. The last tab says how
+ * to play. The menu is in HTML, so it works over an entry of any renderer.
  *
  * The menu is quick to leave from the keyboard. It opens on the first tab
  * with Resume focused, so Enter resumes. Up and Down, or W and S, move
@@ -75,6 +82,7 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                     <h2 id="pause-title" class="visually-hidden" text="Paused" />
                     <div class="pause-tabs" role="tablist" aria-label="Pause menu pages">
                         <TabView kind="menu" label="Pause menu" />
+                        <TabView kind="highscores" label="Highscores" />
                         <TabView kind="how-to-play" label="How to play" />
                     </div>
                     <div class="pause-page" id="pause-page-menu" role="tabpanel" aria-labelledby="pause-tab-menu" visible={() => tab === 'menu'}>
@@ -119,6 +127,15 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                         />
                     </div>
                     <div
+                        class="pause-page pause-highscores"
+                        id="pause-page-highscores"
+                        role="tabpanel"
+                        aria-labelledby="pause-tab-highscores"
+                        visible={() => tab === 'highscores'}
+                    >
+                        <HighscoreTableView rows={bindings.highscoreRows} status={bindings.highscoresStatus} />
+                    </div>
+                    <div
                         class="pause-page pause-how-to"
                         id="pause-page-how-to-play"
                         role="tabpanel"
@@ -132,11 +149,16 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         </div>
     );
 
-    /** Builds a tab's button. Pressing it shows the tab's page. Only the tab that shows is in the tab order. */
+    /**
+     * Builds a tab's button. Pressing it shows the tab's page. Only the tab
+     * that shows is in the tab order. The highscores' tab is there only for a
+     * game with a table.
+     */
     function TabView({ kind, label }: TabViewBindings): Element {
         return (
             <button
                 type="button"
+                visible={() => isTabShown(kind)}
                 class={() => (tab === kind ? 'pause-tab is-selected' : 'pause-tab')}
                 id={`pause-tab-${kind}`}
                 role="tab"
@@ -180,7 +202,9 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         const target = e.target;
         const isOnSlider = target instanceof HTMLInputElement && target.type === 'range';
         if (!isOnSlider && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-            tab = tab === 'menu' ? 'how-to-play' : 'menu';
+            const shown = PAUSE_TABS.filter(isTabShown);
+            const step = e.key === 'ArrowRight' ? 1 : -1;
+            tab = shown[(shown.indexOf(tab) + step + shown.length) % shown.length];
             panel.querySelector<HTMLElement>(`#pause-tab-${tab}`)?.focus();
             e.preventDefault();
             return;
@@ -197,6 +221,11 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         choices[next].focus();
         e.preventDefault();
     }
+
+    /** Whether a tab is in the menu: every tab is, but the highscores', for a game without a table. */
+    function isTabShown(kind: PauseTab): boolean {
+        return kind !== 'highscores' || bindings.hasHighscores();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -204,7 +233,10 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
 // ---------------------------------------------------------------------------
 
 /** The menu's tabs. */
-type PauseTab = 'menu' | 'how-to-play';
+type PauseTab = 'menu' | 'highscores' | 'how-to-play';
+
+/** Every tab, in the order they show. */
+const PAUSE_TABS: readonly PauseTab[] = ['menu', 'highscores', 'how-to-play'];
 
 /** What a tab's button shows. */
 interface TabViewBindings {

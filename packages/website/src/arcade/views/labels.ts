@@ -23,6 +23,14 @@ export function sizeLabel(facts: EntryFacts): string {
     return `${lines} lines, ${facts.files} ${facts.files === 1 ? 'file' : 'files'}`;
 }
 
+/** A place in a highscore table, as a cabinet wrote it, for the pixel font: "1ST", "2ND", "3RD", "4TH"... */
+export function formatRank(rank: number): string {
+    const lastTwo = rank % 100;
+    const last = rank % 10;
+    const suffix = lastTwo >= 11 && lastTwo <= 13 ? 'TH' : (ORDINAL_SUFFIXES[last] ?? 'TH');
+    return `${rank}${suffix}`;
+}
+
 /** The repo's address on GitHub, for links to an entry's source. */
 export const SOURCE_ROOT = 'https://github.com/yortus/mvt-games/tree/main/';
 
@@ -33,3 +41,6 @@ const VALUE_LABELS: Readonly<Record<string, string>> = {
     'three': 'three.js',
     'html': 'HTML',
 };
+
+/** The suffix of an ordinal by its last digit, where it is not "TH". */
+const ORDINAL_SUFFIXES: Readonly<Record<number, string>> = { 1: 'ST', 2: 'ND', 3: 'RD' };
