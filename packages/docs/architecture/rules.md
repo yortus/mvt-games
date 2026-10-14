@@ -48,7 +48,7 @@
 | Rule | Constraint | Detail |
 |---|---|---|
 | **B-contract** | Bindings are the contract between a view and the world | Query bindings read state (model to view). Relay bindings report user input out of the view (view to model). The bindings type is a complete manifest of every dependency. |
-| **B-reusable** | Reusable leaf views use a bindings interface; top-level views may access models directly | Leaf views stay decoupled and reusable. Top-level views are application-specific. |
+| **B-reusable** | Reusable leaf views take query and relay bindings; a top-level view may take the model itself as a fixed binding | Leaf views stay decoupled and reusable. Top-level views are application-specific, so a binding for each model property would gain nothing. |
 | **B-optional** | Relay bindings should usually be optional | Keeps views usable in more contexts without forcing no-op handlers. |
 | **B-wiring** | Bindings are wired at the view construction site | The view does not know how it is connected to the outside. |
 

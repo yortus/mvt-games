@@ -331,18 +331,19 @@ never run.
 
 ## Two Kinds of Views
 
-MVT distinguishes between two kinds of views based on how they access state:
+Every view takes bindings. MVT distinguishes between two kinds of views based
+on what their bindings hold:
 
-| View kind                      | Receives             | Use case                           |
-| ------------------------------ | -------------------- | ---------------------------------- |
-| **Top-level application view** | Model(s) directly    | Application-specific, never reused |
-| **Leaf / reusable view**       | Bindings object      | Reusable across contexts           |
+| View kind                      | Bindings hold                   | Use case                           |
+| ------------------------------ | ------------------------------- | ---------------------------------- |
+| **Top-level application view** | The model(s), as fixed values   | Application-specific, never reused |
+| **Leaf / reusable view**       | Query and relay bindings        | Reusable across contexts           |
 
-**Top-level views** (like a game's main view) take the model itself and
-wire bindings for their child views. They are application-specific and have no
-reuse scenario, so a full bindings interface would add verbosity without
-benefit. In this project a top-level view still has the same signature as
-every other view, taking the model as its one binding: `GameView({ model })`.
+**Top-level views** (like a game's main view) take the model itself as a
+binding, and wire bindings for their child views. They are application-specific
+and have no reuse scenario, so a binding for each value they show would add
+verbosity without benefit. In this project, the binding is named `model`:
+`GameView({ model })`.
 
 **Leaf views** (like the view of a single ship or bullet, a HUD panel, or an
 overlay) take query and relay bindings. This keeps them decoupled from any

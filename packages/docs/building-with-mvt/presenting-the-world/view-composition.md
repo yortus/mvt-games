@@ -18,7 +18,7 @@
 Views compose hierarchically. A parent view creates child views, each with its
 own bindings, and adds them to the presentation layer.
 
-The top-level application view typically takes the model(s) itself and wires
+The top-level application view typically takes the model(s) as its bindings and wires
 bindings for each child. Child views know nothing about the model tree - they
 only see their own query and relay bindings:
 
@@ -59,7 +59,7 @@ graph TD
     Hud --> Lives["LivesDisplay"]
 ```
 
-The top-level view is application-specific and takes the model itself.
+The top-level view is application-specific and takes the model itself as a binding.
 Leaf views are reusable and take query and relay bindings. This matches the access
 patterns described in [Bindings in Depth](bindings-in-depth.md).
 

@@ -166,21 +166,21 @@ patterns - choose by reuse potential and data-source complexity.
 
 | View kind                                        | Access pattern                                                      | Rationale                                                           |
 | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Top-level application view**                   | The model(s) itself                                                 | Application-specific; largest bindings surface; no reuse scenario   |
+| **Top-level application view**                   | The model(s), as fixed bindings                                     | Application-specific; largest bindings surface; no reuse scenario   |
 | **Reusable leaf view**                           | Query and relay bindings                                            | Small interface cost; genuine reuse; absorbs model-shape mismatches |
 | **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or use a fixed query binding   | Never changes at runtime; not reactive state                        |
 
-### Why top-level views skip bindings
+### Why top-level views take the whole model
 
 An application's top-level view (the one that orchestrates all sub-views) is
 the **least** likely to be reused elsewhere - it exists to wire this
 application's specific sub-views together. It is also the view with the
 **largest** bindings surface: every property in every collection would have
-to be projected through indexed bindings. Letting it read model properties
-directly eliminates that entire layer.
+to be projected through indexed bindings. Giving it the model itself, as one
+fixed binding, eliminates that entire layer.
 
-In this project, the top-level view takes the model as its one binding, and
-wires its sub-views' bindings from model properties:
+In this project, that binding is named `model`. The view wires its
+sub-views' bindings from the model's properties:
 
 ```ts
 function GameView(bindings: GameViewBindings): Container {

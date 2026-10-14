@@ -61,7 +61,7 @@ state:
 | Kind                    | State access               | When to use                        |
 | ----------------------- | -------------------------- | ---------------------------------- |
 | **Reusable leaf view**  | Query and relay bindings   | Views of single game objects (a ship, a bullet), HUD panels, any view that could be reused across contexts |
-| **Top-level app view**  | The model itself           | Application-specific root views that are never reused |
+| **Top-level app view**  | The model, as a binding    | Application-specific root views that are never reused |
 
 **[project convention]** A top-level view takes the model as a fixed value in
 its bindings, so it has the same signature as every other view:
@@ -585,9 +585,9 @@ one declaration for each state the view's bindings can show:
 Pixi or three.js view, or
 `htmlTest(name, options?, pose)` for an HTML view. A file declares
 one kind only. The `pose` function's only job is to return a view that
-has been arranged into the pose that the test describes. It builds a leaf
-view from fixed bindings, and a top-level view from a model in a known
-state. If the view has presentation state, the pose advances it
+has been arranged into the pose that the test describes. It builds the
+view from fixed bindings. For a top-level view, the binding is a model
+brought into a known state through its public actions. If the view has presentation state, the pose advances it
 with `advanceTime(ms, model, view)`, which updates models before views
 in each step. `canvasTest` and
 `htmlTest` come from `v-snap`. `advanceTime` comes from the renderer

@@ -135,8 +135,8 @@ Views access state through one or more of these patterns:
 
 | Pattern | When | Why |
 |---|---|---|
-| Bindings object | Reusable leaf views | Decoupled from any specific model shape |
-| Direct model access | Top-level, application-specific views | No reuse scenario; bindings add verbosity without benefit |
+| Query and relay bindings | Reusable leaf views | Decoupled from any specific model shape |
+| The model as a fixed binding | Top-level, application-specific views | No reuse scenario; a binding for each value adds verbosity without benefit |
 | Ambient constants | Static configuration (tile size, screen dimensions) | Never changes at runtime; not reactive state |
 
 See [Bindings](bindings.md) for the bridging pattern.

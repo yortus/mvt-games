@@ -55,9 +55,9 @@ packages/website/src/
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or
 `htmlTest`, from `v-snap` (`packages/v-snap/`).
-A pose returns the view arranged into one state: fixed bindings for a leaf
-view, a model brought into a state through its actions for a top-level view,
-and `advanceTime` (tick API) for presentation state. Reference images are
+A pose returns the view arranged into one state: fixed bindings (for a
+top-level view, a model brought into a state through its actions), and
+`advanceTime` (tick API) for time. Reference images are
 beside the tests, named for the test file's stem and the image, such as
 `hud-view.at-the-start.png`, so a test needs no `describe` block that only
 names its view. See
@@ -89,7 +89,7 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
-- **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; top-level application views take the model itself (they're application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
+- **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
 - **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/audio/docs/](packages/audio/docs/using-the-audio80.md)
 - **`_` prefix** for intentionally unused parameters
 - **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/docs/reference/style-guide.md#writing)

@@ -51,7 +51,7 @@ The canonical definitions live in [Architecture Rules](../architecture/rules.md)
 | Rule | Constraint | Reference |
 |---|---|---|
 | **B-contract** | Bindings are the contract between a view and the world | [Architecture Rules](../architecture/rules.md#binding-rules) |
-| **B-reusable** | Reusable leaf views use a bindings interface; top-level views may access models directly | [Architecture Rules](../architecture/rules.md#binding-rules) |
+| **B-reusable** | Reusable leaf views take query and relay bindings; a top-level view may take the model itself as a fixed binding | [Architecture Rules](../architecture/rules.md#binding-rules) |
 | **B-optional** | Relay bindings should usually be optional | [Architecture Rules](../architecture/rules.md#binding-rules) |
 | **B-wiring** | Bindings are wired at the view construction site | [Architecture Rules](../architecture/rules.md#binding-rules) |
 

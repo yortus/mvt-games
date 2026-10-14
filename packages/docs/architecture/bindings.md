@@ -166,16 +166,19 @@ Each value that changes is given as a simple function that reads a model
 property. The view doesn't know the model exists - it only sees its bindings
 interface.
 
-## When NOT to Use Bindings
+## When a Binding for Each Value Isn't Worth It
 
-Bindings are a pragmatic choice, not a strict rule. The principle: use bindings
-where decoupling provides real value (reuse, testing, substitutability).
+A binding for each value a view shows is a pragmatic choice, not a strict
+rule. Use them where decoupling provides real value (reuse,
+testing, substitutability).
 
 Two common exceptions are:
 
-- **The top-level application view.** For this view it is much simpler to pass the top-level model.
-This view is application-specific with no reuse potential, and has the largest binding surface.
-So the cost vs benefit is in favour of direct model access in this case.
+- **The top-level application view.** For this view it is much simpler to
+pass the top-level model itself, as a fixed binding. This view is
+application-specific with no reuse potential, and has the largest binding
+surface. So the cost vs benefit is in favour of one binding that holds the
+whole model.
 
 - **Application constants.** Applications typically have ambient constants that never vary at runtime
 (e.g. fixed grid dimensions, cell sizes, etc). For views that are specific to the application,

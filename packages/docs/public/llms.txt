@@ -24,7 +24,8 @@ MVT splits applications into three layers:
   (a function called each frame, or a fixed value read once); relay bindings
   report user input out of the view. In this repo, query bindings are named
   for what they return (score, isAlive) and relay bindings are on*() members.
-  Reusable views use bindings; top-level views access models directly.
+  Reusable views take query and relay bindings; a top-level view's binding
+  is the model itself, a fixed value.
 
 ## Frame Sequence
 

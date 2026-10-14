@@ -216,22 +216,23 @@ than `rows: () => number`. That states a limitation, which can be relaxed
 later without breaking callers; see
 [Bindings in Depth](bindings-in-depth.md#fixed-and-changeable-binding-values).
 
-## When to Use Bindings vs Direct Model Access
+## A Binding for Each Value, or the Whole Model
 
-Not every view needs bindings. MVT recognises three access patterns:
+Not every view needs a binding for each value it shows. MVT recognises three access patterns:
 
-| View kind                      | Access pattern                  | Rationale                                     |
-| ------------------------------ | ------------------------------- | --------------------------------------------- |
-| **Top-level application view** | Model(s) directly               | Application-specific; biggest bindings savings |
+| View kind                      | Access pattern                  | Rationale                                      |
+| ------------------------------ | ------------------------------- | ---------------------------------------------- |
+| **Top-level application view** | The model(s), as fixed bindings | Application-specific; biggest bindings savings |
 | **Leaf / reusable view**       | Query and relay bindings        | Small interface cost; genuine reuse potential  |
 | **Static configuration**       | Ambient constants               | Never changes at runtime; not reactive state   |
 
 **Top-level views** are the least likely to be reused - they exist to wire this
 specific application's sub-views together. They're also the views with the
-largest bindings surface area. Letting them read model properties directly
-eliminates an entire adapter layer. In this project, a top-level view takes the
-model as its one binding (`GameView({ model })`), so it has the same signature
-as every other view.
+largest bindings surface area. Giving them the model itself as a binding, and
+letting them read its properties, eliminates an entire adapter layer. The model
+is a fixed value. The view reads the binding once, and reads the model's
+properties on every refresh. In this project, that binding is named `model`
+(`GameView({ model })`).
 
 **Leaf views** (views of single game objects, HUD panels, overlays) are natural reuse
 candidates. The bindings interface gives them an adapter layer: if a model's
