@@ -4,8 +4,12 @@
 // then starts from the same state.
 import { beforeEach } from 'vitest';
 import { setUpPage } from './page-setup';
+import { forgetImageNames } from './visual-test';
 
 const setup = await setUpPage();
+// Canvas test files share one page, so the image names of the file before
+// this one are forgotten.
+forgetImageNames();
 
 beforeEach(() => {
     setup.resetForTest();

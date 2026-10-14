@@ -18,7 +18,7 @@ browser.
 
 | Command | What it does |
 | --- | --- |
-| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. A new image is written as its reference, except in CI |
+| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. Except in CI, a new image is written as its reference, and a reference that no test uses any more is deleted |
 | `vitest run -p unit` | Runs the unit tests alone. No browser starts |
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
 | `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It also repairs references: it renames one whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves the reference of an image within the tolerance as it is |
@@ -28,27 +28,40 @@ browser.
 
 ## Checks of the Reference Images
 
-Every run of the visual tests also checks the reference images, in two
-ways, after the tests:
+Every run of the visual tests also checks the reference images. Most of
+the checks fail a test, so they show wherever a failed test does: in
+Vitest's summary, the Vitest UI, an editor and every reporter.
 
 - **Each reference's pixels match the hash it carries.** A run compares
-  only the hashes, so this catches a reference whose pixels were edited
-  without its hash. A reference that passed before, unchanged since, isn't
-  decoded again.
-- **Every reference is used by a test.** Renamed and deleted tests leave
-  references behind. Without `-u`, the run lists them and fails. With `-u`,
-  it deletes them. A test that didn't run, because `.skip`, `.only`, `.todo`
-  or `-t` left it out, still uses its reference.
+  hashes first, so a reference whose pixels were edited, or that lost its
+  hash, such as to an image optimiser, would otherwise pass unnoticed. Its
+  test fails, unless its pixels match the test's image exactly and the run
+  writes references, in which case the run adds the hash. A reference is
+  checked again only once it changes.
+- **No two tests of a file share a reference.** Test names that differ
+  only in punctuation or case give one image name. The second test fails.
 
-A run of every visual test file checks every reference, those of deleted
+One check is about the run, not a test:
+
+- **Every reference is used by a test.** Renamed and deleted tests leave
+  references behind. Outside CI, and with `-u`, the run deletes them, as it
+  writes new references, so a renamed test leaves nothing behind. In CI,
+  the run lists them and fails. A test that didn't run, because `.skip`,
+  `.only`, `.todo` or `-t` left it out, still uses its reference. Tests in
+  two files that share a reference, which only a reference path without the
+  test file's stem allows, also fail the run.
+
+A run of every visual test file covers every reference, those of deleted
 test files too. A run of some of them, such as a shard (`--shard`), a run
-of one file, or a rerun in watch mode, checks the references of the files
-that ran, and its summary says so. A check that fails prints what it found
-under a heading of its own, after the summary, and the run exits with
-code 1. In GitHub Actions, it also adds an error annotation. A check isn't
-a test, so Vitest's own summary, the Vitest UI and Vitest's other reporters,
-such as JUnit's, don't show it, as they don't show a coverage threshold
-that failed.
+of one file, or a rerun in watch mode, covers the references of the files
+that ran, and its summary says so. A run-level check that fails prints
+what it found under a heading of its own, after the summary, and the run
+exits with code 1. In GitHub Actions, it also adds an error annotation.
+It isn't a test, so Vitest's own summary, the Vitest UI and Vitest's other
+reporters, such as JUnit's, don't show it, as they don't show a coverage
+threshold that failed. Since a local run deletes unused references, this
+mostly happens in CI, when a change was pushed without running the visual
+tests.
 
 A sharded run never runs every visual test file, so it never finds the
 references of deleted test files. The visual tests are quick, so CI can

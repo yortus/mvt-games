@@ -43,10 +43,16 @@ usually means.
 - **"The reference image ... is a Git LFS pointer."** The checkout has
   Git LFS's pointer files, not the images. Run `git lfs pull`, or check out
   with Git LFS, such as with `lfs: true` in `actions/checkout`.
-- **"... references do not match their hashes."** A reference was written
-  by something other than v-snap, such as an image optimiser, or edited
-  since. Run the tests with `-u`, which rewrites each from its test, and
-  look at them before committing them.
+- **"Image ... matches its reference, ..., but the reference carries no
+  pixel hash."** Or its hash is wrong. Something other than v-snap wrote
+  the reference, such as an image optimiser, and the run writes no
+  references, as in CI. Run the tests outside CI, or with `-u`, which adds
+  the hash, and commit the reference.
+- **"... and ... have one reference image."** Two tests of a file have
+  names that differ only in punctuation or case. Rename one.
+- **"No test uses this reference."** In CI, a test was renamed or deleted,
+  and its old reference was committed. Run the visual tests outside CI,
+  which deletes it, and commit the deletion.
 - **"The project ... runs v-snap's visual tests a second time."** The
   config's `browser` settings reach v-snap's projects. Move them into the
   project that needs them.

@@ -131,7 +131,7 @@ export function checkReference(file: string): string | undefined {
     const bytes = readFileSync(file);
     if (isLfsPointer(bytes)) return LFS_PROBLEM;
     const stored = readPngHash(file);
-    if (stored === undefined) return 'carries no pixel hash, so the visual tests did not write it';
+    if (stored === undefined) return 'carries no pixel hash';
     let actual: string;
     try {
         actual = hashImage(decodePng(bytes));

@@ -80,9 +80,11 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
                 files.set(join(pattern.dir, file), name);
             }
         }
-        // A run that rewrites references trusts no hash that its pixels don't
-        // match, so that each such reference is judged, and rewritten.
-        if (isRewriting(mode)) {
+        // No hash that its pixels don't match is trusted, so that each such
+        // reference is judged: its test fails, or a run that rewrites
+        // references rewrites it. The checks are cached by each file's size
+        // and time, so a reference is decoded again only once it changes.
+        if (scope.calibration === undefined) {
             for (const [file, problem] of checkReferences([...files.keys()], CHECK_CACHE_FILE)) {
                 if (problem !== undefined) delete hashes[files.get(file) ?? ''];
             }
@@ -222,19 +224,23 @@ function judge(options: {
     const hash = hashImage(actual);
     const exists = existsSync(file);
     const isWritable = id.calibration !== undefined ? mode === 'environment' : isUpdate || (mode === 'new' && !exists);
-    // A run that rewrites references trusts the hash only if the pixels match it.
-    const isTrusted = !isWritable || !exists || checkReferences([file], CHECK_CACHE_FILE).get(file) === undefined;
-    if (exists && readPngHash(file) === hash && isTrusted) return { outcome: same, referenceFile };
+    // The hash is trusted only if the reference's pixels match it. The
+    // check is cached by the file's size and time.
+    const problem = exists && id.calibration === undefined ? checkReferences([file], CHECK_CACHE_FILE).get(file) : undefined;
+    if (exists && problem === undefined && readPngHash(file) === hash) return { outcome: same, referenceFile };
 
     let expected: RgbaImage | undefined;
     if (exists) expected = readReference({ file, referenceFile, isWritable, testFile });
     const isSameSize = expected !== undefined && expected.width === actual.width && expected.height === actual.height;
     const comparison = expected !== undefined && isSameSize ? compareImages({ expected, actual }) : undefined;
-    // The same pixels, in a file that lacks their hash, such as one that a
-    // paint program saved. A write adds the hash, so that `-u` repairs it.
+    // The same pixels, in a file that lacks their hash, or whose hash is
+    // wrong, such as one that an image optimiser rewrote. A write adds the
+    // hash. A local run repairs it, as it writes new references, and so
+    // does `-u`. In CI, the test fails, so that the fix is committed.
     if (comparison?.changed === 0) {
-        if (isWritable) writeFileSync(file, encodePng(actual));
-        return { outcome: same, referenceFile };
+        if (problem !== undefined && !isWritable && mode !== 'new') return { outcome: 'unsound', problem, referenceFile, testFile };
+        if (isWritable || problem !== undefined) writeFileSync(file, encodePng(actual));
+        return { outcome: problem === undefined ? same : 'updated', referenceFile };
     }
     if (comparison?.isWithinTolerance && !(isWritable && DRAWS_EXACTLY)) {
         return { outcome: 'within-tolerance', changed: comparison.changed, maxDelta: comparison.maxDelta, referenceFile };

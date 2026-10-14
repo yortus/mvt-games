@@ -83,6 +83,9 @@ export function describeFailure(name: string, verdict: VisualVerdict, pageKind: 
             return `Image '${name}' is new, and this run writes no new reference images, as Vitest writes no new snapshots in CI. Run ${update} where it can, and review ${verdict.actualFile ?? verdict.referenceFile}.`;
         case 'size':
             return `Image '${name}' changed size from ${verdict.referenceSize}. See ${verdict.actualFile}. If the change is intended, run ${update}.`;
+        case 'unsound':
+            return `Image '${name}' matches its reference, ${verdict.referenceFile}, but the reference ${verdict.problem}. Something other than v-snap wrote it, or changed it since, such as an image optimiser. `
+                + `This run writes no references, as in CI. Run ${update}, or the tests outside CI, to rewrite it, and commit it.`;
         case 'case':
             return `Image '${name}' has the reference ${verdict.caseFile}, whose name differs from ${verdict.referenceFile} only in case, as after a test is renamed so. `
                 + `Linux tells the two names apart, so the test would fail there. Run ${update} to rename the reference.`;

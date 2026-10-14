@@ -142,9 +142,9 @@ vsnap({ referencePath: 'visual-references/{testFilePath}/{imageName}.png' });
 The unit project must leave out a layout's test files. For the default
 layout, that is `'**/visual-tests/**'` in its `exclude`, and for the first
 layout above, `'**/*.visual.test.{ts,tsx}'`. Also, any other PNG whose name
-starts with a test file's stem and a dot, beside the test file, would match
-the reference path, and the check of every reference image would report
-it. Keep such files elsewhere, or name them otherwise.
+starts with a test file's stem and a dot, beside the test file, is where a
+reference could be, and a test whose image has that name would compare
+with it. Keep such files elsewhere, or name them otherwise.
 
 The package tells its reference images from other PNGs by the hash that
 each one carries, and by where its reference path would put an image of

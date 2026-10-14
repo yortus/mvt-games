@@ -128,8 +128,8 @@ longer than 100 bytes is cut short, and a short hash of the whole name is
 added, so that file names stay inside every system's limits. Two tests
 whose full names differ only in punctuation would have the same image
 name, and share one reference image. So would two whose names differ only
-in case, since macOS and Windows keep such names in one file. If any tests
-share a reference image, the run fails, and names the tests.
+in case, since macOS and Windows keep such names in one file. If two tests
+of a file share a reference image, the second fails, and names the first.
 
 ## One Kind of Test in Each File
 

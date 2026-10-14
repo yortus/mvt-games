@@ -36,7 +36,8 @@ export type VisualOutcome =
     | 'size' // a different size from the reference
     | 'updated' // written as the new reference, or renamed to the test's case
     | 'added' // written as the reference of a new image
-    | 'case'; // a reference whose name differs from the image's only in case
+    | 'case' // a reference whose name differs from the image's only in case
+    | 'unsound'; // the same pixels as the reference, whose hash is missing or wrong
 
 export interface VisualVerdict {
     readonly outcome: VisualOutcome;
@@ -53,6 +54,8 @@ export interface VisualVerdict {
     readonly referenceSize?: string;
     /** The reference whose name differs from the image's only in case, relative to the folder that Vitest runs in. */
     readonly caseFile?: string;
+    /** What is wrong with an unsound reference, such as that it carries no pixel hash. */
+    readonly problem?: string;
     /**
      * The reference's path, and the paths that the actual image and the
      * diff were written to. Each path is relative to the folder that Vitest runs in.

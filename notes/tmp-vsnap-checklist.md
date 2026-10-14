@@ -18,7 +18,7 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
 
 ## Bugs
 
-- [ ] **B1: Check failures show only in v-snap's own block** (2026-10-14 B1,
+- [x] **B1: Check failures show only in v-snap's own block** (2026-10-14 B1,
   checked). Unused references and hash mismatches print after the summary
   and set the exit code, as coverage thresholds do. Vitest's summary, the
   UI, the IDE extension and the JSON and JUnit reporters show the run as
@@ -27,6 +27,11 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   out of "Unhandled Errors" on purpose. The reporter's header and
   `docs/running-tests.md` now describe the current behaviour. Decide
   whether to keep it.
+  Done on 2026-10-14 (option 4b), on branch `v-snap-checks`, `9a2cbd7`: a
+  hash mismatch fails its own test, two tests of a file with one image name
+  fail the second, and a run outside CI deletes unused references as it
+  writes new ones. Only unused references in CI, and references shared
+  across files, still fail the run from v-snap's own block.
 
 ## Before publishing
 
@@ -59,6 +64,20 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
   renames its reference. The two config files and the `Register`
   declaration are real learning cost. Probably keep, but worth a
   conscious decision.
+- [ ] **A4: Don't make a project restructure its Vitest config.** Today a
+  project with a flat config must move to `test.projects`, put its own
+  settings in a `unit` project that excludes `**/visual-tests/**`, then
+  list `...vsnap()`. That is the biggest step in adopting v-snap, and it
+  touches a file the project owns. An earlier review raised it; U6 (closed
+  2026-10-13) only documented the steps, in `docs/getting-started.md`.
+  Vitest 5 lets a plugin add projects (`injectTestProjects` in
+  `configureVitest`), so v-snap could be a plugin, `plugins: [vsnap()]`,
+  that adds its projects to a flat config, and leaves the visual test files
+  out of the config's own tests. To check: whether the root project's
+  `exclude` can be extended from the plugin, how it behaves with a config
+  that already has projects, and what `-p`, watch mode, the VS Code
+  extension and the inherited-settings checks make of injected projects.
+  Keep `...vsnap()` in `test.projects` as the other form.
 
 ## Watch mode
 

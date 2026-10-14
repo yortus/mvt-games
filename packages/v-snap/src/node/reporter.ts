@@ -8,23 +8,20 @@
  * reference is noticed when it is added. On GitHub, the summary also goes on
  * the job's summary page.
  *
- * After a complete run, in which every visual test ran, the reporter does
- * two more things. It decodes every reference image, and checks its pixels
- * against the hash it carries. A run compares only the hashes, so this is
- * what catches a reference whose pixels were edited without its hash. It
- * also looks for references that no actual image was compared with, which
- * tests that were renamed or deleted left behind. Without Vitest's `-u`, it
- * lists them and fails the run. With it, it deletes them.
+ * After each run, the reporter also looks for references that no actual
+ * image was compared with, which tests that were renamed or deleted left
+ * behind. A run that writes references, by default outside CI, deletes
+ * them, as it writes new ones. In CI, it lists them and fails the run. It
+ * also checks that no tests in two files share a reference image.
  *
- * After every run, it also checks that no two tests share a reference
- * image, which would happen if their names differ only in punctuation. If
- * they do, it lists them and fails the run.
- *
- * These checks run once the run's test files have ended. A check that
- * fails is printed under a heading of its own, after the summary, and sets
- * the exit code, as Vitest's coverage thresholds do. It isn't a test
- * failure, so Vitest's own summary, its UI and its other reporters don't
- * show it. In GitHub Actions, it is also an error annotation.
+ * The other checks of the references fail tests, so that they show
+ * wherever test failures do: a test fails if its reference's pixels don't
+ * match the hash it carries, or if another test of its file has the same
+ * image name. A check here isn't a test, so a failure is printed under a
+ * heading of its own, after the summary, and sets the exit code, as Vitest's
+ * coverage thresholds do. Vitest's own summary, its UI and its other
+ * reporters don't show it. In GitHub Actions, it is also an error
+ * annotation.
  */
 
 import { appendFileSync, existsSync, rmSync } from 'node:fs';
@@ -37,8 +34,8 @@ import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
 import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
-import { CHECK_CACHE_FILE, shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
-import { checkReferences, findCandidatesOfFiles, findOrphans, findReferences, findReferencesOfFiles, LFS_PROBLEM, removeReference, toFileKey } from './references.ts';
+import { shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
+import { findOrphans, findReferences, findReferencesOfFiles, removeReference, toFileKey } from './references.ts';
 import { describeProblems, forgetVsnapCalls, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
@@ -123,6 +120,7 @@ const OUTCOMES: Readonly<Record<string, { readonly word: string; readonly isPass
     'size': { word: 'changed size', isPass: false },
     'new': { word: 'new', isPass: false },
     'case': { word: 'named in another case', isPass: false },
+    'unsound': { word: 'with a wrong hash', isPass: false },
 };
 
 /** One actual image of the run, for the summary. */
@@ -405,11 +403,17 @@ interface CheckResult {
  * Runs the checks of the references, once every test file of the run has
  * ended, and returns what they found.
  *
- * - Two tests that share a reference fail the run.
- * - References that no test uses are listed, and fail the run, or are
- *   deleted with `-u`. A test that didn't run, because it was skipped or a
- *   filter left it out, still uses its reference, by its name.
- * - Every reference's pixels are checked against the hash it carries.
+ * - Tests in two files that share a reference fail the run. Two tests of
+ *   one file that share one fail the second test instead, in the page.
+ * - References that no test uses are deleted by a run that writes
+ *   references: by default outside CI, as a new reference is written, and
+ *   with `-u`. In CI, they are listed, and fail the run. A test that didn't
+ *   run, because it was skipped or a filter left it out, still uses its
+ *   reference, by its name.
+ *
+ * Each reference's pixels are checked against the hash it carries by its
+ * own test, which fails if they don't match, so that the failure shows
+ * wherever test failures do.
  *
  * A run of every visual test file covers every reference, those of deleted
  * test files too. A run of some of them, such as a shard, a run of one file
@@ -427,7 +431,9 @@ function runChecks(options: {
     readonly testModules: readonly TestModule[];
 }): CheckOutcome {
     const { layout, state, vitest } = options;
-    const isUpdate = vitest.config.snapshotOptions.updateSnapshot === 'all' || process.env.VSNAP_MODE === 'environment';
+    // Unused references go as new ones arrive: outside CI, and with -u.
+    const update = vitest.config.snapshotOptions.updateSnapshot;
+    const isWriting = update === 'all' || update === 'new' || process.env.VSNAP_MODE === 'environment';
     // A file that failed to load has no tests to say which references it uses.
     const loaded = options.testModules.filter((m) => m.errors().length === 0);
     const loadedKeys = new Set(loaded.map((m) => toFileKey(m.moduleId)));
@@ -437,13 +443,11 @@ function runChecks(options: {
     const others = options.ownFiles.filter((file) => !loadedKeys.has(toFileKey(file)));
     const covered = loaded.map((m) => m.moduleId);
     const references = isComplete ? findReferences(layout, options.ownFiles) : findReferencesOfFiles(layout, covered, others);
-    const candidates = findCandidatesOfFiles(layout, isComplete ? options.ownFiles : covered, isComplete ? [] : others);
     const used = listUsedReferences(layout, options.testModules);
     const named = listNamedReferences(layout, loaded);
     const results = [
         describeSharedReferences(used),
-        settleOrphans({ layout, state, references: references.map((r) => r.file), used, named, isUpdate, isComplete }),
-        checkEveryReference([...references.map((r) => r.file), ...candidates]),
+        settleOrphans({ layout, state, references: references.map((r) => r.file), used, named, isWriting }),
     ];
     const notes: string[] = [];
     const failures = results.flatMap((result) => result.failure === undefined ? [] : [result.failure]);
@@ -453,7 +457,7 @@ function runChecks(options: {
     }
     if (!isComplete && loaded.length > 0) {
         const files = loaded.length === 1 ? 'the visual test file' : `the ${loaded.length} visual test files`;
-        notes.push(`Only the references of ${files} that ran were checked. A run of every visual test file checks them all, and also finds the references of deleted test files.`);
+        notes.push(`Only the references of ${files} that ran were looked at for unused ones. A run of every visual test file looks at them all, those of deleted test files too.`);
     }
     // The references that the run deleted are gone, so the summary leaves them out.
     const kept = deleted.length === 0 ? references : references.filter((r) => existsSync(r.file));
@@ -537,6 +541,8 @@ interface UsedReference {
     /** Every path that the tests gave the reference, which differ only in case. */
     readonly files: Set<string>;
     readonly tests: string[];
+    /** The test files whose tests used it, by their file keys. */
+    readonly modules: Set<string>;
 }
 
 /** Returns the references that this run's tests used, by their paths in lower case. */
@@ -548,9 +554,10 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
             if (imageName === undefined) continue;
             const file = resolveReferencePath(layout, module.moduleId, imageName);
             const key = resolve(file).toLowerCase();
-            const entry = used.get(key) ?? { file, files: new Set<string>(), tests: [] };
+            const entry = used.get(key) ?? { file, files: new Set<string>(), tests: [], modules: new Set<string>() };
             entry.files.add(file);
             entry.tests.push(test.fullName);
+            entry.modules.add(toFileKey(module.moduleId));
             used.set(key, entry);
         }
     }
@@ -558,17 +565,18 @@ function listUsedReferences(layout: VisualLayout, testModules: readonly TestModu
 }
 
 /**
- * Returns the summary's lines about references that two or more tests
- * share, and a failure if there are any. Tests share a reference when
- * their image names are the same, such as names that differ only in
- * punctuation, or tests with the same names in two files whose references
- * are in one folder. Names that differ only in case share one too, on
- * every system, since macOS and Windows keep them in one file.
+ * Returns the summary's lines about references that tests in two or more
+ * files share, and a failure if there are any. That happens when two files
+ * whose references are in one folder, by a reference path without the test
+ * file's stem, have tests with the same image names. Names that differ only
+ * in case share one too, on every system, since macOS and Windows keep them
+ * in one file. Two tests of one file that share a reference fail the
+ * second test instead, in the page.
  */
 function describeSharedReferences(used: ReadonlyMap<string, UsedReference>): CheckResult {
     const lines: string[] = [];
-    for (const { file, files, tests } of used.values()) {
-        if (tests.length < 2) continue;
+    for (const { file, files, tests, modules } of used.values()) {
+        if (modules.size < 2) continue;
         const caseNote = files.size > 1 ? ' (their names differ only in case, which macOS and Windows keep in one file)' : '';
         lines.push(`  ${toDisplayPath(file)}: ${tests.map((t) => `'${t}'`).join(', ')}${caseNote}`);
     }
@@ -604,9 +612,10 @@ function listNamedReferences(layout: VisualLayout, testModules: readonly TestMod
 }
 
 /**
- * Handles the references that no test used. In compare mode, it lists them,
- * with a failure. In the modes that write references, it deletes them. It
- * returns the summary's lines about them.
+ * Handles the references that no test used. A run that writes references,
+ * by default outside CI, deletes them, as it writes new ones, so that a
+ * renamed test leaves nothing behind. In CI, it lists them, with a failure.
+ * It returns the summary's lines about them.
  */
 function settleOrphans(options: {
     readonly layout: VisualLayout;
@@ -616,44 +625,20 @@ function settleOrphans(options: {
     readonly used: ReadonlyMap<string, UsedReference>;
     /** The references of the tests that recorded no image, as file keys. */
     readonly named: ReadonlySet<string>;
-    readonly isUpdate: boolean;
-    /** Whether every visual test file ran, for the message. */
-    readonly isComplete: boolean;
+    /** Whether the run writes references, and so deletes unused ones. */
+    readonly isWriting: boolean;
 }): CheckResult {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].flatMap((u) => [...u.files])];
     const orphans = findOrphans({ references: options.references, compared }).filter((file) => !options.named.has(toFileKey(file)));
     if (orphans.length === 0) return {};
-    if (!options.isUpdate) {
+    if (!options.isWriting) {
         const it = orphans.length === 1 ? 'it' : 'them';
-        const heading = `No test uses ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${it} behind, and a run with Vitest's -u deletes ${it}:`;
+        const heading = `No test uses ${countReferences(orphans.length, 'this', 'these')}. Tests that were renamed or deleted left ${it} behind. `
+            + `This run writes no references, as in CI, so it doesn't delete ${it}. A run outside CI, or with Vitest's -u, deletes ${it}:`;
         return { failure: [heading, ...orphans.map((file) => `  ${toDisplayPath(file)}`)].join('\n') };
     }
     for (const file of orphans) removeReference(file, options.layout.root);
     return { deleted: orphans };
-}
-
-/**
- * Checks each reference's pixels against the hash it carries, and each PNG
- * where a test's reference could be, which finds one that lost its hash.
- * A reference that passed before, unchanged since, isn't decoded again.
- * Returns the summary's lines about any that fail, with a failure.
- */
-function checkEveryReference(files: readonly string[]): CheckResult {
-    const unique = new Map<string, string>();
-    // A reference that the run deleted, as unused, is gone.
-    for (const file of files) if (existsSync(file)) unique.set(toFileKey(file), file);
-    const problems: string[] = [];
-    for (const [file, problem] of checkReferences([...unique.values()], CHECK_CACHE_FILE)) {
-        if (problem !== undefined) problems.push(`  ${toDisplayPath(file)}: ${problem}`);
-    }
-    if (problems.length === 0) return {};
-    const heading = `${problems.length} of ${unique.size} references do not match their hashes, so they weren't written by v-snap, or were changed since:`;
-    const lfs = problems.filter((problem) => problem.endsWith(LFS_PROBLEM)).length;
-    const advice = [
-        ...lfs < problems.length ? ["A run with Vitest's -u rewrites each from its test. Look at each before committing it."] : [],
-        ...lfs > 0 ? ['Git LFS pointers stand for images that this checkout lacks. Run git lfs pull, or check out with Git LFS, such as with lfs: true in actions/checkout.'] : [],
-    ];
-    return { failure: [heading, ...problems, '', ...advice].join('\n') };
 }
 
 /**

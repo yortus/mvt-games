@@ -233,10 +233,11 @@ function declareHtmlTest(declare: Declare, name: string, optionsOrPose: object |
 }
 
 /** Sets the page up, names the test's image, and checks that the test runs in its kind of page. */
-async function startTest(task: { readonly fullTestName: string; readonly meta: TaskMeta }, declared: PageKind): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
+async function startTest(task: { readonly id: string; readonly fullTestName: string; readonly meta: TaskMeta }, declared: PageKind): Promise<{ readonly setup: PageSetup; readonly id: ImageId }> {
     const setup = await setUpPage();
     const id = nameImage(task.fullTestName);
     task.meta.vsnap = { image: id.name };
+    claimImageName(task.id, id);
     const pageKind = inject('vsnapPageKind');
     if (pageKind !== declared) {
         // The config sends each file to the page its declarations ask for,
@@ -244,6 +245,34 @@ async function startTest(task: { readonly fullTestName: string; readonly meta: T
         throw new Error(`'${id.test}' is ${declared === 'html' ? 'an HTML' : 'a canvas'} visual test, but its file runs in the ${pageKind} page. A file declares one kind of visual test only.`);
     }
     return { setup, id };
+}
+
+/**
+ * Forgets the image names that the running file's tests claimed. The setup
+ * file calls it as each test file starts, since canvas test files share
+ * one page.
+ */
+export function forgetImageNames(): void {
+    imageNames.clear();
+}
+
+/** The image names that the running file's tests claimed, in lower case, with the test that claimed each. */
+const imageNames = new Map<string, { readonly taskId: string; readonly test: string }>();
+
+/**
+ * Throws if another test of the file has claimed the same image name, so
+ * that the two would share one reference image, and each would overwrite
+ * the other's. Names that differ only in punctuation give one image name,
+ * and names that differ only in case give one file on macOS and Windows. A
+ * test that runs again, by `retry` or `repeats`, is the same test.
+ */
+function claimImageName(taskId: string, id: ImageId): void {
+    const key = id.name.toLowerCase();
+    const owner = imageNames.get(key);
+    if (owner !== undefined && owner.taskId !== taskId) {
+        throw new Error(`'${id.test}' and '${owner.test}' have one reference image, '${id.name}', since their names differ only in punctuation or case, so each would overwrite the other's. Rename one.`);
+    }
+    imageNames.set(key, { taskId, test: id.test });
 }
 
 /** Records a test's outcome and timings for the run's summary, and fails the test if its image differs. */
