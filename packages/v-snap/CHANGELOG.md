@@ -1,5 +1,17 @@
 # v-snap
 
+## 0.2.0
+
+### Minor Changes
+
+- 60b2b71: Reference checks show wherever test failures do. A reference whose pixels don't match its hash fails its own test, and two tests of a file with one image name fail the second test, instead of failing the run after Vitest's summary. Outside CI, a run deletes references that no test uses any more, as it writes new ones, so a renamed test leaves nothing behind; in CI, they still fail the run.
+- 15148ba: HTML tests can act on their view once it is in the page, with `act`, such as to hover over it, focus it or open a menu with Vitest's `userEvent`; the pointer leaves the page afterwards. A test's `viewport` and `colorScheme` set what its media queries see, and `vsnap()`'s `viewport` and `colorScheme` options set the page's own. The calibration set checks dark form controls too.
+- a1b319c: `withVsnap(config)`, from `v-snap/vitest`, adds v-snap's projects to a Vitest config as it is, with v-snap's options in the config, under `vsnap`. A flat config's unit test settings move into a `unit` project that leaves out the visual test files, so a project no longer restructures its config by hand. `...vsnap()` in `test.projects` still works.
+
+### Patch Changes
+
+- b6606d3: Fixes and clearer messages. A reference whose name differs from its test's only in case fails the test, on every system, and `-u` renames it. `-u` rewrites a reference whose pixels don't match its hash, and, except on arm64, an image within the tolerance. A Git LFS pointer, or a reference that can't be read, gets a message that says what to do. The diff marks differences within the tolerance in dark yellow. `.each` and `.for` follow `.skip`, `.only`, `.skipIf` and `.runIf`. Two configs' `vsnap()` calls with one name no longer share a sources fingerprint. Paths in messages are relative to the folder that Vitest runs in.
+
 ## 0.1.0
 
 ### Minor Changes
