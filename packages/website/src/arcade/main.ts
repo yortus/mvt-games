@@ -1,4 +1,5 @@
 import { ENTRY_FACTS } from 'virtual:entry-facts';
+import { createFetchHighscoreStore, createMemoryHighscoreStore, GAMES, type HighscoreStore } from '../highscores';
 import { refreshView, updateView } from '@mvtjs/html';
 import { assert, watch } from '@mvtjs/utils';
 import { CATALOGUE, findEntry } from '../entries';
@@ -30,6 +31,10 @@ import './arcade.css';
 // entry's or the Arcade's, has a history step of its own. The page also
 // plays an entry live on its card (attract mode) when the wall asks, in a
 // second host that takes no input.
+//
+// The page also connects the games to their highscore tables. It watches the
+// running session's `scoring` for the end of a run, and remembers the
+// visitor's initials between visits.
 
 // ---------------------------------------------------------------------------
 // The page
@@ -81,11 +86,16 @@ const savedSoundSettings = readSavedSoundSettings();
 const firstSoundSettings = savedSoundSettings !== undefined
     ? parseSoundSettings(savedSoundSettings)
     : isHandheldDevice() ? HANDHELD_SOUND_SETTINGS : DEFAULT_SOUND_SETTINGS;
+// Declared before the model, which is made with the initials it keeps
+/** Where the visitor's initials are kept between visits. */
+const INITIALS_KEY = 'mvt-arcade:initials';
 
 const model = createArcadeModel({
     entries: CATALOGUE,
     factsFor: (id) => ENTRY_FACTS[id],
     search: location.search,
+    highscoreStore: highscoreStoreFor(import.meta.env.VITE_HIGHSCORES_URL),
+    rememberedInitials: readInitials(),
     soundSettings: firstSoundSettings,
     loadEntry: async (entry) => {
         const starter = await entry.load();
@@ -138,6 +148,8 @@ const watcher = watch({
     restarts: () => model.restartCount,
     query: () => model.queryRevision,
     panel: panelStep,
+    isRunOver: () => host.session?.scoring?.isOver() === true,
+    initials: () => model.highscores.lastInitials,
 });
 // An info panel's step, reloaded, opens its panel again
 followPanelStep();
@@ -186,20 +198,24 @@ function frame(timeMs: number): void {
 
 /** Starts and ends the entry's sessions as the model's phase changes, and writes the URL. */
 function followModel(): void {
-    const { phase, restarts, query, panel } = watcher.poll();
+    const { phase, restarts, query, panel, isRunOver, initials } = watcher.poll();
     if (phase.changed) {
         if (phase.value === 'playing') {
             exitFrame = undefined;
-            assert(model.starter !== undefined, 'arcade: an entry plays only once it has loaded');
-            host.start(model.starter);
+            const { starter, activeEntry } = model;
+            assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry plays only once it has loaded');
+            host.start(starter, { bestScore: () => model.highscores.bestScoreFor(activeEntry.id) });
         }
         else if (phase.previous === 'playing') {
             exitFrame = host.stop();
         }
     }
     if (restarts.changed) host.restart();
-    // The host stays paused while the entry is held still as it first shows, and while the visitor pauses it.
-    host.isPaused = model.isPaused || model.isHeld;
+    // A run has ended, and its score may place
+    if (isRunOver.changed && isRunOver.value) model.runEnded(host.session?.scoring?.score() ?? 0);
+    // The host stays paused while the entry is frozen: held still as it first shows, paused by the visitor, or waiting while a score places.
+    host.isPaused = model.isEntryFrozen;
+    if (initials.changed && initials.value !== undefined) writeInitials(initials.value);
     // The model replaces its sound settings object whenever one changes. The page gives the new settings to the host and saves them.
     if (model.soundSettings !== keptSoundSettings) {
         keptSoundSettings = model.soundSettings;
@@ -452,4 +468,37 @@ function checkPlayArea(entry: ArcadeEntry, starter: EntryStarter): void {
         () => `${entry.id}: listed as ${entry.screenWidth}x${entry.screenHeight}, `
             + `but plays at ${starter.screenWidth}x${starter.screenHeight}; correct its entry`,
     );
+}
+
+/**
+ * The highscore tables: kept by the Worker at `url`, which the build names
+ * (`VITE_HIGHSCORES_URL`), or, with none, in memory, by the Worker's rules,
+ * and forgotten when the page closes, as in development.
+ */
+function highscoreStoreFor(url: string | undefined): HighscoreStore {
+    return url === undefined || url === '' ? createMemoryHighscoreStore({ games: GAMES }) : createFetchHighscoreStore({ url });
+}
+
+/**
+ * The initials the visitor entered on a visit before, if the browser kept
+ * them. The model checks them. Storage can be blocked, as in a private
+ * window, which just means none.
+ */
+function readInitials(): string | undefined {
+    try {
+        return localStorage.getItem(INITIALS_KEY) ?? undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+
+/** Remembers the visitor's initials for their next visit, if the browser lets it. */
+function writeInitials(initials: string): void {
+    try {
+        localStorage.setItem(INITIALS_KEY, initials);
+    }
+    catch {
+        // Blocked storage: the initials are offered for the rest of this visit only
+    }
 }

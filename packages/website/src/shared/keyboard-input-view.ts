@@ -8,9 +8,11 @@ import { Container } from 'pixi.js';
 export interface KeyboardInputViewBindings {
     /**
      * Whether to handle key events. It is true while an entry that takes
-     * input is running. When it is false, key events are ignored, so the
-     * rest of the page, such as the Arcade's search box, can use them. Any
-     * held keys are released. It is read on every key press and release.
+     * input is running, and not held still. When it is false, key events are
+     * ignored, so the rest of the page, such as the Arcade's search box or a
+     * prompt over the entry, can use them. Any held keys are released, and
+     * the release is reported through the relay bindings. It is read on every
+     * key press and release.
      */
     readonly isActive: () => boolean;
     onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
@@ -50,13 +52,15 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
     };
     // A bit for each key held
     let pressedKeys = 0;
+    // A bit for each button held: primary, secondary, restart
+    let pressedButtons = 0;
     const onKeyDown = (e: KeyboardEvent): void => handleKeyboardEvent(e, true);
     const onKeyUp = (e: KeyboardEvent): void => handleKeyboardEvent(e, false);
 
     function handleKeyboardEvent(e: KeyboardEvent, isDown: boolean): void {
         if (!bindings.isActive()) {
-            // Release any held keys, so none carry over into the next entry
-            pressedKeys = 0;
+            // Release any held keys, so none stays held behind a menu, or carries over into the next entry
+            releaseAll();
             return;
         }
         // A modal dialog's keys are its own, such as a pause menu's Tab, Space
@@ -82,9 +86,24 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
         if (oldRight !== newRight) bindings.onXDirectionChanged?.(newRight ? 'right' : newLeft ? 'left' : 'none');
         if (oldUp !== newUp) bindings.onYDirectionChanged?.(newUp ? 'up' : newDown ? 'down' : 'none');
         if (oldDown !== newDown) bindings.onYDirectionChanged?.(newDown ? 'down' : newUp ? 'up' : 'none');
+        const buttonFlag = BUTTON_FLAGS[e.key] ?? 0;
+        pressedButtons = isDown ? pressedButtons | buttonFlag : pressedButtons & ~buttonFlag;
         if (e.key === ' ') bindings.onPrimaryButtonChanged?.(isDown);
         if (e.key === 'Shift') bindings.onSecondaryButtonChanged?.(isDown);
         if (e.key === 'Enter') bindings.onRestartButtonChanged?.(isDown);
+    }
+
+    /** Reports every key and button still held as released. */
+    function releaseAll(): void {
+        const horizontal = keyFlags.ArrowLeft | keyFlags.ArrowRight | keyFlags.a | keyFlags.d;
+        const vertical = keyFlags.ArrowUp | keyFlags.ArrowDown | keyFlags.w | keyFlags.s;
+        if (pressedKeys & horizontal) bindings.onXDirectionChanged?.('none');
+        if (pressedKeys & vertical) bindings.onYDirectionChanged?.('none');
+        if (pressedButtons & BUTTON_FLAGS[' ']) bindings.onPrimaryButtonChanged?.(false);
+        if (pressedButtons & BUTTON_FLAGS.Shift) bindings.onSecondaryButtonChanged?.(false);
+        if (pressedButtons & BUTTON_FLAGS.Enter) bindings.onRestartButtonChanged?.(false);
+        pressedKeys = 0;
+        pressedButtons = 0;
     }
 
     window.addEventListener('keydown', onKeyDown);
@@ -97,3 +116,10 @@ export function KeyboardInputView(bindings: KeyboardInputViewBindings): Containe
 
     return view;
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** The keys for the buttons, as bits of `pressedButtons`. */
+const BUTTON_FLAGS: Readonly<Record<string, number>> = { ' ': 1 << 0, 'Shift': 1 << 1, 'Enter': 1 << 2 };

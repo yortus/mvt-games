@@ -1,5 +1,7 @@
+import type { HighscoreStore } from '../../highscores';
 import type { ArcadeEntry, EntryFacts, EntryStarter } from '../../entry-types';
 import { type ArcadeQuery, parseArcadeQuery } from './arcade-query';
+import { createHighscoresModel, type HighscoresModel } from './highscores-model';
 import {
     type ActiveTags, chipsFor, matchesTags, matchesWords, noActiveTags, searchWordsOf, sortByName, type TagChip, tagValuesOf,
 } from './entry-filters';
@@ -70,8 +72,17 @@ export interface ArcadeModel {
     readonly starter: EntryStarter | undefined;
     /** Why the last launch failed, until the visitor dismisses it or launches again. */
     readonly loadFailure: string | undefined;
-    /** Whether the entry running is paused. Only a playing entry can be. */
+    /**
+     * Whether the entry running is paused. Only a playing entry can be, and
+     * not while a score of its is placing.
+     */
     isPaused: boolean;
+    /**
+     * Whether the entry running stands still: held at its start (`isHeld`),
+     * paused, or waiting while a score of its places, so that nothing can
+     * restart the run behind the prompt. The page stops the entry while it is.
+     */
+    readonly isEntryFrozen: boolean;
     /** Counts restarts, so the page knows when to start the entry afresh. */
     readonly restartCount: number;
     /** Loads the entry with `id`. Does nothing unless the phase is `'browsing'`. */
@@ -93,6 +104,16 @@ export interface ArcadeModel {
     /** Forgets the last launch's failure. */
     readonly dismissLoadFailure: () => void;
 
+    // --- Highscores ---------------------------------------------------------
+
+    /** Every game's highscore table, and a score placing in one. */
+    readonly highscores: HighscoresModel;
+    /**
+     * The playing entry's run has ended with `score`: the page reports it as
+     * the session's `scoring` says so. For an entry with a highscore table, a
+     * score that places waits for initials, and holds the entry.
+     */
+    readonly runEnded: (score: number) => void;
     // --- Sound --------------------------------------------------------------
     // The visitor's sound settings, which the page keeps between visits.
 
@@ -162,6 +183,10 @@ export interface ArcadeModelOptions {
     readonly loadEntry: (entry: ArcadeEntry) => Promise<EntryStarter>;
     /** The page's query string, for the search to start with. */
     readonly search?: string;
+    /** Where the highscore tables are kept. */
+    readonly highscoreStore: HighscoreStore;
+    /** The initials the visitor entered on a visit before, if the page remembered them. */
+    readonly rememberedInitials?: string;
     /** The sound settings the visitor last left. Defaults to `DEFAULT_SOUND_SETTINGS`. */
     readonly soundSettings?: ArcadeSoundSettings;
 }
@@ -206,6 +231,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let launchCount = 0;
     /** The info panel open, if any. It is an entry's, or the Arcade's own. */
     let panel: ArcadeEntry | 'about' | undefined;
+    const highscores = createHighscoresModel({ store: options.highscoreStore, rememberedInitials: options.rememberedInitials });
 
     const model: ArcadeModel = {
         entries,
@@ -269,7 +295,10 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             return isPaused;
         },
         set isPaused(value) {
-            isPaused = phase === 'playing' && value;
+            isPaused = phase === 'playing' && highscores.placing === 'none' && value;
+        },
+        get isEntryFrozen() {
+            return isHeld || isPaused || highscores.placing !== 'none';
         },
         get restartCount() {
             return restartCount;
@@ -339,6 +368,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (phase !== 'ready') return;
             phase = 'playing';
             isPaused = false;
+            // Fresh tables, for where a run will place, and for the game's "HI"
+            if (activeEntry?.hasHighscores === true) highscores.reload();
             isHeld = true;
         },
         get isHeld() {
@@ -351,6 +382,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         restart() {
             if (phase !== 'playing') return;
             isPaused = false;
+            highscores.close();
             restartCount++;
         },
         exit() {
@@ -361,9 +393,19 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             starter = undefined;
             isPaused = false;
             isHeld = false;
+            highscores.close();
         },
         dismissLoadFailure() {
             loadFailure = undefined;
+        },
+
+        highscores,
+        runEnded(score) {
+            if (phase !== 'playing' || activeEntry?.hasHighscores !== true) return;
+            highscores.runEnded(activeEntry.id, score);
+            // The page sees a run end a frame after it does, and the visitor
+            // may have paused since: a score that places takes over from the menu
+            if (highscores.placing !== 'none') isPaused = false;
         },
 
         get infoEntry() {
@@ -371,6 +413,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         openInfo(id) {
             panel = entries.find((e) => e.id === id) ?? panel;
+            // The panel shows the entry's table: as it stands now
+            if (panel !== 'about' && panel?.id === id && panel.hasHighscores === true) highscores.reload();
         },
         closeInfo() {
             if (panel !== 'about') panel = undefined;
@@ -385,8 +429,9 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (panel === 'about') panel = undefined;
         },
 
-        update(_deltaMs) {
-            // Nothing to advance
+        update(deltaMs) {
+            // Nothing of the arcade's own to advance
+            highscores.update(deltaMs);
         },
     };
 

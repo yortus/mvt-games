@@ -28,9 +28,24 @@ describe('KeyboardInputView', () => {
         press('ArrowLeft', 'keyup');
         state.isActive = true;
         press('ArrowRight');
-        // Releasing right reports 'none'. Had left stayed held from the earlier entry, it would report 'left'
+        // Left is reported released as soon as a key event finds the entry stopped. Releasing
+        // right reports 'none': had left stayed held from the earlier entry, it would report 'left'
         press('ArrowRight', 'keyup');
-        expect(state.directions).toEqual(['left', 'right', 'none']);
+        expect(state.directions).toEqual(['left', 'none', 'right', 'none']);
+        view.destroy();
+    });
+
+    it('takes no key while the entry is held, and releases the buttons held as it was', () => {
+        const { view, state, press } = setUp();
+        state.isActive = true;
+        press(' ');
+        state.isActive = false;
+        // Enter closes a menu over the entry: the entry must not see it as its restart button
+        press('Enter');
+        press(' ', 'keyup');
+        state.isActive = true;
+        press('Enter', 'keyup');
+        expect(state.buttons).toEqual(['primary:true', 'primary:false', 'restart:false']);
         view.destroy();
     });
 });
@@ -40,11 +55,17 @@ describe('KeyboardInputView', () => {
 // ---------------------------------------------------------------------------
 
 function setUp() {
-    const state = { isActive: false, directions: [] as string[] };
+    const state = { isActive: false, directions: [] as string[], buttons: [] as string[] };
     const view = KeyboardInputView({
         isActive: () => state.isActive,
         onXDirectionChanged: (direction) => {
             state.directions.push(direction);
+        },
+        onPrimaryButtonChanged: (pressed) => {
+            state.buttons.push(`primary:${pressed}`);
+        },
+        onRestartButtonChanged: (pressed) => {
+            state.buttons.push(`restart:${pressed}`);
         },
     });
     /** Dispatches a key press or release on the page, as the browser would. */

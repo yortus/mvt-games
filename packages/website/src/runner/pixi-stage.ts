@@ -2,7 +2,7 @@ import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import type { Audio80, AudioControls } from '@mvtjs/audio';
 import { KeyboardInputView, TouchInputView } from '#shared';
-import type { EntryInputConfig, EntrySession, PixiEntryStarter } from '../entry-types';
+import type { EntryInputConfig, EntrySession, PixiEntryStarter, StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 
 // ---------------------------------------------------------------------------
@@ -18,8 +18,8 @@ import { fitPlayArea, type PlayArea } from './play-area';
 export interface PixiStage {
     /** Whether it draws pixel art, which is fixed when its renderer is made. */
     readonly isPixelArt: boolean;
-    /** Starts a session on the stage, and shows the canvas. */
-    start: (starter: PixiEntryStarter) => EntrySession;
+    /** Starts a session on the stage, passing `options` on to the entry, and shows the canvas. */
+    start: (starter: PixiEntryStarter, options: StartOptions) => EntrySession;
     /** Hides the canvas, once the session has ended. */
     hide: () => void;
     /** Runs one frame. It steps the application's ticker, which updates, refreshes and renders the stage. */
@@ -129,8 +129,9 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
     if (takesInput) {
         app.stage.addChild(KeyboardInputView({
-            // The stage outlives each entry, so only handle key events while an entry that takes input is running
-            isActive: () => inputConfig() !== undefined,
+            // The stage outlives each entry, so only handle key events while an entry that takes input is
+            // running, and not held: a key that closes a menu or prompt over it must not reach it too
+            isActive: () => inputConfig() !== undefined && !options.isPaused(),
             onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
             onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
             onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),
@@ -158,11 +159,12 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     const stage: PixiStage = {
         isPixelArt,
 
-        start(next) {
+        start(next, startOptions) {
             starter = next;
             // This applies to the textures the entry makes as it starts, such as text
             TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
             const session = next.start({
+                ...startOptions,
                 stage: entryContainer,
                 host: { renderer: app.renderer, ticker: app.ticker },
                 sound: audio80,

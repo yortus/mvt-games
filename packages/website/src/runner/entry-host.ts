@@ -1,5 +1,5 @@
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
-import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter } from '../entry-types';
+import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter, StartOptions } from '../entry-types';
 import { createPageSound, type PageSound } from './page-sound';
 import { fitPlayArea, type PlayArea } from './play-area';
 import type { PixiStage } from './pixi-stage';
@@ -46,9 +46,12 @@ export interface EntryHost {
      * audio cannot start, the chip stays silent.
      */
     prepare: (starter: EntryStarter) => Promise<void>;
-    /** Starts a session of `starter`, which must have been prepared. It ends any session already running. */
-    start: (starter: EntryStarter) => void;
-    /** Ends the session, and starts a new one of the same entry. */
+    /**
+     * Starts a session of `starter`, which must have been prepared. It ends
+     * any session already running, and passes `options` on to the entry.
+     */
+    start: (starter: EntryStarter, options?: StartOptions) => void;
+    /** Ends the session, and starts a new one of the same entry, with the same options. */
     restart: () => void;
     /**
      * Ends the session. Returns a copy of its last frame's play area, where
@@ -121,6 +124,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     const takesInput = options.takesInput ?? true;
 
     let starter: EntryStarter | undefined;
+    /** What the entry was started with, for a restart. */
+    let startOptions: StartOptions = {};
     let session: EntrySession | undefined;
     let isPaused = false;
     let pixiStage: PixiStage | undefined;
@@ -161,18 +166,19 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             await Promise.all([sound.prepare(), prepareRenderer(next)]);
         },
 
-        start(next) {
+        start(next, options = {}) {
             host.stop();
             starter = next;
+            startOptions = options;
             isPaused = false;
             // No sound of the last session's carries into this one
             sound.entryControls.reset();
-            session = startSession(next);
+            session = startSession(next, options);
         },
 
         restart() {
             if (starter === undefined) return;
-            host.start(starter);
+            host.start(starter, startOptions);
         },
 
         stop() {
@@ -262,14 +268,14 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         pixiStage.fit(areaRect.width, areaRect.height);
     }
 
-    function startSession(next: EntryStarter): EntrySession {
+    function startSession(next: EntryStarter, options: StartOptions): EntrySession {
         if (next.kind === 'pixi') {
             if (pixiStage === undefined) throw new Error('entry host: prepare a Pixi entry before starting it');
             fitStarter(next);
-            return pixiStage.start(next);
+            return pixiStage.start(next, options);
         }
         entryElement.hidden = false;
-        return next.start({ element: entryElement, sound: sound.entryAudio80 });
+        return next.start({ ...options, element: entryElement, sound: sound.entryAudio80 });
     }
 
     /**

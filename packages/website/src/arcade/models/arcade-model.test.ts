@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createMemoryHighscoreStore, type HighscoreStore } from '../../highscores';
 import type { ArcadeEntry, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
 import { createArcadeModel, type ArcadeModelOptions } from './arcade-model';
 import { DEFAULT_SOUND_SETTINGS } from './sound-settings';
@@ -249,6 +250,71 @@ describe('ArcadeModel', () => {
         });
     });
 
+    describe('highscores', () => {
+        it('freezes the entry while a score of its places, and lets it run when the placing closes', async () => {
+            const model = createArcadeModel(options());
+            await play(model, 'maze-game');
+            // Held still as it starts, until let go
+            expect(model.isEntryFrozen).toBe(true);
+            model.letGo();
+            expect(model.isEntryFrozen).toBe(false);
+            model.runEnded(10);
+            expect(model.highscores.placing).toBe('asking');
+            expect(model.highscores.placingEntryId).toBe('maze-game');
+            expect(model.isEntryFrozen).toBe(true);
+            // The pause menu does not open over it
+            model.isPaused = true;
+            expect(model.isPaused).toBe(false);
+            model.highscores.close();
+            expect(model.isEntryFrozen).toBe(false);
+            model.isPaused = true;
+            expect(model.isEntryFrozen).toBe(true);
+        });
+
+        it('takes over from the pause menu if the visitor paused as the run ended', async () => {
+            const model = createArcadeModel(options());
+            await play(model, 'maze-game');
+            model.isPaused = true;
+            model.runEnded(10);
+            expect(model.isPaused).toBe(false);
+            expect(model.highscores.placing).toBe('asking');
+        });
+
+        it('ignores the end of a run of an entry without a table, or not playing', async () => {
+            const model = createArcadeModel(options());
+            model.runEnded(10);
+            await play(model, 'shooter-game');
+            model.runEnded(10);
+            expect(model.highscores.placing).toBe('none');
+        });
+
+        it('drops a score placing when the entry restarts or is left', async () => {
+            const model = createArcadeModel(options());
+            await play(model, 'maze-game');
+            model.runEnded(10);
+            model.restart();
+            expect(model.highscores.placing).toBe('none');
+            model.runEnded(10);
+            model.exit();
+            expect(model.highscores.placing).toBe('none');
+        });
+
+        it('asks for the tables again as a game with one starts, and as its info panel opens', async () => {
+            const { store, loads } = countingStore();
+            const model = createArcadeModel(options({ highscoreStore: store }));
+            expect(loads()).toBe(1);
+            await play(model, 'shooter-game');
+            model.exit();
+            model.openInfo('sim-demo');
+            expect(loads()).toBe(1);
+            await play(model, 'maze-game');
+            expect(loads()).toBe(2);
+            model.exit();
+            model.openInfo('maze-game');
+            expect(loads()).toBe(3);
+        });
+    });
+
     describe('sound', () => {
         it('starts with the settings it is given, or the defaults', () => {
             expect(createArcadeModel(options()).soundSettings).toEqual(DEFAULT_SOUND_SETTINGS);
@@ -396,6 +462,7 @@ const ENTRIES: readonly ArcadeEntry[] = [
     {
         ...entry('maze-game', 'Maze Game', { kind: 'game', era: '1980s', genres: ['maze'] }),
         inspiredBy: { title: 'Grid Runner', maker: 'Someone', year: 1980 },
+        hasHighscores: true,
     },
     { ...entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }), techniques: ['Object pooling'] },
     { ...entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }), description: 'Birds flocking, in 3D.' },
@@ -414,7 +481,18 @@ function options(overrides: Partial<ArcadeModelOptions> = {}): ArcadeModelOption
         entries: ENTRIES,
         factsFor: (id) => FACTS[id],
         loadEntry: () => Promise.resolve(STARTER),
+        highscoreStore: createMemoryHighscoreStore(),
         ...overrides,
+    };
+}
+
+/** An in-memory store that counts the times its tables are asked for. */
+function countingStore(): { store: HighscoreStore; loads: () => number } {
+    const memory = createMemoryHighscoreStore();
+    let loads = 0;
+    return {
+        store: { ...memory, loadAll: () => (loads++, memory.loadAll()) },
+        loads: () => loads,
     };
 }
 

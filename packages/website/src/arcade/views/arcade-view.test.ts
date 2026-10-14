@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createMemoryHighscoreStore } from '../../highscores';
 import { destroyElement, refreshView } from '@mvtjs/html';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import { type ArcadeModel, createArcadeModel, DEFAULT_SOUND_SETTINGS } from '../models';
@@ -109,6 +110,7 @@ function setUp(): { model: ArcadeModel; navTools: HTMLElement; view: Element; ti
         entries: [ENTRY],
         factsFor: () => undefined,
         loadEntry: () => Promise.resolve(STARTER),
+        highscoreStore: createMemoryHighscoreStore(),
     });
     const navTools = document.createElement('div');
     const { audio80 } = createHeadlessAudio80();
