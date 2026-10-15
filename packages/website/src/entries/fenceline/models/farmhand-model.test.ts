@@ -32,21 +32,10 @@ describe('FarmhandModel', () => {
         expect(farmhand.phase).toBe('walking');
     });
 
-    it('stays on the fence without the string button held', () => {
+    it('strings wire into the meadow on pushing off the fence', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        run(farmhand, ONE_STEP_MS * 3);
-        expect(farmhand.row).toBe(8);
-        expect(farmhand.isMoving).toBe(false);
-    });
-
-    it('strings wire into the meadow with the string button held, and keeps going once off the fence', () => {
-        const { farmhand, input } = makeFarmhand();
-        input.direction = 'up';
-        input.stringPressed = true;
-        run(farmhand, ONE_STEP_MS * 0.5);
-        input.stringPressed = false;
-        run(farmhand, ONE_STEP_MS * 2.6);
+        run(farmhand, ONE_STEP_MS * 3.1);
         expect(farmhand.phase).toBe('stringing');
         expect(farmhand.wireLength).toBe(4);
         expect(farmhand.wireRows[0]).toBe(8);
@@ -56,7 +45,6 @@ describe('FarmhandModel', () => {
     it('reaches a fence, ready to tie the wire off, and walks on once it is', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 20);
         expect(farmhand.hasReachedFence).toBe(true);
         expect(farmhand.pointRow).toBe(0);
@@ -69,7 +57,6 @@ describe('FarmhandModel', () => {
     it('never steps back onto its own wire', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 2);
         input.direction = 'down';
         run(farmhand, ONE_STEP_MS * 2);
@@ -83,7 +70,6 @@ describe('FarmhandModel', () => {
     it('lets the wire go slack from its post while standing still, and snaps it when the slack arrives', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 3);
         input.direction = 'none';
         run(farmhand, SLACK_DELAY_MS);
@@ -98,7 +84,6 @@ describe('FarmhandModel', () => {
     it('takes up the slack on moving again', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 3);
         input.direction = 'none';
         run(farmhand, SLACK_DELAY_MS + 200);
@@ -126,7 +111,7 @@ describe('FarmhandModel', () => {
             expect(farmhand.col).toBeGreaterThan(5);
         });
 
-        it('strings wire off the fence without the string button', () => {
+        it('strings wire off the fence', () => {
             const { farmhand, input } = makeFarmhand();
             swipe(input, 'up');
             run(farmhand, ONE_STEP_MS * 3);
@@ -170,7 +155,6 @@ describe('FarmhandModel', () => {
         const { farmhand, input } = makeFarmhand();
         expect(farmhand.isWireWithin(8, 5, 1)).toBe(false);
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 3);
         input.direction = 'none';
         run(farmhand, ONE_STEP_MS);
@@ -183,7 +167,6 @@ describe('FarmhandModel', () => {
     it('goes back to the wire\'s post when it respawns', () => {
         const { farmhand, input } = makeFarmhand();
         input.direction = 'up';
-        input.stringPressed = true;
         run(farmhand, ONE_STEP_MS * 3);
         farmhand.snap();
         expect(farmhand.phase).toBe('snapped');

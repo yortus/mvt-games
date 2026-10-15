@@ -50,7 +50,8 @@ packages/website/src/
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
-└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
+└── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one

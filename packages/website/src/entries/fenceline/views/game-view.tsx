@@ -4,11 +4,12 @@ import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import type { Audio80 } from '@mvtjs/audio';
 import { memoiseLast } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { BeetleView } from './beetle-view';
 import { DustDevilView } from './dust-devil-view';
+import { FarmFencedView } from './farm-fenced-view';
 import { FarmhandView } from './farmhand-view';
 import { FenceView } from './fence-view';
 import { GameAudioView } from './game-audio-view';
@@ -16,9 +17,8 @@ import { HudView } from './hud-view';
 import { MeadowView } from './meadow-view';
 import { PointsPopupView } from './points-popup-view';
 import { SheepView } from './sheep-view';
-import { SwipeInputView } from './swipe-input-view';
 import {
-    CELL_SIZE, COLOURS, FIELD_HEIGHT, FIELD_WIDTH, FIELD_X, FIELD_Y, SCREEN_HEIGHT, SCREEN_WIDTH,
+    CELL_SIZE, COLOURS, FIELD_HEIGHT, FIELD_WIDTH, FIELD_X, FIELD_Y, findFarmLook, SCREEN_HEIGHT, SCREEN_WIDTH,
 } from './view-constants';
 import { WireView } from './wire-view';
 
@@ -43,9 +43,11 @@ export interface GameViewBindings {
  * It is layered from back to front. The ground and the fences come first,
  * then the sheep, then the wire, the beetles and the farmhand. The dust
  * devils, which tower over everything, and the points come last. The HUD
- * runs across the top, and the overlay covers the meadow between rounds. On a touch screen, swipes and taps
- * anywhere on the screen steer the farmhand, but the overlay's own taps
- * come first.
+ * runs across the top, and the overlay covers the meadow between rounds.
+ * When a whole farm is fenced, its celebration covers the meadow instead.
+ * Each farm's dry grass has its own colours. On a touch screen, swipes and
+ * taps anywhere on the screen steer the farmhand, but the overlay's own
+ * taps come first.
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, sound } = bindings;
@@ -62,6 +64,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 sheepPenned={() => model.sheepPennedCount}
                 devilsBlownOut={() => model.devilsBlownOut}
                 beetlesHatched={() => model.beetlesHatched}
+                extraLivesEarned={() => model.extraLivesEarned}
                 isSlackRunning={() => model.farmhand.slackDistance > 0}
                 share={() => model.field.claimedShare}
                 targetShare={() => model.targetShare}
@@ -90,6 +93,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     closureAt={(row, col) => model.field.closureAt(row, col)}
                     closureCount={() => model.field.closureCount}
                     round={() => model.round}
+                    grass={() => findFarmLook(model.farm).grass}
                 />
                 <FenceView
                     rows={FIELD_ROWS}
@@ -174,6 +178,13 @@ export function GameView(bindings: GameViewBindings): Container {
                     text={() => overlayText(model.phase)}
                     onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
                 />
+                <FarmFencedView
+                    width={FIELD_WIDTH}
+                    height={FIELD_HEIGHT}
+                    isShown={() => model.phase === 'farm-fenced'}
+                    farm={() => model.farm}
+                    elapsedMs={() => model.phaseMs}
+                />
             </container>
             <HudView
                 score={() => model.score}
@@ -212,7 +223,7 @@ const SPRITE_SCALES = isTouchDevice()
 function describePhase(phase: GamePhase, model: GameModel): string {
     switch (phase) {
         case 'ready':
-            return `ROUND ${model.round}\n\nFence off ${Math.round(model.targetShare * 100)}% of the meadow${STEERING_HINT}`;
+            return `${findFarmLook(model.farm).name.toUpperCase()}\nROUND ${model.round}\n\nFence off ${Math.round(model.targetShare * 100)}% of the meadow${STEERING_HINT}`;
         case 'round-clear':
             return [
                 'ROUND CLEAR!',

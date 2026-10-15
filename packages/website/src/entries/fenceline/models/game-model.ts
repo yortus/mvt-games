@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { watch } from '@mvtjs/utils';
-import { BLOW_OUT_POINTS, BONUS_PER_PERCENT, LAP_SPEED_UP, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
+import { BLOW_OUT_POINTS, BONUS_PER_PERCENT, EXTRA_LIFE_POINTS, FARM_SPEED_UP, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
 import { createBeetleModel, type BeetleModel } from './beetle-model';
 import type { GamePhase } from './common';
 import type { DevilTarget, DustDevilModel } from './dust-devil-model';
@@ -9,6 +9,7 @@ import { createFieldModel, type FieldModel } from './field-model';
 import { measureDistanceSquared } from './geometry';
 import {
     BEETLE_CATCH_DISTANCE,
+    FARM_FENCED_MS,
     FARMHAND_SPEED,
     MAX_STEP_MS,
     READY_MS,
@@ -35,11 +36,21 @@ import type { SheepModel } from './sheep-model';
  * off too. Fencing off the round's share of the meadow clears the round. A
  * dust devil touching the wire or the farmhand out in the meadow, slack
  * reaching the farmhand, or a beetle reaching them, costs a life.
+ *
+ * A farm is one pass through the rounds. Clearing its last round fences the
+ * whole farm, and after a moment to celebrate, the farmhand starts on the
+ * next farm, which plays faster.
  */
 export interface GameModel {
     readonly phase: GamePhase;
-    /** The round, counting from 1. */
+    /** How long the game has been in its phase. */
+    readonly phaseMs: number;
+    /** The round, counting from 1 and on through the farms. */
     readonly round: number;
+    /** The farm, counting from 1. */
+    readonly farm: number;
+    /** How fast this farm plays, as a multiple of the first farm's speed. */
+    readonly speed: number;
     readonly score: number;
     readonly lives: number;
     /** The share of the meadow to fence off this round, from 0 to 1. */
@@ -57,6 +68,8 @@ export interface GameModel {
     readonly devilsBlownOut: number;
     /** Beetles hatched this game. Each rise is a new beetle. */
     readonly beetlesHatched: number;
+    /** Extra lives earned this game, one for each `extraLifePoints` scored. Each rise is a life earned. */
+    readonly extraLivesEarned: number;
     /** The points the latest wire tied off scored. They count its cells, its sheep and any dust devil it blew out. */
     readonly lastClosurePoints: number;
     /** The bonus for the share fenced off past the target, as the latest round was cleared. */
@@ -72,6 +85,7 @@ export interface GameModel {
 // ---------------------------------------------------------------------------
 
 export interface GameModelOptions {
+    /** The rounds of each farm, in order. */
     readonly rounds: readonly RoundConfig[];
     /** The meadow's size, in cells. */
     readonly rows: number;
@@ -80,6 +94,8 @@ export interface GameModelOptions {
     readonly seed?: number;
     /** Lives at the start of each game. Defaults to `START_LIVES`. */
     readonly startLives?: number;
+    /** The points that earn each extra life. Defaults to `EXTRA_LIFE_POINTS`. */
+    readonly extraLifePoints?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,20 +106,24 @@ export interface GameModelOptions {
 export function createGameModel(options: GameModelOptions): GameModel {
     const { rounds, rows, cols } = options;
     const startLives = options.startLives ?? START_LIVES;
+    const extraLifePoints = options.extraLifePoints ?? EXTRA_LIFE_POINTS;
     const random = createRandom({ seed: options.seed ?? 1 });
     const playerInput = createPlayerInput();
     const watcher = watch({ restart: () => playerInput.restartPressed });
     const phaseTimeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
     let phase: GamePhase = 'ready';
+    let phaseMs = 0;
     let round = 1;
+    let speed = 1;
     let score = 0;
     let lives = startLives;
-    let config = findRoundConfig(1);
+    let config = rounds[0];
     let sheepPennedThisRound = 0;
     let sheepPennedCount = 0;
     let devilsBlownOut = 0;
     let beetlesHatched = 0;
+    let extraLivesEarned = 0;
     let lastClosurePoints = 0;
     let roundBonus = 0;
     let hatchMs = 0;
@@ -125,7 +145,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const model: GameModel = {
         get phase() { return phase; },
+        get phaseMs() { return phaseMs; },
         get round() { return round; },
+        get farm() { return findFarm(round); },
+        get speed() { return speed; },
         get score() { return score; },
         get lives() { return lives; },
         get targetShare() { return config.targetShare; },
@@ -138,6 +161,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get sheepPennedCount() { return sheepPennedCount; },
         get devilsBlownOut() { return devilsBlownOut; },
         get beetlesHatched() { return beetlesHatched; },
+        get extraLivesEarned() { return extraLivesEarned; },
         get lastClosurePoints() { return lastClosurePoints; },
         get roundBonus() { return roundBonus; },
         playerInput,
@@ -149,6 +173,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             sheepPennedCount = 0;
             devilsBlownOut = 0;
             beetlesHatched = 0;
+            extraLivesEarned = 0;
             lastClosurePoints = 0;
             roundBonus = 0;
             loadRound();
@@ -158,10 +183,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const watched = watcher.poll();
             if (phase === 'game-over' && watched.restart.changed && watched.restart.value) model.reset();
 
-            // A long update runs as several short steps, so nothing jumps a fence
+            // A long update runs as several short steps, so nothing jumps a
+            // fence. A faster farm packs more play into each step, so its
+            // steps are shorter.
+            const maxStepMs = MAX_STEP_MS / speed;
             let remaining = deltaMs;
             while (remaining > 0) {
-                const stepMs = Math.min(remaining, MAX_STEP_MS);
+                const stepMs = Math.min(remaining, maxStepMs);
                 step(stepMs);
                 remaining -= stepMs;
             }
@@ -173,9 +201,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Each step ---------------------------------------------------------
 
     function step(deltaMs: number): void {
+        phaseMs += deltaMs;
         phaseTimeline.time(phaseTimeline.time() + deltaMs * 0.001);
-        if (phase !== 'playing') return;
+        if (phase === 'playing') play(deltaMs * speed);
+    }
 
+    /** Advances play by `deltaMs` of the meadow's time, which runs faster on a faster farm. */
+    function play(deltaMs: number): void {
         farmhand.update(deltaMs);
         for (let i = 0; i < devils.length; i++) devils[i].update(deltaMs);
         for (let i = 0; i < beetles.length; i++) beetles[i].update(deltaMs);
@@ -239,7 +271,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
 
         lastClosurePoints = claimed * POINTS_PER_CELL + penned * SHEEP_POINTS + blown * BLOW_OUT_POINTS;
-        score += lastClosurePoints;
+        addScore(lastClosurePoints);
         sheepPennedThisRound += penned;
         sheepPennedCount += penned;
         devilsBlownOut += blown;
@@ -293,6 +325,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 
+    /** Adds `points` to the score, with a life for each `extraLifePoints` mark it passes. */
+    function addScore(points: number): void {
+        const marksBefore = Math.floor(score / extraLifePoints);
+        score += points;
+        const earned = Math.floor(score / extraLifePoints) - marksBefore;
+        lives += earned;
+        extraLivesEarned += earned;
+    }
+
     // ---- Being caught ------------------------------------------------------
 
     function isFarmhandCaught(): boolean {
@@ -313,7 +354,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function snapFarmhand(): void {
         farmhand.snap();
         lives--;
-        phase = 'snapped';
+        enterPhase('snapped');
         phaseTimeline.clear().time(0);
         phaseTimeline.call(lives > 0 ? carryOn : endGame, undefined, SNAPPED_MS * 0.001);
     }
@@ -329,23 +370,30 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 beetle.moveTo(point.row, point.col);
             }
         }
-        phase = 'playing';
+        enterPhase('playing');
     }
 
     function endGame(): void {
-        phase = 'game-over';
+        enterPhase('game-over');
     }
 
     // ---- Rounds ------------------------------------------------------------
 
     function clearRound(): void {
-        phase = 'round-clear';
+        enterPhase('round-clear');
         const percentOver = Math.floor((field.claimedShare - config.targetShare) * 100 + 1e-9);
         roundBonus = Math.max(0, percentOver) * BONUS_PER_PERCENT;
-        score += roundBonus;
+        addScore(roundBonus);
         for (let i = 0; i < sheep.length; i++) sheep[i].lose();
         phaseTimeline.clear().time(0);
-        phaseTimeline.call(nextRound, undefined, ROUND_CLEAR_MS * 0.001);
+        phaseTimeline.call(round % rounds.length === 0 ? fenceFarm : nextRound, undefined, ROUND_CLEAR_MS * 0.001);
+    }
+
+    /** The farm's last round is cleared, so the whole farm is fenced. */
+    function fenceFarm(): void {
+        enterPhase('farm-fenced');
+        phaseTimeline.clear().time(0);
+        phaseTimeline.call(nextRound, undefined, FARM_FENCED_MS * 0.001);
     }
 
     function nextRound(): void {
@@ -354,7 +402,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function loadRound(): void {
-        config = findRoundConfig(round);
+        config = rounds[(round - 1) % rounds.length];
+        speed = FARM_SPEED_UP ** (findFarm(round) - 1);
         field = createFieldModel({ rows, cols, obstacles: config.obstacles });
         farmhand = buildFarmhand();
         devils = placeDevils({ field, config, random, target: devilTarget });
@@ -363,27 +412,23 @@ export function createGameModel(options: GameModelOptions): GameModel {
         sheep = placeSheep({ field, config, random, devils: () => devils });
         sheepPennedThisRound = 0;
         hatchMs = 0;
-        phase = 'ready';
+        enterPhase('ready');
         phaseTimeline.clear().time(0);
         phaseTimeline.call(startPlaying, undefined, READY_MS * 0.001);
     }
 
     function startPlaying(): void {
-        phase = 'playing';
+        enterPhase('playing');
     }
 
-    /** Returns the round's settings. Past the last round, they repeat, faster each lap. */
-    function findRoundConfig(roundNumber: number): RoundConfig {
-        const base = rounds[(roundNumber - 1) % rounds.length];
-        const lap = Math.floor((roundNumber - 1) / rounds.length);
-        if (lap === 0) return base;
-        const speedUp = 1 + lap * LAP_SPEED_UP;
-        return {
-            ...base,
-            devilSpeed: base.devilSpeed * speedUp,
-            beetleSpeed: base.beetleSpeed * speedUp,
-            hatchIntervalMs: base.hatchIntervalMs / speedUp,
-        };
+    function enterPhase(next: GamePhase): void {
+        phase = next;
+        phaseMs = 0;
+    }
+
+    /** Returns the farm that round `roundNumber` is on, counting from 1. */
+    function findFarm(roundNumber: number): number {
+        return Math.floor((roundNumber - 1) / rounds.length) + 1;
     }
 
     // ---- Building the round ------------------------------------------------

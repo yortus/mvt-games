@@ -57,10 +57,24 @@ export interface ArcadeModel {
     readonly query: ArcadeQuery;
     /** Counts each change of tags or words, so the page knows when to write its URL. */
     readonly queryRevision: number;
-    /** How many entries the wall shows. These are the entries the search picks, in order of name. */
+    /**
+     * How many entries the wall shows. These are the entries the search
+     * picks: the visitor's favourites first, then the rest, each part in
+     * order of name.
+     */
     readonly shownCount: number;
     /** The entry shown `position`th, as its index in `entries`. */
     readonly shownIndexAt: (position: number) => number;
+
+    // --- Favourites ---------------------------------------------------------
+    // The entries the visitor has marked, which the page keeps between visits.
+
+    /** The ids of the visitor's favourite entries, in the order marked. The model replaces the array whenever it changes, and only then. */
+    readonly favouriteIds: readonly string[];
+    /** Whether the entry with `id` is one of the visitor's favourites. */
+    readonly isFavourite: (id: string) => boolean;
+    /** Marks the entry with `id` as a favourite, or unmarks it if it is one. Does nothing for an entry not listed. */
+    readonly toggleFavourite: (id: string) => void;
 
     // --- Running ------------------------------------------------------------
 
@@ -74,13 +88,14 @@ export interface ArcadeModel {
     readonly loadFailure: string | undefined;
     /**
      * Whether the entry running is paused. Only a playing entry can be, and
-     * not while a score of its is placing.
+     * not while a score of its is placing, or while it offers to resume.
      */
     isPaused: boolean;
     /**
      * Whether the entry running stands still: held at its start (`isHeld`),
-     * paused, or waiting while a score of its places, so that nothing can
-     * restart the run behind the prompt. The page stops the entry while it is.
+     * paused, offering to resume a saved game, or waiting while a score of
+     * its places, so that nothing can restart the run behind the prompt. The
+     * page stops the entry while it is.
      */
     readonly isEntryFrozen: boolean;
     /** Counts restarts, so the page knows when to start the entry afresh. */
@@ -103,6 +118,22 @@ export interface ArcadeModel {
     readonly exit: () => void;
     /** Forgets the last launch's failure. */
     readonly dismissLoadFailure: () => void;
+
+    // --- Saved games --------------------------------------------------------
+    // The page saves a game as the visitor leaves it, and the next time they
+    // start it, the Arcade offers to resume it.
+
+    /**
+     * Whether the entry started has a saved game, and the visitor is asked
+     * whether to resume it or start afresh. The page loads the saved game as
+     * the entry starts, so it shows behind the offer, and the entry stands
+     * still until the visitor chooses.
+     */
+    readonly isResumeOffered: boolean;
+    /** Closes the offer, and lets the saved game play on. Does nothing unless one is offered. */
+    readonly resume: () => void;
+    /** Closes the offer, and starts the entry afresh, as `restart` does. Does nothing unless one is offered. */
+    readonly startAfresh: () => void;
 
     // --- Highscores ---------------------------------------------------------
 
@@ -189,6 +220,10 @@ export interface ArcadeModelOptions {
     readonly rememberedInitials?: string;
     /** The sound settings the visitor last left. Defaults to `DEFAULT_SOUND_SETTINGS`. */
     readonly soundSettings?: ArcadeSoundSettings;
+    /** The ids of the entries the visitor marked as favourites on a visit before. Ids of entries not listed are dropped. */
+    readonly favouriteIds?: readonly string[];
+    /** Whether the page has a saved game for the entry with `id`. Without it, no entry has one. */
+    readonly hasSavedGame?: (id: string) => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +234,10 @@ export interface ArcadeModelOptions {
 export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     const { entries, factsFor, loadEntry } = options;
     const chips = chipsFor(entries, factsFor);
+
+    // The favourites: as ids, for the page to keep, and as a flag for each entry, for the wall's order
+    const isFavouriteAt: boolean[] = entries.map((entry) => options.favouriteIds?.includes(entry.id) === true);
+    let favouriteIds: readonly string[] = (options.favouriteIds ?? []).filter((id, i, ids) => ids.indexOf(id) === i && entries.some((e) => e.id === id));
 
     // The search is the chips chosen, in the order they were, and the words.
     // A URL holds no order, so its tags count as chosen in the chips' order.
@@ -226,6 +265,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let isPaused = false;
     let isHeld = false;
     let restartCount = 0;
+    let isResumeOffered = false;
     let soundSettings = options.soundSettings ?? DEFAULT_SOUND_SETTINGS;
     /** Counts launches, so a load that finishes after the visitor has left is ignored. */
     let launchCount = 0;
@@ -279,6 +319,19 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         shownIndexAt: (position) => shown[position],
 
+        get favouriteIds() {
+            return favouriteIds;
+        },
+        isFavourite: (id) => favouriteIds.includes(id),
+        toggleFavourite(id) {
+            const index = entries.findIndex((e) => e.id === id);
+            if (index < 0) return;
+            isFavouriteAt[index] = !isFavouriteAt[index];
+            favouriteIds = isFavouriteAt[index] ? [...favouriteIds, id] : favouriteIds.filter((f) => f !== id);
+            // The wall's order changes, and the search does not
+            deriveFromSearch();
+        },
+
         get phase() {
             return phase;
         },
@@ -295,10 +348,10 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             return isPaused;
         },
         set isPaused(value) {
-            isPaused = phase === 'playing' && highscores.placing === 'none' && value;
+            isPaused = phase === 'playing' && highscores.placing === 'none' && !isResumeOffered && value;
         },
         get isEntryFrozen() {
-            return isHeld || isPaused || highscores.placing !== 'none';
+            return isHeld || isPaused || isResumeOffered || highscores.placing !== 'none';
         },
         get restartCount() {
             return restartCount;
@@ -371,6 +424,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             // Fresh tables, for where a run will place, and for the game's "HI"
             if (activeEntry?.hasHighscores === true) highscores.reload();
             isHeld = true;
+            isResumeOffered = activeEntry !== undefined && options.hasSavedGame?.(activeEntry.id) === true;
         },
         get isHeld() {
             return isHeld;
@@ -382,6 +436,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         restart() {
             if (phase !== 'playing') return;
             isPaused = false;
+            isResumeOffered = false;
             highscores.close();
             restartCount++;
         },
@@ -393,10 +448,22 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             starter = undefined;
             isPaused = false;
             isHeld = false;
+            isResumeOffered = false;
             highscores.close();
         },
         dismissLoadFailure() {
             loadFailure = undefined;
+        },
+
+        get isResumeOffered() {
+            return isResumeOffered;
+        },
+        resume() {
+            isResumeOffered = false;
+        },
+        startAfresh() {
+            if (!isResumeOffered) return;
+            model.restart();
         },
 
         highscores,
@@ -452,7 +519,11 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         deriveFromSearch();
     }
 
-    /** Works out the active tags, the entries shown in order of name, and each chip's count, from the chips chosen and the words. */
+    /**
+     * Works out the active tags, the entries shown (favourites first, each
+     * part in order of name), and each chip's count, from the chips chosen
+     * and the words.
+     */
     function deriveFromSearch(): void {
         const tags = noActiveTags();
         isChosenAt.fill(false);
@@ -473,6 +544,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (matchesWords(entries[i], factsFor(entries[i].id), words)) shown.push(i);
         }
         sortByName(shown, entries);
+        putFavouritesFirst();
         for (let c = 0; c < chips.length; c++) {
             const { group, value } = chips[c];
             let count = 0;
@@ -481,5 +553,14 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             }
             chipCounts[c] = count;
         }
+    }
+
+    /** Moves the favourites among the entries shown to the front, keeping the order within each part. */
+    function putFavouritesFirst(): void {
+        const favourites = shown.filter((i) => isFavouriteAt[i]);
+        if (favourites.length === 0) return;
+        const others = shown.filter((i) => !isFavouriteAt[i]);
+        shown.length = 0;
+        shown.push(...favourites, ...others);
     }
 }

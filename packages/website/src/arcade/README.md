@@ -30,6 +30,8 @@
 | [`views/search-bar-view.tsx`](./views/search-bar-view.tsx), [`search-suggestions.ts`](./views/search-suggestions.ts) | The search box, its tag tokens and suggestions |
 | [`views/runner-view.tsx`](./views/runner-view.tsx), [`pause-menu-view.tsx`](./views/pause-menu-view.tsx) | The bar over a running entry, and the pause menu |
 | [`views/placing-view.tsx`](./views/placing-view.tsx), [`highscore-table-view.tsx`](./views/highscore-table-view.tsx) | The prompt for a player's initials when their score places, and a game's highscore table, in the pixel font |
+| [`views/resume-offer-view.tsx`](./views/resume-offer-view.tsx) | The offer to resume a game the visitor left part way through, or to restart it |
+| [`../storage/`](../storage/) | `LocalStore`: what the page keeps in the browser between visits, read and written without ever throwing |
 | [`views/*-audio-view.ts`](./views/) | The views that play the Arcade's own sounds and the pause menu's previews of the volumes. They load on the visitor's first press |
 | [`../runner/`](../runner/) | The entry host, which runs one entry of any renderer |
 
@@ -63,8 +65,11 @@ Which state belongs to the model, and which to the views?
   opening an info panel (`writePanelStep`), so Back closes it, as a phone's
   back button is expected to. The model also holds the visitor's sound
   settings. These are a volume for the music and one for the effects, the
-  level each had when it was turned off, and whether all sound is muted. The
-  page saves them in `localStorage` whenever they change, and reads them back
+  level each had when it was turned off, and whether all sound is muted. It
+  holds the visitor's favourites too, which the wall shows first, and
+  whether a saved game is offered for resuming. The page saves the settings
+  and the favourites in `localStorage`, through a `LocalStore`
+  ([`../storage/`](../storage/)), whenever they change, and reads them back
   on load. A started entry is held still (`isHeld`) until the way in has
   shown its first frame.
 - **In the views:** which card is selected (`selected` in
@@ -232,9 +237,30 @@ become the visitor's initials only when they are sent. The page remembers
 the last initials in `localStorage`, so the next time the prompt opens on
 them.
 
+## 9. Saved Games: The Page Saves, the Model Offers
+
+A game can be saved as the visitor leaves it, and resumed next time. A
+session that supports it has two methods: `saveGame()` returns the game as
+a value JSON can hold, or undefined when there is nothing worth resuming,
+and `loadGame(saved)` restores one, returning whether it could. Crumb Chase
+is the first game to have them.
+
+The page saves the game as the visitor leaves it, and as the page is hidden,
+since a phone may close it without warning. Only the page's own host saves:
+attract mode and thumbnails run in hosts of their own, so they never save
+or load.
+
+The model never sees a saved game. It is asked one question,
+`hasSavedGame(id)`, as an entry starts. If the answer is yes, it offers to
+resume (`isResumeOffered`), and the entry stands still until the visitor
+chooses. The page loads the saved game into the new session at once, so it
+shows behind the offer. Resume closes the offer. Restart is a restart, and
+the page removes the save. A save the session cannot load, from an older
+version of the game say, is removed, and the offer closes.
+
 ## Where It Bends the Rules
 
-Three places do something the rules would usually rule out. Each is
+Four places do something the rules would usually rule out. Each is
 deliberate:
 
 - **Reading a drawn pose back from the page.** When the way in starts, it
@@ -254,6 +280,16 @@ deliberate:
   squashes the entry's own picture, which is in the stage element the entry
   host owns. `drawStage` ([`transition-view.tsx`](./views/transition-view.tsx))
   sets that element's `transform` while it plays, and clears it after.
+- **Turning the runner with CSS.** On a phone held upright, a game wider
+  than tall plays turned a quarter turn, for the phone turned on its side.
+  The page decides (`isRunnerTurned` in `main.ts`), and `ArcadeView` marks
+  the page with a class, which turns each of the runner's layers in the
+  stylesheet. The entry never knows. Pixi finds the pointer from the
+  canvas's box in the page, which a turn breaks, so the entry host maps the
+  pointer through the turn itself
+  ([`../runner/pixi-stage.ts`](../runner/pixi-stage.ts)). That is why only
+  games on the host's Pixi stage are turned. The way in floats the polaroid
+  to the play area turning as it goes.
 
 ## Open Questions
 

@@ -2,7 +2,7 @@
 import type { ArcadeEntry } from '../../entry-types';
 import { createAttractViewModel } from './attract-view-model';
 import type { PhotoPose } from './card-photo';
-import { cardIn, CardView, isCardLink, isOnInfoButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
+import { cardIn, CardView, isCardLink, isOnCardButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
 import { movedPosition, wallMoveFor } from './card-wall-keys';
 import type { CardWallLayout } from './card-wall-layout';
 
@@ -44,6 +44,10 @@ export interface CardWallViewBindings {
     /** Reported with the card pressed, and where its photo is drawn, for the way into its entry to start from. */
     readonly onLaunchPressed?: (index: number, from: PhotoPose) => void;
     readonly onInfoPressed?: (index: number) => void;
+    /** Whether the card's entry is one of the visitor's favourites, which its star shows. */
+    readonly isFavouriteAt: (index: number) => boolean;
+    /** Reported as a card's star, or F on the selected card, is pressed. */
+    readonly onFavouritePressed?: (index: number) => void;
     /** Reported as the keyboard moves the selection to another card. */
     readonly onCardKeyedTo?: (index: number) => void;
 }
@@ -65,8 +69,8 @@ export interface CardWallViewBindings {
  *
  * For the keyboard, the wall is one stop for the Tab key: the selected card,
  * or the first shown if none is. The arrows, or W, A, S and D, move the
- * selection; Enter or Space plays the selected card's entry, and `i` opens
- * its info panel. The selection is this view's presentation state. When an
+ * selection; Enter or Space plays the selected card's entry, `i` opens
+ * its info panel, and F marks it as a favourite, or unmarks it. The selection is this view's presentation state. When an
  * entry, an info panel or a transition takes over, the wall lets go of the
  * focus, and takes it back after.
  *
@@ -92,6 +96,8 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         isLiveShowing: bindings.isLiveShowing,
         onLaunchPressed: (from) => bindings.onLaunchPressed?.(index, from),
         onInfoPressed: () => bindings.onInfoPressed?.(index),
+        isFavourite: () => bindings.isFavouriteAt(index),
+        onFavouritePressed: () => bindings.onFavouritePressed?.(index),
     }));
     const indexOfCard = new Map<Element, number>(cards.map((card, index) => [card, index]));
     const links = cards.map(linkOf);
@@ -216,6 +222,11 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
             selected = tabStop;
             bindings.onInfoPressed?.(tabStop);
         }
+        else if (e.key === 'f' || e.key === 'F') {
+            // The card stays selected as it slides to its new place
+            selected = tabStop;
+            bindings.onFavouritePressed?.(tabStop);
+        }
         else if ((e.key === 'Enter' || e.key === ' ') && e.target instanceof Element && isCardLink(e.target)) {
             // The selected card's, which pointing may have moved away from the focused one
             links[tabStop]?.click();
@@ -227,13 +238,13 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     }
 
     /**
-     * A click on a card, but not on its polaroid (the link) or its info
-     * button, selects the card, and gives it the focus, for the keyboard to
+     * A click on a card, but not on its polaroid (the link) or one of its
+     * buttons, selects the card, and gives it the focus, for the keyboard to
      * go on from; or, if it is selected, deselects it.
      */
     function onClick(e: MouseEvent): void {
         if (!bindings.isActive() || !(e.target instanceof Element)) return;
-        if (isOnPolaroid(e.target) || isOnInfoButton(e.target)) return;
+        if (isOnPolaroid(e.target) || isOnCardButton(e.target)) return;
         const index = cardIndexOf(e.target);
         if (index < 0) return;
         if (index === selected && tabStop === index) {

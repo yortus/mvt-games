@@ -37,7 +37,7 @@ describe('fenceline sounds', () => {
         });
     }
 
-    it('leaves the effects five voices', () => {
+    it('leaves the effects four voices', () => {
         const { voiceCount } = createHeadlessAudio80().audio80;
         for (const [, song] of songs) expect(voiceCount - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
     });
@@ -48,7 +48,7 @@ describe('fenceline sounds', () => {
 // ---------------------------------------------------------------------------
 
 /** How many of the chip's voices the music must leave free for the sound effects. */
-const EFFECT_VOICES = 5;
+const EFFECT_VOICES = 4;
 /** Quieter than this, a sound is lost under the music. */
 const AUDIBLE = 0.08;
 /**

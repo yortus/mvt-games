@@ -131,6 +131,20 @@ export interface EntrySession {
     readonly inputConfig?: EntryInputConfig;
     /** For a game with a highscore table (`hasHighscores`): its score, and when its run ends. */
     readonly scoring?: EntryScoring;
+    /**
+     * For a game that can be saved as the visitor leaves it, to resume next
+     * time. Returns the game as it stands, as a value JSON can hold, for
+     * `loadGame` to restore. Returns undefined when there is nothing worth
+     * resuming, such as a run that is over.
+     */
+    readonly saveGame?: () => unknown;
+    /**
+     * Restores a game that `saveGame` returned, maybe on a visit before, in
+     * place of the game the session started with. Returns whether it could.
+     * A save from an older version of the game may not fit, and then the
+     * session plays on as it started.
+     */
+    readonly loadGame?: (saved: unknown) => boolean;
 }
 
 /**

@@ -16,3 +16,6 @@ export const BLOW_OUT_POINTS = 2000;
 
 /** The bonus for each whole percent fenced off past the round's target. */
 export const BONUS_PER_PERCENT = 1000;
+
+/** An extra life comes with each of these points scored. */
+export const EXTRA_LIFE_POINTS = 100_000;

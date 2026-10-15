@@ -167,7 +167,7 @@ function buildFunnel(): Funnel {
     }
     const grit: Graphics[] = [];
     for (let i = 0; i < GRIT_COUNT; i++) {
-        const speck = new Graphics().rect(0, 0, 1, 1).fill(i % 2 === 0 ? COLOURS.dustDark : COLOURS.strawDark);
+        const speck = new Graphics().rect(0, 0, 1, 1).fill(i % 2 === 0 ? COLOURS.dustDark : COLOURS.grit);
         grit.push(speck);
         container.addChild(speck);
     }

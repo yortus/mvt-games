@@ -35,6 +35,16 @@ export interface EntryHost {
      */
     isPaused: boolean;
     /**
+     * Whether the page has turned the host's element a quarter turn
+     * clockwise, with a CSS transform on it or an ancestor, so a game wider
+     * than tall plays on its side on a phone held upright. The host then fits
+     * the entry to the element's own width and height, which run across and
+     * down the turned element. It maps the pointer through the turn, and
+     * `playRectFor` gives the play area as it shows. Only a Pixi entry can be
+     * turned: the host maps the pointer for its stage alone.
+     */
+    isTurned: boolean;
+    /**
      * Gets ready to start `starter`. For a Pixi entry, it loads Pixi, makes
      * the Pixi application, and fits the entry to the host's area if the
      * entry fits itself. For an element entry, which brings its own
@@ -63,7 +73,8 @@ export interface EntryHost {
     /**
      * Returns where an entry's play area would sit in the viewport, in CSS
      * pixels. The area is centred in the host's element and scaled to fit it,
-     * as the host would scale it.
+     * as the host would scale it. While the host is turned, the rectangle is
+     * the play area's own width and height, about the centre where it shows.
      */
     playRectFor: (target: PlayTarget) => Rect;
     /** Removes the host and everything it made. */
@@ -128,6 +139,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let startOptions: StartOptions = {};
     let session: EntrySession | undefined;
     let isPaused = false;
+    let isTurned = false;
     let pixiStage: PixiStage | undefined;
     const sound = options.sound ?? createPageSound({ isEnabled: false });
     const isSoundOwned = options.sound === undefined;
@@ -160,6 +172,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
         set isPaused(value) {
             isPaused = value;
+        },
+        get isTurned() {
+            return isTurned;
+        },
+        set isTurned(value) {
+            isTurned = value;
         },
 
         async prepare(next) {
@@ -227,7 +245,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 integerScale: pixiStarter?.integerScale,
                 hasTouchControls: isTouch && target.hasControls,
             });
-            return toViewportRect(area, screenWidth, screenHeight, areaRect);
+            return toViewportRect({ area, screenWidth, screenHeight, areaRect, isTurned });
         },
 
         destroy() {
@@ -262,6 +280,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             takesInput,
             session: () => session,
             isPaused: () => isPaused,
+            isTurned: () => isTurned,
             audio80: sound.entryAudio80,
             audioControls: sound.entryControls,
         });
@@ -304,12 +323,35 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Converts a play area, fitted to the host's area at `areaRect`, to a rectangle in the viewport. */
-function toViewportRect(area: PlayArea, screenWidth: number, screenHeight: number, areaRect: Rect): Rect {
-    return {
-        x: areaRect.x + area.offsetX * area.scale,
-        y: areaRect.y + area.offsetY * area.scale,
-        width: screenWidth * area.scale,
-        height: screenHeight * area.scale,
-    };
+/** What `toViewportRect` converts. */
+interface ViewportRectOptions {
+    /** The play area, fitted to the host's area. */
+    readonly area: PlayArea;
+    /** The entry's play area, in its own pixels. */
+    readonly screenWidth: number;
+    readonly screenHeight: number;
+    /** The host's area: its corner where it shows in the viewport, and its own width and height. */
+    readonly areaRect: Rect;
+    /** Whether the host's area is turned a quarter turn clockwise. */
+    readonly isTurned: boolean;
+}
+
+/**
+ * Converts a play area, fitted to the host's area, to a rectangle in the
+ * viewport. A turned area's own corner is at the top right of where it
+ * shows, with its own x running down the screen and its own y running left,
+ * so the play area's centre is found through the turn.
+ */
+function toViewportRect(options: ViewportRectOptions): Rect {
+    const { area, screenWidth, screenHeight, areaRect, isTurned } = options;
+    const width = screenWidth * area.scale;
+    const height = screenHeight * area.scale;
+    // The play area's top left corner, from the area's own corner
+    const ownX = area.offsetX * area.scale;
+    const ownY = area.offsetY * area.scale;
+    if (!isTurned) return { x: areaRect.x + ownX, y: areaRect.y + ownY, width, height };
+    // Turned, the area shows `areaRect.height` wide, so its right edge is there
+    const centreX = areaRect.x + areaRect.height - (ownY + height / 2);
+    const centreY = areaRect.y + ownX + width / 2;
+    return { x: centreX - width / 2, y: centreY - height / 2, width, height };
 }

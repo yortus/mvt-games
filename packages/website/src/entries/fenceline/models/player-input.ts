@@ -14,8 +14,6 @@ import type { Direction, HeldDirection } from './common';
 export interface PlayerInput {
     /** The way the player is pushing, or none. It wins over a swipe. */
     direction: HeldDirection;
-    /** Held to step off the fence and string wire into the meadow. A swipe strings wire without it. */
-    stringPressed: boolean;
     restartPressed: boolean;
     /** The way of the latest swipe. */
     swipeDirection: Direction;
@@ -33,7 +31,6 @@ export interface PlayerInput {
 export function createPlayerInput(): PlayerInput {
     return {
         direction: 'none',
-        stringPressed: false,
         restartPressed: false,
         swipeDirection: 'up',
         swipeCount: 0,

@@ -14,6 +14,7 @@ import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
 import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
+import { ResumeOfferView } from './resume-offer-view';
 import { RunnerView } from './runner-view';
 import { TransitionView } from './transition-view';
 import { createTransitionViewModel, type PicturePose } from './transition-view-model';
@@ -73,6 +74,12 @@ export interface ArcadeViewBindings {
      * hint then offers to turn the sound on as an entry plays.
      */
     readonly isSoundOffByDefault: () => boolean;
+    /**
+     * Whether the runner is turned a quarter turn clockwise, for a game wider
+     * than tall on a phone held upright. Its bar, its stage and everything
+     * over them then show for the phone turned on its side.
+     */
+    readonly isTurned: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +124,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     let cardKeyMoves = 0;
     const transition = createTransitionViewModel({
         target: playRect,
+        turn: () => (bindings.isTurned() ? 90 : 0),
         isReady: () => model.phase === 'ready',
         isPlaying: () => model.phase === 'playing',
         onHandOver: model.startPlaying,
@@ -130,6 +138,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     /** The picture on the card launched, for the way in to start from as the launch begins. */
     let launchedFrom: PicturePose | undefined;
     let isScrollLockDrawn = false;
+    let isTurnDrawn = false;
 
     const wall = CardWallView({
         entries,
@@ -146,6 +155,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         onLiveWanted: (index) => bindings.onLiveWanted?.(entries[index]),
         onLaunchPressed: (index, from) => launch(index, from),
         onInfoPressed: (index) => model.openInfo(entries[index].id),
+        isFavouriteAt: (index) => model.isFavourite(entries[index].id),
+        onFavouritePressed: (index) => model.toggleFavourite(entries[index].id),
         onCardKeyedTo: () => { cardKeyMoves++; },
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
@@ -173,7 +184,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         <div
             class="arcade"
             onUpdate={update}
-            onRefresh={lockScroll}
+            onRefresh={drawPage}
             onDestroyed={stopListening}
         >
             {head}
@@ -231,6 +242,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 title={() => model.activeEntry?.name ?? ''}
                 instructions={() => model.activeEntry?.instructions}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
+                isTurned={bindings.isTurned}
                 onBackPressed={model.exit}
                 onPausePressed={() => { model.isPaused = true; }}
                 onResumePressed={() => { model.isPaused = false; }}
@@ -238,6 +250,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 hasHighscores={() => model.activeEntry?.hasHighscores === true}
                 highscoreRows={() => highscores.tableFor(model.activeEntry?.id ?? '')}
                 highscoresStatus={() => highscores.status}
+            />
+            <ResumeOfferView
+                isOpen={() => model.phase === 'playing' && model.isResumeOffered}
+                title={() => model.activeEntry?.name ?? ''}
+                onResumePressed={model.resume}
+                onRestartPressed={model.startAfresh}
             />
             <PlacingView
                 placing={() => highscores.placing}
@@ -330,6 +348,23 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         return model.phase === 'browsing' && model.infoEntry === undefined && transition.phase === 'idle';
     }
 
+    /** Writes what the Arcade sets on the whole page: the scroll lock, and the runner's turn. */
+    function drawPage(): void {
+        lockScroll();
+        drawTurn();
+    }
+
+    /**
+     * Marks the page while the runner is turned. The stylesheet turns each of
+     * the runner's layers, and each layer over them, as the page's mark says.
+     */
+    function drawTurn(): void {
+        const isTurned = bindings.isTurned();
+        if (isTurned === isTurnDrawn) return;
+        isTurnDrawn = isTurned;
+        document.documentElement.classList.toggle('is-runner-turned', isTurned);
+    }
+
     /**
      * While an entry plays, and until the way back has ended, the page under
      * it stays put: it keeps its place for the way back, and the polaroid and
@@ -371,10 +406,10 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     /**
      * Escape closes the info panel, pauses or resumes the entry playing (a
      * game or a demo, alike), or leaves one still loading. Not while a score
-     * places: the placing view has the keys then.
+     * places, or while a saved game is offered: their views have the keys then.
      */
     function stepBack(e: KeyboardEvent): void {
-        if (highscores.placing !== 'none') return;
+        if (highscores.placing !== 'none' || model.isResumeOffered) return;
         if (model.infoEntry !== undefined) model.closeInfo();
         else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();

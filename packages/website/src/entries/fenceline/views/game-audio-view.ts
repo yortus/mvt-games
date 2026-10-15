@@ -6,6 +6,8 @@ import {
     BAA,
     BLOW_OUT,
     CREAK,
+    EXTRA_LIFE,
+    FARM_FENCED_TUNE,
     GAME_OVER_TUNE,
     HATCH,
     MEADOW_TUNE,
@@ -38,6 +40,8 @@ export interface GameAudioViewBindings {
     readonly devilsBlownOut: () => number;
     /** Beetles hatched. Each rise cracks a shell. */
     readonly beetlesHatched: () => number;
+    /** Extra lives earned. Each rise plays a run up to a high G. */
+    readonly extraLivesEarned: () => number;
     /** Whether slack is running along the wire. It creaks while it does. */
     readonly isSlackRunning: () => boolean;
     /** The share of the meadow fenced off, and the round's target. The tune quickens as the share nears the target. */
@@ -64,9 +68,10 @@ export const CREAK_PERIOD_MS = 240;
  * then the meadow tune, which quickens as more of the meadow is fenced off.
  * Each step of wire ticks off the reel, slack creaks as it runs, and a
  * wire tied off rings out. Penned sheep bleat, dust devils rush away as
- * they blow out, and beetles crack out of their eggs. A snapped wire
- * twangs, and tunes play as the round is cleared and as the game ends. The
- * view draws nothing.
+ * they blow out, and beetles crack out of their eggs. An extra life earned
+ * runs up to a high G. A snapped wire
+ * twangs, and tunes play as the round is cleared, as the whole farm is
+ * fenced, and as the game ends. The view draws nothing.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
@@ -81,6 +86,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         sheepPenned: bindings.sheepPenned,
         devilsBlownOut: bindings.devilsBlownOut,
         beetlesHatched: bindings.beetlesHatched,
+        extraLives: bindings.extraLivesEarned,
         creaks: () => creaks.count,
     });
 
@@ -102,6 +108,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.sheepPenned.increased) sound.play(BAA);
         if (w.devilsBlownOut.increased) sound.play(BLOW_OUT);
         if (w.beetlesHatched.increased) sound.play(HATCH);
+        if (w.extraLives.increased) sound.play(EXTRA_LIFE);
         if (w.creaks.increased) sound.play(CREAK);
         music.refresh();
     }
@@ -127,6 +134,9 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
                 break;
             case 'round-clear':
                 music.play(ROUND_CLEAR_TUNE);
+                break;
+            case 'farm-fenced':
+                music.play(FARM_FENCED_TUNE);
                 break;
             case 'game-over':
                 music.play(GAME_OVER_TUNE);

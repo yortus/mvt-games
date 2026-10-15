@@ -53,6 +53,8 @@ export function turnLeft(direction: Direction): Direction {
 /**
  * Where the game is. A round starts with a moment to get `ready`. A snapped
  * wire or a beetle costs a life (`snapped`). Fencing off enough of the
- * meadow clears the round (`round-clear`).
+ * meadow clears the round (`round-clear`). Clearing a farm's last round
+ * fences the whole farm (`farm-fenced`), and the farmhand moves on to the
+ * next.
  */
-export type GamePhase = 'ready' | 'playing' | 'snapped' | 'round-clear' | 'game-over';
+export type GamePhase = 'ready' | 'playing' | 'snapped' | 'round-clear' | 'farm-fenced' | 'game-over';

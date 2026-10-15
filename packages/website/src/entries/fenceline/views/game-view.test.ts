@@ -21,13 +21,12 @@ describe('GameView', () => {
         };
 
         tick();
-        expect(listTexts(view)).toContain('ROUND 1\n\nFence off 70% of the meadow');
+        expect(listTexts(view)).toContain('BREEZY ACRES\nROUND 1\n\nFence off 70% of the meadow');
 
         // Wander, stringing wire, turning every so often, until the game ends
         let frame = 0;
         let mostClosures = 0;
         while (game.phase !== 'game-over' && frame < 60 * 60 * 10) {
-            game.playerInput.stringPressed = true;
             game.playerInput.direction = WANDER[Math.floor(frame / 40) % WANDER.length];
             tick();
             mostClosures = Math.max(mostClosures, game.field.closureCount);
@@ -42,7 +41,7 @@ describe('GameView', () => {
         tick();
         game.playerInput.restartPressed = false;
         tick();
-        expect(listTexts(view)).toContain('ROUND 1\n\nFence off 70% of the meadow');
+        expect(listTexts(view)).toContain('BREEZY ACRES\nROUND 1\n\nFence off 70% of the meadow');
         view.destroy({ children: true });
     });
 
@@ -79,7 +78,6 @@ describe('GameView', () => {
         // From the bottom middle, left along the edge, then a wire up and across the corner
         const input = game.playerInput;
         const moves: readonly [HeldDirection, number][] = [['none', 1800], ['left', 2200], ['up', 700], ['left', 1200]];
-        input.stringPressed = true;
         for (const [direction, ms] of moves) {
             input.direction = direction;
             for (let elapsed = 0; elapsed < ms && game.sheepPennedCount === 0; elapsed += STEP_MS) tick();
@@ -87,6 +85,50 @@ describe('GameView', () => {
         expect(game.sheepPennedCount).toBe(1);
         for (let i = 0; i < 10; i++) tick();
         expect(listTexts(view)).toContain(`+${SHEEP_POINTS}`);
+        view.destroy({ children: true });
+    });
+
+    it('celebrates the farm fenced after its last round, then starts on the next farm', () => {
+        // A farm of one round, cleared by fencing off the bottom left corner
+        const round: RoundConfig = {
+            ...ROUNDS[0],
+            devilSpeed: 0,
+            startBeetles: 0,
+            maxBeetles: 0,
+            sheepCount: 0,
+            targetShare: 0.01,
+            devilStarts: [{ row: 10, col: 45 }],
+        };
+        const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
+        const { audio80, controls } = createHeadlessAudio80();
+        const view = GameView({ model: game, sound: audio80 });
+        const tick = (): void => {
+            game.update(STEP_MS);
+            controls.update(STEP_MS);
+            updateView(view, STEP_MS);
+            refreshView(view);
+        };
+
+        const input = game.playerInput;
+        const moves: readonly [HeldDirection, number][] = [['none', 1800], ['left', 2200], ['up', 700], ['left', 1200]];
+        for (const [direction, ms] of moves) {
+            input.direction = direction;
+            for (let elapsed = 0; elapsed < ms && game.phase !== 'round-clear'; elapsed += STEP_MS) tick();
+        }
+        input.direction = 'none';
+        expect(game.phase).toBe('round-clear');
+        while (game.phase === 'round-clear') tick();
+        expect(game.phase).toBe('farm-fenced');
+        for (let elapsed = 0; elapsed < 6000; elapsed += STEP_MS) tick();
+        const texts = listTexts(view);
+        expect(texts).toContain('FARM FENCED!');
+        expect(texts).toContain('BREEZY ACRES IS ALL FENCED IN!');
+        expect(texts).toContain('NEXT JOB: GUSTY GULLY.');
+
+        while (game.phase === 'farm-fenced') tick();
+        tick();
+        expect(listTexts(view)).toContain('GUSTY GULLY\nROUND 2\n\nFence off 1% of the meadow');
+        expect(listTexts(view)).not.toContain('FARM FENCED!');
         view.destroy({ children: true });
     });
 });
@@ -97,7 +139,7 @@ describe('GameView', () => {
 
 const WANDER: readonly HeldDirection[] = ['up', 'left', 'up', 'right', 'down', 'right', 'up', 'left', 'down'];
 
-/** The text of every visible text object in the view. */
+/** The text of every visible text object in the view, and every visible label, which is how pixel text tells what it spells. */
 function listTexts(view: Container): string[] {
     const texts: string[] = [];
     walk(view);
@@ -106,6 +148,7 @@ function listTexts(view: Container): string[] {
     function walk(node: Container): void {
         if (!node.visible) return;
         if (node instanceof Text) texts.push(node.text);
+        else if (typeof node.label === 'string') texts.push(node.label);
         for (const child of node.children) walk(child);
     }
 }

@@ -1,9 +1,11 @@
 import { Container, type FederatedPointerEvent, Rectangle } from 'pixi.js';
-import type { Direction } from '../models';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
+
+/** The way a swipe went. */
+export type SwipeDirection = 'up' | 'down' | 'left' | 'right';
 
 export interface SwipeInputViewBindings {
     /** Whether it listens at all, as on a touch screen. Read once. */
@@ -16,7 +18,7 @@ export interface SwipeInputViewBindings {
     /** How far a finger must slide, in the view's pixels, to swipe. Read once. */
     swipeDistance: number;
     /** The player swiped `direction`, the way the slide mostly went. */
-    onSwiped?: (direction: Direction) => void;
+    onSwiped?: (direction: SwipeDirection) => void;
     /** The player tapped, touching and letting go without sliding. */
     onTapped?: () => void;
 }
@@ -48,7 +50,7 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
     let startY = 0;
     let anchorX = 0;
     let anchorY = 0;
-    let swiped: Direction | undefined;
+    let swiped: SwipeDirection | undefined;
 
     view.on('pointerdown', (e: FederatedPointerEvent) => {
         if (pointerId !== undefined) return;
@@ -89,7 +91,7 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
     return view;
 
     /** The way a slide of (dx, dy) went, if it was far enough to swipe. */
-    function findWay(dx: number, dy: number): Direction | undefined {
+    function findWay(dx: number, dy: number): SwipeDirection | undefined {
         if (Math.max(Math.abs(dx), Math.abs(dy)) < swipeDistance) return undefined;
         if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
         return dy > 0 ? 'down' : 'up';

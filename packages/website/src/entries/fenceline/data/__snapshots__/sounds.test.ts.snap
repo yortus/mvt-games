@@ -6,19 +6,23 @@ exports[`fenceline sounds > BLOW_OUT sounds as it did, audible and unclipped 1`]
 
 exports[`fenceline sounds > CREAK sounds as it did, audible and unclipped 1`] = `"579af9a2"`;
 
-exports[`fenceline sounds > GAME_OVER_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"1654b99a"`;
+exports[`fenceline sounds > EXTRA_LIFE sounds as it did, audible and unclipped 1`] = `"228e2110"`;
+
+exports[`fenceline sounds > FARM_FENCED_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"4997f7a8"`;
+
+exports[`fenceline sounds > GAME_OVER_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"92c0cda3"`;
 
 exports[`fenceline sounds > HATCH sounds as it did, audible and unclipped 1`] = `"ae3e2c1b"`;
 
-exports[`fenceline sounds > MEADOW_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f21e90ca"`;
+exports[`fenceline sounds > MEADOW_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"5fbde61e"`;
 
-exports[`fenceline sounds > ROUND_CLEAR_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"67d9a424"`;
+exports[`fenceline sounds > ROUND_CLEAR_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"d6ff6018"`;
 
-exports[`fenceline sounds > ROUND_START sounds as it did, audible and unclipped, as loud as every other song 1`] = `"0fdcc22b"`;
+exports[`fenceline sounds > ROUND_START sounds as it did, audible and unclipped, as loud as every other song 1`] = `"c7afa003"`;
 
 exports[`fenceline sounds > SNAP sounds as it did, audible and unclipped 1`] = `"f8d88308"`;
 
-exports[`fenceline sounds > SNAPPED_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"68185cb7"`;
+exports[`fenceline sounds > SNAPPED_TUNE sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f9424754"`;
 
 exports[`fenceline sounds > STRING_TICK sounds as it did, audible and unclipped 1`] = `"fca5f925"`;
 

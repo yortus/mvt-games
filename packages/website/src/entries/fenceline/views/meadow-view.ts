@@ -3,7 +3,7 @@ import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
 import type { CellKind } from '../data';
 import { hashCell } from './drawing';
-import { COLOURS } from './view-constants';
+import { COLOURS, type StrawColours } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -21,6 +21,8 @@ export interface MeadowViewBindings {
     closureCount: () => number;
     /** The round. Each round is a new meadow. */
     round: () => number;
+    /** The colours of the wild grass, which change from farm to farm. */
+    grass: () => StrawColours;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,20 +30,21 @@ export interface MeadowViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The ground. Where the meadow is open, it is wild straw-coloured grass
- * with wind rippling across it. Where it has been fenced off, it is green
- * pasture scattered with flowers. The ponds and rocks sit in it. Pasture fenced off by the
- * latest wire flashes as it appears. The pasture is redrawn only when a wire
- * is tied off, or a round starts.
+ * The ground. Where the meadow is open, it is wild, dry grass in the farm's
+ * colours, with wind rippling across it. Where it has been fenced off, it
+ * is green pasture scattered with flowers. The ponds and rocks sit in it.
+ * Pasture fenced off by the latest wire flashes as it appears. The pasture
+ * is redrawn only when a wire is tied off, or a round starts, and the wild
+ * grass only when its colours change.
  */
 export function MeadowView(bindings: MeadowViewBindings): Container {
     const { rows, cols, cellSize } = bindings;
     const width = cols * cellSize;
     const height = rows * cellSize;
 
-    const wild = drawWildGrass(new Graphics());
+    const wild = new Graphics();
     const windMask = new Graphics().rect(0, 0, width, height).fill(0xffffff);
-    const wind = drawWind(new Graphics());
+    const wind = new Graphics();
     wind.mask = windMask;
     const pasture = new Graphics();
     const flash = new Graphics();
@@ -56,6 +59,8 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
     const flashWatcher = watch({ closures: bindings.closureCount });
     flashWatcher.poll();
     const drawWatcher = watch({ closures: bindings.closureCount, round: bindings.round });
+    // The colours the wild grass was last drawn in
+    let drawnGrass: StrawColours | undefined;
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -67,6 +72,12 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
     }
 
     function refresh(): void {
+        const grass = bindings.grass();
+        if (grass !== drawnGrass) {
+            drawnGrass = grass;
+            drawWildGrass(grass);
+            drawWind(grass);
+        }
         const watched = drawWatcher.poll();
         if (watched.closures.changed || watched.round.changed) {
             drawPasture();
@@ -78,29 +89,29 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
 
     // ---- Drawing -----------------------------------------------------------
 
-    function drawWildGrass(g: Graphics): Graphics {
-        g.rect(0, 0, width, height).fill(COLOURS.straw);
+    function drawWildGrass(colours: StrawColours): void {
+        const g = wild.clear();
+        g.rect(0, 0, width, height).fill(colours.straw);
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 const hash = hashCell(r, c);
                 const x = c * cellSize + (hash % (cellSize - 1));
                 const y = r * cellSize + ((hash >>> 4) % (cellSize - 3));
                 // A blade or two of darker grass in most cells, and a light seed head in some
-                if ((hash & 0x300) !== 0) g.rect(x, y, 1, 3).fill(COLOURS.strawDark);
-                if ((hash & 0x3000) === 0) g.rect(x + 2, y + 1, 1, 2).fill(COLOURS.strawDark);
-                if ((hash & 0x70000) === 0) g.rect((x + 4) % width, y, 1, 1).fill(COLOURS.strawLight);
+                if ((hash & 0x300) !== 0) g.rect(x, y, 1, 3).fill(colours.strawDark);
+                if ((hash & 0x3000) === 0) g.rect(x + 2, y + 1, 1, 2).fill(colours.strawDark);
+                if ((hash & 0x70000) === 0) g.rect((x + 4) % width, y, 1, 1).fill(colours.strawLight);
             }
         }
-        return g;
     }
 
     /** Soft light bands, slanting, wider than the meadow by one period so they can scroll. */
-    function drawWind(g: Graphics): Graphics {
+    function drawWind(colours: StrawColours): void {
+        const g = wind.clear();
         for (let x = 0; x < width + WIND_PERIOD * 2; x += WIND_PERIOD) {
             g.poly([x, 0, x + 40, 0, x + 40 - height * 0.4, height, x - height * 0.4, height])
-                .fill({ color: COLOURS.strawLight, alpha: 0.14 });
+                .fill({ color: colours.strawLight, alpha: 0.14 });
         }
-        return g;
     }
 
     function drawPasture(): void {

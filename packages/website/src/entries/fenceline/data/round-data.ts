@@ -50,8 +50,9 @@ export interface CellPosition {
 }
 
 /**
- * The rounds, in order. After the last, it repeats with everything a little
- * faster. The ponds and rocks were placed on a blank grid for this game.
+ * The rounds of each farm, in order. After the last, the farm is fenced,
+ * and the next farm's rounds are these again, with everything faster. The
+ * ponds and rocks were placed on a blank grid for this game.
  */
 export const ROUNDS: readonly RoundConfig[] = [
     // One dust devil in an open meadow
@@ -133,5 +134,8 @@ export const ROUNDS: readonly RoundConfig[] = [
     },
 ];
 
-/** How much faster each lap through the rounds is than the last. */
-export const LAP_SPEED_UP = 0.1;
+/**
+ * How much faster each farm plays than the farm before it, as a multiple.
+ * Everything in the meadow speeds up, the farmhand too.
+ */
+export const FARM_SPEED_UP = 1.25;

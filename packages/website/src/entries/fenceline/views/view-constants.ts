@@ -39,10 +39,6 @@ export const COLOURS = {
     hudText: 0xf3e6c4,
     hudDim: 0x9c8a66,
 
-    straw: 0xc9ae62,
-    strawDark: 0xa48a45,
-    strawLight: 0xe3cd86,
-
     grass: 0x5d9b38,
     grassStripe: 0x6aaa40,
     grassDark: 0x4a8430,
@@ -76,6 +72,7 @@ export const COLOURS = {
     reel: 0x9a9a9a,
 
     dust: 0xb89a6a,
+    grit: 0xa48a45,
     dustDark: 0x8c7350,
     dustLight: 0xf0dfb8,
     devilEdge: 0x5a4632,
@@ -90,3 +87,40 @@ export const COLOURS = {
     heart: 0xf0507e,
     heartEdge: 0x7a1838,
 } as const;
+
+// ---------------------------------------------------------------------------
+// Farms
+// ---------------------------------------------------------------------------
+
+/** The colours of a farm's dry grass, the wild meadow not yet fenced off. */
+export interface StrawColours {
+    readonly straw: number;
+    /** Blades of darker grass. */
+    readonly strawDark: number;
+    /** Seed heads, and the wind's bands. */
+    readonly strawLight: number;
+}
+
+/** How one farm looks: its name, and its dry grass. */
+export interface FarmLook {
+    readonly name: string;
+    readonly grass: StrawColours;
+}
+
+/**
+ * Each farm's look, in turn from the first. Each farm is windier than the
+ * last, and so is its name. Past the last, they start again.
+ */
+export const FARM_LOOKS: readonly FarmLook[] = [
+    { name: 'Breezy Acres', grass: { straw: 0xc9ae62, strawDark: 0xa48a45, strawLight: 0xe3cd86 } },
+    { name: 'Gusty Gully', grass: { straw: 0xc4915a, strawDark: 0x9c6b3a, strawLight: 0xe0b583 } },
+    { name: 'Blustery Bluff', grass: { straw: 0xaeb27a, strawDark: 0x878c56, strawLight: 0xccd09c } },
+    { name: 'Howling Heights', grass: { straw: 0xd6c79a, strawDark: 0xae9f6e, strawLight: 0xece2c0 } },
+    { name: 'Cyclone Creek', grass: { straw: 0xb39a8e, strawDark: 0x8c736a, strawLight: 0xd2bcb0 } },
+    { name: 'Whirlwind Wells', grass: { straw: 0xb4b2a4, strawDark: 0x8e8b7c, strawLight: 0xd4d2c6 } },
+];
+
+/** Returns the look of farm `farm`, counting from 1. */
+export function findFarmLook(farm: number): FarmLook {
+    return FARM_LOOKS[(farm - 1) % FARM_LOOKS.length];
+}

@@ -6,6 +6,7 @@ import { CATALOGUE, findEntry } from '../entries';
 import type { ArcadeEntry, EntryStarter } from '../entry-types';
 import { isHandheldDevice } from '../device';
 import { createEntryHost, createPageSound, isTouchDevice } from '../runner';
+import { createLocalStore } from '../storage';
 import {
     type ArcadeSoundSettings,
     createArcadeModel,
@@ -35,6 +36,9 @@ import './arcade.css';
 // The page also connects the games to their highscore tables. It watches the
 // running session's `scoring` for the end of a run, and remembers the
 // visitor's initials between visits.
+//
+// It keeps the visitor's favourites between visits too, and saves a game as
+// the visitor leaves it, for the model to offer to resume next time.
 
 // ---------------------------------------------------------------------------
 // The page
@@ -77,26 +81,35 @@ let liveRequests = 0;
 let livePreparing: Promise<void> = Promise.resolve();
 
 // Declared before the model is made, which reads them.
-/** Where the visitor's sound settings are kept between visits. */
+/** What the page keeps in the browser between visits: the visitor's settings, initials, favourites and saved games. */
+const store = createLocalStore();
+/** Where the visitor's sound settings are kept between visits. It is older than the other keys, so it is named differently. */
 const SOUND_SETTINGS_KEY = 'mvt-arcade-sound';
 /** The sound settings the visitor saved on an earlier visit, as text. It is undefined if they never changed the sound. */
-const savedSoundSettings = readSavedSoundSettings();
+const savedSoundSettings = store.read(SOUND_SETTINGS_KEY);
 // A first visit takes the defaults. On a phone or a tablet, the sound starts
 // muted. Desktops start with sound, as a games site is expected to.
 const firstSoundSettings = savedSoundSettings !== undefined
     ? parseSoundSettings(savedSoundSettings)
     : isHandheldDevice() ? HANDHELD_SOUND_SETTINGS : DEFAULT_SOUND_SETTINGS;
-// Declared before the model, which is made with the initials it keeps
+// Declared before the model, which is made with the initials and favourites it keeps
 /** Where the visitor's initials are kept between visits. */
 const INITIALS_KEY = 'mvt-arcade:initials';
+/** Where the ids of the visitor's favourite entries are kept between visits, as a JSON array. */
+const FAVOURITES_KEY = 'mvt-arcade:favourites';
+/** Where a game left part way through is kept, for the visitor to resume next time: this, then the entry's id. */
+const SAVED_GAME_KEY = 'mvt-arcade:saved-game:';
 
 const model = createArcadeModel({
     entries: CATALOGUE,
     factsFor: (id) => ENTRY_FACTS[id],
     search: location.search,
     highscoreStore: highscoreStoreFor(import.meta.env.VITE_HIGHSCORES_URL),
-    rememberedInitials: readInitials(),
+    // The model checks them. Storage can be blocked, as in a private window, which just means none
+    rememberedInitials: store.read(INITIALS_KEY),
     soundSettings: firstSoundSettings,
+    favouriteIds: readFavourites(),
+    hasSavedGame: (id) => store.read(SAVED_GAME_KEY + id) !== undefined,
     loadEntry: async (entry) => {
         const starter = await entry.load();
         if (DEV) checkPlayArea(entry, starter);
@@ -110,6 +123,11 @@ let exitFrame: HTMLCanvasElement | undefined;
 
 // The visitor's system setting for less motion, followed as it changes
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+// On a phone or a tablet held upright, a game wider than tall plays turned on
+// its side, to be played with the device turned. One with its orientation
+// unlocked turns the page too, and the game shows upright again
+const canTurn = isHandheldDevice();
+const portrait = window.matchMedia('(orientation: portrait)');
 
 root.append(ArcadeView({
     model,
@@ -124,6 +142,7 @@ root.append(ArcadeView({
     audioViews: () => audioViews,
     // The model replaces its settings object whenever one changes, so the first object still there means no change
     isSoundOffByDefault: () => savedSoundSettings === undefined && model.soundSettings === firstSoundSettings && model.isSoundMuted,
+    isTurned: isRunnerTurned,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,
@@ -158,6 +177,15 @@ watcher.poll();
 /** The sound settings last given to the host and saved. */
 let keptSoundSettings = model.soundSettings;
 applySoundSettings(keptSoundSettings);
+/** The favourites last saved. The model replaces its array whenever they change. */
+let keptFavouriteIds = model.favouriteIds;
+
+// A game is saved as the visitor leaves it, and as the page is hidden or
+// closed, which a phone may do without warning
+window.addEventListener('pagehide', saveGame);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveGame();
+});
 
 // A link to an entry (`#crumb-chase`) launches it; going back or forward in history follows,
 // so Back from an entry returns to the wall, and Back from an info panel closes it
@@ -205,22 +233,35 @@ function followModel(): void {
             const { starter, activeEntry } = model;
             assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry plays only once it has loaded');
             host.start(starter, { bestScore: () => model.highscores.bestScoreFor(activeEntry.id) });
+            if (model.isResumeOffered) loadSavedGame(activeEntry);
         }
         else if (phase.previous === 'playing') {
+            saveGame();
             exitFrame = host.stop();
         }
     }
-    if (restarts.changed) host.restart();
+    if (restarts.changed) {
+        host.restart();
+        // The game saved is behind the visitor now. The new one is saved as they leave it
+        if (model.activeEntry !== undefined) store.remove(SAVED_GAME_KEY + model.activeEntry.id);
+    }
     // A run has ended, and its score may place
     if (isRunOver.changed && isRunOver.value) model.runEnded(host.session?.scoring?.score() ?? 0);
     // The host stays paused while the entry is frozen: held still as it first shows, paused by the visitor, or waiting while a score places.
     host.isPaused = model.isEntryFrozen;
-    if (initials.changed && initials.value !== undefined) writeInitials(initials.value);
+    host.isTurned = isRunnerTurned();
+    // Blocked storage means the initials are offered for the rest of this visit only
+    if (initials.changed && initials.value !== undefined) store.write(INITIALS_KEY, initials.value);
+    if (model.favouriteIds !== keptFavouriteIds) {
+        keptFavouriteIds = model.favouriteIds;
+        store.writeJson(FAVOURITES_KEY, keptFavouriteIds);
+    }
     // The model replaces its sound settings object whenever one changes. The page gives the new settings to the host and saves them.
     if (model.soundSettings !== keptSoundSettings) {
         keptSoundSettings = model.soundSettings;
         applySoundSettings(keptSoundSettings);
-        writeSoundSettings(keptSoundSettings);
+        // Blocked or full storage means the settings hold for this visit only
+        store.write(SOUND_SETTINGS_KEY, formatSoundSettings(keptSoundSettings));
     }
     if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
     else if (phase.changed && phase.value === 'browsing') writeUrl('leave');
@@ -300,24 +341,53 @@ function applySoundSettings(settings: ArcadeSoundSettings): void {
     sound.pageControls.isMuted = settings.isMuted;
 }
 
-/** Returns the sound settings the visitor last left, as text. Returns undefined if storage is blocked or holds none. */
-function readSavedSoundSettings(): string | undefined {
-    try {
-        return localStorage.getItem(SOUND_SETTINGS_KEY) ?? undefined;
-    }
-    catch {
-        return undefined;
-    }
+/**
+ * Whether the runner is turned a quarter turn clockwise: on a phone or a
+ * tablet held upright, for a game wider than tall. Only a game at a fixed
+ * size on the host's Pixi stage turns, since the host maps the pointer
+ * through the turn for that stage alone. Every game is one, and its starter,
+ * once loaded, confirms it.
+ */
+function isRunnerTurned(): boolean {
+    const entry = model.activeEntry;
+    if (!canTurn || model.phase === 'browsing' || entry === undefined || !portrait.matches) return false;
+    if (entry.tags.kind !== 'game' || entry.screenWidth <= entry.screenHeight) return false;
+    const starter = model.starter;
+    return starter === undefined || (starter.kind === 'pixi' && starter.fitTo === undefined);
 }
 
-/** Saves the sound settings for the visitor's next visit. */
-function writeSoundSettings(settings: ArcadeSoundSettings): void {
-    try {
-        localStorage.setItem(SOUND_SETTINGS_KEY, formatSoundSettings(settings));
-    }
-    catch {
-        // Storage is blocked or full. The settings still hold for this visit.
-    }
+/** Returns the ids of the entries the visitor marked as favourites on a visit before. The model drops any it does not list. */
+function readFavourites(): string[] {
+    const saved = store.readJson(FAVOURITES_KEY);
+    return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : [];
+}
+
+/**
+ * Saves the game playing, for the visitor to resume next time, if its
+ * session can save. A game with nothing worth resuming, such as a run that is
+ * over, has any save it had removed. Previews and thumbnails are never saved:
+ * they run in hosts of their own.
+ */
+function saveGame(): void {
+    const entry = model.activeEntry;
+    const session = host.session;
+    if (entry === undefined || session?.saveGame === undefined) return;
+    const saved = session.saveGame();
+    if (saved === undefined || !store.writeJson(SAVED_GAME_KEY + entry.id, saved)) store.remove(SAVED_GAME_KEY + entry.id);
+}
+
+/**
+ * Loads the game saved for `entry` into the session just started, so it
+ * shows behind the offer to resume it. A save the session cannot load, from
+ * an older version of the game say, is removed, and the offer is closed: the
+ * session plays on as it started.
+ */
+function loadSavedGame(entry: ArcadeEntry): void {
+    const saved = store.readJson(SAVED_GAME_KEY + entry.id);
+    const isLoaded = saved !== undefined && host.session?.loadGame?.(saved) === true;
+    if (isLoaded) return;
+    store.remove(SAVED_GAME_KEY + entry.id);
+    model.resume();
 }
 
 function pageElement(id: string): HTMLElement {
@@ -477,28 +547,4 @@ function checkPlayArea(entry: ArcadeEntry, starter: EntryStarter): void {
  */
 function highscoreStoreFor(url: string | undefined): HighscoreStore {
     return url === undefined || url === '' ? createMemoryHighscoreStore({ games: GAMES }) : createFetchHighscoreStore({ url });
-}
-
-/**
- * The initials the visitor entered on a visit before, if the browser kept
- * them. The model checks them. Storage can be blocked, as in a private
- * window, which just means none.
- */
-function readInitials(): string | undefined {
-    try {
-        return localStorage.getItem(INITIALS_KEY) ?? undefined;
-    }
-    catch {
-        return undefined;
-    }
-}
-
-/** Remembers the visitor's initials for their next visit, if the browser lets it. */
-function writeInitials(initials: string): void {
-    try {
-        localStorage.setItem(INITIALS_KEY, initials);
-    }
-    catch {
-        // Blocked storage: the initials are offered for the rest of this visit only
-    }
 }

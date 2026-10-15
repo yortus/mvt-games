@@ -1,3 +1,4 @@
+import { isTouchDevice } from '#shared';
 import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
@@ -49,8 +50,11 @@ export async function load(): Promise<PixiEntryStarter> {
                     // A run ends by being caught, or by eating every crumb
                     isOver: () => gameModel.phase !== 'playing',
                 },
+                saveGame: gameModel.save,
+                loadGame: gameModel.load,
                 inputConfig: {
-                    showDpad: true,
+                    // On a touch screen, the game view's swipes steer, so no controls are drawn
+                    showDpad: !isTouchDevice(),
                     onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
                     onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
                     onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },

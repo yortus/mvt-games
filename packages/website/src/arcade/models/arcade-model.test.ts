@@ -446,6 +446,78 @@ describe('ArcadeModel', () => {
             expect(model.infoEntry).toBeUndefined();
         });
     });
+
+    describe('favourites', () => {
+        it('shows the favourites first, then the rest, each in order of name', () => {
+            const model = createArcadeModel(options());
+            model.toggleFavourite('sim-demo');
+            model.toggleFavourite('old-shooter');
+            expect(shownIds(model)).toEqual(['old-shooter', 'sim-demo', 'maze-game', 'shooter-game']);
+            model.toggleFavourite('sim-demo');
+            expect(shownIds(model)).toEqual(['old-shooter', 'maze-game', 'shooter-game', 'sim-demo']);
+        });
+
+        it('starts with the favourites it is given, dropping any it does not list', () => {
+            const model = createArcadeModel(options({ favouriteIds: ['shooter-game', 'no-such-entry'] }));
+            expect(model.favouriteIds).toEqual(['shooter-game']);
+            expect(model.isFavourite('shooter-game')).toBe(true);
+            expect(shownIds(model)[0]).toBe('shooter-game');
+        });
+
+        it('replaces its ids as they change, and only then, for the page to save', () => {
+            const model = createArcadeModel(options());
+            const before = model.favouriteIds;
+            model.toggleFavourite('no-such-entry');
+            expect(model.favouriteIds).toBe(before);
+            model.toggleFavourite('maze-game');
+            expect(model.favouriteIds).not.toBe(before);
+            expect(model.favouriteIds).toEqual(['maze-game']);
+        });
+
+        it('keeps to the search', () => {
+            const model = createArcadeModel(options());
+            model.toggleFavourite('sim-demo');
+            choose(model, 'kind', 'game');
+            expect(shownIds(model)).toEqual(['maze-game', 'old-shooter', 'shooter-game']);
+        });
+    });
+
+    describe('saved games', () => {
+        it('offers to resume an entry with a saved game, and holds it still meanwhile', async () => {
+            const model = createArcadeModel(options({ hasSavedGame: (id) => id === 'maze-game' }));
+            await play(model, 'maze-game');
+            model.letGo();
+            expect(model.isResumeOffered).toBe(true);
+            expect(model.isEntryFrozen).toBe(true);
+            model.isPaused = true;
+            expect(model.isPaused).toBe(false);
+            model.resume();
+            expect(model.isResumeOffered).toBe(false);
+            expect(model.isEntryFrozen).toBe(false);
+            expect(model.restartCount).toBe(0);
+        });
+
+        it('starts afresh when asked, as a restart does', async () => {
+            const model = createArcadeModel(options({ hasSavedGame: () => true }));
+            await play(model, 'maze-game');
+            model.startAfresh();
+            expect(model.isResumeOffered).toBe(false);
+            expect(model.restartCount).toBe(1);
+            // Once the offer is closed, there is nothing to start afresh from
+            model.startAfresh();
+            expect(model.restartCount).toBe(1);
+        });
+
+        it('offers nothing for an entry without a saved game, or once it is left', async () => {
+            const model = createArcadeModel(options({ hasSavedGame: (id) => id === 'maze-game' }));
+            await play(model, 'shooter-game');
+            expect(model.isResumeOffered).toBe(false);
+            model.exit();
+            await play(model, 'maze-game');
+            model.exit();
+            expect(model.isResumeOffered).toBe(false);
+        });
+    });
 });
 
 // ---------------------------------------------------------------------------

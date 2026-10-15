@@ -68,6 +68,8 @@ export const READY_MS = 1800;
 export const SNAPPED_MS = 1600;
 /** How long the round-clear tally shows before the next round. */
 export const ROUND_CLEAR_MS = 3600;
+/** How long the farm-fenced celebration lasts, after the farm's last round-clear tally, before the next farm. */
+export const FARM_FENCED_MS = 9000;
 
 /**
  * The longest step the game advances by at once. A longer update runs as

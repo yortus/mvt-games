@@ -33,8 +33,14 @@ export interface TransitionViewModel {
     readonly picture: TransitionPicture;
     /** How far the page behind is blacked out, from 0 to 1. */
     readonly backdropOpacity: number;
-    /** Where the entry plays, as it was handed over: the stage powers on about its centre. */
+    /**
+     * Where the entry plays, as it was handed over: the stage powers on about
+     * its centre. On a turned play area (`playTurn`), it is the play area's
+     * own width and height, about the centre where it shows.
+     */
     readonly playRect: Rect;
+    /** How far the play area was turned, in degrees clockwise, as it was handed over: 0, or 90 for a game played on its side. */
+    readonly playTurn: number;
     /** The stage the entry plays on, as it powers on. Updated in place. */
     readonly stage: TransitionStage;
     /** The white-hot line of a tube powering on or off, over the play area's centre. Updated in place. */
@@ -161,8 +167,18 @@ export interface TransitionGlow {
 // ---------------------------------------------------------------------------
 
 export interface TransitionViewModelOptions {
-    /** Where the entry plays, which can change as the entry loads. */
+    /**
+     * Where the entry plays, which can change as the entry loads. On a turned
+     * play area, it is the play area's own width and height, about the
+     * centre where it shows.
+     */
     readonly target: () => Rect;
+    /**
+     * How far the play area is turned, in degrees clockwise: 0, or 90 for a
+     * game played on its side, on a phone held upright. The polaroid turns
+     * with it as it floats there. Defaults to 0.
+     */
+    readonly turn?: () => number;
     /** Whether the entry has loaded. */
     readonly isReady: () => boolean;
     /** Whether the entry is running, and so has drawn a frame since `onHandOver`. */
@@ -212,6 +228,9 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
      * differ (an entry scaled by whole numbers, say).
      */
     let playedRect: Rect = NO_RECT;
+    /** How far the play area was turned, as it was handed over. */
+    let playedTurn = 0;
+    const turnOf = options.turn ?? (() => 0);
     /** On the way back: where the polaroid floats from, and to, and the scale and opacity it comes forward from. */
     let returnFrom: PicturePose | undefined;
     let returnTo: PicturePose | undefined;
@@ -235,6 +254,9 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         picture,
         get backdropOpacity() {
             return backdropOpacity;
+        },
+        get playTurn() {
+            return playedTurn;
         },
         get playRect() {
             return playedRect;
@@ -278,7 +300,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
             isQuiet = options.isMotionReduced();
             launched = undefined;
             const target = options.target();
-            const atPlay: PicturePose = { window: target, frame: target, tilt: 0, border: 0 };
+            const atPlay: PicturePose = { window: target, frame: target, tilt: turnOf(), border: 0 };
             place(atPlay, atPlay, 0);
             resetPicture();
             picture.opacity = 1;
@@ -303,7 +325,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
             }
             // The entry ran: its last frame, where it played, powers off first
             returnTo = end;
-            const played: PicturePose = { window: playedRect, frame: playedRect, tilt: 0, border: 0 };
+            const played: PicturePose = { window: playedRect, frame: playedRect, tilt: playedTurn, border: 0 };
             place(played, played, 0);
             resetPicture();
             picture.opacity = 1;
@@ -395,7 +417,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         picture.frameY = launched.frame.y + dy;
         picture.frameWidth = launched.frame.width;
         picture.frameHeight = launched.frame.height;
-        picture.tilt = launched.tilt * (1 - floated);
+        picture.tilt = launched.tilt * (1 - floated) + turnOf() * floated;
         picture.border = launched.border;
     }
 
@@ -411,6 +433,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         if (elapsedMs < duration) return;
         picture.opacity = 0;
         playedRect = options.target();
+        playedTurn = turnOf();
         if (!isQuiet) {
             stage.scaleX = 0;
             stage.scaleY = LINE_SCALE;
@@ -544,7 +567,10 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         glow.height = Math.max(GLOW_MIN_HEIGHT, playedRect.height * scaleY);
     }
 
-    /** `pose`, the size it is on its card, but straight and at the play area's centre: where it comes out of the dot. */
+    /**
+     * `pose`, the size it is on its card, but at the play area's centre, and
+     * straight, or turned as the play area was: where it comes out of the dot.
+     */
     function centredOnPlay(pose: PicturePose): PicturePose {
         const centre = centreOf(playedRect);
         const dx = centre.x - (pose.window.x + pose.window.width / 2);
@@ -552,7 +578,7 @@ export function createTransitionViewModel(options: TransitionViewModelOptions): 
         return {
             window: { ...pose.window, x: pose.window.x + dx, y: pose.window.y + dy },
             frame: { ...pose.frame, x: pose.frame.x + dx, y: pose.frame.y + dy },
-            tilt: 0,
+            tilt: playedTurn,
             border: pose.border,
         };
     }

@@ -36,6 +36,10 @@ export interface CardViewBindings {
     /** Reported with where the card's photo is drawn as it is pressed, for the way into the entry to start from. */
     readonly onLaunchPressed?: (from: PhotoPose) => void;
     readonly onInfoPressed?: () => void;
+    /** Whether the entry is one of the visitor's favourites: its star is filled. */
+    readonly isFavourite: () => boolean;
+    /** Reported as the card's star is pressed. */
+    readonly onFavouritePressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,8 +48,9 @@ export interface CardViewBindings {
 
 /**
  * One entry on the wall: its name across the top, a photo of it, and a few of
- * its tags and a button for its info panel along the foot. Every card is the
- * same size: the photo, in the shape the entry chose, sits in a polaroid
+ * its tags, a star to mark it as a favourite and a button for its info
+ * panel along the foot. Every card is the same size: the photo, in the
+ * shape the entry chose, sits in a polaroid
  * fitted inside a square at the card's centre, tilted a little and taped
  * down across two corners, both its own every time. On the selected card,
  * the polaroid straightens and comes closer, lifting off its tape. Only the
@@ -110,6 +115,15 @@ export function CardView(bindings: CardViewBindings): Element {
                 <ul class="card-tags">
                     {tags.map((tag) => <li text={tag} />)}
                 </ul>
+                <button
+                    type="button"
+                    class={() => (bindings.isFavourite() ? 'card-favourite is-on' : 'card-favourite')}
+                    aria-label={`Favourite: ${entry.name}`}
+                    aria-pressed={() => (bindings.isFavourite() ? 'true' : 'false')}
+                    title={() => (bindings.isFavourite() ? 'Favourite: shown first' : 'Mark as a favourite, to show it first')}
+                    tabIndex={-1}
+                    onClick={() => bindings.onFavouritePressed?.()}
+                />
                 <button
                     type="button"
                     class="card-info"
@@ -262,9 +276,9 @@ export function isOnPolaroid(target: Element): boolean {
     return target.closest('.card-polaroid') !== null;
 }
 
-/** Whether `target` is on a card's info button, which opens the panel and does not select the card. */
-export function isOnInfoButton(target: Element): boolean {
-    return target.closest('.card-info') !== null;
+/** Whether `target` is on one of a card's buttons, its star or its info button, which do not select the card. */
+export function isOnCardButton(target: Element): boolean {
+    return target.closest('.card-info, .card-favourite') !== null;
 }
 
 /** Whether `target` is a card's link, as the keyboard's focus is when it presses Enter on a card. */

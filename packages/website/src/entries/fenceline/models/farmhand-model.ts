@@ -16,9 +16,9 @@ export type FarmhandPhase = 'walking' | 'stringing' | 'snapped';
 
 /**
  * The farmhand, who walks the fences and strings wire. They move from grid
- * point to grid point, along the lines between cells. Holding the string
- * button and pushing off a fence into open meadow starts a wire. The wire
- * follows them until they reach a fence again, and is then ready to tie off.
+ * point to grid point, along the lines between cells. Pushing off a fence
+ * into open meadow starts a wire. The wire follows them until they reach a
+ * fence again, and is then ready to tie off.
  * While they stand still with wire out, the wire goes slack from its post,
  * and slack that reaches them snaps it.
  */
@@ -225,8 +225,8 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
 
     /**
      * Returns the way to go on from the point the farmhand is at, or none.
-     * On a fence, they go the way held if a fence or (with the string button
-     * held) open meadow lies that way. Otherwise, if under way, they keep
+     * On a fence, they go the way held if a fence or open meadow lies that
+     * way, starting a wire into the meadow. Otherwise, if under way, they keep
      * going the way they were, so a way pressed early is taken at the next
      * corner. With wire out, they go only the way held, never back onto the
      * wire.
@@ -236,7 +236,7 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
         if (held === 'none') return 'none';
         if (phase === 'stringing') return canStringTo(held) ? held : 'none';
         if (field.isWalkable(pointRow, pointCol, held)) return held;
-        if (isStringHeld() && field.canString(pointRow, pointCol, held)) return held;
+        if (field.canString(pointRow, pointCol, held)) return held;
         if (isUnderWay && held !== reverse(direction) && field.isWalkable(pointRow, pointCol, direction)) return direction;
         return 'none';
     }
@@ -258,11 +258,6 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
     /** Returns the way the farmhand is steered. That is the way held, or else the way last swiped. */
     function findHeldDirection(): HeldDirection {
         return input.direction !== 'none' ? input.direction : swiped;
-    }
-
-    /** Whether to string wire on pushing into the meadow. It does with the button held, and always when steered by a swipe. */
-    function isStringHeld(): boolean {
-        return input.stringPressed || (input.direction === 'none' && swiped !== 'none');
     }
 
     function canStringTo(way: Direction): boolean {

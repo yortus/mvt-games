@@ -47,7 +47,8 @@ packages/website/src/
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── playground/          The in-browser editor and the sandbox it runs code in
-└── shared/              The site's shared views (overlay, input, perfmon), imported as `#shared`
+├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
+└── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
@@ -73,7 +74,8 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
-| `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `PerfmonView`             |
+| `packages/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `SwipeInputView`, `PerfmonView` |
+| `packages/website/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena

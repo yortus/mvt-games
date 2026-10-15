@@ -69,6 +69,7 @@ function setUp(): { runner: Element; state: { isPlaying: boolean; isSoundOn: boo
         title: () => 'Entry',
         instructions: () => undefined,
         isLandscape: () => false,
+        isTurned: () => false,
         hasHighscores: () => false,
         highscoreRows: () => [],
         highscoresStatus: () => 'ready',

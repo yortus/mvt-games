@@ -24,7 +24,6 @@ export async function load(): Promise<PixiEntryStarter> {
             const input = session.inputConfig;
             input?.onXDirectionChanged?.(move.x);
             input?.onYDirectionChanged?.(move.y);
-            input?.onPrimaryButtonChanged?.(move.isStringing);
         },
 
         start({ stage, sound }): EntrySession {
@@ -52,10 +51,9 @@ export async function load(): Promise<PixiEntryStarter> {
                     gameView.destroy({ children: true });
                 },
                 inputConfig: {
-                    // On a touch screen, the game view's swipes and taps steer, so no controls are drawn
+                    // On a touch screen, the game view's swipes and taps steer, so no controls are drawn.
+                    // Pushing off a fence strings wire, so there is no button.
                     showDpad: !isTouchDevice(),
-                    showPrimary: !isTouchDevice(),
-                    primaryLabel: 'String',
                     onXDirectionChanged: (direction) => {
                         if (direction !== xDirection && direction !== 'none') isYLatest = false;
                         xDirection = direction;
@@ -66,7 +64,6 @@ export async function load(): Promise<PixiEntryStarter> {
                         yDirection = direction;
                         updateDirection();
                     },
-                    onPrimaryButtonChanged: (pressed) => { input.stringPressed = pressed; },
                     onRestartButtonChanged: (pressed) => { input.restartPressed = pressed; },
                 },
             };
@@ -88,14 +85,13 @@ const THUMBNAIL_MOVES: readonly {
     readonly atMs: number;
     readonly x: 'left' | 'none' | 'right';
     readonly y: 'up' | 'none' | 'down';
-    readonly isStringing: boolean;
 }[] = [
-    { atMs: 0, x: 'none', y: 'none', isStringing: false },
-    { atMs: 1800, x: 'left', y: 'none', isStringing: false },
-    { atMs: 2900, x: 'none', y: 'up', isStringing: true },
-    { atMs: 4000, x: 'left', y: 'none', isStringing: false },
-    { atMs: 5650, x: 'none', y: 'up', isStringing: false },
-    { atMs: 7300, x: 'right', y: 'none', isStringing: true },
+    { atMs: 0, x: 'none', y: 'none' },
+    { atMs: 1800, x: 'left', y: 'none' },
+    { atMs: 2900, x: 'none', y: 'up' },
+    { atMs: 4000, x: 'left', y: 'none' },
+    { atMs: 5650, x: 'none', y: 'up' },
+    { atMs: 7300, x: 'right', y: 'none' },
 ];
 
 const THUMBNAIL_ADVANCE_MS = 8500;

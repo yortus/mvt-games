@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BLOW_OUT_POINTS, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
+import { BLOW_OUT_POINTS, FARM_SPEED_UP, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
 import { DIRECTION_DELTA, type HeldDirection } from './common';
 import { createGameModel, type GameModel } from './game-model';
-import { READY_MS, ROUND_CLEAR_MS, SNAPPED_MS, START_LIVES } from './model-constants';
+import { FARM_FENCED_MS, READY_MS, ROUND_CLEAR_MS, SNAPPED_MS, START_LIVES } from './model-constants';
 
 // A meadow of 30 rows and 40 columns. The farmhand starts at the bottom
 // middle, at grid point (30, 20). Dust devils stand still, so a test can
@@ -26,8 +26,14 @@ const QUIET_ROUND: RoundConfig = {
     sheepStarts: [{ row: 27.5, col: 2.5 }],
 };
 
-function makeGame(round: Partial<RoundConfig> = {}): GameModel {
-    const game = createGameModel({ rounds: [{ ...QUIET_ROUND, ...round }], rows: ROWS, cols: COLS });
+/** A round cleared by fencing off one corner, with `clearCorner`. */
+const QUICK_ROUND: Partial<RoundConfig> = { targetShare: 0.05, sheepCount: 0 };
+
+/** Makes a game whose farms each have `roundCount` rounds like `round`, and gets it ready to play. */
+function makeGame(round: Partial<RoundConfig> = {}, roundCount = 1, extraLifePoints?: number): GameModel {
+    const rounds: RoundConfig[] = [];
+    for (let i = 0; i < roundCount; i++) rounds.push({ ...QUIET_ROUND, ...round });
+    const game = createGameModel({ rounds, rows: ROWS, cols: COLS, extraLifePoints });
     run(game, READY_MS);
     return game;
 }
@@ -38,12 +44,11 @@ function run(game: GameModel, ms: number): void {
 }
 
 /**
- * Moves the farmhand through the grid points given, in straight lines,
- * holding the string button. Stops early if the game leaves play.
+ * Moves the farmhand through the grid points given, in straight lines.
+ * Stops early if the game leaves play.
  */
 function travel(game: GameModel, ...points: (readonly [number, number])[]): void {
     const input = game.playerInput;
-    input.stringPressed = true;
     for (const [row, col] of points) {
         for (let frame = 0; frame < 2000; frame++) {
             const farmhand = game.farmhand;
@@ -55,13 +60,25 @@ function travel(game: GameModel, ...points: (readonly [number, number])[]): void
             game.update(STEP_MS);
             if (game.phase !== 'playing') {
                 input.direction = 'none';
-                input.stringPressed = false;
                 return;
             }
         }
     }
     input.direction = 'none';
-    input.stringPressed = false;
+}
+
+/** Fences off the bottom left corner, 110 cells, which clears a `QUICK_ROUND`. */
+function clearCorner(game: GameModel): void {
+    travel(game, [30, 11], [20, 11], [20, 0]);
+}
+
+/** Walks the farmhand left along the fence for `ms`, and returns how far they went, in grid steps. */
+function walkLeft(game: GameModel, ms: number): number {
+    const startCol = game.farmhand.col;
+    game.playerInput.direction = 'left';
+    run(game, ms);
+    game.playerInput.direction = 'none';
+    return startCol - game.farmhand.col;
 }
 
 function directionTowards(row: number, col: number, toRow: number, toCol: number): HeldDirection {
@@ -134,23 +151,64 @@ describe('GameModel', () => {
     });
 
     it('clears the round once its share is fenced off, with a bonus for each percent over', () => {
-        const game = makeGame({ targetShare: 0.05, sheepCount: 0 });
-        travel(game, [30, 11], [20, 11], [20, 0]);
+        const game = makeGame(QUICK_ROUND, 2);
+        clearCorner(game);
         expect(game.phase).toBe('round-clear');
         // 110 of 1200 cells is 9.2%, 4 whole percent over the target
         expect(game.roundBonus).toBe(4 * 1000);
         expect(game.score).toBe(110 * POINTS_PER_CELL + 4000);
         run(game, ROUND_CLEAR_MS + 50);
         expect(game.round).toBe(2);
+        expect(game.farm).toBe(1);
         expect(game.phase).toBe('ready');
         expect(game.field.claimedCount).toBe(0);
     });
 
+    it('fences the farm once its last round is cleared, then starts the next farm, faster', () => {
+        const game = makeGame(QUICK_ROUND, 2);
+        clearCorner(game);
+        run(game, ROUND_CLEAR_MS + 50 + READY_MS);
+        clearCorner(game);
+        expect(game.round).toBe(2);
+        run(game, ROUND_CLEAR_MS + 50);
+        expect(game.phase).toBe('farm-fenced');
+        expect(game.phaseMs).toBeLessThan(100);
+        run(game, FARM_FENCED_MS);
+        expect(game.phase).toBe('ready');
+        expect(game.round).toBe(3);
+        expect(game.farm).toBe(2);
+        expect(game.speed).toBe(FARM_SPEED_UP);
+    });
+
+    it('runs everything faster on a later farm, the farmhand too', () => {
+        const firstFarm = makeGame(QUICK_ROUND);
+        const secondFarm = makeGame(QUICK_ROUND);
+        clearCorner(secondFarm);
+        run(secondFarm, ROUND_CLEAR_MS + FARM_FENCED_MS + READY_MS + 100);
+        expect(secondFarm.farm).toBe(2);
+        expect(secondFarm.phase).toBe('playing');
+        expect(walkLeft(secondFarm, 400) / walkLeft(firstFarm, 400)).toBeCloseTo(FARM_SPEED_UP, 2);
+    });
+
     it('loses the sheep left out in the meadow when the round is cleared', () => {
         const game = makeGame({ targetShare: 0.05, sheepStarts: [{ row: 5.5, col: 5.5 }] });
-        travel(game, [30, 11], [20, 11], [20, 0]);
+        clearCorner(game);
         expect(game.phase).toBe('round-clear');
         expect(game.sheep[0].phase).toBe('lost');
+    });
+
+    it('gives an extra life for each mark of points the score passes', () => {
+        // Fencing off the corner scores its 30 cells and its sheep
+        const points = 30 * POINTS_PER_CELL + SHEEP_POINTS;
+        const lifePoints = Math.floor(points / 2) - 1;
+        const game = makeGame({}, 1, lifePoints);
+        travel(game, [30, 5], [24, 5], [24, 0]);
+        expect(game.score).toBe(points);
+        expect(game.extraLivesEarned).toBe(2);
+        expect(game.lives).toBe(START_LIVES + 2);
+        game.reset();
+        expect(game.extraLivesEarned).toBe(0);
+        expect(game.lives).toBe(START_LIVES);
     });
 
     it('loses a life to a beetle that reaches the farmhand', () => {

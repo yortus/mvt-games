@@ -1,46 +1,92 @@
 import { createInstrument, createSoundEffect } from '@mvtjs/audio';
 
 // Fenceline's instruments and sound effects, for the Audio80. They were all
-// written for this game. The tunes have a country fiddle for a lead, a
-// plucked bass and a light tock, like a barn dance band.
+// written for this game. The tunes are played by a country band: a fiddle,
+// a banjo, a plucked bass and a little drum kit, with brushes on the snare.
 
 // ---------------------------------------------------------------------------
 // The tunes' instruments
 // ---------------------------------------------------------------------------
 
-/** A reedy pulse with a slow vibrato, bowed like a fiddle. It leads every tune. */
+/**
+ * A bowed fiddle. It is a saw wave, mellowed by the songs' low-pass filter
+ * `a`, that swells in with each stroke of the bow and wavers once held. It
+ * leads every tune.
+ */
 export const FIDDLE = createInstrument({
-    wave: 'pulse',
-    pulseWidth: 0.3,
-    pulseSweep: { to: 0.42, ms: 400, isPingPong: true },
-    envelope: { attackMs: 12, decayMs: 260, sustain: 0.55, releaseMs: 90 },
-    vibrato: { semitones: 0.25, hz: 5.5, delayMs: 140 },
-    echo: 0.15,
-    volume: 0.75,
+    wave: 'saw',
+    filter: 'a',
+    envelope: { attackMs: 22, decayMs: 500, sustain: 0.65, releaseMs: 110 },
+    vibrato: { semitones: 0.18, hz: 5.5, delayMs: 170 },
+    echo: 0.2,
+    volume: 0.6,
 });
 
-/** A bright, thin pluck, like a banjo. It plays the jingles' runs. */
+/**
+ * A banjo, picking rolls under the fiddle. It is a thin pulse, plucked,
+ * through the songs' filter `b`, which snaps shut on each note for the
+ * banjo's twang.
+ */
 export const BANJO = createInstrument({
     wave: 'pulse',
-    pulseWidth: 0.18,
-    envelope: { attackMs: 1, decayMs: 180, sustain: 0, releaseMs: 50 },
-    echo: 0.2,
-    volume: 0.8,
+    pulseWidth: 0.22,
+    filter: 'b',
+    filterSweep: { fromHz: 4200, toHz: 1000, ms: 120 },
+    envelope: { attackMs: 1, decayMs: 280, sustain: 0, releaseMs: 40 },
+    echo: 0.1,
+    volume: 0.5,
 });
 
 /** A round, plucked bass. */
 export const THUMP = createInstrument({
     wave: 'triangle',
-    envelope: { attackMs: 1, decayMs: 240, sustain: 0, releaseMs: 60 },
+    envelope: { attackMs: 1, decayMs: 260, sustain: 0, releaseMs: 60 },
     volume: 1,
+});
+
+/** A soft kick: a click of noise, then a low triangle, falling. */
+export const KICK = createInstrument({
+    note: 'C-3',
+    envelope: { attackMs: 0, decayMs: 140, sustain: 0, releaseMs: 0 },
+    steps: `
+        # wave     pitch
+        noise      +24
+        triangle   +7
+        triangle   +0
+        triangle   -5
+    `,
+    volume: 0.75,
+});
+
+/** A snare played with brushes: a soft swish of noise, over a little body. */
+export const BRUSH = createInstrument({
+    note: 'A-5',
+    stepMs: 20,
+    envelope: { attackMs: 3, decayMs: 150, sustain: 0, releaseMs: 0 },
+    steps: `
+        # wave     pitch  vol
+        noise      +0     vC
+        triangle   -24    v7
+        noise      +3     vA
+    `,
+    volume: 0.45,
 });
 
 /** A light tock of noise, off the beat. */
 export const TOCK = createInstrument({
     wave: 'noise',
     note: 'C-6',
-    envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 0 },
-    volume: 0.3,
+    envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 },
+    volume: 0.2,
+});
+
+/** The ute's horn: a buzzy pulse, flicking between two notes a minor third apart, the way a car horn's two notes clash. */
+export const HORN = createInstrument({
+    wave: 'pulse',
+    pulseWidth: 0.4,
+    arpeggio: [0, 3],
+    envelope: { attackMs: 4, decayMs: 0, sustain: 1, releaseMs: 40 },
+    volume: 0.5,
 });
 
 // ---------------------------------------------------------------------------
@@ -78,6 +124,36 @@ export const TIE_OFF = createSoundEffect({
         pulse       +12    vB
         pulse       +16    v9
         pulse       +19    v7
+    `,
+});
+
+/**
+ * An extra life: a bright banjo-like run up the G chord and on to the
+ * octave, ringing out with a flick of arpeggio at the top.
+ */
+export const EXTRA_LIFE = createSoundEffect({
+    note: 'G-5',
+    stepMs: 55,
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 260 },
+    priority: 3,
+    volume: 0.6,
+    echo: 0.3,
+    steps: `
+        # wave      pitch  vol  width
+        pulse       -12    vC   p4
+        pulse       -8     vC
+        pulse       -5     vD
+        pulse       +0     vE
+        pulse       +4     vE   p3
+        pulse       +7     vF
+        pulse       +12    vF
+        pulse       +7     vD
+        pulse       +12    vF   p2
+        pulse       +16    vD
+        pulse       +12    vB
+        pulse       +16    v9
+        pulse       +12    v7
+        pulse       +16    v5
     `,
 });
 

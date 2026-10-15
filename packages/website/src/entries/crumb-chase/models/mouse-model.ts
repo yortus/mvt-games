@@ -25,6 +25,8 @@ export interface MouseModel {
 export interface MouseModelOptions {
     startRow: number;
     startCol: number;
+    /** The way the mouse runs as it starts, until the player steers it. Defaults to left. */
+    startDirection?: Direction;
     /** Tiles per second. */
     speed: number;
     /** Returns whether the given tile can be walked on. */
@@ -44,8 +46,8 @@ export function createMouseModel(options: MouseModelOptions): MouseModel {
         col: startCol,
         tileRow: startRow,
         tileCol: startCol,
-        direction: 'left' as Direction,
-        requestedDirection: 'left' as Direction,
+        direction: options.startDirection ?? 'left',
+        requestedDirection: options.startDirection ?? 'left',
     };
 
     // The current tile-to-tile move, advanced only via update().

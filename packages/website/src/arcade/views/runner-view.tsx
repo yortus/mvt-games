@@ -29,8 +29,10 @@ export interface RunnerViewBindings {
     readonly title: () => string;
     /** How to play the chosen entry, if it says. */
     readonly instructions: () => string | undefined;
-    /** Whether the entry's play area is wider than tall. On a phone held upright, a hint suggests turning it. */
+    /** Whether the entry's play area is wider than tall. On a phone held upright, a hint suggests turning it, unless the runner is turned for it. */
     readonly isLandscape: () => boolean;
+    /** Whether the runner is turned a quarter turn, for a game wider than tall on a phone held upright. No hint is needed then. */
+    readonly isTurned: () => boolean;
     /** Reported as the back button, or the pause menu's Exit, is pressed. */
     readonly onBackPressed?: () => void;
     /** Reported as the pause button is pressed. */
@@ -110,7 +112,7 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
             <div class="runner-frame">
                 {bindings.stage}
             </div>
-            <div class="runner-rotate-hint" visible={() => bindings.isPlaying() && bindings.isLandscape() && !isHintDismissed}>
+            <div class="runner-rotate-hint" visible={() => bindings.isPlaying() && bindings.isLandscape() && !bindings.isTurned() && !isHintDismissed}>
                 <span text="Turn your phone sideways for a bigger view" />
                 <button type="button" aria-label="Dismiss" text="×" onClick={() => { isHintDismissed = true; }} />
             </div>

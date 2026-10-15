@@ -492,6 +492,29 @@ the table is empty or out of reach. It is absent when the game runs outside
 the Arcade, as in its thumbnail. Neon Monsoon's HUD shows the higher of
 `bestScore` and its own best this session.
 
+## Saving a Game
+
+A game can be saved as the visitor leaves it, so the Arcade offers to
+resume it next time. The session gives two methods. `saveGame` returns the
+game as it stands, as a value JSON can hold. It returns undefined when there
+is nothing worth resuming, such as a run that is over. `loadGame` restores a
+saved game in place of the one the session started with, and returns
+whether it could. A save from an older version of the game may not fit,
+so `loadGame` checks the value's shape first:
+
+```ts
+return {
+    // update, destroy, inputConfig and scoring, as before
+    saveGame: gameModel.save,
+    loadGame: gameModel.load,
+};
+```
+
+The game model does the work, through its public actions. Crumb Chase's
+`save` records the score, the crumbs eaten, and each animal's tile, and its
+`load` rebuilds the maze and the animals from them. A version number in the
+save lets a later change to its shape reject older saves.
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
@@ -510,4 +533,5 @@ the Arcade, as in its thumbnail. Neon Monsoon's HUD shows the higher of
 - Model tests exist and pass
 - A game with a score reports it as `scoring`, says `hasHighscores: true`,
   and has a table in `GAMES` (see [Keeping Highscores](#keeping-highscores))
+- A game that can be resumed gives `saveGame` and `loadGame` (see [Saving a Game](#saving-a-game))
 - The title, characters, art and levels are the entry's own (see [Originality](#originality))

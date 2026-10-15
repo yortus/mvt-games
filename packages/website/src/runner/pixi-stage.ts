@@ -50,6 +50,8 @@ export interface PixiStageOptions {
     readonly session: () => EntrySession | undefined;
     /** Whether the session is paused. */
     readonly isPaused: () => boolean;
+    /** Whether the page has turned the canvas a quarter turn clockwise, with a CSS transform on an ancestor. */
+    readonly isTurned: () => boolean;
     /** The host's Audio80, given to each session. */
     readonly audio80: Audio80;
     /** The Audio80's controls. The stage advances the chip's clock with the session's models, and sends its writes after each refresh. */
@@ -85,6 +87,22 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     canvas.style.touchAction = 'none';
     canvas.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
     element.append(canvas);
+
+    // Pixi finds where the pointer is on the canvas from the canvas's box in
+    // the page. A canvas turned a quarter turn clockwise shows in a box that
+    // is its height wide, with its own x running down the screen and its own
+    // y running from the box's right edge to its left
+    const events = app.renderer.events;
+    const mapUpright = events.mapPositionToPoint.bind(events);
+    events.mapPositionToPoint = (point, x, y) => {
+        if (!options.isTurned()) {
+            mapUpright(point, x, y);
+            return;
+        }
+        const box = canvas.getBoundingClientRect();
+        point.x = (y - box.top) * (canvas.width / box.height) / events.resolution;
+        point.y = (box.right - x) * (canvas.height / box.width) / events.resolution;
+    };
 
     let starter: PixiEntryStarter | undefined;
     let area: PlayArea = { scale: 1, stageWidth: 1, stageHeight: 1, offsetX: 0, offsetY: 0 };

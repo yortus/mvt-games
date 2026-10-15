@@ -158,7 +158,9 @@ export function TransitionView(bindings: TransitionViewBindings): Element {
         const play = transition.playRect;
         style.width = `${drawnGlowWidth}px`;
         style.height = `${drawnGlowHeight}px`;
-        style.transform = `translate(${play.x + (play.width - drawnGlowWidth) / 2}px, ${play.y + (play.height - drawnGlowHeight) / 2}px)`;
+        // Turned about its centre, the glow's transform origin, as the play area is
+        const turn = transition.playTurn === 0 ? '' : ` rotate(${transition.playTurn}deg)`;
+        style.transform = `translate(${play.x + (play.width - drawnGlowWidth) / 2}px, ${play.y + (play.height - drawnGlowHeight) / 2}px)${turn}`;
     }
 
     /** The bar's light runs along it as the wait goes on. */
@@ -191,10 +193,15 @@ export function TransitionView(bindings: TransitionViewBindings): Element {
             isStageDrawnTransformed = true;
             drawnStageScaleX = NaN;
             drawnStageBrightness = NaN;
-            // The play area's centre, from the stage's corner
+            // The play area's centre, from the stage's own corner. A stage turned a quarter turn
+            // clockwise has its own corner at the top right of where it shows, and its own x down the screen
             const bounds = stage.getBoundingClientRect();
             const play = transition.playRect;
-            style.transformOrigin = `${play.x + play.width / 2 - bounds.left}px ${play.y + play.height / 2 - bounds.top}px`;
+            const centreX = play.x + play.width / 2;
+            const centreY = play.y + play.height / 2;
+            style.transformOrigin = transition.playTurn === 0
+                ? `${centreX - bounds.left}px ${centreY - bounds.top}px`
+                : `${centreY - bounds.top}px ${bounds.right - centreX}px`;
         }
         if (powering.scaleX !== drawnStageScaleX || powering.scaleY !== drawnStageScaleY) {
             drawnStageScaleX = powering.scaleX;

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
-import { BAA, BLOW_OUT, CREAK, HATCH, SNAP, STRING_TICK, TIE_OFF } from '../data';
+import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';
 
@@ -16,6 +16,7 @@ describe('GameAudioView', () => {
         sheepPenned: number;
         devilsBlownOut: number;
         beetlesHatched: number;
+        extraLivesEarned: number;
         isSlackRunning: boolean;
     };
     let chip: ReturnType<typeof createHeadlessAudio80<{ record: true }>>;
@@ -29,6 +30,7 @@ describe('GameAudioView', () => {
             sheepPenned: 0,
             devilsBlownOut: 0,
             beetlesHatched: 0,
+            extraLivesEarned: 0,
             isSlackRunning: false,
         };
         chip = createHeadlessAudio80({ record: true });
@@ -40,6 +42,7 @@ describe('GameAudioView', () => {
             sheepPenned: () => state.sheepPenned,
             devilsBlownOut: () => state.devilsBlownOut,
             beetlesHatched: () => state.beetlesHatched,
+            extraLivesEarned: () => state.extraLivesEarned,
             isSlackRunning: () => state.isSlackRunning,
             share: () => 0.2,
             targetShare: () => 0.7,
@@ -69,9 +72,10 @@ describe('GameAudioView', () => {
         state.sheepPenned++;
         state.devilsBlownOut++;
         state.beetlesHatched++;
+        state.extraLivesEarned++;
         tick();
         tick();
-        expect(played()).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH]);
+        expect(played()).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH, EXTRA_LIFE]);
     });
 
     it('twangs as the wire snaps', () => {
