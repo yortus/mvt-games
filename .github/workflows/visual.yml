@@ -2,7 +2,9 @@ name: Visual tests
 
 # This workflow runs the visual tests (npm run test:visual).
 #
-# - On every push, they run on Ubuntu.
+# - On every push, they run on Ubuntu. A push or pull request that changes
+#   only Markdown, notes or agent instructions skips them, since no image
+#   depends on those.
 # - When Playwright's version or the test harness changes, they also run on
 #   Windows and macOS. A new Chromium, or a change to how the harness sets
 #   it up, is what could make the three systems draw differently.
@@ -18,6 +20,13 @@ name: Visual tests
 # their own machine. A test whose actual image no longer matches its
 # reference image fails, and its actual and diff images are uploaded for
 # the reviewer.
+#
+# The last job, "Visual tests passed", always runs, and fails only when a
+# job before it failed. A branch rule can require it, even though the
+# tests themselves are sometimes skipped and run on a varying set of
+# systems. The workflow never filters its events by path for the same
+# reason: a required check from a workflow that didn't run would wait
+# forever.
 on:
     push:
     pull_request:
@@ -39,6 +48,7 @@ jobs:
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
         runs-on: ubuntu-latest
         outputs:
+            # A JSON list of systems, empty when the tests are skipped.
             os: ${{ steps.pick.outputs.os }}
         steps:
             - uses: actions/checkout@v4
@@ -64,16 +74,23 @@ jobs:
                   was=$(git show FETCH_HEAD:package-lock.json | node -e "$version")
                   now=$(node -e "$version" < package-lock.json)
                   echo "Playwright: $was before, $now now"
+                  # No image depends on Markdown, notes or agent instructions.
+                  changed=$(git diff --name-only FETCH_HEAD HEAD -- . ':!*.md' ':!notes' ':!.changeset' ':!.claude')
+                  if [ -z "$changed" ]; then
+                      echo "Nothing that could change an image changed, so the tests are skipped."
+                      echo "os=[]" >> "$GITHUB_OUTPUT"; exit 0
+                  fi
                   # The harness fixes everything that could differ between systems, such
                   # as the fonts, the HTML rules and the browser's switches. So a change
-                  # to it is checked on every system too.
-                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/v-snap .github/workflows/visual.yml)
+                  # to it is checked on every system too. Its Markdown is not part of it.
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/v-snap .github/workflows/visual.yml ':!*.md')
                   echo "Harness changes: ${harness:-none}"
                   if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
                   else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
 
     visual:
         needs: systems
+        if: needs.systems.outputs.os != '[]'
         strategy:
             fail-fast: false
             matrix:
@@ -137,3 +154,18 @@ jobs:
                   name: visual-${{ matrix.os }}
                   path: .vitest/vsnap/
                   if-no-files-found: ignore
+
+    passed:
+        name: Visual tests passed
+        needs: [systems, visual]
+        if: always()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check the jobs before this one
+              env:
+                  RESULTS: ${{ join(needs.*.result, ' ') }}
+              run: |
+                  echo "Results: $RESULTS"
+                  case " $RESULTS " in
+                      *' failure '* | *' cancelled '*) exit 1 ;;
+                  esac

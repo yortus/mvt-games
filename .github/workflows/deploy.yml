@@ -1,8 +1,22 @@
 name: Deploy to GitHub Pages
 
+# Builds the site and the docs, and deploys them to GitHub Pages. A push that
+# changes only files neither one is built from, such as a README, a
+# changelog, notes, or a package's own docs, deploys nothing.
+
 on:
     push:
         branches: [main]
+        paths-ignore:
+            - '**/README.md'
+            - '**/CHANGELOG.md'
+            - '**/CONTRIBUTING.md'
+            - AGENTS.md
+            - notes/**
+            - .changeset/**
+            - .claude/**
+            - packages/audio/docs/**
+            - packages/v-snap/docs/**
     workflow_dispatch:
 
 permissions:
