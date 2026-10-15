@@ -17,32 +17,34 @@
   <img src="https://img.shields.io/badge/licence-MIT-e8456b" alt="MIT licence">
 </p>
 
-Unit tests can't see a sprite in the wrong place, a colour that changed,
-or a panel that overflows. Visual tests can. A visual test draws a view in
-a known state, and compares the image with a reference image. The
-reference is an image that someone looked at, accepted and committed in an
-earlier run.
+[Visual snapshot tests](docs/writing-tests.md) have two well-known
+problems: they are slow and flaky. The screenshot process that most tools
+use is inefficient and makes test runs slow. And each system draws a
+little differently, so a reference image made on one machine can fail on
+another. The usual cure for the flakiness is to draw every image in
+Docker, so that every machine draws alike. Then every developer and every
+CI job must run Docker, and the slow tests get slower. As a result, many
+projects use fragile
+[assertions](https://yortus.com/mvt-games/docs/building-with-mvt/iterating-with-confidence/testing-views.html#scene-graph-assertions)
+or skip view testing altogether.
 
-Most projects give up on visual tests, for two reasons. They are slow,
-because each image is a screenshot. And they fail for no visible reason,
-because each system draws a little differently, so a reference made on one
-machine fails on another. The usual cure for that is to draw every image
-in Docker.
+v-snap is fast and consistent across machines, without Docker:
 
-v-snap fixes both, without Docker:
-
-- **It is fast.** A canvas image takes about 4 ms to draw and check. A
-  screenshot test in the same browser takes 67 ms. 1000 images run in under
-  8 seconds, start-up included.
+- **It is an order of magnitude faster per image.** A canvas image takes
+  about 4 ms to draw and check. A screenshot test in the same browser
+  takes 67 ms. 1000 images run in under 8 seconds, start-up included.
 - **Every machine draws the same images.** A reference made on Windows
   passes on Linux and macOS, and the other way round. v-snap is checked on
   Windows x64, Linux x64 and arm64, and macOS arm64. `npm ci` installs
   everything but the browser, which the first run downloads.
+
+And it fits the way projects already test:
+
 - **Its tests are Vitest tests.** v-snap adds two projects to a Vitest
   config. Watch mode, the Vitest UI and the VS Code extension all work.
 - **One line declares one image.** There is no test page to build.
 - **It draws Pixi and three.js views itself,** and any canvas that a test
-  draws. HTML views are tested too, and support for another renderer can
+  draws. HTML views are tested too, and support for other renderers can
   be added.
 
 ## A Test
