@@ -296,8 +296,10 @@ to.
 
 Each test has one image, named for the test. So renaming a test, or its
 `describe` block, renames its image. A run outside CI writes the new
-reference and deletes the old one, so version control shows the rename as
-one file renamed.
+reference and deletes the old one, if git tracks it, so version control
+shows the rename as one file renamed. A rerun in watch mode keeps the old
+one, as [Running the Tests](running-tests.md#checks-of-the-reference-images)
+explains.
 
 Two tests whose full names differ only in punctuation would have the same
 image name, and so share one reference image. So would two whose names

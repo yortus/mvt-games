@@ -17,7 +17,7 @@ tests alone. Only a run that includes v-snap's projects starts a browser.
 
 | Command | What it does |
 | --- | --- |
-| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. Except in CI, a new image is written as its reference, and a reference that no test uses any more is deleted |
+| `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. Except in CI, a new image is written as its reference, and a reference that no test uses any more is deleted, if git tracks it |
 | `vitest run -p unit` | Runs the unit tests alone. No browser starts |
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
 | `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It also repairs references: it renames one whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves the reference of an image within the tolerance as it is |
@@ -50,6 +50,21 @@ One check is about the run, not a test:
   reference, such as one that `.skip`, `.only`, `.todo` or `-t` left out.
   The run also fails if tests in two files share a reference, which only a
   reference path without the test file's stem allows.
+
+A run deletes only what git can bring back, so it deletes only the unused
+references that git tracks, those staged but not committed included. It
+keeps the others, and its summary lists them as unused references, with
+the reason:
+
+- **A reference that git doesn't track,** such as a new one that was
+  never added, is kept, since its deletion couldn't be undone. Delete it by
+  hand, or add it to git, and the next run deletes it.
+- **Every unused reference is kept if git can't say** which files it
+  tracks, such as outside a git repository.
+- **A rerun in watch mode keeps them all,** since it follows each save,
+  and a test may be commented out for only a moment. The first run in
+  watch mode deletes them, and so does a rerun that updates references,
+  as when `u` is pressed.
 
 A run of every visual test file covers every reference, those of deleted
 test files too. A run of some of them, such as a shard (`--shard`), a run
@@ -149,7 +164,9 @@ each reference is a pointer file, and each test fails and says so.
 
 In watch mode, Vitest reruns a test file when the file changes, or when a
 module that it imports changes, such as its view. A change to
-`vsnap.config.ts` reruns the tests with the new config.
+`vsnap.config.ts` reruns the tests with the new config. A rerun deletes no
+unused references, unless it updates references, as
+[Checks of the Reference Images](#checks-of-the-reference-images) says.
 
 A new or deleted test file restarts Vitest, since each project gets its
 test files when the config loads, and the restart sends a new file to its

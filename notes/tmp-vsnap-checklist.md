@@ -19,7 +19,7 @@ come from the blind review of 2026-10-15.
 
 ## Bugs
 
-- [ ] **B2: A local run deletes unused references, in watch reruns too**
+- [x] **B2: A local run deletes unused references, in watch reruns too**
   (checked, `src/node/reporter.ts` `runChecks` and `settleOrphans`).
   Comment out a test and save, and the rerun deletes its reference. If that
   reference was new and not yet committed, it is gone for good. Vitest
@@ -28,7 +28,7 @@ come from the blind review of 2026-10-15.
   watch rerun; or only references that git tracks, which can be got back;
   or move them to `.vitest/vsnap/deleted/` instead of deleting them; or
   delete only with `-u` again.
-  Not done: it reverses part of 4b, so it is yours to decide. Recommendation: delete only in a run that isn't a watch rerun, and only references that git tracks, so a deleted reference can always be got back.
+  Done (2026-10-15), as recommended: a run deletes only references that git tracks (`listTrackedFiles`, staged ones included; none if git can't say), and a watch rerun deletes none unless it updates (`u`). The summary lists kept ones under "Unused references", with the reason. Checked end to end on the fixture, the watch rerun through Vitest's Node API.
 - [x] **B3: HTML captures crop anything outside the element's box**
   (checked, `src/browser/html-image.ts`: the capture is the host's
   rectangle). Box shadows, outlines, focus rings and overflow from

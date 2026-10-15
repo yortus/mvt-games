@@ -35,7 +35,7 @@ import { resolveReferencePath, type VisualLayout } from './layout.ts';
 import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
 import { shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
-import { findOrphans, findReferences, findReferencesOfFiles, removeReference, toFileKey } from './references.ts';
+import { findOrphans, findReferences, findReferencesOfFiles, listTrackedFiles, removeReference, toFileKey } from './references.ts';
 import { describeProblems, forgetVsnapCalls, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
@@ -63,6 +63,8 @@ export function createVisualReporter(options: {
     let vitest: Vitest | undefined;
     /** When the run's first visual test file started, for the summary's time. */
     let started: number | undefined;
+    /** Whether a run of the projects has ended, so that the next run in watch mode is a rerun. */
+    let hasRun = false;
     return {
         onInit(v: Vitest) {
             vitest = v;
@@ -88,7 +90,9 @@ export function createVisualReporter(options: {
             // The checks run once the run's files have ended. They fail the run
             // through its exit code, which Vitest leaves as they set it.
             const failures = options.problems.length > 0 ? [describeProblems(options.problems)] : [];
-            const outcome = reason === 'interrupted' ? undefined : runChecks({ layout, state, vitest, testFiles: options.testFiles, ownFiles, testModules });
+            const isRerun = hasRun && vitest.config.watch;
+            hasRun = true;
+            const outcome = reason === 'interrupted' ? undefined : runChecks({ layout, state, vitest, testFiles: options.testFiles, ownFiles, testModules, isRerun });
             clearPassedOutputs(layout, testModules);
             failures.push(...(outcome?.failures ?? []));
             const seconds = (performance.now() - (started ?? performance.now())) / 1000;
@@ -161,7 +165,7 @@ function describeRun(options: {
     const deleted = outcome?.deleted ?? [];
     const images = listImages(options.layout, options.testModules);
     const unjudged = countUnjudged(options.testModules);
-    if (images.length === 0 && unjudged === 0 && notes.length === 0 && deleted.length === 0) return [];
+    if (images.length === 0 && unjudged === 0 && notes.length === 0 && deleted.length === 0 && outcome?.unused === undefined) return [];
     const lines = [` ${paint.badge(' v-snap ')} ${paint.dim(options.projectNames.join(', '))}`];
     const rows: (readonly [string, string])[] = [];
     if (images.length > 0 || unjudged > 0) rows.push(['Images', describeOutcomes(images, unjudged, paint)]);
@@ -195,6 +199,14 @@ function describeRun(options: {
     }
     if (deleted.length > 0) {
         lines.push(...describeSection(paint, { title: 'Deleted references', rows: deleted.map((file) => fitRow({ paint, columns, path: toRootPath(root, file) })) }));
+    }
+    const unused = outcome?.unused;
+    if (unused !== undefined) {
+        lines.push(...describeSection(paint, {
+            title: 'Unused references',
+            note: `No test uses these, but they were kept. ${unused.why}`,
+            rows: unused.files.map((file) => fitRow({ paint, columns, path: toRootPath(root, file) })),
+        }));
     }
     if (images.some((p) => p.meta.outcome === 'within-tolerance')) {
         const why = DRAWS_EXACTLY
@@ -385,6 +397,8 @@ interface CheckOutcome {
     readonly notes: readonly string[];
     /** The references that the run deleted, as unused, with `-u`, as absolute paths. */
     readonly deleted: readonly string[];
+    /** The unused references that the run kept, and why, if it kept any. */
+    readonly unused?: UnusedReferences;
     /** The checks that failed, each a heading and its lines. */
     readonly failures: readonly string[];
     /** The references that the checks covered, with their sizes, found once for the summary too. */
@@ -393,10 +407,17 @@ interface CheckOutcome {
     readonly isComplete: boolean;
 }
 
-/** What a check found: its failure, if it failed, and the references it deleted, if any. */
+/** What a check found: its failure, if it failed, and the references it deleted or kept, if any. */
 interface CheckResult {
     readonly failure?: string;
     readonly deleted?: readonly string[];
+    readonly unused?: UnusedReferences;
+}
+
+/** Unused references that a run that writes references kept, as absolute paths, and why it kept them. */
+interface UnusedReferences {
+    readonly files: readonly string[];
+    readonly why: string;
 }
 
 /**
@@ -407,9 +428,10 @@ interface CheckResult {
  *   one file that share one fail the second test instead, in the page.
  * - References that no test uses are deleted by a run that writes
  *   references: by default outside CI, as a new reference is written, and
- *   with `-u`. In CI, they are listed, and fail the run. A test that didn't
- *   run, because it was skipped or a filter left it out, still uses its
- *   reference, by its name.
+ *   with `-u`, if git tracks them and the run isn't a rerun in watch mode
+ *   (see `settleOrphans`). In CI, they are listed, and fail the run. A test
+ *   that didn't run, because it was skipped or a filter left it out, still
+ *   uses its reference, by its name.
  *
  * Each reference's pixels are checked against the hash it carries by its
  * own test, which fails if they don't match, so that the failure shows
@@ -429,11 +451,16 @@ function runChecks(options: {
     readonly ownFiles: readonly string[];
     /** The test modules of the projects that ran. */
     readonly testModules: readonly TestModule[];
+    /** Whether the run is a rerun in watch mode. */
+    readonly isRerun: boolean;
 }): CheckOutcome {
     const { layout, state, vitest } = options;
     // Unused references go as new ones arrive: outside CI, and with -u.
     const update = vitest.config.snapshotOptions.updateSnapshot;
     const isWriting = update === 'all' || update === 'new' || process.env.VSNAP_MODE === 'environment';
+    // A rerun in watch mode follows each save, so a test commented out for a
+    // moment would lose its reference. It deletes only when told to update.
+    const mayDelete = !options.isRerun || update === 'all';
     // A file that failed to load has no tests to say which references it uses.
     const loaded = options.testModules.filter((m) => m.errors().length === 0);
     const loadedKeys = new Set(loaded.map((m) => toFileKey(m.moduleId)));
@@ -447,11 +474,12 @@ function runChecks(options: {
     const named = listNamedReferences(layout, loaded);
     const results = [
         describeSharedReferences(used),
-        settleOrphans({ layout, state, references: references.map((r) => r.file), used, named, isWriting }),
+        settleOrphans({ layout, state, references: references.map((r) => r.file), used, named, isWriting, mayDelete }),
     ];
     const notes: string[] = [];
     const failures = results.flatMap((result) => result.failure === undefined ? [] : [result.failure]);
     const deleted = results.flatMap((result) => result.deleted ?? []);
+    const unused = results.find((result) => result.unused !== undefined)?.unused;
     for (const module of options.testModules) {
         if (!loadedKeys.has(toFileKey(module.moduleId))) notes.push(`${toDisplayPath(module.moduleId)} failed to load, so its references were not checked.`);
     }
@@ -461,7 +489,7 @@ function runChecks(options: {
     }
     // The references that the run deleted are gone, so the summary leaves them out.
     const kept = deleted.length === 0 ? references : references.filter((r) => existsSync(r.file));
-    return { notes, deleted, failures, references: kept, isComplete };
+    return { notes, deleted, unused, failures, references: kept, isComplete };
 }
 
 /**
@@ -615,7 +643,13 @@ function listNamedReferences(layout: VisualLayout, testModules: readonly TestMod
  * Handles the references that no test used. A run that writes references,
  * by default outside CI, deletes them, as it writes new ones, so that a
  * renamed test leaves nothing behind. In CI, it lists them, with a failure.
- * It returns the summary's lines about them.
+ *
+ * A deletion must be one that can be undone, so a run deletes only the
+ * references that git tracks, which git can bring back. A reference that
+ * is new, and not yet added to git, is kept, and so is every reference if
+ * git can't say which it tracks. A rerun in watch mode deletes none, unless
+ * it updates references, since it follows each save. The summary lists the
+ * references that were kept, and why.
  */
 function settleOrphans(options: {
     readonly layout: VisualLayout;
@@ -627,6 +661,8 @@ function settleOrphans(options: {
     readonly named: ReadonlySet<string>;
     /** Whether the run writes references, and so deletes unused ones. */
     readonly isWriting: boolean;
+    /** Whether the run may delete them: not a rerun in watch mode, unless it updates references. */
+    readonly mayDelete: boolean;
 }): CheckResult {
     const compared = [...options.state.calibrationReferences, ...[...options.used.values()].flatMap((u) => [...u.files])];
     const orphans = findOrphans({ references: options.references, compared }).filter((file) => !options.named.has(toFileKey(file)));
@@ -637,9 +673,25 @@ function settleOrphans(options: {
             + `This run writes no references, as in CI, so it doesn't delete ${it}. A run outside CI, or with Vitest's -u, deletes ${it}:`;
         return { failure: [heading, ...orphans.map((file) => `  ${toDisplayPath(file)}`)].join('\n') };
     }
-    for (const file of orphans) removeReference(file, options.layout.root);
-    return { deleted: orphans };
+    if (!options.mayDelete) {
+        return { unused: { files: orphans, why: RERUN_KEEPS } };
+    }
+    const tracked = listTrackedFiles(options.layout.root);
+    const deleted = tracked === undefined ? [] : orphans.filter((file) => tracked.has(toFileKey(file)));
+    for (const file of deleted) removeReference(file, options.layout.root);
+    if (deleted.length === orphans.length) return { deleted };
+    return { deleted, unused: { files: orphans.filter((file) => !deleted.includes(file)), why: tracked === undefined ? NO_GIT_KEEPS : UNTRACKED_KEEPS } };
 }
+
+/** Why a rerun in watch mode kept the unused references. */
+const RERUN_KEEPS = 'A rerun in watch mode deletes none, since a test may be commented out for only a moment. '
+    + 'A run that isn\'t a rerun deletes the ones that git tracks, and so does pressing u to update.';
+
+/** Why a run kept unused references that git doesn't track. */
+const UNTRACKED_KEEPS = 'Git doesn\'t track them, so their deletion couldn\'t be undone. Delete them by hand, or add them to git, and the next run deletes them.';
+
+/** Why a run kept every unused reference, when git couldn't say which it tracks. */
+const NO_GIT_KEEPS = 'Git couldn\'t say which references it tracks, so their deletion might not be undone. Delete them by hand.';
 
 /**
  * Throws if v-snap's projects have file lists that v-snap didn't give them. A

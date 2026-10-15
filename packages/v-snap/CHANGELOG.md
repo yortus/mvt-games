@@ -1,5 +1,11 @@
 # v-snap
 
+## 0.4.1
+
+### Patch Changes
+
+- A run deletes an unused reference only if git tracks it, so that git can bring it back. A reference that git doesn't track, such as a new one, is kept, and so is every reference outside a git repository. A rerun in watch mode deletes none, unless it updates references, so a test commented out for a moment keeps its reference. The summary lists the unused references that were kept, and why.
+
 ## 0.4.0
 
 ### Minor Changes

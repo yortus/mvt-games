@@ -11,6 +11,7 @@
  * it is in.
  */
 
+import { execFileSync } from 'node:child_process';
 import { type Dirent, existsSync, globSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, relative, resolve } from 'node:path';
 import picomatch from 'picomatch';
@@ -201,6 +202,22 @@ export function removeReference(file: string, root: string): void {
     for (let dir = dirname(file); toFileKey(dir) !== top && toFileKey(dir).startsWith(top); dir = dirname(dir)) {
         if (readdirSync(dir).length > 0) return;
         rmdirSync(dir);
+    }
+}
+
+/**
+ * Returns the files under a folder that git tracks, those staged but not yet
+ * committed included, as file keys. Git can bring back each of them, if it
+ * is deleted. It returns undefined if git can't say, such as when the folder
+ * isn't in a git repository, or git isn't installed.
+ */
+export function listTrackedFiles(dir: string): Set<string> | undefined {
+    try {
+        const listed = execFileSync('git', ['ls-files', '-z'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 256 * 1024 * 1024 });
+        return new Set(listed.split('\0').filter((path) => path !== '').map((path) => toFileKey(resolve(dir, path))));
+    }
+    catch {
+        return undefined;
     }
 }
 

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,7 +6,7 @@ import { PNG } from 'pngjs';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createLayout } from './layout.ts';
 import { encodePng, type RgbaImage } from './png.ts';
-import { checkReference, checkReferences, findOrphans, findReferenceCandidates, findReferences, registerRoot, removeReference, toReferenceGlob } from './references.ts';
+import { checkReference, checkReferences, findOrphans, findReferenceCandidates, findReferences, listTrackedFiles, registerRoot, removeReference, toFileKey, toReferenceGlob } from './references.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-references-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -219,5 +220,37 @@ describe('removeReference', () => {
         writeFileSync(join(root, 'a.png'), encodePng(createImage(1)));
         removeReference(join(root, 'a.png'), root);
         expect(existsSync(root)).toBe(true);
+    });
+});
+
+describe('listTrackedFiles', () => {
+    it('lists the files that git tracks, staged ones included, but not untracked ones', () => {
+        const repo = join(dir, 'tracked');
+        mkdirSync(join(repo, 'visual-tests'), { recursive: true });
+        const git = (...args: string[]): void => {
+            execFileSync('git', args, { cwd: repo, stdio: 'ignore' });
+        };
+        git('init', '--quiet');
+        const committed = join(repo, 'visual-tests', 'view.committed.png');
+        const staged = join(repo, 'visual-tests', 'view.staged.png');
+        const untracked = join(repo, 'visual-tests', 'view.untracked.png');
+        for (const file of [committed, staged, untracked]) writeFileSync(file, encodePng(createImage(1)));
+        git('add', committed);
+        git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '--quiet', '-m', 'A reference');
+        git('add', staged);
+        const tracked = listTrackedFiles(repo);
+        expect(tracked?.has(toFileKey(committed))).toBe(true);
+        expect(tracked?.has(toFileKey(staged))).toBe(true);
+        expect(tracked?.has(toFileKey(untracked))).toBe(false);
+    });
+
+    it("says it can't tell outside a git repository", () => {
+        const outside = mkdtempSync(join(tmpdir(), 'visual-untracked-'));
+        try {
+            expect(listTrackedFiles(outside)).toBeUndefined();
+        }
+        finally {
+            rmSync(outside, { recursive: true, force: true });
+        }
     });
 });

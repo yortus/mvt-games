@@ -230,7 +230,7 @@ an image of one of its test files there. That has these effects:
 
 - When a test file is deleted, its images still belong to it, if the
   `include` globs would match it. So they count as unused, and a run
-  outside CI deletes them.
+  outside CI deletes the ones that git tracks.
 - A template without `{testFileName}`, `{testFileStem}` or
   `{testFilePath}` can't say which file an image is for. So images can
   only be in folders that hold a test file. A run of some of the test
