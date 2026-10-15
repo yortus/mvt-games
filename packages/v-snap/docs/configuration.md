@@ -117,11 +117,20 @@ reference images. Both are relative to the root.
 
 - **`include`** is a list of globs for the test files. The default,
   `DEFAULT_INCLUDE`, is `['**/visual-tests/*.test.{ts,tsx}']`.
-- **`referencePath`** is a template for each reference image's path. Its
-  variables are `{testFileDir}`, `{testFileName}`, `{testFileStem}` (the
-  name without `.test` or `.spec` and its extension), `{testFilePath}` and
-  `{imageName}`. The default, `DEFAULT_REFERENCE_PATH`, is
+- **`referencePath`** is a template for each reference image's path. The
+  default, `DEFAULT_REFERENCE_PATH`, is
   `'{testFileDir}/{testFileStem}.{imageName}.png'`.
+
+The template's variables give these values, for a test named `at the start`
+in `src/hud/visual-tests/hud-view.test.tsx`:
+
+| Variable | What it gives | Example |
+| --- | --- | --- |
+| `{testFileDir}` | The test file's folder | `src/hud/visual-tests` |
+| `{testFileName}` | The test file's name | `hud-view.test.tsx` |
+| `{testFileStem}` | The name without `.test` or `.spec` and its extension | `hud-view` |
+| `{testFilePath}` | The test file's path | `src/hud/visual-tests/hud-view.test.tsx` |
+| `{imageName}` | The test's image name, from its full name | `at-the-start` |
 
 So by default, a view's folder looks like this:
 
@@ -145,9 +154,13 @@ images under it, with these settings:
 "explorer.fileNesting.patterns": { "*.test.tsx": "${capture}.*.png", "*.test.ts": "${capture}.*.png" }
 ```
 
-`{imageName}` must appear once, in the file name, and the file name must
-end in `.png`. A template that breaks these rules stops the run when the
-config loads. Two other layouts are common.
+A template follows these rules, or the run stops when the config loads:
+
+- `{imageName}` appears once, in the file name.
+- The file name ends in `.png`.
+- The path is relative to the root, and stays inside it.
+
+Two other layouts are common.
 
 ```ts
 // Tests beside their views, with each test file's reference images in a
@@ -164,23 +177,29 @@ vsnap({
 vsnap({ referencePath: 'visual-references/{testFilePath}/{imageName}.png' });
 ```
 
-The unit project must leave out a layout's test files. For the default
-layout, that is `'**/visual-tests/**'` in its `exclude`, and for the first
-layout above, `'**/*.visual.test.{ts,tsx}'`. Also, any other PNG whose name
-starts with a test file's stem and a dot, beside the test file, is where a
-reference could be, and a test whose image has that name would compare
-with it. Keep such files elsewhere, or name them otherwise.
+The unit project must leave out a layout's test files. `withVsnap()` adds
+the `include` globs to its `exclude` itself. A config that lists the
+projects by hand adds them: `'**/visual-tests/**'` for the default layout,
+and `'**/*.visual.test.{ts,tsx}'` for the first layout above.
 
-The package tells its reference images from other PNGs by the hash that
-each one carries, and by where its reference path would put an image of
-one of its test files. A file that the `include` globs match owns its
-images even once it is deleted, so they are reported as unused. A template
-without `{testFileName}`, `{testFileStem}` or `{testFilePath}` can't say
-which file an image is for, so only the folders that hold a test file have
-images, and a run of some test files checks only the images that are
-theirs alone. So the check for references that no test uses never deletes
-a PNG without a hash, a copy of a reference in another folder such as
-`docs`, or the images of another `vsnap` call's tests.
+Keep other PNGs out of the places that the reference path gives. A PNG
+beside a test file, whose name starts with the file's stem and a dot, is
+where a reference could be, and a test whose image has that name would
+compare with it.
+
+v-snap tells its reference images from other PNGs by two things: the hash
+that each one carries, and whether the reference path would put an image
+of one of its test files there. So:
+
+- A file that the `include` globs match owns its images even once it is
+  deleted, so they count as unused, and are deleted outside CI.
+- A template without `{testFileName}`, `{testFileStem}` or
+  `{testFilePath}` can't say which file an image is for. So only the
+  folders that hold a test file have images, and a run of some test files
+  looks only at the images that are theirs alone.
+- The check for references that no test uses never deletes a PNG without
+  a hash, a copy of a reference in another folder, such as `docs`, or the
+  images of another `vsnap` call's tests.
 
 ## Changing Layout
 

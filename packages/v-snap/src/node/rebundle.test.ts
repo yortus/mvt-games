@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { fingerprintSources } from './rebundle.ts';
+import { fingerprintSources, isLeftOutByCommandLine } from './rebundle.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'vsnap-rebundle-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -32,5 +32,31 @@ describe('fingerprintSources', () => {
         writeFileSync(join(dir, 'notes.md'), 'still no imports\n');
         utimesSync(join(dir, 'notes.md'), new Date(), new Date());
         expect(fingerprintSources(dir)).toBe(before);
+    });
+});
+
+describe('isLeftOutByCommandLine', () => {
+    const names = ['visual-canvas', 'visual-html'];
+    const run = (...args: string[]): boolean => isLeftOutByCommandLine(names, ['node', 'vitest', 'run', ...args]);
+
+    it('leaves the projects out only when every filter misses them', () => {
+        expect(run('-p', 'unit')).toBe(true);
+        expect(run('--project=unit', '--project', 'docs')).toBe(true);
+        expect(run('-p', 'visual-*')).toBe(false);
+        expect(run('-p', 'unit', '-p', 'VISUAL-HTML')).toBe(false);
+    });
+
+    it('runs them with no filter, or with a filter that only leaves other projects out', () => {
+        expect(run()).toBe(false);
+        expect(run('--project', '!unit')).toBe(false);
+    });
+
+    it('leaves them out when a negated filter matches them', () => {
+        expect(run('-p', '!visual-*')).toBe(true);
+    });
+
+    it("runs them when a filter is cut short, since it can't tell", () => {
+        expect(run('-p')).toBe(false);
+        expect(run('-p', '--watch')).toBe(false);
     });
 });

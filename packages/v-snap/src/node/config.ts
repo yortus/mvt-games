@@ -32,7 +32,7 @@ import type { ColorScheme, PageKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
-import { forgetFingerprint, mustRebundle, recordFingerprint } from './rebundle.ts';
+import { forgetFingerprint, isLeftOutByCommandLine, mustRebundle, recordFingerprint } from './rebundle.ts';
 import { registerRoot, toFileKey } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
 import { claimTestFiles, describeProblems, escapeGlob, findVisualTestFiles, recordVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
@@ -159,7 +159,8 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         problems: files.problems,
     });
     const plugin = createVsnapPlugin({ reporter, name, root, isDefaultRoot: options.root === undefined, files: () => findVisualTestFiles(layout), initialFiles: files });
-    const rebundle = mustRebundle({ name, root });
+    // A run that leaves the projects out never bundles for them.
+    const rebundle = isLeftOutByCommandLine(projectNames) ? false : mustRebundle({ name, root });
     return pageKinds.map((pageKind, i) => createVisualProject({
         rebundle,
         root,

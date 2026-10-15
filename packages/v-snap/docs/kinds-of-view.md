@@ -103,12 +103,17 @@ A test also checks its view as it runs, by its kind's check, such as
 `instanceof Container`. A view of another kind fails its test, and the
 message says which kind the view is, and the `kind` to give.
 
-Each kind is listed once. Two kinds with one name, a kind named
-`'canvas'` or `'html'`, `htmlViews` listed twice, or a `defaultKind` that
-names no listed kind, are errors. `vsnap.config.ts` runs in the test page,
-so such an error, or any other that the file throws, fails every visual
-test file, with the error under "Failed to import test file" and v-snap's
-setup file. The other projects still run.
+Each kind is listed once. These are errors:
+
+- Two kinds with one name.
+- A kind named `'canvas'` or `'html'`, which are v-snap's own.
+- `htmlViews` listed twice.
+- A `defaultKind` that names no listed kind.
+
+`vsnap.config.ts` runs in the test page, so such an error, or any other
+that the file throws, fails every visual test file. The error appears
+under "Failed to import test file", with v-snap's setup file. The other
+projects still run.
 
 ## Configs in a Monorepo
 

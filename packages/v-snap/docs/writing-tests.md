@@ -107,10 +107,15 @@ A visual test passes when its actual image matches its reference image.
 
 An image's name comes from its test's full name. The full name is the
 names of the test's `describe` blocks, followed by the test's own name.
-Each run of characters other than letters, digits and dots becomes one
-hyphen, and hyphens at either end are dropped. Letters and digits of every
-script count, so `日本` stays as it is, and a test whose name has none
-fails.
+These rules turn it into an image name:
+
+- Each run of characters other than letters, digits and dots becomes one
+  hyphen, so the name has no spaces, and can be typed on a command line.
+- Hyphens at either end are dropped.
+- Letters and digits of every script count, so `日本` stays as it is. A
+  test whose name has none fails.
+- A name longer than 100 bytes is cut short, and a short hash of the whole
+  name is added, so that file names stay inside every system's limits.
 
 So the first test above, whose full name is `at the start`, has the image
 name `at-the-start`, and a test named `with a new best` in a
@@ -123,13 +128,11 @@ A test file's stem is its name without `.test` and its extension. So each
 test file's images sort together, beside it, and the name says which file
 each image belongs to.
 
-An image name has no spaces, so it can be typed on a command line. A name
-longer than 100 bytes is cut short, and a short hash of the whole name is
-added, so that file names stay inside every system's limits. Two tests
-whose full names differ only in punctuation would have the same image
-name, and share one reference image. So would two whose names differ only
-in case, since macOS and Windows keep such names in one file. If two tests
-of a file share a reference image, the second fails, and names the first.
+Two tests whose full names differ only in punctuation would have the same
+image name, and share one reference image. So would two whose names differ
+only in case, since macOS and Windows keep such names in one file. If two
+tests of a file share a reference image, the second fails, and names the
+first.
 
 ## One Kind of Test in Each File
 
@@ -160,10 +163,14 @@ other test.
 
 The package finds the declarations by reading each file's text for
 `canvasTest(` and `htmlTest(`, since Vitest needs each file's project
-before any test code runs. So a file must call `canvasTest` or `htmlTest`
-by those names. A file whose tests all go through a helper of its own,
-which calls them, is reported as declaring neither, and a comment that
-mentions the other one, followed by a bracket, counts as a declaration.
+before any test code runs. So:
+
+- A file calls `canvasTest` or `htmlTest` by those names, not under an
+  alias.
+- A file whose tests all go through a helper of its own, which calls them,
+  is reported as declaring neither.
+- A comment that mentions the other one, followed by a bracket, counts as
+  a declaration.
 
 ## How HTML Views Are Captured
 

@@ -13,6 +13,12 @@
  * times, tells. Vite itself bundles afresh when the lockfile or the config
  * changes. The fingerprint is recorded only by a run that runs v-snap's
  * projects, since only that run bundles.
+ *
+ * Fingerprinting a repository's sources takes a tenth of a second or so.
+ * A run whose command line leaves v-snap's projects out, such as
+ * `vitest -p unit`, never bundles for them, so it skips the fingerprint.
+ * Vitest resolves every project's config before it applies the filter, so
+ * v-snap reads the filter from the command line itself.
  */
 
 import { createHash } from 'node:crypto';
@@ -55,6 +61,19 @@ export function mustRebundle(call: VsnapCall): boolean {
     const decision = { fingerprint, mustRebundle: recorded !== fingerprint };
     memory().decisions.set(file, decision);
     return decision.mustRebundle;
+}
+
+/**
+ * Returns whether a command line's `--project` (`-p`) filters leave out
+ * every one of some projects, as Vitest matches them: a `*` matches any
+ * characters, a leading `!` leaves matching projects out, and case is
+ * ignored. With no filter, every project runs. Unsure, it says no, since a
+ * project that runs needs its fingerprint.
+ */
+export function isLeftOutByCommandLine(projectNames: readonly string[], argv: readonly string[] = process.argv): boolean {
+    const filters = listProjectFilters(argv);
+    if (filters === undefined || filters.length === 0) return false;
+    return projectNames.every((name) => !matchesProjectFilter(filters, name));
 }
 
 /** Records the sources' fingerprint for a `vsnap` call whose projects are about to run, and so to bundle. */
@@ -118,6 +137,41 @@ function findFingerprint(): string {
     const remembered = memory();
     remembered.fingerprint ??= fingerprintSources(REPO_ROOT);
     return remembered.fingerprint;
+}
+
+/**
+ * Returns the project filters on a command line, from `--project <name>`,
+ * `--project=<name>`, `-p <name>` and `-p=<name>`, or undefined if one is
+ * cut short, as at the end of the line.
+ */
+function listProjectFilters(argv: readonly string[]): string[] | undefined {
+    const filters: string[] = [];
+    for (let i = 0; i < argv.length; i++) {
+        const arg = argv[i];
+        const joined = /^(?:--project|-p)=(.*)$/.exec(arg);
+        if (joined !== null) {
+            filters.push(joined[1]);
+        }
+        else if (arg === '--project' || arg === '-p') {
+            const value = argv[i + 1];
+            if (value === undefined || value.startsWith('-')) return undefined;
+            filters.push(value);
+            i++;
+        }
+    }
+    return filters;
+}
+
+/** Returns whether a project runs under some filters, as Vitest decides it. */
+function matchesProjectFilter(filters: readonly string[], name: string): boolean {
+    const matches = (pattern: string): boolean => new RegExp(`^${pattern.split('*').map(escapeRegExp).join('.*')}$`, 'i').test(name);
+    if (filters.some((filter) => filter.startsWith('!') && matches(filter.slice(1)))) return false;
+    const positives = filters.filter((filter) => !filter.startsWith('!'));
+    return positives.length === 0 || positives.some(matches);
+}
+
+function escapeRegExp(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Returns the file that holds a call's fingerprint, named for the call and a hash of its root. */

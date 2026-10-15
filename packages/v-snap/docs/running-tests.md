@@ -54,9 +54,14 @@ One check is about the run, not a test:
 A run of every visual test file covers every reference, those of deleted
 test files too. A run of some of them, such as a shard (`--shard`), a run
 of one file, or a rerun in watch mode, covers the references of the files
-that ran, and its summary says so. A run-level check that fails prints
-what it found under a heading of its own, after the summary, and the run
-exits with code 1. In GitHub Actions, it also adds an error annotation.
+that ran, and its summary says so.
+
+A run-level check that fails does three things:
+
+- It prints what it found under a heading of its own, after the summary.
+- It makes the run exit with code 1.
+- In GitHub Actions, it adds an error annotation.
+
 It isn't a test, so Vitest's own summary, the Vitest UI and Vitest's other
 reporters, such as JUnit's, don't show it, as they don't show a coverage
 threshold that failed. Since a local run deletes unused references, this
@@ -90,7 +95,9 @@ The Vitest UI shows them side by side. Install `@vitest/ui`, at the same
 version as Vitest, run `vitest --ui`, and open the failed test. Its Visual
 Regression panel shows the diff, the reference, the actual image, and a
 slider between the reference and the actual image. Look at each change
-there before accepting it. v-snap fills the panel as Vitest's own
+there before accepting it.
+
+v-snap fills the panel as Vitest's own
 `toMatchScreenshot` does, in a way that Vitest's documentation doesn't
 promise, so a later version of Vitest may show it differently. The tests'
 results don't depend on it.

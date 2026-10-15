@@ -69,11 +69,18 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
 
 ## Smaller items
 
-- [ ] **S1: Compute the sources fingerprint only when v-snap's projects run**
+- [x] **S1: Compute the sources fingerprint only when v-snap's projects run**
   (2026-10-14 B9). Every config load, `vitest -p unit` included, globs and
   stats every source file in the repo (about 90 ms). Coverage reports are
   now left out. `optimizeDeps.force` must be known when the config is
   built, which is what stands in the way. (`src/node/rebundle.ts`)
+  Done on 2026-10-15 (branch `v-snap-tidy`, `4d9b665`): a run whose
+  command line's `--project`/`-p` filters leave every v-snap project out
+  skips the fingerprint (110 to 150 ms here), matching Vitest's rules
+  (`*`, `!`, case ignored). Not lazier: Vitest resolves every project's
+  config before it applies the filter, and Vite reads `force` as its
+  dependency bundler starts. A run through Vitest's API, such as the VS
+  Code extension's, still fingerprints.
 
 ## Usability
 
@@ -89,10 +96,18 @@ findings were fixed in `1efaf75`, `57616b3` and `b6606d3`.
 
 ## Documentation
 
-- [ ] **D1: Denser paragraphs** (2026-10-14 D7). Rules packed into paragraphs,
+- [x] **D1: Denser paragraphs** (2026-10-14 D7). Rules packed into paragraphs,
   such as the kinds' naming rules, would scan better as lists or tables,
   and the `vsnap.config.ts` sample is repeated three times. Fold into the
   docs review under Miscellaneous.
+  Done on 2026-10-15 (`4d9b665`): lists for the kinds' errors, the
+  reference path's rules, what v-snap counts as its references, image-name
+  rules, declaration rules, what `withVsnap()` does and run-level failures;
+  a table of the reference path's variables. The sample stays in the
+  README, Getting Started (moved to sit with its example) and Kinds of
+  View, where each page has to stand alone; Kinds of View's registers two
+  kinds. The narrative paragraphs in How It Works and the README's speed
+  comparison stay prose.
 - [ ] **D3:** Thoroughly review the vsnap README and docs in the vsnap package
 
 ## Miscellaneous

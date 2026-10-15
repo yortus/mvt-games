@@ -85,15 +85,39 @@ export default defineConfig(withVsnap({
 }));
 ```
 
-`withVsnap()` moves the unit tests' settings, such as `environment` and
-`setupFiles`, into a project named `unit`, which leaves out the visual
-test files, and adds v-snap's projects after it. The rest stays where it
-is: settings for the whole run, such as `reporters` and `coverage`, and
-Vite's settings, such as `plugins`, which v-snap's projects inherit.
+`withVsnap()` does three things to the config:
+
+- It moves the unit tests' settings, such as `environment` and
+  `setupFiles`, into a project named `unit`, which leaves out the visual
+  test files.
+- It adds v-snap's projects after it.
+- It leaves the rest where it is: settings for the whole run, such as
+  `reporters` and `coverage`, and Vite's settings, such as `plugins`, which
+  v-snap's projects inherit.
+
 `vitest -p unit` runs the unit tests alone, and `vitest -p "visual-*"` the
 visual tests. v-snap's own options go in the config, under `vsnap`, such
 as `vsnap: { root: import.meta.dirname }`.
 [Configuration](configuration.md#options) lists them.
+
+A project whose views are drawn with Pixi has this `vsnap.config.ts`
+beside it:
+
+```ts
+import { defineVsnapConfig } from 'v-snap';
+import { pixiViews } from 'v-snap/pixi';
+
+const config = defineVsnapConfig({ views: [pixiViews()], defaultKind: 'pixi' });
+
+// Gives canvasTest's types the kinds of view above, and the default kind.
+declare module 'v-snap' {
+    interface Register {
+        config: typeof config;
+    }
+}
+
+export default config;
+```
 
 A config that has projects already lists v-snap's projects itself, after
 its own, with `...vsnap()`, as
@@ -128,24 +152,6 @@ The unit project has `extends: true`, so that it keeps the plugins, as
 v-snap's projects do. [Configuration](configuration.md) explains why the
 `include`, `exclude` and `setupFiles` settings must stay in the unit
 project.
-
-And a project whose views are drawn with Pixi has this `vsnap.config.ts`:
-
-```ts
-import { defineVsnapConfig } from 'v-snap';
-import { pixiViews } from 'v-snap/pixi';
-
-const config = defineVsnapConfig({ views: [pixiViews()], defaultKind: 'pixi' });
-
-// Gives canvasTest's types the kinds of view above, and the default kind.
-declare module 'v-snap' {
-    interface Register {
-        config: typeof config;
-    }
-}
-
-export default config;
-```
 
 ## Your First Test
 
