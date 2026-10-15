@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**052**.
+**053**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -89,6 +89,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
 | 051 | [The Audio90, and entries that choose their sound chip](./proposals/051-audio90-chip.md) | Proposed. A second chip in `@mvtjs/audio` for the sounds of the 1990s, from 16-bit console FM to trance and jungle: sixteen stereo voices, each running FM, an analog-style engine with unison and a resonant filter, or samples bounced from the chip's own engines (never recorded), with a reverb, an echo, a chorus and a pump. Each entry's starter names its chip (`soundChip`), and the types give it that chip as `sound`, or none. A Sound Test demo, and Neon Monsoon rescored |
+| 052 | [A playground that works like a small IDE](./proposals/052-playground-ide.md) | Proposed. The playground becomes a CodePen-like IDE for MVT projects: real TypeScript files (a short `main.ts` with `models/` and `views/` beside it, much simpler than an Arcade entry), real imports from a fixed list of libraries, and completions, hover and type errors from the TypeScript language service in a worker, in CodeMirror. Each Run is a fresh opaque-origin iframe running the files as ES modules through an import map, so shared links can run as they open. Examples become real files in the repo; old links keep working; projects export as a Vite project. The playground moves to `packages/playground/`, and the website is renamed `packages/arcade/`. Later: swapping views while the model runs, porting a project to an Arcade entry, and the lint rules as live diagnostics |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -117,6 +118,10 @@ to what the host gives a session, and built on 036's Arcade.
 051 adds a second chip beside 045's, and changes what 045 made the host
 give every session into a chip each entry chooses. Its Sound Test demo is
 048's idea, and it rescores 034's game.
+052 moves the playground out of the package that 036 made, adds it to
+011's workspace, and renames what is left after 036's Arcade. A project
+can play the chip that 045 built, or the one 051 chooses. Its conversion
+of old links closes an item in 017.
 
 ## Tasks
 
