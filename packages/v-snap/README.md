@@ -11,7 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Vitest-5-6E9F18?logo=vitest&logoColor=white" alt="Vitest 5">
-  <img src="https://img.shields.io/badge/Playwright-1.63-2EAD33" alt="Playwright 1.63">
+  <img src="https://img.shields.io/badge/Playwright-1.64-2EAD33" alt="Playwright 1.64">
   <img src="https://img.shields.io/badge/Node-22.17%2B-5FA04E?logo=nodedotjs&logoColor=white" alt="Node 22.17 or later">
   <img src="https://img.shields.io/badge/types-TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript types">
   <img src="https://img.shields.io/badge/licence-MIT-e8456b" alt="MIT licence">
@@ -231,7 +231,7 @@ already has settings, and what v-snap needs.
 | Needs | Version |
 | --- | --- |
 | Vitest, with `@vitest/browser-playwright` | 5 |
-| Playwright, installed with v-snap | 1.63, any patch release |
+| Playwright, installed with v-snap | 1.64, any patch release |
 | Node | 22.17 or later |
 | Pixi, for Pixi views | 8.16 or later |
 | three.js, for three.js views | 0.160 or later |

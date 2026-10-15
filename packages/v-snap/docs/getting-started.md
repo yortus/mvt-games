@@ -19,7 +19,7 @@ already uses Vitest. The [README](../README.md) has the short version.
   `viteConfig` option at its config. A project that builds with something
   else needs a small Vite config, with the aliases and plugins that its
   views rely on.
-- **Playwright 1.63, any patch release,** and Vitest's Playwright
+- **Playwright 1.64, any patch release,** and Vitest's Playwright
   provider, `@vitest/browser-playwright`, at the same version as `vitest`.
   They are peer dependencies, which npm installs with v-snap. v-snap and
   Vitest must use one copy of Playwright, because v-snap installs the browser
@@ -48,13 +48,13 @@ build could fail. The images are the same on every machine only because
 every machine draws them with the same build.
 
 Each version of Playwright names one build of Chromium. Playwright moves
-to a new build in its minor versions, such as 1.63 to 1.64. Its patch
-releases, such as 1.63.1, fix Playwright itself, and keep the build. So
+to a new build in its minor versions, such as 1.64 to 1.65. Its patch
+releases, such as 1.64.1, fix Playwright itself, and keep the build. So
 the browser changes with Playwright's minor version, and v-snap follows
 Playwright one minor version at a time:
 
 - Each release of v-snap supports one minor version of Playwright, such as
-  1.63, with its patch releases.
+  1.64, with its patch releases.
 - When Playwright releases a new minor version, v-snap follows it with a
   release of its own, checked against the new build.
 - Each run checks the browser's fingerprint, which names its exact build.
