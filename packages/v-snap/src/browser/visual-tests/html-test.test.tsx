@@ -1,8 +1,8 @@
 // These are the visual test harness's own tests. Each one checks one case
 // of capturing an HTML view.
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
-import { adoptHtmlRules, settleAnimations } from '../html-rules';
+import { adoptHtmlRules, quantizeFontSizes, settleAnimations } from '../html-rules';
 import { htmlTest } from '../visual-test';
 
 function createBlock(markup: string): HTMLElement {
@@ -34,12 +34,74 @@ htmlTest('animations, at rest', { repeats: 3 }, () => createBlock(`
     </div>`));
 
 // A web component's text, in its shadow root, is blank too, and its odd
-// font size is rounded to a quarter pixel.
-htmlTest('text in a shadow root, drawn blank', () => {
+// font size is rounded to a quarter pixel. The act step sees both, so a
+// measurement that it takes matches the image.
+htmlTest('text in a shadow root, drawn blank', {
+    act: (block) => {
+        const text = block.shadowRoot?.querySelector('p') as HTMLElement;
+        expect(getComputedStyle(text).fontFamily).toContain('Visual Blank');
+        expect(getComputedStyle(text).fontSize).toBe('17.25px');
+    },
+}, () => {
     const block = createBlock('');
     const shadow = block.attachShadow({ mode: 'open' });
     shadow.innerHTML = '<style>p { font-family: Arial, sans-serif; font-size: 17.3px; margin: 0; width: 160px }</style><p>Text in a web component, long enough to wrap.</p>';
     return block;
+});
+
+// A root whose position is fixed or absolute, such as a modal overlay's,
+// takes no room in the page. The image reaches its far edges, so the box
+// is 30 pixels in from the left and 20 from the top.
+htmlTest('a root with position: fixed', () => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;left:30px;top:20px;width:80px;height:40px;border-radius:6px;background:#5bd1ff';
+    return overlay;
+});
+
+// A margin takes in what the view draws outside its box, such as a focus
+// ring. This button is the whole view.
+htmlTest('a button, focused, in a margin', {
+    margin: 6,
+    act: () => userEvent.tab(),
+}, () => {
+    const block = createBlock(BUTTON);
+    block.style.padding = '0';
+    return block;
+});
+
+// A view that runs on real time is held still with Vitest's fake timers,
+// moved on to a moment, and given back real timers before the pose
+// returns, since the capture waits for frames. The light comes on after
+// 300 ms, and the image catches it on.
+htmlTest('a view on real time, held still with fake timers', () => {
+    vi.useFakeTimers();
+    try {
+        const block = createBlock('<div style="width:30px;height:30px;background:#30363d"></div>');
+        const light = block.firstElementChild as HTMLElement;
+        setTimeout(() => (light.style.background = '#ffe45c'), 300);
+        requestAnimationFrame(() => (light.style.borderRadius = '50%'));
+        vi.advanceTimersByTime(300);
+        return block;
+    }
+    finally {
+        vi.useRealTimers();
+    }
+});
+
+it('gives up its font size rounding to a size set after it', () => {
+    const block = createBlock('<p style="font-size:13.3px">One</p><p style="font-size:15.1px">Two</p>');
+    document.body.append(block);
+    try {
+        const [one, two] = block.querySelectorAll('p');
+        const unround = quantizeFontSizes(block);
+        expect([one.style.fontSize, two.style.fontSize]).toEqual(['13.25px', '15px']);
+        two.style.fontSize = '20.1px';
+        unround();
+        expect([one.style.fontSize, two.style.fontSize]).toEqual(['13.3px', '20.1px']);
+    }
+    finally {
+        block.remove();
+    }
 });
 
 // A test's act step runs once the view is in the page, after its kind's

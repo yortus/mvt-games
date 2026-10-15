@@ -36,6 +36,13 @@ export interface HtmlImageOptions<E extends Element = Element> {
     readonly viewport?: { readonly width: number; readonly height: number };
     /** The colour scheme that the page's `prefers-color-scheme` media queries see. By default, it is `vsnap()`'s `colorScheme`, `dark` unless set. */
     readonly colorScheme?: ColorScheme;
+    /**
+     * The space around the view, in CSS pixels, that the image takes in
+     * too: for what the view draws outside its box, such as a shadow, an
+     * outline or a focus ring. It adds to the image's `width` and `height`.
+     * By default, it is 0, and the image is the view's box.
+     */
+    readonly margin?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -45,39 +52,48 @@ export interface HtmlImageOptions<E extends Element = Element> {
 /**
  * Captures an element and returns the verdict. It sets the page's viewport
  * and colour scheme, if the options give them. It mounts the element in a
- * host element, which shrinks to fit it or takes the given size, and then
- * prepares it, if the options say how, and runs the test's `act` step, so
- * that the element is in the page for both. It gives the page's rules to the element's shadow
- * roots, brings its animations to rest, and waits for its fonts, its `<img>`
- * elements and the images that its styles use. Then Node captures the host's
- * rectangle through the DevTools protocol and judges it. Font sizes are
- * rounded to quarter pixels first (`quantizeFontSizes`). The element is
- * removed afterwards, whatever happens. HTML images are always full size,
- * because the browser's own scaling differs between systems. So an HTML
- * image over the size budget fails, and so does one bigger than the page,
- * which can't be captured.
+ * host element, which shrinks to fit it or takes the given size, with the
+ * margin around it. It gives the page's rules to the element's shadow roots,
+ * and rounds font sizes to quarter pixels (`quantizeFontSizes`). Then it
+ * prepares the element, if the options say how, and runs the test's `act`
+ * step, so that both see the element in the page, laid out as its image
+ * will be. Those steps can change the view, so the rules and the rounding
+ * are applied again after them. Then it brings the view's animations to
+ * rest, waits for its fonts, its `<img>` elements and the images that its
+ * styles use, and sizes the host to a root that takes no room in it. Node
+ * captures the host's rectangle through the DevTools protocol and judges
+ * it. The element is removed afterwards, whatever happens. HTML images are
+ * always full size, because the browser's own scaling differs between
+ * systems. So an HTML image over the size budget fails, and so does one
+ * bigger than the page, which can't be captured.
  */
 export async function captureHtmlImage(
     element: Element,
     options: HtmlImageOptions & { readonly maxPixels: number; readonly prepare?: (element: Element) => void },
     id: VisualImageId,
 ): Promise<VisualVerdict & { readonly captureMs: number; readonly prepareMs: number; readonly width: number; readonly height: number }> {
+    const margin = options.margin ?? 0;
+    if (!(margin >= 0)) throw new Error(`The test's margin is ${margin}, but a margin is 0 or more pixels.`);
     const restorePage = await setUpPage(options);
     const host = document.createElement('div');
-    host.style.cssText = `position:absolute;left:0;top:0;display:inline-block;background:${toCssColour(options.background ?? DEFAULT_BACKGROUND)};`;
+    host.style.cssText = `position:absolute;left:0;top:0;display:inline-block;padding:${margin}px;background:${toCssColour(options.background ?? DEFAULT_BACKGROUND)};`;
     if (options.width !== undefined) host.style.width = `${options.width}px`;
     if (options.height !== undefined) host.style.height = `${options.height}px`;
     host.append(element);
     document.body.append(host);
     try {
+        adoptHtmlRules(host);
+        await document.fonts.ready;
+        const unround = quantizeFontSizes(host);
         const prepared = performance.now();
         options.prepare?.(element);
         await options.act?.(element);
         const prepareMs = performance.now() - prepared;
         adoptHtmlRules(host);
         await document.fonts.ready;
-        pixelateRotatedImages(host);
+        unround();
         quantizeFontSizes(host);
+        pixelateRotatedImages(host);
         // Wait until every `<img>` element is loaded and decoded, lazy ones
         // too. A lazy one that is off screen never loads, so each one is made
         // eager.
@@ -90,6 +106,7 @@ export async function captureHtmlImage(
         // The host is at the page's top left. A pose or an earlier test that
         // focused an element lower down may have scrolled the page.
         scrollTo(0, 0);
+        fitOutOfFlowRoot(host, element, options);
         checkFitsPage(host);
         const rect = measureRect(host);
         const fit = fitImage({ width: rect.width, height: rect.height, maxPixels: options.maxPixels, canScale: false, advice: 'HTML is drawn at full size, so give the view a smaller size, or pose part of it.' });
@@ -141,19 +158,40 @@ function toCssColour(colour: string | number): string {
 }
 
 /**
- * Throws if the host goes past the page, which is the viewport's size. The
- * part past it isn't drawn, so its capture would be blank there.
+ * Sizes the host to a root element that takes no room in it, because its
+ * position is `absolute` or `fixed`, such as a modal overlay's. The host
+ * would otherwise be empty. It reaches the element's right and bottom edges,
+ * so the image holds the element where the page draws it. A size that the
+ * test gives is kept.
+ */
+function fitOutOfFlowRoot(host: HTMLElement, element: Element, options: HtmlImageOptions): void {
+    const position = getComputedStyle(element).position;
+    if (position !== 'absolute' && position !== 'fixed') return;
+    const hostBox = host.getBoundingClientRect();
+    const box = element.getBoundingClientRect();
+    const margin = options.margin ?? 0;
+    if (options.width === undefined) host.style.width = `${Math.max(0, Math.ceil(box.right - hostBox.left - margin))}px`;
+    if (options.height === undefined) host.style.height = `${Math.max(0, Math.ceil(box.bottom - hostBox.top - margin))}px`;
+}
+
+/**
+ * Throws if the host has no area, so that there is nothing to capture, or
+ * if it goes past the page, which is the viewport's size. The part past the
+ * page isn't drawn, so its capture would be blank there.
  */
 function checkFitsPage(host: HTMLElement): void {
     const box = host.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) {
+        throw new Error(`The view is ${Math.ceil(box.width)}x${Math.ceil(box.height)}, so there is nothing to capture. Give it content, or a size, or give the test a width and height.`);
+    }
     if (box.left >= 0 && box.top >= 0 && box.right <= innerWidth && box.bottom <= innerHeight) return;
     throw new Error(`The view is ${Math.ceil(box.width)}x${Math.ceil(box.height)}, which goes past the test page's ${innerWidth}x${innerHeight} viewport, so the part past it can't be captured. Give the view a smaller size, or pose part of it.`);
 }
 
 /**
  * Loads and decodes the images that the host's styles use, so that they are
- * drawn before the capture: backgrounds, border images, list markers and
- * masks, of every element and of its ::before and ::after, and the images
+ * drawn before the capture: backgrounds, border images, generated content,
+ * list markers and masks, of every element and of its ::before and ::after, and the images
  * of SVG `<image>` elements and video posters. It then waits for two frames,
  * so that the page draws them, but only if there were any.
  */
@@ -179,7 +217,7 @@ async function loadStyleImages(host: HTMLElement): Promise<void> {
 }
 
 /** The style properties that can hold images. */
-const IMAGE_PROPERTIES = ['background-image', 'border-image-source', 'list-style-image', 'mask-image'];
+const IMAGE_PROPERTIES = ['background-image', 'border-image-source', 'content', 'list-style-image', 'mask-image'];
 
 /** Matches each `url(...)` in a computed style, with its address in the second group. */
 const CSS_URL = /url\((["']?)(.*?)\1\)/g;

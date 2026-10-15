@@ -60,9 +60,11 @@ lists in full:
   view measures, to wrap or fit it, is measured in those fonts, and a
   character that they lack, such as ★, an emoji or a Chinese character, is
   drawn as a box.
-- **HTML text is drawn blank.** Each letter keeps its width but draws
-  nothing, so an HTML image shows layout and styling, not words. A change
-  to the text's colour or weight doesn't show.
+- **HTML text is drawn blank.** Every letter is an empty space 0.625 em
+  wide, whatever the font, so an HTML image shows layout and styling, not
+  words. Text wraps, and boxes that fit it are sized, as if every letter
+  were that wide, not as in the real font. A change to the text's colour
+  or weight doesn't show.
 - **Drawing is done in software.** WebGL runs on the processor, so
   whatever a graphics card would draw differently isn't tested.
 - **One browser build.** Every machine draws with the same build of
@@ -224,6 +226,7 @@ already has settings, and what v-snap needs.
 | `v-snap/vitest` | `withVsnap(config)` | Returns the Vitest config with v-snap's projects added, and its options, under `vsnap`, taken out. A flat config's unit test settings move into a `unit` project |
 | | `vsnap(options?)` | Returns the Vitest projects that run the visual tests, to list in `test.projects` by hand |
 | `v-snap/pixi` | `pixiViews(options?)` | Returns the kind for Pixi views |
+| | `getPixiRenderer()` | Returns a promise of the Pixi renderer that draws the images, for a view that needs one to build itself |
 | `v-snap/three` | `threeViews(options?)` | Returns the kind for three.js views |
 
 ## Requirements
@@ -249,5 +252,6 @@ published.
 
 ## Licence
 
-MIT. The fonts in `src/browser/fonts/` are under the SIL Open Font
-License, whose text is beside them.
+MIT, but for the two test fonts, Source Sans 3 and Source Code Pro, which
+are under the SIL Open Font License. The published package holds them in
+`lib/browser/fonts/`, and their licences in `src/browser/fonts/`.

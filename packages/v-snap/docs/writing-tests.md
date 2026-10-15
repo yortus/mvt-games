@@ -50,7 +50,62 @@ the project registers Pixi views, and makes them its default kind, as
 
 A view that changes over time, such as one that animates, is posed at a
 known moment: the pose advances it by a fixed amount of time before it
-returns it. A pose never waits for real time to pass.
+returns it. A pose never waits for real time to pass. A view whose game
+moves it on with an update function is moved on the same way:
+
+```tsx
+canvasTest('a quarter of the way through its spin', () => {
+    const coin = CoinView();
+    coin.update(250); // 250 ms on, as the game's loop would move it
+    return coin;
+});
+```
+
+A view that runs on real time, with `setTimeout`, `requestAnimationFrame`
+or a tween that plays by itself, is held still with Vitest's fake timers.
+The pose moves them on to the moment, and gives real timers back before
+it returns, since v-snap waits for frames as it takes the image:
+
+```tsx
+import { vi } from 'vitest';
+
+htmlTest('the banner, half a second in', () => {
+    vi.useFakeTimers();
+    try {
+        const banner = WinBanner();
+        vi.advanceTimersByTime(500);
+        return banner;
+    }
+    finally {
+        vi.useRealTimers();
+    }
+});
+```
+
+Random numbers are seeded the same way before every test, those of
+`Math.random`, `crypto.getRandomValues` and `crypto.randomUUID`, so a
+view that uses them draws the same every time.
+
+## Shared Setup and Assets
+
+A pose builds its view from scratch, but what many tests share, such as a
+spritesheet or a font, can be loaded once, at the top of the test file or
+in a `beforeAll` step. A pose can be `async`, and await what it needs:
+
+```tsx
+import { Assets } from 'pixi.js';
+import { beforeAll } from 'vitest';
+
+let sheet: Spritesheet;
+beforeAll(async () => {
+    sheet = await Assets.load('/sprites/hud.json');
+});
+
+canvasTest('three lives', () => LivesView({ sheet, lives: () => 3 }));
+```
+
+What a test file loads stays loaded for the files after it, since canvas
+test files share one page, so a loaded asset must not change.
 
 ## Options and Modifiers
 
@@ -129,9 +184,9 @@ as one file renamed.
 
 By default, a reference image is beside the test file, named for the
 file's stem and the image name: `visual-tests/hud-view.at-the-start.png`.
-A test file's stem is its name without `.test` and its extension. So each
-test file's images sort together, beside it, and the name says which file
-each image belongs to.
+A test file's stem is its name without `.test` or `.spec` and its
+extension. So each test file's images sort together, beside it, and the
+name says which file each image belongs to.
 
 Two tests whose full names differ only in punctuation would have the same
 image name, and share one reference image. So would two whose names differ
@@ -188,8 +243,11 @@ part of what makes the images the same on every machine.
 The pose builds the view before it is in the page. A test's `act` step
 acts on it once it is, after its kind's `prepare` step, and before its
 image is taken: it can hover over it, focus it or open a menu, with
-Vitest's `userEvent`, or measure its layout. After the image, v-snap moves
-the pointer off the page, so that the next test's view isn't hovered.
+Vitest's `userEvent`, or measure its layout. Both steps see the view as
+its image will be, with its text in the blank font and its font sizes
+rounded, so a measurement matches the image on every machine. After the
+image, v-snap moves the pointer off the page, so that the next test's
+view isn't hovered.
 
 ```ts
 import { userEvent } from 'vitest/browser';
@@ -204,6 +262,14 @@ see, for one test: `viewport: { width: 400, height: 600 }` for a narrow
 layout, and `colorScheme: 'light'` for a light theme. A test's viewport
 can't be bigger than the page's, since a bigger one would be scaled. The
 page returns to its own after the test.
+
+The image is the view's box, so what the view draws outside it, such as a
+shadow, an outline or a focus ring, is cut off. A test's `margin` takes in
+that many pixels around the box, as with `{ margin: 6 }` for a focus ring.
+A view whose root has `position: fixed` or `absolute`, such as a modal
+overlay, takes no room where it is mounted, so its image reaches the
+root's right and bottom edges, from the page's top left. A test can give
+it a `width` and `height` instead.
 
 Before an HTML view's image is taken, the package waits for its fonts, its
 `<img>` elements, and the images that its styles use, such as backgrounds.

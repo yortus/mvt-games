@@ -26,13 +26,14 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFile
 import { basename, dirname, join } from 'node:path';
 import type { BrowserCommand, BrowserCommandContext } from 'vitest/node';
 import type {
-    ColorScheme, VisualCalibration, VisualCaptureRequest, VisualEnvironment, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
+    ColorScheme, VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualEnvironmentCheck, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
 import { compareImages, DRAWS_EXACTLY } from './compare.ts';
 import { CHECK_CACHE_FILE, ENVIRONMENT_FILE, findCalibrationDir, toDisplayPath, toOutputBase } from './paths.ts';
 import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout.ts';
 import { decodePng, encodePng, hashImage, isLfsPointer, type RgbaImage, readPngHash } from './png.ts';
+import { advisePlaywright, findPlaywright } from './playwright-advice.ts';
 import { checkReferences } from './references.ts';
 
 // ---------------------------------------------------------------------------
@@ -164,7 +165,7 @@ function isRewriting(mode: VisualMode): boolean {
     return mode === 'update' || mode === 'environment';
 }
 
-const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): readonly string[] => {
+const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): VisualEnvironmentCheck => {
     const facts: EnvironmentFile = {
         browser: environment.browser,
         webgl: environment.webglRenderer.includes('SwiftShader') ? 'SwiftShader' : environment.webglRenderer,
@@ -174,15 +175,17 @@ const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, envir
     };
     if (process.env.VSNAP_MODE === 'environment') {
         writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
-        return [];
+        return { problems: [] };
     }
-    if (!existsSync(ENVIRONMENT_FILE)) return [`v-snap's ${toDisplayPath(ENVIRONMENT_FILE)} is missing, so v-snap's package is incomplete. Install it again`];
+    if (!existsSync(ENVIRONMENT_FILE)) return { problems: [`v-snap's ${toDisplayPath(ENVIRONMENT_FILE)} is missing, so v-snap's package is incomplete. Install it again`] };
     const expected = JSON.parse(readFileSync(ENVIRONMENT_FILE, 'utf8')) as EnvironmentFile;
     const problems: string[] = [];
     for (const key of Object.keys(expected) as (keyof EnvironmentFile)[]) {
         if (expected[key] !== facts[key]) problems.push(`${key} is ${JSON.stringify(facts[key])}, but the reference environment's is ${JSON.stringify(expected[key])}`);
     }
-    return problems;
+    // The browser comes from the Playwright that the project installs
+    const advice = expected.browser === facts.browser ? undefined : advisePlaywright(findPlaywright());
+    return { problems, advice };
 };
 
 const abortVisualRun: BrowserCommand<[string]> = (ctx, message) => {

@@ -121,11 +121,17 @@ that nothing but `npm ci` is needed.
   draw, such as Pixi's `Text`. Text that reaches a canvas
   another way, such as Pixi's `HTMLText`, which draws HTML through an SVG
   image, is drawn by the system, in its fonts.
-- **HTML text** is set in a blank font, whose letters keep their widths
-  but draw nothing. Nothing tried inside the browser made HTML text draw
-  alike on every system, so the layout is tested, and the words aren't.
+- **HTML text** is set in a blank font, in which every letter is an empty
+  space 0.625 em wide. Every system lays that font out alike, but not as
+  the real font would be: lines wrap, and text is cut off with an
+  ellipsis, at other points. Nothing tried inside the browser made HTML
+  text draw alike on every system, so the layout is tested, and the words
+  aren't.
 - **Random numbers** are seeded the same way before every test, so a view
-  that calls `Math.random` draws the same every time.
+  that calls `Math.random`, `crypto.getRandomValues` or `crypto.randomUUID`
+  draws the same every time. The two `crypto` functions draw from a
+  generator of their own, so adding a call to one of them doesn't change
+  the numbers that `Math.random` gives.
 - **A tolerance** of 2 levels in 255, for each colour channel, covers the
   rounding of some drawing on arm64 processors. A real change is almost
   never that small. On arm64, Vitest's `-u` leaves the reference of an

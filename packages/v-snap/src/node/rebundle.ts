@@ -22,7 +22,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { type Dirent, existsSync, globSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { type Dirent, existsSync, globSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { OUT_DIR, REPO_ROOT } from './paths.ts';
 import { toFileKey } from './references.ts';
@@ -76,10 +76,16 @@ export function isLeftOutByCommandLine(projectNames: readonly string[], argv: re
     return projectNames.every((name) => !matchesProjectFilter(filters, name));
 }
 
-/** Records the sources' fingerprint for a `vsnap` call whose projects are about to run, and so to bundle. */
+/**
+ * Records the sources' fingerprint for a `vsnap` call whose projects are
+ * about to run, and so to bundle. It deletes the call's file from earlier
+ * versions of v-snap, which was named for the call alone, and which nothing
+ * reads now.
+ */
 export function recordFingerprint(call: VsnapCall): void {
     mkdirSync(OUT_DIR, { recursive: true });
     writeFileSync(fingerprintFile(call), findFingerprint());
+    rmSync(join(OUT_DIR, `${call.name}.sources-fingerprint`), { force: true });
 }
 
 /** Forgets the fingerprint, after a source file changed in watch mode, so that the next decision reads the sources again. */

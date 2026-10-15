@@ -104,14 +104,30 @@ export function pixelateRotatedImages(host: HTMLElement): void {
  * exactly alike. Every size is read before any is written. That way, an
  * element sized in `em` is rounded from its own size, not from its parent's
  * rounded one. Pseudo-elements with sizes of their own are not reached.
+ *
+ * Returns a step that takes the rounding off again, so that the sizes can be
+ * rounded afresh after the view changes. It leaves alone a size that
+ * something else has set since.
  */
-export function quantizeFontSizes(host: HTMLElement): void {
+export function quantizeFontSizes(host: HTMLElement): () => void {
     const elements = listElements(host);
     const sizes = elements.map((e) => parseFloat(getComputedStyle(e).fontSize));
+    const rounded: { readonly style: CSSStyleDeclaration; readonly value: string; readonly previous: string; readonly priority: string }[] = [];
     for (let i = 0; i < elements.length; i++) {
         const quantized = Math.round(sizes[i] * 4) / 4;
-        if (quantized !== sizes[i]) elements[i].style.setProperty('font-size', `${quantized}px`, 'important');
+        if (quantized === sizes[i]) continue;
+        const style = elements[i].style;
+        const value = `${quantized}px`;
+        rounded.push({ style, value, previous: style.getPropertyValue('font-size'), priority: style.getPropertyPriority('font-size') });
+        style.setProperty('font-size', value, 'important');
     }
+    return () => {
+        for (const { style, value, previous, priority } of rounded) {
+            if (style.getPropertyValue('font-size') !== value || style.getPropertyPriority('font-size') !== 'important') continue;
+            if (previous === '') style.removeProperty('font-size');
+            else style.setProperty('font-size', previous, priority);
+        }
+    };
 }
 
 // ---------------------------------------------------------------------------

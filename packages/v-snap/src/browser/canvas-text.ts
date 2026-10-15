@@ -142,7 +142,7 @@ const MONO_FAMILIES: ReadonlySet<string> = new Set([
 ]);
 
 const SANS_FAMILIES: ReadonlySet<string> = new Set([
-    'sans-serif', 'serif', 'system-ui', '-apple-system', 'blinkmacsystemfont', 'ui-sans-serif', 'ui-serif', 'ui-rounded',
+    'sans-serif', 'serif', 'system-ui', 'cursive', 'fantasy', 'emoji', 'math', 'fangsong', '-apple-system', 'blinkmacsystemfont', 'ui-sans-serif', 'ui-serif', 'ui-rounded',
     'segoe ui', 'helvetica neue', 'helvetica', 'arial', 'arial black', 'roboto', 'inter', 'georgia', 'times new roman',
     'noto sans', 'ubuntu', 'cantarell', 'source sans 3', 'verdana', 'tahoma', 'trebuchet ms',
 ]);
@@ -153,7 +153,7 @@ const ITALIC_SHEAR = 0.2;
 function lay(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): Laid {
     const run = p.font.layout(text);
     const scale = p.size / p.font.unitsPerEm;
-    const spacing = parseFloat(ctx.letterSpacing) || 0;
+    const spacing = toPixels(ctx.letterSpacing, p.size);
     const x: number[] = [];
     const y: number[] = [];
     let pen = 0;
@@ -166,13 +166,52 @@ function lay(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): Laid {
     return { glyphs: run.glyphs, x, y, width: pen, scale };
 }
 
+/**
+ * Returns a letter spacing in pixels. The canvas keeps it as the CSS length
+ * that it was given, such as `2px` or `0.1em`, where `em` is the font's
+ * size. A length in another unit is resolved by CSS, on an element with the
+ * font's size, and cached.
+ */
+function toPixels(length: string, fontSize: number): number {
+    if (length.endsWith('px')) return parseFloat(length) || 0;
+    const key = `${length} ${fontSize}`;
+    let pixels = resolvedLengths.get(key);
+    if (pixels === undefined) {
+        const probe = document.createElement('span');
+        probe.style.fontSize = `${fontSize}px`;
+        probe.style.letterSpacing = length;
+        document.documentElement.append(probe);
+        pixels = parseFloat(getComputedStyle(probe).letterSpacing) || 0;
+        probe.remove();
+        resolvedLengths.set(key, pixels);
+    }
+    return pixels;
+}
+
+/** Letter spacings resolved by CSS, by their length and font size. */
+const resolvedLengths = new Map<string, number>();
+
+/** Returns the offset of text from its x for the context's alignment. `start` and `end` follow the text's direction. */
 function computeAlignOffset(ctx: CanvasRenderingContext2D, width: number): number {
+    const isRtl = isRightToLeft(ctx);
     switch (ctx.textAlign) {
         case 'center': return -width / 2;
-        case 'right':
-        case 'end': return -width;
+        case 'right': return -width;
+        case 'end': return isRtl ? 0 : -width;
+        case 'start': return isRtl ? -width : 0;
         default: return 0;
     }
+}
+
+/**
+ * Returns whether the context's text runs right to left. A context whose
+ * direction is `inherit`, the default, takes its canvas's, if the canvas is
+ * in the page, and runs left to right otherwise.
+ */
+function isRightToLeft(ctx: CanvasRenderingContext2D): boolean {
+    if (ctx.direction !== 'inherit') return ctx.direction === 'rtl';
+    const canvas = ctx.canvas as HTMLCanvasElement | OffscreenCanvas;
+    return canvas instanceof HTMLCanvasElement && canvas.isConnected && getComputedStyle(canvas).direction === 'rtl';
 }
 
 function computeBaselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): number {

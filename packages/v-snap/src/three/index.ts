@@ -2,4 +2,4 @@
 // project that imports it needs three.js installed.
 
 export type { ThreeImageOptions, ThreeSceneOptions } from './three-image';
-export { threeViews, type ThreeViewsOptions } from './three-views';
+export { type ThreeTestOptions, threeViews, type ThreeViewsOptions } from './three-views';

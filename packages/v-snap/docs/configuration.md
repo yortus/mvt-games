@@ -54,7 +54,7 @@ export default defineConfig({
                 extends: true,
                 test: {
                     name: 'unit',
-                    exclude: [...configDefaults.exclude, '**/visual-tests/**'],
+                    exclude: [...configDefaults.exclude, '**/visual-tests/*.test.{ts,tsx}'],
                 },
             },
             ...vsnap(),
@@ -82,10 +82,15 @@ aliases as the rest of the project.
 
 Vitest adds the config's own `include` and `exclude` lists to an
 inheriting project's, so keep them in the unit project, as above, not in
-the config's `test` block. `withVsnap()` moves them there. The same goes for `setupFiles`, which would run
-in v-snap's browser pages, where a setup file written for Node, or for a
-simulated DOM, fails. A run stops with a message if any of them leak into
-v-snap's projects.
+the config's `test` block. `withVsnap()` moves them there. The same goes
+for `setupFiles`, which would run in v-snap's browser pages, where a setup
+file written for Node, or for a simulated DOM, fails. A run stops with a
+message if any of them leak into v-snap's projects.
+
+A `globalSetup` in the config's `test` block can stay there, and
+`withVsnap()` leaves it. Vitest runs it once for the whole run, in Node,
+not once for each project, since it never passes a root config's
+`globalSetup` on to the projects that inherit it.
 
 ## Options
 
@@ -179,8 +184,9 @@ vsnap({ referencePath: 'visual-references/{testFilePath}/{imageName}.png' });
 
 The unit project must leave out a layout's test files. `withVsnap()` adds
 the `include` globs to its `exclude` itself. A config that lists the
-projects by hand adds them: `'**/visual-tests/**'` for the default layout,
-and `'**/*.visual.test.{ts,tsx}'` for the first layout above.
+projects by hand adds them: `'**/visual-tests/*.test.{ts,tsx}'` for the
+default layout, and `'**/*.visual.test.{ts,tsx}'` for the first layout
+above.
 
 Keep other PNGs out of the places that the reference path gives. A PNG
 beside a test file, whose name starts with the file's stem and a dot, is

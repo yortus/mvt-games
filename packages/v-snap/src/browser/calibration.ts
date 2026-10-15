@@ -32,7 +32,8 @@ export async function checkCalibration(pageKind: PageKind): Promise<void> {
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }
-    const problems = [...await visualCommands.checkVisualEnvironment(readEnvironment())];
+    const environment = await visualCommands.checkVisualEnvironment(readEnvironment());
+    const problems = [...environment.problems];
     const calibrations = pageKind === 'canvas' ? CANVAS_JUDGED : HTML_CALIBRATION;
     if (problems.length === 0) {
         for (const [name, draw] of Object.entries(calibrations)) {
@@ -44,8 +45,10 @@ export async function checkCalibration(pageKind: PageKind): Promise<void> {
         }
     }
     if (problems.length > 0) {
+        const advice = environment.advice
+            ?? 'v-snap draws with the browser of one Playwright version, so check that the project installs the Playwright version that v-snap\'s package.json names, and only one copy of it.';
         const message = `This machine is not the visual tests' reference environment (${pageKind}). These checks failed: ${problems.join('; ')}. `
-            + 'No test\'s actual image was compared. v-snap draws with the browser of one Playwright version, so check that the project installs the Playwright version that v-snap\'s package.json names, and only one copy of it.';
+            + `No test's actual image was compared. ${advice}`;
         await visualCommands.abortVisualRun(message);
         throw new Error(message);
     }

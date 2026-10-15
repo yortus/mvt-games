@@ -5,8 +5,10 @@ usually means.
 
 - **"This machine is not the visual tests' reference environment."** The
   browser's fingerprint, or one of the calibration images, differs, so no
-  test was compared. Check that the project installs the Playwright version
-  that v-snap names, and only one copy of it (`npm ls playwright`).
+  test was compared. When the browser differs, the message names the
+  Playwright version that v-snap supports, and the one that the run uses,
+  with its folder. Install the version that v-snap supports, and only one
+  copy of it (`npm ls playwright`).
 - **"The visual tests run in Playwright's headless Chromium, ... but this
   page runs in another browser."** The run is headed
   (`--browser.headless=false`), or the config names another browser. Run

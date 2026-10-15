@@ -14,6 +14,11 @@ their images don't change from one run to the next.
   words don't. For a game's menus and panels, that is usually what
   matters, and a copy edit doesn't fail a test. Words that matter can be
   checked with assertions.
+- **HTML text is laid out as if every letter were 0.625 em wide,** which
+  is the width of each letter of the blank font. So text wraps, is cut off
+  with an ellipsis, and sizes the boxes that fit it, at other points than
+  in the real font. A layout that is right in the image can still overflow
+  in the page, and the other way round.
 - **HTML views are captured at rest.** Animations are finished or
   cancelled, so an image shows where one ends, not a moment in it.
 - **Canvas text uses the two test fonts,** not the view's own. A character
@@ -49,10 +54,12 @@ their images don't change from one run to the next.
   spritesheet's, draws the same in every test.
 - **Give each canvas font list a family that v-snap knows.** Canvas text
   is drawn in this package's own sans-serif or monospace font, picked by
-  the first family in the list that v-snap knows. It knows the generic
-  families (`sans-serif`, `serif`, `system-ui`, `monospace` and the like)
-  and the common system fonts, such as Arial, Helvetica, Segoe UI, Roboto,
-  Consolas and Menlo. Serif families are drawn sans-serif. So
+  the first family in the list that v-snap knows. It knows every generic
+  family, and the common system fonts, such as Arial, Helvetica, Segoe UI,
+  Roboto, Consolas and Menlo. `monospace` and `ui-monospace` are drawn in
+  the monospace font. `sans-serif`, `serif`, `system-ui`, `ui-sans-serif`,
+  `ui-serif`, `ui-rounded`, `cursive`, `fantasy`, `emoji`, `math` and
+  `fangsong` are drawn in the sans-serif font. So
   `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'` alone
   fails its test. Ending each list with `sans-serif` or `monospace` always
   works.

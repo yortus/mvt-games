@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, RenderTexture, TextureSource } from 'pixi.js';
+import { Application, Container, Graphics, type Renderer, RenderTexture, TextureSource } from 'pixi.js';
 import type { CanvasImage } from '../browser';
 import { fitImage, useCached } from '../shared';
 
@@ -8,8 +8,11 @@ import { fitImage, useCached } from '../shared';
 
 export interface PixiImageOptions {
     /**
-     * The image's size in the view's pixels. By default, it is the view's
-     * bounds after its first refresh, plus a margin.
+     * The image's size in the view's pixels. Each axis is framed on its own.
+     * One with a size runs from 0 to that size, as a game's screen does. One
+     * without is framed by the view's bounds after its first refresh, plus
+     * a margin of 4 pixels. So `{ width: 320 }` gives the screen's width,
+     * and the view's own height.
      */
     readonly width?: number;
     readonly height?: number;
@@ -55,10 +58,28 @@ export interface PixiImageOptions {
  * Sets the defaults that a pose's textures are made with. Call it before the
  * pose runs. Each game sets these defaults for itself, and a test must not
  * inherit the last test's. A spritesheet can set its own sampling, which
- * these defaults then do not change.
+ * these defaults then do not change. It also notes whether the test is of
+ * pixel art, for `getPixiRenderer`.
  */
 export function preparePixiPose(options: PixiImageOptions): void {
-    TextureSource.defaultOptions.scaleMode = options.pixelArt === true ? 'nearest' : 'linear';
+    isPosePixelArt = options.pixelArt === true;
+    TextureSource.defaultOptions.scaleMode = isPosePixelArt ? 'nearest' : 'linear';
+}
+
+/**
+ * Returns the Pixi renderer that draws every actual image, for a view that
+ * needs one to build itself, such as one that calls `generateTexture`. It
+ * is made on first use and kept for the page's life, so a test mustn't
+ * resize it, destroy it or change its settings. A texture that it makes is
+ * the test's to destroy. It rounds positions to whole pixels if the test
+ * is of pixel art, and not otherwise, rather than as the last image left
+ * it, so that what the pose makes with it doesn't depend on the test
+ * before.
+ */
+export async function getPixiRenderer(): Promise<Renderer> {
+    const ready = await ensureApp();
+    setRoundPixels(ready, isPosePixelArt);
+    return ready.renderer;
 }
 
 /**
@@ -69,23 +90,20 @@ export function preparePixiPose(options: PixiImageOptions): void {
  */
 export async function drawPixiImage(view: Container, options: PixiImageOptions & { readonly maxPixels: number }): Promise<CanvasImage> {
     const isSmooth = options.pixelArt !== true;
-    const app = await ensureApp(isSmooth);
+    const app = await ensureApp();
+    setRoundPixels(app, !isSmooth);
     holder.position.set(0, 0);
     holder.addChild(view);
     try {
-        let x0 = 0;
-        let y0 = 0;
-        let width = options.width;
-        let height = options.height;
-        if (width === undefined || height === undefined) {
-            // Use the holder's bounds, so that the view's own position counts.
-            // A view's local bounds leave its position out.
-            const bounds = holder.getLocalBounds();
-            x0 = Math.floor(bounds.minX) - MARGIN;
-            y0 = Math.floor(bounds.minY) - MARGIN;
-            width ??= Math.ceil(bounds.maxX) + MARGIN - x0;
-            height ??= Math.ceil(bounds.maxY) + MARGIN - y0;
-        }
+        // Each axis on its own: one with a size runs from 0 to that size, and
+        // one without is framed by the view's bounds, plus a margin. The
+        // holder's bounds count the view's own position, which a view's local
+        // bounds leave out.
+        const bounds = options.width === undefined || options.height === undefined ? holder.getLocalBounds() : undefined;
+        const x0 = bounds === undefined || options.width !== undefined ? 0 : Math.floor(bounds.minX) - MARGIN;
+        const y0 = bounds === undefined || options.height !== undefined ? 0 : Math.floor(bounds.minY) - MARGIN;
+        const width = options.width ?? (bounds === undefined ? 0 : Math.ceil(bounds.maxX) + MARGIN - x0);
+        const height = options.height ?? (bounds === undefined ? 0 : Math.ceil(bounds.maxY) + MARGIN - y0);
         const fit = fitImage({ width, height, maxPixels: options.maxPixels, canScale: isSmooth, advice: PIXEL_ART_ADVICE });
         if ('problem' in fit) throw new Error(fit.problem);
         holder.position.set(-x0, -y0);
@@ -122,28 +140,34 @@ const holder = new Container();
 stage.addChild(backdrop, holder);
 
 let app: Promise<Application> | undefined;
+
+/** Whether the running test is of pixel art, as `preparePixiPose` noted. */
+let isPosePixelArt = false;
 const targets = new Map<string, RenderTexture>();
 
 /**
- * Returns the one renderer that draws every actual image. It is made on
- * first use and kept. MSAA (multisample antialiasing) belongs to each
- * image's render texture, and whole-pixel positions are set for each
- * image. The renderer's WebGL context has its own antialiasing, which is
- * fixed to off. That setting changes MSAA edges in render textures too, so
- * it must never be left to a default.
+ * Returns the application whose renderer draws every actual image. It is
+ * made on first use and kept. MSAA (multisample antialiasing) belongs to
+ * each image's render texture, and whole-pixel positions are set for each
+ * image, by `setRoundPixels`. The renderer's WebGL context has its own
+ * antialiasing, which is fixed to off. That setting changes MSAA edges in
+ * render textures too, so it must never be left to a default.
  */
-async function ensureApp(isSmooth: boolean): Promise<Application> {
+function ensureApp(): Promise<Application> {
     app ??= (async () => {
         const made = new Application();
         await made.init({ width: 8, height: 8, antialias: false, autoStart: false, preference: 'webgl', sharedTicker: false });
         return made;
     })();
-    const ready = await app;
+    return app;
+}
+
+/** Sets whether the renderer rounds positions to whole pixels, for pixel art, or not, for smooth art. */
+function setRoundPixels(app: Application, isRounded: boolean): void {
     // The renderer reads this internal field every frame, and Pixi offers no
     // setter for it. Pixi's types declare it, so a rename fails the type check,
     // and a test checks that the renderer still reads it.
-    ready.renderer._roundPixels = isSmooth ? 0 : 1;
-    return ready;
+    app.renderer._roundPixels = isRounded ? 1 : 0;
 }
 
 /**

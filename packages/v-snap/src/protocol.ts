@@ -133,6 +133,14 @@ export interface VisualEnvironment {
     readonly devicePixelRatio: number;
 }
 
+/** What the environment check found. */
+export interface VisualEnvironmentCheck {
+    /** Each fact that differs from the reference environment's. */
+    readonly problems: readonly string[];
+    /** What to do about a browser that differs: which Playwright v-snap supports, and which one the run uses. */
+    readonly advice?: string;
+}
+
 /** What Node tells a page once for each test file, or for each calibration set. */
 export interface VisualSession {
     readonly mode: VisualMode;
@@ -217,9 +225,9 @@ export interface VisualCommands {
     /**
      * Checks the browser's facts against the reference environment's. In
      * `environment` mode, it writes them as the reference environment's
-     * instead. Returns what differed.
+     * instead. Returns what differed, and what to do about it.
      */
-    checkVisualEnvironment: (environment: VisualEnvironment) => Promise<readonly string[]>;
+    checkVisualEnvironment: (environment: VisualEnvironment) => Promise<VisualEnvironmentCheck>;
     /** Records that a calibration set matched, and which references it used. The run's other pages then skip the set. */
     recordVisualCalibration: (calibration: VisualCalibration) => Promise<void>;
     /** Stops the run before any more tests, with one error. */

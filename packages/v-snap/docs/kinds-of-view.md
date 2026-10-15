@@ -52,18 +52,31 @@ describes.
 
 - **Pixi views,** registered with `pixiViews()` from `v-snap/pixi`. The pose
   returns a Pixi container. By default, the image is framed by the view's
-  bounds, and drawn smooth, with antialiased edges. The options can set the
-  image's `width`, `height` and `background`, and `pixelArt: true` for
+  bounds, plus a margin of 4 pixels, and drawn smooth, with antialiased
+  edges. The options can set the image's `width`, `height` and
+  `background`. Each axis is framed on its own: one with a size runs from
+  0 to that size, as a game's screen does, and one without is framed by
+  the bounds. So `{ width: 320 }` gives the screen's width and the view's
+  own height. The options can also set `pixelArt: true` for
   pixel art, with hard edges and whole pixels. A project whose views are
   mostly pixel art registers `pixiViews({ pixelArt: true })`, and a test of
   a smooth view then says `pixelArt: false`. `pixiViews({ background })`
-  sets every test's background, unless the test sets its own.
+  sets every test's background, unless the test sets its own. A view that
+  needs a renderer to build itself, such as one that calls
+  `generateTexture`, gets the one that draws the images from
+  `getPixiRenderer()`, in an `async` pose. The renderer is kept for every
+  test, so a test mustn't resize it, destroy it or change its settings,
+  and destroys the textures that it makes.
 - **three.js views,** registered with `threeViews()` from `v-snap/three`. The
   pose returns a three.js object. A three.js view has no bounds to frame it
   by, so the options always set the image's `width` and `height`, and the
   `camera` to draw it with. They can also dress the `scene` as the view's
   game does, with its lights, environment and tone mapping.
-  `threeViews({ background })` sets every test's background.
+  `threeViews()` can set `width`, `height`, `camera`, `scene` and
+  `background` for every test, such as the game's screen and camera, so
+  that a test leaves them out, unless it sets its own. Its tests' types
+  know which it set:
+  `threeViews({ width: 320, height: 240, camera: createCamera })`.
 - **A canvas that the pose has drawn,** of the kind `'canvas'`, with any
   renderer, needs no registration. It can be an `HTMLCanvasElement` or an
   `OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
@@ -153,9 +166,9 @@ the kind gets, unless the test sets its own.
 | Kind | A test's options | The registration's options |
 | --- | --- | --- |
 | Pixi, `pixiViews()` | `width` and `height` (the view's bounds and a margin by default), `background`, `pixelArt` (`false` by default) | `prepare`, `dispose`, `pixelArt`, `background` |
-| three.js, `threeViews()` | `width`, `height` and `camera`, all needed; `scene`, to dress the scene; `background` | `prepare`, `dispose`, `background` |
+| three.js, `threeViews()` | `width`, `height` and `camera`, all needed, unless `threeViews()` sets them; `scene`, to dress the scene; `background` | `prepare`, `dispose`, `background`, `width`, `height`, `camera`, `scene` |
 | A canvas that the pose drew, `'canvas'` | none | none needed |
-| HTML, `htmlTest` | `width` and `height` (the element's own size by default), `background`; `act`, a step on the view once it is in the page; `viewport` and `colorScheme`, for its media queries (see [How HTML Views Are Captured](writing-tests.md#how-html-views-are-captured)) | `htmlViews()`: `prepare`, `dispose`, `background` |
+| HTML, `htmlTest` | `width` and `height` (the element's own size by default), `background`; `margin`, the space around the element that the image takes in (0 by default); `act`, a step on the view once it is in the page; `viewport` and `colorScheme`, for its media queries (see [How HTML Views Are Captured](writing-tests.md#how-html-views-are-captured)) | `htmlViews()`: `prepare`, `dispose`, `background` |
 
 A `background` is a number, such as `0x202024`, or a CSS colour. By
 default, it is one dark grey for every kind, so that transparent areas

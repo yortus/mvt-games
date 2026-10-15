@@ -156,7 +156,6 @@ type ImageId = ReturnType<typeof nameImage>;
  */
 const OWN_BASE = new URL('..', import.meta.url).href;
 
-/** Vitest's `test`, or one of its modifiers, `test.skip` and `test.only`, which declares a test as `test` does. */
 /** A pose of any test, which takes its case's arguments, if it has a case. */
 type AnyPose = (...args: readonly unknown[]) => unknown;
 

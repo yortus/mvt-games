@@ -1,11 +1,11 @@
 // These are the visual test harness's own tests. Each one checks one case
 // of drawing a view on a canvas: a canvas that the pose draws, or a Pixi or
 // three.js view, which this package's vsnap.config.ts registers.
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Text } from 'pixi.js';
 import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import config, { type Sketch } from '../../../vsnap.config';
-import { pixiViews } from '../../pixi';
+import { getPixiRenderer, pixiViews } from '../../pixi';
 import { defineVsnapConfig, loadViewKinds } from '../view-kinds';
 import { bindCanvasTest, canvasTest } from '../visual-test';
 
@@ -20,6 +20,19 @@ canvasTest('placed by its own position', () => {
 });
 
 canvasTest('at a fixed size', { width: 100, height: 60 }, () => new Graphics().rect(10, 10, 40, 40).fill(0xff4f8b));
+
+// Each axis is framed on its own: the width runs from 0 to 100, so the bar
+// is 10 pixels in, and the height is the bar's, with the margin.
+canvasTest('at a fixed width, framed by its bounds in height', { width: 100 }, () => new Graphics().rect(10, 200, 40, 20).fill(0xff4f8b));
+
+// A view that builds itself with a renderer, such as with generateTexture,
+// gets the one that draws the images. The texture is the test's own.
+canvasTest('a texture made with the shared renderer', async () => {
+    const renderer = await getPixiRenderer();
+    const texture = renderer.generateTexture(new Graphics().star(0, 0, 5, 20).fill(0xffe45c));
+    onTestFinished(() => texture.destroy(true));
+    return new Sprite(texture);
+});
 
 // Vitest's skipIf and runIf work on canvasTest as on test: this one is
 // skipped, and this one runs.
@@ -48,6 +61,80 @@ it('draws two characters that the test fonts lack differently', () => {
         return ctx.getImageData(0, 0, 60, 60).data;
     };
     expect(draw('★')).not.toEqual(draw('☆'));
+});
+
+// Every generic family is drawn in a test font. Letter spacing in em is a
+// share of the font's size, and start and end alignment follow the text's
+// direction: each row of this canvas ends at its right edge.
+canvasTest('canvas text, spaced in em and aligned right to left', { kind: 'canvas' }, () => {
+    const families = ['cursive', 'fantasy', 'emoji', 'math', 'fangsong'];
+    const canvas = new OffscreenCanvas(200, 20 + families.length * 22);
+    const ctx = canvas.getContext('2d');
+    if (ctx === null) throw new Error('The browser gave no 2D context.');
+    ctx.fillStyle = '#202024';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.direction = 'rtl';
+    ctx.textAlign = 'start';
+    for (let i = 0; i < families.length; i++) {
+        ctx.font = `16px ${families[i]}`;
+        ctx.letterSpacing = i % 2 === 0 ? '0.25em' : '0px';
+        ctx.fillText(families[i], 192, 26 + i * 22);
+    }
+    return canvas;
+});
+
+describe('canvas text measured', () => {
+    const measure = (set: (ctx: OffscreenCanvasRenderingContext2D) => void): TextMetrics => {
+        const ctx = new OffscreenCanvas(10, 10).getContext('2d');
+        if (ctx === null) throw new Error('The browser gave no 2D context.');
+        ctx.font = '20px sans-serif';
+        set(ctx);
+        return ctx.measureText('Spin');
+    };
+
+    it('takes letter spacing in em as a share of the font\'s size', () => {
+        expect(measure((ctx) => (ctx.letterSpacing = '0.5em')).width).toBe(measure((ctx) => (ctx.letterSpacing = '10px')).width);
+    });
+
+    it('aligns start and end text by its direction', () => {
+        const right = measure((ctx) => (ctx.textAlign = 'right')).actualBoundingBoxRight;
+        expect(measure((ctx) => {
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'start';
+        }).actualBoundingBoxRight).toBe(right);
+        expect(measure((ctx) => (ctx.textAlign = 'end')).actualBoundingBoxRight).toBe(right);
+        expect(measure((ctx) => {
+            ctx.direction = 'rtl';
+            ctx.textAlign = 'end';
+        }).actualBoundingBoxRight).toBe(measure((ctx) => (ctx.textAlign = 'left')).actualBoundingBoxRight);
+    });
+});
+
+// Random numbers start from the same seed in every test, whatever ran
+// before, crypto's too. The first test draws some, and the later ones, which
+// need it to have run, draw the same.
+describe('random numbers', { shuffle: false }, () => {
+    const drawNumbers = (): unknown[] => [Math.random(), crypto.getRandomValues(new Uint32Array(2)).join(), crypto.randomUUID(), Math.random()];
+    let first: unknown[] | undefined;
+
+    it('are seeded', () => {
+        first = drawNumbers();
+        expect(first[2]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+        expect(crypto.getRandomValues(new Uint8Array(4))).not.toEqual(crypto.getRandomValues(new Uint8Array(4)));
+    });
+
+    it('start again from the seed in the next test', ({ skip }) => {
+        if (first === undefined) return skip();
+        expect(drawNumbers()).toEqual(first);
+    });
+
+    it('come from two generators, so that crypto doesn\'t change Math.random', ({ skip }) => {
+        if (first === undefined) return skip();
+        const plain = Math.random();
+        crypto.getRandomValues(new Uint8Array(4));
+        expect([plain, Math.random()]).toEqual([first[0], first[3]]);
+    });
 });
 
 // A kind's prepare runs after the pose, as a refresh step would. This
