@@ -11,12 +11,12 @@
 > each session reports two queries, its score and whether its run is over,
 > and the Arcade does the rest.
 
-**Status:** implemented, in its own branch, not yet merged into `vnext`.
-Steps 1 to 8 are done (section 11). The Worker is deployed for production
-at `highscores.yortus.workers.dev`, and for the test site at
-`highscores-test.yortus.workers.dev`. The site's workflows point at them,
-and a workflow deploys the Worker when its package changes. The pause
-menu's highscores are a tab. What is left is step 9's later decisions.
+**Status:** implemented, merged into `vnext` on 2026-10-15 in five reviewed
+chunks, and live on the site. Steps 1 to 8 are done (section 11). The
+Worker is deployed for production at `highscores.yortus.workers.dev`, and
+for the test site at `highscores-test.yortus.workers.dev`. Archived on
+2026-10-15. What is left, step 9 and moving `GAMES` into the games, is
+task [049](../tasks/backlog/049-highscores-follow-ons.md).
 
 **Written:** 2026-10-08, against `vnext` at `87ed5c8`. Checked against the
 entry types ([`entry-starter.ts`](../../packages/website/src/entry-types/entry-starter.ts),
@@ -38,7 +38,7 @@ by a deployed spike, on the same day (section 4.6).
 [Architecture Rules](../../packages/docs/architecture/rules.md) -
 [Change Detection](../../packages/docs/building-with-mvt/reacting-to-changes/change-detection.md) -
 [045](045-sound-chip.md) (also adds to what the host gives a session; the two should agree on shape) -
-[034](034-neon-monsoon-bullet-hell.md) (Neon Monsoon's seeded, replayable model, the first candidate for replay checks, section 8.3)
+[034](../proposals/034-neon-monsoon-bullet-hell.md) (Neon Monsoon's seeded, replayable model, the first candidate for replay checks, section 8.3)
 
 ---
 
@@ -646,6 +646,6 @@ Still open, with a recommendation each:
    added (asked for on 2026-10-08, when the item proved easy to miss).~~
    Done 2026-10-14, in the merge: a "Highscores" tab between the menu and
    "How to play", shown only for a game with a table.
-9. **Later, each its own decision.** The leader on each card; tables in
+9. **Later, each its own decision.** Moved to task 049. The leader on each card; tables in
    attract mode; Crumb Chase's ties and a score for Dojo Duel (question 3);
    replay checks (section 8.3).

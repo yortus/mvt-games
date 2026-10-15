@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**049**.
+**050**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -88,7 +88,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
-| 046 | [Highscores for the Arcade](./proposals/046-arcade-highscores.md) | Implemented, in its own branch, not yet merged: the Worker deployed for production and the test site, the seven games reporting their scores, the initials prompt and the tables in the Arcade, and a Highscores tab in the pause menu. One global table of ten per game, with three-letter initials from a 38-character set entered cabinet-style, drawn in the Arcade's pixel font. The site stays static: the tables live in a Cloudflare Worker with one Durable Object (SQLite), in the website (`highscores-worker/`, a TypeScript project of its own), which shares its rules with the page (`src/highscores/`). Games report two queries on the session (`scoring: { score, isOver }`) and change no model; the Arcade's model decides when a run places and pauses the entry for the initials. The browser stores only the visitor's last initials. Plausibility checks only; replay checks left for later |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -112,8 +111,8 @@ thumbnail code to give every entry a visual test, and made true what 015's
 testing docs already describe. 045, now archived, built the sound chip that
 035's music can play on, which 035's section 8 deferred. It gave `watch` its
 `increased` and `decreased`, which 008's builder may want too.
-046 adds to what a session gives its host, as 045 added to what the host
-gives a session, and builds on 036's Arcade.
+046, now archived, added to what a session gives its host, as 045 added
+to what the host gives a session, and built on 036's Arcade.
 
 ## Tasks
 
@@ -134,6 +133,7 @@ gives a session, and builds on 036's Arcade.
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
 | 047 | [Pixel Art as Multiline Strings](tasks/backlog/047-pixel-art-as-multiline-strings.md) | low | 2026-10-09 |
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
+| 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |
 
 ## Archive
 
@@ -166,6 +166,7 @@ gives a session, and builds on 036's Arcade.
 | 042 | [Proposal: visual snapshot tests for views](archive/042-visual-snapshot-tests.md) (published to npm as `v-snap`: Vitest projects that draw Pixi, three.js, canvas and HTML views, and compare each image with a reference committed beside its test, the same on Windows, Linux and macOS with no Docker; every view and whole entry of the website is tested with it. Loose ends: the logo, a trial on a real project and the docs reviews, in `notes/tmp-vsnap-checklist.md`) | 2026-10-14 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
 | 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/audio`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
+| 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/website/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
 
 ## Elsewhere
 
