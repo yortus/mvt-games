@@ -75,9 +75,9 @@ Some context for the figures:
 
 - **Like for like, v-snap is 11.5 times as fast.** In one page each, the
   screenshot tests take 67 ms an image, and each file also loads a fresh
-  page. v-snap takes 4 ms an image, and about half of its 7.8 s is start-up: it
-  launches the browser, loads the page and its fonts, and checks the
-  environment.
+  page. v-snap takes 4 ms an image. About half of its 7.8 s is start-up,
+  in which it launches the browser, loads the page and its fonts, and
+  checks the environment.
 - **Running several pages at once narrows the gap, but costs the whole
   machine.** The 13 pages share the processor, so each screenshot takes
   longer, 131 ms at the median, but 13 run at once. v-snap still finishes
@@ -100,11 +100,11 @@ the tests is [`bench/run.ts`](../bench/run.ts).
 
 ## The Same Images on Every Machine
 
-Many things differ between machines, and each changes an image's pixels:
-the GPU and its driver, the fonts installed, how the system draws and lays
-out text, the browser's version, the locale, the time zone, and the screen's
-scale and colour profile. v-snap pins each of them inside the browser, so
-that nothing but `npm ci` is needed.
+Many things differ between machines, and each of them can change an
+image's pixels. They include the GPU and its driver, the fonts installed,
+how the system draws and lays out text, the browser's version, the locale,
+the time zone, and the screen's scale and colour profile. v-snap fixes
+each of them inside the browser, so nothing but `npm ci` is needed.
 
 - **The browser** is always the same build of Chromium, Playwright's
   Chrome Headless Shell. Playwright names one build for each of its
@@ -118,9 +118,9 @@ that nothing but `npm ci` is needed.
   and Source Code Pro. v-snap lays the text out and draws each letter as a
   shape, so the system's text engine takes no part. Every system draws
   shapes alike. This covers the text that the canvas's own text calls
-  draw, such as Pixi's `Text`. Text that reaches a canvas
-  another way, such as Pixi's `HTMLText`, which draws HTML through an SVG
-  image, is drawn by the system, in its fonts.
+  draw, such as Pixi's `Text`. Text that reaches a canvas in another way
+  is drawn by the system, in its fonts. Pixi's `HTMLText` is one example,
+  since it draws HTML through an SVG image.
 - **HTML text** is set in a blank font, in which every letter is an empty
   space 0.625 em wide. Every system lays that font out alike, but not as
   the real font would be: lines wrap, and text is cut off with an

@@ -46,9 +46,9 @@ usually means.
   Git LFS's pointer files, not the images. Run `git lfs pull`, or check out
   with Git LFS, such as with `lfs: true` in `actions/checkout`.
 - **"Image ... matches its reference, ..., but the reference carries no
-  pixel hash."** Or its hash is wrong. Something other than v-snap wrote
-  the reference, such as an image optimiser, and the run writes no
-  references, as in CI. Run the tests outside CI, or with `-u`, which adds
+  pixel hash."** A similar message says that the hash is wrong. Something
+  other than v-snap wrote the reference, such as an image optimiser, and
+  the run writes no references, as in CI. Run the tests outside CI, or with `-u`, which adds
   the hash, and commit the reference.
 - **"... and ... have one reference image."** Two tests of a file have
   names that differ only in punctuation or case. Rename one.

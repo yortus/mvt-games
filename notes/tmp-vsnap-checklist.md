@@ -151,5 +151,13 @@ come from the blind review of 2026-10-15.
   for options most people won't touch, so they could move lower.
   - Apply docs skills to improve clarity and accessibility throughout.
   - Make the README shorter, punchier, with clear opening motivation.
+  - First pass done (2026-10-15), for review: the README rewritten, with
+    the problem and v-snap's answer first and the example earlier; Image
+    Names and Where Files Go moved to the ends of their pages; Kinds of
+    View's kinds as subsections; dense paragraphs split on every page;
+    code samples within 80 columns; two broken anchors fixed.
+    CONTRIBUTING.md too: brought up to date (`withVsnap`, `getPixiRenderer`,
+    the Playwright advice) and its upgrade steps completed (docs' version,
+    changeset, the website's visual tests).
 
 ## Miscellaneous

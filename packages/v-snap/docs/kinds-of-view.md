@@ -16,10 +16,11 @@ project tells v-snap which kinds its tests pose, and how each kind is drawn.
 ## Registering Kinds of View
 
 Each canvas test is of one kind of view, which its options name as `kind`.
-A kind is one that the project registers, such as `'pixi'`, or `'canvas'`,
-for a canvas that the pose drew. A project registers its kinds in
-`vsnap.config.ts`, which is v-snap's config for the project. It is in
-v-snap's root, beside `vitest.config.ts` in a project with one package.
+A kind is either one that the project registers, such as `'pixi'`, or
+`'canvas'`, for a canvas that the pose drew. A project registers its kinds
+in `vsnap.config.ts`, which is v-snap's config for the project. The file
+is in v-snap's root, which in a project with one package is beside
+`vitest.config.ts`.
 
 ```ts
 import { defineVsnapConfig } from 'v-snap';
@@ -41,54 +42,78 @@ declare module 'v-snap' {
 export default config;
 ```
 
-The file runs in the test page, not in Node as `vitest.config.ts` does,
-because what it registers runs on the views: checks of their classes,
-drawing, preparing and disposing. So the settings that Node needs before
-any page exists, such as `maxPixels` and where the files go, are options of
-`vsnap()` in `vitest.config.ts`, as [Configuration](configuration.md)
-describes.
+The file runs in the test page, not in Node as `vitest.config.ts` does.
+That is because what it registers works on the views themselves: it
+checks their classes, draws them, and prepares and disposes of them. The
+settings that Node needs before any page exists, such as `maxPixels` and
+where the files go, are v-snap's options in `vitest.config.ts` instead, as
+[Configuration](configuration.md) describes.
 
 ## The Kinds
 
-- **Pixi views,** registered with `pixiViews()` from `v-snap/pixi`. The pose
-  returns a Pixi container. By default, the image is framed by the view's
-  bounds, plus a margin of 4 pixels, and drawn smooth, with antialiased
-  edges. The options can set the image's `width`, `height` and
-  `background`. Each axis is framed on its own: one with a size runs from
-  0 to that size, as a game's screen does, and one without is framed by
-  the bounds. So `{ width: 320 }` gives the screen's width and the view's
-  own height. The options can also set `pixelArt: true` for
-  pixel art, with hard edges and whole pixels. A project whose views are
-  mostly pixel art registers `pixiViews({ pixelArt: true })`, and a test of
-  a smooth view then says `pixelArt: false`. `pixiViews({ background })`
-  sets every test's background, unless the test sets its own. A view that
-  needs a renderer to build itself, such as one that calls
-  `generateTexture`, gets the one that draws the images from
-  `getPixiRenderer()`, in an `async` pose. The renderer is kept for every
-  test, so a test mustn't resize it, destroy it or change its settings,
-  and destroys the textures that it makes.
-- **three.js views,** registered with `threeViews()` from `v-snap/three`. The
-  pose returns a three.js object. A three.js view has no bounds to frame it
-  by, so the options always set the image's `width` and `height`, and the
-  `camera` to draw it with. They can also dress the `scene` as the view's
-  game does, with its lights, environment and tone mapping.
-  `threeViews()` can set `width`, `height`, `camera`, `scene` and
-  `background` for every test, such as the game's screen and camera, so
-  that a test leaves them out, unless it sets its own. Its tests' types
-  know which it set:
-  `threeViews({ width: 320, height: 240, camera: createCamera })`.
-- **A canvas that the pose has drawn,** of the kind `'canvas'`, with any
-  renderer, needs no registration. It can be an `HTMLCanvasElement` or an
-  `OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
-  in the page needs `preserveDrawingBuffer: true`, because the browser
-  clears it once it is shown. The canvas stays the pose's own: v-snap
-  doesn't dispose of it, since a pose may draw on the same canvas for every
-  test. A pose that makes a new WebGL canvas for each test should release
-  its context, since a page keeps only so many.
-- **HTML views,** declared with `htmlTest`, need no registration, unless
-  they need preparing or disposing of, as
-  [Preparing and Disposing of Views](#preparing-and-disposing-of-views)
-  describes, or a background for every test, `htmlViews({ background })`.
+### Pixi Views
+
+Pixi views are registered with `pixiViews()`, from `v-snap/pixi`. The pose
+returns a Pixi container. By default, the image is framed by the view's
+bounds, plus a margin of 4 pixels, and drawn smooth, with antialiased
+edges.
+
+A test's options can set the image's `width`, `height` and `background`.
+Each axis is framed on its own. An axis with a size runs from 0 to that
+size, as a game's screen does, and an axis without one is framed by the
+view's bounds. So `{ width: 320 }` gives the screen's width and the view's
+own height.
+
+`pixelArt: true` draws pixel art, with hard edges and whole pixels. A
+project whose views are mostly pixel art registers
+`pixiViews({ pixelArt: true })`, and a test of a smooth view then says
+`pixelArt: false`. `pixiViews({ background })` sets every test's
+background, unless the test sets its own.
+
+Some views need a renderer to build themselves, such as one that calls
+`generateTexture`. Such a view's pose is `async`, and gets the renderer
+that draws the images from `getPixiRenderer()`. v-snap keeps that renderer
+for every test. So a test mustn't resize it, destroy it or change its
+settings, and it destroys the textures that it makes.
+
+### three.js Views
+
+three.js views are registered with `threeViews()`, from `v-snap/three`.
+The pose returns a three.js object. A three.js view has no bounds to frame
+it by, so a test gives the image's `width` and `height`, and a `camera`
+function that makes the camera to draw it with. A test's `scene` function
+can also dress the scene as the view's game does, with its lights,
+environment and tone mapping.
+
+`threeViews()` can set `width`, `height`, `camera`, `scene` and
+`background` for every test, such as the game's screen size and camera.
+A test can then leave them out, or set its own. The tests' types know
+which options `threeViews()` set:
+
+```ts
+threeViews({ width: 320, height: 240, camera: createCamera })
+```
+
+### Canvases That the Pose Drew
+
+A canvas that the pose drew, with any renderer, is of the kind `'canvas'`,
+which needs no registration. It can be an `HTMLCanvasElement` or an
+`OffscreenCanvas`, drawn with canvas 2D or WebGL. A WebGL canvas that is
+in the page needs `preserveDrawingBuffer: true`, because the browser
+clears it once it is shown.
+
+The canvas stays the pose's own. v-snap doesn't dispose of it, since a
+pose may draw on the same canvas for every test. A pose that makes a new
+WebGL canvas for each test should release its context, since a page keeps
+only so many.
+
+### HTML Views
+
+HTML views are declared with `htmlTest`. They need no registration,
+unless they need preparing or disposing of, as
+[Preparing and Disposing of Views](#preparing-and-disposing-of-views)
+describes, or a background for every test, with
+`htmlViews({ background })`.
 
 ## The Default Kind
 
@@ -97,8 +122,10 @@ Most projects draw most of their views one way, so most of their tests give
 no kind. A test of another kind names it:
 
 ```ts
+const LEVER = { kind: 'three', width: 240, height: 300, camera } as const;
+
 canvasTest('spinning', () => ReelView(...));
-canvasTest('at rest', { kind: 'three', width: 240, height: 300, camera }, () => LeverView(...));
+canvasTest('at rest', LEVER, () => LeverView(...));
 canvasTest('a bar chart', { kind: 'canvas' }, () => drawChart(SALES));
 ```
 
@@ -106,11 +133,12 @@ Without `defaultKind`, the default is `'canvas'`.
 
 ## Types That Know the Kinds
 
-The `Register` declaration gives the config's type to `canvasTest`. So each
-test's options are checked against its kind, and its pose must return its
-kind's view. A three.js test that leaves out its `kind` is taken as Pixi,
-so `camera` is a type error, and so is a three.js object from its pose. For
-that, the project's `tsconfig.json` must include `vsnap.config.ts`.
+The `Register` declaration gives the config's type to `canvasTest`. So
+each test's options are checked against its kind, and its pose must return
+its kind's view. For example, if Pixi is the default kind, a three.js test
+that leaves out its `kind` is taken as Pixi. Its `camera` is then a type
+error, and so is the three.js object that its pose returns. This needs the
+project's `tsconfig.json` to include `vsnap.config.ts`.
 
 A test also checks its view as it runs, by its kind's check, such as
 `instanceof Container`. A view of another kind fails its test, and the
@@ -151,10 +179,10 @@ export default config;
 import { canvasTest } from '../vsnap.config';
 ```
 
-Such a `canvasTest` also checks, as each test runs, that it is the config
-of the test's own project, so a test that imports another package's fails.
-The type of its tests' options is `CanvasTestOptions<'three', typeof config>`,
-with the config named after the kind.
+As each test runs, such a `canvasTest` also checks that its config is the
+one for the test's own project. So a test that imports another package's
+`canvasTest` fails. The type of a test's options names the config after
+the kind, as in `CanvasTestOptions<'three', typeof config>`.
 
 ## Options of Each Kind
 
@@ -176,11 +204,11 @@ show.
 
 ## Preparing and Disposing of Views
 
-By default, the package takes an image of a view just as the pose returns
-it. Afterwards, it disposes of the view the plain way: removing the HTML
-element, Pixi's `destroy`, or three.js's `dispose` on every geometry and
-material. A project whose views need more says so in each kind's
-registration.
+By default, v-snap takes an image of a view just as the pose returns it.
+Afterwards, it disposes of the view in the plain way for its kind. It
+removes an HTML element, calls a Pixi container's `destroy`, and calls
+`dispose` on every geometry and material of a three.js object. A project
+whose views need more says so in each kind's registration.
 
 - **`prepare(view)`** runs after the pose, before the image is taken. A
   framework whose views write their state to the screen in a separate
@@ -231,11 +259,12 @@ checks of what it was given.
 is much faster than a renderer for each test. Support for another renderer
 can do the same.
 
-It is a `CanvasViewKind`: its name, as `kind`, a check of the view, and
-the step that draws it. It can also have steps that prepare and dispose of
-the view, and `defaults`, options that every test of the kind gets unless
-it sets its own, as `pixiViews({ background })` does. Its `draw` can return
-the canvas that it drew on, and v-snap reads it.
+Support for a renderer is a `CanvasViewKind`. It has a name, as `kind`, a
+check of the view, and a step that draws it. It can also have steps that
+prepare and dispose of the view. Its `defaults` are options that every
+test of the kind gets, unless the test sets its own, as
+`pixiViews({ background })` does. Its `draw` can return the canvas that it
+drew on, and v-snap reads it.
 
 Here is a small kind, for views that paint themselves on a 2D canvas. For
 brevity, it makes a canvas for each image. A kind for a real renderer would
@@ -249,9 +278,14 @@ export interface Sketch {
     readonly paint: (ctx: CanvasRenderingContext2D) => void;
 }
 
-const sketchViews: CanvasViewKind<Sketch, { readonly width?: number; readonly height?: number }, 'sketch'> = {
+interface SketchOptions {
+    readonly width?: number;
+    readonly height?: number;
+}
+
+const sketchViews: CanvasViewKind<Sketch, SketchOptions, 'sketch'> = {
     kind: 'sketch',
-    isView: (value) => value instanceof Object && typeof (value as Partial<Sketch>).paint === 'function',
+    isView: (value) => typeof (value as Partial<Sketch>)?.paint === 'function',
     draw: (view, options) => {
         const canvas = document.createElement('canvas');
         canvas.width = options.width ?? 80;
@@ -264,7 +298,10 @@ const sketchViews: CanvasViewKind<Sketch, { readonly width?: number; readonly he
     },
 };
 
-const config = defineVsnapConfig({ views: [sketchViews], defaultKind: 'sketch' });
+const config = defineVsnapConfig({
+    views: [sketchViews],
+    defaultKind: 'sketch',
+});
 
 declare module 'v-snap' {
     interface Register {
@@ -286,9 +323,9 @@ canvasTest('a red square', { width: 40, height: 40 }, () => ({
 }));
 ```
 
-`v-snap` exports the types, with two helpers: `fitImage` says how an image
-fits the size budget, and `readCanvas` reads a canvas's pixels at full
-resolution. A kind that draws an image smaller, to fit the budget, reads
-its canvas itself, and gives the image its resolution. Listed in the
-config, the kind joins `canvasTest`'s types through `Register`, as the
-others do.
+`v-snap` exports the types, and two helpers. `fitImage` returns how an
+image fits the size budget, and `readCanvas` returns a canvas's pixels at
+full resolution. A kind that draws an image smaller, to fit the budget,
+reads its canvas itself, and gives the image its resolution. Once the kind
+is listed in the config, `Register` gives it to `canvasTest`'s types, as
+it does the other kinds.

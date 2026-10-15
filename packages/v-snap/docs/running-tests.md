@@ -13,8 +13,7 @@ what every run checks, and covers failed images, CI and watch mode.
 ## Commands
 
 Vitest's `-p` (`--project`) filter picks the unit tests or the visual
-tests alone, and only a run that includes v-snap's projects starts a
-browser.
+tests alone. Only a run that includes v-snap's projects starts a browser.
 
 | Command | What it does |
 | --- | --- |
@@ -33,24 +32,24 @@ Every run of the visual tests also checks the reference images. Most of
 the checks fail a test, so they show wherever a failed test does: in
 Vitest's summary, the Vitest UI, an editor and every reporter.
 
-- **Each reference's pixels match the hash it carries.** A run compares
-  hashes first, so a reference whose pixels were edited, or that lost its
-  hash, such as to an image optimiser, would otherwise pass unnoticed. Its
-  test fails, unless its pixels match the test's image exactly and the run
-  writes references, in which case the run adds the hash. A reference is
-  checked again only once it changes.
+- **Each reference's pixels match the hash that it carries.** A run
+  compares hashes first. So a reference whose pixels were edited, or that
+  lost its hash, such as to an image optimiser, could otherwise pass
+  unnoticed. Its test fails instead. If the run writes references and the
+  pixels match the test's image exactly, the run adds the hash, and the
+  test passes. A reference is checked again only once it changes.
 - **No two tests of a file share a reference.** Test names that differ
   only in punctuation or case give one image name. The second test fails.
 
 One check is about the run, not a test:
 
 - **Every reference is used by a test.** Renamed and deleted tests leave
-  references behind. Outside CI, and with `-u`, the run deletes them, as it
+  references behind. Outside CI, and with `-u`, the run deletes them as it
   writes new references, so a renamed test leaves nothing behind. In CI,
-  the run lists them and fails. A test that didn't run, because `.skip`,
-  `.only`, `.todo` or `-t` left it out, still uses its reference. Tests in
-  two files that share a reference, which only a reference path without the
-  test file's stem allows, also fail the run.
+  the run lists them and fails. A test that didn't run still uses its
+  reference, such as one that `.skip`, `.only`, `.todo` or `-t` left out.
+  The run also fails if tests in two files share a reference, which only a
+  reference path without the test file's stem allows.
 
 A run of every visual test file covers every reference, those of deleted
 test files too. A run of some of them, such as a shard (`--shard`), a run
@@ -63,11 +62,11 @@ A run-level check that fails does three things:
 - It makes the run exit with code 1.
 - In GitHub Actions, it adds an error annotation.
 
-It isn't a test, so Vitest's own summary, the Vitest UI and Vitest's other
-reporters, such as JUnit's, don't show it, as they don't show a coverage
-threshold that failed. Since a local run deletes unused references, this
-mostly happens in CI, when a change was pushed without running the visual
-tests.
+Such a check isn't a test. So Vitest's own summary, the Vitest UI and
+Vitest's other reporters, such as JUnit's, don't show it, just as they
+don't show a coverage threshold that failed. A local run deletes unused
+references, so this mostly happens in CI, when a change was pushed without
+running the visual tests.
 
 A sharded run never runs every visual test file, so it never finds the
 references of deleted test files. The visual tests are quick, so CI can
@@ -85,32 +84,34 @@ In GitHub Actions, the summary also goes to the job's summary page.
 
 ## Reviewing a Failed Image
 
-A test whose image changed fails with a message that names its files: the
-reference, the actual image in `.vitest/vsnap/`, and, for an image that
-kept its size, a diff. The diff shows the reference dimmed, the pixels that
-changed by more than the tolerance in red, and those that changed by less
-in dark yellow. The message ends with the command that accepts this image
-alone, `vitest run <file> -t "^<test's name>$" -u`, which picks the test by
-its full name. A name with a character that a shell would change in double
-quotes, such as `$` or `"`, gets `vitest run <file> -u` instead, which
-accepts every changed image in the file. The files of a test that passes
-again are deleted.
+A test whose image changed fails with a message that names its files.
+They are the reference, the actual image in `.vitest/vsnap/`, and a diff,
+if the image kept its size. The diff shows the reference dimmed, the
+pixels that changed by more than the tolerance in red, and those that
+changed by less in dark yellow.
+
+The message ends with a command that accepts this image alone, if the
+change was meant: `vitest run <file> -t "^<test's name>$" -u`. It picks the
+test by its full name. A shell would change some characters in double
+quotes, such as `$` and `"`. For a name with one of those, the message
+gives `vitest run <file> -u` instead, which accepts every changed image in
+the file. When a test passes again, its files in `.vitest/vsnap/` are
+deleted.
+
+The Vitest UI shows the three images side by side. Install `@vitest/ui`,
+at the same version as Vitest, run `vitest --ui`, and open the failed
+test. Its Visual Regression panel shows the diff, the reference and the
+actual image, with a slider between the reference and the actual image.
+Look at each change there before accepting it.
+
+v-snap fills the panel in the same way as Vitest's own `toMatchScreenshot`.
+Vitest's documentation doesn't promise that way, so a later version of
+Vitest may show it differently. The tests' results don't depend on it.
 
 The visual tests run only in a headless browser. A headed one, as with
 `--browser.headless=false`, draws differently, so v-snap stops such a run
-before any test. To look at an image, open it in `.vitest/vsnap/`, or the
-failed test in the Vitest UI.
-
-The Vitest UI shows them side by side. Install `@vitest/ui`, at the same
-version as Vitest, run `vitest --ui`, and open the failed test. Its Visual
-Regression panel shows the diff, the reference, the actual image, and a
-slider between the reference and the actual image. Look at each change
-there before accepting it.
-
-v-snap fills the panel as Vitest's own
-`toMatchScreenshot` does, in a way that Vitest's documentation doesn't
-promise, so a later version of Vitest may show it differently. The tests'
-results don't depend on it.
+before any test. To look at a view, open its actual image in
+`.vitest/vsnap/`, or the failed test in the Vitest UI.
 
 ## In CI
 
@@ -124,12 +125,15 @@ downloaded each time. In GitHub Actions:
 - name: Where Playwright keeps its browser
   id: playwright
   run: |
-      echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
-      echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+      echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" \
+          >> "$GITHUB_ENV"
+      version=$(node -p 'require("playwright/package.json").version')
+      echo "key=playwright-$RUNNER_OS-$RUNNER_ARCH-$version" \
+          >> "$GITHUB_OUTPUT"
 - uses: actions/cache@v4
   with:
       path: ${{ runner.temp }}/ms-playwright
-      key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+      key: ${{ steps.playwright.outputs.key }}
 - run: npx playwright install chromium-headless-shell
 - run: npx vitest run
 ```

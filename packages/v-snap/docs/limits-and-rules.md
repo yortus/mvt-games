@@ -27,17 +27,17 @@ their images don't change from one run to the next.
   changes the image. Text that a view measures, to wrap or fit it, is
   measured in the test fonts too, so a line that overflows in the view's
   own font may fit in the image.
-- **Text that reaches a canvas other than through its text calls isn't
-  pinned,** such as Pixi's `HTMLText`, which draws HTML through an SVG
-  image. The system draws it, in its own fonts, so its images can differ
-  between machines. Leave it out of visual tests.
+- **Text that reaches a canvas in another way than its text calls is
+  drawn by the system,** in the system's own fonts. Pixi's `HTMLText` is
+  one example, since it draws HTML through an SVG image. Its images can
+  differ between machines, so leave it out of visual tests.
 - **Rotated `<img>` elements look a little jagged,** because smooth
   sampling rounds differently on arm64 processors.
 - **Differences of 2 levels or less pass.** A real change is almost never
   that small. On a processor other than arm64, Vitest's `-u` still writes
   such a change to the reference.
-- **The drawing is software's,** so it can differ a little from a real
-  graphics card.
+- **Drawing is done in software,** so it can differ a little from what a
+  real graphics card draws.
 
 ## Rules for Tests
 
@@ -47,14 +47,14 @@ their images don't change from one run to the next.
   That includes Vitest's `vi.mock` and `vi.stubGlobal`.
 - **Make a Pixi texture in the pose, if pixel art and smooth tests share
   it.** A texture keeps the sampling that it was made with, which
-  `pixelArt` sets as each pose starts. One that a module makes once and
-  caches keeps the sampling of the test that made it, so a later test of the
-  other kind would draw it differently, and its image would depend on which
-  test ran first. A texture whose sampling is set when it is made, such as a
-  spritesheet's, draws the same in every test.
+  `pixelArt` sets as each pose starts. Say a module makes a texture once
+  and caches it. The texture keeps the sampling of the test that made it,
+  so a later test of the other kind draws it differently. Its image then
+  depends on which test ran first. A texture whose sampling is set when it
+  is made, such as a spritesheet's, draws the same in every test.
 - **Give each canvas font list a family that v-snap knows.** Canvas text
-  is drawn in this package's own sans-serif or monospace font, picked by
-  the first family in the list that v-snap knows. It knows every generic
+  is drawn in v-snap's own sans-serif or monospace font. The first family
+  in the list that v-snap knows picks which. It knows every generic
   family, and the common system fonts, such as Arial, Helvetica, Segoe UI,
   Roboto, Consolas and Menlo. `monospace` and `ui-monospace` are drawn in
   the monospace font. `sans-serif`, `serif`, `system-ui`, `ui-sans-serif`,
