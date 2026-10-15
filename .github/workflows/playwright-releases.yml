@@ -1,0 +1,183 @@
+name: Playwright releases
+
+# This workflow watches for new minor versions of Playwright, for v-snap.
+#
+# Each minor version of Playwright brings a new build of Chromium, which can
+# draw some images differently. So v-snap supports one minor version at a
+# time, and follows each new one with a release of its own (Playwright
+# Versions, in packages/v-snap/docs/getting-started.md).
+#
+# Weekly, and on demand, the workflow compares Playwright's latest version
+# with the one v-snap supports. When a newer minor version is out, and no
+# open issue says so yet, it opens one, with the steps to follow. Then it
+# tries the new version: it installs it, rewrites v-snap's environment
+# fingerprint and calibration images, runs the site's visual tests against
+# their references, and comments on the issue with what changed. The changed
+# images are uploaded for the reviewer. Nothing is committed.
+#
+# A run by hand tries the new version again, even if the issue was already
+# open, such as after a patch release of it.
+on:
+    schedule:
+        - cron: '0 4 * * 1'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    issues: write
+
+concurrency:
+    group: playwright-releases
+    cancel-in-progress: false
+
+jobs:
+    watch:
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ github.token }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - name: Compare Playwright's latest version with v-snap's
+              id: versions
+              run: |
+                  supported=$(node -p "require('./packages/v-snap/package.json').peerDependencies.playwright.replace(/^[~^]/, '').split('.').slice(0, 2).join('.')")
+                  latest=$(npm view playwright version)
+                  minor=$(echo "$latest" | cut -d. -f1,2)
+                  newest=$(printf '%s\n%s\n' "$supported" "$minor" | sort -V | tail -n 1)
+                  echo "v-snap supports Playwright $supported. The latest is $latest."
+                  {
+                      echo "supported=$supported"
+                      echo "latest=$latest"
+                      echo "minor=$minor"
+                      if [ "$minor" != "$supported" ] && [ "$newest" = "$minor" ]; then echo "found=true"; else echo "found=false"; fi
+                  } >> "$GITHUB_OUTPUT"
+
+            - name: Find or open the issue
+              id: issue
+              if: steps.versions.outputs.found == 'true'
+              env:
+                  SUPPORTED: ${{ steps.versions.outputs.supported }}
+                  LATEST: ${{ steps.versions.outputs.latest }}
+                  MINOR: ${{ steps.versions.outputs.minor }}
+              run: |
+                  title="v-snap: Playwright $MINOR is out"
+                  number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)
+                  if [ -n "$number" ]; then
+                      echo "Issue #$number already says so."
+                      { echo "number=$number"; echo "created=false"; } >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+                  cat > issue.md <<EOF
+                  Playwright $LATEST is out. v-snap supports Playwright $SUPPORTED, and each minor version of Playwright brings a new build of Chromium, which can draw some images differently. So v-snap needs a release that supports $MINOR.
+
+                  This workflow tries the new version, and comments here with what changed.
+
+                  To move v-snap to Playwright $MINOR:
+
+                  1. Set \`playwright\` to \`~$LATEST\` in the root \`package.json\`'s \`devDependencies\`, and in \`packages/v-snap/package.json\`'s \`peerDependencies\` and \`devDependencies\`. Then run \`npm install\`.
+                  2. Run \`npx playwright install chromium-headless-shell\`, then \`npm run test:visual:environment -w v-snap\`. It rewrites \`packages/v-snap/visual-environment.json\` and the calibration images. Look at each changed image.
+                  3. Run \`npm test\` and \`npm run test:vsnap\`. If a site's or v-snap's reference image changed, look at it, and update it with \`-u\`.
+                  4. Update the Playwright version in v-snap's README badge and Requirements table, and in Getting Started.
+                  5. Add a changeset for \`v-snap\` (minor), and push. The visual tests run on Windows, macOS and Linux whenever Playwright's version changes, which checks that the three systems still draw alike.
+                  6. Release.
+                  EOF
+                  url=$(gh issue create --title "$title" --body-file issue.md)
+                  echo "Opened $url."
+                  { echo "number=${url##*/}"; echo "created=true"; } >> "$GITHUB_OUTPUT"
+
+            # The trial runs for a new issue, or for a run by hand.
+            - name: Install the new Playwright
+              id: install
+              if: steps.issue.outputs.created == 'true' || (steps.versions.outputs.found == 'true' && github.event_name == 'workflow_dispatch')
+              env:
+                  LATEST: ${{ steps.versions.outputs.latest }}
+              run: |
+                  npm ci
+                  node -e "
+                      const fs = require('fs');
+                      const set = (file, groups) => {
+                          const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+                          for (const group of groups) pkg[group].playwright = '~' + process.argv[1];
+                          fs.writeFileSync(file, JSON.stringify(pkg, undefined, 4) + '\n');
+                      };
+                      set('package.json', ['devDependencies']);
+                      set('packages/v-snap/package.json', ['peerDependencies', 'devDependencies']);
+                  " "$LATEST"
+                  npm install
+                  npm ls playwright
+                  npx playwright install chromium-headless-shell
+
+            - name: Rewrite v-snap's environment
+              id: environment
+              if: steps.install.outcome == 'success'
+              continue-on-error: true
+              run: |
+                  set -o pipefail
+                  npm run test:visual:environment -w v-snap 2>&1 | tee environment.log
+
+            # Compare mode, as in CI: no reference is written.
+            - name: Run the site's visual tests
+              id: site
+              if: steps.environment.outcome == 'success'
+              continue-on-error: true
+              run: |
+                  set -o pipefail
+                  npx vitest run -p "visual-*" 2>&1 | tee site.log
+
+            - name: Comment on the issue
+              if: always() && steps.install.outcome != 'skipped' && steps.issue.outputs.number != ''
+              env:
+                  NUMBER: ${{ steps.issue.outputs.number }}
+                  LATEST: ${{ steps.versions.outputs.latest }}
+                  INSTALL: ${{ steps.install.outcome }}
+                  ENVIRONMENT: ${{ steps.environment.outcome }}
+                  SITE: ${{ steps.site.outcome }}
+                  RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  strip() { sed 's/\x1b\[[0-9;]*m//g'; }
+                  list() { if [ -n "$1" ]; then echo "$1" | sed 's/^/- `/; s/$/`/'; else echo "None."; fi; }
+                  {
+                      echo "Tried Playwright $LATEST in [this run]($RUN)."
+                      echo
+                      if [ "$INSTALL" != success ]; then
+                          echo "It couldn't be installed. The run's log says why."
+                      elif [ "$ENVIRONMENT" != success ]; then
+                          echo "Rewriting v-snap's environment failed. Its last lines:"
+                          echo; echo '```'; tail -n 30 environment.log | strip; echo '```'
+                      else
+                          old=$(git show HEAD:packages/v-snap/visual-environment.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).browser")
+                          new=$(node -p "require('./packages/v-snap/visual-environment.json').browser")
+                          calibration=$(git status --porcelain -- packages/v-snap/src/browser/calibration-images | awk '{ print $2 }')
+                          own=$(git status --porcelain -- packages/v-snap/src/browser/visual-tests packages/v-snap/fixtures | awk '{ print $2 }')
+                          echo "**The browser:** \`$old\` before, \`$new\` now."
+                          echo
+                          echo "**The calibration images that changed:**"
+                          echo; list "$calibration"
+                          echo
+                          echo "**v-snap's own reference images that changed:**"
+                          echo; list "$own"
+                          echo
+                          echo "**The site's visual tests, against their references:**"
+                          echo; echo '```'; grep -E "Test Files|Tests |Images" site.log | strip; echo '```'
+                          if [ "$SITE" != success ]; then echo; echo "Some of the site's images changed. Their actual and diff images are in the run's artifact."; fi
+                          if [ -z "$calibration$own" ] && [ "$SITE" = success ]; then echo; echo "No image changed, so moving to $LATEST should take only the version bumps."; fi
+                      fi
+                  } > comment.md
+                  gh issue comment "$NUMBER" --body-file comment.md
+
+            - uses: actions/upload-artifact@v4
+              if: always() && steps.environment.outcome != 'skipped'
+              with:
+                  name: playwright-${{ steps.versions.outputs.latest }}-trial
+                  path: |
+                      packages/v-snap/visual-environment.json
+                      packages/v-snap/src/browser/calibration-images/
+                      packages/v-snap/src/browser/visual-tests/*.png
+                      .vitest/vsnap/
+                  if-no-files-found: ignore

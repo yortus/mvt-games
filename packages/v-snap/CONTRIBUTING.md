@@ -99,7 +99,12 @@ see.
 ### Upgrading Playwright
 
 A new minor version of Playwright brings a new Chromium, which can draw
-differently. To upgrade:
+differently. The repository's `playwright-releases` workflow
+(`.github/workflows/playwright-releases.yml`) checks for one weekly. When
+one is out, it opens an issue with these steps, then tries the new version
+and comments with what changed: the new browser build, the calibration
+images and references that changed, and how the site's visual tests fared.
+Its run keeps the changed images for review. To upgrade:
 
 1. Change the `playwright` range in `package.json`'s `peerDependencies`
    and `devDependencies`, and in the repository root's `devDependencies`,
