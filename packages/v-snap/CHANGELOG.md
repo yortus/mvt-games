@@ -1,5 +1,16 @@
 # v-snap
 
+## 0.3.0
+
+### Minor Changes
+
+- d3b7e98: v-snap now supports Playwright 1.64, whose headless shell is Chromium 156, in place of 1.63. A project upgrades Playwright to 1.64 with it. Every image is drawn as before, so no reference image needs updating.
+
+### Patch Changes
+
+- 47476fa: A failed image's message suggests a command that accepts that image alone, `vitest run <file> -t "^<test's name>$" -u`, instead of every changed image in the file. A name that a shell would change in double quotes gets the file's command, as before.
+- 4aaf3cf: A run whose `--project` filter leaves out v-snap's projects, such as `vitest -p unit`, no longer fingerprints the repository's sources as the config loads, which took about a tenth of a second.
+
 ## 0.2.0
 
 ### Minor Changes
