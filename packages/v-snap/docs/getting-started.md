@@ -4,6 +4,7 @@ This page says what v-snap needs, and how to add it to a project that
 already uses Vitest. The [README](../README.md) has the short version.
 
 - [Requirements](#requirements)
+- [Playwright Versions](#playwright-versions)
 - [Adding v-snap to a Project](#adding-v-snap-to-a-project)
 - [An Example](#an-example)
 - [Your First Test](#your-first-test)
@@ -22,13 +23,9 @@ already uses Vitest. The [README](../README.md) has the short version.
   provider, `@vitest/browser-playwright`, at the same version as `vitest`.
   They are peer dependencies, which npm installs with v-snap. v-snap and
   Vitest must use one copy of Playwright, because v-snap installs the browser
-  that Vitest launches, and that browser draws every image. Each run first
-  checks the browser's fingerprint, which names its exact build, so a patch
-  release that changed the browser would stop the run rather than change
-  the images. A newer minor version of Playwright brings a new browser, so
-  it needs a new release of v-snap. A project that uses Playwright for other
-  tests uses the same version for both, so it upgrades Playwright when v-snap
-  does. The first run downloads the browser, Playwright's Chrome Headless
+  that Vitest launches, and that browser draws every image.
+  [Playwright Versions](#playwright-versions) says how v-snap follows
+  Playwright's releases. The first run downloads the browser, Playwright's Chrome Headless
   Shell (about 100 MB), into Playwright's cache. A bare Linux system also
   needs the libraries that the browser uses, which
   `npx playwright install-deps chromium` installs.
@@ -39,6 +36,32 @@ already uses Vitest. The [README](../README.md) has the short version.
   draws with the project's own copy of `pixi.js` (8.16 or later) or
   `three` (0.160 or later), so a project that uses it installs only the
   library its views use.
+
+## Playwright Versions
+
+Chromium draws every image, so the build of Chromium decides every pixel.
+A new build can draw the same view a little differently: a change to its
+2D graphics library, or to SwiftShader, which runs its WebGL, can shift an
+antialiased edge or a gradient by a few levels. Nobody would see the
+difference, but the pixels change, so every reference made with the old
+build could fail. The images are the same on every machine only because
+every machine draws them with the same build.
+
+Each version of Playwright names one build of Chromium. Playwright moves
+to a new build in its minor versions, such as 1.63 to 1.64. Its patch
+releases, such as 1.63.1, fix Playwright itself, and keep the build. So
+the browser changes with Playwright's minor version, and v-snap follows
+Playwright one minor version at a time:
+
+- Each release of v-snap supports one minor version of Playwright, such as
+  1.63, with its patch releases.
+- When Playwright releases a new minor version, v-snap follows it with a
+  release of its own, checked against the new build.
+- Each run checks the browser's fingerprint, which names its exact build.
+  So if a patch release ever changed the build, the run would stop, rather
+  than change the images.
+- A project that also uses Playwright for other tests uses the same version
+  for both, so it moves to a new minor version when v-snap does.
 
 ## Adding v-snap to a Project
 

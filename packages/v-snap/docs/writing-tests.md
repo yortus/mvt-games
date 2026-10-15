@@ -122,6 +122,11 @@ name `at-the-start`, and a test named `with a new best` in a
 `describe('after a game over')` block has the image name
 `after-a-game-over-with-a-new-best`.
 
+Each test has one image, named for the test, so renaming a test, or its
+`describe` block, renames its image. A run outside CI writes the new
+reference and deletes the old one, so the rename shows in version control
+as one file renamed.
+
 By default, a reference image is beside the test file, named for the
 file's stem and the image name: `visual-tests/hud-view.at-the-start.png`.
 A test file's stem is its name without `.test` and its extension. So each

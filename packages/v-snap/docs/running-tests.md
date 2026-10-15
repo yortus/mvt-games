@@ -22,7 +22,8 @@ browser.
 | `vitest run -p unit` | Runs the unit tests alone. No browser starts |
 | `vitest run -p "visual-*"` | Runs the visual tests alone |
 | `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It also repairs references: it renames one whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves the reference of an image within the tolerance as it is |
-| `vitest run <file> -u` | Updates the reference images of one test file. A failure message gives this command |
+| `vitest run <file> -t "^<test's name>$" -u` | Updates one test's reference image. A failure message gives this command |
+| `vitest run <file> -u` | Updates the reference images of one test file |
 | `vitest -p "visual-*"` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |
 | `vitest run -p "visual-*" --sequence.shuffle` | Runs the visual tests in a random order, which finds any test that depends on the ones before it. Vitest prints the order's seed, and adding `--sequence.seed=<seed>` repeats that order |
 
@@ -88,8 +89,17 @@ A test whose image changed fails with a message that names its files: the
 reference, the actual image in `.vitest/vsnap/`, and, for an image that
 kept its size, a diff. The diff shows the reference dimmed, the pixels that
 changed by more than the tolerance in red, and those that changed by less
-in dark yellow. The message ends with the command that accepts the change,
-`vitest run <file> -u`. The files of a test that passes again are deleted.
+in dark yellow. The message ends with the command that accepts this image
+alone, `vitest run <file> -t "^<test's name>$" -u`, which picks the test by
+its full name. A name with a character that a shell would change in double
+quotes, such as `$` or `"`, gets `vitest run <file> -u` instead, which
+accepts every changed image in the file. The files of a test that passes
+again are deleted.
+
+The visual tests run only in a headless browser. A headed one, as with
+`--browser.headless=false`, draws differently, so v-snap stops such a run
+before any test. To look at an image, open it in `.vitest/vsnap/`, or the
+failed test in the Vitest UI.
 
 The Vitest UI shows them side by side. Install `@vitest/ui`, at the same
 version as Vitest, run `vitest --ui`, and open the failed test. Its Visual

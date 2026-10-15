@@ -2,6 +2,7 @@ import { commands } from 'vitest/browser';
 import { expect } from 'vitest';
 import { toImageName } from '../image-name';
 import type { VisualCommands, PageKind, VisualScope, VisualSession, VisualVerdict } from '../protocol';
+import { toUpdateCommand } from './update-command';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -72,12 +73,12 @@ export function describeDifference(verdict: VisualVerdict): string {
 
 /**
  * Returns the error message for a test whose actual image didn't pass, given
- * the image name. It says what differs, where to look, and what to run.
+ * the image name and the test's full name. It says what differs, where to
+ * look, and what to run.
  */
-export function describeFailure(name: string, verdict: VisualVerdict, pageKind: PageKind): string {
-    // The command reruns the test's file with Vitest's update flag. Only the
-    // images that changed are rewritten.
-    const update = verdict.testFile === undefined ? 'Vitest with -u' : `\`npx vitest run ${verdict.testFile} -u\``;
+export function describeFailure(name: string, verdict: VisualVerdict, pageKind: PageKind, testName?: string): string {
+    // The command accepts this test's image alone.
+    const update = toUpdateCommand({ testFile: verdict.testFile, testName });
     switch (verdict.outcome) {
         case 'new':
             return `Image '${name}' is new, and this run writes no new reference images, as Vitest writes no new snapshots in CI. Run ${update} where it can, and review ${verdict.actualFile ?? verdict.referenceFile}.`;

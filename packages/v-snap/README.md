@@ -65,9 +65,14 @@ lists in full:
   to the text's colour or weight doesn't show.
 - **Drawing is done in software.** WebGL runs on the processor, so
   whatever a graphics card would draw differently isn't tested.
-- **One browser build.** Each release of v-snap is checked against the
-  build of Chromium that one Playwright version names, so a project
-  installs that version of Playwright.
+- **One browser build.** Every machine draws with the same build of
+  Chromium, since a new build can change pixels that nobody would see.
+  Playwright moves to a new build in its minor versions, so each release of
+  v-snap supports one minor version of Playwright. A project moves to a
+  newer Playwright only when v-snap does, which follows each new minor
+  version with a release of its own.
+  [Playwright Versions](docs/getting-started.md#playwright-versions)
+  explains.
 
 ## How Fast?
 
@@ -129,8 +134,9 @@ in the 16x16 pixels at (116, 108).
 ```
 
 It goes on to name the three files, and ends with the command that
-accepts the change: `vitest run <file> -u`. The Vitest UI shows the same
-three images, with a slider between the reference and the actual image.
+accepts this image alone: `vitest run <file> -t "^<test's name>$" -u`.
+The Vitest UI shows the same three images, with a slider between the
+reference and the actual image.
 
 ## Quick Start
 

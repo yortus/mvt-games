@@ -291,7 +291,7 @@ async function finishTest(task: TestContext['task'], result: {
     const visual: VisualTestMeta = { pageKind, outcome: verdict.outcome, width: size.width, height: size.height, resolution: size.resolution, ms };
     task.meta.vsnap = { image: id.name, result: visual };
     if (isPass(verdict)) return;
-    const message = describeFailure(id.name, verdict, pageKind);
+    const message = describeFailure(id.name, verdict, pageKind, id.test);
     if (verdict.images !== undefined && verdict.images.length > 0) {
         // The same record as Vitest's own screenshot assertion makes, so that
         // its UI and reports show the reference, actual and diff images. Its
