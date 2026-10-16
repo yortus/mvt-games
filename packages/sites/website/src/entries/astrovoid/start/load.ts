@@ -38,6 +38,8 @@ export async function load(): Promise<PixiEntryStarter> {
                     score: () => gameModel.score,
                     isOver: () => gameModel.phase === 'game-over',
                 },
+                saveGame: gameModel.save,
+                loadGame: gameModel.load,
                 inputConfig: {
                     showDpad: true,
                     showPrimary: true,

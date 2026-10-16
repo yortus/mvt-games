@@ -69,7 +69,32 @@ export interface GameModel {
     readonly breaksLeft: number;
     readonly playerInput: PlayerInput;
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its wave, with the score it had then,
+     * and the lives it has now, so that leaving and resuming a game never
+     * helps it. A wave just cleared is saved as the start of the next.
+     * Returns undefined once the last life is lost, and while the game is
+     * still on its first wave, since resuming that would only start it
+     * again.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its wave. Returns whether it could: a value that is not a
+     * saved game, such as one from an older version, leaves the game as it
+     * was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/** A game part way through, as `save` returns it: the wave to start, with its score and lives. */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    readonly wave: number;
+    readonly score: number;
+    readonly lives: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,8 +116,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let gamePhase: GamePhase = 'playing';
     let fireConsumed = false;
     let score = 0;
-    let lives = 3;
+    let lives = START_LIVES;
     let wave = 1;
+    /** The score as this wave started, which a save keeps. The wave's own points are won again on resuming. */
+    let waveStartScore = 0;
     /** The next asteroid's shape seed. It counts from 1 in each game, so one game's shapes never depend on another's. */
     let nextShapeSeed = 1;
     let shotsFired = 0;
@@ -162,9 +189,29 @@ export function createGameModel(options: GameModelOptions): GameModel {
             shotsFired = 0;
             rocksBroken = 0;
             lastBrokenRockSize = undefined;
-            lives = 3;
+            lives = START_LIVES;
             wave = 1;
             loadWave();
+        },
+
+        save() {
+            if (gamePhase === 'game-over') return undefined;
+            // A life lost while the ship breaks up is taken once the pieces settle
+            const livesLeft = gamePhase === 'dying' ? lives - 1 : lives;
+            if (livesLeft <= 0) return undefined;
+            if (gamePhase === 'wave-clear') return { version: SAVED_GAME_VERSION, wave: wave + 1, score, lives: livesLeft };
+            // A game still at its start has nothing worth resuming. Resuming would only start it again
+            if (wave === 1 && waveStartScore === 0) return undefined;
+            return { version: SAVED_GAME_VERSION, wave, score: waveStartScore, lives: livesLeft };
+        },
+
+        load(value) {
+            if (!isSavedGame(value)) return false;
+            wave = value.wave;
+            score = value.score;
+            lives = value.lives;
+            loadWave();
+            return true;
         },
 
         update(deltaMs: number): void {
@@ -346,6 +393,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Wave management ---------------------------------------------------
 
     function loadWave(): void {
+        waveStartScore = score;
         ship.respawn(arenaWidth / 2, arenaHeight / 2);
         bullets = buildBulletPool();
         asteroids.clear();
@@ -509,6 +557,26 @@ export function createGameModel(options: GameModelOptions): GameModel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+const START_LIVES = 3;
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/** Whether `value` is a saved game: a wave from 1, a score from 0, and from 1 life to as many as a game starts with. */
+function isSavedGame(value: unknown): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, wave, score, lives } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(wave) && wave >= 1
+        && isWholeNumber(score)
+        && isWholeNumber(lives) && lives >= 1 && lives <= START_LIVES;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
 
 const SCORE_BY_SIZE: Record<AsteroidSize, number> = {
     large: SCORE_LARGE,

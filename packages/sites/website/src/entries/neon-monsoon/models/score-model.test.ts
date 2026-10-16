@@ -55,4 +55,15 @@ describe('ScoreModel', () => {
         expect(scoring.highScore).toBe(500);
         expect(scoring.extendsEarned).toBe(0);
     });
+
+    it('restores a saved score and graze count, with the extra lives the score has passed', () => {
+        const scoring = createScoreModel();
+        scoring.addKill(10);
+        scoring.restore({ score: EXTEND_SCORES[0], grazeCount: 7 });
+        expect(scoring.score).toBe(EXTEND_SCORES[0]);
+        expect(scoring.grazeCount).toBe(7);
+        expect(scoring.chain).toBe(0);
+        expect(scoring.extendsEarned).toBe(1);
+        expect(scoring.highScore).toBe(EXTEND_SCORES[0]);
+    });
 });

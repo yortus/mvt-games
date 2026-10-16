@@ -12,6 +12,12 @@ export interface Random {
     next: () => number;
     /** The next number in `[min, max)`. */
     between: (min: number, max: number) => number;
+    /**
+     * The generator's whole state, a whole number from 1 to 2^32 - 1. Setting
+     * it back to a value read earlier replays the sequence from that point,
+     * so a saved round starts again just as it did.
+     */
+    state: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,6 +46,8 @@ export function createRandom(options: RandomOptions): Random {
     return {
         next,
         between: (min, max) => min + next() * (max - min),
+        get state() { return x >>> 0; },
+        set state(value) { x = (value | 0) || 0x9e3779b9; },
     };
 
     function next(): number {

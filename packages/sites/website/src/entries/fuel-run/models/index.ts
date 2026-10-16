@@ -9,7 +9,7 @@ export { createUfoModel, type UfoModel, type UfoModelOptions } from './ufo-model
 export { createFuelTankModel, type FuelTankModel, type FuelTankModelOptions } from './fuel-tank-model';
 export { createFuelModel, type FuelModel, type FuelModelOptions } from './fuel-model';
 export { createExplosionModel, type ExplosionModel, type ExplosionModelOptions } from './explosion-model';
-export { createGameModel, type GameModel, type GameModelOptions } from './game-model';
+export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';
 export {
     MAX_BULLETS,
     MAX_BOMBS,

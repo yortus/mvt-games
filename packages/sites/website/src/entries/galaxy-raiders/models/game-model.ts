@@ -44,7 +44,32 @@ export interface GameModel {
     readonly enemiesLeft: number;
     readonly playerInput: PlayerInput;
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its stage, with the score it had then,
+     * and the lives it has now, so that leaving and resuming a game never
+     * helps it. A stage just cleared is saved as the start of the next.
+     * Returns undefined once the last life is lost, and while the game is
+     * still on its first stage with no score, since resuming it would only
+     * start the game again.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its stage. Returns whether it could: a value that is not a
+     * saved game, such as one from an older version, leaves the game as it
+     * was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/** A game part way through, as `save` returns it: the stage to start, with its score and lives. */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    readonly stage: number;
+    readonly score: number;
+    readonly lives: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +99,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let diveTimer = 0;
     let fireConsumed = false;
     let score = 0;
-    let lives = 3;
+    let lives = START_LIVES;
     let stage = 1;
+    /** The score as this stage started, which a save keeps. The stage's own points are won again on resuming. */
+    let stageStartScore = 0;
     let shotsFired = 0;
 
     const phaseTimeline = gsap.timeline({ paused: true });
@@ -128,11 +155,33 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         reset(): void {
             score = 0;
-            lives = 3;
+            lives = START_LIVES;
             stage = 1;
             shotsFired = 0;
             waveIndex = 0;
             loadWave();
+        },
+
+        save() {
+            if (gamePhase === 'game-over') return undefined;
+            // A life lost while the ship explodes is taken once the delay is over
+            const livesLeft = gamePhase === 'dying' ? lives - 1 : lives;
+            if (livesLeft <= 0) return undefined;
+            if (gamePhase === 'stage-clear') return { version: SAVED_GAME_VERSION, stage: stage + 1, score, lives: livesLeft };
+            // A game still at its start has nothing worth resuming: it would only start again
+            if (stage === 1 && stageStartScore === 0) return undefined;
+            return { version: SAVED_GAME_VERSION, stage, score: stageStartScore, lives: livesLeft };
+        },
+
+        load(value) {
+            if (!isSavedGame(value)) return false;
+            stage = value.stage;
+            // Each stage plays the next wave, and the stages past the last wave play the last wave again
+            waveIndex = value.stage - 1;
+            score = value.score;
+            lives = value.lives;
+            loadWave();
+            return true;
         },
 
         update(deltaMs: number): void {
@@ -259,6 +308,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Stage management --------------------------------------------------
 
     function loadWave(): void {
+        stageStartScore = score;
         ship = buildShip();
         enemies = buildEnemies();
         playerBullets = buildBulletPool(MAX_PLAYER_BULLETS);
@@ -443,6 +493,26 @@ export function createGameModel(options: GameModelOptions): GameModel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+const START_LIVES = 3;
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/** Whether `value` is a saved game: a stage from 1, a score from 0, and from 1 life to as many as a game starts with. */
+function isSavedGame(value: unknown): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, stage, score, lives } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(stage) && stage >= 1
+        && isWholeNumber(score)
+        && isWholeNumber(lives) && lives >= 1 && lives <= START_LIVES;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
 
 const STAGE_CLEAR_DELAY_MS = 1500;
 const DYING_DELAY_MS = 1500;

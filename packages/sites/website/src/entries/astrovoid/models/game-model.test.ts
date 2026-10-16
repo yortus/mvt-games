@@ -1,7 +1,8 @@
+import { assert } from '@mvtjs/utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ARENA_HEIGHT, ARENA_WIDTH } from '../data';
 import type { AsteroidModel } from './asteroid-model';
-import { createGameModel, type GameModel } from './game-model';
+import { createGameModel, type GameModel, type SavedGame } from './game-model';
 
 const TICK_MS = 1000 / 60;
 /** Long enough for the ship, spinning and firing, to clear the first wave. */
@@ -75,6 +76,84 @@ describe('GameModel: what it keeps for the views to hear', () => {
     });
 });
 
+describe('GameModel: saving', () => {
+    beforeEach(() => {
+        let state = 12345;
+        vi.spyOn(Math, 'random').mockImplementation(() => {
+            state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+            return state / 4294967296;
+        });
+    });
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('saves nothing while the game is on its first wave, since resuming would only start it again', () => {
+        const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        expect(model.save()).toBeUndefined();
+        let hasScored = false;
+        playUntilWaveEnds(model, () => {
+            if (model.score > 0 && model.phase === 'playing') {
+                hasScored = true;
+                expect(model.save()).toBeUndefined();
+            }
+        });
+        expect(hasScored).toBe(true);
+    });
+
+    it('saves a wave part way through as of its start, with the score it had then', () => {
+        const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        const saved = saveOfClearedWave();
+        const startScore = saved.score;
+        expect(model.load(saved)).toBe(true);
+        let hasScored = false;
+        playUntilWaveEnds(model, () => {
+            if (model.score > startScore && model.phase === 'playing' && !hasScored) {
+                hasScored = true;
+                expect(model.save()).toMatchObject({ wave: 2, score: startScore, lives: model.lives });
+            }
+        });
+        expect(hasScored).toBe(true);
+    });
+
+    it('saves a wave just cleared as the start of the next, and loads it there', () => {
+        const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        playUntilWaveEnds(model, () => undefined);
+        expect(model.phase).toBe('wave-clear');
+        const saved = model.save();
+        expect(saved).toMatchObject({ wave: 2, score: model.score, lives: model.lives });
+
+        const loaded = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        const firstWaveBreaks = loaded.breaksLeft;
+        expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
+        expect(loaded.phase).toBe('playing');
+        expect(loaded.wave).toBe(2);
+        expect(loaded.score).toBe(model.score);
+        expect(loaded.lives).toBe(model.lives);
+        // The second wave has more rocks than the first
+        expect(loaded.breaksLeft).toBeGreaterThan(firstWaveBreaks);
+    });
+
+    it('loads nothing that is not a saved game, and plays on as it was', () => {
+        const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        const saved = saveOfClearedWave();
+        const rejects: unknown[] = [
+            undefined,
+            'saved',
+            { ...saved, version: 0 },
+            { ...saved, wave: 0 },
+            { ...saved, score: 1.5 },
+            { ...saved, lives: 0 },
+            { ...saved, lives: model.lives + 1 },
+        ];
+        for (let i = 0; i < rejects.length; i++) {
+            expect(model.load(rejects[i]), `save ${i}`).toBe(false);
+        }
+        expect(model.wave).toBe(1);
+        expect(model.score).toBe(0);
+    });
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -92,6 +171,15 @@ function playUntilWaveEnds(model: GameModel, check: (before: AsteroidModel[]) =>
         model.update(TICK_MS);
         check(before);
     }
+}
+
+/** Plays a new game until its first wave is cleared, and returns its save, which is for the second wave. */
+function saveOfClearedWave(): SavedGame {
+    const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+    playUntilWaveEnds(model, () => undefined);
+    const saved = model.save();
+    assert(saved !== undefined, 'the first wave is cleared');
+    return saved;
 }
 
 function hasWaveEnded(model: GameModel): boolean {

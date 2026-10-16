@@ -494,8 +494,9 @@ the Arcade, as in its thumbnail. Neon Monsoon's HUD shows the higher of
 
 ## Saving a Game
 
-A game can be saved as the visitor leaves it, so the Arcade offers to
-resume it next time. The session gives two methods. `saveGame` returns the
+A game can be saved part way through, so the Arcade offers to resume it
+next time. The Arcade saves every few seconds of play, as the visitor
+leaves the game, and as the page is hidden. The session gives two methods. `saveGame` returns the
 game as it stands, as a value JSON can hold. It returns undefined when there
 is nothing worth resuming, such as a run that is over. `loadGame` restores a
 saved game in place of the one the session started with, and returns
@@ -510,10 +511,47 @@ return {
 };
 ```
 
-The game model does the work, through its public actions. Crumb Chase's
-`save` records the score, the crumbs eaten, and each animal's tile, and its
-`load` rebuilds the maze and the animals from them. A version number in the
-save lets a later change to its shape reject older saves.
+The game model does the work, through its public actions. A version number
+in the save lets a later change to its shape reject older saves. `save` is
+called every few seconds, in any phase of the game, so it must give a
+sensible answer whether the player is dying, between levels, or watching a
+cascade play out.
+
+A game with nothing worth resuming saves nothing. That is a game that is
+over, and a game not yet under way, which resuming would only start again.
+The player can always restart. When `save` returns undefined, the Arcade
+removes any save the game had, so a visitor who leaves after a game over,
+or before playing, is not offered a resume next time.
+
+What a game saves depends on the game. A game whose whole state is small
+and settles often saves all of it. Crumb Chase's `save` records the score,
+the crumbs eaten, and each animal's tile, and its `load` rebuilds the maze
+and the animals from them. Kwazy Cactii saves its board whenever it is at
+rest. While a swap plays out, it saves the board as it stood before the
+swap.
+
+An action game saves a checkpoint instead, because its bullets, enemies and
+explosions are too many to save and too fleeting to matter. A checkpoint is
+the start of the current level or wave. The rule is that leaving and
+resuming must never help the player, since the score may go on a highscore
+table. So a save keeps:
+
+- **The level:** the current one. A level just cleared saves the next one,
+  since nothing in it is left to play.
+- **The score as the level started.** The points won in the level are won
+  again on resuming.
+- **The lives as they are now.** A life lost in the level stays lost, even
+  one whose loss is still playing out. A game with no lives left saves
+  nothing. A game that awards lives for points leaves out the lives earned
+  in the level, since the points that earned them are won again.
+- **Nothing else lost in the level comes back.** Neon Monsoon keeps no more
+  bombs or weapon power than the player has now.
+
+An action game's checkpoint on its first level, with no score, is the
+game's start, so it saves nothing. Astrovoid is the simplest example. Its
+`save` returns the wave, the score as the wave began, and the lives left.
+Fenceline also saves the state of its random numbers as the round began, so
+a resumed round is laid out as it was, and leaving cannot deal a new one.
 
 ## Checklist
 

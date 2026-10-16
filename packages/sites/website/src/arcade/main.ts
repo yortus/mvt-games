@@ -37,8 +37,9 @@ import './arcade.css';
 // running session's `scoring` for the end of a run, and remembers the
 // visitor's initials between visits.
 //
-// It keeps the visitor's favourites between visits too, and saves a game as
-// the visitor leaves it, for the model to offer to resume next time.
+// It keeps the visitor's favourites between visits too. It saves a game every
+// few seconds of play, and as the visitor leaves it, for the model to offer
+// to resume next time.
 
 // ---------------------------------------------------------------------------
 // The page
@@ -120,6 +121,8 @@ const model = createArcadeModel({
 
 /** The last frame of the entry just left, for the way back to its card. */
 let exitFrame: HTMLCanvasElement | undefined;
+/** How long the entry running has played since its game was last saved, in milliseconds. */
+let playedSinceSaveMs = 0;
 
 // The visitor's system setting for less motion, followed as it changes
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -180,8 +183,10 @@ applySoundSettings(keptSoundSettings);
 /** The favourites last saved. The model replaces its array whenever they change. */
 let keptFavouriteIds = model.favouriteIds;
 
-// A game is saved as the visitor leaves it, and as the page is hidden or
-// closed, which a phone may do without warning
+// A game is saved every few seconds of play (in the loop), as the visitor
+// leaves it, and as the page is hidden or closed, which a phone may do
+// without warning. A browser that crashes or is killed gets no warning at
+// all, which is why the loop saves too.
 window.addEventListener('pagehide', saveGame);
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveGame();
@@ -208,6 +213,11 @@ function frame(timeMs: number): void {
     model.update(deltaMs);
     followModel();
     host.tick(timeMs, deltaMs);
+    // Only play time counts. A frozen entry, paused or offering to resume, has nothing new to save
+    if (model.phase === 'playing' && !model.isEntryFrozen) {
+        playedSinceSaveMs += deltaMs;
+        if (playedSinceSaveMs >= SAVE_EVERY_MS) saveGame();
+    }
     if (liveHost !== undefined) {
         liveHost.tick(timeMs, deltaMs);
         if (liveEntry !== undefined && liveElement?.isConnected === true) liveFrames++;
@@ -233,6 +243,7 @@ function followModel(): void {
             const { starter, activeEntry } = model;
             assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry plays only once it has loaded');
             host.start(starter, { bestScore: () => model.highscores.bestScoreFor(activeEntry.id) });
+            playedSinceSaveMs = 0;
             if (model.isResumeOffered) loadSavedGame(activeEntry);
         }
         else if (phase.previous === 'playing') {
@@ -330,6 +341,12 @@ function playLive(entry: ArcadeEntry | undefined): void {
 
 /** The longest step the loop takes, in milliseconds. A longer gap, such as a hidden tab's, is clamped to it. */
 const MAX_STEP_MS = 50;
+/**
+ * How often a game playing is saved, in milliseconds of play. A save is a
+ * small JSON string written to `localStorage`, so it costs little. A crash
+ * loses no more than this.
+ */
+const SAVE_EVERY_MS = 5000;
 /** How many frames a live entry draws on its card before it is shown, so it never shows blank. */
 const LIVE_SHOWN_AFTER_FRAMES = 3;
 const DEV = import.meta.env.DEV;
@@ -369,6 +386,7 @@ function readFavourites(): string[] {
  * they run in hosts of their own.
  */
 function saveGame(): void {
+    playedSinceSaveMs = 0;
     const entry = model.activeEntry;
     const session = host.session;
     if (entry === undefined || session?.saveGame === undefined) return;

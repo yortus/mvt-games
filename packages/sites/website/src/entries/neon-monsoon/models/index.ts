@@ -10,6 +10,6 @@ export { createExplosionModel, type ExplosionModel, type ExplosionModelOptions }
 export { createShipModel, type ShipModel, type ShipModelOptions } from './ship-model';
 export { createBossModel, type BossModel, type BossModelOptions, type BossPhase, type AttackOutcome } from './boss-model';
 export { createStageModel, type StageModel, type StageModelOptions } from './stage-model';
-export { createGameModel, type GameModel, type GameModelOptions } from './game-model';
+export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';
 export { createScoreModel, type ScoreModel } from './score-model';
 export { STEP_MS } from './model-constants';

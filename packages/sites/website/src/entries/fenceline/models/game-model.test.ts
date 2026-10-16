@@ -252,3 +252,156 @@ describe('GameModel', () => {
         expect(game.beetlesHatched).toBe(2);
     });
 });
+
+describe('GameModel: saving', () => {
+    /** A quick round whose dust devil is placed at random, so a save must lay it out again. */
+    const RANDOM_ROUND: Partial<RoundConfig> = { ...QUICK_ROUND, devilStarts: undefined };
+
+    /**
+     * Makes a game like `makeGame`, but loaded on round 2 with no score, from
+     * a save of a quick game, so it is past its start and saves. It has
+     * `lives` lives, and gets ready to play.
+     */
+    function makeGameOnRound2(options: { round?: Partial<RoundConfig>; extraLifePoints?: number; lives?: number } = {}): GameModel {
+        const quick = makeGame(QUICK_ROUND, 2);
+        clearCorner(quick);
+        const game = makeGame(options.round, 2, options.extraLifePoints);
+        expect(game.load({ ...quick.save(), score: 0, lives: options.lives ?? START_LIVES })).toBe(true);
+        run(game, READY_MS);
+        return game;
+    }
+
+    it('saves a round part way through as of its start, with the score it had then', () => {
+        const game = makeGame(QUICK_ROUND, 2);
+        clearCorner(game);
+        run(game, ROUND_CLEAR_MS + 50 + READY_MS);
+        expect(game.round).toBe(2);
+        const startScore = game.score;
+        // A small corner scores, but leaves the round to play
+        travel(game, [30, 5], [24, 5], [24, 0]);
+        expect(game.phase).toBe('playing');
+        expect(game.score).toBeGreaterThan(startScore);
+        expect(game.save()).toMatchObject({ round: 2, score: startScore, lives: game.lives });
+    });
+
+    it('saves a round just cleared as the start of the next, and loads it there, laid out the same', () => {
+        const game = makeGame(RANDOM_ROUND, 2);
+        clearCorner(game);
+        expect(game.phase).toBe('round-clear');
+        const saved = game.save();
+        expect(saved).toMatchObject({ round: 2, score: game.score, lives: game.lives });
+
+        const loaded = makeGame(RANDOM_ROUND, 2);
+        expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
+        expect(loaded.phase).toBe('ready');
+        expect(loaded.round).toBe(2);
+        expect(loaded.score).toBe(game.score);
+        expect(loaded.lives).toBe(game.lives);
+        expect(loaded.field.claimedCount).toBe(0);
+
+        run(game, ROUND_CLEAR_MS + 50);
+        expect(game.round).toBe(2);
+        expect(loaded.devils[0].row).toBe(game.devils[0].row);
+        expect(loaded.devils[0].col).toBe(game.devils[0].col);
+    });
+
+    it('lays a round out again as it started, from a save part way through it', () => {
+        const game = makeGame(RANDOM_ROUND, 2);
+        clearCorner(game);
+        run(game, ROUND_CLEAR_MS + 50);
+        expect(game.round).toBe(2);
+        const { row, col } = game.devils[0];
+        const startScore = game.score;
+        // The dust devil stands still, but the round's play draws on the random numbers
+        run(game, READY_MS + 2000);
+        const loaded = makeGame(RANDOM_ROUND, 2);
+        expect(loaded.load(game.save())).toBe(true);
+        expect(loaded.round).toBe(2);
+        expect(loaded.score).toBe(startScore);
+        expect(loaded.devils[0].row).toBe(row);
+        expect(loaded.devils[0].col).toBe(col);
+    });
+
+    it('saves a farm just fenced as the start of the next farm', () => {
+        const game = makeGame(QUICK_ROUND, 1);
+        clearCorner(game);
+        run(game, ROUND_CLEAR_MS + 50);
+        expect(game.phase).toBe('farm-fenced');
+        const saved = game.save();
+        expect(saved).toMatchObject({ round: 2, score: game.score, lives: game.lives });
+
+        const loaded = makeGame(QUICK_ROUND, 1);
+        expect(loaded.load(saved)).toBe(true);
+        expect(loaded.farm).toBe(2);
+        expect(loaded.speed).toBe(FARM_SPEED_UP);
+    });
+
+    it('keeps a life lost in the round lost, while the wire is still snapping', () => {
+        const game = makeGameOnRound2();
+        travel(game, [30, 30], [11, 30]);
+        expect(game.phase).toBe('snapped');
+        expect(game.save()).toMatchObject({ round: 2, score: 0, lives: START_LIVES - 1 });
+    });
+
+    it('leaves out a life earned in the round, which comes again with its points', () => {
+        // Fencing off the corner scores its 30 cells and its sheep, passing 2 marks
+        const points = 30 * POINTS_PER_CELL + SHEEP_POINTS;
+        const game = makeGameOnRound2({ extraLifePoints: Math.floor(points / 2) - 1 });
+        travel(game, [30, 5], [24, 5], [24, 0]);
+        expect(game.extraLivesEarned).toBe(2);
+        expect(game.save()).toMatchObject({ score: 0, lives: START_LIVES });
+        // After a life is lost too, the save has one fewer than the round started with
+        travel(game, [24, 30], [11, 30]);
+        expect(game.phase).toBe('snapped');
+        expect(game.lives).toBe(START_LIVES + 2 - 1);
+        expect(game.save()).toMatchObject({ score: 0, lives: START_LIVES - 1 });
+    });
+
+    it('saves nothing once the last life is lost', () => {
+        const game = makeGameOnRound2({ lives: 1 });
+        travel(game, [30, 30], [11, 30]);
+        expect(game.phase).toBe('snapped');
+        expect(game.save()).toBeUndefined();
+        run(game, SNAPPED_MS + 50);
+        expect(game.phase).toBe('game-over');
+        expect(game.save()).toBeUndefined();
+    });
+
+    it('saves nothing during the first round of a new game, which a restart gives anyway', () => {
+        const game = createGameModel({ rounds: [QUIET_ROUND], rows: ROWS, cols: COLS });
+        expect(game.save()).toBeUndefined();
+        run(game, READY_MS);
+        // Not once it has scored, or lost a life, either
+        travel(game, [30, 5], [24, 5], [24, 0]);
+        expect(game.score).toBeGreaterThan(0);
+        expect(game.save()).toBeUndefined();
+        travel(game, [24, 30], [11, 30]);
+        expect(game.phase).toBe('snapped');
+        expect(game.save()).toBeUndefined();
+    });
+
+    it('loads nothing that is not a saved game, and plays on as it was', () => {
+        const game = makeGameOnRound2();
+        const saved = game.save();
+        expect(saved).toBeDefined();
+        const rejects: unknown[] = [
+            undefined,
+            'saved',
+            { ...saved, version: 0 },
+            { ...saved, round: 0 },
+            { ...saved, round: 1.5 },
+            { ...saved, score: -1 },
+            { ...saved, lives: 0 },
+            { ...saved, lives: START_LIVES + 1 },
+            { ...saved, randomState: 0 },
+            { ...saved, randomState: 2 ** 32 },
+            { ...saved, randomState: undefined },
+        ];
+        for (let i = 0; i < rejects.length; i++) {
+            expect(game.load(rejects[i]), `save ${i}`).toBe(false);
+        }
+        expect(game.phase).toBe('playing');
+        expect(game.round).toBe(2);
+        expect(game.lives).toBe(saved?.lives);
+    });
+});

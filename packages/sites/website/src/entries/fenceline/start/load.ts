@@ -50,6 +50,8 @@ export async function load(): Promise<PixiEntryStarter> {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                saveGame: gameModel.save,
+                loadGame: gameModel.load,
                 inputConfig: {
                     // On a touch screen, the game view's swipes and taps steer, so no controls are drawn.
                     // Pushing off a fence strings wire, so there is no button.

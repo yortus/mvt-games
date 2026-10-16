@@ -9,6 +9,8 @@ export interface FuelModel {
     readonly isFuelEmpty: boolean;
     /** Add fuel, capped at 1.0. */
     addFuel: (amount: number) => void;
+    /** Set the fuel level, from 0.0 to 1.0. */
+    setFuel: (level: number) => void;
     reset: () => void;
     /** Advance fuel depletion. */
     update: (deltaMs: number) => void;
@@ -44,6 +46,11 @@ export function createFuelModel(options: FuelModelOptions = {}): FuelModel {
         addFuel(amount: number): void {
             fuel += amount;
             if (fuel > 1.0) fuel = 1.0;
+        },
+
+        setFuel(level: number): void {
+            fuel = Math.min(Math.max(level, 0), 1.0);
+            fuelEmpty = fuel === 0;
         },
 
         reset(): void {

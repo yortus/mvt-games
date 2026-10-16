@@ -29,6 +29,7 @@ import {
     BULLET_MARGIN,
     DYING_MS,
     ENEMY_POINTS,
+    EXTEND_SCORES,
     GEM_COLLECT_RADIUS,
     GEM_POINTS,
     INITIAL_LIVES,
@@ -42,6 +43,7 @@ import {
     MAX_GEMS,
     MAX_ITEMS,
     MAX_PLAYER_SHOTS,
+    MAX_POWER,
     MAX_STEPS_PER_UPDATE,
     RESPAWN_INVULNERABLE_MS,
     SCROLL_SPEED,
@@ -125,7 +127,36 @@ export interface GameModel {
 
     /** Start a new game. The high score is kept. */
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its loop, with the score and grazes
+     * it had then, and no more lives, bombs or power than it has now, so
+     * that leaving and resuming a game never helps it. Nothing won during
+     * the loop is kept, since it is won again. A loop just cleared is saved
+     * as the start of the next. A game still on its first loop has nothing
+     * worth resuming, so returns undefined, as it does once the last life is
+     * lost or the last loop is cleared.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its loop. Returns whether it could: a value that is not a
+     * saved game, such as one from an older version, leaves the game as it
+     * was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/** A game part way through, as `save` returns it: the loop to start, with its score, grazes, lives, bombs and power. */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    readonly loop: number;
+    readonly score: number;
+    readonly grazeCount: number;
+    readonly lives: number;
+    readonly bombs: number;
+    readonly power: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +219,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let untilBossExplosionMs = 0;
     // Whether the current boss attack has gone without a death or a bomb.
     let isAttackClean = true;
+    /** The game as this loop started, which a save keeps. The loop's own points are won again on resuming. */
+    let loopStart = checkpoint();
+    /** The extra lives given by this loop's start. Those given since are won again on resuming. */
+    let loopStartExtendsGiven = extendsGiven;
 
     // Edges: a restart or bomb press, and the boss changing phase.
     const restartWatcher = watch({ isPressed: () => playerInput.restartPressed });
@@ -270,6 +305,36 @@ export function createGameModel(options: GameModelOptions): GameModel {
             gemsCollected = 0;
             ship.reset();
             startLoop();
+        },
+
+        save() {
+            if (lives <= 0 || phase === 'game-over' || phase === 'all-clear') return undefined;
+            if (phase === 'tally') return loop < LOOP_COUNT ? { ...checkpoint(), loop: loop + 1 } : undefined;
+            // Resuming at the game's start would only start it again, perhaps with less
+            if (loopStart.loop === 1 && loopStart.score === 0) return undefined;
+            // Nothing lost in the loop comes back, and nothing won in it is kept, since it is won again.
+            // A life lost is taken at once, even while the ship is still exploding. A ship still
+            // flying keeps at least the life it is on.
+            return {
+                ...loopStart,
+                lives: Math.max(1, lives - (extendsGiven - loopStartExtendsGiven)),
+                bombs: Math.min(bombs, loopStart.bombs),
+                power: Math.min(ship.power, loopStart.power),
+            };
+        },
+
+        load(value) {
+            if (!isSavedGame(value)) return false;
+            loop = value.loop;
+            scoring.restore(value);
+            // The lives the score has already earned are in the saved lives
+            extendsGiven = scoring.extendsEarned;
+            lives = value.lives;
+            bombs = value.bombs;
+            ship.reset();
+            for (let power = 1; power < value.power; power++) ship.powerUp();
+            startLoop();
+            return true;
         },
 
         update(deltaMs) {
@@ -617,6 +682,21 @@ export function createGameModel(options: GameModelOptions): GameModel {
         warningMsLeft = 0;
         if (!ship.isAlive) ship.respawn(0);
         enterPhase('playing');
+        loopStart = checkpoint();
+        loopStartExtendsGiven = extendsGiven;
+    }
+
+    /** The game as it is now, as a save would start the current loop. */
+    function checkpoint(): SavedGame {
+        return {
+            version: SAVED_GAME_VERSION,
+            loop,
+            score: scoring.score,
+            grazeCount: scoring.grazeCount,
+            lives,
+            bombs,
+            power: ship.power,
+        };
     }
 
     function startTally(): void {
@@ -657,6 +737,35 @@ const BOMB_DAMAGE_PER_STEP = BOMB_DAMAGE_PER_SEC * STEP_MS * 0.001;
 const BODY_FRACTION = 0.6;
 
 const REVENGE_PATTERNS = [REVENGE_RING];
+
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/** The most lives a game can have: those it starts with, and one for each extend score. */
+const MAX_LIVES = INITIAL_LIVES + EXTEND_SCORES.length;
+
+/**
+ * Whether `value` is a saved game: one of the loops, a score and grazes from
+ * 0, from 1 life to the most a game can have, and bombs and power within
+ * their limits.
+ */
+function isSavedGame(value: unknown): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, loop, score, grazeCount, lives, bombs, power } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(loop) && loop >= 1 && loop <= LOOP_COUNT
+        && isWholeNumber(score)
+        && isWholeNumber(grazeCount)
+        && isWholeNumber(lives) && lives >= 1 && lives <= MAX_LIVES
+        && isWholeNumber(bombs) && bombs <= MAX_BOMBS
+        && isWholeNumber(power) && power >= 1 && power <= MAX_POWER;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
 
 const EXPLOSION_SIZES: Readonly<Record<EnemyKind, ExplosionSize>> = {
     kite: 'small',

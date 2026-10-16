@@ -1,8 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { createGameModel } from './game-model';
+import { createGameModel, type GameModel, type SavedGame } from './game-model';
 import type { SectionProfile } from '../data';
-import { SECTIONS } from '../data';
-import { MAX_FUEL_TANKS, ROCKET_DETECT_RANGE, SCROLL_SPEED, SHIP_START_COL, SHIP_START_ROW } from './model-constants';
+import { SECTIONS, VISIBLE_ROWS } from '../data';
+import {
+    INITIAL_LIVES,
+    MAX_FUEL_TANKS,
+    RESPAWN_FUEL_AMOUNT,
+    ROCKET_DETECT_RANGE,
+    SCORE_FUEL_TANK,
+    SCROLL_SPEED,
+    SHIP_START_COL,
+    SHIP_START_ROW,
+    SPEED_INCREASE_PER_LOOP,
+} from './model-constants';
 
 // Minimal section for focused tests: 30 cols, flat floor at height 2, no ceiling
 function makeSection(cols: number, floorHeight = 2): SectionProfile {
@@ -235,4 +245,167 @@ describe('GameModel', () => {
             expect(g.ship.isAlive).toBe(true);
         });
     });
+
+    describe('saving', () => {
+        it('saves nothing in the first section of a new game, even once it has points, since a restart is as good', () => {
+            const g = createGameModel({ sections: makeTankSections() });
+            expect(g.save()).toBeUndefined();
+            g.playerInput.bombPressed = true;
+            runFor(g, 2000);
+            expect(g.score).toBe(SCORE_FUEL_TANK);
+            expect(g.save()).toBeUndefined();
+        });
+
+        it('saves a section just reached as its start, with no more fuel than it had then, and loads it there', () => {
+            const sections = makeTankSections();
+            const g = createGameModel({ sections });
+            playToSecondSection(g);
+            const sectionStartScore = g.score;
+            const sectionStartFuel = g.fuel.fuel;
+
+            // A bomb on the section's tanks wins points and fuel, which a save does not keep
+            g.playerInput.bombPressed = false;
+            g.update(TICK_MS);
+            g.playerInput.bombPressed = true;
+            runFor(g, 2000);
+            expect(g.score).toBe(sectionStartScore + SCORE_FUEL_TANK);
+            const saved = g.save();
+            expect(saved).toMatchObject({ loop: 0, section: 1, score: sectionStartScore, lives: INITIAL_LIVES });
+            expect(saved?.fuel).toBeCloseTo(sectionStartFuel, 2);
+            expect(saved?.fuel).toBeLessThan(g.fuel.fuel);
+
+            const loaded = createGameModel({ sections });
+            expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
+            expect(loaded.phase).toBe('playing');
+            expect(loaded.sectionIndex).toBe(1);
+            expect(loaded.scrollCol).toBe(sections[0].floor.length);
+            expect(loaded.ship.worldCol).toBe(loaded.scrollCol + SHIP_START_COL);
+            expect(loaded.score).toBe(sectionStartScore);
+            expect(loaded.lives).toBe(INITIAL_LIVES);
+            expect(loaded.fuel.fuel).toBe(saved?.fuel);
+            // The section's own tanks are met again, and the tanks before it are not
+            loaded.update(TICK_MS);
+            expect(loaded.fuelTanks.liveCount).toBe(MAX_FUEL_TANKS);
+        });
+
+        it('saves a loop just cleared as the start of the next, and loads it there', () => {
+            const sections = makeTankSections();
+            const g = createGameModel({ sections });
+            for (let i = 0; i < LONGEST_RUN_TICKS && g.phase === 'playing'; i++) g.update(TICK_MS);
+            expect(g.phase).toBe('section-clear');
+            const saved = g.save();
+            expect(saved).toMatchObject({ loop: 1, section: 0, score: g.score, lives: g.lives, fuel: g.fuel.fuel });
+
+            const loaded = createGameModel({ sections });
+            expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
+            expect(loaded.phase).toBe('playing');
+            expect(loaded.loop).toBe(1);
+            expect(loaded.scrollSpeed).toBe(SCROLL_SPEED + SPEED_INCREASE_PER_LOOP);
+            expect(loaded.scrollCol).toBe(0);
+
+            // The game's own next loop starts in the same place
+            for (let i = 0; i < LONGEST_RUN_TICKS && g.phase === 'section-clear'; i++) g.update(TICK_MS);
+            expect(g.phase).toBe('playing');
+            expect(g.loop).toBe(1);
+            expect(g.scrollSpeed).toBe(loaded.scrollSpeed);
+            expect(g.save()).toMatchObject({ loop: 1, section: 0, score: saved?.score, lives: saved?.lives });
+        });
+
+        it('counts a life lost as soon as the ship is hit, and saves nothing once the last is lost', () => {
+            // Solid from floor to sky after the first section, so the ship is hit as soon as it appears
+            const solid = makeSection(SECTION_COLS, VISIBLE_ROWS);
+            const g = createGameModel({ sections: [makeTankSections()[0], solid, solid] });
+            expect(g.load(saveAtSecondSection())).toBe(true);
+            let deaths = 0;
+            for (let i = 0; i < LONGEST_RUN_TICKS && g.phase !== 'game-over'; i++) {
+                const wasDying = g.phase === 'dying';
+                g.update(TICK_MS);
+                if (g.phase === 'dying' && !wasDying) deaths++;
+                if (g.phase === 'dying') expect(g.save()?.lives ?? 0).toBe(g.lives - 1);
+                if (g.phase === 'respawning') expect(g.save()?.lives).toBe(g.lives);
+            }
+            expect(g.phase).toBe('game-over');
+            expect(deaths).toBe(INITIAL_LIVES);
+            expect(g.save()).toBeUndefined();
+        });
+
+        it('gives a ship that runs out of fuel the fuel that respawning gives it', () => {
+            const g = createGameModel({ sections: [makeTankSections()[0], makeSection(SECTION_COLS * 10), makeSection(SECTION_COLS)] });
+            expect(g.load(saveAtSecondSection())).toBe(true);
+            for (let i = 0; i < LONGEST_RUN_TICKS && g.phase === 'playing'; i++) g.update(TICK_MS);
+            expect(g.phase).toBe('dying');
+            expect(g.fuel.isFuelEmpty).toBe(true);
+            expect(g.save()).toMatchObject({ lives: INITIAL_LIVES - 1, fuel: RESPAWN_FUEL_AMOUNT });
+            for (let i = 0; i < LONGEST_RUN_TICKS && g.phase === 'dying'; i++) g.update(TICK_MS);
+            expect(g.phase).toBe('respawning');
+            expect(g.save()).toMatchObject({ lives: INITIAL_LIVES - 1, fuel: RESPAWN_FUEL_AMOUNT });
+        });
+
+        it('loads nothing that is not a saved game of its sections, and plays on as it was', () => {
+            const sections = makeTankSections();
+            const g = createGameModel({ sections });
+            runFor(g, 1000);
+            const saved = saveAtSecondSection();
+            const scrollCol = g.scrollCol;
+            const fuel = g.fuel.fuel;
+            const rejects: unknown[] = [
+                undefined,
+                'saved',
+                { ...saved, version: 0 },
+                { ...saved, loop: -1 },
+                { ...saved, section: -1 },
+                { ...saved, section: 0.5 },
+                { ...saved, section: sections.length },
+                { ...saved, score: 1.5 },
+                { ...saved, lives: 0 },
+                { ...saved, lives: INITIAL_LIVES + 1 },
+                { ...saved, fuel: 0 },
+                { ...saved, fuel: 1.5 },
+                { ...saved, fuel: '1' },
+            ];
+            for (let i = 0; i < rejects.length; i++) {
+                expect(g.load(rejects[i]), `save ${i}`).toBe(false);
+            }
+            expect(g.phase).toBe('playing');
+            expect(g.scrollCol).toBe(scrollCol);
+            expect(g.fuel.fuel).toBe(fuel);
+            expect(g.lives).toBe(INITIAL_LIVES);
+        });
+    });
 });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const TICK_MS = 1000 / 60;
+const LONGEST_RUN_TICKS = 60 * 60 * 5;
+const SECTION_COLS = 40;
+
+/**
+ * Three flat sections, each with a row of fuel tanks near its start, one in
+ * each slot. A bomb dropped as the ship reaches a section lands on one.
+ */
+function makeTankSections(): SectionProfile[] {
+    const spawns = Array.from({ length: MAX_FUEL_TANKS }, (_, i) => ({ col: 6 + i, row: 0, kind: 'fuel-tank' as const }));
+    return [0, 1, 2].map(() => ({ ...makeSection(SECTION_COLS), spawns }));
+}
+
+/** Plays a game of `makeTankSections` into its second section, bombing a tank in the first on the way. */
+function playToSecondSection(g: GameModel): void {
+    g.playerInput.bombPressed = true;
+    for (let i = 0; i < LONGEST_RUN_TICKS && g.sectionIndex === 0; i++) g.update(TICK_MS);
+    expect(g.sectionIndex).toBe(1);
+    expect(g.score).toBe(SCORE_FUEL_TANK);
+}
+
+/** Returns the save of a game of `makeTankSections` that has just reached its second section. */
+function saveAtSecondSection(): SavedGame | undefined {
+    const g = createGameModel({ sections: makeTankSections() });
+    playToSecondSection(g);
+    return g.save();
+}
+
+function runFor(g: GameModel, durationMs: number): void {
+    for (let elapsedMs = 0; elapsedMs < durationMs; elapsedMs += TICK_MS) g.update(TICK_MS);
+}

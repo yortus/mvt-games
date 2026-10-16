@@ -31,6 +31,7 @@ import {
     MAX_FUEL_TANKS,
     FUEL_DEPLETION_RATE,
     FUEL_REFILL_AMOUNT,
+    RESPAWN_FUEL_AMOUNT,
     SCORE_ROCKET,
     SCORE_UFO,
     SCORE_FUEL_TANK,
@@ -106,7 +107,37 @@ export interface GameModel {
     /** The number of times the base has been destroyed this game. There is one base on each loop of the sections. */
     readonly basesDestroyed: number;
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its section, with the score it had
+     * then, the lives it has now, and no more fuel than it has now, so that
+     * leaving and resuming a game never helps it. A loop just cleared is
+     * saved as the start of the next. Returns undefined once the last life
+     * is lost, and while the game has passed no section and won no points,
+     * since resuming there would only start the game again.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its section. Returns whether it could: a value that is not a
+     * saved game of these sections, such as one from an older version,
+     * leaves the game as it was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/** A game part way through, as `save` returns it: the loop and section to start, with its score, lives and fuel. */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    /** The loop of the sections, from 0. Each loop scrolls faster than the last. */
+    readonly loop: number;
+    /** The section to start, from 0. */
+    readonly section: number;
+    readonly score: number;
+    readonly lives: number;
+    /** The fuel level, more than 0.0 and at most 1.0. */
+    readonly fuel: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +172,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let lives = INITIAL_LIVES;
     let sectionIndex = 0;
     let loop = 0;
+    /** The score as this section started, which a save keeps. The section's own points are won again on resuming. */
+    let sectionStartScore = 0;
+    /** The fuel as this section started. A save keeps this, or the fuel now if that is less. */
+    let sectionStartFuel = 1.0;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -278,6 +313,42 @@ export function createGameModel(options: GameModelOptions): GameModel {
             bombConsumed = false;
             gamePhase = 'playing';
             phaseTimeline.clear().time(0);
+            markSectionStart();
+        },
+
+        save() {
+            if (gamePhase === 'game-over') return undefined;
+            // A life lost while the ship breaks up is taken once the pieces settle
+            const livesLeft = gamePhase === 'dying' ? lives - 1 : lives;
+            if (livesLeft <= 0) return undefined;
+            if (gamePhase === 'section-clear') {
+                return { version: SAVED_GAME_VERSION, loop: loop + 1, section: 0, score, lives: livesLeft, fuel: fuelModel.fuel };
+            }
+            // A checkpoint at the start of the game is no better than a restart
+            if (loop === 0 && sectionIndex === 0 && sectionStartScore === 0) return undefined;
+            return {
+                version: SAVED_GAME_VERSION,
+                loop,
+                section: sectionIndex,
+                score: sectionStartScore,
+                lives: livesLeft,
+                fuel: Math.min(sectionStartFuel, measureShipFuel()),
+            };
+        },
+
+        load(value) {
+            if (!isSavedGame(value, sections.length)) return false;
+            loop = value.loop;
+            sectionIndex = value.section;
+            score = value.score;
+            lives = value.lives;
+            fuelModel.setFuel(value.fuel);
+            explosions.clear();
+            fireConsumed = false;
+            bombConsumed = false;
+            phaseTimeline.clear().time(0);
+            startSection();
+            return true;
         },
 
         update(deltaMs: number): void {
@@ -301,7 +372,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
             scrollCol += currentScrollSpeed * deltaMs * 0.001;
 
             // Update section index
-            sectionIndex = terrain.getSectionIndex(Math.floor(scrollCol));
+            const scrolledSectionIndex = terrain.getSectionIndex(Math.floor(scrollCol));
+            if (scrolledSectionIndex !== sectionIndex) {
+                sectionIndex = scrolledSectionIndex;
+                markSectionStart();
+            }
 
             // Route input
             ship.setXDirection(playerInput.xDirection);
@@ -807,20 +882,38 @@ export function createGameModel(options: GameModelOptions): GameModel {
             () => {
                 // Completed all 3 sections - start new loop
                 loop++;
-                currentScrollSpeed = SCROLL_SPEED + loop * SPEED_INCREASE_PER_LOOP;
-                scrollCol = 0;
-                spawnCursor = 0;
-                clearEntities();
-                ship.respawn(
-                    SHIP_START_COL,
-                    SHIP_START_ROW,
-                );
                 sectionIndex = 0;
-                gamePhase = 'playing';
+                startSection();
             },
             undefined,
             SECTION_CLEAR_DELAY_MS * 0.001,
         );
+    }
+
+    /** Starts the section `sectionIndex` of the loop `loop` at its first column, as a new loop starts. */
+    function startSection(): void {
+        currentScrollSpeed = SCROLL_SPEED + loop * SPEED_INCREASE_PER_LOOP;
+        scrollCol = terrain.getSectionStartCol(sectionIndex);
+        scrollClamped = false;
+        // The enemies before the section are in its starting score already, so they are not met again
+        spawnCursor = 0;
+        while (spawnCursor < spawnList.length && spawnList[spawnCursor].worldCol < scrollCol) spawnCursor++;
+        clearEntities();
+        const shipCol = scrollCol + SHIP_START_COL;
+        ship.respawn(shipCol, findSafeRow(shipCol));
+        gamePhase = 'playing';
+        markSectionStart();
+    }
+
+    function markSectionStart(): void {
+        sectionStartScore = score;
+        sectionStartFuel = measureShipFuel();
+    }
+
+    /** Returns the ship's fuel. A ship that is dying or respawning has the fuel that respawning gives it, which is always some. */
+    function measureShipFuel(): number {
+        const isShipDown = gamePhase === 'dying' || gamePhase === 'respawning';
+        return isShipDown ? Math.min(fuelModel.fuel + RESPAWN_FUEL_AMOUNT, 1.0) : fuelModel.fuel;
     }
 
     // ---- Phase management --------------------------------------------------
@@ -844,7 +937,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                             const safeRow = findSafeRow(safeCol);
                             ship.respawn(safeCol, safeRow);
                             clearProjectiles();
-                            fuelModel.addFuel(0.25);
+                            fuelModel.addFuel(RESPAWN_FUEL_AMOUNT);
                             gamePhase = 'playing';
                         },
                         undefined,
@@ -898,6 +991,31 @@ export function createGameModel(options: GameModelOptions): GameModel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/**
+ * Whether `value` is a saved game of `sectionCount` sections: a loop from 0,
+ * one of the sections, a score from 0, from 1 life to as many as a game
+ * starts with, and some fuel, up to a full tank.
+ */
+function isSavedGame(value: unknown, sectionCount: number): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, loop, section, score, lives, fuel } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(loop)
+        && isWholeNumber(section) && section < sectionCount
+        && isWholeNumber(score)
+        && isWholeNumber(lives) && lives >= 1 && lives <= INITIAL_LIVES
+        && typeof fuel === 'number' && fuel > 0 && fuel <= 1.0;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
 
 interface AbsoluteSpawn {
     readonly worldCol: number;

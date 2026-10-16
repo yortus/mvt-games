@@ -28,7 +28,9 @@ export interface GameModel {
     reset: () => void;
     /**
      * Returns the game as it stands, as a value JSON can hold, for `load` to
-     * restore. Returns undefined unless a game is being played.
+     * restore. Returns undefined unless a game is being played, and until
+     * the mouse eats its first crumb, since resuming before that would only
+     * start the game again.
      */
     save: () => SavedGame | undefined;
     /**
@@ -149,7 +151,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         save() {
-            if (gamePhase !== 'playing') return undefined;
+            // A game with no crumb eaten has nothing worth resuming. Resuming it would only start it again
+            if (gamePhase !== 'playing' || score === 0) return undefined;
             const eaten: number[] = [];
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {

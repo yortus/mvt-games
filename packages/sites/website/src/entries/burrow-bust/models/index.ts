@@ -13,4 +13,4 @@ export { createDiggerModel, type DiggerModel, type DiggerModelOptions } from './
 export { createEnemyModel, type EnemyModel, type EnemyModelOptions } from './enemy-model';
 export { createRockModel, type RockModel, type RockModelOptions } from './rock-model';
 export { createPlayerInput, type PlayerInput } from './player-input';
-export { createGameModel, type GameModel, type GameModelOptions } from './game-model';
+export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';

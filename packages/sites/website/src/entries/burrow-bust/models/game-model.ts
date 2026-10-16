@@ -25,7 +25,31 @@ export interface GameModel {
     readonly level: number;
     readonly playerInput: PlayerInput;
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its level, with the score it had then,
+     * and the lives it has now, so that leaving and resuming a game never
+     * helps it. A level just cleared is saved as the start of the next.
+     * Returns undefined once the last life is lost, and while the game is
+     * still at its start, since resuming it would only start it again.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its level. Returns whether it could: a value that is not a
+     * saved game, such as one from an older version, leaves the game as it
+     * was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/** A game part way through, as `save` returns it: the level to start, with its score and lives. */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    readonly level: number;
+    readonly score: number;
+    readonly lives: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,8 +74,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let gamePhase: GamePhase = 'playing';
     let levelIndex = 0;
     let score = 0;
-    let lives = 3;
+    let lives = START_LIVES;
     let level = 1;
+    /**
+     * The score as this level last started, which a save keeps. A level
+     * starts again after a death, keeping the score, so this is the score
+     * as of that restart. The level's own points are won again on resuming.
+     */
+    let levelStartScore = 0;
 
     /** Index of the enemy currently attached to the harpoon, or -1. */
     let harpoonTarget = -1;
@@ -102,10 +132,31 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         reset(): void {
             score = 0;
-            lives = 3;
+            lives = START_LIVES;
             level = 1;
             levelIndex = 0;
             loadLevel();
+        },
+
+        save() {
+            if (gamePhase === 'game-over') return undefined;
+            // A life lost while the digger dies is taken once the delay is over
+            const livesLeft = gamePhase === 'dying' ? lives - 1 : lives;
+            if (livesLeft <= 0) return undefined;
+            if (gamePhase === 'level-clear') return { version: SAVED_GAME_VERSION, level: level + 1, score, lives: livesLeft };
+            // A game still at its start has nothing worth resuming: it would only start again
+            if (level === 1 && levelStartScore === 0) return undefined;
+            return { version: SAVED_GAME_VERSION, level, score: levelStartScore, lives: livesLeft };
+        },
+
+        load(value) {
+            if (!isSavedGame(value)) return false;
+            level = value.level;
+            levelIndex = value.level - 1;
+            score = value.score;
+            lives = value.lives;
+            loadLevel();
+            return true;
         },
 
         update(deltaMs: number): void {
@@ -271,6 +322,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function loadLevel(): void {
+        levelStartScore = score;
         field = buildField();
         // Carve tunnels at enemy spawn positions so they start in tunnels
         const lvl = currentLevel();
@@ -493,6 +545,30 @@ export function createGameModel(options: GameModelOptions): GameModel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+const START_LIVES = 3;
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/**
+ * Whether `value` is a saved game: a level from 1, a score from 0, and from
+ * 1 life to as many as a game starts with. Any level from 1 will do, since
+ * the levels past the last play the last again.
+ */
+function isSavedGame(value: unknown): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, level, score, lives } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(level) && level >= 1
+        && isWholeNumber(score)
+        && isWholeNumber(lives) && lives >= 1 && lives <= START_LIVES;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
 
 const COLLISION_THRESHOLD_SQ = 0.5 * 0.5;
 const FIRE_RANGE = 3; // tiles

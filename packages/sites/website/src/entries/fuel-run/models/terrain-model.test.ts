@@ -99,6 +99,22 @@ describe('TerrainModel', () => {
         });
     });
 
+    describe('getSectionStartCol', () => {
+        it('returns the first column of each section', () => {
+            const terrain = createTerrainModel({
+                sections: [
+                    makeSimpleSection(10, 2),
+                    makeSimpleSection(20, 3),
+                    makeSimpleSection(15, 1),
+                ],
+                rows: 14,
+            });
+            expect(terrain.getSectionStartCol(0)).toBe(0);
+            expect(terrain.getSectionStartCol(1)).toBe(10);
+            expect(terrain.getSectionStartCol(2)).toBe(30);
+        });
+    });
+
     describe('getSurfaceRow', () => {
         it('returns first empty row above floor', () => {
             const terrain = createTerrainModel({

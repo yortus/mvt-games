@@ -4,4 +4,4 @@ export { createShipModel, type ShipModel, type ShipModelOptions } from './ship-m
 export { createBulletModel, type BulletModel, type BulletModelOptions } from './bullet-model';
 export { createAsteroidModel, type AsteroidModel, type AsteroidModelOptions } from './asteroid-model';
 export { createDebrisModel, type DebrisModel, type DebrisModelOptions, type DebrisParticle } from './debris-model';
-export { createGameModel, type GameModel, type GameModelOptions } from './game-model';
+export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';

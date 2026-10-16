@@ -104,6 +104,9 @@ export const FUEL_DEPLETION_RATE = 0.03;
 /** Fuel gained per fuel tank destroyed (fraction of full tank). */
 export const FUEL_REFILL_AMOUNT = 0.25;
 
+/** Fuel gained by a ship that respawns after a death (fraction of full tank). */
+export const RESPAWN_FUEL_AMOUNT = 0.25;
+
 // ---------------------------------------------------------------------------
 // Scoring
 // ---------------------------------------------------------------------------

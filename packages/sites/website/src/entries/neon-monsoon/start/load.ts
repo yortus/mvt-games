@@ -40,6 +40,8 @@ export async function load(): Promise<PixiEntryStarter> {
                     // A run ends by losing every life, or by clearing both loops
                     isOver: () => gameModel.phase === 'game-over' || gameModel.phase === 'all-clear',
                 },
+                saveGame: gameModel.save,
+                loadGame: gameModel.load,
                 inputConfig: {
                     showDpad: true,
                     showPrimary: true,

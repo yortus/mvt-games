@@ -71,6 +71,14 @@ export interface BoardModelOptions {
     readonly colCount?: number;
     /** Custom random source (0-1). Defaults to `Math.random`. Useful for seeded testing. */
     readonly random?: () => number;
+    /**
+     * The cactii to start with, as `startKinds[row][col]`, such as a saved
+     * board's. It must fill the grid and hold no line. Without it, the board
+     * starts with random cactii.
+     */
+    readonly startKinds?: DeepReadonly<CactusKind[][]>;
+    /** The score to start with, such as a saved board's. Defaults to 0. */
+    readonly startScore?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,7 +103,7 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     }
 
     let boardPhase: BoardPhase = 'idle';
-    let score = 0;
+    let score = options.startScore ?? 0;
     let cascadeStep = 0;
     let currentMatchedCells: CactusCell[] = [];
     let swapCell1: CactusCell | undefined;
@@ -113,7 +121,15 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         settling: finishSettling,
     };
 
-    fillCellsNoMatches(cells, rowCount, colCount, randomKind);
+    const { startKinds } = options;
+    if (startKinds === undefined) {
+        fillCellsNoMatches(cells, rowCount, colCount, randomKind);
+    }
+    else {
+        for (let r = 0; r < rowCount; r++) {
+            for (let c = 0; c < colCount; c++) cells[r][c] = createCell(startKinds[r][c], r, c);
+        }
+    }
 
     // ---- Public record -----------------------------------------------------
 

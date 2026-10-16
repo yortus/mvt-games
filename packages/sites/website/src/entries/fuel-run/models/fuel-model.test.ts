@@ -52,6 +52,20 @@ describe('FuelModel', () => {
         });
     });
 
+    describe('setFuel', () => {
+        it('sets the level, from empty to full', () => {
+            const f = makeFuel();
+            f.setFuel(0.4);
+            expect(f.fuel).toBe(0.4);
+            f.setFuel(2);
+            expect(f.fuel).toBe(1.0);
+            f.setFuel(0);
+            expect(f.isFuelEmpty).toBe(true);
+            f.setFuel(0.5);
+            expect(f.isFuelEmpty).toBe(false);
+        });
+    });
+
     describe('reset', () => {
         it('restores fuel to full', () => {
             const f = makeFuel(10);

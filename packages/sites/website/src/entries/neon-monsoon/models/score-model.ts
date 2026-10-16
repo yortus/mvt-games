@@ -33,6 +33,12 @@ export interface ScoreModel {
     breakChain: () => void;
     /** Back to zero for a new game. The high score is kept. */
     reset: () => void;
+    /**
+     * Start a game again from a saved score and graze count, with no chain
+     * running. The extra lives that the score has passed count as earned.
+     * The high score is kept, and rises to the score if it is lower.
+     */
+    restore: (saved: { readonly score: number; readonly grazeCount: number }) => void;
     update: (deltaMs: number) => void;
 }
 
@@ -91,6 +97,12 @@ export function createScoreModel(): ScoreModel {
             grazeCount = 0;
             extendsEarned = 0;
             model.breakChain();
+        },
+
+        restore(saved) {
+            model.reset();
+            grazeCount = saved.grazeCount;
+            addPoints(saved.score);
         },
 
         update(deltaMs) {

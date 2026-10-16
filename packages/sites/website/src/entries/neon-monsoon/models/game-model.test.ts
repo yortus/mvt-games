@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { BOSS_ATTACKS, STAGE_EVENTS, type BossAttackDef, type StageEvent } from '../data';
-import { createGameModel, type GameModel } from './game-model';
+import { BOSS_ATTACKS, LOOP_COUNT, STAGE_EVENTS, type BossAttackDef, type StageEvent } from '../data';
+import { createGameModel, type GameModel, type SavedGame } from './game-model';
 import {
     BOMBS_PER_LIFE,
     BOSS_ENTER_MS,
     BOSS_EXPLODE_MS,
     DYING_MS,
+    EXTEND_SCORES,
     GRAZE_POINTS,
     INITIAL_LIVES,
+    MAX_BOMBS,
+    MAX_POWER,
+    RESPAWN_INVULNERABLE_MS,
     SHIP_START_Y,
     STEP_MS,
     TALLY_MS,
@@ -237,6 +241,167 @@ describe('GameModel', () => {
                 shipY: game.ship.y,
                 firstBulletX: game.enemyBullets.count > 0 ? game.enemyBullets.xOf(0) : -1,
             };
+        }
+    });
+
+    describe('saving', () => {
+        it('saves nothing on the first loop, since resuming would only start the game again', () => {
+            const game = makeGame([
+                { kind: 'spawn', atMs: 0, enemy: 'kite', x: 120, path: { kind: 'straight', speed: 40 }, patterns: [] },
+            ]);
+            expect(game.save()).toBeUndefined();
+            for (let i = 0; i < 180 && game.scoring.score === 0; i++) game.update(STEP_MS);
+            expect(game.scoring.score).toBeGreaterThan(0);
+            expect(game.save()).toBeUndefined();
+        });
+
+        it('saves a loop part way through as of its start, with no more bombs or power than it has now', () => {
+            const game = makeGameOnLoopTwo([
+                { kind: 'spawn', atMs: 0, enemy: 'kite', x: 120, path: { kind: 'straight', speed: 40 }, patterns: [], drop: 'power' },
+            ], { bombs: BOMBS_PER_LIFE, power: 1 });
+            const start = { score: game.scoring.score, grazeCount: game.scoring.grazeCount, lives: game.lives };
+            // The bomb shields the ship from the bullets the kite leaves on later loops.
+            game.playerInput.bombPressed = true;
+            for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
+            expect(game.scoring.score).toBeGreaterThan(start.score);
+            expect(game.lives).toBe(start.lives);
+            expect(game.ship.power).toBe(2);
+            expect(game.bombs).toBe(BOMBS_PER_LIFE - 1);
+
+            // The power won is won again, and the bomb used stays used.
+            expect(game.save()).toMatchObject({ loop: 2, ...start, bombs: BOMBS_PER_LIFE - 1, power: 1 });
+        });
+
+        it('keeps a life lost, even while the ship is still exploding, and saves nothing once the last is lost', () => {
+            const game = makeGameOnLoopTwo(NO_EVENTS, { bombs: 1 });
+            const startLives = game.lives;
+            bulletAtShip(game);
+            game.update(STEP_MS);
+            expect(game.phase).toBe('dying');
+            expect(game.save()?.lives).toBe(startLives - 1);
+
+            // The new ship's fresh bombs do not come back either.
+            play(game, DYING_MS + STEP_MS);
+            expect(game.bombs).toBe(BOMBS_PER_LIFE);
+            expect(game.save()).toMatchObject({ lives: startLives - 1, bombs: 1 });
+
+            for (let life = 1; life < startLives; life++) {
+                play(game, RESPAWN_INVULNERABLE_MS + DYING_MS + STEP_MS);
+                bulletAtShip(game);
+                game.update(STEP_MS);
+            }
+            expect(game.phase).toBe('dying');
+            expect(game.save()).toBeUndefined();
+            play(game, DYING_MS + STEP_MS);
+            expect(game.phase).toBe('game-over');
+            expect(game.save()).toBeUndefined();
+        });
+
+        it('does not keep a life won during the loop, since its points are won again', () => {
+            const game = makeGameOnLoopTwo(NO_EVENTS);
+            const start = { score: game.scoring.score, lives: game.lives };
+            game.scoring.addPoints(EXTEND_SCORES[0]);
+            game.update(STEP_MS);
+            expect(game.lives).toBe(start.lives + 1);
+            expect(game.save()).toMatchObject(start);
+
+            // A life lost after it is still lost, and the life won is won again on resuming.
+            bulletAtShip(game);
+            game.update(STEP_MS);
+            expect(game.lives).toBe(start.lives);
+            expect(game.save()).toMatchObject({ score: start.score, lives: start.lives - 1 });
+        });
+
+        it('saves a loop just cleared as the start of the next, and loads it there', () => {
+            const game = makeGame([{ kind: 'boss', atMs: 0 }], ONE_WEAK_ATTACK);
+            playToTally(game);
+            const saved = game.save();
+            expect(saved).toMatchObject({
+                loop: 2, score: game.scoring.score, lives: game.lives, bombs: game.bombs, power: game.ship.power,
+            });
+
+            const loaded = makeGame([{ kind: 'boss', atMs: 0 }], ONE_WEAK_ATTACK);
+            expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
+            expect(loaded.phase).toBe('playing');
+            expect(loaded.loop).toBe(2);
+            expect(loaded.scoring.score).toBe(game.scoring.score);
+            expect(loaded.lives).toBe(game.lives);
+            expect(loaded.bombs).toBe(game.bombs);
+            expect(loaded.stage.timeMs).toBe(0);
+
+            // The last loop cleared ends the run, with nothing to resume
+            expect(loaded.loop).toBe(LOOP_COUNT);
+            playToTally(loaded);
+            expect(loaded.save()).toBeUndefined();
+        });
+
+        it('loads the score, grazes, lives, bombs and power, without giving again the lives the score has earned', () => {
+            const game = makeGame();
+            const saved = {
+                ...saveAtTally(), score: EXTEND_SCORES[0], grazeCount: 12, lives: INITIAL_LIVES + 1, bombs: MAX_BOMBS, power: MAX_POWER,
+            };
+            expect(game.load(saved)).toBe(true);
+            game.update(STEP_MS);
+            expect(game.scoring.score).toBe(EXTEND_SCORES[0]);
+            expect(game.scoring.grazeCount).toBe(12);
+            expect(game.lives).toBe(INITIAL_LIVES + 1);
+            expect(game.bombs).toBe(MAX_BOMBS);
+            expect(game.ship.power).toBe(MAX_POWER);
+        });
+
+        it('loads nothing that is not a saved game, and plays on as it was', () => {
+            const game = makeGame();
+            game.playerInput.bombPressed = true;
+            play(game, 1000);
+            const saved = saveAtTally();
+            const maxLives = INITIAL_LIVES + EXTEND_SCORES.length;
+            const rejects: unknown[] = [
+                undefined,
+                'saved',
+                { ...saved, version: 0 },
+                { ...saved, loop: 0 },
+                { ...saved, loop: LOOP_COUNT + 1 },
+                { ...saved, score: 1.5 },
+                { ...saved, score: '0' },
+                { ...saved, grazeCount: -1 },
+                { ...saved, lives: 0 },
+                { ...saved, lives: maxLives + 1 },
+                { ...saved, bombs: MAX_BOMBS + 1 },
+                { ...saved, power: 0 },
+                { ...saved, power: MAX_POWER + 1 },
+            ];
+            const stepCount = game.stepCount;
+            const stageMs = game.stage.timeMs;
+            for (let i = 0; i < rejects.length; i++) {
+                expect(game.load(rejects[i]), `save ${i}`).toBe(false);
+            }
+            expect(game.loop).toBe(1);
+            expect(game.lives).toBe(INITIAL_LIVES);
+            expect(game.bombs).toBe(BOMBS_PER_LIFE - 1);
+            expect(game.stepCount).toBe(stepCount);
+            expect(game.stage.timeMs).toBe(stageMs);
+        });
+
+        /** Play until the boss is down and the tally shows, as in a stage that is only the boss. */
+        function playToTally(game: GameModel): void {
+            for (let i = 0; i < 60 * 60 && game.phase !== 'tally'; i++) game.update(STEP_MS);
+            expect(game.phase).toBe('tally');
+        }
+
+        /** A save at the start of the second loop, from a first loop that is only a weak boss. */
+        function saveAtTally(): SavedGame {
+            const game = makeGame([{ kind: 'boss', atMs: 0 }], ONE_WEAK_ATTACK);
+            playToTally(game);
+            const saved = game.save();
+            if (saved === undefined) throw new Error('A cleared first loop saves the second.');
+            return saved;
+        }
+
+        /** A game on the second loop, with `events` for its stage, and any of the save's values changed. */
+        function makeGameOnLoopTwo(events: readonly StageEvent[], changes: Partial<SavedGame> = {}): GameModel {
+            const game = makeGame(events);
+            expect(game.load({ ...saveAtTally(), ...changes })).toBe(true);
+            return game;
         }
     });
 });

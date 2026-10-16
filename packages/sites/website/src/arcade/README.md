@@ -242,11 +242,18 @@ them.
 A game can be saved as the visitor leaves it, and resumed next time. A
 session that supports it has two methods: `saveGame()` returns the game as
 a value JSON can hold, or undefined when there is nothing worth resuming,
-and `loadGame(saved)` restores one, returning whether it could. Crumb Chase
-is the first game to have them.
+and `loadGame(saved)` restores one, returning whether it could. Most of the
+games have them. The [entries' guide](../entries/README.md#saving-a-game)
+says what each kind of game saves.
 
-The page saves the game as the visitor leaves it, and as the page is hidden,
-since a phone may close it without warning. Only the page's own host saves:
+The page saves the game at three moments. It saves every five seconds of
+play (`SAVE_EVERY_MS`), counting only time the entry is not frozen. It saves
+as the visitor leaves the game. And it saves as the page is hidden or
+closed, since a phone may close it without warning. A browser that crashes
+gives no warning at all, which is why the page saves as the game plays. A
+save is a small JSON string, so saving that often costs little. A save that
+returns undefined, from a run that is over, removes the save instead.
+Only the page's own host saves:
 attract mode and thumbnails run in hosts of their own, so they never save
 or load.
 

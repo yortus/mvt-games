@@ -55,6 +55,14 @@ describe('GameModel', () => {
             expect(loaded.phase).toBe('playing');
         });
 
+        it('saves nothing until the first crumb is eaten, since resuming would only start the game again', () => {
+            const model = makeGame();
+            expect(model.save()).toBeUndefined();
+            for (let t = 0; t < 3000 && model.score === 0; t += STEP_MS) model.update(STEP_MS);
+            expect(model.score).toBeGreaterThan(0);
+            expect(model.save()).toBeDefined();
+        });
+
         it('saves nothing once the game is over', () => {
             const model = makeGame();
             for (let t = 0; t < 120_000 && model.phase === 'playing'; t += STEP_MS) model.update(STEP_MS);
@@ -63,8 +71,12 @@ describe('GameModel', () => {
         });
 
         it('loads nothing that is not a saved game of its maze, and plays on as it was', () => {
+            // A save from a game that has eaten a crumb, to spoil in each way below
+            const played = makeGame();
+            for (let t = 0; t < 3000 && played.score === 0; t += STEP_MS) played.update(STEP_MS);
+            const saved = played.save();
+            expect(saved).toBeDefined();
             const model = makeGame();
-            const saved = model.save();
             const otherVersion = { ...saved, version: 0 };
             const mouseInHedge = { ...saved, mouse: { row: 0, col: 0, direction: 'left' } };
             const tooFewCats = { ...saved, cats: saved?.cats.slice(1) };

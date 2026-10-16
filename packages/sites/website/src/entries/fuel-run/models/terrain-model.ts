@@ -16,6 +16,8 @@ export interface TerrainModel {
     isSolid: (col: number, row: number) => boolean;
     /** Return the section index (0-based) for the given world column. */
     getSectionIndex: (col: number) => number;
+    /** Return the world column where the given section (0-based) starts. */
+    getSectionStartCol: (sectionIndex: number) => number;
     /** Return the row of the first empty tile above the floor at the given column. */
     getSurfaceRow: (col: number) => number;
     update: (deltaMs: number) => void;
@@ -87,6 +89,10 @@ export function createTerrainModel(options: TerrainModelOptions): TerrainModel {
                 if (col >= sectionStarts[s]) return s;
             }
             return 0;
+        },
+
+        getSectionStartCol(sectionIndex: number): number {
+            return sectionStarts[sectionIndex] ?? 0;
         },
 
         getSurfaceRow(col: number): number {

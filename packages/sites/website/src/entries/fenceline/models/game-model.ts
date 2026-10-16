@@ -77,7 +77,39 @@ export interface GameModel {
     readonly playerInput: PlayerInput;
     /** Starts a new game from round 1. */
     reset: () => void;
+    /**
+     * Returns the game as a value JSON can hold, for `load` to restore. A
+     * game is saved as of the start of its round, with the score it had
+     * then, and the lives it has now, so that leaving and resuming a game
+     * never helps it. A life earned in the round is left out, since its
+     * points are won again on resuming. A round just cleared is saved as the
+     * start of the next, with its bonus and any lives it earned. Returns
+     * undefined once the last life is lost. It also returns undefined during
+     * the first round of a new game, since resuming there would only start
+     * the game again, and a restart does that.
+     */
+    save: () => SavedGame | undefined;
+    /**
+     * Restores a game that `save` returned, in place of this one, at the
+     * start of its round, laid out as it was. Returns whether it could: a
+     * value that is not a saved game, such as one from an older version,
+     * leaves the game as it was.
+     */
+    load: (saved: unknown) => boolean;
     update: (deltaMs: number) => void;
+}
+
+/**
+ * A game part way through, as `save` returns it: the round to start, with
+ * its score and lives, and the state of the game's random numbers as the
+ * round starts, which lays out its dust devils and sheep.
+ */
+export interface SavedGame {
+    readonly version: typeof SAVED_GAME_VERSION;
+    readonly round: number;
+    readonly score: number;
+    readonly lives: number;
+    readonly randomState: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,6 +159,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let lastClosurePoints = 0;
     let roundBonus = 0;
     let hatchMs = 0;
+    /** The score as this round started, which a save keeps. The round's own points are won again on resuming. */
+    let roundStartScore = 0;
+    /** The lives earned before this round, so a save can leave out those earned in it. */
+    let roundStartLivesEarned = 0;
+    /** The random numbers' state as this round started, before its dust devils and sheep were placed. */
+    let roundStartRandomState = random.state;
 
     let field = createFieldModel({ rows, cols, obstacles: [] });
     let farmhand = buildFarmhand();
@@ -177,6 +215,33 @@ export function createGameModel(options: GameModelOptions): GameModel {
             lastClosurePoints = 0;
             roundBonus = 0;
             loadRound();
+        },
+
+        save() {
+            if (phase === 'game-over' || lives <= 0) return undefined;
+            // Nothing draws on the random numbers between rounds, so the next round starts from their state now
+            if (phase === 'round-clear' || phase === 'farm-fenced') {
+                return { version: SAVED_GAME_VERSION, round: round + 1, score, lives, randomState: random.state };
+            }
+            // A save of the game's start would only start it again
+            if (round === 1 && roundStartScore === 0) return undefined;
+            // A life earned in the round comes again with its points. A life lost in it stays lost,
+            // but a farmhand still playing keeps at least the one they are on.
+            const livesKept = Math.max(1, lives - (extraLivesEarned - roundStartLivesEarned));
+            return { version: SAVED_GAME_VERSION, round, score: roundStartScore, lives: livesKept, randomState: roundStartRandomState };
+        },
+
+        load(value) {
+            if (!isSavedGame(value)) return false;
+            // The round's farm depends on this game's rounds, and the most lives a score can have on its starting lives
+            if (findFarm(value.round) > MAX_SAVED_FARM) return false;
+            if (value.lives > startLives + Math.floor(value.score / extraLifePoints)) return false;
+            round = value.round;
+            score = value.score;
+            lives = value.lives;
+            random.state = value.randomState;
+            loadRound();
+            return true;
         },
 
         update(deltaMs) {
@@ -402,6 +467,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     }
 
     function loadRound(): void {
+        roundStartScore = score;
+        roundStartLivesEarned = extraLivesEarned;
+        roundStartRandomState = random.state;
         config = rounds[(round - 1) % rounds.length];
         speed = FARM_SPEED_UP ** (findFarm(round) - 1);
         field = createFieldModel({ rows, cols, obstacles: config.obstacles });
@@ -454,3 +522,35 @@ export function createGameModel(options: GameModelOptions): GameModel {
  * this far from them too.
  */
 const SAFE_DISTANCE = 15;
+
+/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+const SAVED_GAME_VERSION = 1;
+
+/**
+ * The furthest farm a saved game can be on. Each farm plays faster than the
+ * last, so no one gets this far, and a farm much further on would play too
+ * fast to run.
+ */
+const MAX_SAVED_FARM = 20;
+
+/**
+ * Whether `value` is the shape of a saved game: a round from 1, a score from
+ * 0, at least 1 life, and a random state from 1 to 2^32 - 1. `load` checks
+ * the rest, which depends on the game: the round's farm, and the most lives
+ * its score could have.
+ */
+function isSavedGame(value: unknown): value is SavedGame {
+    // typeof null is 'object' too
+    if (typeof value !== 'object' || value === null) return false;
+    const { version, round, score, lives, randomState } = value as Record<string, unknown>;
+    return version === SAVED_GAME_VERSION
+        && isWholeNumber(round) && round >= 1
+        && isWholeNumber(score)
+        && isWholeNumber(lives) && lives >= 1
+        && isWholeNumber(randomState) && randomState >= 1 && randomState <= 0xffffffff;
+}
+
+/** Whether `value` is a whole number, 0 or more. */
+function isWholeNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
