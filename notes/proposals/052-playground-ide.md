@@ -13,10 +13,15 @@
 > ES module. It stays focused. It runs MVT projects on Pixi, the DOM or
 > three.js, with a fixed set of libraries, and nothing else: no npm, no
 > terminal, no build settings. The playground moves out of the website into
-> a package of its own, `packages/playground/`, and the website, which is
-> then the Arcade and nothing else, is renamed `packages/arcade/`.
+> a package of its own, `packages/sites/playground/`, and the website, which is
+> then the Arcade and nothing else, is renamed `packages/sites/arcade/`.
 
-**Status:** proposed. Nothing is built.
+**Status:** proposed, and spiked (section 16). The spike confirmed the
+runtime, the sandbox and the editor in Chromium, Firefox and WebKit, and
+changed four details: a cheaper loop guard (5.5), gzip for share links
+(7.3), the editor's own glue to the language service (6.2), and a `CORS`
+file for the test deploy (13). The rest of the design stands. Nothing is
+built beyond the spike.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -42,9 +47,14 @@ the lint rules that fence it off
 ([`package.json`](../../package.json)) and the deploys
 ([`deploy.yml`](../../.github/workflows/deploy.yml),
 [`deploy-highscores.yml`](../../.github/workflows/deploy-highscores.yml)).
-The sizes and counts that say "measured" were read from the repo and
-`node_modules` on that commit. Every load time and every other size is an
-estimate until the spike (section 15, step 1).
+Checked again the same day against `b32f67b`, after the packages were
+grouped into `libraries/`, `tools/`, `sites/` and `tests/`: the
+playground's code is unchanged, and only its paths moved. The paths here
+are the grouped ones, and the new packages are placed in `sites/`. The
+sizes and counts that say "measured" were read from the repo and
+`node_modules` at `b32f67b`. The spike (section 16) ran the same day, in a
+worktree at `b32f67b`, and its sizes and times replace the estimates the
+first draft had.
 
 **Related:**
 [036](../archive/036-website-arcade.md) (the Arcade, and the entry shape a project can be ported to) -
@@ -78,9 +88,10 @@ estimate until the spike (section 15, step 1).
 | 12 | The examples | Real files in the repo, one folder each, so the repo's type check, lint and tests cover them. The presets' 992 lines of code in strings go | [7.2](#72-examples-are-real-files-in-the-repo) |
 | 13 | Old links | `#preset=` links, which the docs use, open the matching example. `#code=` links are converted to a project on open | [7.4](#74-old-links-keep-working) |
 | 14 | The playground's own code | Rebuilt in MVT, as the Arcade is: a model of the project, the tabs and the run, and HTML JSX views | [8](#8-the-playground-built-with-mvt) |
-| 15 | Where it lives | A private package of its own, `packages/playground/` (`@mvtjs/playground`), built on its own into `dist/playground/` and proxied in dev, as the docs are. The lint rules that fence it off today go, since the package boundary does their job | [9.2](#92-the-playground-package) |
-| 16 | The website package | Renamed `packages/arcade/` (`@mvtjs/arcade`), since without the playground it is the Arcade, its entries and its highscores Worker. A mechanical step of its own, before the playground work | [9.3](#93-the-website-becomes-the-arcade) |
+| 15 | Where it lives | A private package of its own, `packages/sites/playground/` (`@mvtjs/playground`), built on its own into `dist/playground/` and proxied in dev, as the docs are. The lint rules that fence it off today go, since the package boundary does their job | [9.2](#92-the-playground-package) |
+| 16 | The website package | Renamed `packages/sites/arcade/` (`@mvtjs/arcade`), since without the playground it is the Arcade, its entries and its highscores Worker. A mechanical step of its own, before the playground work | [9.3](#93-the-website-becomes-the-arcade) |
 | 17 | Later | Things only an MVT playground can do: swap the views while the model keeps running, a tool that ports a project into an Arcade entry, the architecture's lint rules as live diagnostics, embeds for the docs, and remixing an Arcade entry. Each is its own step after the rest has shipped | [10](#10-later-what-only-an-mvt-playground-can-do) |
+| 18 | What the spike found | The runtime, the sandbox and the editor work in Chromium, Firefox and WebKit. Loop guards cost 1-3% once counted loops are left out. Intellisense for a Pixi project downloads 1.7 MB gzipped, after the editor is in use. Desktop meets every target; a phone-ish profile misses two | [16](#16-spike-results) |
 
 ---
 
@@ -130,14 +141,14 @@ press Share, paste the link into a chat, and a friend's browser opens the
 project and runs it. They press Export, unzip, run `npm install` and
 `npm run dev`, and the same ball bounces on their own machine. Every
 `PlaygroundLink` in the docs still opens the example it names. In the repo,
-the playground is `packages/playground/`, and the site it sits in is
-`packages/arcade/`.
+the playground is `packages/sites/playground/`, and the site it sits in is
+`packages/sites/arcade/`.
 
 ---
 
 ## 2. What the Playground Is Today
 
-These are the facts the design starts from, as of `81900f5`.
+These are the facts the design starts from, as of `b32f67b`.
 
 | What | How it is done now | What it costs |
 | --- | --- | --- |
@@ -320,10 +331,12 @@ the new design is no worse.
 | --- | --- | --- |
 | Files | 40 | Enough for a small game. The Arcade's largest entries have more, and do not belong in a share link |
 | One file | 100 KB | A file larger than this is almost always data pasted in by mistake |
-| The whole project | 300 KB | Compressed, that is roughly 60-90 KB of URL, near the most a chat app or a browser's address bar handles well. Section 7.3 |
+| The whole project | 300 KB | Gzipped and written in URL-safe base64, that is about 90 KB of URL, near the most a chat app or a browser's address bar handles well. Section 7.3 |
 
-The numbers are first guesses. The spike measures the compressed size of
-real entries' code to set them.
+The spike measured the Arcade's entries' code (section 16.4): from 8 files
+and 16 KB (the 3D boids) to 68 files and 206 KB (the fruit machine), and
+238 KB for the largest, Neon Monsoon. So 300 KB takes in every entry but
+two of them by size, and 40 files all but four. Both limits stay.
 
 ---
 
@@ -365,10 +378,16 @@ modules ready to run. The steps, for each file:
    the file's path, to the project file it names (trying `.ts`, `.tsx`,
    and `/index.ts`), and replaced with a bare name for it, such as
    `project:models/ball-model.ts`. A `.css` import is replaced by a call
-   that adds the stylesheet. A library's specifier is left alone.
+   that adds the stylesheet. A library's specifier is left alone. Sucrase
+   has already dropped any import the file never uses, as TypeScript does,
+   so an unused import of an unknown package passes Run without harm. The
+   editor still underlines it, since the language service cannot find the
+   module (found in the spike, section 16.1).
 4. **Name the file** with a `//# sourceURL=` comment carrying its path, so
    the browser's devtools and stack traces show `models/ball-model.ts`, not
-   a blob URL.
+   a blob URL. Chromium and Firefox use it in `error.stack`; WebKit does
+   not, and names `blob:null/<id>`. So the sandbox also replaces each blob
+   URL in a stack with its file's path, which works in every browser.
 
 The sandbox then makes a blob URL for each module, writes an **import
 map** that maps each `project:` name to its blob URL and each library to
@@ -422,12 +441,13 @@ favourites and saved games (see the comment in
 opaque origin, the worst a project can do is the worst any web page can do
 inside its own tab.
 
-**What an opaque origin costs, for the spike to confirm:**
+**What an opaque origin costs, as the spike found (section 16.1):**
 
-| Concern | Expected answer |
+| Concern | Answer |
 | --- | --- |
-| Module scripts from an opaque origin are cross-origin requests, which need CORS | GitHub Pages sends `Access-Control-Allow-Origin: *` on every response. The playground's Vite dev server needs `server.cors` to allow the `null` origin |
-| The Audio80's worklet module is loaded with `addModule`, also cross-origin | As above. And the iframe needs `allow="autoplay"`, so the Run click in the parent counts as the gesture that starts audio |
+| Is the sandbox still a secure context, with `AudioWorklet`? | Yes, in all three browsers: its origin is `null`, and it is secure, as its parent is |
+| Module scripts from an opaque origin are cross-origin requests, which need CORS | GitHub Pages sends `Access-Control-Allow-Origin: *` on every response, pages and assets alike (read from the live site). Surge, the test deploy, sends none, and without it the libraries fail to load; a file named `CORS` holding `*` at the root of what Surge publishes turns it on (section 13). The playground's Vite dev server needs `server.cors` set to `{ origin: '*' }` |
+| The Audio80's worklet module is loaded with `addModule`, also cross-origin | It loads, and the chip's clock runs, in Chromium and Firefox, in development and in the build. Chromium starts the sound only with `allow="autoplay"` on the iframe, so the Run click in the parent counts; without it, the audio context stays suspended. Firefox starts it either way |
 | A project that uses `localStorage` | It throws. That is acceptable: the playground is for MVT code, and the console says why |
 | Pixi's devtools extension found `__PIXI_APP__` through the parent ([`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts)) | The bridge stops working. The extension can still be pointed at the iframe. Worth a line in the playground's help |
 | Keyboard focus | Unchanged: the host focuses the iframe on Run, as now |
@@ -438,16 +458,31 @@ A loop that never ends is the most common way to break a playground. With
 a same-origin iframe today it freezes the whole tab. An opaque-origin
 iframe may run in a process of its own in some browsers (Chrome is moving
 sandboxed iframes into their own processes), but not in all, so the
-playground cannot rely on it.
+playground cannot rely on it. In the spike, it shared the page's thread in
+all three browsers: a three-second loop in the sandbox froze the parent
+page for three seconds (section 16.1).
 
-The fix CodePen uses works here too. As a file is transpiled, each `for`,
-`while` and `do` loop gets one line at the top of its body: a counter, and
-every 4096 turns, a check of `performance.now()` against the time the
-current frame or `start` began. Past one second, it throws an error that
-names the file and the line of the loop. The cost is an increment and a
-compare per turn. The spike measures it on the falling-sand demo's hot
-loops, the worst case in the repo; if it shows, a project can turn it off
-with a comment at the top of a file.
+The fix CodePen uses works here too. As a file is transpiled, each loop
+gets a guard at the top of its body, on the same line, so line numbers
+hold. The guard counts down a budget kept in the module. When the budget
+runs out, every 4096 turns, it calls a check, which refills it and compares
+`performance.now()` with the time the current frame or `start` began. Past
+one second, the check throws an error that names the file and the line of
+the loop.
+
+**Counted loops go unguarded.** A loop of the form
+`for (let i = 0; i < n; i++)` ends by itself, as long as `n` is a name or
+a number and the body assigns neither `i` nor `n`. The test may also go on
+with `&&` (`i < n && isEmpty(c)`), and the step may be `--`, `+=` or `-=`.
+These are the hot loops of most games, and leaving them out is what makes
+the guards cheap. A bound such as `arr.length` stays guarded, since a body
+that pushes onto `arr` is a classic loop that never ends.
+
+**What it costs**, measured on the falling-sand demo's model, the hottest
+loops in the repo (section 16.2): guarding every loop made the model 15-19%
+slower; guarding all but the counted ones, 1-3%, within the noise. If even
+that shows in some project, a comment at the top of a file turns the guards
+off for it.
 
 The host keeps a watchdog too, now that it can fire: if the sandbox misses
 three heartbeats, the host drops the iframe and says so in the console.
@@ -465,7 +500,8 @@ opens the file there:
   exist, or a package not on the list.
 - **Errors at run time**, from the sandbox: `main.ts` itself, `start`,
   the ticked `update`, a view's update or refresh. The stack trace's
-  `sourceURL` gives the file, and Sucrase's kept lines give the line.
+  `sourceURL`, or the sandbox's own map from blob URLs to paths, gives the
+  file, and Sucrase's kept lines give the line.
 
 An error in the ticked `update` or a view's step stops the loop, as now,
 so the console does not fill with the same error sixty times a second.
@@ -516,11 +552,15 @@ The compiler settings are fixed: `strict`, `target` ES2022,
 the import source, `noEmit`. They are the repo's, so a model or view that
 type-checks here type-checks in the repo.
 
-The editor and the worker talk through a small message protocol, or through
-an existing CodeMirror binding such as `@valtown/codemirror-ts`. The spike
-tries the binding first; if it fits, it saves writing a few hundred lines
-of glue. Either way the worker loads after the editor is on screen, and the
-editor works as plain text until it is ready.
+The editor and the worker talk through a small message protocol of our
+own, with Comlink (a few KB) to make it calls. The spike tried
+`@valtown/codemirror-ts` first, and it does not fit (section 16.3): it
+asks TypeScript for completions with no preferences, so it never offers
+auto-imports, and it has no rename, go to definition, signature help, or
+way to delete a file. Its code for syncing files, errors and hover is a
+good model, a few dozen lines each, and the spike's completion source with
+auto-imports was about forty. The worker loads after the editor is on
+screen, and the editor works as plain text until it is ready.
 
 Whether TypeScript 7, the native rewrite, can run in a browser by the time
 this is built is unknown. The design does not depend on it: the language
@@ -533,17 +573,23 @@ the MVT libraries resolve to their sources (the `@mvtjs/source` condition),
 and `@mvtjs/audio` has no published build at all. So a script in the
 playground package generates the types:
 
-- For each `@mvtjs` package, it emits declarations from the package's
-  sources with the TypeScript compiler, as `build:packages` does.
+- For each `@mvtjs` package, it takes the declarations `build:packages`
+  emits. The spike used them for `@mvtjs/utils` and `@mvtjs/pixi` as they
+  are. `@mvtjs/audio` is not built by `build:packages`, so its
+  declarations are emitted from its sources with the TypeScript compiler.
 - For `pixi.js`, `three` (from `@types/three`) and `gsap`, it takes the
-  `.d.ts` files from `node_modules`.
+  `.d.ts` files from `node_modules`, with those of the packages their
+  types import (Pixi's import nine, `@webgpu/types` the largest). Only the
+  folder a package's `types` names: `pixi.js` also ships a bundled copy in
+  `dist/`, 1.6 MB, which TypeScript never reads.
 - It writes one JSON file per library, mapping each declaration file's
   virtual path to its text, with a hashed name.
 
 The worker fetches a library's file the first time a project imports the
-library, so a Pixi project never downloads three.js's types. Measured on
-`81900f5`: Pixi's declarations are 2.0 MB of text, and three.js's 1.9 MB.
-Both compress well; the spike measures them over the wire.
+library, so a Pixi project never downloads three.js's types. Measured in
+the spike: Pixi's bundle is 2.3 MB of text, 446 KB gzipped, and
+TypeScript's libs for ES2022 and the DOM are 2.4 MB, 316 KB gzipped
+(section 16.4).
 
 In the dev server, a Vite plugin serves the same files, generated on
 request and cached, so the types follow edits to the libraries.
@@ -552,7 +598,7 @@ request and cached, so the types follow edits to the libraries.
 
 | Feature | From | Notes |
 | --- | --- | --- |
-| Completions | Language service | With the doc comment of each item, and **auto-imports**: choosing `Graphics` adds it to the file's `pixi.js` import, and choosing `createBallModel` in another file adds `import { createBallModel } from './models'`. It imports through the barrel, as the repo's rule says, because the barrel is what TypeScript finds first; the spike checks that |
+| Completions | Language service | With the doc comment of each item, and **auto-imports**: choosing `Graphics` adds it to the file's `pixi.js` import, and choosing `createBallModel` in another file adds `import { createBallModel } from './models'`. It imports through the barrel, as the repo's rule says, because the barrel is what TypeScript finds first. The spike confirmed both: `../models`, and `Graphics` from `pixi.js` only |
 | Hover | Language service | The type and doc comment |
 | Signature help | Language service | As a call's arguments are typed |
 | Type errors | Language service | Squiggles in the editor, a count on each tab and file, and a Problems list beside the console |
@@ -600,7 +646,7 @@ own, and neither package touches the other's.
 ### 7.2 Examples are real files in the repo
 
 Each example is a folder of real files in the repo, in
-`packages/playground/examples/<id>/`, with a small `example.ts` beside the
+`packages/sites/playground/examples/<id>/`, with a small `example.ts` beside the
 project's files for its name and description. The playground imports them
 as text with Vite's `import.meta.glob` and the `?raw` suffix.
 
@@ -619,9 +665,17 @@ three.js scene, a sound on the Audio80, a `<List>` of many things.
 ### 7.3 Share links
 
 A share link holds the project in the URL's hash, as today: the files and
-the project's name as JSON, compressed with lz-string. Nothing is sent to a
-server, and the link works for as long as the site does. The hash format
-gains a version, `#p1=...`, so it can change again later.
+the project's name as JSON, compressed. Nothing is sent to a server, and
+the link works for as long as the site does. The hash format gains a
+version, `#p1=...`, so it can change again later.
+
+The new format compresses with gzip, through the browser's own
+`CompressionStream`, and writes the bytes in URL-safe base64. The spike
+measured both on the Arcade's entries (section 16.4): lz-string, today's
+format, makes a link 43-53% the size of the code; gzip makes one 20-24%,
+or about 29% once base64 adds its third. For the largest entry, Neon
+Monsoon, that is about 68 KB of link where lz-string makes 102 KB. Old `#code=` links stay lz-string, and are
+still read (section 7.4).
 
 A project over the size limit (section 4.4) cannot be shared by link, and
 the Share button says so, and offers Export instead.
@@ -726,13 +780,18 @@ This proposal is the time to do it:
   library manifest (5.3), the language service's worker and the examples'
   tests fit its own Vite and Vitest config better than the website's.
 
+It is a page that gets deployed, so it joins the `sites/` group, beside
+the docs and the Arcade.
+
 ### 9.2 The playground package
 
-`packages/playground/`, named `@mvtjs/playground`, private, in the shape of
-the other private packages:
+`packages/sites/playground/`, named `@mvtjs/playground`, private, in the
+shape of the other private packages. The workspace takes every folder in
+`packages/*/*`, so it needs no change to the root `package.json` to be
+found.
 
 ```
-packages/playground/
+packages/sites/playground/
 ├── index.html          The playground's page
 ├── sandbox.html        Only if the spike needs one; srcdoc may do (5.4)
 ├── src/
@@ -750,10 +809,11 @@ packages/playground/
 ```
 
 **Building and serving.** The playground has its own Vite build, with
-`base` set to the site's base plus `playground/`, writing to
-`dist/playground/`. That is how the docs work today: `build:docs` builds
-VitePress on its own into `dist/docs/`, after the website's build, since
-the website's build empties `dist/`. The root `build` and `deploy.yml` gain
+`base` set to the site's base plus `playground/`, writing to the repo's
+`dist/playground/` (`../../../dist/playground` from the package). That is
+how the docs work today: `build:docs` builds VitePress on its own into
+`dist/docs/`, after the website's build, since the website's build empties
+`dist/`. The root `build` and `deploy.yml` gain
 a `build:playground` step between the two. In dev, the playground's server
 runs on a fixed port, and the Arcade's dev server proxies `/playground` to
 it, as it proxies `/docs`, with the same "not running" page when it is not
@@ -775,18 +835,19 @@ the playground cannot drift onto a version the Arcade does not run.
 Once the playground has moved out, the website package is the Arcade: the
 home page, its entries, the entry host, the visitor's storage and the
 highscores Worker. Its name should say so. `packages/sites/website/` becomes
-`packages/arcade/`, and `@mvtjs/website` becomes `@mvtjs/arcade`.
+`packages/sites/arcade/`, and `@mvtjs/website` becomes `@mvtjs/arcade`.
 
-**What the rename touches** (measured on `81900f5`):
+**What the rename touches** (measured at `b32f67b`, leaving out this
+proposal):
 
 - 10 files name `@mvtjs/website`: the root `package.json` (its `dev`,
   `build` and `build:website` scripts), the benchmarks' `package.json` and
   two of their suites, `deploy-highscores.yml`, the Worker's `wrangler.toml`
   and README, `AGENTS.md`, Project Structure, and the package's own
   `package.json`.
-- 39 files outside `notes/archive/` cite the path `packages/sites/website`: docs,
-  notes, workflows and configs (`eslint.config.ts`, the Vitest and v-snap
-  configs).
+- 36 files outside `notes/archive/` cite the path `packages/sites/website`:
+  docs, notes, `deploy-highscores.yml`, and the root `eslint.config.ts`
+  and `vitest.config.ts`.
 - `build:website` becomes `build:arcade`, in the root scripts and both
   deploy workflows.
 - The highscores Worker's deployed name and URL do not change. Only the
@@ -796,7 +857,7 @@ highscores Worker. Its name should say so. `packages/sites/website/` becomes
   rename.
 
 Inside the package, the home page's own code is in `src/arcade/`, so its
-path becomes `packages/arcade/src/arcade/`. That reads twice, but it is
+path becomes `packages/sites/arcade/src/arcade/`. That reads twice, but it is
 accurate: the package is the Arcade site, and that folder is the Arcade's
 home page. Renaming the folder (to `src/home/`, say) would ripple into
 `ArcadeModel`, `ArcadeView` and their docs, for little gain. It is an open
@@ -805,7 +866,7 @@ question (section 14), with keeping it as the recommendation.
 The rename is a mechanical step of its own, in its own commit, with no
 change in behaviour, before any playground work (section 15, step 2). Done
 first, its diff is easy to review, and the playground's new package is
-created beside `packages/arcade/` from the start.
+created beside `packages/sites/arcade/` from the start.
 
 ---
 
@@ -836,7 +897,7 @@ of this step.
 
 A project that grows into a game worth listing should not need rewriting
 by hand. "Export as an Arcade entry" downloads a zip of one folder, ready to
-drop into `packages/arcade/src/entries/<id>/`:
+drop into `packages/sites/arcade/src/entries/<id>/`:
 
 - the project's `models/`, `views/` and `data/` as they are;
 - `main.ts` moved to `start/project.ts`, with its `playground` import
@@ -889,25 +950,37 @@ these ideas, and comes last.
 The playground is its own page, so none of this touches the Arcade's
 budget.
 
-| What | Size | When it loads |
+Measured in the spike's production build, gzipped as GitHub Pages serves
+it (section 16.4):
+
+| What | Gzipped | When it loads |
 | --- | --- | --- |
-| The page, CodeMirror, Sucrase, es-module-lexer | Estimate: about today's playground bundle, plus a few KB | At once |
-| TypeScript in the worker | `typescript.js` is 8.7 MB on disk, unminified (measured). Estimate: about 3 MB minified, under 1 MB compressed | After the editor is on screen |
-| `lib.es2022`, `lib.dom` | Estimate: about 1 MB of text, a fifth of that compressed | With TypeScript |
-| A library's types | Pixi 2.0 MB and three.js 1.9 MB of text (measured), each a few hundred KB compressed (estimate) | When a project first imports it |
-| The libraries' code, in the sandbox | As the Arcade loads them | On the first Run, then cached |
+| The editor: CodeMirror, Comlink, the page | 165 KB | At once |
+| The runtime: Sucrase, acorn (for the loop guards), es-module-lexer | 92 KB | At once |
+| TypeScript in the worker | 947 KB (3.4 MB minified) | After the editor is on screen |
+| TypeScript's libs for ES2022 and the DOM | 316 KB | With TypeScript |
+| Pixi's types | 446 KB | When a project first imports Pixi |
+| The `@mvtjs` libraries' types | 25 KB | With the first library's |
+| The libraries in the sandbox: Pixi, the `@mvtjs` libraries, the Audio80 | At most 286 KB, every chunk counted; a project loads only those it needs | On the first Run, then cached |
 
-**Targets**, for the spike to test on a mid-range laptop on a fast
-connection, and on a mid-range phone:
+So intellisense for a Pixi project downloads about 1.7 MB, after the editor
+is already in use. Brotli would make it 1.3 MB, but Pages serves gzip.
 
-- The editor shows and takes typing within 1 second of opening the page.
-- An example runs within 1.5 seconds of opening the page, with the
-  libraries not cached.
-- Completions work within 4 seconds of opening the page.
-- A second Run of a cached Pixi project shows its first frame within 300
-  ms.
-- A completion list appears within 100 ms of typing, in a project of 20
-  files.
+**Targets**, and what the spike measured from a cold cache (section 16.5).
+"Phone-ish" is Chromium with its main thread slowed four times and a 9
+Mbps, 60 ms network: a rough stand-in, since no real phone was tested.
+
+| Target | Desktop | Phone-ish |
+| --- | --- | --- |
+| The editor takes typing within 1 second of opening the page | 60 ms | 0.5 s |
+| An example runs within 1.5 seconds of opening the page, uncached | 0.7 s | **2.2 s, missed** |
+| Completions work within 4 seconds of opening the page | 0.6 s | 2.8 s measured; about 4.5 s estimated with the worker slowed too |
+| A second Run shows its first frame within 300 ms | 94 ms | 247 ms |
+| A completion list appears within 100 ms, in a project of 20 files | 26 ms | About 100 ms, estimated |
+
+The two phone-ish misses are for step 3 to work on: preloading the
+library chunks with the page, so Pixi downloads while the page starts,
+and loading the language service only after the first Run.
 
 ---
 
@@ -933,13 +1006,16 @@ commands as the other packages' are.
 - **The rename** (section 9.3): every file it lists, in its own commit.
 - [`AGENTS.md`](../../AGENTS.md),
   [Project Structure](../../packages/sites/docs/reference/project-structure.md)
-  and the root README: the package tree gains `playground/` and renames
+  and the root README: the `sites/` group gains `playground/` and renames
   `website/` to `arcade/`; the Arcade's `src/` tree loses `playground/`;
   the commands table gains `playground:dev` and `build:playground`.
 - [`eslint.config.ts`](../../eslint.config.ts): the two fence rules go,
   and so does the playground's `ignores` entry.
 - The root `package.json` and the deploy workflows: `build:arcade` and
   `build:playground`, and the order of the builds (section 9.2).
+- `test-deploy.yml`: write a file named `CORS`, holding `*`, into `dist/`
+  before `surge` publishes it, so the sandbox can load the libraries from
+  the test deploy (section 5.4).
 - The [Quickstart](../../packages/sites/docs/building-with-mvt/quickstart.md),
   [Models](../../packages/sites/docs/building-with-mvt/simulating-the-world/models.md)
   and [Views](../../packages/sites/docs/building-with-mvt/presenting-the-world/views.md)
@@ -964,7 +1040,7 @@ commands as the other packages' are.
    a local file (section 7.5), so it never meets the npm package of that
    name. Recommendation: these names.
 2. **The home page's folder** in the renamed package: keep
-   `packages/arcade/src/arcade/`, or rename it? Recommendation: keep it
+   `packages/sites/arcade/src/arcade/`, or rename it? Recommendation: keep it
    (section 9.3).
 3. **Pinning versions.** Should a share link record the library versions
    it was written against, and the playground keep old versions to run it?
@@ -994,7 +1070,7 @@ commands as the other packages' are.
 
 Each step ends with the site working and deployable.
 
-1. **Spike, and measure.** In a throwaway branch: an opaque-origin iframe
+1. ~~**Spike, and measure.** In a throwaway branch: an opaque-origin iframe
    that runs three files through Sucrase, an import map and blob URLs,
    with Pixi from a Vite build, in the dev server and on the test deploy
    (Surge) and GitHub Pages. Check CORS, the Audio80's worklet and
@@ -1003,14 +1079,18 @@ Each step ends with the site working and deployable.
    demo. Load TypeScript's language service in a worker beside CodeMirror,
    with Pixi's types, and measure every row of section 11 on a laptop and
    a phone. Try `@valtown/codemirror-ts`. Write the results into this
-   proposal, and adjust the design where they disagree with it.
+   proposal, and adjust the design where they disagree with it.~~ Done
+   2026-10-16, in Playwright's Chromium, Firefox and WebKit, with the
+   deploys' headers read from the live sites rather than deploying the
+   spike. Results and changes in section 16. Not done: a real phone, real
+   Safari, and the installed Chrome (section 16.6).
 2. **Rename the website to the Arcade** (section 9.3). Mechanical, in one
    commit, with no change in behaviour: the build, the tests, the test
    deploy and the highscores Worker's deploy all pass from the new path
    before it merges. The old playground stays where it is, in
-   `packages/arcade/src/playground/`.
+   `packages/sites/arcade/src/playground/`.
 3. **The new playground package, with its runtime.** Create
-   `packages/playground/` (section 9.2), with its own build into
+   `packages/sites/playground/` (section 9.2), with its own build into
    `dist/playground/` and the dev proxy. In it: the modules pipeline
    (5.2), the opaque-origin sandbox (5.4), loop guards (5.5), the library
    manifest (5.3), `main.ts` and the `playground` module (4.2), and the
@@ -1033,3 +1113,181 @@ Each step ends with the site working and deployable.
 8. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).
+
+---
+
+## 16. Spike Results
+
+Done on 2026-10-16, in a worktree at `b32f67b` on the branch
+`spike/052-playground`, in a throwaway folder,
+`packages/sites/playground-spike/`. It is not to be merged. It has two
+pages: a runtime page, which runs a sample project of seven files
+(`main.ts`, a model and a view with their barrels, and two files that
+import each other) in variants that each test one thing, and an editor
+page, with CodeMirror and the language service in a worker over a project
+of 20 files. Node scripts beside them measure the loop guards, the share
+links and the type bundles. Playwright drove the browsers: its Chromium
+headless shell 156, Firefox 157 and WebKit 27.2, on Windows 11.
+
+### 16.1 The runtime
+
+| Check | Chromium | Firefox | WebKit |
+| --- | --- | --- | --- |
+| The sandbox's origin is opaque (`null`), and it is still a secure context | Yes | Yes | Yes |
+| An import map added by script, with the project's files as blob URLs under `project:` names | Works | Works | Works |
+| Two files that import each other | Work | Work | Work |
+| Line numbers in errors match the editor's | Yes | Yes | Yes |
+| `sourceURL` names the file in `error.stack` | Yes | Yes | No: `blob:null/<id>`, which the sandbox maps to the path |
+| Libraries load across origins, with `Access-Control-Allow-Origin: *` | Yes | Yes | Yes |
+| Without the header, as Surge serves | They fail | They fail ("CORS header missing") | Not run |
+| The Audio80's worklet loads, and its clock runs | Yes | Yes | Not testable: Playwright's WebKit for Windows has no Web Audio |
+| The sound starts from the parent page's click | Only with `allow="autoplay"` | Either way | - |
+| An unguarded three-second loop freezes the parent page | Yes, 3,015 ms | Yes, 3,034 ms | Yes, 3,030 ms |
+| A guarded loop that never ends stops after a second, naming `main.ts:12` | Yes | Yes | Yes |
+| A missing file (`./view`) is reported before Run | Yes | Yes | Yes |
+| A used import of `lodash` is refused before Run | Yes | Yes | Yes |
+
+The same checks passed in the Vite dev server (with `server.cors` set) and
+in the production build, served with gzip and the header as Pages serves
+it. The library chunks came from one build with each library as an entry,
+`preserveEntrySignatures: 'strict'`, and a manifest that the page reads
+for the import map. `@mvtjs/pixi` and `pixi.js` were one Pixi.
+
+Sucrase drops an import the file never uses. So an unused import of an
+unknown package is not refused at Run; the language service reports it in
+the editor instead (section 5.2).
+
+### 16.2 Loop guards
+
+The falling-sand demo's model, bundled, with the guards the pipeline adds,
+run in Node 26 for 1,080 frames after a warm-up, in a separate process for
+each run, seven runs each, interleaved:
+
+| Guard | Loops guarded | Storage `objects` | Storage `arrays` |
+| --- | --- | --- | --- |
+| None | 0 | 160 µs a frame | 148 µs a frame |
+| A call to a global check on every turn | 76 | +18.9% | +18.9% |
+| A module-local budget, checked when it runs out | 76 | +14.9% | +16.9% |
+| The budget, with counted loops left out (section 5.5) | 42 | **+1.3%** | **+3.4%** |
+
+The first version of the counted-loop rule missed the model's hottest
+loops, `for (let n = 0; n < FLOW_SIGHT_CELLS && isEmpty(...); n++)`, whose
+test goes on with `&&`, and cost 12%. Allowing `&&` brought it to the last
+row. The final rule still guards 14 more loops than the first version did,
+because it keeps bounds such as `arr.length` guarded, at no cost that
+showed.
+
+### 16.3 The language service
+
+- **The binding.** `@valtown/codemirror-ts` 2.3.1 keeps the worker's files
+  in step, and gives errors, hover and plain completions. It calls
+  `getCompletionsAtPosition` with empty preferences, so it offers no
+  auto-imports, and it filters what it offers by sort order. It has no
+  rename, go to definition or signature help, and cannot delete a file.
+  The spike used it for syncing, errors and hover, and a completion source
+  of its own for the rest (section 6.2).
+- **Types.** The sample project type-checks with no errors, its Pixi JSX
+  included, against the type bundles: TypeScript's libs, Pixi's types, the
+  `@mvtjs` declarations from `build:packages`, and a hand-written
+  `playground` module.
+- **Auto-import.** Typing `createBallMo` in a new file under `views/`
+  offers `createBallModel` from `../models`, the barrel, and inserts
+  `import { createBallModel } from "../models";`. `Graphics` is offered
+  from `pixi.js` only.
+- **Speed, in Node.** The service is ready 0.43 s after reading the
+  bundles, and checks 20 files in 0.09 s. `model.` completes in 28 ms,
+  then under 1 ms once warm.
+
+### 16.4 Sizes
+
+From the spike's production build, and the type bundles, measured with
+Node's zlib:
+
+| What | Minified or raw | Gzipped | Brotli |
+| --- | --- | --- | --- |
+| The editor page: CodeMirror, the binding, Comlink | 497 KB | 165 KB | 139 KB |
+| The runtime page: Sucrase, acorn, es-module-lexer, the host | 342 KB | 92 KB | 76 KB |
+| The language service's worker, TypeScript 5.9 | 3,398 KB | 947 KB | 718 KB |
+| TypeScript's libs: `es2022`, `dom`, `dom.iterable` and the 56 they reference | 2,375 KB | 316 KB | 223 KB |
+| Pixi's types, with the nine packages they import (769 files) | 2,263 KB | 446 KB | 333 KB |
+| `@mvtjs/utils` and `@mvtjs/pixi` types | 117 KB | 25 KB | 21 KB |
+| Every chunk the sandbox may load: Pixi, the `@mvtjs` libraries, the Audio80 | 976 KB | 286 KB | - |
+
+acorn is in the runtime page only to find loops for the guards. Sucrase
+parses each file already, but exposes no syntax tree; replacing acorn is a
+size saving for step 3 to weigh.
+
+**Share links** for each of the Arcade's entries, counting `.ts`, `.tsx`
+and `.css` files without tests:
+
+| Entry | Files | Code | lz-string link | Gzipped | Gzipped, base64 |
+| --- | --- | --- | --- | --- | --- |
+| boids-3d | 8 | 16 KB | 10 KB | 5 KB | 6 KB |
+| reordering-lists | 10 | 25 KB | 13 KB | 6 KB | 8 KB |
+| boids | 12 | 51 KB | 26 KB | 12 KB | 16 KB |
+| astrovoid | 25 | 70 KB | 32 KB | 15 KB | 19 KB |
+| crumb-chase | 25 | 74 KB | 36 KB | 18 KB | 23 KB |
+| galaxy-raiders | 27 | 77 KB | 33 KB | 15 KB | 20 KB |
+| kwazy-cactii | 31 | 105 KB | 49 KB | 22 KB | 30 KB |
+| fractalscope | 28 | 110 KB | 55 KB | 28 KB | 37 KB |
+| fuel-run | 41 | 126 KB | 53 KB | 23 KB | 31 KB |
+| burrow-bust | 29 | 127 KB | 54 KB | 24 KB | 32 KB |
+| dojo-duel | 26 | 129 KB | 58 KB | 26 KB | 35 KB |
+| falling-sand | 25 | 139 KB | 66 KB | 30 KB | 40 KB |
+| fruit-machine | 68 | 206 KB | 98 KB | 50 KB | 67 KB |
+| fenceline | 40 | 227 KB | 100 KB | 49 KB | 66 KB |
+| neon-monsoon | 49 | 238 KB | 102 KB | 51 KB | 68 KB |
+
+### 16.5 Timings
+
+From a cold cache, the production build served with gzip, in Chromium's
+headless shell, three rounds each; the middle value of three is given,
+with the range where it varied.
+
+| Moment | Desktop | Phone-ish |
+| --- | --- | --- |
+| The editor takes typing | 60 ms (53-81) | 514 ms (508-549) |
+| The worker answers (TypeScript downloaded and run) | 103 ms after it is made | 1,043 ms after |
+| The language service is ready, its first check done | 630 ms (561-780) | 2,781 ms |
+| The example's first frame, from opening the page | 715 ms (696-771) | 2,180 ms |
+| A second Run's first frame | 94 ms (86-115) | 247 ms (236-263) |
+| `model.` completes, first time, then warm | 22 ms, 1 ms | 22 ms, 1 ms |
+| Completions with auto-imports, 20 files | 26 ms | 25 ms |
+
+"Phone-ish" slows Chromium's main thread four times, and the network to 9
+Mbps with 60 ms round trips. Chrome's CPU throttling does not reach a
+dedicated worker, so the worker's rows in that column are a desktop's CPU
+on a phone's network. On desktop, the worker's own work, running
+TypeScript, creating the service and the first check, takes about 0.5 s;
+four times that puts a phone's service at about 4.5 s, and its completions
+at about 100 ms.
+
+### 16.6 Not checked
+
+- **A real phone, and real Safari.** The spike's pages can be served to a
+  phone on the network; sound there needs the HTTPS dev server. Safari
+  matters most for two rows of 16.1: whether its Web Audio starts in the
+  sandbox, and its `sourceURL` handling, which WebKit's already showed.
+- **The installed Chrome.** Whether its site isolation puts the sandbox in
+  a process of its own, as the headless shell did not. Not run, because
+  each new profile of the installed Chrome costs a failed Windows logon.
+  The answer would not change the design: Safari and Android need the
+  guards either way.
+- **Deploying the spike.** Deploying is outward-facing, so the spike read
+  the live deploys' headers instead: Pages sends the CORS header on pages
+  and assets; Surge sends none.
+- **three.js, HTML JSX and the Audio80's types.** Only Pixi projects were
+  run and type-checked. `@mvtjs/audio`'s declarations need emitting from
+  its sources (section 6.3).
+
+### 16.7 What changed in the design
+
+| Section | Before the spike | After |
+| --- | --- | --- |
+| 5.5 | A guard on every loop | A budget guard, with counted loops left out: 1-3% in place of 15-19% |
+| 7.3 | lz-string links | Gzip and URL-safe base64: links about 30% of the code in place of about 45% |
+| 6.2 | Try `@valtown/codemirror-ts` | Our own glue to the worker, with the binding as a model |
+| 5.2, 5.6 | `sourceURL` names files in stack traces | Also map blob URLs to paths, for WebKit |
+| 5.4, 13 | GitHub Pages sends the CORS header | It does; Surge needs a `CORS` file in the test deploy |
+| 4.4 | Limits are first guesses | Measured against the Arcade's entries, and kept |
+| 11 | Estimated sizes and targets | Measured; two phone-ish targets missed, with fixes for step 3 to try |
