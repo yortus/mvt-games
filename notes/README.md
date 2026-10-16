@@ -140,7 +140,7 @@ of old links closes an item in 017.
 | --- | --- | --- | --- |
 | 017 | [Miscellaneous Loose Ends](tasks/backlog/017-misc-loose-ends.md) | medium | 2026-09-26 |
 | 038 | [HTML JSX Runtime: Findings from the Arcade](tasks/backlog/038-html-jsx-findings-from-the-arcade.md) | medium | 2026-10-05 |
-| 039 | [Link Previews for Each Entry](tasks/backlog/039-entry-link-previews.md) | low | 2026-10-05 |
+| 039 | [Link Previews for Each Entry](tasks/backlog/039-entry-link-previews.md) | low | 2026-10-16 |
 | 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
 | 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
