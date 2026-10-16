@@ -1,18 +1,18 @@
 # AGENTS.md - AI Agent Orientation
 
 > Terse, structured reference for AI coding agents. For expanded orientation,
-> see [packages/docs/ai-agents/](packages/docs/ai-agents/index.md). For task-specific
+> see [packages/sites/docs/ai-agents/](packages/sites/docs/ai-agents/index.md). For task-specific
 > instructions, load the relevant [skills file](#skills).
 
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/website/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/website/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/sites/website/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/website/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
-Full reference: [Architecture Overview](packages/docs/architecture/index.md) -
-[Architecture Rules](packages/docs/architecture/rules.md)
+Full reference: [Architecture Overview](packages/sites/docs/architecture/index.md) -
+[Architecture Rules](packages/sites/docs/architecture/rules.md)
 
 ## Project Structure
 
@@ -22,22 +22,26 @@ everything else, including `@mvtjs/audio` for now.
 
 ```
 packages/
-├── utils/               @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
-├── pixi/                @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
-├── three/               @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
-├── html/                @mvtjs/html: the tick API for DOM elements, and its JSX runtime
-├── audio/               @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
-├── v-snap/              v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
-├── eslint-plugin/       @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
-├── benchmarks/          @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
-├── checks/              @mvtjs/checks (private): tests that the packages still fit together as decided
-├── docs/                @mvtjs/docs (private): the documentation (VitePress)
-└── website/             @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+├── libraries/           What people build with
+│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
+│   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+│   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── html/            @mvtjs/html: the tick API for DOM elements, and its JSX runtime
+│   └── audio/           @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+├── tools/               What people use while developing
+│   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
+│   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
+├── sites/               What gets deployed
+│   ├── website/         @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
+└── tests/               What tests the other packages, and never ships
+    ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
+    └── checks/          @mvtjs/checks (private): tests that the packages still fit together as decided
 notes/                   Proposals and tasks
 ```
 
 ```
-packages/website/src/
+packages/sites/website/src/
 ├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
@@ -56,27 +60,27 @@ packages/website/src/
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or
-`htmlTest`, from `v-snap` (`packages/v-snap/`).
+`htmlTest`, from `v-snap` (`packages/tools/v-snap/`).
 A pose returns the view arranged into one state: fixed bindings (for a
 top-level view, a model brought into a state through its actions), and
 `advanceTime` (tick API) for time. Reference images are
 beside the tests, named for the test file's stem and the image, such as
 `hud-view.at-the-start.png`, so a test needs no `describe` block that only
 names its view. See
-[Visual Tests](packages/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
+[Visual Tests](packages/sites/docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
 
 Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
 `exports` condition), so nothing needs building to run the site or the tests.
 
-Full reference: [Project Structure](packages/docs/reference/project-structure.md)
+Full reference: [Project Structure](packages/sites/docs/reference/project-structure.md)
 
 ## The Arcade and Its Entries
 
 - **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, description, tags, screenWidth, screenHeight, thumbnail, load }`. Metadata only, so listing every entry loads no entry's code; `load()` imports `start/load.ts`
 - **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games, and `scoring` for a game with a highscore table
-- **CATALOGUE** - every entry, in `packages/website/src/entries/catalogue.ts`
+- **CATALOGUE** - every entry, in `packages/sites/website/src/entries/catalogue.ts`
 - **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
-- To add a game or demo: create `packages/website/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/website/src/entries/README.md#originality). See [Adding an Entry](packages/website/src/entries/README.md)
+- To add a game or demo: create `packages/sites/website/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/sites/website/src/entries/README.md#originality). See [Adding an Entry](packages/sites/website/src/entries/README.md)
 
 ## Key Conventions
 
@@ -85,19 +89,19 @@ Full reference: [Project Structure](packages/docs/reference/project-structure.md
 - **Tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
 - **No `null`, no `this`** - our own code and APIs never introduce `null` (`undefined` instead). Be explicit where a third-party `null` arrives (`node.parent === null`, a local `T | null`), and convert it (`?? undefined`) before it reaches our own APIs; a declaration that must accept one takes an `eslint-disable` comment saying why. Closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
-- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](packages/docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
+- **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](packages/sites/docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
-- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/audio/docs/](packages/audio/docs/using-the-audio80.md)
+- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio/docs/](packages/libraries/audio/docs/using-the-audio80.md)
 - **`_` prefix** for intentionally unused parameters
-- **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/docs/reference/style-guide.md#writing)
+- **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
-Full reference: [Style Guide](packages/docs/reference/style-guide.md)
+Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 
 ## Commands
 
@@ -118,10 +122,10 @@ Full reference: [Style Guide](packages/docs/reference/style-guide.md)
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
-| `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/checks/](packages/checks/README.md)) |
+| `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
-| `npm run bench`        | Performance benchmarks ([packages/benchmarks/](packages/benchmarks/README.md)) |
-| `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/audio/](packages/audio/README.md)) |
+| `npm run bench`        | Performance benchmarks ([packages/tests/benchmarks/](packages/tests/benchmarks/README.md)) |
+| `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/libraries/audio/](packages/libraries/audio/README.md)) |
 
 ## Notes: Proposals and Tasks
 
@@ -135,15 +139,15 @@ done. Proposals and tasks share one number sequence.
 ## Critical Rules (Do Not Violate)
 
 0. **No em-dashes** - use hyphens instead (lint: `@mvtjs/no-em-dash`, which auto-fixes).
-1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files, and `@mvtjs/no-module-state` rejects module-level `let`, which every model the file makes would share. [Time Management](packages/docs/building-with-mvt/simulating-the-world/time-management.md)
-2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](packages/docs/building-with-mvt/adding-visual-polish/presentation-state.md)
-3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](packages/docs/reference/project-structure.md)
-4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/docs/reference/style-guide.md)
-5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/docs/building-with-mvt/performance/hot-paths.md)
-6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/docs/building-with-mvt/simulating-the-world/models.md)
-7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/website/src/entries/README.md#originality)
+1. **Models must not use wall-clock time.** No `setTimeout`, `setInterval`, `requestAnimationFrame`, or auto-playing GSAP tweens. All state advances through `update(deltaMs)` only. Lint (`@mvtjs/no-wall-clock`) checks model files, and `@mvtjs/no-module-state` rejects module-level `let`, which every model the file makes would share. [Time Management](packages/sites/docs/building-with-mvt/simulating-the-world/time-management.md)
+2. **Views hold no domain state.** No domain logic, no autonomous animations, no internal domain state. Read state from bindings (leaf views) or model properties (top-level application views), write to the presentation output. Views may hold cosmetic presentation state for transitions the model doesn't track (e.g. a death-flash timer, a smoothed score counter). Such views gain an `update(deltaMs)` step (in this repo, an update method set with `setUpdate`; never forwarded by hand from parent views). `update` advances presentation state only; `refresh` writes all presentation output, including adding and removing display objects. Presentation state starts valid at construction: a view's first `refresh` may come before its first `update`. When the presentation logic is complex enough to warrant separate testing, extract it into a view model - the view creates and owns it internally. [Presentation State](packages/sites/docs/building-with-mvt/adding-visual-polish/presentation-state.md)
+3. **Never import past a barrel file.** All cross-directory imports go through `index.ts`. Within the same directory, use direct relative paths (`./foo`). Never import your own or an ancestor's barrel (`.`, `..`): from a subdirectory, import the ancestor's file directly (`../element-mixin`). [Project Structure](packages/sites/docs/reference/project-structure.md)
+4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/sites/docs/reference/style-guide.md)
+5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/sites/docs/building-with-mvt/performance/hot-paths.md)
+6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/sites/docs/building-with-mvt/simulating-the-world/models.md)
+7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/sites/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/sites/website/src/entries/README.md#originality)
 
-Full rules: [Architecture Rules](packages/docs/architecture/rules.md)
+Full rules: [Architecture Rules](packages/sites/docs/architecture/rules.md)
 
 ## File Organisation Within a Module
 
@@ -170,20 +174,20 @@ Load the relevant skills file for task-specific instructions:
 
 | Task                       | Skills file                                              |
 | -------------------------- | -------------------------------------------------------- |
-| Writing a new model        | [packages/docs/ai-agents/skill-mvt-model.md](packages/docs/ai-agents/skill-mvt-model.md) |
-| Writing a new view         | [packages/docs/ai-agents/skill-mvt-view.md](packages/docs/ai-agents/skill-mvt-view.md)   |
-| Following code conventions | [packages/docs/ai-agents/skill-code-style.md](packages/docs/ai-agents/skill-code-style.md) |
-| Reviewing code             | [packages/docs/ai-agents/skill-code-review.md](packages/docs/ai-agents/skill-code-review.md) |
-| Updating documentation     | [packages/docs/ai-agents/skill-documentation.md](packages/docs/ai-agents/skill-documentation.md) |
+| Writing a new model        | [packages/sites/docs/ai-agents/skill-mvt-model.md](packages/sites/docs/ai-agents/skill-mvt-model.md) |
+| Writing a new view         | [packages/sites/docs/ai-agents/skill-mvt-view.md](packages/sites/docs/ai-agents/skill-mvt-view.md)   |
+| Following code conventions | [packages/sites/docs/ai-agents/skill-code-style.md](packages/sites/docs/ai-agents/skill-code-style.md) |
+| Reviewing code             | [packages/sites/docs/ai-agents/skill-code-review.md](packages/sites/docs/ai-agents/skill-code-review.md) |
+| Updating documentation     | [packages/sites/docs/ai-agents/skill-documentation.md](packages/sites/docs/ai-agents/skill-documentation.md) |
 
 ## Documentation
 
 | Section          | Content                                   |
 | ---------------- | ----------------------------------------- |
-| [Architecture](packages/docs/architecture/index.md) | Transferable MVT specification |
-| [Building with MVT](packages/docs/building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
-| [Reference](packages/docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
-| [AI Agents](packages/docs/ai-agents/index.md) | Expanded agent orientation   |
+| [Architecture](packages/sites/docs/architecture/index.md) | Transferable MVT specification |
+| [Building with MVT](packages/sites/docs/building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
+| [Reference](packages/sites/docs/reference/style-guide.md) | Style guide, glossary, quick-reference rules |
+| [AI Agents](packages/sites/docs/ai-agents/index.md) | Expanded agent orientation   |
 
 ## Tech Stack
 

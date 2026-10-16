@@ -12,15 +12,15 @@ import mvt from '#eslint-plugin';
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
-    'packages/*/src/**/*.{ts,tsx}',
+    'packages/*/*/src/**/*.{ts,tsx}',
 ];
 
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
-// (packages/docs/reference/project-structure.md).
+// (packages/sites/docs/reference/project-structure.md).
 const OWN_BARREL_IMPORT = {
     regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
-    message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/docs/reference/project-structure.md).',
+    message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/sites/docs/reference/project-structure.md).',
 };
 
 // The tick API a renderer package re-exports from @mvtjs/utils. Code that uses
@@ -45,8 +45,8 @@ const DEV_FILES = [
     '**/*.test.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
-    'packages/benchmarks/**',
-    'packages/docs/**',
+    'packages/tests/benchmarks/**',
+    'packages/sites/docs/**',
     '**/*.config.{ts,js}',
 ];
 
@@ -95,7 +95,7 @@ export default tseslint.config(
     },
     {
         // Each package's scripts, fixtures and root config files too.
-        files: ['packages/*/src/**/*.{ts,tsx}', 'packages/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*.config.ts'],
+        files: ['packages/*/*/src/**/*.{ts,tsx}', 'packages/*/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*/*.config.ts'],
         plugins: {
             '@mvtjs': mvt,
         },
@@ -110,7 +110,7 @@ export default tseslint.config(
         settings: {
             'import/resolver': {
                 typescript: {
-                    project: ['./packages/*/tsconfig.json'],
+                    project: ['./packages/*/*/tsconfig.json'],
                     noWarnOnMultipleProjects: true,
                 },
             },
@@ -120,19 +120,19 @@ export default tseslint.config(
         // A package's config files are loaded by Node itself, which imports a
         // file, not a folder. So they import a folder's barrel by its index
         // file, such as `./scripts/index.ts`.
-        files: ['packages/*/*.config.ts'],
+        files: ['packages/*/*/*.config.ts'],
         rules: {
             '@mvtjs/no-deep-imports': ['error', { allowIndexFile: true }],
         },
     },
     {
-        files: ['packages/website/src/**/*.{ts,tsx}'],
+        files: ['packages/sites/website/src/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
         },
     },
     {
-        files: ['packages/benchmarks/**/*.ts'],
+        files: ['packages/tests/benchmarks/**/*.ts'],
         rules: {
             'no-restricted-imports': ['error', { paths: [TICK_API_FROM_RENDERER] }],
         },
@@ -140,7 +140,7 @@ export default tseslint.config(
     {
         // The playground and the rest of the site share no code, so either
         // could move to a package of its own without untangling them.
-        files: ['packages/website/src/**/*.{ts,tsx}'],
+        files: ['packages/sites/website/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -148,14 +148,14 @@ export default tseslint.config(
             'import/no-restricted-paths': ['error', {
                 zones: [
                     {
-                        target: './packages/website/src/playground',
-                        from: './packages/website/src',
+                        target: './packages/sites/website/src/playground',
+                        from: './packages/sites/website/src',
                         except: ['./playground'],
                         message: 'The playground shares no code with the rest of the site.',
                     },
                     {
-                        target: ['./packages/website/src/!(playground)/**', './packages/website/src/*.{ts,tsx}'],
-                        from: './packages/website/src/playground',
+                        target: ['./packages/sites/website/src/!(playground)/**', './packages/sites/website/src/*.{ts,tsx}'],
+                        from: './packages/sites/website/src/playground',
                         message: 'The rest of the site shares no code with the playground.',
                     },
                 ],
@@ -166,7 +166,7 @@ export default tseslint.config(
         files: VIEW_CONVENTION_FILES,
         // The playground builds DOM and CodeMirror views, and its presets follow
         // the sandbox's own `createView(model)` contract.
-        ignores: ['packages/website/src/playground/**'],
+        ignores: ['packages/sites/website/src/playground/**'],
         rules: {
             'no-restricted-syntax': [
                 'error',
@@ -200,13 +200,13 @@ export default tseslint.config(
             }],
         },
     },
-    // MVT's own rules (packages/eslint-plugin), for models: no wall-clock time
+    // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time
     {
-        files: ['packages/website/src/**/models/**/*.{ts,tsx}', 'packages/website/src/**/*-model.ts'],
+        files: ['packages/sites/website/src/**/models/**/*.{ts,tsx}', 'packages/sites/website/src/**/*-model.ts'],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
     },
-    // This repo's own style rules (packages/eslint-plugin): no em-dashes, no
+    // This repo's own style rules (packages/tools/eslint-plugin): no em-dashes, no
     // `null`, no `this`
     {
         files: ['**/*.{ts,tsx,js,mjs,cjs}'],
@@ -217,23 +217,23 @@ export default tseslint.config(
         // can reach their instance or plugin context only through `this`; an
         // audio worklet's processor must be a class, and gets its port that way
         files: [
-            'packages/pixi/src/container-mixin.ts',
-            'packages/three/src/object3d-mixin.ts',
-            'packages/website/scripts/vite-plugin-spritesheet.ts',
-            'packages/audio/src/web/chip-processor.ts',
+            'packages/libraries/pixi/src/container-mixin.ts',
+            'packages/libraries/three/src/object3d-mixin.ts',
+            'packages/sites/website/scripts/vite-plugin-spritesheet.ts',
+            'packages/libraries/audio/src/web/chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
-            'packages/v-snap/src/browser/canvas-text.ts',
-            'packages/v-snap/src/pixi/pixi-views.ts',
+            'packages/tools/v-snap/src/browser/canvas-text.ts',
+            'packages/tools/v-snap/src/pixi/pixi-views.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
         // .vitest/ holds Vitest's output, such as an HTML report's scripts, and
-        // packages/v-snap/lib/ its build. .wrangler/ holds Wrangler's local
+        // packages/tools/v-snap/lib/ its build. .wrangler/ holds Wrangler's local
         // state, and worker-configuration.d.ts the Worker types it generates.
         ignores: [
-            '**/dist/**', 'node_modules/**', 'packages/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/v-snap/lib/**',
+            '**/dist/**', 'node_modules/**', 'packages/sites/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/tools/v-snap/lib/**',
             '**/.wrangler/**', '**/worker-configuration.d.ts',
         ],
     },

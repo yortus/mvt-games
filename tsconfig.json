@@ -3,16 +3,16 @@
     // re-checks only what changed since the last run
     "files": [],
     "references": [
-        { "path": "./packages/utils" },
-        { "path": "./packages/pixi" },
-        { "path": "./packages/three" },
-        { "path": "./packages/html" },
-        { "path": "./packages/audio" },
-        { "path": "./packages/v-snap" },
-        { "path": "./packages/eslint-plugin" },
-        { "path": "./packages/website" },
-        { "path": "./packages/benchmarks" },
-        { "path": "./packages/website/highscores-worker" },
-        { "path": "./packages/checks" }
+        { "path": "./packages/libraries/utils" },
+        { "path": "./packages/libraries/pixi" },
+        { "path": "./packages/libraries/three" },
+        { "path": "./packages/libraries/html" },
+        { "path": "./packages/libraries/audio" },
+        { "path": "./packages/tools/v-snap" },
+        { "path": "./packages/tools/eslint-plugin" },
+        { "path": "./packages/sites/website" },
+        { "path": "./packages/tests/benchmarks" },
+        { "path": "./packages/sites/website/highscores-worker" },
+        { "path": "./packages/tests/checks" }
     ]
 }

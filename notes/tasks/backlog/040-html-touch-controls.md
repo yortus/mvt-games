@@ -11,7 +11,7 @@
 On a touch screen, the entry host draws on-screen controls (a d-pad or a
 floating joystick, and up to two buttons) for the entry it runs, from the
 session's `inputConfig`. They are a Pixi view, `TouchInputView` in
-`packages/website/src/shared/`, on the host's Pixi stage beside the entry
+`packages/sites/website/src/shared/`, on the host's Pixi stage beside the entry
 (`runner/pixi-stage.ts`). So only a `pixi` entry can have them: an `element`
 entry brings its own renderers, and the host has no Pixi stage to put them
 on. No `element` entry takes controls today; the first one that does will

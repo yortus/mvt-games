@@ -5,7 +5,7 @@ name: Playwright releases
 # Each minor version of Playwright brings a new build of Chromium, which can
 # draw some images differently. So v-snap supports one minor version at a
 # time, and follows each new one with a release of its own (Playwright
-# Versions, in packages/v-snap/docs/getting-started.md).
+# Versions, in packages/tools/v-snap/docs/getting-started.md).
 #
 # Weekly, and on demand, the workflow compares Playwright's latest version
 # with the one v-snap supports. When a newer minor version is out, and no
@@ -46,7 +46,7 @@ jobs:
             - name: Compare Playwright's latest version with v-snap's
               id: versions
               run: |
-                  supported=$(node -p "require('./packages/v-snap/package.json').peerDependencies.playwright.replace(/^[~^]/, '').split('.').slice(0, 2).join('.')")
+                  supported=$(node -p "require('./packages/tools/v-snap/package.json').peerDependencies.playwright.replace(/^[~^]/, '').split('.').slice(0, 2).join('.')")
                   latest=$(npm view playwright version)
                   minor=$(echo "$latest" | cut -d. -f1,2)
                   newest=$(printf '%s\n%s\n' "$supported" "$minor" | sort -V | tail -n 1)
@@ -80,8 +80,8 @@ jobs:
 
                   To move v-snap to Playwright $MINOR:
 
-                  1. Set \`playwright\` to \`~$LATEST\` in the root \`package.json\`'s \`devDependencies\`, and in \`packages/v-snap/package.json\`'s \`peerDependencies\` and \`devDependencies\`. Then run \`npm install\`.
-                  2. Run \`npx playwright install chromium-headless-shell\`, then \`npm run test:visual:environment -w v-snap\`. It rewrites \`packages/v-snap/visual-environment.json\` and the calibration images. Look at each changed image.
+                  1. Set \`playwright\` to \`~$LATEST\` in the root \`package.json\`'s \`devDependencies\`, and in \`packages/tools/v-snap/package.json\`'s \`peerDependencies\` and \`devDependencies\`. Then run \`npm install\`.
+                  2. Run \`npx playwright install chromium-headless-shell\`, then \`npm run test:visual:environment -w v-snap\`. It rewrites \`packages/tools/v-snap/visual-environment.json\` and the calibration images. Look at each changed image.
                   3. Run \`npm test\` and \`npm run test:vsnap\`. If a site's or v-snap's reference image changed, look at it, and update it with \`-u\`.
                   4. Update the Playwright version in v-snap's README badge and Requirements table, and in Getting Started.
                   5. Add a changeset for \`v-snap\` (minor), and push. The visual tests run on Windows, macOS and Linux whenever Playwright's version changes, which checks that the three systems still draw alike.
@@ -107,7 +107,7 @@ jobs:
                           fs.writeFileSync(file, JSON.stringify(pkg, undefined, 4) + '\n');
                       };
                       set('package.json', ['devDependencies']);
-                      set('packages/v-snap/package.json', ['peerDependencies', 'devDependencies']);
+                      set('packages/tools/v-snap/package.json', ['peerDependencies', 'devDependencies']);
                   " "$LATEST"
                   npm install
                   npm ls playwright
@@ -151,10 +151,10 @@ jobs:
                           echo "Rewriting v-snap's environment failed. Its last lines:"
                           echo; echo '```'; tail -n 30 environment.log | strip; echo '```'
                       else
-                          old=$(git show HEAD:packages/v-snap/visual-environment.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).browser")
-                          new=$(node -p "require('./packages/v-snap/visual-environment.json').browser")
-                          calibration=$(git status --porcelain -- packages/v-snap/src/browser/calibration-images | awk '{ print $2 }')
-                          own=$(git status --porcelain -- packages/v-snap/src/browser/visual-tests packages/v-snap/fixtures | awk '{ print $2 }')
+                          old=$(git show HEAD:packages/tools/v-snap/visual-environment.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).browser")
+                          new=$(node -p "require('./packages/tools/v-snap/visual-environment.json').browser")
+                          calibration=$(git status --porcelain -- packages/tools/v-snap/src/browser/calibration-images | awk '{ print $2 }')
+                          own=$(git status --porcelain -- packages/tools/v-snap/src/browser/visual-tests packages/tools/v-snap/fixtures | awk '{ print $2 }')
                           echo "**The browser:** \`$old\` before, \`$new\` now."
                           echo
                           echo "**The calibration images that changed:**"
@@ -176,8 +176,8 @@ jobs:
               with:
                   name: playwright-${{ steps.versions.outputs.latest }}-trial
                   path: |
-                      packages/v-snap/visual-environment.json
-                      packages/v-snap/src/browser/calibration-images/
-                      packages/v-snap/src/browser/visual-tests/*.png
+                      packages/tools/v-snap/visual-environment.json
+                      packages/tools/v-snap/src/browser/calibration-images/
+                      packages/tools/v-snap/src/browser/visual-tests/*.png
                       .vitest/vsnap/
                   if-no-files-found: ignore

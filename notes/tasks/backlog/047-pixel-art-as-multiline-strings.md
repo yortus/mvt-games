@@ -22,11 +22,11 @@ pixel art can follow the same rules.
 
 The scripts with pixel art in arrays of strings:
 
-- `packages/website/scripts/generate-burrow-bust-textures.ts`
-- `packages/website/scripts/generate-crumb-chase-textures.ts`
-- `packages/website/scripts/generate-fuel-run-textures.ts`
-- `packages/website/scripts/generate-galaxy-raiders-textures.ts`
-- `packages/website/scripts/generate-neon-monsoon-textures.ts`
+- `packages/sites/website/scripts/generate-burrow-bust-textures.ts`
+- `packages/sites/website/scripts/generate-crumb-chase-textures.ts`
+- `packages/sites/website/scripts/generate-fuel-run-textures.ts`
+- `packages/sites/website/scripts/generate-galaxy-raiders-textures.ts`
+- `packages/sites/website/scripts/generate-neon-monsoon-textures.ts`
 
 Search the rest of the repo for others before starting.
 

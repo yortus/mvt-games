@@ -30,31 +30,31 @@ on how to keep one copy. It relies on:
 
 ### What exists today
 
-- [copies.ts](../../../packages/utils/src/copies.ts): `PROTOCOL`,
+- [copies.ts](../../../packages/libraries/utils/src/copies.ts): `PROTOCOL`,
   `shareAcrossCopies(host, name, create)` and `registerCopy(name, version)`,
   all three exported from `@mvtjs/utils`.
-- [shared-state.ts](../../../packages/utils/src/tick-api/shared-state.ts):
+- [shared-state.ts](../../../packages/libraries/utils/src/tick-api/shared-state.ts):
   `methodAssignments` and the `tickCounter` object, kept in one object on
   `globalThis` so every copy of utils counts into it; registers utils' copy.
   It is the module utils' `sideEffects` keeps.
-- [tick-api.ts](../../../packages/utils/src/tick-api/tick-api.ts): the
+- [tick-api.ts](../../../packages/libraries/utils/src/tick-api/tick-api.ts): the
   dev-only `_mvtProtocol` field, set by `setUpdate` and `setRefresh` and
   checked on every node visit (`visit`, `warnOfForeignNode`,
   `hasWarnedOfForeignNode`), so a walk can warn of a node another protocol
   set up.
 - Each renderer's mixin
-  ([pixi](../../../packages/pixi/src/container-mixin.ts),
-  [three](../../../packages/three/src/object3d-mixin.ts),
-  [html](../../../packages/html/src/element-mixin.ts)) wraps its registration
+  ([pixi](../../../packages/libraries/pixi/src/container-mixin.ts),
+  [three](../../../packages/libraries/three/src/object3d-mixin.ts),
+  [html](../../../packages/libraries/html/src/element-mixin.ts)) wraps its registration
   in `shareAcrossCopies` on the prototype it extends (three and html through
   an `ObjectCore` / `ElementCore` record), and calls `registerCopy` with the
   version it imports from its `package.json`.
-- [skip-descendants.ts](../../../packages/utils/src/tick-api/skip-descendants.ts):
+- [skip-descendants.ts](../../../packages/libraries/utils/src/tick-api/skip-descendants.ts):
   `SKIP_DESCENDANTS` is `Symbol.for(...)` so every copy agrees.
-- Tests: [copies.test.ts](../../../packages/utils/src/copies.test.ts), a
+- Tests: [copies.test.ts](../../../packages/libraries/utils/src/copies.test.ts), a
   `second-copy.test.ts` in each renderer, and the "nodes set up by an
   incompatible copy" block in
-  [tick-api.test.ts](../../../packages/utils/src/tick-api/tick-api.test.ts).
+  [tick-api.test.ts](../../../packages/libraries/utils/src/tick-api/tick-api.test.ts).
 
 ### The plan
 
@@ -149,7 +149,7 @@ nothing is broken today.
    `globalThis`, or a registration on a prototype, outlives a re-run of the
    module that set it, and the guard cannot tell a re-run from a second
    copy. Concretely:
-   - **In this repo:** [html-jsx.test.tsx](../../../packages/html/src/jsx/html-jsx.test.tsx)
+   - **In this repo:** [html-jsx.test.tsx](../../../packages/libraries/html/src/jsx/html-jsx.test.tsx)
      calls `vi.resetModules()` and re-imports `./jsx-runtime`, which
      re-evaluates `element-mixin.ts` and, since the libraries resolve to
      source and are inlined, utils' modules too. Today the shared core makes
@@ -261,7 +261,7 @@ part of it, the rest are options to weigh.
      since a page has one `Element.prototype`. Worth it only if someone
      needs it; recorded so the design is not worked out twice.
 4. **Production-only duplicates.**
-   - **(adopt)** A check in `packages/checks/` that the built website holds
+   - **(adopt)** A check in `packages/tests/checks/` that the built website holds
      the guard exactly once (count its marker string across the emitted
      JavaScript). It guards this repo's own site, the nearest thing to a
      real consumer, and joins `npm run build` beside the home-page budget.

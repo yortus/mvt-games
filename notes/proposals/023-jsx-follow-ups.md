@@ -22,7 +22,7 @@ that shipped. The session listed 13 steps; 021 took 1, 5-7, 9 and 10, 022
 covers 13, and this note records 2-4, 8, 11 and 12) -
 [022](022-renderer-agnostic-jsx.md) (a renderer-agnostic JSX base; its
 section 2 appraises the workshop's `common-jsx` as spike 022a) -
-[src/mvt-utils/jsx/design-notes.md](../../packages/utils/src/jsx/design-notes.md) (settled
+[src/mvt-utils/jsx/design-notes.md](../../packages/libraries/utils/src/jsx/design-notes.md) (settled
 decisions on context and cleanup scopes, and when to revisit them) -
 [004](../archive/004-list-proposal.md) (`<List>` and `<Switch>`).
 
@@ -181,7 +181,7 @@ instance, and several HTML and three.js details. Send both lists together.
 - The workshop's keyed `<For>`, which moves views on reorder to keep their
   state, is not wanted: this repo keeps per-item presentation state in a
   view model keyed by item id instead (004, and
-  [Presenting Collections](../../packages/docs/building-with-mvt/presenting-the-world/collections.md)).
+  [Presenting Collections](../../packages/sites/docs/building-with-mvt/presenting-the-world/collections.md)).
 - The workshop's per-node update methods, combined at construction, are not
   wanted either: the pixi-mvt `onUpdate` pass does the same job and also
   follows later changes to the tree.

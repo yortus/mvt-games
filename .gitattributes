@@ -1,3 +1,3 @@
-# Written by packages/utils/scripts/generate-refresh-copies.ts. GitHub collapses
+# Written by packages/libraries/utils/scripts/generate-refresh-copies.ts. GitHub collapses
 # it in diffs and leaves it out of the language statistics.
-packages/utils/src/jsx/refresh-copies.ts linguist-generated=true
+packages/libraries/utils/src/jsx/refresh-copies.ts linguist-generated=true

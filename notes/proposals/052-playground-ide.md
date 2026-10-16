@@ -20,25 +20,25 @@
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
-([`index.ts`](../../packages/website/src/playground/index.ts),
-[`editor-panel.ts`](../../packages/website/src/playground/editor-panel.ts),
-[`presets.ts`](../../packages/website/src/playground/presets.ts),
-[`url-state.ts`](../../packages/website/src/playground/url-state.ts),
-[`compile.ts`](../../packages/website/src/playground/sandbox/compile.ts),
-[`sandbox-host.ts`](../../packages/website/src/playground/sandbox/sandbox-host.ts),
-[`sandbox-runner.ts`](../../packages/website/src/playground/sandbox/sandbox-runner.ts)),
-its pages ([`playground/index.html`](../../packages/website/playground/index.html),
-[`playground/sandbox.html`](../../packages/website/playground/sandbox.html)),
+([`index.ts`](../../packages/sites/website/src/playground/index.ts),
+[`editor-panel.ts`](../../packages/sites/website/src/playground/editor-panel.ts),
+[`presets.ts`](../../packages/sites/website/src/playground/presets.ts),
+[`url-state.ts`](../../packages/sites/website/src/playground/url-state.ts),
+[`compile.ts`](../../packages/sites/website/src/playground/sandbox/compile.ts),
+[`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts),
+[`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts)),
+its pages ([`playground/index.html`](../../packages/sites/website/playground/index.html),
+[`playground/sandbox.html`](../../packages/sites/website/playground/sandbox.html)),
 the entry types
-([`entry-starter.ts`](../../packages/website/src/entry-types/entry-starter.ts)),
+([`entry-starter.ts`](../../packages/sites/website/src/entry-types/entry-starter.ts)),
 an entry's start code
-([`crumb-chase/start/load.ts`](../../packages/website/src/entries/crumb-chase/start/load.ts)),
+([`crumb-chase/start/load.ts`](../../packages/sites/website/src/entries/crumb-chase/start/load.ts)),
 the docs' links into it
-([`PlaygroundLink.vue`](../../packages/docs/.vitepress/components/PlaygroundLink.vue)),
+([`PlaygroundLink.vue`](../../packages/sites/docs/.vitepress/components/PlaygroundLink.vue)),
 the lint rules that fence it off
 ([`eslint.config.ts`](../../eslint.config.ts)), the website's build
-([`vite.config.ts`](../../packages/website/vite.config.ts),
-[`package.json`](../../packages/website/package.json)), the root scripts
+([`vite.config.ts`](../../packages/sites/website/vite.config.ts),
+[`package.json`](../../packages/sites/website/package.json)), the root scripts
 ([`package.json`](../../package.json)) and the deploys
 ([`deploy.yml`](../../.github/workflows/deploy.yml),
 [`deploy-highscores.yml`](../../.github/workflows/deploy-highscores.yml)).
@@ -54,9 +54,9 @@ estimate until the spike (section 15, step 1).
 [017](../tasks/backlog/017-misc-loose-ends.md) (old playground links that assign `view.onRefresh`) -
 [047](../tasks/backlog/047-pixel-art-as-multiline-strings.md) (pixel art in code, which suits a playground with no image files) -
 [050](../tasks/backlog/050-visitor-analytics.md) (which pages report visits) -
-[Project Structure](../../packages/docs/reference/project-structure.md) -
-[Quickstart](../../packages/docs/building-with-mvt/quickstart.md) (links into the playground) -
-[Adding an Entry](../../packages/website/src/entries/README.md)
+[Project Structure](../../packages/sites/docs/reference/project-structure.md) -
+[Quickstart](../../packages/sites/docs/building-with-mvt/quickstart.md) (links into the playground) -
+[Adding an Entry](../../packages/sites/website/src/entries/README.md)
 
 ---
 
@@ -141,19 +141,19 @@ These are the facts the design starts from, as of `81900f5`.
 
 | What | How it is done now | What it costs |
 | --- | --- | --- |
-| Files | Two CodeMirror editors, Model and View, in tabs ([`editor-panel.ts`](../../packages/website/src/playground/editor-panel.ts)) | No way to split code into files, so presets put a model's helpers, constants and types in one buffer |
-| Imports | Removed by a regular expression before transpiling ([`compile.ts`](../../packages/website/src/playground/sandbox/compile.ts), `transpile`) | Code written in the playground cannot import anything, and code copied from the repo has its imports silently dropped |
-| What code can use | A fixed list of globals: eight Pixi classes, the tick API, `watch`, `setBackground`, and the JSX runtime's `h`, `Fragment`, `List`, `Switch` and `Match` ([`sandbox-runner.ts`](../../packages/website/src/playground/sandbox/sandbox-runner.ts), `createUserGlobals`). A banner above the editor lists them | Nothing outside the list is reachable: no `@mvtjs/utils` tweens, no `SlotList`, no three.js, no HTML JSX, no sound. `watch` is a separate copy written for the sandbox |
+| Files | Two CodeMirror editors, Model and View, in tabs ([`editor-panel.ts`](../../packages/sites/website/src/playground/editor-panel.ts)) | No way to split code into files, so presets put a model's helpers, constants and types in one buffer |
+| Imports | Removed by a regular expression before transpiling ([`compile.ts`](../../packages/sites/website/src/playground/sandbox/compile.ts), `transpile`) | Code written in the playground cannot import anything, and code copied from the repo has its imports silently dropped |
+| What code can use | A fixed list of globals: eight Pixi classes, the tick API, `watch`, `setBackground`, and the JSX runtime's `h`, `Fragment`, `List`, `Switch` and `Match` ([`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts), `createUserGlobals`). A banner above the editor lists them | Nothing outside the list is reachable: no `@mvtjs/utils` tweens, no `SlotList`, no three.js, no HTML JSX, no sound. `watch` is a separate copy written for the sandbox |
 | How it starts | The model's code must declare `createModel`, and the view's `createView(model)`, found by name after `new Function` evaluates each buffer | The names differ from the repo's conventions (`createXxxModel`, `XxxView`). One model and one view, always |
 | JSX | Sucrase's classic transform, calling a global `h`, adapted to the runtime's `jsx` | Differs from the repo, which uses the automatic runtime and a pragma |
 | Types | None. CodeMirror's JavaScript mode, with TypeScript syntax highlighting | No completions, no hover, no type errors |
 | Renderer | Pixi only | The DOM and three.js, which the libraries support, cannot be tried |
-| Sandbox | An iframe with `allow-scripts` and `allow-same-origin` ([`sandbox-host.ts`](../../packages/website/src/playground/sandbox/sandbox-host.ts)) | It shares the site's origin, so code in it can read and write the site's storage: settings, favourites, saved games. That is why a shared link loads its code but does not run it ([`index.ts`](../../packages/website/src/playground/index.ts)) |
+| Sandbox | An iframe with `allow-scripts` and `allow-same-origin` ([`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts)) | It shares the site's origin, so code in it can read and write the site's storage: settings, favourites, saved games. That is why a shared link loads its code but does not run it ([`index.ts`](../../packages/sites/website/src/playground/index.ts)) |
 | Runaway loops | The host pings the sandbox every 3 seconds, and replaces the iframe if no reply comes | A same-origin iframe runs on its parent's thread. A loop that never ends freezes the whole page, the host's timer included, so the watchdog never fires |
-| Presets | Eight examples, as code in template strings, 992 lines ([`presets.ts`](../../packages/website/src/playground/presets.ts)). Each calls `setBackground` once, with a fixed colour | Not type-checked, and exempt from lint ([`eslint.config.ts`](../../eslint.config.ts)). They drifted once already: links saved before task 028 assign `view.onRefresh` and never animate (017) |
+| Presets | Eight examples, as code in template strings, 992 lines ([`presets.ts`](../../packages/sites/website/src/playground/presets.ts)). Each calls `setBackground` once, with a fixed colour | Not type-checked, and exempt from lint ([`eslint.config.ts`](../../eslint.config.ts)). They drifted once already: links saved before task 028 assign `view.onRefresh` and never animate (017) |
 | Saving | One project in `localStorage`, "Custom Project" | One slot. Choosing an example and coming back is the only way to keep two things |
-| Sharing | lz-string compressed JSON of both buffers in the hash (`#code=`), or `#preset=<id>` ([`url-state.ts`](../../packages/website/src/playground/url-state.ts)) | Works well, and is kept (section 7.3) |
-| Controls | Run, Stop, Pause, Step, Reset, a speed slider, and the canvas size ([`controls-panel.ts`](../../packages/website/src/playground/controls-panel.ts)) | Good, and kept. The canvas size moves into the project (section 4.2) |
+| Sharing | lz-string compressed JSON of both buffers in the hash (`#code=`), or `#preset=<id>` ([`url-state.ts`](../../packages/sites/website/src/playground/url-state.ts)) | Works well, and is kept (section 7.3) |
+| Controls | Run, Stop, Pause, Step, Reset, a speed slider, and the canvas size ([`controls-panel.ts`](../../packages/sites/website/src/playground/controls-panel.ts)) | Good, and kept. The canvas size moves into the project (section 4.2) |
 | Where it lives | In the website package, `src/playground/`, fenced from the rest of the site by two lint rules ([`eslint.config.ts`](../../eslint.config.ts)). Its page loads the site's `src/shared/nav.css` | CodeMirror's five packages, Sucrase and lz-string are in the website's `package.json`, and nothing else in the website uses them (measured). The fence is a convention, kept by lint, with one crossing: the nav's CSS |
 | Its own code | Imperative DOM building, about 3,800 lines with the CSS, and no tests but `compile.test.ts` | Hard to extend, and unlike the rest of the site |
 
@@ -418,7 +418,7 @@ That is what lets a shared link run as it opens, as CodePen's do. Today the
 playground loads a shared project and waits for the visitor to press Run,
 because the code could otherwise read or change the visitor's settings,
 favourites and saved games (see the comment in
-[`index.ts`](../../packages/website/src/playground/index.ts)). With an
+[`index.ts`](../../packages/sites/website/src/playground/index.ts)). With an
 opaque origin, the worst a project can do is the worst any web page can do
 inside its own tab.
 
@@ -429,7 +429,7 @@ inside its own tab.
 | Module scripts from an opaque origin are cross-origin requests, which need CORS | GitHub Pages sends `Access-Control-Allow-Origin: *` on every response. The playground's Vite dev server needs `server.cors` to allow the `null` origin |
 | The Audio80's worklet module is loaded with `addModule`, also cross-origin | As above. And the iframe needs `allow="autoplay"`, so the Run click in the parent counts as the gesture that starts audio |
 | A project that uses `localStorage` | It throws. That is acceptable: the playground is for MVT code, and the console says why |
-| Pixi's devtools extension found `__PIXI_APP__` through the parent ([`sandbox-host.ts`](../../packages/website/src/playground/sandbox/sandbox-host.ts)) | The bridge stops working. The extension can still be pointed at the iframe. Worth a line in the playground's help |
+| Pixi's devtools extension found `__PIXI_APP__` through the parent ([`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts)) | The bridge stops working. The extension can still be pointed at the iframe. Worth a line in the playground's help |
 | Keyboard focus | Unchanged: the host focuses the iframe on Run, as now |
 
 ### 5.5 Runaway loops
@@ -478,7 +478,7 @@ project's root (the Pixi stage, the HTML root or the three.js scene), then
 a render, for Pixi and three.js. Pause leaves the root out of
 `updateView`. Step advances one frame of 16.67 ms. The speed slider scales
 `deltaMs`. This is today's loop in
-[`sandbox-runner.ts`](../../packages/website/src/playground/sandbox/sandbox-runner.ts),
+[`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts),
 with the model's call replaced by the project's, and a root for each
 renderer.
 
@@ -705,7 +705,7 @@ in [`eslint.config.ts`](../../eslint.config.ts) goes.
 
 The playground lives in the website package, behind two lint rules that
 keep it and the rest of the site from importing each other.
-[Project Structure](../../packages/docs/reference/project-structure.md)
+[Project Structure](../../packages/sites/docs/reference/project-structure.md)
 already says the fence is there so it "could become a package of its own".
 This proposal is the time to do it:
 
@@ -767,14 +767,14 @@ question of its own, not this proposal's.
 
 **Library versions.** The playground declares `pixi.js`, `three` and `gsap`
 at the same ranges as the Arcade, and npm installs one copy for both. A
-check in `packages/checks/` fails if the two packages' ranges differ, so
+check in `packages/tests/checks/` fails if the two packages' ranges differ, so
 the playground cannot drift onto a version the Arcade does not run.
 
 ### 9.3 The website becomes the Arcade
 
 Once the playground has moved out, the website package is the Arcade: the
 home page, its entries, the entry host, the visitor's storage and the
-highscores Worker. Its name should say so. `packages/website/` becomes
+highscores Worker. Its name should say so. `packages/sites/website/` becomes
 `packages/arcade/`, and `@mvtjs/website` becomes `@mvtjs/arcade`.
 
 **What the rename touches** (measured on `81900f5`):
@@ -784,7 +784,7 @@ highscores Worker. Its name should say so. `packages/website/` becomes
   two of their suites, `deploy-highscores.yml`, the Worker's `wrangler.toml`
   and README, `AGENTS.md`, Project Structure, and the package's own
   `package.json`.
-- 39 files outside `notes/archive/` cite the path `packages/website`: docs,
+- 39 files outside `notes/archive/` cite the path `packages/sites/website`: docs,
   notes, workflows and configs (`eslint.config.ts`, the Vitest and v-snap
   configs).
 - `build:website` becomes `build:arcade`, in the root scripts and both
@@ -924,7 +924,7 @@ commands as the other packages' are.
 | The playground's views | Visual tests with `htmlTest` from v-snap, in `visual-tests/` beside them, as the Arcade's are |
 | The examples | Type-checked and linted with the repo. A unit test starts each example headless on a bare root and advances it one second, failing on any error |
 | The sandbox, end to end | A browser test (Vitest's browser mode, as v-snap uses) that opens the sandbox, runs each example, and checks that a frame was drawn and nothing was logged as an error. It covers the import map, blob URLs and the opaque origin, which Node cannot |
-| Library versions | A check in `packages/checks/` that the playground and the Arcade declare the same ranges (section 9.2) |
+| Library versions | A check in `packages/tests/checks/` that the playground and the Arcade declare the same ranges (section 9.2) |
 
 ---
 
@@ -932,7 +932,7 @@ commands as the other packages' are.
 
 - **The rename** (section 9.3): every file it lists, in its own commit.
 - [`AGENTS.md`](../../AGENTS.md),
-  [Project Structure](../../packages/docs/reference/project-structure.md)
+  [Project Structure](../../packages/sites/docs/reference/project-structure.md)
   and the root README: the package tree gains `playground/` and renames
   `website/` to `arcade/`; the Arcade's `src/` tree loses `playground/`;
   the commands table gains `playground:dev` and `build:playground`.
@@ -940,13 +940,13 @@ commands as the other packages' are.
   and so does the playground's `ignores` entry.
 - The root `package.json` and the deploy workflows: `build:arcade` and
   `build:playground`, and the order of the builds (section 9.2).
-- The [Quickstart](../../packages/docs/building-with-mvt/quickstart.md),
-  [Models](../../packages/docs/building-with-mvt/simulating-the-world/models.md)
-  and [Views](../../packages/docs/building-with-mvt/presenting-the-world/views.md)
+- The [Quickstart](../../packages/sites/docs/building-with-mvt/quickstart.md),
+  [Models](../../packages/sites/docs/building-with-mvt/simulating-the-world/models.md)
+  and [Views](../../packages/sites/docs/building-with-mvt/presenting-the-world/views.md)
   pages: their playground links work unchanged (section 7.4). Their text
   around the links, where it describes `createModel` and `createView`,
   changes to match `main.ts`.
-- [Style Guide](../../packages/docs/reference/style-guide.md): its line
+- [Style Guide](../../packages/sites/docs/reference/style-guide.md): its line
   that exempts the playground goes.
 - A short help page inside the playground: what a project is, what
   `main.ts` returns, what can be imported, the shortcuts, and how to

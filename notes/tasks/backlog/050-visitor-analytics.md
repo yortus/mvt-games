@@ -30,8 +30,8 @@ referrers.
 
 Points to settle while adding it:
 
-- **Which pages.** The Arcade (`packages/website/index.html`), the playground
-  (`packages/website/playground/index.html`) and the docs (VitePress, built
+- **Which pages.** The Arcade (`packages/sites/website/index.html`), the playground
+  (`packages/sites/website/playground/index.html`) and the docs (VitePress, built
   into the same Pages site by `deploy.yml`) each need the tag, or a decision
   to leave one out.
 - **Production only.** The test deploy to Surge (`test-deploy.yml`) and the

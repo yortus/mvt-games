@@ -40,7 +40,7 @@ Settled questions that should not be reopened without new information are in
   - Crumb Chase, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was
     the model, not the views. The mouse and the four cats each started a GSAP
     tween, and a `set`, for every one-tile step. Their moves are now a
-    `TileMove` (`packages/website/src/games/crumb-chase/models/tile-move.ts`, with tests): a
+    `TileMove` (`packages/sites/website/src/games/crumb-chase/models/tile-move.ts`, with tests): a
     straight slide advanced by `update(deltaMs)` that allocates nothing, with
     the same semantics (linear, starting from wherever the actor is, and no
     time carried from one move to the next). The model now allocates nothing
@@ -59,7 +59,7 @@ Settled questions that should not be reopened without new information are in
   The lint rule's auto-fix converts them all; then enable the rule set to
   `'property'`. Type-check afterwards, since the stricter parameter checks may
   surface real errors. They are most likely around `SlotList<T>` and
-  `OrderedSlotList<T>` in `packages/utils/src/slot-list/`, which take `T` as a
+  `OrderedSlotList<T>` in `packages/libraries/utils/src/slot-list/`, which take `T` as a
   parameter: converted, a `SlotList<Asteroid>` is no longer accepted as a
   `SlotList<GameObject>`. Prefer fixing code that relies on this; failing
   that, add a narrow, documented exception for generic collection interfaces
@@ -67,7 +67,7 @@ Settled questions that should not be reopened without new information are in
 - ~~**Views that read a query binding's getter only once.**~~ Done
   2026-09-27, by 018's migrations. Each declared a query binding as a
   function but read it only at construction, which rule
-  [V-reactive](../../../packages/docs/architecture/rules.md#view-rules) forbids. Found
+  [V-reactive](../../../packages/sites/docs/architecture/rules.md#view-rules) forbids. Found
   by two sweeps (the second also caught reads inside constructor arguments):
   the overlay view's size; six Fuel Run views' sizes; Kwazy Cactii's
   `matchSequence` in five views; and, borderline, the asteroid view's radius
@@ -98,7 +98,7 @@ Settled questions that should not be reopened without new information are in
 
 - **An interrupted `npm run bench -- all --save` empties every results
   file.** Stopping one partway through (2026-09-27, during its first suite)
-  rewrote all nine `packages/benchmarks/results/*.md` and `.json` files with their
+  rewrote all nine `packages/tests/benchmarks/results/*.md` and `.json` files with their
   headers but no tables, removing about 4,000 lines; they were restored from
   git. A save should write only the suites that finished, or write nothing
   until the run is complete. Until then, save one suite at a time
@@ -128,7 +128,7 @@ Settled questions that should not be reopened without new information are in
   to the style guide.
 
 - **Vite 8's config-loader warning.** Every Vite run warns that
-  `packages/website/vite.config.ts` uses two things its coming native config loader will
+  `packages/sites/website/vite.config.ts` uses two things its coming native config loader will
   not support: `__dirname` (use `import.meta.dirname`, as `vitest.config.ts`
   should too) and the extensionless import of
   `./scripts/vite-plugin-spritesheet`. The extension is the awkward one: the
@@ -148,7 +148,7 @@ Settled questions that should not be reopened without new information are in
   (`<List as="ol">`). It affects every renderer's `<List>`, so it is a design
   question for `@mvtjs/utils/jsx`, not a fix in the HTML target alone. Found
   building the fruit machine's wins list (033), which still has the wrapper:
-  `packages/website/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
+  `packages/sites/website/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
 
 - **A `<List>` item view's update step sees last frame's item.** An item
   view reads its item through a cache that the slot's presence check fills
@@ -184,7 +184,7 @@ Settled questions that should not be reopened without new information are in
   item views have no update steps. The alternative is to keep last-refresh
   semantics and document the three hazards in `ListBindings.children`;
   cheaper, but a trap. See `gateUpdatesOnceEmpty` in
-  `packages/utils/src/jsx/list.ts`, and 034 section 11.4.
+  `packages/libraries/utils/src/jsx/list.ts`, and 034 section 11.4.
 - **Pixi's pooled `BatchableGraphics` keep `roundPixels`.** Found by 042's
   spike (2026-10-07), in Pixi 8.21: `BatchableGraphics.reset()`
   (`scene/graphics/shared/BatchableGraphics.mjs`) clears its renderable and
@@ -197,7 +197,7 @@ Settled questions that should not be reopened without new information are in
   to Pixi with a minimal repro (draw a rounded `Graphics`, destroy it, then
   draw a large smooth `roundRect` and compare with a fresh page), and
   decide whether the site patches `reset` meanwhile as 042's harness does
-  (`packages/website/visual-spike/setup.ts` on the `visual-tests` branch).
+  (`packages/sites/website/visual-spike/setup.ts` on the `visual-tests` branch).
 - **Hand-written time-stepping helpers that `advanceTime` now covers.** The
   tick API gained `advanceTime(ms, ...items)` (042, step 10). But
   `building-with-mvt/simulating-the-world/time-management.md` and
@@ -205,7 +205,7 @@ Settled questions that should not be reopened without new information are in
   `stepMs(model, totalMs)` helper, and three test files keep their own
   copy: `entries/boids/models/flock-model.test.ts`,
   `entries/kwazy-cactii/models/board-model.test.ts` and
-  `packages/utils/src/sequence.test.ts`. Their helpers run synchronously,
+  `packages/libraries/utils/src/sequence.test.ts`. Their helpers run synchronously,
   and `advanceTime` is async, so moving to it means awaiting each call.
   Teach `advanceTime` in both docs, and switch the tests.
 
@@ -259,7 +259,7 @@ Settled questions that should not be reopened without new information are in
   drop? From [010](../../archive/010-performance-docs-proposal.md) section 9,
   step 7.
 - **Benchmarks in browsers, with rendering included.** Everything so far is V8
-  under Node with nothing rendered. See `packages/benchmarks/README.md`, "What is
+  under Node with nothing rendered. See `packages/tests/benchmarks/README.md`, "What is
   excluded", and 010 section 8, items 1-2.
 - **CI benchmarking.** Timing noise on shared runners makes it hard; 010
   recommended treating the harness as an on-demand tool. 010 section 8, item
@@ -285,7 +285,7 @@ Settled questions that should not be reopened without new information are in
     over each item and a plain `Container`), but goes when the `jsx` approach
     runs the hand-written view code. A tidier standalone copy of the JSX setup
     allocates nothing. Reproduce with
-    [`packages/benchmarks/repro/fractional-boxing.ts`](../../../packages/benchmarks/repro/fractional-boxing.ts)
+    [`packages/tests/benchmarks/repro/fractional-boxing.ts`](../../../packages/tests/benchmarks/repro/fractional-boxing.ts)
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.
@@ -321,7 +321,7 @@ Settled questions that should not be reopened without new information are in
   `width` and `height` values every frame (16 bytes per element), changed or
   not, because their last value lived in a closure variable that started as
   a symbol. They now use a `Float64Array` (see
-  `FRACTIONAL_WATCHED_ATTRIBUTES` in `packages/pixi/src/jsx/jsx-runtime.ts`), guarded by the `memory` suite's
+  `FRACTIONAL_WATCHED_ATTRIBUTES` in `packages/libraries/pixi/src/jsx/jsx-runtime.ts`), guarded by the `memory` suite's
   `allocation-watched` table.
 
 - **Object literals with getters are slow in V8.** Found by
@@ -367,7 +367,7 @@ Settled questions that should not be reopened without new information are in
   renderer's scene passes add `_mvtUpdateMethod`, `_mvtRefreshMethod`,
   `_mvtSubtreeHasUpdate`, `_mvtUpdateWalk`, `_mvtSubtreeHasRefresh` and
   `_mvtRefreshWalk` to its node prototype (`installFieldDefaults` in
-  `packages/utils/src/scene-passes.ts`), and a
+  `packages/libraries/utils/src/scene-passes.ts`), and a
   node gains them as own properties lazily, in whatever order it is used.
   Reads of them see every node class (`Container`, `Sprite`, `Graphics`,
   `Text`, and so on) and every order of those writes, so in a mixed scene
@@ -430,7 +430,7 @@ falling-sand demo. Each is a new variant, measured with
   methods. [001](../../archive/001-mvt-plugin-rework-plan.md) section 13, item 1.
 - ~~**Fold the `<List>` patterns guide into `docs/`.**~~ Done 2026-09-27,
   with 018's Building with MVT rewrite: it is now
-  [Presenting Collections](../../../packages/docs/building-with-mvt/presenting-the-world/collections.md).
+  [Presenting Collections](../../../packages/sites/docs/building-with-mvt/presenting-the-world/collections.md).
 - **`<List>` follow-ups**: a `range()` helper, merging the per-slot presence
   check into the item view's method, and a typed `matchOn<T>()`. Each names its
   trigger. 004 section 11, items 1, 3 and 4. Item 2, a lint rule against

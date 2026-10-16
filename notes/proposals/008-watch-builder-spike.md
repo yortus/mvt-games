@@ -1,9 +1,9 @@
 # 008 - `Watch()` fluent builder (spike)
 
 > Status: **Spike / design investigation.** A working prototype lives in
-> [`src/mvt-utils/watch-builder.spike.ts`](../../packages/utils/src/watch-builder.spike.ts)
+> [`src/mvt-utils/watch-builder.spike.ts`](../../packages/libraries/utils/src/watch-builder.spike.ts)
 > with tests in
-> [`src/mvt-utils/watch-builder.spike.test.ts`](../../packages/utils/src/watch-builder.spike.test.ts)
+> [`src/mvt-utils/watch-builder.spike.test.ts`](../../packages/libraries/utils/src/watch-builder.spike.test.ts)
 > (tsc + eslint + vitest green). It is not exported from the `#mvt-utils` barrel,
 > and nothing else in `src/` imports it. Living under `src/` means
 > `npm run build` type-checks it and `npm test` runs its tests.
@@ -433,8 +433,8 @@ without a new reason.
 - Migration notes: `watch({...})` becomes `Watch().when({...}).detect()`;
   `ReactionBuilder` `runFirstTime: false` (its default) becomes
   `changes({ from: PREVIOUS, ... })`.
-- Update references to `watch()` in `AGENTS.md`, the `packages/docs/ai-agents/`
-  skills, the glossary and `packages/docs/public/llms.txt`.
+- Update references to `watch()` in `AGENTS.md`, the `packages/sites/docs/ai-agents/`
+  skills, the glossary and `packages/sites/docs/public/llms.txt`.
 
 ### Promotion work
 
@@ -451,7 +451,7 @@ without a new reason.
   toolbar and Fuel Run's HUD) should give way to the mapping terminal, or
   stay as the simpler tool for the single-value case.
 - Port `derive` from the `derive-util` branch: its docs
-  (`packages/docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
+  (`packages/sites/docs/building-with-mvt/reacting-to-changes/deriving-values.md`) and demo
   (`src/demos/derive/`) onto `.derive(...)`.
 
 ### Housekeeping

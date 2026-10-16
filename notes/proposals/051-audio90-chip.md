@@ -23,21 +23,21 @@
 
 **Written:** 2026-10-16, against `vnext` at `53012eb`. Checked against
 `@mvtjs/audio` as built
-([`audio80.ts`](../../packages/audio/src/chip/audio80.ts),
-[`audio-controls.ts`](../../packages/audio/src/chip/audio-controls.ts),
-[`commands.ts`](../../packages/audio/src/core/commands.ts),
-[`audio80-synthesiser.ts`](../../packages/audio/src/core/audio80-synthesiser.ts),
-[`web-audio80.ts`](../../packages/audio/src/web/web-audio80.ts),
-[`chip-runner.ts`](../../packages/audio/src/web/chip-runner.ts),
-[`music-player.ts`](../../packages/audio/src/music-player/music-player.ts),
-the notation in [`notation/`](../../packages/audio/src/notation/index.ts)),
+([`audio80.ts`](../../packages/libraries/audio/src/chip/audio80.ts),
+[`audio-controls.ts`](../../packages/libraries/audio/src/chip/audio-controls.ts),
+[`commands.ts`](../../packages/libraries/audio/src/core/commands.ts),
+[`audio80-synthesiser.ts`](../../packages/libraries/audio/src/core/audio80-synthesiser.ts),
+[`web-audio80.ts`](../../packages/libraries/audio/src/web/web-audio80.ts),
+[`chip-runner.ts`](../../packages/libraries/audio/src/web/chip-runner.ts),
+[`music-player.ts`](../../packages/libraries/audio/src/music-player/music-player.ts),
+the notation in [`notation/`](../../packages/libraries/audio/src/notation/index.ts)),
 the website's sound
-([`page-sound.ts`](../../packages/website/src/runner/page-sound.ts),
-[`entry-host.ts`](../../packages/website/src/runner/entry-host.ts),
-[`pixi-stage.ts`](../../packages/website/src/runner/pixi-stage.ts),
-[`headless.ts`](../../packages/website/src/runner/headless.ts),
-[`snapshot.ts`](../../packages/website/src/snapshot.ts)), the start options
-in [`entry-starter.ts`](../../packages/website/src/entry-types/entry-starter.ts),
+([`page-sound.ts`](../../packages/sites/website/src/runner/page-sound.ts),
+[`entry-host.ts`](../../packages/sites/website/src/runner/entry-host.ts),
+[`pixi-stage.ts`](../../packages/sites/website/src/runner/pixi-stage.ts),
+[`headless.ts`](../../packages/sites/website/src/runner/headless.ts),
+[`snapshot.ts`](../../packages/sites/website/src/snapshot.ts)), the start options
+in [`entry-starter.ts`](../../packages/sites/website/src/entry-types/entry-starter.ts),
 and every entry's `start/load.ts`. Cost figures are estimates until the
 spike (section 15, step 1). The Audio80's measured cost is the base they
 are scaled from.
@@ -47,10 +47,10 @@ are scaled from.
 [048](../tasks/backlog/048-sound-follow-ons.md) (the Audio80's loose ends; its Sound Test entry is section 8.1 here) -
 [034](../archive/034-neon-monsoon-bullet-hell.md) (Neon Monsoon, rescored in section 8.2) -
 [036](../archive/036-website-arcade.md) (the Arcade and its size budget) -
-[Using the Audio80](../../packages/audio/docs/using-the-audio80.md) -
-[Writing Tracker Music](../../packages/audio/docs/writing-tracker-music.md) -
-[Sound and Music](../../packages/docs/building-with-mvt/presenting-the-world/sound.md) -
-[Originality](../../packages/website/src/entries/README.md#originality)
+[Using the Audio80](../../packages/libraries/audio/docs/using-the-audio80.md) -
+[Writing Tracker Music](../../packages/libraries/audio/docs/writing-tracker-music.md) -
+[Sound and Music](../../packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) -
+[Originality](../../packages/sites/website/src/entries/README.md#originality)
 
 ---
 
@@ -407,7 +407,7 @@ part into a folder of its own, with the Audio80's audio tests guarding it:
 not one hash may change.
 
 ```
-packages/audio/src/
+packages/libraries/audio/src/
 ├── index.ts             @mvtjs/audio: both chips' notation, the music player, the types
 ├── shared/              What every chip uses
 │   ├── command-queue.ts         Stamped commands, in order
@@ -678,7 +678,7 @@ export const EXPLODE = createAudio90SoundEffect({
 ### 6.4 Songs, and the tokens the Audio90 adds
 
 Every token of the Audio80's notation keeps its meaning
-([Writing Tracker Music](../../packages/audio/docs/writing-tracker-music.md)):
+([Writing Tracker Music](../../packages/libraries/audio/docs/writing-tracker-music.md)):
 notes, `...`, `===`, instrument letters, `v` volume, `a` arpeggio, `~`
 vibrato, `>` glide, `u` and `d` slides, `p` pulse width, `f` filter. The
 Audio90 adds:
@@ -1087,7 +1087,7 @@ upsampler (which is also how the decade's consoles ran).
 ## 12. Docs
 
 - **The package's README**: two chips, how to choose, and the guides.
-- **A new guide, Using the Audio90**, in `packages/audio/docs/`: the
+- **A new guide, Using the Audio90**, in `packages/libraries/audio/docs/`: the
   engines, instruments, samples and bouncing, effects with pan, the mixer,
   the pump, the characters, and a short cookbook of the decade's sounds (an
   FM piano, a supersaw, an acid line, a reese, an orchestra hit, a sliced
@@ -1099,9 +1099,9 @@ upsampler (which is also how the decade's consoles ran).
   originality rules for sound (section 9).
 - **`AGENTS.md`**: the sound convention says an entry's starter names its
   chip and is given that chip as `sound`, not that the host passes every
-  entry an Audio80. The project structure line for `packages/audio/` names
+  entry an Audio80. The project structure line for `packages/libraries/audio/` names
   both chips.
-- **`packages/docs/ai-agents/skill-mvt-view.md`**, **the glossary** and
+- **`packages/sites/docs/ai-agents/skill-mvt-view.md`**, **the glossary** and
   **`llms.txt`**: the Audio90 beside the Audio80.
 - **Sound and Music**: the "Project convention" box names both chips, and
   048's revision of the page still applies. Its example stays on the

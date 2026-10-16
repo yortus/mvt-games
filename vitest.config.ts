@@ -18,7 +18,7 @@ const SOURCE_CONDITION = '@mvtjs/source';
 export default defineConfig(withVsnap({
     // The website's visual tests, which build its views with its own Vite config
     vsnap: {
-        root: resolve(ROOT, 'packages/website'),
+        root: resolve(ROOT, 'packages/sites/website'),
         viteConfig: './vite.config.ts',
     },
     resolve: {
@@ -35,7 +35,7 @@ export default defineConfig(withVsnap({
         ],
         // .claude/ holds agent worktrees: separate checkouts, tested on their
         // own. v-snap's own tests run in its own config.
-        exclude: [...configDefaults.exclude, '.claude/**', 'packages/v-snap/**'],
+        exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**'],
         // Node resolves solid-js to its server build, where effects never run.
         // Tests get the browser build, as a page does, and Vite loads solid-js
         // and pixi-solid itself so that they share that one copy.

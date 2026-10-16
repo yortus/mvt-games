@@ -53,7 +53,7 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
 The MVT docs should teach how to give an MVT game good sound. How the
 Audio80 works, and how to use its API, belongs in the package's own docs,
 with links from the MVT pages. Most of "Sound and Music"
-(`packages/docs/building-with-mvt/presenting-the-world/sound.md`) already
+(`packages/sites/docs/building-with-mvt/presenting-the-world/sound.md`) already
 does this. Its sections on why sound is presentation, finding the moment,
 what the model exposes, audio views in a list, and common mistakes are
 about MVT. Some parts slip into teaching the library:
@@ -76,11 +76,11 @@ about MVT. Some parts slip into teaching the library:
   update step and played in the refresh step, and a new song cuts the old
   one off, so a jingle should be no longer than its phase.
 - **Testing Views, "Testing Audio Views"**
-  (`packages/docs/building-with-mvt/iterating-with-confidence/testing-views.md`)
+  (`packages/sites/docs/building-with-mvt/iterating-with-confidence/testing-views.md`)
   has the same issue as "Testing", with a `createHeadlessAudio80` example.
   The same recording stand-in would suit it. "For music, compare the notes
   with a music player" is library-specific too.
-- **The glossary** (`packages/docs/reference/glossary.md`) defines
+- **The glossary** (`packages/sites/docs/reference/glossary.md`) defines
   `AudioControls` and "Tracker notation". These are the package's terms, not
   MVT's, so they belong in the package's docs. "Audio80" and "Music player"
   can stay as short project-convention entries that link to the package,
@@ -91,7 +91,7 @@ These are fine as they are:
 - The "Project convention" box on the Sound and Music page, which names the
   Audio80 and says any sound library would do.
 - The example audio view, which plays on an Audio80 as the repo's views do.
-- `packages/docs/ai-agents/skill-mvt-view.md`, which is for agents working
+- `packages/sites/docs/ai-agents/skill-mvt-view.md`, which is for agents working
   in this repo, so its specifics are what they need.
 - The other pages that mention audio views (Change Detection, Why Polling,
   Presenting Collections, Presentation State), which only use them as

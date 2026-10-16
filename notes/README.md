@@ -2,7 +2,7 @@
 
 Planning material for the project: designs not yet built, work to do, and a
 record of what is finished. Nothing here describes how the repo currently
-works; for that, see [packages/docs/](../packages/docs/index.md) and the README of the module in
+works; for that, see [packages/sites/docs/](../packages/sites/docs/index.md) and the README of the module in
 question.
 
 ```
@@ -28,7 +28,7 @@ a progress log.
 - When a proposal or task is finished, or abandoned, move it to `archive/` and
   update the index below. Put any loose ends in a task, or in an existing one.
 - A document that turns out to describe shipped code (design notes, a usage
-  guide) moves next to that code or into `packages/docs/`, not into the archive.
+  guide) moves next to that code or into `packages/sites/docs/`, not into the archive.
 
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
@@ -37,13 +37,13 @@ valid when it moves. Numbers are never reused. The next free number is
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
-the paths of their day: `src/mvt-utils/` is now `packages/utils/src/`,
+the paths of their day: `src/mvt-utils/` is now `packages/libraries/utils/src/`,
 `src/<renderer>-mvt/` is `packages/<renderer>/src/`, `src/common/` is
-`packages/website/src/shared/`, and the rest of `src/` is
-`packages/website/src/`. The aliases became package names (`#pixi-mvt/jsx`
+`packages/sites/website/src/shared/`, and the rest of `src/` is
+`packages/sites/website/src/`. The aliases became package names (`#pixi-mvt/jsx`
 is `@mvtjs/pixi/jsx`), and `#common` became `#shared`. On 2026-10-04 (036),
-`site/` moved to `packages/website/`, `docs/` to `packages/docs/`,
-`benchmarks/` to `packages/benchmarks/`, and `checks/` to `packages/checks/`. Later
+`site/` moved to `packages/sites/website/`, `docs/` to `packages/sites/docs/`,
+`benchmarks/` to `packages/tests/benchmarks/`, and `checks/` to `packages/tests/checks/`. Later
 that day, the website's `src/games/<id>/` and `src/demos/<id>/` became
 `src/entries/<id>/`, its `src/catalogue/` moved into `src/entries/`, and the
 entry types' `src/entries/` became `src/entry-types/`.
@@ -171,21 +171,21 @@ of old links closes an item in 017.
 | 030 | [A Self-Describing Perfmon Panel](archive/030-self-describing-perfmon.md) | 2026-10-02 |
 | 031 | [Proposal: the tick API in MVT's own words](archive/031-tick-api-in-mvt-terms.md) (`updateView` / `refreshView` and `setUpdate` / `setRefresh`, one set for every renderer; `tickCounter`; `PerformanceMetrics`; "scene pass" retired) | 2026-10-03 |
 | 033 | [Fruit Machine Demo](archive/033-fruit-machine-demo/task.md) (one model, four views: Pixi, three.js, an HTML panel and a terminal) | 2026-10-03 |
-| 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/website/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
+| 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/sites/website/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
 | 042 | [Proposal: visual snapshot tests for views](archive/042-visual-snapshot-tests.md) (published to npm as `v-snap`: Vitest projects that draw Pixi, three.js, canvas and HTML views, and compare each image with a reference committed beside its test, the same on Windows, Linux and macOS with no Docker; every view and whole entry of the website is tested with it. Loose ends: the logo, a trial on a real project and the docs reviews, in `notes/tmp-vsnap-checklist.md`) | 2026-10-14 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
 | 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/audio`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
-| 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/website/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
+| 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/sites/website/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
 
 ## Elsewhere
 
 - **002** and **006** turned out to describe shipped code. 002 lives next
-  to it, [packages/pixi/src/design-notes.md](../packages/pixi/src/design-notes.md); 006,
+  to it, [packages/libraries/pixi/src/design-notes.md](../packages/libraries/pixi/src/design-notes.md); 006,
   the `<List>` patterns guide, is now the docs page
-  [Presenting Collections](../packages/docs/building-with-mvt/presenting-the-world/collections.md).
+  [Presenting Collections](../packages/sites/docs/building-with-mvt/presenting-the-world/collections.md).
 - **009** was never used.
 - Tasks 014-016 were numbered 001-003 before 2026-09-26.
-- [Can pull match push?](../packages/docs/articles/can-pull-match-push.md), a write-up
-  of the `<List>` design for a general audience, is in `packages/docs/articles/`. It is
+- [Can pull match push?](../packages/sites/docs/articles/can-pull-match-push.md), a write-up
+  of the `<List>` design for a general audience, is in `packages/sites/docs/articles/`. It is
   a draft, excluded from the docs build until it is published.

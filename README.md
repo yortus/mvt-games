@@ -33,7 +33,7 @@ MVT too, in HTML.
 | Reordering Lists | Rows of cards sliding into place as a script reorders them        |
 
 Each game and demo is an **entry**: a self-contained module under
-`packages/website/src/entries/<id>/` with its own data, models, and views, and
+`packages/sites/website/src/entries/<id>/` with its own data, models, and views, and
 a `start/` directory that tells the Arcade how to list it and load it.
 
 ## Tech Stack
@@ -68,7 +68,7 @@ npm run dev
 ## Documentation
 
 Learn the architecture, conventions, and patterns:
-**[Read the docs](packages/docs/index.md)**
+**[Read the docs](packages/sites/docs/index.md)**
 
 **AI agents:** see [AGENTS.md](AGENTS.md) for compressed orientation.
 
@@ -88,18 +88,23 @@ notes/        Proposals, tasks, and the archive of finished work
 
 ```
 packages/
-├── utils/               Renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
-├── pixi/                The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
-├── three/               The tick API for three.js objects, pointer picker, and its JSX runtime
-├── html/                The tick API for DOM elements, and its JSX runtime
-├── audio/               The Audio80 sound chip, its tracker notation and music player (private for now)
-├── eslint-plugin/       This repo's lint rules (private for now)
-├── benchmarks/          Performance benchmarks (private; npm run bench)
-├── checks/              Tests that the packages still fit together as decided (private)
-├── docs/                The documentation (VitePress, private)
-└── website/             The Arcade, its games and demos, and the playground (private)
+├── libraries/
+│   ├── utils/           Renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
+│   ├── pixi/            The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+│   ├── three/           The tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── html/            The tick API for DOM elements, and its JSX runtime
+│   └── audio/           The Audio80 sound chip, its tracker notation and music player (private for now)
+├── tools/
+│   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
+│   └── eslint-plugin/   This repo's lint rules (private for now)
+├── sites/
+│   ├── website/         The Arcade, its games and demos, and the playground (private)
+│   └── docs/            The documentation (VitePress, private)
+└── tests/
+    ├── benchmarks/      Performance benchmarks (private; npm run bench)
+    └── checks/          Tests that the packages still fit together as decided (private)
 
-packages/website/src/
+packages/sites/website/src/
 ├── arcade/              The Arcade, the home page (HTML JSX)
 ├── entries/             Every game and demo, one directory each, and the catalogue
 │   └── <id>/            Self-contained entry (start/, data/, models/, views/)

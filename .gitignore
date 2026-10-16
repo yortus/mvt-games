@@ -20,12 +20,12 @@ dist-ssr
 /renders
 
 # VitePress
-packages/docs/.vitepress/cache
-packages/docs/.vitepress/dist
+packages/sites/docs/.vitepress/cache
+packages/sites/docs/.vitepress/dist
 
 # v-snap's build, for publishing, and its package.json while the published one is in place
-packages/v-snap/lib
-packages/v-snap/package.repo.json
+packages/tools/v-snap/lib
+packages/tools/v-snap/package.repo.json
 
 # Editor directories and files
 .vscode/*

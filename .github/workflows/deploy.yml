@@ -15,8 +15,8 @@ on:
             - notes/**
             - .changeset/**
             - .claude/**
-            - packages/audio/docs/**
-            - packages/v-snap/docs/**
+            - packages/libraries/audio/docs/**
+            - packages/tools/v-snap/docs/**
     workflow_dispatch:
 
 permissions:
