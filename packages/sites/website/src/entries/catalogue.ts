@@ -4,13 +4,17 @@ import { entry as boidsEntry } from './boids';
 import { entry as boids3dEntry } from './boids-3d';
 import { entry as burrowBustEntry } from './burrow-bust';
 import { entry as crumbChaseEntry } from './crumb-chase';
+import { entry as deepDiveEntry } from './deep-dive';
 import { entry as dojoDuelEntry } from './dojo-duel';
+import { entry as doublePendulumEntry } from './double-pendulum';
 import { entry as fallingSandEntry } from './falling-sand';
 import { entry as fencelineEntry } from './fenceline';
+import { entry as fireworksEntry } from './fireworks';
+import { entry as fractalscopeEntry } from './fractalscope';
 import { entry as fruitMachineEntry } from './fruit-machine';
 import { entry as fuelRunEntry } from './fuel-run';
 import { entry as galaxyRaidersEntry } from './galaxy-raiders';
-import { entry as fractalscopeEntry } from './fractalscope';
+import { entry as gardenSnakeEntry } from './garden-snake';
 import { entry as kwazyCactiiEntry } from './kwazy-cactii';
 import { entry as neonMonsoonEntry } from './neon-monsoon';
 import { entry as reorderingListsEntry } from './reordering-lists';
@@ -39,6 +43,10 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     astrovoidEntry,
     fractalscopeEntry,
     fencelineEntry,
+    deepDiveEntry,
+    gardenSnakeEntry,
+    doublePendulumEntry,
+    fireworksEntry,
 ];
 
 /** The entry with `id`, if there is one. */
