@@ -1,11 +1,12 @@
 /** @jsxImportSource @mvtjs/html */
 import { watch } from '@mvtjs/utils';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
-import type { PanelKind, ShareStatus, WorkspaceModel } from '../models';
+import { EDITOR_THEME_KINDS, type PanelKind, type ShareStatus, type WorkspaceModel } from '../models';
 import { MAIN_PATH } from '../runtime';
 import { CodeEditorView } from './code-editor-view';
 import { ConsoleView } from './console-view';
 import { DividerView } from './divider-view';
+import { EDITOR_THEMES } from './editor-themes';
 import { FileListView } from './file-list-view';
 import { HeaderView } from './header-view';
 import { PreviewView } from './preview-view';
@@ -35,8 +36,8 @@ export interface PlaygroundViewBindings {
  * Dividers between the panes resize them, and the file list folds away. A
  * narrow screen shows one panel at a time, chosen by tabs.
  *
- * Ctrl+Enter, or Cmd+Enter, runs the project from anywhere on the page, and
- * Ctrl+P, or Cmd+P, opens a file by name.
+ * Ctrl+Enter, or Cmd+Enter, runs the project from anywhere on the page,
+ * Ctrl+P, or Cmd+P, opens a file by name, and Ctrl+S, or Cmd+S, saves it.
  */
 export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
     const { model } = bindings;
@@ -57,8 +58,12 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                 examples={bindings.examples}
                 shareLabel={() => SHARE_LABELS[model.shareStatus]}
                 isSharing={() => model.shareStatus === 'sharing'}
+                saves={() => model.savesRequested}
+                themes={THEMES}
+                theme={() => model.editorTheme}
                 onExampleChosen={(id) => model.openExample(id)}
                 onSharePressed={() => model.share()}
+                onThemeChosen={(theme) => model.setEditorTheme(theme)}
             />
             <nav class="panel-tabs" aria-label="Panels">
                 {PANELS.map((panel) => (
@@ -98,6 +103,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         placesShown: () => model.placesShown,
                         typeChecks: () => model.typeChecks,
                         typeProblemsFor: typeProblemsFor,
+                        theme: () => model.editorTheme,
                         language: bindings.language,
                         onTextEdited: (path, text) => model.editFile(path, text),
                         onDefinitionFound: openDefinition,
@@ -222,6 +228,10 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
             event.preventDefault();
             layout.openQuickOpen(model.paths);
         }
+        else if (event.key === 's' || event.key === 'S') {
+            event.preventDefault();
+            model.save();
+        }
     }
 
     function addFile(): void {
@@ -249,6 +259,9 @@ const SHARE_LABELS: Readonly<Record<ShareStatus, string>> = {
 };
 
 const NO_PROBLEMS: readonly TypeProblem[] = [];
+
+/** The editor's themes, in the order the header offers them. */
+const THEMES = EDITOR_THEME_KINDS.map((kind) => ({ kind, name: EDITOR_THEMES[kind].name }));
 
 /** The panels a narrow screen shows one at a time, in the order of their tabs. */
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [

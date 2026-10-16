@@ -1,4 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
+import { watch } from '@mvtjs/utils';
+import type { EditorThemeKind } from '../models';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -11,20 +13,38 @@ export interface HeaderViewBindings {
     /** What the Share button says: "Share", or how sharing went. */
     readonly shareLabel: () => string;
     readonly isSharing: () => boolean;
+    /** Rises each time the visitor asks to save, for a moment's note that the project is saved. */
+    readonly saves: () => number;
+    /** The editor's themes to offer, by kind and name. */
+    readonly themes: readonly { readonly kind: EditorThemeKind; readonly name: string }[];
+    readonly theme: () => EditorThemeKind;
     readonly onExampleChosen?: (id: string) => void;
     readonly onSharePressed?: () => void;
+    readonly onThemeChosen?: (theme: EditorThemeKind) => void;
 }
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
-/** The playground's header: the project's name, a menu of examples to open, and Share. */
+/**
+ * The playground's header: the project's name, a menu of examples to open,
+ * the editor's theme, and Share. The project is saved as it changes, so a
+ * request to save only says so: "Saved" shows beside the name for a moment.
+ */
 export function HeaderView(bindings: HeaderViewBindings): Element {
+    const watcher = watch({ saves: bindings.saves });
+    watcher.poll();
+    let savedNoteMs = 0;
+
     return (
-        <header class="header">
+        <header class="header" onUpdate={update}>
             <h1 class="header-title" text="Playground" />
             <span class="header-project" text={bindings.projectName} />
+            <span class="header-saved" text="Saved" visible={() => savedNoteMs > 0} />
+            <select class="header-theme" aria-label="The editor's theme" value={bindings.theme} onChange={onThemeChanged}>
+                {bindings.themes.map((theme) => <option value={theme.kind} text={theme.name} />)}
+            </select>
             <select class="header-examples" aria-label="Open an example" value={() => ''} onChange={onExampleChanged}>
                 <option value="" text="Open an example..." />
                 {bindings.examples.map((example) => <option value={example.id} text={example.name} />)}
@@ -33,8 +53,26 @@ export function HeaderView(bindings: HeaderViewBindings): Element {
         </header>
     );
 
+    function update(deltaMs: number): void {
+        if (watcher.poll().saves.increased) savedNoteMs = SAVED_NOTE_MS;
+        else savedNoteMs = Math.max(0, savedNoteMs - deltaMs);
+    }
+
+    function onThemeChanged(event: Event): void {
+        const kind = (event.target as HTMLSelectElement).value;
+        const theme = bindings.themes.find((t) => t.kind === kind);
+        if (theme !== undefined) bindings.onThemeChosen?.(theme.kind);
+    }
+
     function onExampleChanged(event: Event): void {
         const id = (event.target as HTMLSelectElement).value;
         if (id !== '') bindings.onExampleChosen?.(id);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How long "Saved" shows. */
+const SAVED_NOTE_MS = 1500;

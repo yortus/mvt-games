@@ -22,9 +22,10 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 to 5: the new package is the playground,
-at `/playground/`, with its layout, Problems list, run on change and
-intellisense, and the old one is gone. Next is step 6, projects and export.
+built beyond the spike, but steps 3 to 6: the new package is the playground,
+at `/playground/`, with its layout, Problems list, run on change,
+intellisense, and the editor's menu, keys and themes, and the old one is
+gone. Next is step 7, projects and export.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -629,6 +630,41 @@ after typing stops, if no file has a syntax error, the project runs again.
 A project that should not restart on every keystroke, such as a game being
 played, turns it off.
 
+### 6.6 The editor's menu, keys and themes
+
+Added after step 5, when the owner asked whether there would be a menu
+bar. There is not: the playground has about ten commands, and the header
+holds the few that are the page's. But the editor's commands, such as
+rename and format, had only their keys, and nothing on screen said they
+were there.
+
+**A right-click menu** in the editor, as VS Code has: the fixes for a
+problem under the pointer, then go to definition, rename, format,
+organise imports and go to line, then cut, copy and paste, each with its
+keys beside it, so the menu teaches them. The menu key opens it at the
+cursor. In a library's read-only declarations, only what reads.
+
+**Keys** that a visitor's fingers already know:
+
+| Keys | Does |
+| --- | --- |
+| Ctrl+S | Saves now, and says "Saved" for a moment. The project saves as it changes anyway, but without this the browser's Save As opens |
+| Ctrl+. | The quick fixes at the cursor, as a menu |
+| F8, Shift+F8 | The next problem, and the one before |
+| Ctrl+G | Go to a line. The browser's find next, otherwise |
+
+Ctrl+/, Alt+Up and Down, Ctrl+D, Ctrl+F and Ctrl+Space are CodeMirror's
+own, and already work. Ctrl+N, Ctrl+T and Ctrl+W cannot be had: the
+browser keeps them.
+
+**Themes.** A menu in the header chooses the editor's colours, kept
+between visits with the other settings: One Dark, as before, then VS Code
+Dark, GitHub Dark, Dracula, Tokyo Night, Nord and Monokai, from the
+`@uiw/codemirror-theme-*` packages (MIT). Dark only, since the page
+around the editor is dark. Light themes need the page's colours in CSS
+variables, with a light palette for the page and the site's nav: later,
+if wanted.
+
 ---
 
 ## 7. Projects, Examples and Sharing
@@ -1134,7 +1170,7 @@ Each step ends with the site working and deployable.
    - Sharing (`#p1=`, gzip) and keeping one project between visits, with
      the old playground's saved project converted, came early, so the
      switch loses nothing the old playground had. IndexedDB projects stay
-     in step 6.
+     in step 7.
    - The library entry modules are in `libraries/entries/`, beside the
      list of libraries in `libraries/`, at the package's root, where
      `vite.config.ts` can import the list through a barrel.
@@ -1205,11 +1241,32 @@ Each step ends with the site working and deployable.
    TypeScript's default spacing (no space after a comma), a late answer
    reopened the signature after its call was closed, and the new styles
    were missing.
-6. **Projects and export.** IndexedDB projects and the migration from
+6. ~~**The editor's menu, keys and themes.** Section 6.6.~~ Done
+   2026-10-16:
+   - Each command is provided once, with its label and keys, and an
+     extension both binds the keys and lists it in the right-click menu.
+     The menu is a CodeMirror extension, as its tooltips are, and lives
+     in the page's body, so the editor's own pointer and key handling never
+     sees it. It closes on Escape, a click elsewhere, or a scroll.
+   - Ctrl+S goes through the workspace model (`save()`, which counts
+     requests), so the page saves then, and the header's note follows the
+     count. The theme is the model's too, kept in the settings. The editor
+     swaps it in each file's state, keeping undo and the cursor.
+   - The header's menus narrow to fit a phone, and the narrow screen drops
+     the header's "Playground", which the site's nav already says.
+   - Two unit tests, and visual tests of the header just saved and of the
+     editor in each theme (now 23 in all).
+   Checked in headless Chromium against a build: every item in the menu,
+   its keys, the read-only menu, copy and paste, Ctrl+. with and without
+   fixes, F8 and Shift+F8, Ctrl+G, Ctrl+S with no dialog, and a theme
+   kept after a reload. The check found that a scroll event arriving late,
+   for a scroll made before, closed the menu as it opened, and that a type
+   shown on hover stayed over the menu.
+7. **Projects and export.** IndexedDB projects and the migration from
    `localStorage` (7.1), the `#p1=` share format with its size limit (7.3),
    and Export (7.5).
-7. **Docs.** Section 13.
-8. **Later.** Each of section 10's ideas, as a proposal or task of its own
+8. **Docs.** Section 13.
+9. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).
 

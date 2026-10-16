@@ -1,7 +1,6 @@
 import { EditorView, basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorSelection, EditorState } from '@codemirror/state';
+import { Compartment, EditorSelection, EditorState } from '@codemirror/state';
 import { indentUnit } from '@codemirror/language';
 import { indentWithTab } from '@codemirror/commands';
 import { type Diagnostic, setDiagnostics } from '@codemirror/lint';
@@ -9,7 +8,10 @@ import { keymap } from '@codemirror/view';
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import type { DefinitionTarget, FileEdit, TypeProblem } from '../language';
+import type { EditorThemeKind } from '../models';
 import type { SourceLocation } from '../runtime';
+import { createEditorMenu } from './editor-menu';
+import { EDITOR_THEMES } from './editor-themes';
 import { createLanguageExtensions, type EditorLanguage } from './language-extensions';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +36,8 @@ export interface CodeEditorViewBindings {
     readonly typeChecks: () => number;
     /** A file's type problems, which the editor underlines. */
     readonly typeProblemsFor: (path: string) => readonly TypeProblem[];
+    /** The colour theme. */
+    readonly theme: () => EditorThemeKind;
     /** The language service, for completions, hover and the rest. Without it, the editor edits plain text. */
     readonly language?: EditorLanguage;
     /** Reported as each edit is made. */
@@ -53,12 +57,16 @@ export interface CodeEditorViewBindings {
  * keeps its own editor state, so its undo history and selection survive a
  * switch to another file and back. With the language service, it completes,
  * shows types on hover, underlines type problems with their fixes, and goes
- * to definitions. A library's declarations show read-only.
+ * to definitions. A library's declarations show read-only. A right-click
+ * opens a menu of what the editor can do there, with each command's keys.
  */
 export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
     const element = document.createElement('div');
     element.className = 'code-editor';
     const states = new Map<string, EditorState>();
+    // Each file's state has the theme in this compartment, so a new theme replaces it there, keeping the rest
+    const themeCompartment = new Compartment();
+    let shownTheme = bindings.theme();
     let shownPath = bindings.activePath();
     const editor = new EditorView({ parent: element, state: createState(shownPath) });
     const watcher = watch({
@@ -67,6 +75,7 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
         places: bindings.placesShown,
         externalEdits: bindings.externalEdits,
         typeChecks: bindings.typeChecks,
+        theme: bindings.theme,
     });
     watcher.poll();
     showProblems();
@@ -76,7 +85,13 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
     return element;
 
     function refresh(): void {
-        const { projects, path, places, externalEdits, typeChecks } = watcher.poll();
+        const { projects, path, places, externalEdits, typeChecks, theme } = watcher.poll();
+        if (theme.changed) {
+            shownTheme = theme.value;
+            const effects = themeCompartment.reconfigure(EDITOR_THEMES[shownTheme].extension);
+            editor.dispatch({ effects });
+            for (const [statePath, state] of states) states.set(statePath, state.update({ effects }).state);
+        }
         if (projects.changed) {
             states.clear();
             shownPath = path.value;
@@ -102,7 +117,8 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
                 indentUnit.of('    '),
                 EditorState.tabSize.of(4),
                 path.endsWith('.css') ? [] : javascript({ typescript: true, jsx: path.endsWith('.tsx') }),
-                oneDark,
+                themeCompartment.of(EDITOR_THEMES[shownTheme].extension),
+                createEditorMenu(),
                 isReadOnly ? EditorState.readOnly.of(true) : [],
                 isReadOnly || bindings.language === undefined || path.endsWith('.css')
                     ? []

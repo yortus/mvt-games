@@ -22,6 +22,10 @@ export const MAX_FILES = 40;
 /** Where sharing the project is. A project over the size limit cannot be shared by link. */
 export type ShareStatus = 'idle' | 'sharing' | 'copied' | 'too-large' | 'failed';
 
+/** The editor's colour themes, all dark, as the page is. */
+export const EDITOR_THEME_KINDS = ['one-dark', 'vscode-dark', 'github-dark', 'dracula', 'tokyo-night', 'nord', 'monokai'] as const;
+export type EditorThemeKind = (typeof EDITOR_THEME_KINDS)[number];
+
 /** A line in the console: what the project logged, or an error, with where it happened if that is known. */
 export interface ConsoleEntry {
     readonly level: ConsoleLevel;
@@ -120,6 +124,10 @@ export interface WorkspaceModel {
     readonly shareStatus: ShareStatus;
     /** Rises each time Share is pressed, for the page to write the link. */
     readonly sharesRequested: number;
+    /** Rises each time the visitor asks to save, as with Ctrl+S, for the page to save the project then. */
+    readonly savesRequested: number;
+    /** The editor's colour theme. */
+    readonly editorTheme: EditorThemeKind;
 
     /** How the workspace is laid out. */
     readonly layout: LayoutModel;
@@ -151,6 +159,9 @@ export interface WorkspaceModel {
     /** Opens a file at a place, as a console entry's link does. */
     readonly showPlace: (location: SourceLocation) => void;
     readonly share: () => void;
+    /** Asks for the project to be saved now. It is saved as it changes, too. */
+    readonly save: () => void;
+    readonly setEditorTheme: (theme: EditorThemeKind) => void;
 
     /** From the page: the project is ready to run in this sandbox document. */
     readonly reportPrepared: (sandboxDocument: string) => void;
@@ -192,6 +203,8 @@ export interface WorkspaceModelOptions {
     readonly savedLayout?: LayoutModelOptions['saved'];
     /** Whether a change runs the project again, as kept from a visit before. The default is true. */
     readonly isRunOnChange?: boolean;
+    /** The editor's theme, as kept from a visit before. The default is the first. */
+    readonly editorTheme?: EditorThemeKind;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,6 +238,8 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let placesShown = 0;
     let shareStatus: ShareStatus = 'idle';
     let sharesRequested = 0;
+    let savesRequested = 0;
+    let editorTheme: EditorThemeKind = options.editorTheme ?? EDITOR_THEME_KINDS[0];
 
     let problems: readonly Problem[] = [];
     let checksRequested = 0;
@@ -264,6 +279,8 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get placesShown() { return placesShown; },
         get shareStatus() { return shareStatus; },
         get sharesRequested() { return sharesRequested; },
+        get savesRequested() { return savesRequested; },
+        get editorTheme() { return editorTheme; },
         get problems() { return problems; },
         get checksRequested() { return checksRequested; },
         get isRunOnChange() { return isRunOnChange; },
@@ -385,6 +402,14 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             shownPlace = location;
             placesShown++;
             layout.showPanel('code');
+        },
+
+        save() {
+            savesRequested++;
+        },
+
+        setEditorTheme(theme) {
+            editorTheme = theme;
         },
 
         share() {

@@ -11,6 +11,8 @@ export {
     type CheckResult,
     type ConsoleEntry,
     createWorkspaceModel,
+    EDITOR_THEME_KINDS,
+    type EditorThemeKind,
     type LibraryFile,
     type ListedProblem,
     MAX_FILES,

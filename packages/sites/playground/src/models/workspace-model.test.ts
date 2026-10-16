@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EXAMPLES } from '../examples';
-import { createWorkspaceModel, MAX_FILES } from './workspace-model';
+import { createWorkspaceModel, EDITOR_THEME_KINDS, MAX_FILES } from './workspace-model';
 
 const PROJECT = {
     name: 'Test',
@@ -282,5 +282,22 @@ describe('a workspace model', () => {
         expect(model.activePath).toBe('models/a-model.ts');
         expect(model.shownPlace).toEqual({ path: 'models/a-model.ts', line: 2 });
         expect(model.placesShown).toBe(1);
+    });
+
+    it('counts each request to save, without changing the project', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        const edits = model.edits;
+        model.save();
+        model.save();
+        expect(model.savesRequested).toBe(2);
+        expect(model.edits).toBe(edits);
+    });
+
+    it('starts with the editor theme kept from before, or the first, and changes it', () => {
+        expect(createWorkspaceModel({ project: PROJECT }).editorTheme).toBe(EDITOR_THEME_KINDS[0]);
+        const model = createWorkspaceModel({ project: PROJECT, editorTheme: EDITOR_THEME_KINDS[1] });
+        expect(model.editorTheme).toBe(EDITOR_THEME_KINDS[1]);
+        model.setEditorTheme(EDITOR_THEME_KINDS[2]);
+        expect(model.editorTheme).toBe(EDITOR_THEME_KINDS[2]);
     });
 });

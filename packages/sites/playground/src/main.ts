@@ -44,17 +44,24 @@ import './playground.css';
 const libraryUrls = findLibraryUrls();
 const first = await readFirstProject();
 const settings = loadSettings();
-const model = createWorkspaceModel({ project: first.project, savedLayout: settings.layout, isRunOnChange: settings.isRunOnChange });
+const model = createWorkspaceModel({
+    project: first.project,
+    savedLayout: settings.layout,
+    isRunOnChange: settings.isRunOnChange,
+    editorTheme: settings.editorTheme,
+});
 if (first.exampleId !== undefined) model.openExample(first.exampleId);
 const watcher = watch({
     runs: () => model.runsRequested,
     checks: () => model.checksRequested,
     shares: () => model.sharesRequested,
+    saves: () => model.savesRequested,
     edits: () => model.edits,
     exampleId: () => model.exampleId,
 });
 const settingsWatcher = watch({
     isRunOnChange: () => model.isRunOnChange,
+    editorTheme: () => model.editorTheme,
     filesWidth: () => model.layout.filesWidth,
     runWidth: () => model.layout.runWidth,
     consoleHeight: () => model.layout.consoleHeight,
@@ -96,14 +103,14 @@ function frame(timeMs: number): void {
 
 /** Starts what the model asks the page for, and keeps the URL and the saved project in step with it. */
 function followModel(workspace: WorkspaceModel): void {
-    const { runs, checks, shares, edits, exampleId } = watcher.poll();
+    const { runs, checks, shares, saves, edits, exampleId } = watcher.poll();
     if (runs.increased) void prepareRun(workspace);
     if (checks.increased) {
         void checkProject(workspace);
         void checkTypes(workspace);
     }
     if (shares.increased) void share(workspace);
-    if (edits.changed) saveProject({ name: workspace.projectName, files: workspace.files });
+    if (edits.changed || saves.increased) saveProject({ name: workspace.projectName, files: workspace.files });
     if (edits.changed || exampleId.changed) {
         // An example is named in the URL. A project of the visitor's own is
         // not, since it is saved, and a link it came from would reopen the
@@ -194,10 +201,11 @@ function toSandboxDocument(prepared: PreparedProject, urls: LibraryUrls): string
 /** Saves the workspace's settings as any of them changes. */
 function saveChangedSettings(workspace: WorkspaceModel): void {
     const w = settingsWatcher.poll();
-    if (!(w.isRunOnChange.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
+    if (!(w.isRunOnChange.changed || w.editorTheme.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
     const { layout } = workspace;
     saveSettings({
         isRunOnChange: workspace.isRunOnChange,
+        editorTheme: workspace.editorTheme,
         layout: {
             filesWidth: layout.filesWidth,
             runWidth: layout.runWidth,

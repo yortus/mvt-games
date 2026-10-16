@@ -3,6 +3,7 @@ import { autocompletion, type Completion, type CompletionContext, type Completio
 import { type Extension, StateEffect, StateField } from '@codemirror/state';
 import { EditorView, hoverTooltip, keymap, showTooltip, type Tooltip, ViewPlugin } from '@codemirror/view';
 import type { CompletionEntry, DefinitionTarget, FileEdit, LanguageClient } from '../language';
+import { provideEditorCommands } from './editor-menu';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -76,11 +77,13 @@ export function createLanguageExtensions(options: LanguageExtensionsOptions): Ex
                 else if (isShown || before === '(' || before === ',') void showSignature(view, head);
             },
         })),
+        provideEditorCommands([
+            { label: 'Go to definition', key: 'F12', run: (view) => goToDefinition(view.state.selection.main.head) },
+            { label: 'Rename...', key: 'F2', run: renameAtCursor },
+            { label: 'Format', key: 'Shift-Alt-f', run: (view) => editThisFile(view, language.format(path)) },
+            { label: 'Organise imports', key: 'Shift-Alt-o', run: (view) => editThisFile(view, language.organizeImports(path)) },
+        ]),
         keymap.of([
-            { key: 'F12', run: (view) => goToDefinition(view.state.selection.main.head) },
-            { key: 'F2', run: renameAtCursor },
-            { key: 'Shift-Alt-o', run: (view) => editThisFile(view, language.organizeImports(path)) },
-            { key: 'Shift-Alt-f', run: (view) => editThisFile(view, language.format(path)) },
             {
                 key: 'Escape',
                 run: (view) => {

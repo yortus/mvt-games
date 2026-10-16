@@ -68,11 +68,35 @@ button:disabled {
 }
 
 .header-project {
-    flex: 1;
+    min-width: 0;
     color: var(--site-text-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Shows for a moment after the visitor asks to save */
+.header-saved {
+    flex: none;
+    padding: 1px 8px;
+    border-radius: 9px;
+    background: #12361f;
+    color: #3fb950;
+    font-size: 12px;
+}
+
+/* The theme, the examples and Share sit at the right. The menus narrow, if need be, to fit */
+.header-theme {
+    margin-left: auto;
+}
+
+.header select {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.header button {
+    flex: none;
 }
 
 /* The panel tabs are for narrow screens only */
@@ -462,6 +486,59 @@ button:disabled {
     font-size: 12px;
 }
 
+/* --- The editor's menu --- */
+
+.editor-menu {
+    position: fixed;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    padding: 4px;
+    border: 1px solid var(--site-nav-border);
+    border-radius: 6px;
+    background: #1c2128;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    font-family: var(--site-font-ui);
+    font-size: 13px;
+}
+
+.editor-menu:focus {
+    outline: none;
+}
+
+.editor-menu-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    text-align: left;
+}
+
+.editor-menu-item:hover:not(:disabled),
+.editor-menu-item:focus-visible {
+    outline: none;
+    background: #1f6feb;
+    color: #ffffff;
+}
+
+.editor-menu-keys {
+    color: var(--site-text-muted);
+}
+
+.editor-menu-item:hover:not(:disabled) .editor-menu-keys,
+.editor-menu-item:focus-visible .editor-menu-keys {
+    color: inherit;
+}
+
+.editor-menu-separator {
+    margin: 4px 6px;
+    border-top: 1px solid var(--site-nav-border);
+}
+
 /* --- Opening a file by name --- */
 
 /* The dialog's wrapper takes no room: it is there to see the dialog open */
@@ -531,6 +608,11 @@ button:disabled {
 /* --- Narrow screens: one panel at a time, chosen by tabs --- */
 
 @media (max-width: 800px) {
+    /* The site's navigation above says which page this is */
+    .header-title {
+        display: none;
+    }
+
     .panel-tabs {
         display: flex;
         border-bottom: 1px solid var(--site-nav-border);
