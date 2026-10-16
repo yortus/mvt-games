@@ -9,10 +9,10 @@ import { keymap } from '@codemirror/view';
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import type { DefinitionTarget, FileEdit, TypeProblem } from '../language';
-import type { EditorThemeKind } from '../models';
+import type { ThemeKind } from '../models';
 import type { SourceLocation } from '../runtime';
 import { createEditorMenu } from './editor-menu';
-import { EDITOR_THEMES } from './editor-themes';
+import { THEMES } from './themes';
 import { createLanguageExtensions, type EditorLanguage } from './language-extensions';
 
 // ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ export interface CodeEditorViewBindings {
     /** A file's type problems, which the editor underlines. */
     readonly typeProblemsFor: (path: string) => readonly TypeProblem[];
     /** The colour theme. */
-    readonly theme: () => EditorThemeKind;
+    readonly theme: () => ThemeKind;
     /** The language service, for completions, hover and the rest. Without it, the editor edits plain text. */
     readonly language?: EditorLanguage;
     /** Reported as each edit is made. */
@@ -89,7 +89,7 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
         const { projects, path, places, externalEdits, typeChecks, theme } = watcher.poll();
         if (theme.changed) {
             shownTheme = theme.value;
-            const effects = themeCompartment.reconfigure(EDITOR_THEMES[shownTheme].extension);
+            const effects = themeCompartment.reconfigure(THEMES[shownTheme].editor);
             editor.dispatch({ effects });
             for (const [statePath, state] of states) states.set(statePath, state.update({ effects }).state);
         }
@@ -120,7 +120,7 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
                 indentUnit.of('    '),
                 EditorState.tabSize.of(4),
                 path.endsWith('.css') ? [] : javascript({ typescript: true, jsx: path.endsWith('.tsx') }),
-                themeCompartment.of(EDITOR_THEMES[shownTheme].extension),
+                themeCompartment.of(THEMES[shownTheme].editor),
                 createEditorMenu(),
                 isReadOnly ? EditorState.readOnly.of(true) : [],
                 isReadOnly || bindings.language === undefined || path.endsWith('.css')

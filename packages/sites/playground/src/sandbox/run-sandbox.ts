@@ -94,6 +94,10 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         else if (message.kind === 'resume') isPaused = false;
         else if (message.kind === 'step') stepMs += message.deltaMs;
         else if (message.kind === 'set-speed') speed = message.speed;
+        else if (message.kind === 'set-background' && /^#[0-9a-f]{6}$/i.test(message.colour)) {
+            document.documentElement.style.background = message.colour;
+            document.body.style.background = message.colour;
+        }
     });
     requestAnimationFrame(frame);
 

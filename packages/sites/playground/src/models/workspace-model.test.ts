@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EXAMPLES } from '../examples';
-import { createWorkspaceModel, EDITOR_THEME_KINDS, MAX_FILES } from './workspace-model';
+import { createWorkspaceModel, THEME_KINDS, MAX_FILES } from './workspace-model';
 
 const PROJECT = {
     name: 'Test',
@@ -293,11 +293,11 @@ describe('a workspace model', () => {
         expect(model.edits).toBe(edits);
     });
 
-    it('starts with the editor theme kept from before, or the first, and changes it', () => {
-        expect(createWorkspaceModel({ project: PROJECT }).editorTheme).toBe(EDITOR_THEME_KINDS[0]);
-        const model = createWorkspaceModel({ project: PROJECT, editorTheme: EDITOR_THEME_KINDS[1] });
-        expect(model.editorTheme).toBe(EDITOR_THEME_KINDS[1]);
-        model.setEditorTheme(EDITOR_THEME_KINDS[2]);
-        expect(model.editorTheme).toBe(EDITOR_THEME_KINDS[2]);
+    it('starts with the theme kept from before, or the first, and changes it', () => {
+        expect(createWorkspaceModel({ project: PROJECT }).theme).toBe(THEME_KINDS[0]);
+        const model = createWorkspaceModel({ project: PROJECT, theme: THEME_KINDS[1] });
+        expect(model.theme).toBe(THEME_KINDS[1]);
+        model.setTheme(THEME_KINDS[2]);
+        expect(model.theme).toBe(THEME_KINDS[2]);
     });
 });

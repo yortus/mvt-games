@@ -16,6 +16,8 @@ export interface SandboxDocumentOptions {
     readonly toModuleName: (path: string) => string;
     /** The path of the file the project starts from. */
     readonly mainPath: string;
+    /** The colour around the project, as `#rrggbb`: the page's theme's, so the preview matches the page. */
+    readonly background: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -40,11 +42,12 @@ export function buildSandboxDocument(options: SandboxDocumentOptions): string {
         runnerUrl: options.runnerUrl,
         mainModule: options.toModuleName(options.mainPath),
     };
+    const background = /^#[0-9a-f]{6}$/i.test(options.background) ? options.background : '#111111';
     // `<` written as an escape, so no file can end the script element early
     const json = JSON.stringify(data).replace(/</g, '\\u003c');
     return `<!doctype html>
 <html><head><meta charset="utf-8">
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111}canvas{display:block}</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:${background}}canvas{display:block}</style>
 <script type="application/json" id="playground-data">${json}</script>
 <script>${BOOTSTRAP}</script>
 </head><body></body></html>`;

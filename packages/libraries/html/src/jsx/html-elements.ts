@@ -133,6 +133,12 @@ export const htmlElements = defineElements({
         value: attributesOf<HTMLOptionElement>().fixed('value'),
         disabled: attributesOf<HTMLOptionElement>().onChange('disabled'),
     }, globalPatterns),
+    optgroup: element(() => document.createElement('optgroup'), {
+        ...globalAttributes,
+        /** The group's name, which a `<select>` shows above its options. */
+        label: attributesOf<HTMLOptGroupElement>().onChange('label'),
+        disabled: attributesOf<HTMLOptGroupElement>().onChange('disabled'),
+    }, globalPatterns),
     button: element(() => document.createElement('button'), {
         ...globalAttributes,
         disabled: button.onChange('disabled'),

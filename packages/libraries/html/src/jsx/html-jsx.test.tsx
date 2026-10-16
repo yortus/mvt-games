@@ -253,6 +253,32 @@ describe('@mvtjs/html JSX', () => {
         });
     });
 
+    describe('<optgroup>', () => {
+        it('groups a select\'s options under a label, which can follow the model', () => {
+            let label = 'Dark';
+            const select = (
+                <select value={() => 'b'}>
+                    <optgroup label={() => label}>
+                        <option value="a" text="A" />
+                        <option value="b" text="B" />
+                    </optgroup>
+                    <optgroup label="Light" disabled={true}>
+                        <option value="c" text="C" />
+                    </optgroup>
+                </select>
+            ) as HTMLSelectElement;
+            refreshView(select);
+            const groups = select.querySelectorAll('optgroup');
+            expect([...groups].map((g) => g.label)).toEqual(['Dark', 'Light']);
+            expect(groups[1].disabled).toBe(true);
+            expect(select.value).toBe('b');
+
+            label = 'Darker';
+            refreshView(select);
+            expect(groups[0].label).toBe('Darker');
+        });
+    });
+
     describe('typing hints', () => {
         it('set autocomplete on fields, and spellcheck on any element', () => {
             const input = <input autocomplete="off" spellcheck={false} /> as HTMLInputElement;

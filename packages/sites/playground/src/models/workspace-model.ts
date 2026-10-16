@@ -22,9 +22,12 @@ export const MAX_FILES = 40;
 /** Where sharing the project is. A project over the size limit cannot be shared by link. */
 export type ShareStatus = 'idle' | 'sharing' | 'copied' | 'too-large' | 'failed';
 
-/** The editor's colour themes, all dark, as the page is. */
-export const EDITOR_THEME_KINDS = ['vscode-dark', 'one-dark', 'github-dark', 'dracula', 'tokyo-night', 'nord', 'monokai'] as const;
-export type EditorThemeKind = (typeof EDITOR_THEME_KINDS)[number];
+/** The page's colour themes, the editor's included: the dark ones, then the light ones. */
+export const THEME_KINDS = [
+    'vscode-dark', 'one-dark', 'github-dark', 'dracula', 'tokyo-night', 'nord', 'monokai',
+    'vscode-light', 'github-light', 'solarized-light',
+] as const;
+export type ThemeKind = (typeof THEME_KINDS)[number];
 
 /** A line in the console: what the project logged, or an error, with where it happened if that is known. */
 export interface ConsoleEntry {
@@ -126,8 +129,8 @@ export interface WorkspaceModel {
     readonly sharesRequested: number;
     /** Rises each time the visitor asks to save, as with Ctrl+S, for the page to save the project then. */
     readonly savesRequested: number;
-    /** The editor's colour theme. */
-    readonly editorTheme: EditorThemeKind;
+    /** The colour theme of the page and its editor. */
+    readonly theme: ThemeKind;
 
     /** How the workspace is laid out. */
     readonly layout: LayoutModel;
@@ -161,7 +164,7 @@ export interface WorkspaceModel {
     readonly share: () => void;
     /** Asks for the project to be saved now. It is saved as it changes, too. */
     readonly save: () => void;
-    readonly setEditorTheme: (theme: EditorThemeKind) => void;
+    readonly setTheme: (theme: ThemeKind) => void;
 
     /** From the page: the project is ready to run in this sandbox document. */
     readonly reportPrepared: (sandboxDocument: string) => void;
@@ -203,8 +206,8 @@ export interface WorkspaceModelOptions {
     readonly savedLayout?: LayoutModelOptions['saved'];
     /** Whether a change runs the project again, as kept from a visit before. The default is true. */
     readonly isRunOnChange?: boolean;
-    /** The editor's theme, as kept from a visit before. The default is the first. */
-    readonly editorTheme?: EditorThemeKind;
+    /** The colour theme, as kept from a visit before. The default is the first. */
+    readonly theme?: ThemeKind;
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +242,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let shareStatus: ShareStatus = 'idle';
     let sharesRequested = 0;
     let savesRequested = 0;
-    let editorTheme: EditorThemeKind = options.editorTheme ?? EDITOR_THEME_KINDS[0];
+    let theme: ThemeKind = options.theme ?? THEME_KINDS[0];
 
     let problems: readonly Problem[] = [];
     let checksRequested = 0;
@@ -280,7 +283,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get shareStatus() { return shareStatus; },
         get sharesRequested() { return sharesRequested; },
         get savesRequested() { return savesRequested; },
-        get editorTheme() { return editorTheme; },
+        get theme() { return theme; },
         get problems() { return problems; },
         get checksRequested() { return checksRequested; },
         get isRunOnChange() { return isRunOnChange; },
@@ -408,8 +411,8 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             savesRequested++;
         },
 
-        setEditorTheme(theme) {
-            editorTheme = theme;
+        setTheme(kind) {
+            theme = kind;
         },
 
         share() {

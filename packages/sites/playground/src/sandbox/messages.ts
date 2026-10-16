@@ -7,7 +7,9 @@ export type HostMessage =
     | { readonly kind: 'pause' }
     | { readonly kind: 'resume' }
     | { readonly kind: 'step'; readonly deltaMs: number }
-    | { readonly kind: 'set-speed'; readonly speed: number };
+    | { readonly kind: 'set-speed'; readonly speed: number }
+    /** The colour around the project, as `#rrggbb`, as the page's theme changes. */
+    | { readonly kind: 'set-background'; readonly colour: string };
 
 /** When an error happened: loading the project, starting it, in a frame, or outside all three. */
 export type ErrorPhase = 'load' | 'start' | 'frame' | 'outside';

@@ -1,18 +1,18 @@
 /** @jsxImportSource @mvtjs/html */
 import { watch } from '@mvtjs/utils';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
-import { EDITOR_THEME_KINDS, type PanelKind, type ShareStatus, type WorkspaceModel } from '../models';
+import { THEME_KINDS, type PanelKind, type ShareStatus, type WorkspaceModel } from '../models';
 import { MAIN_PATH } from '../runtime';
 import { CodeEditorView } from './code-editor-view';
 import { ConsoleView } from './console-view';
 import { DividerView } from './divider-view';
-import { EDITOR_THEMES } from './editor-themes';
 import { FileListView } from './file-list-view';
 import { HeaderView } from './header-view';
 import { PreviewView } from './preview-view';
 import { ProblemsView } from './problems-view';
 import { QuickOpenView } from './quick-open-view';
 import { RunControlsView } from './run-controls-view';
+import { THEMES, writePalette } from './themes';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -49,21 +49,22 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         runWidth: () => layout.runWidth,
         consoleHeight: () => layout.consoleHeight,
     });
+    const themeWatcher = watch({ theme: () => model.theme });
     window.addEventListener('keydown', onKeyDown);
 
     return (
-        <div class={() => PANEL_CLASSES[layout.narrowPanel]} onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}>
+        <div class={() => PANEL_CLASSES[layout.narrowPanel]} onRefresh={writeTheme} onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}>
             <HeaderView
                 projectName={() => model.projectName}
                 examples={bindings.examples}
                 shareLabel={() => SHARE_LABELS[model.shareStatus]}
                 isSharing={() => model.shareStatus === 'sharing'}
                 saves={() => model.savesRequested}
-                themes={THEMES}
-                theme={() => model.editorTheme}
+                themes={THEME_CHOICES}
+                theme={() => model.theme}
                 onExampleChosen={(id) => model.openExample(id)}
                 onSharePressed={() => model.share()}
-                onThemeChosen={(theme) => model.setEditorTheme(theme)}
+                onThemeChosen={(theme) => model.setTheme(theme)}
             />
             <nav class="panel-tabs" aria-label="Panels">
                 {PANELS.map((panel) => (
@@ -103,7 +104,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         placesShown: () => model.placesShown,
                         typeChecks: () => model.typeChecks,
                         typeProblemsFor: typeProblemsFor,
-                        theme: () => model.editorTheme,
+                        theme: () => model.theme,
                         language: bindings.language,
                         onTextEdited: (path, text) => model.editFile(path, text),
                         onDefinitionFound: openDefinition,
@@ -131,6 +132,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         isPaused: () => model.isPaused,
                         steps: () => model.steps,
                         speed: () => model.speed,
+                        background: () => THEMES[model.theme].palette.background,
                         isFocusTaken: () => model.isRunByVisitor,
                         placeholder: () => (model.phase === 'preparing' ? 'Preparing...' : 'Press Run, or Ctrl+Enter, to run the project'),
                         onSandboxMessage: (message) => model.reportSandboxMessage(message),
@@ -209,6 +211,16 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         });
     }
 
+    /**
+     * Writes the theme's colours to the CSS, as it changes. They go on the
+     * document's root, since the editor's menu opens in the page's body,
+     * outside this view.
+     */
+    function writeTheme(): void {
+        const { theme } = themeWatcher.poll();
+        if (theme.changed) writePalette(document.documentElement, THEMES[theme.value]);
+    }
+
     /** Writes the panes' sizes to the CSS, as each changes. */
     function writeSizes(workspace: Element): void {
         const { filesWidth, runWidth, consoleHeight } = sizes.poll();
@@ -260,8 +272,8 @@ const SHARE_LABELS: Readonly<Record<ShareStatus, string>> = {
 
 const NO_PROBLEMS: readonly TypeProblem[] = [];
 
-/** The editor's themes, in the order the header offers them. */
-const THEMES = EDITOR_THEME_KINDS.map((kind) => ({ kind, name: EDITOR_THEMES[kind].name }));
+/** The themes, in the order the header offers them. */
+const THEME_CHOICES = THEME_KINDS.map((kind) => ({ kind, name: THEMES[kind].name, scheme: THEMES[kind].scheme }));
 
 /** The panels a narrow screen shows one at a time, in the order of their tabs. */
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [

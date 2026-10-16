@@ -1,4 +1,4 @@
-import { EDITOR_THEME_KINDS, type EditorThemeKind, type PaneSizes } from '../models';
+import { THEME_KINDS, type ThemeKind, type PaneSizes } from '../models';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -7,7 +7,7 @@ import { EDITOR_THEME_KINDS, type EditorThemeKind, type PaneSizes } from '../mod
 /** How the visitor last left the workspace, kept for their next visit. */
 export interface WorkspaceSettings {
     readonly isRunOnChange?: boolean;
-    readonly editorTheme?: EditorThemeKind;
+    readonly theme?: ThemeKind;
     readonly layout?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean };
 }
 
@@ -24,7 +24,7 @@ export function loadSettings(): WorkspaceSettings {
         const layout = (typeof data.layout === 'object' && data.layout !== null ? data.layout : {}) as Record<string, unknown>;
         return {
             isRunOnChange: typeof data.isRunOnChange === 'boolean' ? data.isRunOnChange : undefined,
-            editorTheme: (EDITOR_THEME_KINDS as readonly unknown[]).includes(data.editorTheme) ? data.editorTheme as EditorThemeKind : undefined,
+            theme: (THEME_KINDS as readonly unknown[]).includes(data.theme) ? data.theme as ThemeKind : undefined,
             layout: {
                 filesWidth: numberOrUndefined(layout.filesWidth),
                 runWidth: numberOrUndefined(layout.runWidth),

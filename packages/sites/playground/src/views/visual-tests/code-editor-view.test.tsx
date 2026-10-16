@@ -1,7 +1,7 @@
 import { htmlTest } from 'v-snap';
 import '../../nav.css';
 import '../../playground.css';
-import { EDITOR_THEME_KINDS } from '../../models';
+import { THEME_KINDS } from '../../models';
 import { CodeEditorView } from '../code-editor-view';
 import { inBox } from './in-box';
 
@@ -26,7 +26,7 @@ const BASE = {
     placesShown: () => 0,
     typeChecks: () => 0,
     typeProblemsFor: () => [],
-    theme: () => EDITOR_THEME_KINDS[0],
+    theme: () => THEME_KINDS[0],
 };
 
 htmlTest('a file open', () => inBox(CodeEditorView(BASE), 600, 260));
@@ -45,6 +45,6 @@ htmlTest('in each other theme', () => {
     box.style.display = 'grid';
     box.style.gridTemplateColumns = 'repeat(3, 300px)';
     box.style.gridAutoRows = '130px';
-    for (const kind of EDITOR_THEME_KINDS.slice(1)) box.append(CodeEditorView({ ...BASE, theme: () => kind }));
+    for (const kind of THEME_KINDS.slice(1)) box.append(CodeEditorView({ ...BASE, theme: () => kind }));
     return inBox(box, 900, 260);
 });

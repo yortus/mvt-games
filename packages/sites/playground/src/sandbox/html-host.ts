@@ -17,6 +17,8 @@ export function createHtmlHost(project: HtmlProject): RendererHost<Omit<HtmlStar
     root.style.overflow = 'auto';
     root.style.width = project.width === undefined ? '100%' : `${project.width}px`;
     root.style.height = project.height === undefined ? '100%' : `${project.height}px`;
+    // Its own background, so its light text reads whatever the page's theme
+    root.style.background = `#${(project.background ?? HTML_BACKGROUND).toString(16).padStart(6, '0')}`;
     root.style.color = '#e6e6e6';
     root.style.font = '14px system-ui, sans-serif';
     document.body.append(root);
@@ -27,3 +29,10 @@ export function createHtmlHost(project: HtmlProject): RendererHost<Omit<HtmlStar
         render: () => {},
     };
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** The colour behind an HTML project that names none: the preview's, before themes. */
+const HTML_BACKGROUND = 0x111111;

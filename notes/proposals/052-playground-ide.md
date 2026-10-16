@@ -22,10 +22,11 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 to 6: the new package is the playground,
+built beyond the spike, but steps 3 to 7: the new package is the playground,
 at `/playground/`, with its layout, Problems list, run on change,
-intellisense, and the editor's menu, keys and themes, and the old one is
-gone. Next is step 7, themes for the whole page (6.7).
+intellisense, the editor's menu and keys, and dark and light themes for
+the whole page, and the old one is gone. Next is step 8, projects and
+export.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -719,11 +720,16 @@ were never the Arcade's, only borrowed names.
 
 **The preview.** The sandbox's page has its own background, `#111`,
 around a project's canvas. It becomes the theme's `background`, passed in
-the sandbox's document. A theme chosen during a run takes effect at the
-next run, as the sandbox cannot be reached without a run. (A transparent
-sandbox showing the page through would follow at once, but a browser
-paints an iframe opaque when its color-scheme differs from the page's,
-which a project cannot be trusted to match.)
+the sandbox's document, and sent to a running sandbox as a message when
+the theme changes, as pause and speed are. (A transparent sandbox showing
+the page through would need no message, but a browser paints an iframe
+opaque when its color-scheme differs from the page's, which a project
+cannot be trusted to match.) A project's own area keeps its own colours:
+a Pixi or three.js project's `background`, and now an HTML project's too.
+Its root had no background of its own, and showed its light text on the
+sandbox's dark page; on a light theme the text would have gone. The root
+now has the project's `background`, `#111` by default, so it looks as it
+did.
 
 **The themes.** Dark: VS Code Dark (the default), One Dark, GitHub Dark,
 Dracula, Tokyo Night, Nord, Monokai. Light: VS Code Light, GitHub Light,
@@ -1338,14 +1344,47 @@ Each step ends with the site working and deployable.
    kept after a reload. The check found that a scroll event arriving late,
    for a scroll made before, closed the menu as it opened, and that a type
    shown on hover stayed over the menu.
-7. **Themes for the whole page.** Section 6.7: every colour in
+7. ~~**Themes for the whole page.** Section 6.7: every colour in
    `playground.css` a `--pg-*` variable, a palette for each theme, the
    three light themes, the preview's surround, and the contrast and
-   visual tests. Before it, from the owner's playtest of step 6: VS Code
-   Dark as the default, import paths completed, and Tab to take a
-   completion (6.6), all done 2026-10-16. That work found that the
-   language service took an empty file, such as one just added, for a
-   missing one, and failed; it gives an empty file a space now.
+   visual tests.~~ Done 2026-10-16. Before it, from the owner's playtest
+   of step 6: VS Code Dark as the default, import paths completed, and
+   Tab to take a completion (6.6). That work found that the language
+   service took an empty file, such as one just added, for a missing one,
+   and failed; it gives an empty file a space now. Then:
+   - `views/themes.ts` holds each theme: its name, dark or light, its
+     editor extension and its page palette of twelve colours.
+     `writePalette` writes a palette as `--pg-*` variables and
+     `color-scheme`. The page view writes it on the document's root as
+     the theme changes, since the editor's menu opens outside the view.
+     `playground.css` has no colour of its own left; badges and Run tint a
+     theme colour with `color-mix`.
+   - The model's `editorTheme` became `theme`, and the settings keep it
+     under that name, so a theme chosen before this step is forgotten
+     once, and VS Code Dark shows.
+   - The header groups the themes under Dark and Light, with
+     `<optgroup>`, which `@mvtjs/html`'s JSX did not have. It has now, with
+     its `label` and `disabled`, a test and a changeset (a minor bump).
+     Its test found that a fixed `value` on a `<select>` is lost: it is
+     written before the options are added. A bound `value`, as the header
+     has, works. Not fixed here.
+   - The site's nav keeps its own colours, so nothing outside the
+     playground changed but the lock file and `<optgroup>` in
+     `@mvtjs/html`. The Arcade's 64 visual tests are unchanged.
+   - Tests: the contrast of every palette (WCAG 4.5:1 for text on the
+     editor, panels and buttons; 3:1 for muted text, links and the
+     problem colours on panels and the selected row). Where a theme's own
+     colour fell short, the palette's is a little lighter or darker:
+     several muted greys, Dracula's, Monokai's and Nord's reds, and the
+     light themes' yellows and greens. Then a visual test of the whole page in each
+     theme; and every other visual test now in the default theme (33 in
+     all).
+   Checked in headless Chromium against a build: the default, the
+   switch to VS Code Light reaching the editor, panels, menu, hover and
+   quick open while the nav stays dark, the letterbox changing during a
+   run, the theme kept after a reload, and an HTML project's text on its
+   own dark root under a light theme. The owner playtested it, and it
+   passed.
 8. **Projects and export.** IndexedDB projects and the migration from
    `localStorage` (7.1), the `#p1=` share format with its size limit (7.3),
    and Export (7.5).
@@ -1353,6 +1392,45 @@ Each step ends with the site working and deployable.
 10. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).
+11. **Investigate: open an Arcade entry in the playground, from GitHub.**
+    Added at the owner's request on 2026-10-16, after step 7's playtest.
+    It is 10.5's remix, with one constraint: the entry's files are read
+    from the repo on GitHub as the visitor opens it, and no copy of them is
+    kept anywhere, in the site's build or the playground's package. The
+    investigation answers these, and ends with a short report here, on
+    which entries open and run, what the rest need, and whether to build
+    it, in place of 10.5's guess:
+    - **Reading the files.** `raw.githubusercontent.com` serves each file,
+      with CORS open to any page. Listing an entry's files needs either
+      GitHub's API (a tree listing is one request, but the API allows 60
+      an hour for each visitor's address without a token) or a list of
+      each entry's paths, without their contents, written into the site's
+      build. Which, and does either meet "no duplicate"?
+    - **Which version.** The commit the deployed site was built from, so
+      the code matches what the Arcade runs, or `main`? A built site would
+      need to know its own commit.
+    - **What an entry needs that a project lacks.** An entry starts from
+      `start/load.ts`, which builds a starter from `entry-types` (all 19
+      do), not from a `main.ts`; that needs converting, as 10.2 does the
+      other way. 13 of the 19 entries import `#shared`, the site's shared
+      views (overlay, input, swipes), outside their tests, and the
+      playground has none of it. Their libraries are all on the
+      playground's list. Their tests (`*.test.ts`, `visual-tests/`) are
+      left behind, and with them the only uses of `@mvtjs/audio/headless`. Its images, such as `burrow-bust/assets/*.png`, are
+      committed (83 files across the entries), so they can be fetched too,
+      but a project has no files that are not text yet; and a spritesheet
+      that a Vite plugin builds would not exist.
+    - **Size.** Most entries are over the project's limit of 40 files and
+      the share link's size. Opened from GitHub, an unedited entry could
+      be shared as a reference (`#entry=<id>@<commit>`), not its files;
+      an edited one becomes the visitor's own project, kept in their
+      browser like any other.
+    - **Where it is offered.** In the playground's own menu ("Open an
+      Arcade entry..."), which keeps the Arcade untouched, or on an
+      entry's card in the Arcade, as 10.5 has it.
+    - **Which entries.** Try each entry in the catalogue, and sort them:
+      runs as it is, runs with the conversion, needs `#shared` or assets,
+      too large.
 
 ---
 

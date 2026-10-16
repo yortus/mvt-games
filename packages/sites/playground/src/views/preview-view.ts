@@ -15,6 +15,8 @@ export interface PreviewViewBindings {
     /** Rises each time a paused run should advance one frame. */
     readonly steps: () => number;
     readonly speed: () => number;
+    /** The colour around the project, as `#rrggbb`. A new sandbox's document has it already; a running one is told as it changes. */
+    readonly background: () => string;
     /** Whether a new sandbox takes the keyboard's focus, as one the visitor started does. */
     readonly isFocusTaken: () => boolean;
     /** Shown while there is no sandbox. */
@@ -31,8 +33,9 @@ export interface PreviewViewBindings {
  * Where the project runs: an iframe whose origin is opaque, so the project
  * cannot reach the site's storage or the page around it. Each run gets a
  * fresh iframe, since a document loads each module only once. The view
- * passes on the sandbox's messages, and tells it to pause, resume, step and
- * change speed as the bindings change.
+ * passes on the sandbox's messages, and tells it to pause, resume, step,
+ * change speed and change the colour around the project as the bindings
+ * change.
  */
 export function PreviewView(bindings: PreviewViewBindings): Element {
     const element = document.createElement('div');
@@ -47,6 +50,7 @@ export function PreviewView(bindings: PreviewViewBindings): Element {
         isPaused: bindings.isPaused,
         steps: bindings.steps,
         speed: bindings.speed,
+        background: bindings.background,
         placeholder: bindings.placeholder,
     });
 
@@ -66,6 +70,7 @@ export function PreviewView(bindings: PreviewViewBindings): Element {
             if (w.isPaused.changed) send({ kind: w.isPaused.value ? 'pause' : 'resume' });
             if (w.steps.increased) send({ kind: 'step', deltaMs: STEP_MS });
             if (w.speed.changed) send({ kind: 'set-speed', speed: w.speed.value });
+            if (w.background.changed) send({ kind: 'set-background', colour: w.background.value });
         }
         if (w.placeholder.changed) placeholder.textContent = w.placeholder.value;
         placeholder.hidden = frame !== undefined;

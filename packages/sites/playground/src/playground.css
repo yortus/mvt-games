@@ -1,4 +1,7 @@
-/* The playground's page: a header, then the files, the editor, and the run. */
+/* The playground's page: a header, then the files, the editor, and the run.
+   Every colour is a theme's, from a `--pg-*` variable, which the page sets
+   on the document's root as the theme changes. The site's nav above keeps
+   its own colours, the `--site-*` ones, whatever the theme. */
 
 /* The views hide an element with `hidden`, which must win over a rule that sets its display */
 [hidden] {
@@ -7,8 +10,8 @@
 
 body {
     margin: 0;
-    background: var(--site-bg);
-    color: var(--site-text);
+    background: var(--pg-panel, var(--site-bg));
+    color: var(--pg-text, var(--pg-text));
     font-family: var(--site-font-ui);
     font-size: 14px;
 }
@@ -25,9 +28,9 @@ button,
 select {
     font: inherit;
     font-size: 13px;
-    color: var(--site-text);
-    background: #21262d;
-    border: 1px solid var(--site-nav-border);
+    color: var(--pg-text);
+    background: var(--pg-raised);
+    border: 1px solid var(--pg-border);
     border-radius: 6px;
     padding: 3px 10px;
     cursor: pointer;
@@ -35,7 +38,7 @@ select {
 
 button:hover:not(:disabled),
 select:hover {
-    border-color: var(--site-text-muted);
+    border-color: var(--pg-muted);
 }
 
 button:disabled {
@@ -57,8 +60,7 @@ button:disabled {
     align-items: center;
     gap: 12px;
     padding: 6px 12px;
-    border-bottom: 1px solid var(--site-nav-border);
-    background: var(--site-nav-bg);
+    border-bottom: 1px solid var(--pg-border);
 }
 
 .header-title {
@@ -69,7 +71,7 @@ button:disabled {
 
 .header-project {
     min-width: 0;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -80,8 +82,8 @@ button:disabled {
     flex: none;
     padding: 1px 8px;
     border-radius: 9px;
-    background: #12361f;
-    color: #3fb950;
+    background: color-mix(in srgb, var(--pg-success) 18%, var(--pg-panel));
+    color: var(--pg-success);
     font-size: 12px;
 }
 
@@ -125,7 +127,7 @@ button:disabled {
 }
 
 .divider {
-    background: var(--site-nav-border);
+    background: var(--pg-border);
     touch-action: none;
     outline: none;
 }
@@ -141,7 +143,7 @@ button:disabled {
 .divider:hover,
 .divider:focus-visible,
 .divider-dragging {
-    background: var(--site-accent);
+    background: var(--pg-accent);
 }
 
 /* The preview's iframe would take the pointer from a drag that crosses it */
@@ -154,7 +156,6 @@ button:disabled {
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    background: var(--site-nav-bg);
 }
 
 .files-head {
@@ -163,7 +164,7 @@ button:disabled {
     gap: 6px;
     padding: 6px 6px;
     font-size: 12px;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
@@ -214,11 +215,11 @@ button:disabled {
 }
 
 .file-active {
-    background: #1f2b3a;
+    background: var(--pg-selected);
 }
 
 .file-active .file-name {
-    color: var(--site-accent);
+    color: var(--pg-accent);
 }
 
 /* How many errors a file has, as the language service found them */
@@ -228,15 +229,15 @@ button:disabled {
     margin-right: 4px;
     padding: 0 5px;
     border-radius: 9px;
-    background: #5a1e1e;
-    color: #ffa198;
+    background: color-mix(in srgb, var(--pg-error) 22%, var(--pg-panel));
+    color: var(--pg-error);
     font-size: 11px;
     line-height: 16px;
     text-align: center;
 }
 
 .file-remove {
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     visibility: hidden;
 }
 
@@ -258,14 +259,14 @@ button:disabled {
     align-items: baseline;
     gap: 12px;
     padding: 4px 10px;
-    border-bottom: 1px solid var(--site-nav-border);
-    background: #1c2128;
+    border-bottom: 1px solid var(--pg-border);
+    background: var(--pg-raised);
     font-size: 12px;
 }
 
 .editor-banner-path {
     font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
-    color: var(--site-accent);
+    color: var(--pg-accent);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -273,7 +274,7 @@ button:disabled {
 
 .editor-banner-note {
     flex: none;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
 }
 
 .code-editor {
@@ -301,13 +302,13 @@ button:disabled {
 }
 
 .language-info-type strong {
-    color: var(--site-accent);
+    color: var(--pg-accent);
 }
 
 .language-info-doc {
     margin-top: 6px;
     padding-top: 6px;
-    border-top: 1px solid #3a3f4b;
+    border-top: 1px solid var(--pg-border);
     font-family: var(--site-font-ui);
     white-space: pre-wrap;
 }
@@ -332,13 +333,13 @@ button:disabled {
     align-items: center;
     gap: 6px;
     padding: 6px 8px;
-    border-bottom: 1px solid var(--site-nav-border);
+    border-bottom: 1px solid var(--pg-border);
 }
 
 .run-run {
-    background: #238636;
-    border-color: #2ea043;
-    color: #fff;
+    background: color-mix(in srgb, var(--pg-success) 22%, var(--pg-raised));
+    border-color: var(--pg-success);
+    color: var(--pg-success);
 }
 
 .run-on-change {
@@ -346,19 +347,19 @@ button:disabled {
     align-items: center;
     gap: 4px;
     font-size: 12px;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     cursor: pointer;
 }
 
 .run-phase {
     margin-left: auto;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     font-size: 12px;
 }
 
 .preview {
     position: relative;
-    background: #111;
+    background: var(--pg-background);
     min-height: 0;
 }
 
@@ -375,7 +376,7 @@ button:disabled {
     inset: 0;
     display: grid;
     place-items: center;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     padding: 16px;
     text-align: center;
 }
@@ -391,7 +392,7 @@ button:disabled {
     align-items: center;
     gap: 2px;
     padding: 4px 8px 0;
-    border-bottom: 1px solid var(--site-nav-border);
+    border-bottom: 1px solid var(--pg-border);
 }
 
 .run-tab {
@@ -400,12 +401,12 @@ button:disabled {
     border-radius: 0;
     background: none;
     font-size: 12px;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
 }
 
 .run-tab-active {
-    color: var(--site-text);
-    border-bottom-color: var(--site-accent);
+    color: var(--pg-text);
+    border-bottom-color: var(--pg-accent);
 }
 
 .run-tab-clear {
@@ -442,22 +443,22 @@ button:disabled {
 .console-line,
 .problem {
     padding: 2px 0;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--pg-border);
     white-space: pre-wrap;
     word-break: break-word;
 }
 
 .console-warn {
-    color: #d29922;
+    color: var(--pg-warning);
 }
 
 .console-error,
 .problem-error .problem-text {
-    color: #f85149;
+    color: var(--pg-error);
 }
 
 .problem-warning .problem-text {
-    color: #d29922;
+    color: var(--pg-warning);
 }
 
 /* Marks a problem that stops the project running, as a type problem does not */
@@ -465,8 +466,8 @@ button:disabled {
     margin-right: 8px;
     padding: 0 6px;
     border-radius: 4px;
-    background: #5a1e1e;
-    color: #ffa198;
+    background: color-mix(in srgb, var(--pg-error) 22%, var(--pg-panel));
+    color: var(--pg-error);
     font-family: var(--site-font-ui);
     font-size: 11px;
 }
@@ -477,12 +478,12 @@ button:disabled {
     padding: 0 6px;
     font-family: inherit;
     font-size: 11px;
-    color: var(--site-accent);
+    color: var(--pg-accent);
 }
 
 .problems-none {
     margin: 8px;
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
     font-size: 12px;
 }
 
@@ -495,10 +496,10 @@ button:disabled {
     flex-direction: column;
     min-width: 220px;
     padding: 4px;
-    border: 1px solid var(--site-nav-border);
+    border: 1px solid var(--pg-border);
     border-radius: 6px;
-    background: #1c2128;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    background: var(--pg-raised);
+    box-shadow: 0 8px 24px var(--pg-shadow);
     font-family: var(--site-font-ui);
     font-size: 13px;
 }
@@ -521,12 +522,12 @@ button:disabled {
 .editor-menu-item:hover:not(:disabled),
 .editor-menu-item:focus-visible {
     outline: none;
-    background: #1f6feb;
-    color: #ffffff;
+    background: var(--pg-selected);
+    color: var(--pg-text);
 }
 
 .editor-menu-keys {
-    color: var(--site-text-muted);
+    color: var(--pg-muted);
 }
 
 .editor-menu-item:hover:not(:disabled) .editor-menu-keys,
@@ -536,7 +537,7 @@ button:disabled {
 
 .editor-menu-separator {
     margin: 4px 6px;
-    border-top: 1px solid var(--site-nav-border);
+    border-top: 1px solid var(--pg-border);
 }
 
 /* --- Opening a file by name --- */
@@ -554,7 +555,7 @@ button:disabled {
     justify-content: center;
     align-items: flex-start;
     padding-top: 12vh;
-    background: rgb(0 0 0 / 0.4);
+    background: var(--pg-shadow);
 }
 
 .quick-open-panel {
@@ -562,10 +563,10 @@ button:disabled {
     max-height: 60vh;
     display: flex;
     flex-direction: column;
-    background: var(--site-nav-bg);
-    border: 1px solid var(--site-nav-border);
+    background: var(--pg-raised);
+    border: 1px solid var(--pg-border);
     border-radius: 8px;
-    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+    box-shadow: 0 12px 32px var(--pg-shadow);
     overflow: hidden;
 }
 
@@ -573,10 +574,10 @@ button:disabled {
     box-sizing: border-box;
     width: 100%;
     font: inherit;
-    color: var(--site-text);
-    background: var(--site-bg);
+    color: var(--pg-text);
+    background: var(--pg-background);
     border: none;
-    border-bottom: 1px solid var(--site-nav-border);
+    border-bottom: 1px solid var(--pg-border);
     padding: 10px 12px;
     outline: none;
 }
@@ -601,8 +602,8 @@ button:disabled {
 
 .quick-open-match:hover,
 .quick-open-matches li:first-child .quick-open-match {
-    background: #1f2b3a;
-    color: var(--site-accent);
+    background: var(--pg-selected);
+    color: var(--pg-accent);
 }
 
 /* --- Narrow screens: one panel at a time, chosen by tabs --- */
@@ -615,7 +616,7 @@ button:disabled {
 
     .panel-tabs {
         display: flex;
-        border-bottom: 1px solid var(--site-nav-border);
+        border-bottom: 1px solid var(--pg-border);
     }
 
     .panel-tab {
@@ -628,7 +629,7 @@ button:disabled {
     }
 
     .panel-tab-active {
-        border-bottom-color: var(--site-accent);
+        border-bottom-color: var(--pg-accent);
     }
 
     .workspace,

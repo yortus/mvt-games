@@ -72,6 +72,8 @@ export interface HtmlProjectOptions {
     readonly width?: number;
     /** The root's height, in CSS pixels. Without it, the root fills the preview's height. */
     readonly height?: number;
+    /** The colour behind the root's elements, such as `0x1a1a2e`. Their text is light, so the default is near black. */
+    readonly background?: number;
     /** Builds the project's models and views, and returns what to tick. It may return a promise. */
     readonly start: (options: HtmlStartOptions) => StartResult | Promise<StartResult>;
 }

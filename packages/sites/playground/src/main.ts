@@ -19,7 +19,7 @@ import {
     toSharedHash,
 } from './runtime';
 import { loadOldPlaygroundProject, loadSavedProject, loadSettings, saveProject, saveSettings, type SavedProject } from './storage';
-import { PlaygroundView } from './views';
+import { PlaygroundView, THEMES } from './views';
 import './nav.css';
 import './playground.css';
 
@@ -48,7 +48,7 @@ const model = createWorkspaceModel({
     project: first.project,
     savedLayout: settings.layout,
     isRunOnChange: settings.isRunOnChange,
-    editorTheme: settings.editorTheme,
+    theme: settings.theme,
 });
 if (first.exampleId !== undefined) model.openExample(first.exampleId);
 const watcher = watch({
@@ -61,7 +61,7 @@ const watcher = watch({
 });
 const settingsWatcher = watch({
     isRunOnChange: () => model.isRunOnChange,
-    editorTheme: () => model.editorTheme,
+    theme: () => model.theme,
     filesWidth: () => model.layout.filesWidth,
     runWidth: () => model.layout.runWidth,
     consoleHeight: () => model.layout.consoleHeight,
@@ -164,7 +164,7 @@ async function prepareRun(workspace: WorkspaceModel): Promise<void> {
     const urls = await libraryUrls;
     if (workspace.runsRequested !== run) return;
     if (prepared.problems.length > 0) workspace.reportProblems(prepared.problems);
-    else workspace.reportPrepared(toSandboxDocument(prepared, urls));
+    else workspace.reportPrepared(toSandboxDocument(workspace, prepared, urls));
 }
 
 /** Checks the project's files, and tells the model what the check found. The model ignores a check the files have changed since. */
@@ -175,7 +175,7 @@ async function checkProject(workspace: WorkspaceModel): Promise<void> {
     workspace.reportChecked({
         checkNumber,
         problems: prepared.problems,
-        sandboxDocument: prepared.problems.length > 0 ? undefined : toSandboxDocument(prepared, urls),
+        sandboxDocument: prepared.problems.length > 0 ? undefined : toSandboxDocument(workspace, prepared, urls),
     });
 }
 
@@ -187,8 +187,9 @@ async function checkTypes(workspace: WorkspaceModel): Promise<void> {
     if (problems !== undefined) workspace.reportTypeProblems({ checkNumber, problems });
 }
 
-function toSandboxDocument(prepared: PreparedProject, urls: LibraryUrls): string {
+function toSandboxDocument(workspace: WorkspaceModel, prepared: PreparedProject, urls: LibraryUrls): string {
     return buildSandboxDocument({
+        background: THEMES[workspace.theme].palette.background,
         modules: prepared.modules,
         loops: prepared.loops,
         libraries: urls.libraries,
@@ -201,11 +202,11 @@ function toSandboxDocument(prepared: PreparedProject, urls: LibraryUrls): string
 /** Saves the workspace's settings as any of them changes. */
 function saveChangedSettings(workspace: WorkspaceModel): void {
     const w = settingsWatcher.poll();
-    if (!(w.isRunOnChange.changed || w.editorTheme.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
+    if (!(w.isRunOnChange.changed || w.theme.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
     const { layout } = workspace;
     saveSettings({
         isRunOnChange: workspace.isRunOnChange,
-        editorTheme: workspace.editorTheme,
+        theme: workspace.theme,
         layout: {
             filesWidth: layout.filesWidth,
             runWidth: layout.runWidth,

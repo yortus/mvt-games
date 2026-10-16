@@ -28,6 +28,7 @@
         "@uiw/codemirror-theme-github": "^4.25.12",
         "@uiw/codemirror-theme-monokai": "^4.25.12",
         "@uiw/codemirror-theme-nord": "^4.25.12",
+        "@uiw/codemirror-theme-solarized": "^4.25.12",
         "@uiw/codemirror-theme-tokyo-night": "^4.25.12",
         "@uiw/codemirror-theme-vscode": "^4.25.12",
         "acorn": "^8.18.0",
