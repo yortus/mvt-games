@@ -15,7 +15,17 @@ describe('share links', () => {
     it('read back the project they were written from', async () => {
         const encoded = await encodeSharedProject(PROJECT);
         expect(encoded).toMatch(/^[\w-]+$/);
-        expect(await decodeSharedProject(encoded)).toEqual(PROJECT);
+        expect(await decodeSharedProject(encoded)).toEqual({ ...PROJECT, isBarrelKept: true, description: '' });
+    });
+
+    it('say when the playground does not keep a project\'s barrels, and keep them otherwise', async () => {
+        expect((await decodeSharedProject(await encodeSharedProject({ ...PROJECT, isBarrelKept: false })))?.isBarrelKept).toBe(false);
+        expect((await decodeSharedProject(await encodeSharedProject(PROJECT)))?.isBarrelKept).toBe(true);
+    });
+
+    it('carry a project\'s description, and none where it has none', async () => {
+        expect((await decodeSharedProject(await encodeSharedProject({ ...PROJECT, description: 'A ball' })))?.description).toBe('A ball');
+        expect((await decodeSharedProject(await encodeSharedProject(PROJECT)))?.description).toBe('');
     });
 
     it('are smaller than the old playground\'s lz-string links', async () => {

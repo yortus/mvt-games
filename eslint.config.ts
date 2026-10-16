@@ -9,9 +9,9 @@ import tseslint from 'typescript-eslint';
 // with only the `node` and `import` conditions, never `@mvtjs/source`.
 import mvt from '#eslint-plugin';
 
-// The playground's examples: small projects, written as an entry's code is,
-// and linted by the same rules.
-const PLAYGROUND_EXAMPLES = 'packages/sites/playground/examples/**/*.{ts,tsx}';
+// The playground's examples and starting projects: small projects, written as
+// an entry's code is, and linted by the same rules.
+const PLAYGROUND_EXAMPLES = 'packages/sites/playground/{examples,starters}/**/*.{ts,tsx}';
 
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
@@ -182,7 +182,7 @@ export default tseslint.config(
         files: [
             'packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts',
             'packages/sites/playground/src/**/models/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*-model.ts',
-            'packages/sites/playground/examples/**/models/**/*.{ts,tsx}', 'packages/sites/playground/examples/**/*-model.ts',
+            'packages/sites/playground/{examples,starters}/**/models/**/*.{ts,tsx}', 'packages/sites/playground/{examples,starters}/**/*-model.ts',
         ],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,

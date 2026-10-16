@@ -49,4 +49,35 @@ describe('a layout model', () => {
         layout.closeQuickOpen();
         expect(layout.isQuickOpenOpen).toBe(false);
     });
+
+    it('opens one dialog at a time: Projects, Project options, or opening a file by name', () => {
+        const layout = createLayoutModel({});
+        layout.openQuickOpen(['main.ts']);
+        layout.openProjects();
+        expect(layout.isProjectsOpen).toBe(true);
+        expect(layout.isQuickOpenOpen).toBe(false);
+        layout.openQuickOpen(['main.ts']);
+        expect(layout.isProjectsOpen).toBe(false);
+        layout.closeQuickOpen();
+        layout.openProjects();
+        layout.closeProjects();
+        expect(layout.isProjectsOpen).toBe(false);
+        layout.openProjectOptions();
+        expect(layout.isProjectOptionsOpen).toBe(true);
+        layout.openProjects();
+        expect(layout.isProjectOptionsOpen).toBe(false);
+        layout.openProjectOptions();
+        layout.closeProjectOptions();
+        expect(layout.isProjectOptionsOpen).toBe(false);
+    });
+
+    it('folds a folder in the file list, and unfolds it, as a new set each time', () => {
+        const layout = createLayoutModel({});
+        const before = layout.foldedFolders;
+        layout.toggleFolder('models');
+        expect(layout.foldedFolders.has('models')).toBe(true);
+        expect(layout.foldedFolders).not.toBe(before);
+        layout.toggleFolder('models');
+        expect(layout.foldedFolders.has('models')).toBe(false);
+    });
 });

@@ -25,9 +25,15 @@ export const DEFAULT_SIZES: PaneSizes = { filesWidth: 230, runWidth: 480, consol
  */
 export interface LayoutModel extends PaneSizes {
     readonly isFilesFolded: boolean;
+    /** The folders folded in the file list, by path. */
+    readonly foldedFolders: ReadonlySet<string>;
     readonly narrowPanel: PanelKind;
     readonly runPaneTab: RunPaneTabKind;
     readonly isQuickOpenOpen: boolean;
+    /** Whether the Projects dialog is open, which lists the kept projects, and makes new ones. */
+    readonly isProjectsOpen: boolean;
+    /** Whether the Project options dialog is open, for the open project's name and settings. */
+    readonly isProjectOptionsOpen: boolean;
     /** What the visitor has typed in the dialog that opens a file by name. */
     readonly quickOpenQuery: string;
     /** The paths that match the query, best first. */
@@ -40,11 +46,17 @@ export interface LayoutModel extends PaneSizes {
     /** Resizes the console by a distance, kept within its limits. It grows as the divider moves up. */
     readonly resizeConsole: (deltaPx: number) => void;
     readonly toggleFiles: () => void;
+    /** Folds a folder in the file list, or unfolds it. */
+    readonly toggleFolder: (path: string) => void;
     readonly showPanel: (panel: PanelKind) => void;
     readonly showRunPaneTab: (tab: RunPaneTabKind) => void;
     /** Opens the dialog that opens a file by name, matching against these paths. */
     readonly openQuickOpen: (paths: readonly string[]) => void;
     readonly closeQuickOpen: () => void;
+    readonly openProjects: () => void;
+    readonly closeProjects: () => void;
+    readonly openProjectOptions: () => void;
+    readonly closeProjectOptions: () => void;
     readonly setQuickOpenQuery: (query: string) => void;
 }
 
@@ -68,9 +80,12 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
     let runWidth = clamp(saved.runWidth ?? DEFAULT_SIZES.runWidth, LIMITS.runWidth);
     let consoleHeight = clamp(saved.consoleHeight ?? DEFAULT_SIZES.consoleHeight, LIMITS.consoleHeight);
     let isFilesFolded = saved.isFilesFolded ?? false;
+    let foldedFolders: ReadonlySet<string> = new Set();
     let narrowPanel: PanelKind = 'code';
     let runPaneTab: RunPaneTabKind = 'console';
     let isQuickOpenOpen = false;
+    let isProjectsOpen = false;
+    let isProjectOptionsOpen = false;
     let quickOpenQuery = '';
     let quickOpenPaths: readonly string[] = [];
     let quickOpenMatches: readonly string[] = [];
@@ -80,9 +95,12 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
         get runWidth() { return runWidth; },
         get consoleHeight() { return consoleHeight; },
         get isFilesFolded() { return isFilesFolded; },
+        get foldedFolders() { return foldedFolders; },
         get narrowPanel() { return narrowPanel; },
         get runPaneTab() { return runPaneTab; },
         get isQuickOpenOpen() { return isQuickOpenOpen; },
+        get isProjectsOpen() { return isProjectsOpen; },
+        get isProjectOptionsOpen() { return isProjectOptionsOpen; },
         get quickOpenQuery() { return quickOpenQuery; },
         get quickOpenMatches() { return quickOpenMatches; },
 
@@ -102,6 +120,13 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
             isFilesFolded = !isFilesFolded;
         },
 
+        toggleFolder(path) {
+            // A new set, so a view that follows it sees the change
+            const next = new Set(foldedFolders);
+            if (!next.delete(path)) next.add(path);
+            foldedFolders = next;
+        },
+
         showPanel(panel) {
             narrowPanel = panel;
         },
@@ -112,9 +137,31 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
 
         openQuickOpen(paths) {
             isQuickOpenOpen = true;
+            isProjectsOpen = false;
+            isProjectOptionsOpen = false;
             quickOpenPaths = paths;
             quickOpenQuery = '';
             quickOpenMatches = paths;
+        },
+
+        openProjects() {
+            isProjectsOpen = true;
+            isQuickOpenOpen = false;
+            isProjectOptionsOpen = false;
+        },
+
+        openProjectOptions() {
+            isProjectOptionsOpen = true;
+            isQuickOpenOpen = false;
+            isProjectsOpen = false;
+        },
+
+        closeProjectOptions() {
+            isProjectOptionsOpen = false;
+        },
+
+        closeProjects() {
+            isProjectsOpen = false;
         },
 
         closeQuickOpen() {

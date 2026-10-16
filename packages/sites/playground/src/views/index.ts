@@ -1,2 +1,3 @@
 export { PlaygroundView, type PlaygroundViewBindings } from './playground-view';
-export { THEMES } from './themes';
+export { ThemePickerView, type ThemePickerViewBindings } from './theme-picker-view';
+export { THEME_CHOICES, THEMES } from './themes';

@@ -8,6 +8,8 @@ import { THEME_KINDS, type ThemeKind, type PaneSizes } from '../models';
 export interface WorkspaceSettings {
     readonly isRunOnChange?: boolean;
     readonly theme?: ThemeKind;
+    /** The kept project open last, which a visit with no link to an example or a project opens. */
+    readonly lastProjectId?: string;
     readonly layout?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean };
 }
 
@@ -24,6 +26,7 @@ export function loadSettings(): WorkspaceSettings {
         const layout = (typeof data.layout === 'object' && data.layout !== null ? data.layout : {}) as Record<string, unknown>;
         return {
             isRunOnChange: typeof data.isRunOnChange === 'boolean' ? data.isRunOnChange : undefined,
+            lastProjectId: typeof data.lastProjectId === 'string' ? data.lastProjectId : undefined,
             theme: (THEME_KINDS as readonly unknown[]).includes(data.theme) ? data.theme as ThemeKind : undefined,
             layout: {
                 filesWidth: numberOrUndefined(layout.filesWidth),

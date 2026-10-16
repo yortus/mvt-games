@@ -2,7 +2,7 @@ import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { refreshView, updateView } from '@mvtjs/three';
 import type { ThreeProject, ThreeStartOptions } from '../project-api';
 import { DEFAULT_BACKGROUND, fitToWindow } from './fit-to-window';
-import type { RendererHost } from './run-sandbox';
+import type { RendererHost } from './renderer-host';
 
 // ---------------------------------------------------------------------------
 // Functions

@@ -23,7 +23,7 @@ export interface CodeEditorViewBindings {
     /** The file to show. */
     readonly activePath: () => string;
     readonly textOf: (path: string) => string;
-    /** Whether a file is shown read-only, as a library's declarations are. */
+    /** Whether a file is shown read-only, as a library's declarations are. A file can become read-only, or stop being, while it is open. */
     readonly isReadOnly: (path: string) => boolean;
     /** Rises each time a different project opens, which starts every file afresh. */
     readonly projectsOpened: () => number;
@@ -47,6 +47,10 @@ export interface CodeEditorViewBindings {
     readonly onDefinitionFound?: (target: DefinitionTarget) => void;
     /** Reported with edits to the project's files, as a rename or a fix makes. */
     readonly onEditsWanted?: (edits: readonly FileEdit[]) => void;
+    /** Asks the visitor for a name's new name, for rename. Gives it, or undefined if they cancelled. */
+    readonly askNewName?: (oldName: string) => Promise<string | undefined>;
+    /** Tells the visitor why something could not be done. */
+    readonly tell?: (message: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +108,11 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
             editor.setState(states.get(shownPath) ?? createState(shownPath));
         }
         if (externalEdits.changed) takeExternalEdits();
+        // A file that became read-only, or stopped being, as a barrel does when the playground starts or stops keeping it, starts afresh
+        if (editor.state.readOnly !== bindings.isReadOnly(shownPath)) {
+            editor.setState(createState(shownPath));
+            showProblems();
+        }
         if (projects.changed || path.changed || typeChecks.changed || externalEdits.changed) showProblems();
         if (places.increased) revealPlace();
     }
@@ -130,6 +139,8 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
                             language: bindings.language,
                             onDefinitionFound: bindings.onDefinitionFound,
                             onEditsWanted: bindings.onEditsWanted,
+                            askNewName: bindings.askNewName,
+                            tell: bindings.tell,
                         }),
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged && !isReadOnly) bindings.onTextEdited?.(path, update.state.doc.toString());

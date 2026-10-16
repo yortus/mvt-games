@@ -1,22 +1,66 @@
-import type { OldPlaygroundCode, ProjectFile } from '../runtime';
+import { toUniqueProjectName } from '../models';
+import { convertOldCode, type OldPlaygroundCode, type ProjectFile } from '../runtime';
+import type { ProjectDatabase } from './project-database';
 
 // ---------------------------------------------------------------------------
-// Interface
+// Options
 // ---------------------------------------------------------------------------
 
-/** A project as the browser keeps it between visits. */
-export interface SavedProject {
-    readonly name: string;
-    readonly files: readonly ProjectFile[];
+export interface MoveLocalProjectsOptions {
+    readonly database: ProjectDatabase;
+    /** The browser's `localStorage`, or a stand-in for one in tests. */
+    readonly storage: Storage;
+    /** Makes a new project's id. */
+    readonly createId: () => string;
+    /** The time now, in milliseconds since 1970, for the projects' `savedAt`. */
+    readonly now: number;
 }
 
 // ---------------------------------------------------------------------------
 // Functions
 // ---------------------------------------------------------------------------
 
-/** The project the visitor last worked on, if the browser kept one. */
-export function loadSavedProject(): SavedProject | undefined {
-    const data = readJson(PROJECT_KEY) as { name?: unknown; files?: unknown } | undefined;
+/**
+ * Moves the projects that `localStorage` kept into the database, where the
+ * playground keeps its projects now: the one project this playground kept
+ * before it kept many, and the one the old playground kept, converted, as
+ * "My first project". Each is removed from `localStorage` once the database
+ * has it, and only where the database outlasts the page. Returns the id of
+ * the one this playground kept, which the visitor last worked on, if there
+ * was one.
+ */
+export async function moveLocalProjects(options: MoveLocalProjectsOptions): Promise<string | undefined> {
+    const { database, storage, createId, now } = options;
+    let lastId: string | undefined;
+    // Each with a name no project kept already has
+    const names = (await database.list()).map((p) => p.name);
+    const old = readOldPlaygroundCode(storage);
+    if (old !== undefined) {
+        const name = toUniqueProjectName('My first project', names);
+        names.push(name);
+        await database.save({ id: createId(), name, files: convertOldCode(old), savedAt: now - 1 });
+        if (database.isKept) removeItem(storage, OLD_PROJECT_KEY);
+    }
+    const kept = readKeptProject(storage);
+    if (kept !== undefined) {
+        lastId = createId();
+        await database.save({ id: lastId, name: toUniqueProjectName(kept.name, names), files: kept.files, savedAt: now });
+        if (database.isKept) removeItem(storage, PROJECT_KEY);
+    }
+    return lastId;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** Where this playground kept its one project, before it kept many. */
+const PROJECT_KEY = 'mvt-playground-project';
+/** Where the old playground kept its one project. */
+const OLD_PROJECT_KEY = 'mvt-playground-custom';
+
+function readKeptProject(storage: Storage): { name: string; files: ProjectFile[] } | undefined {
+    const data = readJson(storage, PROJECT_KEY) as { name?: unknown; files?: unknown } | undefined;
     if (data === undefined || typeof data.name !== 'string' || !Array.isArray(data.files)) return undefined;
     const files: ProjectFile[] = [];
     for (const file of data.files as { path?: unknown; text?: unknown }[]) {
@@ -26,19 +70,8 @@ export function loadSavedProject(): SavedProject | undefined {
     return { name: data.name, files };
 }
 
-/** Keeps the project for the visitor's next visit. Does nothing where the browser keeps nothing. */
-export function saveProject(project: SavedProject): void {
-    try {
-        localStorage.setItem(PROJECT_KEY, JSON.stringify({ name: project.name, files: project.files }));
-    }
-    catch {
-        // Storage is off or full. The project stays open, unsaved.
-    }
-}
-
-/** The project the old playground kept, if the browser still has it and no new one was saved. */
-export function loadOldPlaygroundProject(): OldPlaygroundCode | undefined {
-    const data = readJson(OLD_PROJECT_KEY) as { m?: unknown; v?: unknown; w?: unknown; h?: unknown } | undefined;
+function readOldPlaygroundCode(storage: Storage): OldPlaygroundCode | undefined {
+    const data = readJson(storage, OLD_PROJECT_KEY) as { m?: unknown; v?: unknown; w?: unknown; h?: unknown } | undefined;
     if (data === undefined || typeof data.m !== 'string' || typeof data.v !== 'string') return undefined;
     return {
         modelCode: data.m,
@@ -48,20 +81,21 @@ export function loadOldPlaygroundProject(): OldPlaygroundCode | undefined {
     };
 }
 
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-const PROJECT_KEY = 'mvt-playground-project';
-/** Where the old playground kept its one project. */
-const OLD_PROJECT_KEY = 'mvt-playground-custom';
-
-function readJson(key: string): unknown {
+function readJson(storage: Storage, key: string): unknown {
     try {
-        const text = localStorage.getItem(key);
+        const text = storage.getItem(key);
         return text === null ? undefined : JSON.parse(text);
     }
     catch {
         return undefined;
+    }
+}
+
+function removeItem(storage: Storage, key: string): void {
+    try {
+        storage.removeItem(key);
+    }
+    catch {
+        // Storage is off. The item stays, and moves again next visit, as a copy
     }
 }

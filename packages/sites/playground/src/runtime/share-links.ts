@@ -8,6 +8,10 @@ import type { ProjectFile } from './prepare-project';
 export interface SharedProject {
     readonly name: string;
     readonly files: readonly ProjectFile[];
+    /** Whether the playground keeps the project's barrels. A link without it keeps them, as links from before it did. */
+    readonly isBarrelKept?: boolean;
+    /** What the project is. A link without one has none. */
+    readonly description?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -20,7 +24,12 @@ export interface SharedProject {
  * playground's format, makes.
  */
 export async function encodeSharedProject(project: SharedProject): Promise<string> {
-    const json = JSON.stringify({ n: project.name, f: project.files.map((f) => [f.path, f.text]) });
+    const json = JSON.stringify({
+        n: project.name,
+        f: project.files.map((f) => [f.path, f.text]),
+        ...(project.isBarrelKept === false ? { b: 0 } : {}),
+        ...(project.description === undefined || project.description === '' ? {} : { d: project.description }),
+    });
     const zipped = await transform(new TextEncoder().encode(json), new CompressionStream('gzip'));
     return toBase64Url(zipped);
 }
@@ -29,14 +38,14 @@ export async function encodeSharedProject(project: SharedProject): Promise<strin
 export async function decodeSharedProject(encoded: string): Promise<SharedProject | undefined> {
     try {
         const json = new TextDecoder().decode(await transform(fromBase64Url(encoded), new DecompressionStream('gzip')));
-        const data = JSON.parse(json) as { n?: unknown; f?: unknown };
+        const data = JSON.parse(json) as { n?: unknown; f?: unknown; b?: unknown; d?: unknown };
         if (typeof data.n !== 'string' || !Array.isArray(data.f)) return undefined;
         const files: ProjectFile[] = [];
         for (const entry of data.f as unknown[]) {
             if (!Array.isArray(entry) || typeof entry[0] !== 'string' || typeof entry[1] !== 'string') return undefined;
             files.push({ path: entry[0], text: entry[1] });
         }
-        return { name: data.n, files };
+        return { name: data.n, files, isBarrelKept: data.b !== 0, description: typeof data.d === 'string' ? data.d : '' };
     }
     catch {
         return undefined;

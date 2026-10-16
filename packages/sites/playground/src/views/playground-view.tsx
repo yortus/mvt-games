@@ -1,17 +1,23 @@
 /** @jsxImportSource @mvtjs/html */
-import { watch } from '@mvtjs/utils';
+import { memoiseLast, watch } from '@mvtjs/utils';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
-import { THEME_KINDS, type PanelKind, type ShareStatus, type WorkspaceModel } from '../models';
+import type { PanelKind, WorkspaceModel } from '../models';
+import type { RendererKind } from '../project-api';
 import { MAIN_PATH } from '../runtime';
 import { CodeEditorView } from './code-editor-view';
 import { ConsoleView } from './console-view';
+import { DialogView } from './dialog-view';
+import { createDialogs } from './dialogs';
 import { DividerView } from './divider-view';
 import { FileListView } from './file-list-view';
 import { HeaderView } from './header-view';
 import { PreviewView } from './preview-view';
 import { ProblemsView } from './problems-view';
+import { ProjectOptionsView } from './project-options-view';
+import { ProjectsView } from './projects-view';
 import { QuickOpenView } from './quick-open-view';
 import { RunControlsView } from './run-controls-view';
+import { ShareView } from './share-view';
 import { THEMES, writePalette } from './themes';
 
 // ---------------------------------------------------------------------------
@@ -22,6 +28,8 @@ export interface PlaygroundViewBindings {
     readonly model: WorkspaceModel;
     /** The examples to offer, by id and name. */
     readonly examples: readonly { readonly id: string; readonly name: string }[];
+    /** The starting projects New offers, one for each renderer. */
+    readonly starters: readonly { readonly renderer: RendererKind; readonly name: string; readonly description: string }[];
     /** The language service, for the editor's completions, hover and the rest. */
     readonly language?: LanguageClient;
 }
@@ -37,7 +45,8 @@ export interface PlaygroundViewBindings {
  * narrow screen shows one panel at a time, chosen by tabs.
  *
  * Ctrl+Enter, or Cmd+Enter, runs the project from anywhere on the page,
- * Ctrl+P, or Cmd+P, opens a file by name, and Ctrl+S, or Cmd+S, saves it.
+ * Ctrl+P, or Cmd+P, opens a file by name, Ctrl+O, or Cmd+O, opens the
+ * Projects dialog, and Ctrl+S, or Cmd+S, saves the project.
  */
 export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
     const { model } = bindings;
@@ -50,21 +59,19 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         consoleHeight: () => layout.consoleHeight,
     });
     const themeWatcher = watch({ theme: () => model.theme });
+    // The page's dialogs, in place of the browser's, so they take the theme
+    const dialogs = createDialogs();
     window.addEventListener('keydown', onKeyDown);
 
     return (
         <div class={() => PANEL_CLASSES[layout.narrowPanel]} onRefresh={writeTheme} onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}>
             <HeaderView
                 projectName={() => model.projectName}
-                examples={bindings.examples}
-                shareLabel={() => SHARE_LABELS[model.shareStatus]}
-                isSharing={() => model.shareStatus === 'sharing'}
                 saves={() => model.savesRequested}
-                themes={THEME_CHOICES}
-                theme={() => model.theme}
-                onExampleChosen={(id) => model.openExample(id)}
+                onOptionsPressed={() => layout.openProjectOptions()}
+                onProjectsPressed={() => layout.openProjects()}
                 onSharePressed={() => model.share()}
-                onThemeChosen={(theme) => model.setTheme(theme)}
+                onExportPressed={() => model.exportProject()}
             />
             <nav class="panel-tabs" aria-label="Panels">
                 {PANELS.map((panel) => (
@@ -82,10 +89,14 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     activePath={() => model.activePath}
                     fixedPath={MAIN_PATH}
                     isFolded={() => layout.isFilesFolded}
+                    foldedFolders={() => layout.foldedFolders}
                     problemCountOf={model.problemCountOf}
+                    isKeptBarrel={model.isKeptBarrel}
                     onFoldToggled={() => layout.toggleFiles()}
+                    onFolderToggled={(path) => layout.toggleFolder(path)}
                     onFileChosen={(path) => model.openFile(path)}
                     onAddPressed={addFile}
+                    onMovePressed={movePath}
                     onRemovePressed={removeFile}
                 />
                 <DividerView orientation="vertical" label="Resize the file list" onDragged={(deltaPx) => layout.resizeFiles(deltaPx)} />
@@ -94,10 +105,14 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         <span class="editor-banner-path" text={() => model.libraryFile?.path ?? ''} />
                         <span class="editor-banner-note" text="Read-only: a library's declarations" />
                     </div>
+                    <div class="editor-banner" visible={() => model.isKeptBarrel(model.activePath)}>
+                        <span class="editor-banner-note" text={() => keptBarrelNote(model.activePath)} />
+                        <button type="button" class="editor-banner-button" text="Manage files myself" onClick={() => void stopAutoBarrels()} />
+                    </div>
                     {CodeEditorView({
                         activePath: () => model.activePath,
                         textOf: model.textOf,
-                        isReadOnly: (path) => path === model.libraryFile?.path,
+                        isReadOnly: (path) => path === model.libraryFile?.path || model.isKeptBarrel(path),
                         projectsOpened: () => model.projectsOpened,
                         externalEdits: () => model.externalEdits,
                         shownPlace: () => model.shownPlace,
@@ -109,6 +124,8 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         onTextEdited: (path, text) => model.editFile(path, text),
                         onDefinitionFound: openDefinition,
                         onEditsWanted: (edits) => model.applyEdits(edits),
+                        askNewName: (oldName) => dialogs.prompt({ title: 'Rename', message: `Rename ${oldName}, everywhere it is used, to:`, value: oldName, confirmLabel: 'Rename' }),
+                        tell: (message) => void dialogs.tell({ title: 'Cannot rename', message }),
                     })}
                 </div>
                 <DividerView orientation="vertical" label="Resize the run" onDragged={(deltaPx) => layout.resizeRun(deltaPx)} />
@@ -176,6 +193,50 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                 }}
                 onClosed={() => layout.closeQuickOpen()}
             />
+            <ProjectsView
+                isOpen={() => layout.isProjectsOpen}
+                projects={() => model.keptProjects}
+                openId={() => model.projectId}
+                isKept={() => model.isKeepingProjects}
+                starters={bindings.starters}
+                examples={bindings.examples}
+                onExampleChosen={(id) => {
+                    layout.closeProjects();
+                    model.openExample(id);
+                }}
+                onNewPressed={(renderer) => {
+                    layout.closeProjects();
+                    model.newProject(renderer);
+                }}
+                onOpenPressed={(id) => {
+                    layout.closeProjects();
+                    if (id !== model.projectId) model.requestProject({ kind: 'open', id });
+                }}
+                onDuplicatePressed={(id) => model.requestProject({ kind: 'duplicate', id })}
+                onDeletePressed={deleteProject}
+                onClosed={() => layout.closeProjects()}
+            />
+            <ShareView
+                status={() => model.shareStatus}
+                link={() => model.shareLink}
+                onCopyPressed={() => model.copyShareLink()}
+                onExportPressed={() => {
+                    model.closeShare();
+                    model.exportProject();
+                }}
+                onClosed={() => model.closeShare()}
+            />
+            <ProjectOptionsView
+                isOpen={() => layout.isProjectOptionsOpen}
+                name={() => model.projectName}
+                description={() => model.projectDescription}
+                isBarrelKept={() => model.isBarrelKept}
+                onRenamePressed={(name) => model.renameProject(name)}
+                onDescriptionTyped={(description) => model.setProjectDescription(description)}
+                onBarrelKeptToggled={(isKept) => model.setBarrelKept(isKept)}
+                onClosed={() => layout.closeProjectOptions()}
+            />
+            <DialogView dialogs={dialogs} />
         </div>
     );
 
@@ -244,17 +305,56 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
             event.preventDefault();
             model.save();
         }
+        else if (event.key === 'o' || event.key === 'O') {
+            event.preventDefault();
+            layout.openProjects();
+        }
     }
 
-    function addFile(): void {
-        const path = window.prompt('The new file\'s path, such as models/ship-model.ts');
-        if (path === null || path.trim() === '') return;
-        const problem = model.addFile(path.trim());
-        if (problem !== undefined) window.alert(problem);
+    /** Adds a file, in a folder, or at the root for '', asking for its path, the folder's filled in. */
+    async function addFile(folder: string): Promise<void> {
+        const path = (await dialogs.prompt({
+            title: 'New file',
+            message: 'Its path, such as models/ship-model.ts. A folder in the path is made if it is new.',
+            value: folder === '' ? '' : `${folder}/`,
+            confirmLabel: 'Add',
+            // After the folder, to type the file's name
+            isValueChosen: false,
+        }))?.trim();
+        if (path === undefined || path === '') return;
+        const problem = model.addFile(path);
+        if (problem !== undefined) await dialogs.tell({ title: 'Cannot add the file', message: problem });
     }
 
-    function removeFile(path: string): void {
-        if (window.confirm(`Remove ${path}? This cannot be undone.`)) model.removeFile(path);
+    /** Moves a file or a folder to a path the visitor gives, with the language service's edits to the imports of what moves. */
+    async function movePath(from: string): Promise<void> {
+        const to = (await dialogs.prompt({ title: 'Move', message: `Move ${from}, and update its imports, to:`, value: from, confirmLabel: 'Move' }))?.trim();
+        if (to === undefined || to === '' || to === from) return;
+        const edits = await (bindings.language?.fileRenameEdits(from, to) ?? Promise.resolve([]));
+        const problem = model.movePath(from, to, edits);
+        if (problem !== undefined) await dialogs.tell({ title: 'Cannot move it', message: problem });
+    }
+
+    /** Stops auto-generating barrels, from a barrel's banner, once the visitor confirms what that means. */
+    async function stopAutoBarrels(): Promise<void> {
+        const isConfirmed = await dialogs.confirm({
+            title: 'Manage files yourself?',
+            message: 'No rule at all, and barrels are ordinary files: keep them, change them, or have none. Import however you like.',
+            confirmLabel: 'Manage them myself',
+        });
+        if (isConfirmed) model.setBarrelKept(false);
+    }
+
+    async function deleteProject(id: string): Promise<void> {
+        const project = model.keptProjects.find((p) => p.id === id);
+        if (project === undefined) return;
+        const isConfirmed = await dialogs.confirm({ title: `Delete ${project.name}?`, message: 'It cannot be brought back.', confirmLabel: 'Delete', isDangerous: true });
+        if (isConfirmed) model.requestProject({ kind: 'delete', id });
+    }
+
+    async function removeFile(path: string): Promise<void> {
+        const isConfirmed = await dialogs.confirm({ title: `Remove ${path}?`, message: 'It cannot be brought back.', confirmLabel: 'Remove', isDangerous: true });
+        if (isConfirmed) model.removeFile(path);
     }
 }
 
@@ -262,18 +362,10 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
 // Internals
 // ---------------------------------------------------------------------------
 
-const SHARE_LABELS: Readonly<Record<ShareStatus, string>> = {
-    'idle': 'Share',
-    'sharing': 'Sharing...',
-    'copied': 'Link copied',
-    'too-large': 'Too large to share',
-    'failed': 'Could not copy',
-};
-
 const NO_PROBLEMS: readonly TypeProblem[] = [];
 
-/** The themes, in the order the header offers them. */
-const THEME_CHOICES = THEME_KINDS.map((kind) => ({ kind, name: THEMES[kind].name, scheme: THEMES[kind].scheme }));
+/** What the banner over a kept barrel says, for the barrel's path. Made only as the barrel shown changes. */
+const keptBarrelNote = memoiseLast((path: string) => `Auto-generated. Exports everything in ${path.slice(0, path.lastIndexOf('/'))}/.`);
 
 /** The panels a narrow screen shows one at a time, in the order of their tabs. */
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [

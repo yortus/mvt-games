@@ -1,6 +1,7 @@
 import type ts from 'typescript';
 import { createSystem, createVirtualTypeScriptEnvironment, type VirtualTypeScriptEnvironment } from '@typescript/vfs';
 import { BASE_TYPE_BUNDLES, isLibrary, LIBRARIES, TYPE_BUNDLES_OF, type TypeBundleKind } from '../../libraries';
+import { resolveRelative } from '../runtime';
 import type {
     CodeFix,
     CompletionDetails,
@@ -23,6 +24,17 @@ export interface ServiceFile {
     readonly text: string;
 }
 
+/** How the project is written, besides its files. */
+export interface ServiceFileOptions {
+    /**
+     * Whether the playground keeps the project's barrels. While it does, an
+     * import from another folder goes through that folder's barrel, and a
+     * file never imports its own folder's barrel, or an ancestor's: the
+     * diagnostics say where an import does not.
+     */
+    readonly isBarrelKept?: boolean;
+}
+
 /**
  * TypeScript's language service over a playground project: the project's
  * files, TypeScript's libs, and the type bundles of the libraries the project
@@ -33,7 +45,7 @@ export interface ServiceFile {
  */
 export interface ProjectLanguageService {
     /** Brings the service's copy of the project up to date, and loads the type bundles its imports need. */
-    readonly setFiles: (files: readonly ServiceFile[]) => Promise<void>;
+    readonly setFiles: (files: readonly ServiceFile[], options?: ServiceFileOptions) => Promise<void>;
     /** Every type error and warning in the project, with fixes where TypeScript has them. */
     readonly diagnostics: () => readonly TypeProblem[];
     readonly completions: (path: string, offset: number) => CompletionList | undefined;
@@ -44,6 +56,14 @@ export interface ProjectLanguageService {
     /** The edits that rename what is at the offset, in every file, or why it cannot be renamed. */
     readonly rename: (path: string, offset: number, newName: string) => readonly FileEdit[] | string;
     readonly organizeImports: (path: string) => readonly FileEdit[];
+    /**
+     * Each folder's barrel, as the playground keeps it: for each folder with
+     * code in it, an `index.ts` that names everything its files export, and
+     * everything its subfolders' barrels do, a line for each.
+     */
+    readonly keptBarrels: () => readonly ServiceFile[];
+    /** The edits that update each import of a file or folder, as it moves to a new path. */
+    readonly fileRenameEdits: (oldPath: string, newPath: string) => readonly FileEdit[];
     readonly format: (path: string) => readonly FileEdit[];
     /** A library's declaration file's text, by its path, as a definition names it. */
     readonly libraryFileText: (path: string) => string | undefined;
@@ -72,6 +92,7 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
     let envBundles = '';
     let envRenderer = '';
     let texts = new Map<string, string>();
+    let isBarrelKept = false;
 
     // TypeScript's defaults, such as a space after each comma, which a setting left out would turn off
     const formatOptions: ts.FormatCodeSettings = {
@@ -92,7 +113,8 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
     };
 
     const service: ProjectLanguageService = {
-        async setFiles(files) {
+        async setFiles(files, fileOptions) {
+            isBarrelKept = fileOptions?.isBarrelKept ?? false;
             const wanted = wantedBundles(files);
             for (const kind of wanted) {
                 if (!bundles.has(kind)) bundles.set(kind, await loadBundle(kind));
@@ -139,7 +161,49 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
                     });
                 }
             }
+            if (isBarrelKept) found.push(...barrelImportProblems());
             return found;
+        },
+
+        keptBarrels() {
+            const program = env?.languageService.getProgram();
+            if (program === undefined) return [];
+            const checker = program.getTypeChecker();
+            const paths = [...texts.keys()].map(toProjectPath);
+            const codePaths = paths.filter((path) => /\.tsx?$/.test(path) && !isIndexFile(path) && path.includes('/'));
+            const folders = new Set<string>();
+            for (const path of codePaths) {
+                for (let folder = folderOf(path); folder !== ''; folder = folderOf(folder)) folders.add(folder);
+            }
+            // The deepest first, so each folder's subfolders' names are known
+            const ordered = [...folders].sort((a, b) => b.split('/').length - a.split('/').length || a.localeCompare(b));
+            const namesOf = new Map<string, readonly ExportedName[]>();
+            const barrels: ServiceFile[] = [];
+            for (const folder of ordered) {
+                const sources: { specifier: string; names: readonly ExportedName[] }[] = [];
+                for (const path of codePaths) {
+                    if (folderOf(path) === folder) sources.push({ specifier: `./${path.slice(folder.length + 1).replace(/\.tsx?$/, '')}`, names: exportedNames(program, checker, path) });
+                }
+                for (const sub of folders) {
+                    if (folderOf(sub) === folder) sources.push({ specifier: `./${sub.slice(folder.length + 1)}`, names: namesOf.get(sub) ?? [] });
+                }
+                sources.sort((a, b) => a.specifier.localeCompare(b.specifier));
+                const lines: string[] = [];
+                const all: ExportedName[] = [];
+                for (const { specifier, names } of sources) {
+                    if (names.length === 0) continue;
+                    lines.push(`export { ${names.map((n) => (n.isType ? `type ${n.name}` : n.name)).join(', ')} } from '${specifier}';`);
+                    all.push(...names);
+                }
+                namesOf.set(folder, all);
+                barrels.push({ path: `${folder}/index.ts`, text: lines.length === 0 ? '' : `${lines.join('\n')}\n` });
+            }
+            return barrels.sort((a, b) => a.path.localeCompare(b.path));
+        },
+
+        fileRenameEdits(oldPath, newPath) {
+            if (env === undefined) return [];
+            return toEdits(env.languageService.getEditsForFileRename(toServicePath(oldPath), toServicePath(newPath), formatOptions, preferences));
         },
 
         completions(path, offset) {
@@ -247,8 +311,21 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
         },
 
         organizeImports(path) {
-            if (env === undefined) return [];
-            return toEdits(env.languageService.organizeImports({ type: 'file', fileName: toServicePath(path) }, formatOptions, preferences));
+            const servicePath = toServicePath(path);
+            const text = texts.get(servicePath);
+            if (env === undefined || text === undefined) return [];
+            // TypeScript keeps imports apart where a blank line parts them. Here they
+            // are one block: the blank lines go, then TypeScript sorts and merges them
+            const joined = withoutBlankLinesBetweenImports(text);
+            env.updateFile(servicePath, toServiceText(joined));
+            try {
+                const changes = env.languageService.organizeImports({ type: 'file', fileName: servicePath }, formatOptions, preferences);
+                const organised = applyTextChanges(joined, changes.filter((c) => c.fileName === servicePath).flatMap((c) => c.textChanges));
+                return organised === text ? [] : [toOneEdit(path, text, organised)];
+            }
+            finally {
+                env.updateFile(servicePath, toServiceText(text));
+            }
         },
 
         format(path) {
@@ -324,6 +401,88 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
         return tsc.isLiteralTypeNode(parent) && tsc.isImportTypeNode(parent.parent);
     }
 
+    /**
+     * Each import, or export from, that breaks the barrel rule: one that goes
+     * past a folder's barrel, from outside the folder, with a fix that
+     * imports the barrel; and one of the file's own folder's barrel, or an
+     * ancestor's.
+     */
+    function barrelImportProblems(): TypeProblem[] {
+        const program = env?.languageService.getProgram();
+        if (program === undefined) return [];
+        const paths = new Set([...texts.keys()].map(toProjectPath));
+        const barrelFolders = new Set<string>();
+        for (const path of paths) if (isIndexFile(path) && path.includes('/')) barrelFolders.add(folderOf(path));
+        const problems: TypeProblem[] = [];
+        for (const path of paths) {
+            const source = program.getSourceFile(toServicePath(path));
+            if (source === undefined) continue;
+            const from = folderOf(path);
+            for (const statement of source.statements) {
+                if (!(tsc.isImportDeclaration(statement) || tsc.isExportDeclaration(statement))) continue;
+                const specifier = statement.moduleSpecifier;
+                if (specifier === undefined || !tsc.isStringLiteral(specifier) || !specifier.text.startsWith('.')) continue;
+                const target = resolveRelative(path, specifier.text, paths);
+                if (target === undefined) continue;
+                const barrelOf = isIndexFile(target) ? folderOf(target) : undefined;
+                // The outermost folder with a barrel that holds the target, but not this file
+                let wanted: string | undefined;
+                for (const folder of foldersOf(target)) {
+                    if (barrelFolders.has(folder) && !isInside(from, folder)) {
+                        wanted = folder;
+                        break;
+                    }
+                }
+                const start = specifier.getStart(source);
+                const place = source.getLineAndCharacterOfPosition(start);
+                const at = { path, line: place.line + 1, column: place.character + 1, start, length: specifier.getWidth(source), severity: 'error' as const };
+                if (wanted !== undefined && barrelOf !== wanted) {
+                    const barrel = toRelativePath(from, wanted);
+                    problems.push({
+                        ...at,
+                        message: `Import from '${barrel}', the barrel of ${wanted}/: from outside a folder, only its barrel is imported.`,
+                        fixes: [{ description: `Import from '${barrel}'`, edits: [{ path, start: start + 1, end: specifier.getEnd() - 1, newText: barrel }] }],
+                    });
+                }
+                else if (barrelOf !== undefined && isInside(from, barrelOf)) {
+                    problems.push({
+                        ...at,
+                        message: `Import the file itself: a file in ${barrelOf}/ does not import its own folder's barrel.`,
+                        fixes: [],
+                    });
+                }
+            }
+        }
+        return problems;
+    }
+
+    /** What a project file exports, by name, sorted as a barrel lists them: by name, whatever its case. A default export has no name, and is left out. */
+    function exportedNames(program: ts.Program, checker: ts.TypeChecker, path: string): ExportedName[] {
+        const source = program.getSourceFile(toServicePath(path));
+        const module = source === undefined ? undefined : checker.getSymbolAtLocation(source);
+        if (module === undefined) return [];
+        const names: ExportedName[] = [];
+        for (const symbol of checker.getExportsOfModule(module)) {
+            if (symbol.name === 'default') continue;
+            const resolved = (symbol.flags & tsc.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+            names.push({ name: symbol.name, isType: (resolved.flags & tsc.SymbolFlags.Value) === 0 });
+        }
+        return names.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.name.localeCompare(b.name));
+    }
+
+    /** A file's text, with no blank line between the imports it starts with. A comment between them stays. */
+    function withoutBlankLinesBetweenImports(text: string): string {
+        const source = tsc.createSourceFile('file.tsx', text, tsc.ScriptTarget.ES2022, true);
+        let last: ts.Statement | undefined;
+        for (const statement of source.statements) {
+            if (!tsc.isImportDeclaration(statement)) break;
+            last = statement;
+        }
+        if (last === undefined) return text;
+        const start = source.statements[0].getStart(source);
+        return text.slice(0, start) + text.slice(start, last.end).replace(/\n[ \t]*(?=\r?\n)/g, '') + text.slice(last.end);
+    }
+
     function toEdits(changes: readonly ts.FileTextChanges[]): FileEdit[] {
         const edits: FileEdit[] = [];
         for (const change of changes) {
@@ -389,6 +548,27 @@ function importPathCompletions(fromPath: string, typed: string, projectPaths: re
     return entries;
 }
 
+/** A name a module exports, and whether it is a type only. */
+interface ExportedName {
+    readonly name: string;
+    readonly isType: boolean;
+}
+
+function isIndexFile(path: string): boolean {
+    return /(^|\/)index\.tsx?$/.test(path);
+}
+
+/** Whether a folder is another, or inside it. The root, '', holds every folder. */
+function isInside(folder: string, outer: string): boolean {
+    return outer === '' || `${folder}/`.startsWith(`${outer}/`);
+}
+
+/** The folders a path is in, the outermost first, the root left out: `a/b/c.ts` is in `a`, then `a/b`. */
+function foldersOf(path: string): string[] {
+    const parts = path.split('/').slice(0, -1);
+    return parts.map((_, i) => parts.slice(0, i + 1).join('/'));
+}
+
 /** A path's folder, or '' at the project's root. */
 function folderOf(path: string): string {
     const slash = path.lastIndexOf('/');
@@ -435,6 +615,24 @@ function rendererOf(files: readonly ServiceFile[]): string {
     const main = files.find((f) => f.path === 'main.ts')?.text ?? '';
     const match = /\bdefine(Pixi|Html|Three)Project\b/.exec(main);
     return match === null ? 'pixi' : match[1].toLowerCase();
+}
+
+/** A text with TypeScript's changes made, from the last, so each change's place still holds. */
+function applyTextChanges(text: string, changes: readonly ts.TextChange[]): string {
+    let result = text;
+    for (const change of [...changes].sort((a, b) => b.span.start - a.span.start)) {
+        result = result.slice(0, change.span.start) + change.newText + result.slice(change.span.start + change.span.length);
+    }
+    return result;
+}
+
+/** The one edit that turns a file's text into another: what lies between their common start and their common end. */
+function toOneEdit(path: string, before: string, after: string): FileEdit {
+    let start = 0;
+    while (start < before.length && start < after.length && before[start] === after[start]) start++;
+    let end = 0;
+    while (end < before.length - start && end < after.length - start && before[before.length - 1 - end] === after[after.length - 1 - end]) end++;
+    return { path, start, end: before.length - end, newText: after.slice(start, after.length - end) };
 }
 
 /**

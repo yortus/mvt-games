@@ -36,6 +36,7 @@
         "codemirror": "^6.0.2",
         "comlink": "^4.4.2",
         "es-module-lexer": "^2.3.2",
+        "fflate": "^0.8.3",
         "gsap": "^3.14.2",
         "lz-string": "^1.5.0",
         "pixi.js": "^8.16.0",
@@ -46,6 +47,7 @@
     "devDependencies": {
         "@types/node": "^26.6.3",
         "@types/three": "^0.186.0",
+        "fake-indexeddb": "6.2.5",
         "v-snap": "*",
         "vite": "^8.3.2",
         "vitest": "^5.0.1"

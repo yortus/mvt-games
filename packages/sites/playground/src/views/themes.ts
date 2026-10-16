@@ -7,7 +7,7 @@ import { nord } from '@uiw/codemirror-theme-nord';
 import { solarizedLight } from '@uiw/codemirror-theme-solarized';
 import { tokyoNight } from '@uiw/codemirror-theme-tokyo-night';
 import { vscodeDarkInit, vscodeLightInit } from '@uiw/codemirror-theme-vscode';
-import type { ThemeKind } from '../models';
+import { THEME_KINDS, type ThemeKind } from '../models';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -162,6 +162,13 @@ export const THEMES: Readonly<Record<ThemeKind, Theme>> = {
         },
     },
 };
+
+/** The themes, as a menu offers them: in order, by kind, name and scheme. */
+export const THEME_CHOICES: readonly { readonly kind: ThemeKind; readonly name: string; readonly scheme: 'dark' | 'light' }[] = THEME_KINDS.map((kind) => ({
+    kind,
+    name: THEMES[kind].name,
+    scheme: THEMES[kind].scheme,
+}));
 
 // ---------------------------------------------------------------------------
 // Functions

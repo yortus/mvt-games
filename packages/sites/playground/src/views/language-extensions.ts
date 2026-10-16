@@ -27,6 +27,10 @@ export interface LanguageExtensionsOptions {
     readonly onDefinitionFound?: (target: DefinitionTarget) => void;
     /** Reported with edits to more files than this one, as a rename makes. */
     readonly onEditsWanted?: (edits: readonly FileEdit[]) => void;
+    /** Asks the visitor for a name's new name, for rename. Gives it, or undefined if they cancelled. Without it, there is no rename. */
+    readonly askNewName?: (oldName: string) => Promise<string | undefined>;
+    /** Tells the visitor why something could not be done, as why a name cannot be renamed. */
+    readonly tell?: (message: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,12 +191,13 @@ export function createLanguageExtensions(options: LanguageExtensionsOptions): Ex
         const head = view.state.selection.main.head;
         const word = view.state.wordAt(head);
         const oldName = word === null ? '' : view.state.sliceDoc(word.from, word.to);
-        const newName = window.prompt('Rename to', oldName)?.trim();
-        if (newName === undefined || newName === '' || newName === oldName) return true;
-        void language.rename(path, head, newName).then((result) => {
-            if (typeof result === 'string') window.alert(result);
+        void (async () => {
+            const newName = (await options.askNewName?.(oldName))?.trim();
+            if (newName === undefined || newName === '' || newName === oldName) return;
+            const result = await language.rename(path, head, newName);
+            if (typeof result === 'string') options.tell?.(result);
             else options.onEditsWanted?.(result);
-        });
+        })();
         return true;
     }
 

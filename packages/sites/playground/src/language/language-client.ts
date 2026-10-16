@@ -36,6 +36,10 @@ export interface LanguageClient {
     /** The edits that rename what is at the offset in every file, or why it cannot be renamed. */
     readonly rename: (path: string, offset: number, newName: string) => Promise<readonly FileEdit[] | string>;
     readonly organizeImports: (path: string) => Promise<readonly FileEdit[]>;
+    /** Each folder's barrel, as the playground keeps it, or undefined until the worker is ready. */
+    readonly keptBarrels: () => Promise<readonly ServiceFile[] | undefined>;
+    /** The edits that update each import of a file or folder that moves. None until the worker is ready. */
+    readonly fileRenameEdits: (oldPath: string, newPath: string) => Promise<readonly FileEdit[]>;
     readonly format: (path: string) => Promise<readonly FileEdit[]>;
     readonly libraryFileText: (path: string) => Promise<string | undefined>;
 }
@@ -47,6 +51,8 @@ export interface LanguageClient {
 export interface LanguageClientOptions {
     /** The project's files as they are now. A new array means they have changed. */
     readonly files: () => readonly ServiceFile[];
+    /** Whether the playground keeps the project's barrels, and so checks that imports go through them. */
+    readonly isBarrelKept: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,6 +64,7 @@ export function createLanguageClient(options: LanguageClientOptions): LanguageCl
     let remote: Comlink.Remote<ProjectLanguageService> | undefined;
     let isReady = false;
     let sentFiles: readonly ServiceFile[] | undefined;
+    let sentIsBarrelKept = false;
     /** The sync in progress, so calls made meanwhile wait for it rather than send the files again. */
     let syncing: Promise<void> = Promise.resolve();
 
@@ -81,6 +88,8 @@ export function createLanguageClient(options: LanguageClientOptions): LanguageCl
         definition: async (path, offset) => (await ready()) ? remote!.definition(path, offset) : undefined,
         rename: async (path, offset, newName) => (await ready()) ? remote!.rename(path, offset, newName) : 'The language service is still loading.',
         organizeImports: async (path) => (await ready()) ? remote!.organizeImports(path) : [],
+        keptBarrels: async () => (await ready()) ? remote!.keptBarrels() : undefined,
+        fileRenameEdits: async (oldPath, newPath) => (await ready()) ? remote!.fileRenameEdits(oldPath, newPath) : [],
         format: async (path) => (await ready()) ? remote!.format(path) : [],
         libraryFileText: async (path) => (await ready()) ? remote!.libraryFileText(path) : undefined,
     };
@@ -94,13 +103,15 @@ export function createLanguageClient(options: LanguageClientOptions): LanguageCl
         return true;
     }
 
-    /** Sends the worker the project's files, if they have changed since they were last sent. */
+    /** Sends the worker the project's files, and its setting for barrels, if either has changed since they were last sent. */
     function sync(): Promise<void> {
         syncing = syncing.then(async () => {
             const files = options.files();
-            if (files === sentFiles || remote === undefined) return;
-            await remote.setFiles(files);
+            const isBarrelKept = options.isBarrelKept();
+            if ((files === sentFiles && isBarrelKept === sentIsBarrelKept) || remote === undefined) return;
+            await remote.setFiles(files, { isBarrelKept });
             sentFiles = files;
+            sentIsBarrelKept = isBarrelKept;
         });
         return syncing;
     }

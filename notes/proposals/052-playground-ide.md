@@ -22,11 +22,11 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 to 7: the new package is the playground,
+built beyond the spike, but steps 3 to 9: the new package is the playground,
 at `/playground/`, with its layout, Problems list, run on change,
-intellisense, the editor's menu and keys, and dark and light themes for
-the whole page, and the old one is gone. Next is step 8, projects and
-export.
+intellisense, the editor's menu and keys, dark and light themes, projects
+kept in the browser, New, Export, and a file tree with moves and kept
+barrels, and the old one is gone. Next is step 10, the docs.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -747,6 +747,65 @@ setting (VS Code Light or Dark), or stay VS Code Dark until a visitor
 chooses? Recommended: stay VS Code Dark, as the owner asked, and offer
 "Match the system" as a menu item later, if wanted.
 
+### 6.8 A file tree, renames that fix imports, and barrels kept for you
+
+Added after the owner's playtest of step 8, which asked for a tree, and
+for barrels that keep themselves.
+
+**The tree.** The file list shows folders as a tree: each folder a row
+that folds, its files indented beneath it, `main.ts` first at the top. A
+folder's row shows the errors of everything inside it, so a folded folder
+still says where problems are. A folder's row has its own +, which adds a
+file with the folder's path filled in. Folders come from files' paths, so
+there are no empty ones; a new folder is a new file's path. Which folders
+are folded is the layout's, as the panes' sizes are. Ctrl+P stays, for a
+file by name.
+
+**Renames that fix imports.** A file's row gets Rename, which moves the
+file to a new path, folders included, and updates every import of it,
+with the language service's `getEditsForFileRename`, in one step that one
+undo takes back. Without it, moving a file means fixing each import by
+hand.
+
+**Barrels kept for you.** The repo's rule is that a folder's `index.ts`
+exports what the folder offers, and nothing imports past it. That teaches
+good practice, but for a small project it is one more file to keep in
+step. So a project has a setting, on by default: barrels kept for you.
+While it is on, each folder that has code has an `index.ts` that the
+playground writes and keeps up to date:
+
+- one `export { ... } from './file';` for each of the folder's files,
+  naming everything the file exports, types marked `type`, in the order
+  the examples write them;
+- one for each subfolder that has a barrel of its own, naming what that
+  barrel exports, so the rule holds at every level;
+- shown read-only, with a banner saying it is kept, and a button that
+  turns the setting off for the project, from when on the visitor writes
+  the barrels.
+
+The language service knows each file's exports, so it writes the barrels,
+after each change, as one more answer from the worker. A barrel catches
+up a moment after the change, before the check that follows it.
+
+The examples' and starters' barrels are written as the playground would
+write them, and a test says so, so opening one changes nothing. The
+setting is part of the project: kept with it, in its share link (the
+format gains a field, still `#p1=`), and in an export, whose barrels are
+plain files, from then on the visitor's.
+
+The alternative, `export * from './file'` for each file, needs no language
+service, and is never out of date. But it hides what a barrel offers, which
+is what a barrel is for, and the repo writes its names out. The names are
+recommended.
+
+**Decided by the owner** (2026-10-17): the setting is per project. A
+folder of one file has a barrel too. While barrels are kept, the rule is
+enforced: an import from outside a folder goes through its barrel, and a
+file never imports its own folder's barrel, or an ancestor's, and each
+import that breaks it is an error, with a fix where there is one. With
+barrels left to the visitor, there is no rule at all: barrels can be
+skipped, and imports go wherever the visitor likes.
+
 ---
 
 ## 7. Projects, Examples and Sharing
@@ -1176,7 +1235,11 @@ commands as the other packages' are.
 5. **Export with sound,** while `@mvtjs/audio` is private. Offer Export
    with a note, or hold it back for projects that import the package?
    Recommendation: offer it with the note; the audio package is meant to be
-   published.
+   published. Decided in step 8: Export is offered for every project. While
+   the package is private, an export leaves it out, its `sound` says why
+   when read, and its README says so, and names any file that imports the
+   package. Once the package is on npm, an export has sound, with no change
+   to the playground.
 6. **Run on change by default.** CodePen does it, and it suits small
    visual toys. It suits a game less. Recommendation: on by default, and the
    toggle remembered per project.
@@ -1385,14 +1448,174 @@ Each step ends with the site working and deployable.
    run, the theme kept after a reload, and an HTML project's text on its
    own dark root under a light theme. The owner playtested it, and it
    passed.
-8. **Projects and export.** IndexedDB projects and the migration from
+8. ~~**Projects and export.** IndexedDB projects and the migration from
    `localStorage` (7.1), the `#p1=` share format with its size limit (7.3),
-   and Export (7.5).
-9. **Docs.** Section 13.
-10. **Later.** Each of section 10's ideas, as a proposal or task of its own
+   and Export (7.5).~~ Done 2026-10-16. The `#p1=` links and their limit
+   came in step 3; this step did the rest, and New (6.5):
+   - **Kept projects.** `storage/project-database.ts` keeps them in
+     IndexedDB, in a database named `mvt-playground`, apart from the
+     Arcade's, or in memory where the browser keeps nothing, and the
+     Projects dialog says so. On the first visit, the project this
+     playground kept in `localStorage` since step 3 moves in, and so does
+     the old playground's, converted, as "My first project"; each leaves
+     `localStorage` once the database has it. A visit with no link opens
+     the project open last, which the settings remember.
+   - **The model.** A project open has an id once it is kept. An example,
+     or a project from a link, has none until the visitor changes it,
+     renames it, or makes it with New; then it is kept as a project of
+     its own. A count of its changes tells the page to save it, one save
+     at a time, the latest replacing any waiting. Opening, duplicating and
+     deleting a kept project need the database, so the model queues them
+     for the page. The project open cannot be deleted.
+   - **The Projects dialog** (the header's Projects, or Ctrl+O): New for
+     each renderer, then each kept project, the last saved first, to open,
+     duplicate or delete. Pressing the project's name in the header
+     renames it.
+   - **Starting projects**, one for each renderer, in `starters/`: a
+     square that turns (Pixi), a stopwatch with buttons (HTML JSX), and a
+     cube that turns (three.js). Real files, linted, type-checked, and run
+     headless for a second in a test, as the examples are. The language
+     service's test of the examples covers them too, which found that
+     three.js's types never loaded: `@types/three` maps `three` to
+     `build/three.module.d.ts` through its `exports`, and the bundle held
+     only `src/`. It holds `build/` now (10 KB).
+   - **Export** (the header's Export, and the label of a Share too large):
+     a zip, made with `fflate`, of a Vite project: the project under
+     `src/`, the `playground` module as `src/playground.ts`, the sandbox's
+     own host and a standalone runner in `src/runner/` (read as text from
+     the playground's source, so they cannot drift), a generated
+     `src/index.ts`, `package.json` at the versions the playground runs
+     (a Vite plugin reads them from `node_modules`), `tsconfig.json`,
+     `index.html` and a README. Section 14's question 5 on sound is
+     decided there.
+   - **Tests:** the database (with `fake-indexeddb`, pinned at 6.2.5: 6.2.6
+     came out the same day, after a year with no release, so it was left
+     alone), the move from `localStorage`, the model's kept projects, the
+     starters, and the export: its files, and each starter and two
+     examples exported to disk and type-checked as projects of their own.
+     Visual tests of the dialog, and the narrow header now wraps to a
+     second row (35 in all).
+   Checked in headless Chromium against a build: the move from
+   `localStorage`, an edited example kept, New, a rename kept after a
+   reload, open, duplicate and delete, Ctrl+O and Escape, and Export's
+   download. The exported Analogue Clock was unzipped outside the repo,
+   installed from npm (the libraries at 0.3.0), type-checked and built
+   with `npm run build`, and ran in Chromium.
+   After the owner's playtest (2026-10-17): Share opens a dialog, not a
+   label on its button. It copies the link as it opens, and says so, or
+   says the browser would not let it; it shows the link, to select by
+   hand, with Copy to copy it again; and a project too large for a link
+   gets Export instead. The dialog takes the focus as it opens, so Escape
+   closes it at once. The page's own address no longer changes to the
+   link, since the dialog shows it, and a reload opens the kept project.
+   The starters' model became a cycle with a `progress` from 0 to 1 and
+   a `periodMs`, knowing nothing of angles; the views make the angle.
+9. ~~**Files: a tree, renames that fix imports, and barrels kept for you.**
+   Section 6.8. Added after the owner's playtest of step 8.~~ Done
+   2026-10-17:
+   - **The tree.** The file list is a tree of folders that fold, built
+     from the paths, `main.ts` first, then each level's folders, then its
+     files. A folded folder shows its errors' count (the model counts each
+     folder's, under its path and a `/`). A folder's row has + to add a
+     file in it, and every row but `main.ts` and the kept barrels has ✎ to
+     move it; the buttons show on hover, and always on a touch screen.
+   - **Moves.** ✎ asks for a new path, for a file or a whole folder. The
+     language service's `getEditsForFileRename` updates the imports, and
+     the model makes those edits and the move as one change.
+   - **Barrels kept.** The language service writes them from each file's
+     exports, as the examples write them; a test holds every example's
+     and starter's barrels to that, character for character. Each check
+     asks for the barrels first: if any changed, the model writes them and
+     checks again at once, so a run never sees a stale barrel. A folder
+     whose code is gone loses its barrel. A kept barrel is read-only, under
+     a banner, and "Keep barrels for me", at the foot of the file list,
+     switches the setting. The editor starts a file's state afresh when it
+     becomes read-only, or stops being.
+   - **The rule** is the language service's: an error on the import's
+     path, with "Import from '../models'" as its fix where it goes past a
+     barrel. Off while barrels are left to the visitor.
+   - **The setting** is kept with each project, and in its share link as
+     `b: 0` when off, so links from before keep barrels.
+   - **Organise Imports** treats a file's imports as one block: the owner
+     had parted them with blank lines, expecting them joined, and
+     TypeScript keeps blank-line groups apart. The service now drops the
+     blank lines, lets TypeScript organise the block, and gives one edit.
+     A comment between imports still parts them.
+   - Tests: the barrels, nested and of one file; the rule, on and off;
+     the rename edits; one block for Organise Imports; the model's
+     barrels, moves and folder counts; folding; the setting in links and
+     the database. Visual tests of a deeper tree with a folded folder, and
+     of barrels left to the visitor (39 in all).
+   Checked in headless Chromium against a build: folding, a kept barrel's
+   banner, a new file named in its folder's barrel, an import past a
+   barrel with its fix, a file moved into a new folder that gets its own
+   barrel, the setting off with no rule, Organise Imports joining
+   imports that blank lines parted, and the setting kept after a reload.
+   After the owner's playtest (2026-10-17):
+   - The page's own dialogs, themed, in place of the browser's prompt,
+     confirm and alert: New file, Move, rename (F2), the project's name,
+     Delete, Remove, the barrels' switch, and what cannot be done. A
+     `Dialogs` object asks, with a promise of the answer, and a view shows
+     the one asked for, over any other dialog. A loss is asked about in
+     the error colour. Enter agrees and Escape cancels; the field takes the
+     focus, its text chosen, or, for New file, the cursor after the
+     folder. The check found that a field after a dialog with none could
+     not take the focus: a parent's refresh step runs before its
+     children's bindings, so each element now focuses itself, in its own
+     step.
+   - Switching barrels off asks "Manage files yourself?", and says what
+     that means: no rule at all, and barrels are ordinary files, to keep,
+     change, or do without. Switching them on asks too, since the
+     playground then writes every folder's `index.ts`.
+   - The HTML starter's view takes milliseconds, and shows seconds and
+     hundredths, `00:00`, in a monospaced font with tabular figures, so no
+     digit moves as the time runs.
+   - No two kept projects share a name, whatever its case. A name given
+     to a project, by New, by an example or a link kept as it changes, by
+     Duplicate (in place of "(copy)"), or by the move from
+     `localStorage`, takes the first free number from 2 where it must, as
+     "New Pixi project 2"; a name that ends in a number counts on from it.
+     A rename to a name taken is refused, saying why. The model counts the
+     names it has given but the page has not listed yet, so two quick News
+     take two names.
+   - A cog beside the project's name opens Project options: the name, with
+     Rename, which says under the field why a name cannot be had; and
+     "Auto-generate barrels", with what it means either way beneath it.
+     The name in the header no longer renames, and the switch at the foot
+     of the file list is gone. A barrel's banner says "Auto-generated",
+     and still offers "Manage files myself", which confirms first.
+   - A project has a description, optional, up to 500 characters, typed
+     in Project options and kept as it is typed. The Projects list shows
+     it under the name, and a share link and an export's README carry it.
+     An example's own description comes with it; a new project has none.
+   - The header no longer says "Playground", which the site's nav says
+     already. The project's name is the page's heading in its place.
+   - The theme's menu is in the site's nav, just left of the GitHub link:
+     a slot in the playground's own copy of the nav's markup, which the
+     page fills with a view of its own, ticked as a second root. It takes
+     the nav's colours, and its dark scheme, whatever the theme. Below
+     600px, where the nav folds its links away, it shows as a ◐, the menu
+     laid over it unseen, so a press opens the list. The Arcade's nav, and
+     its pages, are unchanged.
+   - The Projects dialog has two menus side by side: "New project...", for
+     a Pixi, HTML or three.js project, in place of the three buttons, and
+     "Open an example...", moved from the header. The header reads left to
+     right as the way to every project, then the one open: Projects, the
+     project's name and its cog, and at the right, Share and Export, on
+     one row even on a phone, the name cut short where it must be.
+   The owner playtested step 9, with all of the above, on 2026-10-17, and
+   it passed.
+10. **Docs.** Section 13. The owner's questions after step 8 say two things
+   the docs must explain: what Organise Imports does (sorts the imports
+   as one block, the blank lines between them gone, drops unused names,
+   merges imports of one module, in TypeScript's order, which puts
+   `@mvtjs/pixi` before `pixi.js`; a comment between imports parts them),
+   and what an exported project is and how to use it. And the tree, moves
+   and kept barrels, with the rule they bring.
+11. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).
-11. **Investigate: open an Arcade entry in the playground, from GitHub.**
+12. **Investigate: open an Arcade entry in the playground, from GitHub.**
     Added at the owner's request on 2026-10-16, after step 7's playtest.
     It is 10.5's remix, with one constraint: the entry's files are read
     from the repo on GitHub as the visitor opens it, and no copy of them is

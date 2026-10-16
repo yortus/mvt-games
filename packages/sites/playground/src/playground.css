@@ -63,18 +63,26 @@ button:disabled {
     border-bottom: 1px solid var(--pg-border);
 }
 
-.header-title {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-}
-
+/* The project's name, the page's heading, kept quiet: the site's nav says which page this is */
 .header-project {
     min-width: 0;
-    color: var(--pg-muted);
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pg-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* The project's options: a cog, quiet until pointed at */
+.header-options {
+    flex: none;
+    padding: 0 6px;
+    border-color: transparent;
+    background: none;
+    color: var(--pg-muted);
+    font-size: 15px;
 }
 
 /* Shows for a moment after the visitor asks to save */
@@ -87,18 +95,53 @@ button:disabled {
     font-size: 12px;
 }
 
-/* The theme, the examples and Share sit at the right. The menus narrow, if need be, to fit */
-.header-theme {
+/* Share and Export sit at the right */
+.header-share {
     margin-left: auto;
-}
-
-.header select {
-    flex: 0 1 auto;
-    min-width: 0;
 }
 
 .header button {
     flex: none;
+}
+
+/* --- The theme's menu, in the site's nav: the nav's colours, whatever the theme --- */
+
+.site-nav-tools {
+    display: flex;
+    align-items: center;
+    margin-right: 4px;
+    color-scheme: dark;
+}
+
+.theme-picker {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.theme-picker-menu {
+    font: inherit;
+    font-size: 13px;
+    color: var(--site-text-muted);
+    background: var(--site-nav-bg);
+    border: 1px solid var(--site-nav-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.theme-picker-menu:hover,
+.theme-picker-menu:focus-visible {
+    color: var(--site-text);
+}
+
+/* Shown on a narrow screen only, where the menu lies over it, unseen */
+.theme-picker-icon {
+    display: none;
+    padding: 6px;
+    color: var(--site-text-muted);
+    font-size: 18px;
+    line-height: 1;
 }
 
 /* The panel tabs are for narrow screens only */
@@ -186,6 +229,7 @@ button:disabled {
 }
 
 .files-list {
+    flex: 1;
     list-style: none;
     margin: 0;
     padding: 0 0 8px;
@@ -205,13 +249,44 @@ button:disabled {
 
 .file-name {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
     text-align: left;
     font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
     font-size: 12px;
-    padding: 4px 10px;
+    padding: 4px 10px 4px calc(10px + var(--depth, 0) * 14px);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.file-depth-1 { --depth: 1; }
+.file-depth-2 { --depth: 2; }
+.file-depth-3 { --depth: 3; }
+.file-depth-4 { --depth: 4; }
+.file-depth-5 { --depth: 5; }
+.file-depth-6 { --depth: 6; }
+
+/* A folder's arrow, and the same room before a file's name, so names line up */
+.file-caret {
+    flex: none;
+    width: 14px;
+    color: var(--pg-muted);
+}
+
+.file-label {
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+}
+
+.file-folder .file-label {
+    color: var(--pg-muted);
+}
+
+/* A barrel the playground keeps, which the visitor reads but does not write */
+.file-kept .file-label {
+    color: var(--pg-muted);
+    font-style: italic;
 }
 
 .file-active {
@@ -236,13 +311,23 @@ button:disabled {
     text-align: center;
 }
 
-.file-remove {
+.file-action {
+    flex: none;
+    padding: 0 6px;
     color: var(--pg-muted);
     visibility: hidden;
 }
 
-.file:hover .file-remove {
+.file:hover .file-action,
+.file-action:focus-visible {
     visibility: visible;
+}
+
+/* A touch screen has no hover, so the buttons show always */
+@media (hover: none) {
+    .file-action {
+        visibility: visible;
+    }
 }
 
 /* A column, so the editor takes the height the banner leaves */
@@ -275,6 +360,12 @@ button:disabled {
 .editor-banner-note {
     flex: none;
     color: var(--pg-muted);
+}
+
+.editor-banner-button {
+    margin-left: auto;
+    padding: 1px 8px;
+    font-size: 12px;
 }
 
 .code-editor {
@@ -540,6 +631,326 @@ button:disabled {
     border-top: 1px solid var(--pg-border);
 }
 
+/* --- The projects kept, and new ones, and Share: dialogs alike --- */
+
+/* A dialog's wrapper takes no room: it is there to see the dialog open */
+.projects-layer,
+.share-layer,
+.options-layer {
+    display: contents;
+}
+
+.projects,
+.share,
+.options {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 10vh;
+    background: var(--pg-shadow);
+}
+
+.projects-panel,
+.share-panel,
+.options-panel {
+    width: min(560px, calc(100vw - 32px));
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    background: var(--pg-raised);
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px var(--pg-shadow);
+}
+
+.projects-head,
+.share-head,
+.options-head {
+    display: flex;
+    align-items: center;
+}
+
+.projects-title,
+.share-title,
+.options-title {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* New project and Open an example, side by side, sharing the width */
+.projects-new {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.projects-new select {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+.projects-note,
+.projects-none {
+    margin: 0;
+    color: var(--pg-muted);
+    font-size: 12px;
+}
+
+.projects-note {
+    color: var(--pg-warning);
+}
+
+.projects-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    border-top: 1px solid var(--pg-border);
+}
+
+.project {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.project-current {
+    background: var(--pg-selected);
+}
+
+.project-open {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: none;
+    background: none;
+    text-align: left;
+}
+
+.project-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-current .project-name {
+    color: var(--pg-accent);
+}
+
+.project-description {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--pg-text);
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+.project-details {
+    color: var(--pg-muted);
+    font-size: 11px;
+}
+
+.project-action {
+    flex: none;
+    padding: 1px 8px;
+    font-size: 12px;
+}
+
+/* Project options: the name, and the barrels' switch, with what it means */
+.options-label {
+    font-size: 12px;
+    color: var(--pg-muted);
+}
+
+.options-row {
+    display: flex;
+    gap: 6px;
+}
+
+.options-name {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--pg-text);
+    background: var(--pg-background);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.options-description {
+    font: inherit;
+    font-size: 13px;
+    color: var(--pg-text);
+    background: var(--pg-background);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    resize: vertical;
+}
+
+.options-problem {
+    margin: 0;
+    font-size: 12px;
+    color: var(--pg-error);
+}
+
+.options-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    cursor: pointer;
+}
+
+.options-about {
+    margin: 0 0 0 22px;
+    font-size: 12px;
+    color: var(--pg-muted);
+}
+
+/* What Share shows: what a link is, the link with Copy, and whether it was copied */
+.share-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.share-about,
+.share-status {
+    margin: 0;
+    font-size: 12px;
+    color: var(--pg-muted);
+}
+
+.share-row {
+    display: flex;
+    gap: 6px;
+}
+
+.share-link {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--pg-text);
+    background: var(--pg-background);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+/* The panel takes the focus as it opens, for Escape, and needs no ring for it */
+.share-panel:focus {
+    outline: none;
+}
+
+.share-status-copied {
+    color: var(--pg-success);
+}
+
+.share-status-failed {
+    color: var(--pg-warning);
+}
+
+/* --- The page's own dialogs, in place of the browser's: over the others --- */
+
+.dialog-layer {
+    display: contents;
+}
+
+.dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 16vh;
+    background: var(--pg-shadow);
+}
+
+.dialog-panel {
+    width: min(440px, calc(100vw - 32px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    background: var(--pg-raised);
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px var(--pg-shadow);
+}
+
+.dialog-panel:focus {
+    outline: none;
+}
+
+.dialog-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.dialog-message {
+    margin: 0;
+    color: var(--pg-muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.dialog-field {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 13px;
+    color: var(--pg-text);
+    background: var(--pg-background);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 5px 8px;
+}
+
+.dialog-field:focus {
+    outline: 1px solid var(--pg-accent);
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.dialog-confirm {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent);
+}
+
+.dialog-confirm-danger {
+    border-color: var(--pg-error);
+    color: var(--pg-error);
+}
+
 /* --- Opening a file by name --- */
 
 /* The dialog's wrapper takes no room: it is there to see the dialog open */
@@ -608,11 +1019,20 @@ button:disabled {
 
 /* --- Narrow screens: one panel at a time, chosen by tabs --- */
 
-@media (max-width: 800px) {
-    /* The site's navigation above says which page this is */
-    .header-title {
-        display: none;
+/* The site's nav folds its links away below 600px: the theme's menu becomes its ◐ */
+@media (max-width: 600px) {
+    .theme-picker-icon {
+        display: block;
     }
+
+    .theme-picker-menu {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+    }
+}
+
+@media (max-width: 800px) {
 
     .panel-tabs {
         display: flex;

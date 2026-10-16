@@ -1,6 +1,6 @@
 import { refreshView, updateView } from '@mvtjs/html';
 import type { HtmlProject, HtmlStartOptions } from '../project-api';
-import type { RendererHost } from './run-sandbox';
+import type { RendererHost } from './renderer-host';
 
 // ---------------------------------------------------------------------------
 // Functions

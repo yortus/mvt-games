@@ -59,6 +59,16 @@ export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBun
     'gsap': ['gsap'],
 };
 
+/**
+ * The packages an exported project depends on, by their names on npm: the
+ * libraries a project may import, at the versions the playground runs. A
+ * package not yet on npm is left out.
+ */
+export const EXPORT_DEPENDENCIES = ['@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', '@mvtjs/audio', 'pixi.js', 'three', 'gsap'] as const;
+
+/** What an exported project is built with, and three.js's types, which three.js does not include. */
+export const EXPORT_DEV_DEPENDENCIES = ['typescript', 'vite', '@types/three'] as const;
+
 /** The module that runs a project inside the sandbox. It is built as a library's module is, but no project imports it. */
 export const SANDBOX_RUNNER = 'sandbox-runner';
 

@@ -2,7 +2,7 @@ import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { PixiProject, PixiStartOptions } from '../project-api';
 import { DEFAULT_BACKGROUND, fitToWindow } from './fit-to-window';
-import type { RendererHost } from './run-sandbox';
+import type { RendererHost } from './renderer-host';
 
 // ---------------------------------------------------------------------------
 // Functions

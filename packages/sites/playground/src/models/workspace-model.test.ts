@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { EXAMPLES } from '../examples';
-import { createWorkspaceModel, THEME_KINDS, MAX_FILES } from './workspace-model';
+import { EXAMPLES, findStarter } from '../examples';
+import { createWorkspaceModel, MAX_DESCRIPTION_LENGTH, MAX_FILES, THEME_KINDS } from './workspace-model';
 
 const PROJECT = {
     name: 'Test',
@@ -299,5 +299,219 @@ describe('a workspace model', () => {
         expect(model.theme).toBe(THEME_KINDS[1]);
         model.setTheme(THEME_KINDS[2]);
         expect(model.theme).toBe(THEME_KINDS[2]);
+    });
+
+    it('shares through a dialog: open while sharing, the link copied again on request, and closed', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.copyShareLink();
+        expect(model.copiesRequested).toBe(0);
+        model.share();
+        expect(model.shareStatus).toBe('sharing');
+        expect(model.sharesRequested).toBe(1);
+        model.reportShareLink('https://example.com/#p1=x');
+        model.reportShared('copied');
+        expect(model.shareLink).toBe('https://example.com/#p1=x');
+        expect(model.shareStatus).toBe('copied');
+        model.copyShareLink();
+        expect(model.copiesRequested).toBe(1);
+        model.closeShare();
+        expect(model.shareStatus).toBe('idle');
+        // A report that comes after the dialog closed leaves it closed
+        model.reportShared('failed');
+        expect(model.shareStatus).toBe('idle');
+    });
+
+    describe('kept projects', () => {
+        /** Ids in order, as the page would make them. */
+        function createIds(): () => string {
+            let count = 0;
+            return () => `id-${++count}`;
+        }
+
+        it('keeps an example as a project of its own once it is changed, and not before', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            model.openExample(EXAMPLES[0].id);
+            expect(model.projectId).toBeUndefined();
+            const changes = model.projectChanges;
+            model.editFile('main.ts', '// changed');
+            expect(model.projectId).toBe('id-1');
+            expect(model.projectChanges).toBe(changes + 1);
+            expect(model.exampleId).toBeUndefined();
+            // Further changes keep the same project
+            model.editFile('main.ts', '// changed again');
+            expect(model.projectId).toBe('id-1');
+            expect(model.projectChanges).toBe(changes + 2);
+        });
+
+        it('opens a kept project by its id, without asking for it to be saved', () => {
+            const model = createWorkspaceModel({ project: { id: 'kept', ...PROJECT } });
+            expect(model.projectId).toBe('kept');
+            const changes = model.projectChanges;
+            model.openProject({ id: 'other', ...PROJECT });
+            expect(model.projectId).toBe('other');
+            expect(model.projectChanges).toBe(changes);
+        });
+
+        it('makes a new project from a renderer\'s starting project, kept at once', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            const changes = model.projectChanges;
+            model.newProject('three');
+            expect(model.files).toEqual(findStarter('three').files);
+            expect(model.projectName).toBe(`New ${findStarter('three').name} project`);
+            expect(model.projectId).toBe('id-1');
+            expect(model.projectChanges).toBe(changes + 1);
+        });
+
+        it('renames the project open, which keeps it, and ignores a blank name', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            model.renameProject('   ');
+            expect(model.projectName).toBe(PROJECT.name);
+            expect(model.projectId).toBeUndefined();
+            model.renameProject('  Ball game ');
+            expect(model.projectName).toBe('Ball game');
+            expect(model.projectId).toBe('id-1');
+        });
+
+        it('queues requests for the page, but not to delete the project open', () => {
+            const model = createWorkspaceModel({ project: { id: 'open', ...PROJECT } });
+            model.requestProject({ kind: 'duplicate', id: 'a' });
+            model.requestProject({ kind: 'delete', id: 'open' });
+            model.requestProject({ kind: 'delete', id: 'b' });
+            expect(model.projectRequests).toEqual([{ kind: 'duplicate', id: 'a' }, { kind: 'delete', id: 'b' }]);
+            expect(model.takeProjectRequests()).toHaveLength(2);
+            expect(model.projectRequests).toEqual([]);
+        });
+
+        it('lists the kept projects as the page reports them', () => {
+            const model = createWorkspaceModel({ project: PROJECT });
+            const kept = [{ id: 'a', name: 'A', description: '', savedAt: 1, fileCount: 2 }];
+            model.reportKeptProjects(kept, false);
+            expect(model.keptProjects).toEqual(kept);
+            expect(model.isKeepingProjects).toBe(false);
+        });
+
+        it('gives each new project a name no other has, even before the page lists them', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            model.newProject('pixi');
+            model.newProject('pixi');
+            expect(model.projectName).toBe(`New ${findStarter('pixi').name} project 2`);
+            // Once listed, the names still count
+            model.reportKeptProjects([
+                { id: 'id-1', name: `New ${findStarter('pixi').name} project`, description: '', savedAt: 1, fileCount: 1 },
+                { id: 'id-2', name: `New ${findStarter('pixi').name} project 2`, description: '', savedAt: 2, fileCount: 1 },
+            ], true);
+            model.newProject('pixi');
+            expect(model.projectName).toBe(`New ${findStarter('pixi').name} project 3`);
+        });
+
+        it('numbers an example kept under a name a project has already', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            model.reportKeptProjects([{ id: 'kept', name: EXAMPLES[0].name, description: '', savedAt: 1, fileCount: 1 }], true);
+            model.openExample(EXAMPLES[0].id);
+            model.editFile('main.ts', '// changed');
+            expect(model.projectName).toBe(`${EXAMPLES[0].name} 2`);
+        });
+
+        it('refuses a rename to a name another project has, whatever its case, but not a change of case', () => {
+            const model = createWorkspaceModel({ project: { id: 'mine', ...PROJECT } });
+            model.reportKeptProjects([{ id: 'other', name: 'Clock', description: '', savedAt: 1, fileCount: 1 }, { id: 'mine', name: PROJECT.name, description: '', savedAt: 2, fileCount: 3 }], true);
+            expect(model.renameProject('clock')).toBeDefined();
+            expect(model.projectName).toBe(PROJECT.name);
+            expect(model.renameProject(PROJECT.name.toUpperCase())).toBeUndefined();
+            expect(model.projectName).toBe(PROJECT.name.toUpperCase());
+        });
+
+        it('keeps a description, an example\'s own at first, cut to the most a project has, and keeps the project as it changes', () => {
+            const model = createWorkspaceModel({ project: PROJECT, createId: createIds() });
+            model.openExample(EXAMPLES[0].id);
+            expect(model.projectDescription).toBe(EXAMPLES[0].description);
+            model.setProjectDescription('x'.repeat(MAX_DESCRIPTION_LENGTH + 10));
+            expect(model.projectDescription).toHaveLength(MAX_DESCRIPTION_LENGTH);
+            expect(model.projectId).toBe('id-1');
+            model.newProject('html');
+            expect(model.projectDescription).toBe('');
+        });
+
+        it('counts each request to export', () => {
+            const model = createWorkspaceModel({ project: PROJECT });
+            model.exportProject();
+            expect(model.exportsRequested).toBe(1);
+        });
+    });
+
+    describe('barrels kept for the visitor', () => {
+        const FILES = [
+            { path: 'main.ts', text: 'main' },
+            { path: 'models/a-model.ts', text: 'a' },
+            { path: 'models/index.ts', text: 'old' },
+            { path: 'gone/index.ts', text: 'stale' },
+        ];
+
+        it('writes the barrels the page reports, removes those of folders with no other code, and checks again at once', () => {
+            const model = createWorkspaceModel({ project: { name: 'P', files: FILES } });
+            const checks = model.checksRequested;
+            expect(model.reportKeptBarrels([{ path: 'models/index.ts', text: 'new' }])).toBe(true);
+            expect(model.textOf('models/index.ts')).toBe('new');
+            expect(model.paths).not.toContain('gone/index.ts');
+            expect(model.checksRequested).toBe(checks + 1);
+            // The same barrels again change nothing
+            expect(model.reportKeptBarrels([{ path: 'models/index.ts', text: 'new' }])).toBe(false);
+            expect(model.isKeptBarrel('models/index.ts')).toBe(true);
+            expect(model.isKeptBarrel('models/a-model.ts')).toBe(false);
+        });
+
+        it('leaves barrels to the visitor once keeping them is off, and keeps the project', () => {
+            const model = createWorkspaceModel({ project: { name: 'P', files: FILES }, createId: () => 'id' });
+            model.setBarrelKept(false);
+            expect(model.isBarrelKept).toBe(false);
+            expect(model.projectId).toBe('id');
+            expect(model.isKeptBarrel('models/index.ts')).toBe(false);
+            expect(model.reportKeptBarrels([])).toBe(false);
+            expect(model.paths).toContain('gone/index.ts');
+        });
+
+        it('opens a project with its own setting, keeping barrels unless it says not', () => {
+            expect(createWorkspaceModel({ project: PROJECT }).isBarrelKept).toBe(true);
+            expect(createWorkspaceModel({ project: { ...PROJECT, isBarrelKept: false } }).isBarrelKept).toBe(false);
+        });
+    });
+
+    describe('moving files', () => {
+        it('moves a file, after the edits that fix its imports, keeping it open', () => {
+            const model = createWorkspaceModel({ project: PROJECT });
+            model.openFile('models/a-model.ts');
+            const problem = model.movePath('models/a-model.ts', 'models/b/a-model.ts', [{ path: 'main.ts', start: 0, end: 4, newText: 'MAIN' }]);
+            expect(problem).toBeUndefined();
+            expect(model.textOf('models/b/a-model.ts')).toBe('a');
+            expect(model.paths).not.toContain('models/a-model.ts');
+            expect(model.textOf('main.ts')).toBe('MAIN');
+            expect(model.activePath).toBe('models/b/a-model.ts');
+        });
+
+        it('moves a folder, with every file in it', () => {
+            const model = createWorkspaceModel({ project: PROJECT });
+            expect(model.movePath('views', 'screens', [])).toBeUndefined();
+            expect(model.paths).toContain('screens/b-view.ts');
+            expect(model.paths).not.toContain('views/b-view.ts');
+        });
+
+        it('refuses to move main.ts, onto a file there already, or to a path that is not one', () => {
+            const model = createWorkspaceModel({ project: PROJECT });
+            expect(model.movePath('main.ts', 'start.ts', [])).toBeDefined();
+            expect(model.movePath('views/b-view.ts', 'models/a-model.ts', [])).toBeDefined();
+            expect(model.movePath('views/b-view.ts', 'views/b view.ts', [])).toBeDefined();
+            expect(model.paths).toContain('views/b-view.ts');
+        });
+    });
+
+    it('counts a folder\'s errors, as its path and a slash, as well as each file\'s', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.reportTypeProblems({
+            checkNumber: model.checksRequested,
+            problems: [{ path: 'models/a-model.ts', line: 1, column: 1, start: 0, length: 1, message: 'x', severity: 'error', fixes: [] }],
+        });
+        expect(model.problemCountOf('models/a-model.ts')).toBe(1);
+        expect(model.problemCountOf('models/')).toBe(1);
+        expect(model.problemCountOf('views/')).toBe(0);
     });
 });

@@ -33,7 +33,7 @@ packages/
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── sites/               What gets deployed
 │   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
-│   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ (each a project), libraries/ (what a project may import)
+│   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ and starters/ (each a project; starters/ are what New opens), libraries/ (what a project may import)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games

@@ -2,7 +2,7 @@ import ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { LIBRARIES } from '../../libraries';
 import { makeTypeBundles } from '../../scripts';
-import { EXAMPLES } from '../examples';
+import { EXAMPLES, STARTERS } from '../examples';
 import { createProjectLanguageService, type ProjectLanguageService, type ServiceFile } from './project-language-service';
 
 // The bundles take a few seconds to make, so they are made once for the file
@@ -39,11 +39,15 @@ function offsetAfter(files: readonly ServiceFile[], path: string, marker: string
 }
 
 describe('a project language service', { timeout: 60_000 }, () => {
-    it('finds no type problems in any example', async () => {
+    it('finds no type problems in any example or starting project', async () => {
         const { service } = createService();
         for (const example of EXAMPLES) {
             await service.setFiles(example.files);
             expect(service.diagnostics(), example.id).toEqual([]);
+        }
+        for (const starter of STARTERS) {
+            await service.setFiles(starter.files);
+            expect(service.diagnostics(), starter.renderer).toEqual([]);
         }
     });
 
@@ -181,5 +185,72 @@ describe('a project language service', { timeout: 60_000 }, () => {
             organised = organised.slice(0, edit.start) + edit.newText + organised.slice(edit.end);
         }
         expect(organised.split('\n')[0]).toBe('import { a, b } from \'./names\';');
+    });
+
+    it('organises imports that blank lines part as one block: sorted, merged, and the blank lines gone', async () => {
+        const { service } = createService();
+        const text = 'import { b } from \'./names\';\n\nimport { c } from \'./more\';\n\nimport { a } from \'./names\';\n\nexport const all = a + b + c;\n';
+        await service.setFiles([
+            { path: 'main.ts', text },
+            { path: 'names.ts', text: 'export const a = 1;\nexport const b = 2;\n' },
+            { path: 'more.ts', text: 'export const c = 3;\n' },
+        ]);
+        const [edit] = service.organizeImports('main.ts');
+        const organised = text.slice(0, edit.start) + edit.newText + text.slice(edit.end);
+        expect(organised).toBe('import { c } from \'./more\';\nimport { a, b } from \'./names\';\n\nexport const all = a + b + c;\n');
+        // The service's copy of the file is as it was
+        expect(service.organizeImports('main.ts')).toHaveLength(1);
+    });
+
+    it('keeps the barrels every example and starting project has, as they are', async () => {
+        const { service } = createService();
+        for (const project of [...EXAMPLES, ...STARTERS]) {
+            await service.setFiles(project.files);
+            const label = 'id' in project ? project.id : project.renderer;
+            const barrels = project.files.filter((f) => /\/index\.ts$/.test(f.path));
+            expect(service.keptBarrels(), label).toEqual(barrels);
+        }
+    });
+
+    it('keeps a barrel in each folder with code, a one-file folder too, naming its subfolders\' barrels', async () => {
+        const { service } = createService();
+        await service.setFiles([
+            { path: 'main.ts', text: '' },
+            { path: 'game/rules.ts', text: 'export const MAX = 3;\nexport type Rule = { name: string };\nexport default 1;\n' },
+            { path: 'game/pieces/king.ts', text: 'export class King {}\nexport interface Move { to: number }\n' },
+            { path: 'notes/empty.ts', text: 'const unused = 1;\n' },
+        ]);
+        expect(service.keptBarrels()).toEqual([
+            { path: 'game/index.ts', text: 'export { King, type Move } from \'./pieces\';\nexport { MAX, type Rule } from \'./rules\';\n' },
+            { path: 'game/pieces/index.ts', text: 'export { King, type Move } from \'./king\';\n' },
+            { path: 'notes/index.ts', text: '' },
+        ]);
+    });
+
+    it('says where an import breaks the barrel rule while barrels are kept, with a fix, and says nothing otherwise', async () => {
+        const { service } = createService();
+        const files = [
+            { path: 'main.ts', text: 'import { a } from \'./parts/a\';\nimport { b } from \'./parts\';\nexport const ab = a + b;\n' },
+            { path: 'parts/index.ts', text: 'export { a } from \'./a\';\nexport { b } from \'./b\';\n' },
+            { path: 'parts/a.ts', text: 'export const a = 1;\n' },
+            { path: 'parts/b.ts', text: 'import { a } from \'.\';\nexport const b = a + 1;\n' },
+        ];
+        await service.setFiles(files, { isBarrelKept: true });
+        const problems = service.diagnostics();
+        expect(problems.map((p) => [p.path, p.line])).toEqual([['main.ts', 1], ['parts/b.ts', 1]]);
+        expect(problems[0].fixes[0].edits).toEqual([{ path: 'main.ts', start: 19, end: 28, newText: './parts' }]);
+        expect(problems[1].fixes).toEqual([]);
+
+        await service.setFiles(files, { isBarrelKept: false });
+        expect(service.diagnostics()).toEqual([]);
+    });
+
+    it('updates each import of a file that moves', async () => {
+        const { service } = createService();
+        await service.setFiles([
+            { path: 'main.ts', text: 'import { a } from \'./a\';\nexport const b = a;\n' },
+            { path: 'a.ts', text: 'export const a = 1;\n' },
+        ]);
+        expect(service.fileRenameEdits('a.ts', 'parts/a.ts')).toEqual([{ path: 'main.ts', start: 19, end: 22, newText: './parts/a' }]);
     });
 });

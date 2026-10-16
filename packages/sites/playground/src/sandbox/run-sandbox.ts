@@ -1,7 +1,8 @@
-import type { Audio80, AudioControls } from '@mvtjs/audio';
 import { createWebAudio80 } from '@mvtjs/audio/web';
 import type { Project, StartOptions, StartResult } from '../project-api';
 import type { ErrorPhase, HostMessage, SandboxMessage } from './messages';
+import type { RendererHost } from './renderer-host';
+import { createLazySound } from './run-project';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -12,20 +13,6 @@ export interface SandboxReport {
     readonly post: (message: SandboxMessage) => void;
     /** An error's message, and its stack with each project file named by its path. */
     readonly describe: (error: unknown) => { readonly message: string; readonly stack: string };
-}
-
-/**
- * What a renderer gives the runner: what `start` is given besides the sound,
- * and the steps of a frame over the root the project's views go in.
- */
-export interface RendererHost<O> {
-    readonly startOptions: O;
-    /** Calls `updateView` over the root. */
-    readonly update: (deltaMs: number) => void;
-    /** Calls `refreshView` over the root. */
-    readonly refresh: () => void;
-    /** Draws the frame, where the renderer draws to a canvas. */
-    readonly render: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,7 +56,7 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
     }
     report.post({ kind: 'started' });
 
-    const sound = createLazySound();
+    const sound = createLazySound(() => createWebAudio80({ context: new AudioContext() }));
     let host: RendererHost<object>;
     let ticked: StartResult;
     try {
@@ -144,21 +131,4 @@ async function createRendererHost(project: Project): Promise<RendererHost<object
         case 'html': return (await import('./html-host')).createHtmlHost(project);
         case 'three': return (await import('./three-host')).createThreeHost(project);
     }
-}
-
-/** The project's Audio80, made the first time `sound` is read. */
-function createLazySound(): { chip: () => Audio80; controls: () => AudioControls | undefined } {
-    let controls: AudioControls | undefined;
-    let audio80: Audio80 | undefined;
-    return {
-        chip() {
-            if (audio80 === undefined) {
-                const chip = createWebAudio80({ context: new AudioContext() });
-                audio80 = chip.audio80;
-                controls = chip.controls;
-            }
-            return audio80;
-        },
-        controls: () => controls,
-    };
 }
