@@ -1,6 +1,6 @@
 import type ts from 'typescript';
 import { createSystem, createVirtualTypeScriptEnvironment, type VirtualTypeScriptEnvironment } from '@typescript/vfs';
-import { BASE_TYPE_BUNDLES, isLibrary, TYPE_BUNDLES_OF, type TypeBundleKind } from '../../libraries';
+import { BASE_TYPE_BUNDLES, isLibrary, LIBRARIES, TYPE_BUNDLES_OF, type TypeBundleKind } from '../../libraries';
 import type {
     CodeFix,
     CompletionDetails,
@@ -108,8 +108,8 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
             }
             else {
                 for (const [path, text] of next) {
-                    if (!texts.has(path)) env.createFile(path, text);
-                    else if (texts.get(path) !== text) env.updateFile(path, text);
+                    if (!texts.has(path)) env.createFile(path, toServiceText(text));
+                    else if (texts.get(path) !== text) env.updateFile(path, toServiceText(text));
                 }
             }
             texts = next;
@@ -144,6 +144,12 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
 
         completions(path, offset) {
             const servicePath = toServicePath(path);
+            const pathStart = importPathStartAt(servicePath, offset);
+            if (pathStart !== undefined) {
+                const typed = texts.get(servicePath)?.slice(pathStart, offset) ?? '';
+                const projectPaths = [...texts.keys()].map(toProjectPath);
+                return { isMemberCompletion: false, replaceFrom: pathStart, entries: importPathCompletions(path, typed, projectPaths) };
+            }
             const info = env?.languageService.getCompletionsAtPosition(servicePath, offset, preferences);
             if (info === undefined) return undefined;
             // The list can run to thousands, with the DOM's names. Only those that
@@ -263,7 +269,7 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
         for (const bundle of bundles.values()) {
             for (const [path, text] of Object.entries(bundle)) fsMap.set(path, text);
         }
-        for (const [path, text] of files) fsMap.set(path, text);
+        for (const [path, text] of files) fsMap.set(path, toServiceText(text));
         const compilerOptions: ts.CompilerOptions = {
             target: tsc.ScriptTarget.ES2022,
             module: tsc.ModuleKind.ESNext,
@@ -293,6 +299,31 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
         }
     }
 
+    /**
+     * Where the text of an import's path begins, if the offset is inside
+     * one: in `import ... from '...'`, `export ... from '...'`, `import '...'`,
+     * or `import('...')`, in code or in a type.
+     */
+    function importPathStartAt(servicePath: string, offset: number): number | undefined {
+        const source = env?.languageService.getProgram()?.getSourceFile(servicePath);
+        if (source === undefined) return undefined;
+        let found: number | undefined;
+        const visit = (node: ts.Node): void => {
+            if (found !== undefined || offset <= node.getStart(source) || offset > node.end) return;
+            if (tsc.isStringLiteralLike(node) && isImportPath(node)) found = node.getStart(source) + 1;
+            else tsc.forEachChild(node, visit);
+        };
+        tsc.forEachChild(source, visit);
+        return found;
+    }
+
+    function isImportPath(node: ts.StringLiteralLike): boolean {
+        const parent = node.parent;
+        if ((tsc.isImportDeclaration(parent) || tsc.isExportDeclaration(parent)) && parent.moduleSpecifier === node) return true;
+        if (tsc.isCallExpression(parent) && parent.expression.kind === tsc.SyntaxKind.ImportKeyword) return true;
+        return tsc.isLiteralTypeNode(parent) && tsc.isImportTypeNode(parent.parent);
+    }
+
     function toEdits(changes: readonly ts.FileTextChanges[]): FileEdit[] {
         const edits: FileEdit[] = [];
         for (const change of changes) {
@@ -318,6 +349,62 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
 const MAX_FIXED_PROBLEMS = 50;
 /** The most completions sent to the editor. */
 const MAX_COMPLETIONS = 600;
+
+/**
+ * What can go in an import's path, from a file: the libraries, and the
+ * project's other files and folders, relative to it. A folder with an
+ * `index.ts` is offered by its own path, and the files in it are not, from
+ * outside it: imports go through the index. Files are offered without
+ * `.ts` or `.tsx`, as they are imported. Once the visitor has typed a `.`,
+ * folders rank first, then files, then libraries; before that, libraries
+ * rank first.
+ */
+function importPathCompletions(fromPath: string, typed: string, projectPaths: readonly string[]): CompletionEntry[] {
+    const isRelative = typed.startsWith('.');
+    const ranks = isRelative ? { folder: '0', file: '1', library: '2' } : { library: '0', folder: '1', file: '2' };
+    const entries: CompletionEntry[] = [];
+    for (const library of LIBRARIES) {
+        // A JSX runtime is imported by a view's pragma, never by hand
+        if (library.endsWith('/jsx-runtime')) continue;
+        entries.push({ name: library, kind: 'external module name', sortText: ranks.library });
+    }
+    const fromFolder = folderOf(fromPath);
+    const indexedFolders = new Set<string>();
+    for (const path of projectPaths) if (/(^|\/)index\.tsx?$/.test(path)) indexedFolders.add(folderOf(path));
+    const isInside = (folder: string, outer: string): boolean => `${folder}/`.startsWith(`${outer}/`);
+    const offered = new Set<string>();
+    for (const path of projectPaths) {
+        if (path === fromPath) continue;
+        const folder = folderOf(path);
+        const isIndex = /(^|\/)index\.tsx?$/.test(path);
+        // A folder's own files import each other directly, not through its index
+        if (isIndex && isInside(fromFolder, folder)) continue;
+        // From outside a folder with an index, only the index's folder is offered
+        if (!isIndex && [...indexedFolders].some((f) => f !== '' && isInside(folder, f) && !isInside(fromFolder, f))) continue;
+        const relative = toRelativePath(fromFolder, isIndex ? folder : path.replace(/\.tsx?$/, ''));
+        if (offered.has(relative)) continue;
+        offered.add(relative);
+        entries.push({ name: relative, kind: isIndex ? 'directory' : 'script', sortText: isIndex ? ranks.folder : ranks.file });
+    }
+    return entries;
+}
+
+/** A path's folder, or '' at the project's root. */
+function folderOf(path: string): string {
+    const slash = path.lastIndexOf('/');
+    return slash === -1 ? '' : path.slice(0, slash);
+}
+
+/** The path from a folder to a file or folder, as an import writes it: `./ball-view`, `../models`. */
+function toRelativePath(fromFolder: string, to: string): string {
+    const from = fromFolder === '' ? [] : fromFolder.split('/');
+    const parts = to.split('/');
+    let shared = 0;
+    while (shared < from.length && shared < parts.length && from[shared] === parts[shared]) shared++;
+    const up = from.length - shared;
+    const rest = parts.slice(shared).join('/');
+    return up === 0 ? `./${rest}` : `${'../'.repeat(up)}${rest}`;
+}
 
 const IMPORT_SPECIFIER = /(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g;
 
@@ -348,6 +435,15 @@ function rendererOf(files: readonly ServiceFile[]): string {
     const main = files.find((f) => f.path === 'main.ts')?.text ?? '';
     const match = /\bdefine(Pixi|Html|Three)Project\b/.exec(main);
     return match === null ? 'pixi' : match[1].toLowerCase();
+}
+
+/**
+ * A file's text as the service's file system holds it. That file system
+ * takes an empty text for no file at all, so an empty file, such as one just
+ * added, is given a space, which TypeScript reads the same.
+ */
+function toServiceText(text: string): string {
+    return text === '' ? ' ' : text;
 }
 
 function toServicePath(path: string): string {

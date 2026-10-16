@@ -23,7 +23,7 @@ export const MAX_FILES = 40;
 export type ShareStatus = 'idle' | 'sharing' | 'copied' | 'too-large' | 'failed';
 
 /** The editor's colour themes, all dark, as the page is. */
-export const EDITOR_THEME_KINDS = ['one-dark', 'vscode-dark', 'github-dark', 'dracula', 'tokyo-night', 'nord', 'monokai'] as const;
+export const EDITOR_THEME_KINDS = ['vscode-dark', 'one-dark', 'github-dark', 'dracula', 'tokyo-night', 'nord', 'monokai'] as const;
 export type EditorThemeKind = (typeof EDITOR_THEME_KINDS)[number];
 
 /** A line in the console: what the project logged, or an error, with where it happened if that is known. */

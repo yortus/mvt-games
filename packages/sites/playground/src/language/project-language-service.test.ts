@@ -1,5 +1,6 @@
 import ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { LIBRARIES } from '../../libraries';
 import { makeTypeBundles } from '../../scripts';
 import { EXAMPLES } from '../examples';
 import { createProjectLanguageService, type ProjectLanguageService, type ServiceFile } from './project-language-service';
@@ -83,6 +84,44 @@ describe('a project language service', { timeout: 60_000 }, () => {
         expect(entry?.source).toBeDefined();
         const details = service.completionDetails('views/other-view.ts', offset, entry!);
         expect(details?.edits[0].newText).toContain("from '../models'");
+    });
+
+    it('completes an import\'s path with the libraries, and the project\'s files and folders relative to the file', async () => {
+        const { service } = createService();
+        const view = 'import { BallModel } from \'../m\';\nimport \'\';\n';
+        const files = [
+            { path: 'main.ts', text: '' },
+            { path: 'models/index.ts', text: 'export * from \'./ball-model\';\n' },
+            { path: 'models/ball-model.ts', text: 'export interface BallModel { x: number }\n' },
+            { path: 'views/ball-view.ts', text: view },
+            { path: 'views/colours.ts', text: '' },
+        ];
+        await service.setFiles(files);
+        // Empty files, as a file just added is, are files like any other
+        expect(service.diagnostics().filter((p) => p.path === 'main.ts')).toEqual([]);
+
+        // Inside '../m': the whole path is replaced, and the project's paths rank first
+        const pathStart = view.indexOf('../m');
+        const relative = service.completions('views/ball-view.ts', pathStart + '../m'.length);
+        expect(relative?.replaceFrom).toBe(pathStart);
+        const names = relative?.entries.map((e) => e.name) ?? [];
+        expect(names).toEqual(expect.arrayContaining(['../models', './colours', '../main', ...LIBRARIES.filter((l) => !l.endsWith('/jsx-runtime'))]));
+        // A folder's files are imported through its index, so neither its files nor the index are offered, nor is the file importing
+        expect(names).not.toContain('../models/ball-model');
+        expect(names).not.toContain('../models/index');
+        expect(names).not.toContain('./ball-view');
+        // Folders first, then files, then libraries
+        const rankOf = (name: string): number => Number(relative?.entries.find((e) => e.name === name)?.sortText);
+        expect(rankOf('../models')).toBeLessThan(rankOf('../main'));
+        expect(rankOf('../main')).toBeLessThan(rankOf('pixi.js'));
+
+        // Inside '': the libraries rank first
+        const empty = service.completions('views/ball-view.ts', view.indexOf('\'\'') + 1);
+        const emptyRank = (name: string): number => Number(empty?.entries.find((e) => e.name === name)?.sortText);
+        expect(emptyRank('pixi.js')).toBeLessThan(emptyRank('../models'));
+
+        // Outside an import's path, completions are TypeScript's own
+        expect(service.completions('views/ball-view.ts', view.indexOf('BallModel'))?.replaceFrom).toBeUndefined();
     });
 
     it('shows a name\'s type on hover, and the signature of a call being typed', async () => {

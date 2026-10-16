@@ -25,7 +25,7 @@ rename of the website to the Arcade, is done (section 15). Nothing else is
 built beyond the spike, but steps 3 to 6: the new package is the playground,
 at `/playground/`, with its layout, Problems list, run on change,
 intellisense, and the editor's menu, keys and themes, and the old one is
-gone. Next is step 7, projects and export.
+gone. Next is step 7, themes for the whole page (6.7).
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -658,12 +658,88 @@ own, and already work. Ctrl+N, Ctrl+T and Ctrl+W cannot be had: the
 browser keeps them.
 
 **Themes.** A menu in the header chooses the editor's colours, kept
-between visits with the other settings: One Dark, as before, then VS Code
-Dark, GitHub Dark, Dracula, Tokyo Night, Nord and Monokai, from the
-`@uiw/codemirror-theme-*` packages (MIT). Dark only, since the page
-around the editor is dark. Light themes need the page's colours in CSS
-variables, with a light palette for the page and the site's nav: later,
-if wanted.
+between visits with the other settings: VS Code Dark, the default since the
+owner's playtest, then One Dark, GitHub Dark, Dracula, Tokyo Night, Nord
+and Monokai, from the `@uiw/codemirror-theme-*` packages (MIT). Dark only,
+since the page around the editor is dark. Section 6.7 themes the rest of
+the page.
+
+**Import paths** complete too, added after the owner's playtest, since
+they say what a project can import. Inside an import's quotes the
+editor offers the libraries, and the project's files and folders as paths
+from the file: a folder with an `index.ts` by its own path, and none of
+the files behind its index, as the repo's barrel rule has it. Libraries
+rank first, and once a `.` is typed, folders, then files. Tab takes a
+completion, as Enter does.
+
+### 6.7 Themes for the whole page
+
+Added after the owner's playtest of step 6: with only the editor themed,
+each theme's editor sits among the page's own blue-black panels, and most
+clash. VS Code Dark's grey editor between GitHub-coloured panels looks
+like two apps. A theme colours the whole page instead, and once it does,
+light themes cost little more.
+
+**A theme** is the editor's CodeMirror extension and a palette for the
+page, in one record per theme in the playground's code:
+
+| Colour | Paints |
+| --- | --- |
+| `background` | The editor's own background, read from the editor theme, and the preview's surround |
+| `panel` | The file list, the header, the run's controls, the console and Problems |
+| `raised` | Buttons, menus, the quick open dialog, the banner over a library file |
+| `border` | Dividers, and the edges of all of the above |
+| `text`, `muted` | Text, and labels and places |
+| `accent` | The active file, links to places, the chosen tab, focus |
+| `error`, `warning`, `success` | Problems, counts, "Saved", Run |
+| `selected` | The active file's row, the menu's chosen item |
+
+Each palette comes from its theme's own UI colours, where the theme has
+them (VS Code's sidebar and panel, Dracula's and Nord's published
+palettes), and so matches the editor by design. `color-scheme` is part of
+it too, so the browser draws native controls (the menus, check boxes and
+scroll bars) light or dark to match.
+
+**How it reaches the CSS.** `playground.css` says every colour as a
+variable, `--pg-background` and so on, and none as a literal. Today it
+has 19 literal colours and 44 uses of the nav's `--site-*` colours; all
+become `--pg-*`. The page view writes the theme's palette to those
+variables on the document's root element, as the theme changes, as it
+writes the panes' sizes now. The palette lives beside the editor theme in
+TypeScript, one list for both, so a theme cannot have one without the
+other.
+
+**The site's nav stays as it is**, dark, on every theme. It is the site's,
+not the playground's, and the same on every page; a dark bar over a light
+page is common (GitHub's own). The playground keeps its own copy of the
+nav's markup and CSS already (`src/nav.css`, section 9), and its colours
+stay `--site-*`, so nothing in the Arcade or its nav changes. This is the
+answer to "without touching the Arcade": the playground's page colours
+were never the Arcade's, only borrowed names.
+
+**The preview.** The sandbox's page has its own background, `#111`,
+around a project's canvas. It becomes the theme's `background`, passed in
+the sandbox's document. A theme chosen during a run takes effect at the
+next run, as the sandbox cannot be reached without a run. (A transparent
+sandbox showing the page through would follow at once, but a browser
+paints an iframe opaque when its color-scheme differs from the page's,
+which a project cannot be trusted to match.)
+
+**The themes.** Dark: VS Code Dark (the default), One Dark, GitHub Dark,
+Dracula, Tokyo Night, Nord, Monokai. Light: VS Code Light, GitHub Light,
+and Solarized Light, from the same packages. The header's menu groups
+them under Dark and Light.
+
+**Checks.** A unit test that each palette's text reads on its background
+and panel (WCAG contrast 4.5:1 for `text`, 3:1 for `muted`, `accent` and
+the problem colours), derived from the palettes themselves. Visual tests
+of the whole page in each theme, at a small size, so a theme that misses
+a colour shows as a patch of another.
+
+**Open questions.** Should the default follow the system's light or dark
+setting (VS Code Light or Dark), or stay VS Code Dark until a visitor
+chooses? Recommended: stay VS Code Dark, as the owner asked, and offer
+"Match the system" as a menu item later, if wanted.
 
 ---
 
@@ -1170,7 +1246,7 @@ Each step ends with the site working and deployable.
    - Sharing (`#p1=`, gzip) and keeping one project between visits, with
      the old playground's saved project converted, came early, so the
      switch loses nothing the old playground had. IndexedDB projects stay
-     in step 7.
+     in step 8.
    - The library entry modules are in `libraries/entries/`, beside the
      list of libraries in `libraries/`, at the package's root, where
      `vite.config.ts` can import the list through a barrel.
@@ -1262,11 +1338,19 @@ Each step ends with the site working and deployable.
    kept after a reload. The check found that a scroll event arriving late,
    for a scroll made before, closed the menu as it opened, and that a type
    shown on hover stayed over the menu.
-7. **Projects and export.** IndexedDB projects and the migration from
+7. **Themes for the whole page.** Section 6.7: every colour in
+   `playground.css` a `--pg-*` variable, a palette for each theme, the
+   three light themes, the preview's surround, and the contrast and
+   visual tests. Before it, from the owner's playtest of step 6: VS Code
+   Dark as the default, import paths completed, and Tab to take a
+   completion (6.6), all done 2026-10-16. That work found that the
+   language service took an empty file, such as one just added, for a
+   missing one, and failed; it gives an empty file a space now.
+8. **Projects and export.** IndexedDB projects and the migration from
    `localStorage` (7.1), the `#p1=` share format with its size limit (7.3),
    and Export (7.5).
-8. **Docs.** Section 13.
-9. **Later.** Each of section 10's ideas, as a proposal or task of its own
+9. **Docs.** Section 13.
+10. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).
 

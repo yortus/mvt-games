@@ -1,7 +1,8 @@
 import { EditorView, basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
-import { Compartment, EditorSelection, EditorState } from '@codemirror/state';
+import { Compartment, EditorSelection, EditorState, Prec } from '@codemirror/state';
 import { indentUnit } from '@codemirror/language';
+import { acceptCompletion } from '@codemirror/autocomplete';
 import { indentWithTab } from '@codemirror/commands';
 import { type Diagnostic, setDiagnostics } from '@codemirror/lint';
 import { keymap } from '@codemirror/view';
@@ -113,6 +114,8 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
             doc: bindings.textOf(path),
             extensions: [
                 basicSetup,
+                // Tab takes the completion chosen, as Enter does, or else indents
+                Prec.high(keymap.of([{ key: 'Tab', run: acceptCompletion }])),
                 keymap.of([indentWithTab]),
                 indentUnit.of('    '),
                 EditorState.tabSize.of(4),

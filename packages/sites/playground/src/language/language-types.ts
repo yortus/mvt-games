@@ -49,6 +49,8 @@ export interface CompletionEntry {
 export interface CompletionList {
     readonly isMemberCompletion: boolean;
     readonly entries: readonly CompletionEntry[];
+    /** Where the text the chosen entry replaces begins, when that is not the word before the cursor, as in an import's path. */
+    readonly replaceFrom?: number;
 }
 
 /** A completion's type, documentation, and the import it adds, if any. */

@@ -109,12 +109,14 @@ export function createLanguageExtensions(options: LanguageExtensionsOptions): Ex
         const word = context.matchBefore(/[\w$]*/);
         const from = word?.from ?? context.pos;
         const isAfterDot = context.state.sliceDoc(from - 1, from) === '.';
-        if (!context.explicit && !isAfterDot && from === context.pos) return null;
+        // An import's path completes from its opening quote, and as each `/` is typed
+        const isInImportPath = context.matchBefore(IMPORT_PATH_BEFORE) !== null;
+        if (!context.explicit && !isAfterDot && !isInImportPath && from === context.pos) return null;
         const list = await language.completions(path, context.pos);
         if (list === undefined || context.aborted) return null;
         return {
-            from,
-            validFor: /^[\w$]*$/,
+            from: list.replaceFrom ?? from,
+            validFor: list.replaceFrom === undefined ? /^[\w$]*$/ : /^[\w$@./-]*$/,
             options: list.entries.map((entry) => toCompletion(entry, context.pos)),
         };
     }
@@ -207,6 +209,9 @@ export function createLanguageExtensions(options: LanguageExtensionsOptions): Ex
 // Internals
 // ---------------------------------------------------------------------------
 
+/** A line up to the cursor, when the cursor is inside an import's path. */
+const IMPORT_PATH_BEFORE = /\b(?:from|import)\s*\(?\s*['"][^'"]*$/;
+
 /** How long the pointer rests on a name before its type shows. */
 const HOVER_MS = 350;
 
@@ -223,6 +228,9 @@ const COMPLETION_TYPES: Readonly<Record<string, string>> = {
     'type': 'type',
     'enum': 'enum',
     'module': 'namespace',
+    'external module name': 'namespace',
+    'directory': 'namespace',
+    'script': 'text',
     'keyword': 'keyword',
     'const': 'constant',
     'let': 'variable',
