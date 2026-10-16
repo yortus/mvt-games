@@ -40,7 +40,7 @@ Settled questions that should not be reopened without new information are in
   - Crumb Chase, 2.1 KB to about 235 bytes. Measured first: 1.9 KB of it was
     the model, not the views. The mouse and the four cats each started a GSAP
     tween, and a `set`, for every one-tile step. Their moves are now a
-    `TileMove` (`packages/sites/website/src/games/crumb-chase/models/tile-move.ts`, with tests): a
+    `TileMove` (`packages/sites/arcade/src/games/crumb-chase/models/tile-move.ts`, with tests): a
     straight slide advanced by `update(deltaMs)` that allocates nothing, with
     the same semantics (linear, starting from wherever the actor is, and no
     time carried from one move to the next). The model now allocates nothing
@@ -128,7 +128,7 @@ Settled questions that should not be reopened without new information are in
   to the style guide.
 
 - **Vite 8's config-loader warning.** Every Vite run warns that
-  `packages/sites/website/vite.config.ts` uses two things its coming native config loader will
+  `packages/sites/arcade/vite.config.ts` uses two things its coming native config loader will
   not support: `__dirname` (use `import.meta.dirname`, as `vitest.config.ts`
   should too) and the extensionless import of
   `./scripts/vite-plugin-spritesheet`. The extension is the awkward one: the
@@ -148,7 +148,7 @@ Settled questions that should not be reopened without new information are in
   (`<List as="ol">`). It affects every renderer's `<List>`, so it is a design
   question for `@mvtjs/utils/jsx`, not a fix in the HTML target alone. Found
   building the fruit machine's wins list (033), which still has the wrapper:
-  `packages/sites/website/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
+  `packages/sites/arcade/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
 
 - **A `<List>` item view's update step sees last frame's item.** An item
   view reads its item through a cache that the slot's presence check fills
@@ -197,7 +197,7 @@ Settled questions that should not be reopened without new information are in
   to Pixi with a minimal repro (draw a rounded `Graphics`, destroy it, then
   draw a large smooth `roundRect` and compare with a fresh page), and
   decide whether the site patches `reset` meanwhile as 042's harness does
-  (`packages/sites/website/visual-spike/setup.ts` on the `visual-tests` branch).
+  (`packages/sites/arcade/visual-spike/setup.ts` on the `visual-tests` branch).
 - **Hand-written time-stepping helpers that `advanceTime` now covers.** The
   tick API gained `advanceTime(ms, ...items)` (042, step 10). But
   `building-with-mvt/simulating-the-world/time-management.md` and

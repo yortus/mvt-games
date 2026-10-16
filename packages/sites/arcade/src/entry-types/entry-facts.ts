@@ -15,6 +15,6 @@ export interface EntryFacts {
     readonly files: number;
     /** The renderers it draws with. */
     readonly renderers: readonly RendererKind[];
-    /** Its directory, from the repo's root (`packages/sites/website/src/entries/crumb-chase`). */
+    /** Its directory, from the repo's root (`packages/sites/arcade/src/entries/crumb-chase`). */
     readonly sourcePath: string;
 }

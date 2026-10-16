@@ -13,7 +13,7 @@
 The repository is an npm workspace. It has four libraries, published under
 the `@mvtjs` npm scope, and the visual testing package, published as
 `v-snap`. Its other packages are private: the sound chip, the lint rules,
-the website, the docs, the benchmarks and the checks.
+the Arcade, the docs, the benchmarks and the checks.
 
 ```
 packages/
@@ -27,7 +27,7 @@ packages/
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules
 ├── sites/               What gets deployed
-│   ├── website/         @mvtjs/website (private): the Arcade, its games and demos, the playground (Vite), and the Cloudflare Worker that keeps the highscore tables
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos, the playground (Vite), and the Cloudflare Worker that keeps the highscore tables
 │   └── docs/            @mvtjs/docs (private): this documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
@@ -41,7 +41,7 @@ published, so that publishing one moves nothing.
 Each package's source is in its own `src/`. The site's is laid out by area:
 
 ```
-packages/sites/website/src/
+packages/sites/arcade/src/
 ├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
@@ -64,7 +64,7 @@ are in a `visual-tests/` directory beside the views they test, one
 are beside it, named for the file's stem and the image, such as
 `hud-view.at-the-start.png`. The tests come from v-snap, the package in `packages/tools/v-snap/`. The
 root `vitest.config.ts` lists v-snap's projects beside the unit tests, and
-the website's `vsnap.config.ts` registers the kinds of view that the tests
+the Arcade's `vsnap.config.ts` registers the kinds of view that the tests
 pose, which it refreshes and destroys the MVT way. v-snap's
 [README](https://github.com/yortus/mvt-games/blob/main/packages/tools/v-snap/README.md)
 describes the package for its users, and its
@@ -81,8 +81,8 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
-| `packages/sites/website/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `SwipeInputView`, `PerfmonView` |
-| `packages/sites/website/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
+| `packages/sites/arcade/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `SwipeInputView`, `PerfmonView` |
+| `packages/sites/arcade/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -286,20 +286,20 @@ The rules above apply inside each package. Between packages:
   from either.
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
   sequences, slot lists, the metronome.
-- **The playground stands alone.** `packages/sites/website/src/playground/` and the rest of the
+- **The playground stands alone.** `packages/sites/arcade/src/playground/` and the rest of the
   site share no code in either direction (`import/no-restricted-paths`), so
   the playground could become a package of its own.
 
 Within the site, its shared views are imported as `#shared`, an alias that
-`packages/sites/website/package.json` defines.
+`packages/sites/arcade/package.json` defines.
 
 ## Entry Structure
 
 Each game and demo is an **entry**: a self-contained module under
-`packages/sites/website/src/entries/<id>/`, named for its id. A typical layout:
+`packages/sites/arcade/src/entries/<id>/`, named for its id. A typical layout:
 
 ```
-packages/sites/website/src/entries/<id>/
+packages/sites/arcade/src/entries/<id>/
 ├── index.ts              Barrel - re-exports the entry
 ├── start/
 │   ├── index.ts          Barrel - re-exports `entry` from entry.ts
@@ -325,4 +325,4 @@ the benchmarks find each one the same way. Everything else is the entry's
 own: a small demo may have only `models/` and `views/`.
 
 For details on creating a new entry, see
-`packages/sites/website/src/entries/README.md` in the repository.
+`packages/sites/arcade/src/entries/README.md` in the repository.

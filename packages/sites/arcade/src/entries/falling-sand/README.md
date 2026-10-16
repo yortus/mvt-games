@@ -241,4 +241,4 @@ does not jump.
 
 The performance metrics come from `createPerformanceMetrics` in
 [`packages/libraries/pixi/src/`](../../../../../libraries/pixi/src/index.ts) and `PerfmonView` in
-[`packages/sites/website/src/shared/`](../../shared/index.ts), which any demo or game can use.
+[`packages/sites/arcade/src/shared/`](../../shared/index.ts), which any demo or game can use.

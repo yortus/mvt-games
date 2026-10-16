@@ -20,30 +20,31 @@
 runtime, the sandbox and the editor in Chromium, Firefox and WebKit, and
 changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
-file for the test deploy (13). The rest of the design stands. Nothing is
+file for the test deploy (13). The rest of the design stands. Step 2, the
+rename of the website to the Arcade, is done (section 15). Nothing else is
 built beyond the spike.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
-([`index.ts`](../../packages/sites/website/src/playground/index.ts),
-[`editor-panel.ts`](../../packages/sites/website/src/playground/editor-panel.ts),
-[`presets.ts`](../../packages/sites/website/src/playground/presets.ts),
-[`url-state.ts`](../../packages/sites/website/src/playground/url-state.ts),
-[`compile.ts`](../../packages/sites/website/src/playground/sandbox/compile.ts),
-[`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts),
-[`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts)),
-its pages ([`playground/index.html`](../../packages/sites/website/playground/index.html),
-[`playground/sandbox.html`](../../packages/sites/website/playground/sandbox.html)),
+([`index.ts`](../../packages/sites/arcade/src/playground/index.ts),
+[`editor-panel.ts`](../../packages/sites/arcade/src/playground/editor-panel.ts),
+[`presets.ts`](../../packages/sites/arcade/src/playground/presets.ts),
+[`url-state.ts`](../../packages/sites/arcade/src/playground/url-state.ts),
+[`compile.ts`](../../packages/sites/arcade/src/playground/sandbox/compile.ts),
+[`sandbox-host.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-host.ts),
+[`sandbox-runner.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-runner.ts)),
+its pages ([`playground/index.html`](../../packages/sites/arcade/playground/index.html),
+[`playground/sandbox.html`](../../packages/sites/arcade/playground/sandbox.html)),
 the entry types
-([`entry-starter.ts`](../../packages/sites/website/src/entry-types/entry-starter.ts)),
+([`entry-starter.ts`](../../packages/sites/arcade/src/entry-types/entry-starter.ts)),
 an entry's start code
-([`crumb-chase/start/load.ts`](../../packages/sites/website/src/entries/crumb-chase/start/load.ts)),
+([`crumb-chase/start/load.ts`](../../packages/sites/arcade/src/entries/crumb-chase/start/load.ts)),
 the docs' links into it
 ([`PlaygroundLink.vue`](../../packages/sites/docs/.vitepress/components/PlaygroundLink.vue)),
 the lint rules that fence it off
 ([`eslint.config.ts`](../../eslint.config.ts)), the website's build
-([`vite.config.ts`](../../packages/sites/website/vite.config.ts),
-[`package.json`](../../packages/sites/website/package.json)), the root scripts
+([`vite.config.ts`](../../packages/sites/arcade/vite.config.ts),
+[`package.json`](../../packages/sites/arcade/package.json)), the root scripts
 ([`package.json`](../../package.json)) and the deploys
 ([`deploy.yml`](../../.github/workflows/deploy.yml),
 [`deploy-highscores.yml`](../../.github/workflows/deploy-highscores.yml)).
@@ -66,7 +67,7 @@ first draft had.
 [050](../tasks/backlog/050-visitor-analytics.md) (which pages report visits) -
 [Project Structure](../../packages/sites/docs/reference/project-structure.md) -
 [Quickstart](../../packages/sites/docs/building-with-mvt/quickstart.md) (links into the playground) -
-[Adding an Entry](../../packages/sites/website/src/entries/README.md)
+[Adding an Entry](../../packages/sites/arcade/src/entries/README.md)
 
 ---
 
@@ -152,19 +153,19 @@ These are the facts the design starts from, as of `b32f67b`.
 
 | What | How it is done now | What it costs |
 | --- | --- | --- |
-| Files | Two CodeMirror editors, Model and View, in tabs ([`editor-panel.ts`](../../packages/sites/website/src/playground/editor-panel.ts)) | No way to split code into files, so presets put a model's helpers, constants and types in one buffer |
-| Imports | Removed by a regular expression before transpiling ([`compile.ts`](../../packages/sites/website/src/playground/sandbox/compile.ts), `transpile`) | Code written in the playground cannot import anything, and code copied from the repo has its imports silently dropped |
-| What code can use | A fixed list of globals: eight Pixi classes, the tick API, `watch`, `setBackground`, and the JSX runtime's `h`, `Fragment`, `List`, `Switch` and `Match` ([`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts), `createUserGlobals`). A banner above the editor lists them | Nothing outside the list is reachable: no `@mvtjs/utils` tweens, no `SlotList`, no three.js, no HTML JSX, no sound. `watch` is a separate copy written for the sandbox |
+| Files | Two CodeMirror editors, Model and View, in tabs ([`editor-panel.ts`](../../packages/sites/arcade/src/playground/editor-panel.ts)) | No way to split code into files, so presets put a model's helpers, constants and types in one buffer |
+| Imports | Removed by a regular expression before transpiling ([`compile.ts`](../../packages/sites/arcade/src/playground/sandbox/compile.ts), `transpile`) | Code written in the playground cannot import anything, and code copied from the repo has its imports silently dropped |
+| What code can use | A fixed list of globals: eight Pixi classes, the tick API, `watch`, `setBackground`, and the JSX runtime's `h`, `Fragment`, `List`, `Switch` and `Match` ([`sandbox-runner.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-runner.ts), `createUserGlobals`). A banner above the editor lists them | Nothing outside the list is reachable: no `@mvtjs/utils` tweens, no `SlotList`, no three.js, no HTML JSX, no sound. `watch` is a separate copy written for the sandbox |
 | How it starts | The model's code must declare `createModel`, and the view's `createView(model)`, found by name after `new Function` evaluates each buffer | The names differ from the repo's conventions (`createXxxModel`, `XxxView`). One model and one view, always |
 | JSX | Sucrase's classic transform, calling a global `h`, adapted to the runtime's `jsx` | Differs from the repo, which uses the automatic runtime and a pragma |
 | Types | None. CodeMirror's JavaScript mode, with TypeScript syntax highlighting | No completions, no hover, no type errors |
 | Renderer | Pixi only | The DOM and three.js, which the libraries support, cannot be tried |
-| Sandbox | An iframe with `allow-scripts` and `allow-same-origin` ([`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts)) | It shares the site's origin, so code in it can read and write the site's storage: settings, favourites, saved games. That is why a shared link loads its code but does not run it ([`index.ts`](../../packages/sites/website/src/playground/index.ts)) |
+| Sandbox | An iframe with `allow-scripts` and `allow-same-origin` ([`sandbox-host.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-host.ts)) | It shares the site's origin, so code in it can read and write the site's storage: settings, favourites, saved games. That is why a shared link loads its code but does not run it ([`index.ts`](../../packages/sites/arcade/src/playground/index.ts)) |
 | Runaway loops | The host pings the sandbox every 3 seconds, and replaces the iframe if no reply comes | A same-origin iframe runs on its parent's thread. A loop that never ends freezes the whole page, the host's timer included, so the watchdog never fires |
-| Presets | Eight examples, as code in template strings, 992 lines ([`presets.ts`](../../packages/sites/website/src/playground/presets.ts)). Each calls `setBackground` once, with a fixed colour | Not type-checked, and exempt from lint ([`eslint.config.ts`](../../eslint.config.ts)). They drifted once already: links saved before task 028 assign `view.onRefresh` and never animate (017) |
+| Presets | Eight examples, as code in template strings, 992 lines ([`presets.ts`](../../packages/sites/arcade/src/playground/presets.ts)). Each calls `setBackground` once, with a fixed colour | Not type-checked, and exempt from lint ([`eslint.config.ts`](../../eslint.config.ts)). They drifted once already: links saved before task 028 assign `view.onRefresh` and never animate (017) |
 | Saving | One project in `localStorage`, "Custom Project" | One slot. Choosing an example and coming back is the only way to keep two things |
-| Sharing | lz-string compressed JSON of both buffers in the hash (`#code=`), or `#preset=<id>` ([`url-state.ts`](../../packages/sites/website/src/playground/url-state.ts)) | Works well, and is kept (section 7.3) |
-| Controls | Run, Stop, Pause, Step, Reset, a speed slider, and the canvas size ([`controls-panel.ts`](../../packages/sites/website/src/playground/controls-panel.ts)) | Good, and kept. The canvas size moves into the project (section 4.2) |
+| Sharing | lz-string compressed JSON of both buffers in the hash (`#code=`), or `#preset=<id>` ([`url-state.ts`](../../packages/sites/arcade/src/playground/url-state.ts)) | Works well, and is kept (section 7.3) |
+| Controls | Run, Stop, Pause, Step, Reset, a speed slider, and the canvas size ([`controls-panel.ts`](../../packages/sites/arcade/src/playground/controls-panel.ts)) | Good, and kept. The canvas size moves into the project (section 4.2) |
 | Where it lives | In the website package, `src/playground/`, fenced from the rest of the site by two lint rules ([`eslint.config.ts`](../../eslint.config.ts)). Its page loads the site's `src/shared/nav.css` | CodeMirror's five packages, Sucrase and lz-string are in the website's `package.json`, and nothing else in the website uses them (measured). The fence is a convention, kept by lint, with one crossing: the nav's CSS |
 | Its own code | Imperative DOM building, about 3,800 lines with the CSS, and no tests but `compile.test.ts` | Hard to extend, and unlike the rest of the site |
 
@@ -437,7 +438,7 @@ That is what lets a shared link run as it opens, as CodePen's do. Today the
 playground loads a shared project and waits for the visitor to press Run,
 because the code could otherwise read or change the visitor's settings,
 favourites and saved games (see the comment in
-[`index.ts`](../../packages/sites/website/src/playground/index.ts)). With an
+[`index.ts`](../../packages/sites/arcade/src/playground/index.ts)). With an
 opaque origin, the worst a project can do is the worst any web page can do
 inside its own tab.
 
@@ -449,7 +450,7 @@ inside its own tab.
 | Module scripts from an opaque origin are cross-origin requests, which need CORS | GitHub Pages sends `Access-Control-Allow-Origin: *` on every response, pages and assets alike (read from the live site). Surge, the test deploy, sends none, and without it the libraries fail to load; a file named `CORS` holding `*` at the root of what Surge publishes turns it on (section 13). The playground's Vite dev server needs `server.cors` set to `{ origin: '*' }` |
 | The Audio80's worklet module is loaded with `addModule`, also cross-origin | It loads, and the chip's clock runs, in Chromium and Firefox, in development and in the build. Chromium starts the sound only with `allow="autoplay"` on the iframe, so the Run click in the parent counts; without it, the audio context stays suspended. Firefox starts it either way |
 | A project that uses `localStorage` | It throws. That is acceptable: the playground is for MVT code, and the console says why |
-| Pixi's devtools extension found `__PIXI_APP__` through the parent ([`sandbox-host.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-host.ts)) | The bridge stops working. The extension can still be pointed at the iframe. Worth a line in the playground's help |
+| Pixi's devtools extension found `__PIXI_APP__` through the parent ([`sandbox-host.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-host.ts)) | The bridge stops working. The extension can still be pointed at the iframe. Worth a line in the playground's help |
 | Keyboard focus | Unchanged: the host focuses the iframe on Run, as now |
 
 ### 5.5 Runaway loops
@@ -514,7 +515,7 @@ project's root (the Pixi stage, the HTML root or the three.js scene), then
 a render, for Pixi and three.js. Pause leaves the root out of
 `updateView`. Step advances one frame of 16.67 ms. The speed slider scales
 `deltaMs`. This is today's loop in
-[`sandbox-runner.ts`](../../packages/sites/website/src/playground/sandbox/sandbox-runner.ts),
+[`sandbox-runner.ts`](../../packages/sites/arcade/src/playground/sandbox/sandbox-runner.ts),
 with the model's call replaced by the project's, and a root for each
 renderer.
 
@@ -1084,11 +1085,18 @@ Each step ends with the site working and deployable.
    deploys' headers read from the live sites rather than deploying the
    spike. Results and changes in section 16. Not done: a real phone, real
    Safari, and the installed Chrome (section 16.6).
-2. **Rename the website to the Arcade** (section 9.3). Mechanical, in one
+2. ~~**Rename the website to the Arcade** (section 9.3). Mechanical, in one
    commit, with no change in behaviour: the build, the tests, the test
    deploy and the highscores Worker's deploy all pass from the new path
    before it merges. The old playground stays where it is, in
-   `packages/sites/arcade/src/playground/`.
+   `packages/sites/arcade/src/playground/`.~~ Done 2026-10-16, on the
+   branch `rename-website-to-arcade`, on `vnext` at `ad299ea`: lint, the
+   2,536 unit tests, the build with the home page's budget check and the
+   docs, and the 64 visual tests (every image identical) pass. The two deploys run from the new
+   path when the branch is pushed, and are the last check. It also fixed
+   the entry info panel, which since the packages were grouped had shown
+   an entry's path as `packages/sites/website/src/entries/<id>` rather
+   than `src/entries/<id>`.
 3. **The new playground package, with its runtime.** Create
    `packages/sites/playground/` (section 9.2), with its own build into
    `dist/playground/` and the dev proxy. In it: the modules pipeline
@@ -1264,6 +1272,9 @@ at about 100 ms.
 
 ### 16.6 Not checked
 
+- **The owner's playtest.** Both spike pages were tried by hand in desktop
+  Chrome on 2026-10-16, and everything worked. Other browsers and devices
+  are left for later testing.
 - **A real phone, and real Safari.** The spike's pages can be served to a
   phone on the network; sound there needs the HTTPS dev server. Safari
   matters most for two rows of 16.1: whether its Web Audio starts in the

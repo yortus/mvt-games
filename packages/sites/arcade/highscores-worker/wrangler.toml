@@ -1,5 +1,5 @@
-# The highscores Worker: `npm run highscores:deploy:test -w @mvtjs/website` for
-# the test site's tables, `npm run highscores:deploy -w @mvtjs/website` for the
+# The highscores Worker: `npm run highscores:deploy:test -w @mvtjs/arcade` for
+# the test site's tables, `npm run highscores:deploy -w @mvtjs/arcade` for the
 # Arcade's.
 # Bindings and vars are not inherited by an environment, so `test` repeats them.
 

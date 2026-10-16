@@ -8,10 +8,10 @@
 
 ## Description
 
-The Arcade (`packages/sites/website/src/arcade/`, proposal
+The Arcade (`packages/sites/arcade/src/arcade/`, proposal
 [036](../../archive/036-website-arcade.md)) is the first MVT application
 in the repo that is not a game, and building it needed answers the docs do
-not give. Its [README](../../../packages/sites/website/src/arcade/README.md) shows
+not give. Its [README](../../../packages/sites/arcade/src/arcade/README.md) shows
 how it answered each; the docs should answer them in general, in the guide
 (`packages/sites/docs/building-with-mvt/`), each where it fits, with the Arcade as
 the worked example.

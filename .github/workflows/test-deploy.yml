@@ -26,7 +26,7 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test:unit
-            - run: npm run build:website
+            - run: npm run build:arcade
               env:
                   BASE_URL: /
                   # The highscores Worker's test environment, with tables of its own (deploy-highscores.yml)

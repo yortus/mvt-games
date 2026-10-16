@@ -1,4 +1,4 @@
-// Checks that the website's home page, the Arcade, stays light to load: the
+// Checks that the site's home page, the Arcade, stays light to load: the
 // JavaScript it needs before its first paint must not include a renderer
 // (Pixi or three.js), and must stay under a budget, gzipped. The Arcade shows
 // cards, not entries: an entry's code, and the renderer it draws with, load
@@ -6,10 +6,10 @@
 // anywhere the home page reaches, would bring it into the first load
 // unnoticed, and the page would take seconds longer to appear.
 //
-// It builds the website in memory, as it is deployed, with its own Vite
+// It builds the Arcade in memory, as it is deployed, with its own Vite
 // config, and walks the home page's chunks from its entry through their
 // static imports, which the browser loads before the page runs. Dynamic imports are
-// left out: they load later, on demand. `npm run build:website` runs it after
+// left out: they load later, on demand. `npm run build:arcade` runs it after
 // building; `npm run check:home-page-budget` runs it alone.
 
 import { fileURLToPath } from 'node:url';
@@ -36,11 +36,11 @@ const FORBIDDEN: readonly { readonly name: string; readonly path: string }[] = [
 // Run
 // ---------------------------------------------------------------------------
 
-const websiteRoot = fileURLToPath(new URL('../../../sites/website/', import.meta.url));
-const homePage = websiteRoot + 'index.html';
+const arcadeRoot = fileURLToPath(new URL('../../../sites/arcade/', import.meta.url));
+const homePage = arcadeRoot + 'index.html';
 
 const output = await build({
-    configFile: websiteRoot + 'vite.config.ts',
+    configFile: arcadeRoot + 'vite.config.ts',
     // How `vite build` loads it too, without the warning about the native loader
     configLoader: 'bundle',
     logLevel: 'error',

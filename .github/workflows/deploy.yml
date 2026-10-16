@@ -42,7 +42,7 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test:unit
-            - run: npm run build:website
+            - run: npm run build:arcade
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
                   # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)

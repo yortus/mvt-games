@@ -235,7 +235,7 @@ repo's root:
 
 ```sh
 npm run audio:render -- \
-    packages/sites/website/src/entries/galaxy-raiders/data/music.ts
+    packages/sites/arcade/src/entries/galaxy-raiders/data/music.ts
 ```
 
 It renders every song and effect the module exports to WAV files. It writes

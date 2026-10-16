@@ -171,7 +171,7 @@ refreshView(app.stage);             // 3. every refresh method in the stage, par
   anything on.
 - **Sessions advance only their models.** A game session's `update()` runs its
   model and nothing else. The host (the entry host in
-  `packages/sites/website/src/runner/`, driven by the Arcade's page) updates and
+  `packages/sites/arcade/src/runner/`, driven by the Arcade's page) updates and
   refreshes the whole stage once per frame, after the models.
 - **Pausing is the host's call.** While paused, the host stops advancing the
   models, and its game container sits out `updateView`. It is still

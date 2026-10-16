@@ -13,7 +13,7 @@
 
 ## The Parts
 
-The highscores' code is in two folders of the website.
+The highscores' code is in two folders of the Arcade's package.
 
 | Folder | What it holds | Where it runs |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ The Worker runs on Cloudflare's runtime, not in a browser. So this folder is
 a TypeScript project of its own, beside `src/`, with Cloudflare's types in
 place of the browser's. Wrangler, Cloudflare's command-line tool, builds the
 Worker from `worker.ts`. The Worker imports the shared code as
-`#highscores`, an import mapping in the website's `package.json`. The page
+`#highscores`, an import mapping in the Arcade's `package.json`. The page
 imports only `src/highscores/`, so none of the Worker's code reaches the
 page's bundle. But the page and the Worker still check initials with the
 same function.
@@ -98,11 +98,11 @@ tables in memory, by the same rules, and forgets them when the page closes.
 
 | Command | What it does |
 | --- | --- |
-| `npx vitest run -p unit packages/sites/website/highscores-worker packages/sites/website/src/highscores` | Runs the tests of the Worker and the code it shares, in Node. The SQLite storage runs on Node's own SQLite (`node:sqlite`) |
-| `npm run highscores:dev -w @mvtjs/website` | Runs the Worker on this machine, on Cloudflare's runtime, as the `test` environment. Set `VITE_HIGHSCORES_URL` to its address to try it from the site |
-| `npm run highscores:deploy:test -w @mvtjs/website` | Deploys the `test` environment. It needs a Wrangler login (`npx wrangler login`) |
-| `npm run highscores:deploy -w @mvtjs/website` | Deploys production |
-| `npm run highscores:types -w @mvtjs/website` | Writes Cloudflare's runtime types to `worker-configuration.d.ts`, after a Wrangler upgrade or a change to the compatibility date |
+| `npx vitest run -p unit packages/sites/arcade/highscores-worker packages/sites/arcade/src/highscores` | Runs the tests of the Worker and the code it shares, in Node. The SQLite storage runs on Node's own SQLite (`node:sqlite`) |
+| `npm run highscores:dev -w @mvtjs/arcade` | Runs the Worker on this machine, on Cloudflare's runtime, as the `test` environment. Set `VITE_HIGHSCORES_URL` to its address to try it from the site |
+| `npm run highscores:deploy:test -w @mvtjs/arcade` | Deploys the `test` environment. It needs a Wrangler login (`npx wrangler login`) |
+| `npm run highscores:deploy -w @mvtjs/arcade` | Deploys production |
+| `npm run highscores:types -w @mvtjs/arcade` | Writes Cloudflare's runtime types to `worker-configuration.d.ts`, after a Wrangler upgrade or a change to the compatibility date |
 
 The workflow
 [`deploy-highscores.yml`](../../../../.github/workflows/deploy-highscores.yml)
@@ -119,7 +119,7 @@ deployment reaches every Cloudflare location.
 long random string, and keep it somewhere safe:
 
 ```sh
-npx -w @mvtjs/website wrangler secret put ADMIN_TOKEN -c highscores-worker/wrangler.toml
+npx -w @mvtjs/arcade wrangler secret put ADMIN_TOKEN -c highscores-worker/wrangler.toml
 ```
 
 Add `--env test` to set the test environment's token. Then remove the row by

@@ -40,7 +40,7 @@ These commands run in v-snap's folder:
 
 From the repository's root, `npm run test:vsnap` runs `npm test` here. The
 root's own `npm test` runs the other workspaces' unit tests, and the
-website's visual tests, since the website is v-snap's biggest user. It
+Arcade's visual tests, since the Arcade is v-snap's biggest user. It
 leaves out v-snap's own tests, as if v-snap lived in a repository of its
 own.
 
@@ -110,7 +110,7 @@ can draw differently. The repository's `playwright-releases` workflow
 one is out, the workflow opens an issue with these steps. Then it tries
 the new version, and comments on the issue with what changed: the new
 browser build, the calibration images and references that changed, and
-how the website's visual tests fared. Its run keeps the changed images for
+how the Arcade's visual tests fared. Its run keeps the changed images for
 review.
 
 To upgrade:
@@ -124,7 +124,7 @@ To upgrade:
 3. Look at every changed calibration image before committing it. A change
    there means that the new browser draws differently. The projects that
    use v-snap will then need to update their references too.
-4. Run the website's visual tests from the root, with
+4. Run the Arcade's visual tests from the root, with
    `npm run test:visual`, and look at any image that changed.
 5. Change the Playwright version that the docs name: the README's badge
    and Requirements table, and Getting Started's requirements.

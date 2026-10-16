@@ -22,11 +22,11 @@ import { launchHeadlessChrome } from './headless-chrome.ts';
 const CROP_PIXELS = 600;
 const WEBP_QUALITY = 82;
 
-const websiteDir = resolve(import.meta.dirname, '..');
-const entryDirs = findEntryDirectories(join(websiteDir, 'src'));
+const arcadeDir = resolve(import.meta.dirname, '..');
+const entryDirs = findEntryDirectories(join(arcadeDir, 'src'));
 
 const server = await createServer({
-    configFile: join(websiteDir, 'vite.config.ts'),
+    configFile: join(arcadeDir, 'vite.config.ts'),
     server: { host: '127.0.0.1', port: 5190, strictPort: false },
     logLevel: 'warn',
 });
@@ -69,7 +69,7 @@ try {
         const file = join(dir, 'start', 'thumbnail.webp');
         writeFileSync(file, Buffer.from(data, 'base64'));
         const size = `${Math.round(rect.width * scale)}x${Math.round(rect.height * scale)}`;
-        console.log(`${id.padEnd(18)} ${size.padEnd(10)} -> ${relative(websiteDir, file)}`);
+        console.log(`${id.padEnd(18)} ${size.padEnd(10)} -> ${relative(arcadeDir, file)}`);
     }
 }
 finally {

@@ -10,7 +10,7 @@ See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 Everything the Arcade lists is an **entry**: a game, a demo, or one day an
 art piece. Each is a self-contained module under
-`packages/sites/website/src/entries/<id>/`, named for its id. Games and demos are
+`packages/sites/arcade/src/entries/<id>/`, named for its id. Games and demos are
 built the same way; the difference is in their metadata, such as their
 `kind` tag and a game's instructions. To add one, you need:
 
@@ -30,7 +30,7 @@ An entry here can be inspired by a classic, but must not copy it. Ideas,
 genres and mechanics are free to use; titles, character names and designs,
 artwork, music and specific level layouts are not.
 
-- **Art** is drawn from scratch, in a generator script in `packages/sites/website/scripts/`
+- **Art** is drawn from scratch, in a generator script in `packages/sites/arcade/scripts/`
   (`generate-<name>-textures.ts`) or in the entry's views, so where it came
   from is in the repo. Never use sprites ripped from another game, and do not
   trace or closely follow someone else's artwork, even reworked.
@@ -47,11 +47,11 @@ artwork, music and specific level layouts are not.
 
 ## Directory Structure
 
-Create a new directory under `packages/sites/website/src/entries/`, named for the
+Create a new directory under `packages/sites/arcade/src/entries/`, named for the
 entry's id:
 
 ```
-packages/sites/website/src/entries/breakout/
+packages/sites/arcade/src/entries/breakout/
 ├── index.ts              Barrel - export { entry } from './start'
 ├── start/
 │   ├── index.ts          Barrel - export { entry } from './entry'
@@ -444,7 +444,7 @@ for every element entry. Record the test's reference image, look at it, and
 commit it:
 
 ```bash
-npx vitest run packages/sites/website/src/entries/visual-tests/canvas-entries.test.tsx -u
+npx vitest run packages/sites/arcade/src/entries/visual-tests/canvas-entries.test.tsx -u
 ```
 
 Give the views their own visual tests too, with one test for each

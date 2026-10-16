@@ -20,7 +20,7 @@ export interface EntryFacts {
     readonly files: number;
     /** The renderers its source imports, in a fixed order. */
     readonly renderers: readonly RendererKind[];
-    /** Its directory, from the repo's root, with forward slashes (`packages/sites/website/src/entries/crumb-chase`). */
+    /** Its directory, from the repo's root, with forward slashes (`packages/sites/arcade/src/entries/crumb-chase`). */
     readonly sourcePath: string;
 }
 

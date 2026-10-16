@@ -33,7 +33,7 @@ MVT too, in HTML.
 | Reordering Lists | Rows of cards sliding into place as a script reorders them        |
 
 Each game and demo is an **entry**: a self-contained module under
-`packages/sites/website/src/entries/<id>/` with its own data, models, and views, and
+`packages/sites/arcade/src/entries/<id>/` with its own data, models, and views, and
 a `start/` directory that tells the Arcade how to list it and load it.
 
 ## Tech Stack
@@ -81,7 +81,7 @@ else.
 ```
 packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
               @mvtjs/three, @mvtjs/html), and the private ones: the sound
-              chip, the website, the docs, the benchmarks, the checks and
+              chip, the Arcade, the docs, the benchmarks, the checks and
               the lint rules
 notes/        Proposals, tasks, and the archive of finished work
 ```
@@ -98,13 +98,13 @@ packages/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   This repo's lint rules (private for now)
 ├── sites/
-│   ├── website/         The Arcade, its games and demos, and the playground (private)
+│   ├── arcade/          The Arcade, its games and demos, and the playground (private)
 │   └── docs/            The documentation (VitePress, private)
 └── tests/
     ├── benchmarks/      Performance benchmarks (private; npm run bench)
     └── checks/          Tests that the packages still fit together as decided (private)
 
-packages/sites/website/src/
+packages/sites/arcade/src/
 ├── arcade/              The Arcade, the home page (HTML JSX)
 ├── entries/             Every game and demo, one directory each, and the catalogue
 │   └── <id>/            Self-contained entry (start/, data/, models/, views/)

@@ -16,7 +16,7 @@ done on its own, or dropped.
 ### Each game configures its own table
 
 The games with tables, each with its cap and its table's version, are listed
-in `GAMES`, in `packages/sites/website/src/highscores/rules/games.ts`. That is far
+in `GAMES`, in `packages/sites/arcade/src/highscores/rules/games.ts`. That is far
 from the games, so it is hard to keep up to date. The owner wants each game
 to configure its own table instead, probably in its `start/entry.ts`, in
 place of `hasHighscores: true`.

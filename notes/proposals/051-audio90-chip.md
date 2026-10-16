@@ -31,13 +31,13 @@
 [`chip-runner.ts`](../../packages/libraries/audio/src/web/chip-runner.ts),
 [`music-player.ts`](../../packages/libraries/audio/src/music-player/music-player.ts),
 the notation in [`notation/`](../../packages/libraries/audio/src/notation/index.ts)),
-the website's sound
-([`page-sound.ts`](../../packages/sites/website/src/runner/page-sound.ts),
-[`entry-host.ts`](../../packages/sites/website/src/runner/entry-host.ts),
-[`pixi-stage.ts`](../../packages/sites/website/src/runner/pixi-stage.ts),
-[`headless.ts`](../../packages/sites/website/src/runner/headless.ts),
-[`snapshot.ts`](../../packages/sites/website/src/snapshot.ts)), the start options
-in [`entry-starter.ts`](../../packages/sites/website/src/entry-types/entry-starter.ts),
+the Arcade's sound
+([`page-sound.ts`](../../packages/sites/arcade/src/runner/page-sound.ts),
+[`entry-host.ts`](../../packages/sites/arcade/src/runner/entry-host.ts),
+[`pixi-stage.ts`](../../packages/sites/arcade/src/runner/pixi-stage.ts),
+[`headless.ts`](../../packages/sites/arcade/src/runner/headless.ts),
+[`snapshot.ts`](../../packages/sites/arcade/src/snapshot.ts)), the start options
+in [`entry-starter.ts`](../../packages/sites/arcade/src/entry-types/entry-starter.ts),
 and every entry's `start/load.ts`. Cost figures are estimates until the
 spike (section 15, step 1). The Audio80's measured cost is the base they
 are scaled from.
@@ -50,7 +50,7 @@ are scaled from.
 [Using the Audio80](../../packages/libraries/audio/docs/using-the-audio80.md) -
 [Writing Tracker Music](../../packages/libraries/audio/docs/writing-tracker-music.md) -
 [Sound and Music](../../packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) -
-[Originality](../../packages/sites/website/src/entries/README.md#originality)
+[Originality](../../packages/sites/arcade/src/entries/README.md#originality)
 
 ---
 

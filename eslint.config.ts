@@ -126,7 +126,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['packages/sites/website/src/**/*.{ts,tsx}'],
+        files: ['packages/sites/arcade/src/**/*.{ts,tsx}'],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
         },
@@ -140,7 +140,7 @@ export default tseslint.config(
     {
         // The playground and the rest of the site share no code, so either
         // could move to a package of its own without untangling them.
-        files: ['packages/sites/website/src/**/*.{ts,tsx}'],
+        files: ['packages/sites/arcade/src/**/*.{ts,tsx}'],
         plugins: {
             import: importPlugin,
         },
@@ -148,14 +148,14 @@ export default tseslint.config(
             'import/no-restricted-paths': ['error', {
                 zones: [
                     {
-                        target: './packages/sites/website/src/playground',
-                        from: './packages/sites/website/src',
+                        target: './packages/sites/arcade/src/playground',
+                        from: './packages/sites/arcade/src',
                         except: ['./playground'],
                         message: 'The playground shares no code with the rest of the site.',
                     },
                     {
-                        target: ['./packages/sites/website/src/!(playground)/**', './packages/sites/website/src/*.{ts,tsx}'],
-                        from: './packages/sites/website/src/playground',
+                        target: ['./packages/sites/arcade/src/!(playground)/**', './packages/sites/arcade/src/*.{ts,tsx}'],
+                        from: './packages/sites/arcade/src/playground',
                         message: 'The rest of the site shares no code with the playground.',
                     },
                 ],
@@ -166,7 +166,7 @@ export default tseslint.config(
         files: VIEW_CONVENTION_FILES,
         // The playground builds DOM and CodeMirror views, and its presets follow
         // the sandbox's own `createView(model)` contract.
-        ignores: ['packages/sites/website/src/playground/**'],
+        ignores: ['packages/sites/arcade/src/playground/**'],
         rules: {
             'no-restricted-syntax': [
                 'error',
@@ -202,7 +202,7 @@ export default tseslint.config(
     },
     // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time
     {
-        files: ['packages/sites/website/src/**/models/**/*.{ts,tsx}', 'packages/sites/website/src/**/*-model.ts'],
+        files: ['packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts'],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
     },
@@ -219,7 +219,7 @@ export default tseslint.config(
         files: [
             'packages/libraries/pixi/src/container-mixin.ts',
             'packages/libraries/three/src/object3d-mixin.ts',
-            'packages/sites/website/scripts/vite-plugin-spritesheet.ts',
+            'packages/sites/arcade/scripts/vite-plugin-spritesheet.ts',
             'packages/libraries/audio/src/web/chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
             'packages/tools/v-snap/src/browser/canvas-text.ts',

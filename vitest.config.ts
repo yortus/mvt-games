@@ -9,16 +9,16 @@ const ROOT = import.meta.dirname;
 const SOURCE_CONDITION = '@mvtjs/source';
 
 // One test run over every workspace in packages/: the unit tests in Node, and
-// the website's visual tests in a browser. withVsnap moves the unit tests'
+// the Arcade's visual tests in a browser. withVsnap moves the unit tests'
 // settings into the "unit" project, which leaves out the visual tests, and
 // adds v-snap's projects, `visual-canvas` and `visual-html`, which bring
 // v-snap's reporter with them. `-p unit` and `-p "visual-*"` run each alone.
 // v-snap is left out, as if it lived in a repo of its own: its own config
 // runs its tests, and the scripts call it.
 export default defineConfig(withVsnap({
-    // The website's visual tests, which build its views with its own Vite config
+    // The Arcade's visual tests, which build its views with its own Vite config
     vsnap: {
-        root: resolve(ROOT, 'packages/sites/website'),
+        root: resolve(ROOT, 'packages/sites/arcade'),
         viteConfig: './vite.config.ts',
     },
     resolve: {

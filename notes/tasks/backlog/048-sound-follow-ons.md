@@ -41,7 +41,7 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
   the page asks for media playback, with `navigator.audioSession`. Should the
   Arcade ask?
 - **Publishing `@mvtjs/audio`.** The package is private. Its own side is
-  generic, and the site's side (`PageSound`) lives in the website. Publishing
+  generic, and the site's side (`PageSound`) lives in the Arcade. Publishing
   it would need its docs to show that side as an example.
 - **A Sound Test entry.** A demo in the Arcade, like the sound test menus of
   16-bit games. It would be a jukebox of every entry's sounds and tunes, with

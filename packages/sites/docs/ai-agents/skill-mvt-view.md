@@ -336,7 +336,7 @@ setUpdate(view, update);     // only for views with presentation state
   `model.update(deltaMs)`, then `updateView(app.stage, deltaMs)`, which calls
   every update method in the stage, then `refreshView(app.stage)`, which calls
   every refresh method. Game sessions advance only their models; the entry
-  host (`packages/sites/website/src/runner/`) updates and refreshes the stage once
+  host (`packages/sites/arcade/src/runner/`) updates and refreshes the stage once
   per frame, and pauses by leaving the entry's container out of `updateView`.
   Games know nothing about pause.
 - **Never forward `update()` or `refresh()` to child views.** `updateView` and
@@ -605,11 +605,11 @@ canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({
   wrap the tests in a `describe` block that only names the view, which
   would repeat it in every image's name. Use a `describe` block only for
   something more specific, such as a state that several tests share.
-- The website's `vsnap.config.ts` registers Pixi, three.js and HTML views.
+- The Arcade's `vsnap.config.ts` registers Pixi, three.js and HTML views.
   v-snap refreshes each view before its image is taken, and destroys it the
   MVT way after, so the pose doesn't. Pixi is the default kind, so a Pixi
   test gives no `kind`.
-- The website's `vsnap.config.ts` draws Pixi views as pixel art, as most
+- The Arcade's `vsnap.config.ts` draws Pixi views as pixel art, as most
   of its games are. Set `pixelArt: false` for a view that its game draws
   with antialiasing.
 - A three.js view's options give `kind: 'three'`, the image's `width` and

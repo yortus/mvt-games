@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
-import { findEntry } from '@mvtjs/website/entries';
-import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/website/entry-types';
+import { findEntry } from '@mvtjs/arcade/entries';
+import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/arcade/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
@@ -12,7 +12,7 @@ import { stubTextMeasurement } from '../harness/text-measurement';
 // run unattended, as they do before anyone touches them. Textures and text
 // measurement are stubbed (see the driver and `stubTextMeasurement`), and
 // nothing is rendered. So this measures each one's own frame work, in the
-// order the website's entry host runs it. First the session's update
+// order the Arcade's entry host runs it. First the session's update
 // advances its models, and then the stage is ticked.
 //
 // measure `time`: mean µs per frame over one simulated minute (3600 frames)
@@ -97,7 +97,7 @@ else {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Loads a game or demo by id, as the website would launch it. Only entries drawn with Pixi run headless here. */
+/** Loads a game or demo by id, as the Arcade would launch it. Only entries drawn with Pixi run headless here. */
 async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
     const entry = findEntry(id);
     if (entry === undefined) throw new Error(`unknown game or demo: ${id}`);

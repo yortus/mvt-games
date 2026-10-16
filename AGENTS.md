@@ -8,7 +8,7 @@
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/sites/website/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/website/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/sites/arcade/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/arcade/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](packages/sites/docs/architecture/index.md) -
@@ -32,7 +32,7 @@ packages/
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── sites/               What gets deployed
-│   ├── website/         @mvtjs/website (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
@@ -41,7 +41,7 @@ notes/                   Proposals and tasks
 ```
 
 ```
-packages/sites/website/src/
+packages/sites/arcade/src/
 ├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
@@ -78,9 +78,9 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 
 - **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, description, tags, screenWidth, screenHeight, thumbnail, load }`. Metadata only, so listing every entry loads no entry's code; `load()` imports `start/load.ts`
 - **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games, and `scoring` for a game with a highscore table
-- **CATALOGUE** - every entry, in `packages/sites/website/src/entries/catalogue.ts`
+- **CATALOGUE** - every entry, in `packages/sites/arcade/src/entries/catalogue.ts`
 - **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
-- To add a game or demo: create `packages/sites/website/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/sites/website/src/entries/README.md#originality). See [Adding an Entry](packages/sites/website/src/entries/README.md)
+- To add a game or demo: create `packages/sites/arcade/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/sites/arcade/src/entries/README.md#originality). See [Adding an Entry](packages/sites/arcade/src/entries/README.md)
 
 ## Key Conventions
 
@@ -145,7 +145,7 @@ done. Proposals and tasks share one number sequence.
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/sites/docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/sites/docs/building-with-mvt/performance/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/sites/docs/building-with-mvt/simulating-the-world/models.md)
-7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/sites/website/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/sites/website/src/entries/README.md#originality)
+7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/sites/arcade/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/sites/arcade/src/entries/README.md#originality)
 
 Full rules: [Architecture Rules](packages/sites/docs/architecture/rules.md)
 

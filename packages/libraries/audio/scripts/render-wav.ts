@@ -4,7 +4,7 @@
  *
  * Run from the repo's root:
  *
- *     npm run audio:render -- packages/sites/website/src/entries/galaxy-raiders/data/music.ts [more modules...]
+ *     npm run audio:render -- packages/sites/arcade/src/entries/galaxy-raiders/data/music.ts [more modules...]
  *
  * Files go to `renders/<the module's path>/<export>.wav`, which git ignores. Import the
  * modules that hold the sounds directly, not a barrel that also loads

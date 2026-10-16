@@ -1,8 +1,8 @@
 import { Container } from 'pixi.js';
 import {
     createDemoModel, type DemoSnapshot, type GrainKind, type GrainStorageKind, TANK_SIZES, type TankSizeKind,
-} from '@mvtjs/website/entries/falling-sand/models';
-import { DemoView, type GrainsViewKind } from '@mvtjs/website/entries/falling-sand/views';
+} from '@mvtjs/arcade/entries/falling-sand/models';
+import { DemoView, type GrainsViewKind } from '@mvtjs/arcade/entries/falling-sand/views';
 import { countTick, refreshView, updateView } from '@mvtjs/pixi';
 import { cached } from '../harness/case-cache';
 import { readParams, report } from '../harness/measure';

@@ -135,7 +135,7 @@ function describeInspiration(inspiration: Inspiration | undefined): string {
 /** "1.3k lines, 20 files, in src/entries/crumb-chase" */
 function describeSize(facts: EntryFacts | undefined): string {
     if (facts === undefined) return '';
-    return `${sizeLabel(facts)}, in ${facts.sourcePath.replace(WEBSITE_PREFIX, '')}`;
+    return `${sizeLabel(facts)}, in ${facts.sourcePath.replace(ARCADE_PREFIX, '')}`;
 }
 
-const WEBSITE_PREFIX = /^packages\/website\//;
+const ARCADE_PREFIX = /^packages\/sites\/arcade\//;

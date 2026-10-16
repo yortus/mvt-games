@@ -9,7 +9,7 @@
         "@mvtjs/pixi": "^0.3.0",
         "@mvtjs/three": "^0.3.0",
         "@mvtjs/utils": "^0.3.0",
-        "@mvtjs/website": "*",
+        "@mvtjs/arcade": "*",
         "esbuild": "^0.27.3",
         "pixi.js": "^8.16.0",
         "solid-js": "^1.9.11",

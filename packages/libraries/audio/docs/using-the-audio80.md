@@ -630,7 +630,7 @@ are called from refresh steps, which must not allocate.
 
 ```sh
 npm run audio:render -- \
-    packages/sites/website/src/entries/galaxy-raiders/data/music.ts
+    packages/sites/arcade/src/entries/galaxy-raiders/data/music.ts
 ```
 
 This command renders every song and effect the module exports to WAV

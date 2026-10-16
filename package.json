@@ -10,16 +10,16 @@
         "#eslint-plugin": "./packages/tools/eslint-plugin/src/index.ts"
     },
     "scripts": {
-        "dev": "npm run dev -w @mvtjs/website",
-        "dev:https": "npm run dev:https -w @mvtjs/website",
-        "build": "tsc -b && npm run build -w @mvtjs/website && npm run check:home-page-budget && npm run build -w @mvtjs/docs",
-        "build:website": "tsc -b && npm run build -w @mvtjs/website && npm run check:home-page-budget",
+        "dev": "npm run dev -w @mvtjs/arcade",
+        "dev:https": "npm run dev:https -w @mvtjs/arcade",
+        "build": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget && npm run build -w @mvtjs/docs",
+        "build:arcade": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget",
         "build:docs": "npm run build -w @mvtjs/docs",
         "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html && npm run check:view-type-registration",
         "check:home-page-budget": "npm run check:home-page-budget -w @mvtjs/checks",
         "check:view-type-registration": "npm run check:view-type-registration -w @mvtjs/checks",
         "docs:dev": "npm run dev -w @mvtjs/docs",
-        "preview": "npm run preview -w @mvtjs/website",
+        "preview": "npm run preview -w @mvtjs/arcade",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "release": "changeset version && npm install --package-lock-only",
@@ -31,10 +31,10 @@
         "test:visual": "vitest run -p \"visual-*\"",
         "test:visual:update": "vitest run -p \"visual-*\" -u",
         "test:vsnap": "npm test -w v-snap",
-        "generate-textures": "npm run generate-textures -w @mvtjs/website",
+        "generate-textures": "npm run generate-textures -w @mvtjs/arcade",
         "audio:render": "npm run render-wav -w @mvtjs/audio --",
-        "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/website --",
-        "measure-load": "npm run measure-load -w @mvtjs/website --"
+        "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/arcade --",
+        "measure-load": "npm run measure-load -w @mvtjs/arcade --"
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.5",
