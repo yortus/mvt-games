@@ -586,7 +586,6 @@ instance. See
 Every view in the site and the packages follows this convention, and lint enforces its naming:
 no `createXxxView` functions, no `get*` members in `XxxViewBindings`,
 `XxxViewModel` or `XxxViewModelOptions` interfaces, and no `XxxViewProps`.
-The playground is exempt, since it builds DOM views.
 
 ## Code Organisation
 

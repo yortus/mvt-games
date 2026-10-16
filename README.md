@@ -98,7 +98,8 @@ packages/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   This repo's lint rules (private for now)
 ├── sites/
-│   ├── arcade/          The Arcade, its games and demos, and the playground (private)
+│   ├── arcade/          The Arcade, its games and demos (private)
+│   ├── playground/      An editor in the browser that runs small MVT projects (private)
 │   └── docs/            The documentation (VitePress, private)
 └── tests/
     ├── benchmarks/      Performance benchmarks (private; npm run bench)
@@ -110,6 +111,5 @@ packages/sites/arcade/src/
 │   └── <id>/            Self-contained entry (start/, data/, models/, views/)
 ├── entry-types/         What an entry is, and how it starts
 ├── runner/              The entry host, which runs one entry of any renderer, and the page's sound
-├── playground/          In-browser editor and sandbox
 └── shared/              The site's shared views (overlay, input, perfmon)
 ```

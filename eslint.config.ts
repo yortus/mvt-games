@@ -143,35 +143,7 @@ export default tseslint.config(
         },
     },
     {
-        // The playground and the rest of the site share no code, so either
-        // could move to a package of its own without untangling them.
-        files: ['packages/sites/arcade/src/**/*.{ts,tsx}'],
-        plugins: {
-            import: importPlugin,
-        },
-        rules: {
-            'import/no-restricted-paths': ['error', {
-                zones: [
-                    {
-                        target: './packages/sites/arcade/src/playground',
-                        from: './packages/sites/arcade/src',
-                        except: ['./playground'],
-                        message: 'The playground shares no code with the rest of the site.',
-                    },
-                    {
-                        target: ['./packages/sites/arcade/src/!(playground)/**', './packages/sites/arcade/src/*.{ts,tsx}'],
-                        from: './packages/sites/arcade/src/playground',
-                        message: 'The rest of the site shares no code with the playground.',
-                    },
-                ],
-            }],
-        },
-    },
-    {
         files: VIEW_CONVENTION_FILES,
-        // The playground builds DOM and CodeMirror views, and its presets follow
-        // the sandbox's own `createView(model)` contract.
-        ignores: ['packages/sites/arcade/src/playground/**'],
         rules: {
             'no-restricted-syntax': [
                 'error',

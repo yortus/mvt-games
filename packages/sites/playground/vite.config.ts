@@ -8,7 +8,7 @@ const ROOT = import.meta.dirname;
 const SOURCE_CONDITION = '@mvtjs/source';
 
 /** Where the playground is served, from the site's root. */
-const PLAYGROUND_PATH = 'playground/next/';
+const PLAYGROUND_PATH = 'playground/';
 
 /** The dev server's port. The Arcade's dev server sends requests for the playground here. */
 const DEV_PORT = 5300;

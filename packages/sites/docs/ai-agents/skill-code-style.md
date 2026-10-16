@@ -90,7 +90,6 @@ Between packages ([details](../reference/project-structure.md#between-packages))
 - In the site and benchmarks, take `SKIP_DESCENDANTS`, `hasUpdate`,
   `hasRefresh`, the counters and the method types from the renderer package,
   not `@mvtjs/utils` (`no-restricted-imports`).
-- `packages/sites/arcade/src/playground/` and the rest of the site never import each other.
 
 ## String-Literal Unions
 

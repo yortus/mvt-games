@@ -27,7 +27,8 @@ packages/
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules
 ├── sites/               What gets deployed
-│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos, the playground (Vite), and the Cloudflare Worker that keeps the highscore tables
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite), and the Cloudflare Worker that keeps the highscore tables
+│   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite)
 │   └── docs/            @mvtjs/docs (private): this documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
@@ -53,7 +54,6 @@ packages/sites/arcade/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── playground/          The in-browser editor and the sandbox it runs code in
 ├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
@@ -286,9 +286,9 @@ The rules above apply inside each package. Between packages:
   from either.
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
   sequences, slot lists, the metronome.
-- **The playground stands alone.** `packages/sites/arcade/src/playground/` and the rest of the
-  site share no code in either direction (`import/no-restricted-paths`), so
-  the playground could become a package of its own.
+- **The playground stands alone.** It is a package of its own,
+  `packages/sites/playground/`, and shares no code with the Arcade. It
+  imports only the libraries, as the projects it runs do.
 
 Within the site, its shared views are imported as `#shared`, an alias that
 `packages/sites/arcade/package.json` defines.

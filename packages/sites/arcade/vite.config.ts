@@ -15,7 +15,10 @@ const SOURCE_CONDITION = '@mvtjs/source';
 /** The mode (`--mode https`) in which the dev server serves over HTTPS. */
 const HTTPS_MODE = 'https';
 
-/** Creates a plugin that redirects `/playground` to `/playground/`, so Vite serves its index.html. */
+/**
+ * Creates a plugin that redirects `/playground` to `/playground/`, which the
+ * proxy sends on to the playground's dev server.
+ */
 function trailingSlashPlugin(): Plugin {
     return {
         name: 'trailing-slash-rewrite',
@@ -78,10 +81,10 @@ export default defineConfig(({ mode }) => ({
         resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
     // In development, requests for /docs go to VitePress's dev server, and
-    // requests for the new playground to its own dev server. In production,
-    // each writes static files to the top-level dist/, which Pages serves. The
-    // site is at its root, the docs are in docs/, and the new playground is
-    // in playground/next/.
+    // requests for /playground/ to the playground's own dev server. In
+    // production, each writes static files to the top-level dist/, which Pages
+    // serves. The site is at its root, the docs are in docs/, and the
+    // playground is in playground/.
     server: {
         proxy: {
             '/docs': {
@@ -89,7 +92,7 @@ export default defineConfig(({ mode }) => ({
                 changeOrigin: true,
                 configure: (proxy) => showNotRunning(proxy, 'Docs', 'VitePress dev server', 'npm run docs:dev'),
             },
-            '/playground/next': {
+            '/playground/': {
                 target: `http://localhost:${PLAYGROUND_DEV_PORT}`,
                 changeOrigin: true,
                 // Vite's own updates to the page, as files change
@@ -104,8 +107,6 @@ export default defineConfig(({ mode }) => ({
         rollupOptions: {
             input: {
                 'main': resolve(SITE_ROOT, 'index.html'),
-                'playground': resolve(SITE_ROOT, 'playground/index.html'),
-                'playground-sandbox': resolve(SITE_ROOT, 'playground/sandbox.html'),
             },
         },
     },

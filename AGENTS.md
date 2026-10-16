@@ -32,7 +32,8 @@ packages/
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── sites/               What gets deployed
-│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos, and the playground (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ (each a project), libraries/ (what a project may import)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
@@ -53,7 +54,6 @@ packages/sites/arcade/src/
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── playground/          In-browser editor and sandbox; shares no code with the rest of the site
 ├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
@@ -121,6 +121,7 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run test:vsnap`   | All of v-snap's own tests, unit and visual, from its own config |
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
+| `npm run playground:dev` | Start the playground's dev server, which `npm run dev` serves at /playground/ |
 | `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |

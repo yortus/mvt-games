@@ -119,8 +119,9 @@ frame is drawn; any mechanism that does that works.
 
 ## Try It Live
 
-> **<PlaygroundLink preset="bouncing-ball" />** - edit the model
-> and view side by side and see changes instantly.
+> **<PlaygroundLink preset="bouncing-ball" />** - the ball as a
+> small project, with its model and view in files of their own. Change
+> either, and press Run to see the change.
 
 ## What's Next?
 

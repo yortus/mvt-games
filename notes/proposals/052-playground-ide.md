@@ -22,9 +22,8 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but most of step 3: the new package runs at
-`/playground/next/` beside the old playground, awaiting a playtest before it
-takes over `/playground/`.
+built beyond the spike, but step 3: the new package is the playground, at
+`/playground/`, and the old one is gone.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -1102,7 +1101,7 @@ Each step ends with the site working and deployable.
    the entry info panel, which since the packages were grouped had shown
    an entry's path as `packages/sites/website/src/entries/<id>` rather
    than `src/entries/<id>`.
-3. **The new playground package, with its runtime.** Create
+3. ~~**The new playground package, with its runtime.** Create
    `packages/sites/playground/` (section 9.2), with its own build into
    `dist/playground/` and the dev proxy. In it: the modules pipeline
    (5.2), the opaque-origin sandbox (5.4), loop guards (5.5), the library
@@ -1113,12 +1112,12 @@ Each step ends with the site working and deployable.
    When every example runs and every old preset converts, `/playground/`
    switches to it, and the old `src/playground/` is deleted from the
    Arcade, with its dependencies, the two fence rules, and its lines in
-   the Arcade's Vite config. Shared links now run as they open.
+   the Arcade's Vite config. Shared links now run as they open.~~
 
-   Done in part, 2026-10-16: everything before the switch. The package
-   builds into `dist/playground/next/` after the Arcade, and the Arcade's
-   dev server proxies `/playground/next` to its own (`npm run
-   playground:dev`, port 5300). Both deploy workflows build it, and the
+   Done 2026-10-16. The package builds into `dist/playground/` after the
+   Arcade, and the Arcade's dev server proxies `/playground/` to its own
+   (`npm run playground:dev`, port 5300). It ran first at
+   `/playground/next/`, beside the old playground, for the checks below. Both deploy workflows build it, and the
    test deploy writes Surge's `CORS` file. The eight presets are examples,
    each run headless for a second by a unit test. In headless Chromium, in
    the dev server, through the proxy and from the build: all eight run;
@@ -1139,9 +1138,13 @@ Each step ends with the site working and deployable.
      list of libraries in `libraries/`, at the package's root, where
      `vite.config.ts` can import the list through a barrel.
 
-   Left before the switch: the owner's playtest of `/playground/next/`.
-   Then the old playground goes, as above, the base moves to
-   `playground/`, and the nav's links in the new page lose a `../`.
+   The owner playtested `/playground/next/` the same day, and then it
+   took over `/playground/`. The old playground is gone from the Arcade,
+   with its six CodeMirror packages, Sucrase and lz-string, the two lint
+   rules that fenced it, its lines in the Arcade's Vite config and its
+   line in the docs. The docs' `#preset=` links, and `/playground` without
+   its slash, open and run the new one. The quickstart's line under its
+   link now says what the playground does.
 4. **The playground in MVT.** The workspace model and HTML JSX views
    (section 8), the new layout (6.5), the console and Problems list with
    file and line links (5.6). Visual tests of the views.
