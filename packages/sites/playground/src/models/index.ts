@@ -1,4 +1,14 @@
 export {
+    createLayoutModel,
+    DEFAULT_SIZES,
+    type LayoutModel,
+    type LayoutModelOptions,
+    type PaneSizes,
+    type PanelKind,
+    type RunPaneTabKind,
+} from './layout-model';
+export {
+    type CheckResult,
     type ConsoleEntry,
     createWorkspaceModel,
     MAX_FILES,

@@ -8,14 +8,16 @@ import {
     decodeSharedProject,
     encodeSharedProject,
     findLibraryUrls,
+    type LibraryUrls,
     MAIN_PATH,
+    type PreparedProject,
     prepareProject,
     readHashRequest,
     toExampleHash,
     toModuleName,
     toSharedHash,
 } from './runtime';
-import { loadOldPlaygroundProject, loadSavedProject, saveProject, type SavedProject } from './storage';
+import { loadOldPlaygroundProject, loadSavedProject, loadSettings, saveProject, saveSettings, type SavedProject } from './storage';
 import { PlaygroundView } from './views';
 import './nav.css';
 import './playground.css';
@@ -25,8 +27,9 @@ import './playground.css';
 // sandbox, which has a loop of its own.
 //
 // The page does what the model cannot: it makes each run's sandbox
-// document, which takes awaiting, it keeps the project between visits, it
-// writes share links, and it keeps the URL naming the example open. It
+// document, and checks the project as the model asks, which take awaiting.
+// It keeps the project and the workspace's settings between visits, writes
+// share links, and keeps the URL naming the example open. It
 // reads the project to open from the URL: an example, a share link, or a
 // link from the old playground. Without one, it opens the project the
 // visitor last worked on, or the first example. Whatever opens, runs. The
@@ -39,15 +42,25 @@ import './playground.css';
 
 const libraryUrls = findLibraryUrls();
 const first = await readFirstProject();
-const model = createWorkspaceModel({ project: first.project });
+const settings = loadSettings();
+const model = createWorkspaceModel({ project: first.project, savedLayout: settings.layout, isRunOnChange: settings.isRunOnChange });
 if (first.exampleId !== undefined) model.openExample(first.exampleId);
 const watcher = watch({
     runs: () => model.runsRequested,
+    checks: () => model.checksRequested,
     shares: () => model.sharesRequested,
     edits: () => model.edits,
     exampleId: () => model.exampleId,
 });
+const settingsWatcher = watch({
+    isRunOnChange: () => model.isRunOnChange,
+    filesWidth: () => model.layout.filesWidth,
+    runWidth: () => model.layout.runWidth,
+    consoleHeight: () => model.layout.consoleHeight,
+    isFilesFolded: () => model.layout.isFilesFolded,
+});
 watcher.poll();
+settingsWatcher.poll();
 
 const root = document.getElementById('playground');
 if (root === null) throw new Error('The page has no #playground element');
@@ -66,6 +79,7 @@ function frame(timeMs: number): void {
     lastTimeMs = timeMs;
     model.update(deltaMs);
     followModel(model);
+    saveChangedSettings(model);
     updateView(root!, deltaMs);
     refreshView(root!);
     requestAnimationFrame(frame);
@@ -73,8 +87,9 @@ function frame(timeMs: number): void {
 
 /** Starts what the model asks the page for, and keeps the URL and the saved project in step with it. */
 function followModel(workspace: WorkspaceModel): void {
-    const { runs, shares, edits, exampleId } = watcher.poll();
+    const { runs, checks, shares, edits, exampleId } = watcher.poll();
     if (runs.increased) void prepareRun(workspace);
+    if (checks.increased) void checkProject(workspace);
     if (shares.increased) void share(workspace);
     if (edits.changed) saveProject({ name: workspace.projectName, files: workspace.files });
     if (edits.changed || exampleId.changed) {
@@ -126,18 +141,47 @@ async function prepareRun(workspace: WorkspaceModel): Promise<void> {
     const prepared = await prepareProject({ files: workspace.files });
     const urls = await libraryUrls;
     if (workspace.runsRequested !== run) return;
-    if (prepared.problems.length > 0) {
-        workspace.reportProblems(prepared.problems);
-        return;
-    }
-    workspace.reportPrepared(buildSandboxDocument({
+    if (prepared.problems.length > 0) workspace.reportProblems(prepared.problems);
+    else workspace.reportPrepared(toSandboxDocument(prepared, urls));
+}
+
+/** Checks the project's files, and tells the model what the check found. The model ignores a check the files have changed since. */
+async function checkProject(workspace: WorkspaceModel): Promise<void> {
+    const checkNumber = workspace.checksRequested;
+    const prepared = await prepareProject({ files: workspace.files });
+    const urls = await libraryUrls;
+    workspace.reportChecked({
+        checkNumber,
+        problems: prepared.problems,
+        sandboxDocument: prepared.problems.length > 0 ? undefined : toSandboxDocument(prepared, urls),
+    });
+}
+
+function toSandboxDocument(prepared: PreparedProject, urls: LibraryUrls): string {
+    return buildSandboxDocument({
         modules: prepared.modules,
         loops: prepared.loops,
         libraries: urls.libraries,
         runnerUrl: urls.runnerUrl,
         toModuleName,
         mainPath: MAIN_PATH,
-    }));
+    });
+}
+
+/** Saves the workspace's settings as any of them changes. */
+function saveChangedSettings(workspace: WorkspaceModel): void {
+    const w = settingsWatcher.poll();
+    if (!(w.isRunOnChange.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
+    const { layout } = workspace;
+    saveSettings({
+        isRunOnChange: workspace.isRunOnChange,
+        layout: {
+            filesWidth: layout.filesWidth,
+            runWidth: layout.runWidth,
+            consoleHeight: layout.consoleHeight,
+            isFilesFolded: layout.isFilesFolded,
+        },
+    });
 }
 
 /** Writes a share link for the project, puts it in the URL, and copies it. */

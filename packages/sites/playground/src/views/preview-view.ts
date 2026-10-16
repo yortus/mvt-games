@@ -15,6 +15,8 @@ export interface PreviewViewBindings {
     /** Rises each time a paused run should advance one frame. */
     readonly steps: () => number;
     readonly speed: () => number;
+    /** Whether a new sandbox takes the keyboard's focus, as one the visitor started does. */
+    readonly isFocusTaken: () => boolean;
     /** Shown while there is no sandbox. */
     readonly placeholder: () => string;
     /** Reported for each message from the sandbox now running. */
@@ -79,7 +81,7 @@ export function PreviewView(bindings: PreviewViewBindings): Element {
         frame.allow = 'autoplay';
         frame.srcdoc = document;
         element.append(frame);
-        frame.focus();
+        if (bindings.isFocusTaken()) frame.focus();
         // A run starts unpaused, at the speed set; the watcher has seen both
         if (bindings.speed() !== 1) send({ kind: 'set-speed', speed: bindings.speed() });
     }

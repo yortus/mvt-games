@@ -11,6 +11,9 @@ export interface FileListViewBindings {
     readonly activePath: () => string;
     /** A file that cannot be removed, which has no remove button. */
     readonly fixedPath: string;
+    /** Whether the list is folded away, leaving only its unfold button. */
+    readonly isFolded: () => boolean;
+    readonly onFoldToggled?: () => void;
     readonly onFileChosen?: (path: string) => void;
     readonly onAddPressed?: () => void;
     readonly onRemovePressed?: (path: string) => void;
@@ -20,11 +23,21 @@ export interface FileListViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** The project's files, the open one marked, with buttons to add and remove files. */
+/**
+ * The project's files, the open one marked, with buttons to add and remove
+ * files, and to fold the list away.
+ */
 export function FileListView(bindings: FileListViewBindings): Element {
     return (
-        <nav class="files" aria-label="Files">
+        <nav class={() => (bindings.isFolded() ? 'files files-folded' : 'files')} aria-label="Files">
             <div class="files-head">
+                <button
+                    type="button"
+                    class="files-fold"
+                    title={() => (bindings.isFolded() ? 'Show the files' : 'Hide the files')}
+                    text={() => (bindings.isFolded() ? '›' : '‹')}
+                    onClick={() => bindings.onFoldToggled?.()}
+                />
                 <span class="files-title" text="Files" />
                 <button type="button" class="files-add" title="Add a file" text="+" onClick={() => bindings.onAddPressed?.()} />
             </div>

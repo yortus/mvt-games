@@ -22,8 +22,9 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but step 3: the new package is the playground, at
-`/playground/`, and the old one is gone.
+built beyond the spike, but steps 3 and 4: the new package is the playground,
+at `/playground/`, with its layout, Problems list and run on change, and the
+old one is gone. Next is step 5, intellisense.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -1145,9 +1146,33 @@ Each step ends with the site working and deployable.
    line in the docs. The docs' `#preset=` links, and `/playground` without
    its slash, open and run the new one. The quickstart's line under its
    link now says what the playground does.
-4. **The playground in MVT.** The workspace model and HTML JSX views
+4. ~~**The playground in MVT.** The workspace model and HTML JSX views
    (section 8), the new layout (6.5), the console and Problems list with
-   file and line links (5.6). Visual tests of the views.
+   file and line links (5.6). Visual tests of the views.~~ Done
+   2026-10-16. The model and views came in step 3. This step added:
+   - A layout model, a child of the workspace's: the panes' sizes,
+     dragged with dividers (or moved with the arrow keys), a file list
+     that folds away, and tabs that show one panel at a time on a narrow
+     screen. The page keeps the sizes, the fold and the run-on-change
+     toggle between visits.
+   - A Problems tab beside the console. The workspace asks for a check
+     half a second after the files stop changing, and the page prepares
+     the project to make it, so the Problems list follows the typing.
+   - Run on change (6.5), on by default: a check that finds no problems
+     runs the project again, unless the visitor stopped it. A broken edit
+     keeps the last good run going. A run on change leaves the keyboard's
+     focus in the editor; one the visitor starts takes it, so a game gets
+     its keys.
+   - Ctrl+P opens a file by name, with a dialog that matches by file name
+     first, then by letters in order.
+   - Visual tests: the root `vitest.config.ts` now lists v-snap's projects
+     itself, one set for each package, and the playground's 19 tests run
+     as `visual-playground-html`. They found two bugs before any visitor
+     could: the dialog showed all the time, and the workspace did not fill
+     the height.
+   Checked in headless Chromium against the dev server: each divider,
+   the fold, Ctrl+P, run on change both ways, the settings after a
+   reload, and the narrow screen's tabs.
 5. **Intellisense.** The language service worker (6.2), the generated
    types (6.3), and every row of 6.4.
 6. **Projects and export.** IndexedDB projects and the migration from

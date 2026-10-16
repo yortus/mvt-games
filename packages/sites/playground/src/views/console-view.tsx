@@ -3,6 +3,7 @@ import { List } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import type { ConsoleEntry } from '../models';
 import type { SourceLocation } from '../runtime';
+import { createPlaceLabeller } from './place-label';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -12,7 +13,6 @@ export interface ConsoleViewBindings {
     readonly entries: () => readonly ConsoleEntry[];
     /** Reported as an entry's place is pressed, to open its file there. */
     readonly onPlaceChosen?: (location: SourceLocation) => void;
-    readonly onClearPressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,10 +28,6 @@ export function ConsoleView(bindings: ConsoleViewBindings): Element {
 
     return (
         <section class="console" aria-label="Console">
-            <div class="console-head">
-                <span class="console-title" text="Console" />
-                <button type="button" class="console-clear" text="Clear" onClick={() => bindings.onClearPressed?.()} />
-            </div>
             <ol class="console-lines" onRefresh={keepNewestInView}>
                 <List items={bindings.entries}>
                     {(entry) => {
@@ -66,22 +62,6 @@ export function ConsoleView(bindings: ConsoleViewBindings): Element {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/**
- * Labels a place as `path:line`, building the label only when the place is a
- * different one, so a refresh does not build a new string every frame.
- */
-function createPlaceLabeller(): (location: SourceLocation | undefined) => string {
-    let labelled: SourceLocation | undefined;
-    let label = '';
-    return (location) => {
-        if (location !== labelled) {
-            labelled = location;
-            label = location === undefined ? '' : `${location.path}:${location.line}`;
-        }
-        return label;
-    };
-}
 
 const LEVEL_CLASSES: Readonly<Record<ConsoleEntry['level'], string>> = {
     log: 'console-line',

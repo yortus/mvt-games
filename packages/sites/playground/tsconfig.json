@@ -7,5 +7,5 @@
             "playground": ["./src/project-api/index.ts"]
         }
     },
-    "include": ["src", "examples", "libraries", "vite.config.ts"]
+    "include": ["src", "examples", "libraries", "vite.config.ts", "vsnap.config.ts"]
 }

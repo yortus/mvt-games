@@ -10,19 +10,22 @@ export interface RunControlsViewBindings {
     readonly phase: () => RunPhase;
     readonly isPaused: () => boolean;
     readonly speed: () => number;
+    /** Whether a change runs the project again, once the files check clean. */
+    readonly isRunOnChange: () => boolean;
     readonly onRunPressed?: () => void;
     readonly onStopPressed?: () => void;
     readonly onPausePressed?: () => void;
     readonly onResumePressed?: () => void;
     readonly onStepPressed?: () => void;
     readonly onSpeedChosen?: (speed: number) => void;
+    readonly onRunOnChangeToggled?: (isOn: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
-/** Run, Stop, Pause or Resume, Step, the speed, and where the run is. */
+/** Run, Stop, Pause or Resume, Step, the speed, whether a change runs it again, and where the run is. */
 export function RunControlsView(bindings: RunControlsViewBindings): Element {
     const isLive = (): boolean => bindings.phase() === 'starting' || bindings.phase() === 'running';
     const speedValue = memoiseLast((speed: number) => String(speed));
@@ -55,6 +58,14 @@ export function RunControlsView(bindings: RunControlsViewBindings): Element {
             <select class="run-speed" aria-label="Speed" value={() => speedValue(bindings.speed())} onChange={onSpeedChanged}>
                 {SPEEDS.map((speed) => <option value={String(speed)} text={`${speed}x`} />)}
             </select>
+            <label class="run-on-change" title="Run again half a second after the files stop changing, if they have no problems">
+                <input
+                    type="checkbox"
+                    checked={bindings.isRunOnChange}
+                    onChange={(event) => bindings.onRunOnChangeToggled?.((event.target as HTMLInputElement).checked)}
+                />
+                <span text="Run on change" />
+            </label>
             <span class="run-phase" text={() => PHASE_LABELS[bindings.phase()]} />
         </div>
     );

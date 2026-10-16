@@ -1,5 +1,10 @@
 /* The playground's page: a header, then the files, the editor, and the run. */
 
+/* The views hide an element with `hidden`, which must win over a rule that sets its display */
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
     background: var(--site-bg);
@@ -38,9 +43,10 @@ button:disabled {
     cursor: default;
 }
 
+/* A column, so the workspace takes the height left, whether the narrow screen's tabs show or not */
 .playground {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     height: 100%;
 }
 
@@ -69,39 +75,89 @@ button:disabled {
     white-space: nowrap;
 }
 
-/* --- The workspace: files, editor, run --- */
+/* The panel tabs are for narrow screens only */
+.panel-tabs {
+    display: none;
+}
+
+/* --- The workspace: files, editor, run, with dividers between --- */
 
 .workspace {
+    flex: 1;
+    --files-width: 230px;
+    --run-width: 480px;
+    --console-height: 200px;
     display: grid;
-    grid-template-columns: 230px minmax(0, 1fr) minmax(340px, 38%);
+    grid-template-columns: var(--files-width) 5px minmax(0, 1fr) 5px var(--run-width);
     min-height: 0;
+}
+
+.workspace-files-folded {
+    grid-template-columns: 34px 0 minmax(0, 1fr) 5px var(--run-width);
+}
+
+.workspace-files-folded > .divider:first-of-type {
+    visibility: hidden;
+}
+
+.divider {
+    background: var(--site-nav-border);
+    touch-action: none;
+    outline: none;
+}
+
+.divider-vertical {
+    cursor: col-resize;
+}
+
+.divider-horizontal {
+    cursor: row-resize;
+}
+
+.divider:hover,
+.divider:focus-visible,
+.divider-dragging {
+    background: var(--site-accent);
+}
+
+/* The preview's iframe would take the pointer from a drag that crosses it */
+.workspace:has(.divider-dragging) .preview-frame {
+    pointer-events: none;
 }
 
 .files {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
-    border-right: 1px solid var(--site-nav-border);
     background: var(--site-nav-bg);
 }
 
-.files-head,
-.console-head {
+.files-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 8px;
+    gap: 6px;
+    padding: 6px 6px;
     font-size: 12px;
     color: var(--site-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
-.files-head button,
-.console-head button {
+.files-title {
+    flex: 1;
+}
+
+.files-head button {
     padding: 0 8px;
     text-transform: none;
     letter-spacing: normal;
+}
+
+.files-folded .files-title,
+.files-folded .files-add,
+.files-folded .files-list {
+    display: none;
 }
 
 .files-list {
@@ -165,11 +221,13 @@ button:disabled {
     font-size: 13px;
 }
 
+/* --- The run: controls, preview, and the console and Problems --- */
+
 .run-pane {
     display: grid;
-    grid-template-rows: auto minmax(200px, 1fr) minmax(120px, 34%);
+    grid-template-rows: auto minmax(120px, 1fr) 5px var(--console-height);
+    min-width: 0;
     min-height: 0;
-    border-left: 1px solid var(--site-nav-border);
 }
 
 .run-controls {
@@ -185,6 +243,15 @@ button:disabled {
     background: #238636;
     border-color: #2ea043;
     color: #fff;
+}
+
+.run-on-change {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--site-text-muted);
+    cursor: pointer;
 }
 
 .run-phase {
@@ -217,23 +284,67 @@ button:disabled {
     text-align: center;
 }
 
-.console {
+.run-tabs {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    border-top: 1px solid var(--site-nav-border);
 }
 
-.console-lines {
+.run-tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px 0;
+    border-bottom: 1px solid var(--site-nav-border);
+}
+
+.run-tab {
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    font-size: 12px;
+    color: var(--site-text-muted);
+}
+
+.run-tab-active {
+    color: var(--site-text);
+    border-bottom-color: var(--site-accent);
+}
+
+.run-tab-clear {
+    margin-left: auto;
+    padding: 0 8px;
+    font-size: 12px;
+}
+
+.run-tab-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.console,
+.problems {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.console-lines,
+.problems-lines {
     list-style: none;
     margin: 0;
-    padding: 0 8px 8px;
+    padding: 4px 8px 8px;
     overflow: auto;
     font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
     font-size: 12px;
 }
 
-.console-line {
+.console-line,
+.problem {
     padding: 2px 0;
     border-bottom: 1px solid #21262d;
     white-space: pre-wrap;
@@ -244,11 +355,13 @@ button:disabled {
     color: #d29922;
 }
 
-.console-error {
+.console-error,
+.problem-text {
     color: #f85149;
 }
 
-.console-place {
+.console-place,
+.problem-place {
     margin-right: 8px;
     padding: 0 6px;
     font-family: inherit;
@@ -256,37 +369,130 @@ button:disabled {
     color: var(--site-accent);
 }
 
-/* --- Narrow screens: one column, which scrolls --- */
+.problems-none {
+    margin: 8px;
+    color: var(--site-text-muted);
+    font-size: 12px;
+}
+
+/* --- Opening a file by name --- */
+
+/* The dialog's wrapper takes no room: it is there to see the dialog open */
+.quick-open-layer {
+    display: contents;
+}
+
+.quick-open {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 12vh;
+    background: rgb(0 0 0 / 0.4);
+}
+
+.quick-open-panel {
+    width: min(520px, calc(100vw - 32px));
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--site-nav-bg);
+    border: 1px solid var(--site-nav-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+    overflow: hidden;
+}
+
+.quick-open-query {
+    box-sizing: border-box;
+    width: 100%;
+    font: inherit;
+    color: var(--site-text);
+    background: var(--site-bg);
+    border: none;
+    border-bottom: 1px solid var(--site-nav-border);
+    padding: 10px 12px;
+    outline: none;
+}
+
+.quick-open-matches {
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+    overflow: auto;
+}
+
+.quick-open-match {
+    width: 100%;
+    text-align: left;
+    border: none;
+    border-radius: 0;
+    background: none;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    padding: 5px 12px;
+}
+
+.quick-open-match:hover,
+.quick-open-matches li:first-child .quick-open-match {
+    background: #1f2b3a;
+    color: var(--site-accent);
+}
+
+/* --- Narrow screens: one panel at a time, chosen by tabs --- */
 
 @media (max-width: 800px) {
-    #playground {
-        position: static;
-        margin-top: var(--site-nav-height);
-    }
-
-    .playground {
-        height: auto;
-    }
-
-    .workspace {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .files {
-        border-right: none;
+    .panel-tabs {
+        display: flex;
         border-bottom: 1px solid var(--site-nav-border);
     }
 
-    .files-list {
-        max-height: 140px;
+    .panel-tab {
+        flex: 1;
+        border: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        background: none;
+        padding: 8px;
     }
 
-    .editor-pane {
-        height: 55vh;
+    .panel-tab-active {
+        border-bottom-color: var(--site-accent);
+    }
+
+    .workspace,
+    .workspace-files-folded {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .workspace > .divider-vertical,
+    .files-fold {
+        display: none;
+    }
+
+    .show-files .editor-pane,
+    .show-files .run-pane,
+    .show-code .files,
+    .show-code .run-pane,
+    .show-run .files,
+    .show-run .editor-pane {
+        display: none;
+    }
+
+    /* A folded list unfolds on a narrow screen, where it has the whole width */
+    .files-folded .files-title,
+    .files-folded .files-add {
+        display: inline;
+    }
+
+    .files-folded .files-list {
+        display: block;
     }
 
     .run-pane {
-        grid-template-rows: auto 60vh 200px;
-        border-left: none;
+        grid-template-rows: auto minmax(160px, 1fr) 5px var(--console-height);
     }
 }

@@ -1,6 +1,7 @@
 import { findExample } from '../examples';
 import { findProjectLocation, MAIN_PATH, type Problem, type ProjectFile, type SourceLocation } from '../runtime';
 import type { ConsoleLevel, SandboxMessage } from '../sandbox';
+import { createLayoutModel, type LayoutModel, type LayoutModelOptions } from './layout-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -54,6 +55,12 @@ export interface WorkspaceModel {
     readonly sandboxDocument: string | undefined;
     /** Rises each time a new sandbox document is ready, for the preview to start it. */
     readonly sandboxesStarted: number;
+    /**
+     * Whether the visitor started the run in the sandbox, with Run, rather
+     * than a change. Such a run takes the keyboard's focus, so a game gets
+     * its keys. A run on change leaves the focus in the editor.
+     */
+    readonly isRunByVisitor: boolean;
     /** Rises each time Step is pressed. */
     readonly steps: number;
 
@@ -63,9 +70,23 @@ export interface WorkspaceModel {
     /** Rises each time a place is asked for, for the editor to scroll to it. */
     readonly placesShown: number;
 
+    /** What stops the project running, as the last check or run found it. */
+    readonly problems: readonly Problem[];
+    /** Rises once the files have stood unchanged for half a second, for the page to check the project. */
+    readonly checksRequested: number;
+    /**
+     * Whether a check that finds no problems runs the project again. It
+     * restarts a run that is going, or that an error stopped, but not one the
+     * visitor stopped.
+     */
+    readonly isRunOnChange: boolean;
+
     readonly shareStatus: ShareStatus;
     /** Rises each time Share is pressed, for the page to write the link. */
     readonly sharesRequested: number;
+
+    /** How the workspace is laid out. */
+    readonly layout: LayoutModel;
 
     /** Opens a project in place of the one open. */
     readonly openProject: (project: { readonly name: string; readonly files: readonly ProjectFile[] }) => void;
@@ -85,6 +106,7 @@ export interface WorkspaceModel {
     /** Advances a paused run by one frame. */
     readonly step: () => void;
     readonly setSpeed: (speed: number) => void;
+    readonly setRunOnChange: (isOn: boolean) => void;
     readonly clearConsole: () => void;
     /** Opens a file at a place, as a console entry's link does. */
     readonly showPlace: (location: SourceLocation) => void;
@@ -94,12 +116,27 @@ export interface WorkspaceModel {
     readonly reportPrepared: (sandboxDocument: string) => void;
     /** From the page: the project cannot run, for these reasons. */
     readonly reportProblems: (problems: readonly Problem[]) => void;
+    /**
+     * From the page: what a check found. Its document is the sandbox's, made
+     * from the files as they were checked, where they have no problems. A
+     * check the files have changed since is ignored.
+     */
+    readonly reportChecked: (check: CheckResult) => void;
     /** From the preview: a message from the sandbox. */
     readonly reportSandboxMessage: (message: SandboxMessage) => void;
     /** From the page: how sharing went. */
     readonly reportShared: (status: ShareStatus) => void;
 
     readonly update: (deltaMs: number) => void;
+}
+
+/** What the page found as it checked the project. */
+export interface CheckResult {
+    /** The check's number: the value of `checksRequested` that asked for it. */
+    readonly checkNumber: number;
+    readonly problems: readonly Problem[];
+    /** The sandbox's document, where the project has no problems. */
+    readonly sandboxDocument: string | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +146,10 @@ export interface WorkspaceModel {
 export interface WorkspaceModelOptions {
     /** The project open at first. */
     readonly project: { readonly name: string; readonly files: readonly ProjectFile[] };
+    /** The pane sizes and fold kept from a visit before, if any. */
+    readonly savedLayout?: LayoutModelOptions['saved'];
+    /** Whether a change runs the project again, as kept from a visit before. The default is true. */
+    readonly isRunOnChange?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +173,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let runsRequested = 0;
     let sandboxDocument: string | undefined;
     let sandboxesStarted = 0;
+    let isRunByVisitor = false;
     let steps = 0;
     /** How long since the sandbox last said anything, while it runs. */
     let silentMs = 0;
@@ -141,6 +183,14 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let placesShown = 0;
     let shareStatus: ShareStatus = 'idle';
     let sharesRequested = 0;
+
+    let problems: readonly Problem[] = [];
+    let checksRequested = 0;
+    let isRunOnChange = options.isRunOnChange ?? true;
+    /** Whether the files have changed since the last check was asked for. */
+    let isCheckDue = false;
+    let msSinceEdit = 0;
+    const layout = createLayoutModel({ saved: options.savedLayout });
 
     openProject(options.project);
 
@@ -159,12 +209,17 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get runsRequested() { return runsRequested; },
         get sandboxDocument() { return sandboxDocument; },
         get sandboxesStarted() { return sandboxesStarted; },
+        get isRunByVisitor() { return isRunByVisitor; },
         get steps() { return steps; },
         get consoleEntries() { return consoleEntries; },
         get shownPlace() { return shownPlace; },
         get placesShown() { return placesShown; },
         get shareStatus() { return shareStatus; },
         get sharesRequested() { return sharesRequested; },
+        get problems() { return problems; },
+        get checksRequested() { return checksRequested; },
+        get isRunOnChange() { return isRunOnChange; },
+        layout,
 
         openProject,
 
@@ -177,7 +232,9 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         },
 
         openFile(path) {
-            if (texts.has(path)) activePath = path;
+            if (!texts.has(path)) return;
+            activePath = path;
+            layout.showPanel('code');
         },
 
         editFile(path, text) {
@@ -207,6 +264,9 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             isPaused = false;
             sandboxDocument = undefined;
             consoleEntries = [];
+            layout.showPanel('run');
+            // The run checks the files as it prepares them, so a check due for them is not needed
+            isCheckDue = false;
         },
 
         stop() {
@@ -231,6 +291,10 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             if (value > 0) speed = value;
         },
 
+        setRunOnChange(isOn) {
+            isRunOnChange = isOn;
+        },
+
         clearConsole() {
             consoleEntries = [];
         },
@@ -240,6 +304,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             activePath = location.path;
             shownPlace = location;
             placesShown++;
+            layout.showPanel('code');
         },
 
         share() {
@@ -249,20 +314,29 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
 
         reportPrepared(document) {
             if (phase !== 'preparing') return;
-            sandboxDocument = document;
-            sandboxesStarted++;
-            phase = 'starting';
-            silentMs = 0;
+            problems = [];
+            startSandbox(document, true);
         },
 
-        reportProblems(problems) {
+        reportProblems(found) {
             if (phase !== 'preparing') return;
-            for (const problem of problems) {
+            problems = found;
+            for (const problem of found) {
                 // A problem with a place shows it as a link, so its text need not name it
                 const location = problem.line === undefined ? undefined : { path: problem.path, line: problem.line };
                 log({ level: 'error', text: location === undefined ? `${problem.path}: ${problem.message}` : problem.message, location });
             }
             phase = 'failed';
+        },
+
+        reportChecked(check) {
+            if (check.checkNumber !== checksRequested) return;
+            problems = check.problems;
+            const isRestartable = phase === 'starting' || phase === 'running' || phase === 'failed';
+            if (isRunOnChange && isRestartable && problems.length === 0 && check.sandboxDocument !== undefined) {
+                consoleEntries = [];
+                startSandbox(check.sandboxDocument, false);
+            }
         },
 
         reportSandboxMessage(message) {
@@ -293,6 +367,13 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         },
 
         update(deltaMs) {
+            if (isCheckDue) {
+                msSinceEdit += deltaMs;
+                if (msSinceEdit >= CHECK_DELAY_MS) {
+                    isCheckDue = false;
+                    checksRequested++;
+                }
+            }
             if (!isRunLive()) return;
             silentMs += deltaMs;
             if (silentMs > SILENCE_LIMIT_MS) {
@@ -321,6 +402,17 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         files = paths.map((path) => ({ path, text: texts.get(path) ?? '' }));
         edits++;
         exampleId = undefined;
+        isCheckDue = true;
+        msSinceEdit = 0;
+    }
+
+    function startSandbox(document: string, isByVisitor: boolean): void {
+        sandboxDocument = document;
+        isRunByVisitor = isByVisitor;
+        sandboxesStarted++;
+        phase = 'starting';
+        isPaused = false;
+        silentMs = 0;
     }
 
     function isRunLive(): boolean {
@@ -344,6 +436,9 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** How long the files must stand unchanged before they are checked. */
+const CHECK_DELAY_MS = 500;
 
 /** How long the sandbox may say nothing, while a run is live, before it is taken to have frozen. Its heartbeat comes twice a second. */
 const SILENCE_LIMIT_MS = 4000;

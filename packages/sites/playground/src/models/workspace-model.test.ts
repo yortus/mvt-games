@@ -150,6 +150,86 @@ describe('a workspace model', () => {
         expect(model.consoleEntries).toEqual([]);
     });
 
+    it('asks for a check once the files stand unchanged for half a second', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.update(500);
+        const checks = model.checksRequested;
+        model.editFile('main.ts', 'one');
+        model.update(300);
+        model.editFile('main.ts', 'two');
+        model.update(300);
+        expect(model.checksRequested).toBe(checks);
+        model.update(200);
+        expect(model.checksRequested).toBe(checks + 1);
+        model.update(1000);
+        expect(model.checksRequested).toBe(checks + 1);
+    });
+
+    it('asks for no check of files that Run has just prepared', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.run();
+        model.update(1000);
+        expect(model.checksRequested).toBe(0);
+    });
+
+    it('runs again after a change that checks clean, and lists what a check finds', () => {
+        const model = createRunningModel();
+        model.editFile('main.ts', 'changed');
+        model.update(500);
+        const started = model.sandboxesStarted;
+        expect(model.isRunByVisitor).toBe(true);
+        model.reportChecked({ checkNumber: model.checksRequested, problems: [], sandboxDocument: '<html 2>' });
+        expect(model.sandboxesStarted).toBe(started + 1);
+        expect(model.sandboxDocument).toBe('<html 2>');
+        // A run on change leaves the focus in the editor
+        expect(model.isRunByVisitor).toBe(false);
+        expect(model.phase).toBe('starting');
+
+        model.editFile('main.ts', 'broken');
+        model.update(500);
+        const problem = { path: 'main.ts', line: 1, message: 'Unexpected token' };
+        model.reportChecked({ checkNumber: model.checksRequested, problems: [problem], sandboxDocument: undefined });
+        expect(model.problems).toEqual([problem]);
+        expect(model.sandboxesStarted).toBe(started + 1);
+    });
+
+    it('ignores a check the files have changed since', () => {
+        const model = createRunningModel();
+        model.editFile('main.ts', 'changed');
+        model.update(500);
+        const stale = model.checksRequested;
+        model.editFile('main.ts', 'changed again');
+        model.update(500);
+        const started = model.sandboxesStarted;
+        model.reportChecked({ checkNumber: stale, problems: [], sandboxDocument: '<old>' });
+        expect(model.sandboxesStarted).toBe(started);
+    });
+
+    it('does not run again after a change when run on change is off, or the visitor stopped the run', () => {
+        const off = createRunningModel();
+        off.setRunOnChange(false);
+        off.editFile('main.ts', 'changed');
+        off.update(500);
+        const started = off.sandboxesStarted;
+        off.reportChecked({ checkNumber: off.checksRequested, problems: [], sandboxDocument: '<html>' });
+        expect(off.sandboxesStarted).toBe(started);
+
+        const stopped = createRunningModel();
+        stopped.stop();
+        stopped.editFile('main.ts', 'changed');
+        stopped.update(500);
+        stopped.reportChecked({ checkNumber: stopped.checksRequested, problems: [], sandboxDocument: '<html>' });
+        expect(stopped.phase).toBe('stopped');
+    });
+
+    it('shows the run on a narrow screen as it runs, and the code as a file opens', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.run();
+        expect(model.layout.narrowPanel).toBe('run');
+        model.openFile('views/b-view.ts');
+        expect(model.layout.narrowPanel).toBe('code');
+    });
+
     it('opens a file at a place asked for', () => {
         const model = createWorkspaceModel({ project: PROJECT });
         model.showPlace({ path: 'models/a-model.ts', line: 2 });
