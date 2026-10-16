@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**053**.
+**054**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -148,6 +148,7 @@ of old links closes an item in 017.
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 | 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |
 | 050 | [Visitor Analytics: Who Comes, and From Where](tasks/backlog/050-visitor-analytics.md) | low | 2026-10-15 |
+| 053 | [Models Name What the Player Means, Not the Controls](tasks/backlog/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 
 ## Archive
 
