@@ -1,10 +1,12 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin } from 'vite';
+import { defaultClientConditions, defaultServerConditions, defineConfig, type HttpProxy, type Plugin } from 'vite';
 import { entryFactsPlugin, spritesheetPlugin } from './scripts/index.ts';
 
 const VITEPRESS_DEV_PORT = 5200;
+/** The playground's own dev server (packages/sites/playground). */
+const PLAYGROUND_DEV_PORT = 5300;
 const SITE_ROOT = import.meta.dirname;
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
@@ -28,6 +30,27 @@ function trailingSlashPlugin(): Plugin {
             });
         },
     };
+}
+
+/**
+ * Answers a request the proxy cannot pass on, because the dev server behind
+ * it is not running, with a page that says how to start it.
+ */
+function showNotRunning(proxy: HttpProxy.ProxyServer, title: string, server: string, command: string): void {
+    proxy.on('error', (_err, _req, res) => {
+        // A failed WebSocket upgrade gives a socket, not a response, and needs no page
+        if (!('writeHead' in res)) return;
+        const r = res as ServerResponse;
+        r.writeHead(200, { 'Content-Type': 'text/html' });
+        r.end([
+            '<!doctype html><html><head><meta charset="UTF-8">',
+            `<title>${title}</title></head>`,
+            '<body style="background:#0d1117;color:#c9d1d9;font-family:system-ui;padding:80px;text-align:center">',
+            `<h2>The ${server} is not running</h2>`,
+            `<p style="margin-top:16px">Start it with: <code style="color:#58a6ff">${command}</code></p>`,
+            '</body></html>',
+        ].join(''));
+    });
 }
 
 // The HTML pages sit at the site's root, beside src/, which they load as /src/...
@@ -54,29 +77,24 @@ export default defineConfig(({ mode }) => ({
     ssr: {
         resolve: { conditions: [SOURCE_CONDITION, ...defaultServerConditions] },
     },
-    // In development, requests for /docs go to VitePress's dev server. In
-    // production, Vite and VitePress both write static files to the top-level
-    // dist/, which Pages serves. The site is at its root, and the docs are in
-    // docs/.
+    // In development, requests for /docs go to VitePress's dev server, and
+    // requests for the new playground to its own dev server. In production,
+    // each writes static files to the top-level dist/, which Pages serves. The
+    // site is at its root, the docs are in docs/, and the new playground is
+    // in playground/next/.
     server: {
         proxy: {
             '/docs': {
                 target: `http://localhost:${VITEPRESS_DEV_PORT}`,
                 changeOrigin: true,
-                configure: (proxy) => {
-                    proxy.on('error', (_err, _req, res) => {
-                        const r = res as ServerResponse;
-                        r.writeHead(200, { 'Content-Type': 'text/html' });
-                        r.end([
-                            '<!doctype html><html><head><meta charset="UTF-8">',
-                            '<title>Docs</title></head>',
-                            '<body style="background:#0d1117;color:#c9d1d9;font-family:system-ui;padding:80px;text-align:center">',
-                            '<h2>VitePress dev server is not running</h2>',
-                            `<p style="margin-top:16px">Start it with: <code style="color:#58a6ff">npm run docs:dev</code></p>`,
-                            '</body></html>',
-                        ].join(''));
-                    });
-                },
+                configure: (proxy) => showNotRunning(proxy, 'Docs', 'VitePress dev server', 'npm run docs:dev'),
+            },
+            '/playground/next': {
+                target: `http://localhost:${PLAYGROUND_DEV_PORT}`,
+                changeOrigin: true,
+                // Vite's own updates to the page, as files change
+                ws: true,
+                configure: (proxy) => showNotRunning(proxy, 'Playground', 'playground\'s dev server', 'npm run playground:dev'),
             },
         },
     },

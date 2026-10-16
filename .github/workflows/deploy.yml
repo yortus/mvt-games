@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
-# Builds the site and the docs, and deploys them to GitHub Pages. A push that
-# changes only files neither one is built from, such as a README, a
-# changelog, notes, or a package's own docs, deploys nothing.
+# Builds the site, the playground and the docs, and deploys them to GitHub
+# Pages. A push that changes only files none of them is built from, such as a
+# README, a changelog, notes, or a package's own docs, deploys nothing.
 
 on:
     push:
@@ -47,6 +47,9 @@ jobs:
                   BASE_URL: /${{ github.event.repository.name }}/
                   # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores.yortus.workers.dev
+            - run: npm run build:playground
+              env:
+                  BASE_URL: /${{ github.event.repository.name }}/
             - run: npm run build:docs
               env:
                   BASE_URL: /${{ github.event.repository.name }}/

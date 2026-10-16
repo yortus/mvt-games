@@ -22,7 +22,9 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike.
+built beyond the spike, but most of step 3: the new package runs at
+`/playground/next/` beside the old playground, awaiting a playtest before it
+takes over `/playground/`.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -793,17 +795,20 @@ found.
 
 ```
 packages/sites/playground/
-├── index.html          The playground's page
-├── sandbox.html        Only if the spike needs one; srcdoc may do (5.4)
+├── index.html          The playground's page. The sandbox needs no page of its own: srcdoc does (5.4)
 ├── src/
 │   ├── models/         The workspace (section 8)
 │   ├── views/          Its HTML JSX views
-│   ├── runtime/        Transpiling, loop guards, import rewriting, the import map, the sandbox's host loop
-│   ├── language/       The language service's worker
+│   ├── runtime/        Transpiling, loop guards, import rewriting, the sandbox's document, links
+│   ├── sandbox/        What runs inside the sandbox: the runner, and a host for each renderer
+│   ├── examples/       Reads the examples' files, as text
+│   ├── storage/        The project kept between visits
+│   ├── language/       The language service's worker (step 5)
 │   ├── project-api/    The `playground` module: the define functions and their types
 │   └── main.ts         The page's loop
+├── libraries/          The libraries a project may import, and an entry module for each (entries/)
 ├── examples/<id>/      The examples (section 7.2)
-├── scripts/            The library types generator (section 6.3)
+├── scripts/            The library types generator (section 6.3, step 5)
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
@@ -1109,6 +1114,34 @@ Each step ends with the site working and deployable.
    switches to it, and the old `src/playground/` is deleted from the
    Arcade, with its dependencies, the two fence rules, and its lines in
    the Arcade's Vite config. Shared links now run as they open.
+
+   Done in part, 2026-10-16: everything before the switch. The package
+   builds into `dist/playground/next/` after the Arcade, and the Arcade's
+   dev server proxies `/playground/next` to its own (`npm run
+   playground:dev`, port 5300). Both deploy workflows build it, and the
+   test deploy writes Surge's `CORS` file. The eight presets are examples,
+   each run headless for a second by a unit test. In headless Chromium, in
+   the dev server, through the proxy and from the build: all eight run;
+   every `#preset=` and every old preset's `#code=` link runs; a syntax
+   error, an error in `update` and a loop that never ends each name the
+   file and line, with a link that opens it; a share link (`#p1=`, gzip)
+   reopens and runs; and small HTML and three.js projects run, as does one
+   that makes the sound chip. Where it differs from the plan:
+   - The UI is already the MVT workspace model with HTML JSX views (step
+     4's first half), since a plain DOM editor would have needed the old
+     lint exemption back and been thrown away a step later. Step 4 keeps
+     its layout work, the Problems list and the visual tests.
+   - Sharing (`#p1=`, gzip) and keeping one project between visits, with
+     the old playground's saved project converted, came early, so the
+     switch loses nothing the old playground had. IndexedDB projects stay
+     in step 6.
+   - The library entry modules are in `libraries/entries/`, beside the
+     list of libraries in `libraries/`, at the package's root, where
+     `vite.config.ts` can import the list through a barrel.
+
+   Left before the switch: the owner's playtest of `/playground/next/`.
+   Then the old playground goes, as above, the base moves to
+   `playground/`, and the nav's links in the new page lose a `../`.
 4. **The playground in MVT.** The workspace model and HTML JSX views
    (section 8), the new layout (6.5), the console and Problems list with
    file and line links (5.6). Visual tests of the views.

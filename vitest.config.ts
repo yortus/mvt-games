@@ -40,6 +40,9 @@ export default defineConfig(withVsnap({
         // Tests get the browser build, as a page does, and Vite loads solid-js
         // and pixi-solid itself so that they share that one copy.
         alias: [
+            // The playground's examples import `playground` as a project in
+            // the playground does. Here it is the module's source.
+            { find: /^playground$/, replacement: resolve(ROOT, 'packages/sites/playground/src/project-api/index.ts') },
             { find: /^solid-js$/, replacement: resolve(ROOT, 'node_modules/solid-js/dist/solid.js') },
             { find: /^solid-js\/store$/, replacement: resolve(ROOT, 'node_modules/solid-js/store/dist/store.js') },
             { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },

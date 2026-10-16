@@ -1,0 +1,11 @@
+{
+    "extends": "../../../tsconfig.base.json",
+    "compilerOptions": {
+        // The examples import `playground` as a project in the playground
+        // does. Here it is the module's source.
+        "paths": {
+            "playground": ["./src/project-api/index.ts"]
+        }
+    },
+    "include": ["src", "examples", "libraries", "vite.config.ts"]
+}

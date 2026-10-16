@@ -9,10 +9,15 @@ import tseslint from 'typescript-eslint';
 // with only the `node` and `import` conditions, never `@mvtjs/source`.
 import mvt from '#eslint-plugin';
 
+// The playground's examples: small projects, written as an entry's code is,
+// and linted by the same rules.
+const PLAYGROUND_EXAMPLES = 'packages/sites/playground/examples/**/*.{ts,tsx}';
+
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
 const VIEW_CONVENTION_FILES = [
     'packages/*/*/src/**/*.{ts,tsx}',
+    PLAYGROUND_EXAMPLES,
 ];
 
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
@@ -95,7 +100,7 @@ export default tseslint.config(
     },
     {
         // Each package's scripts, fixtures and root config files too.
-        files: ['packages/*/*/src/**/*.{ts,tsx}', 'packages/*/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*/*.config.ts'],
+        files: ['packages/*/*/src/**/*.{ts,tsx}', 'packages/*/*/{scripts,fixtures}/**/*.{ts,tsx}', 'packages/*/*/*.config.ts', PLAYGROUND_EXAMPLES],
         plugins: {
             '@mvtjs': mvt,
         },
@@ -126,7 +131,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['packages/sites/arcade/src/**/*.{ts,tsx}'],
+        files: ['packages/sites/arcade/src/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*.{ts,tsx}', PLAYGROUND_EXAMPLES],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
         },
@@ -202,7 +207,11 @@ export default tseslint.config(
     },
     // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time
     {
-        files: ['packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts'],
+        files: [
+            'packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts',
+            'packages/sites/playground/src/**/models/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*-model.ts',
+            'packages/sites/playground/examples/**/models/**/*.{ts,tsx}', 'packages/sites/playground/examples/**/*-model.ts',
+        ],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
     },
