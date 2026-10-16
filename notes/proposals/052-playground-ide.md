@@ -22,9 +22,9 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 and 4: the new package is the playground,
-at `/playground/`, with its layout, Problems list and run on change, and the
-old one is gone. Next is step 5, intellisense.
+built beyond the spike, but steps 3 to 5: the new package is the playground,
+at `/playground/`, with its layout, Problems list, run on change and
+intellisense, and the old one is gone. Next is step 6, projects and export.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -1173,8 +1173,38 @@ Each step ends with the site working and deployable.
    Checked in headless Chromium against the dev server: each divider,
    the fold, Ctrl+P, run on change both ways, the settings after a
    reload, and the narrow screen's tabs.
-5. **Intellisense.** The language service worker (6.2), the generated
-   types (6.3), and every row of 6.4.
+5. ~~**Intellisense.** The language service worker (6.2), the generated
+   types (6.3), and every row of 6.4.~~ Done 2026-10-16:
+   - The language service runs in a worker, through Comlink, on
+     `@typescript/vfs`. The page starts it after the first frame, and the
+     editor works as plain text until it is ready. Each call first sends
+     the worker the project's files, if they have changed.
+   - The types come in six bundles, each a JSON map of file paths to
+     declarations: TypeScript's own libraries, the `@mvtjs` libraries
+     (declarations emitted from their source), the `playground` module,
+     Pixi, three.js and GSAP. The worker loads the first three, and the
+     others once a project imports them. A Vite plugin in `scripts/`
+     makes them: the dev server serves them from memory, and a build
+     writes each as an asset with a hashed name. Made in about 4 seconds.
+   - Sizes, gzipped: the worker 970 KB (most of it TypeScript),
+     TypeScript's libraries 316 KB, `@mvtjs` 49 KB, Pixi 447 KB, three.js
+     251 KB, GSAP 39 KB. A Pixi project downloads about 1.8 MB, near the
+     spike's 1.7 MB. The page's own chunk does not grow.
+   - Every row of 6.4: completions, with each one's documentation and an
+     import added for a name from another file (through its barrel, and
+     merged into an import already there); types on hover; the signature
+     of a call as it is typed; type problems underlined, with their fixes,
+     listed in Problems (a problem that stops the run says so) and counted
+     beside their files; go to definition (F12 or Ctrl+click), which opens
+     a library's declarations read-only under a banner; rename (F2) across
+     files; organise imports (Shift+Alt+O); and format (Shift+Alt+F).
+   - Unit tests of the service (9), and visual tests of the underline, the
+     file count and the Problems list's kinds (now 21 in all).
+   Checked in headless Chromium against a build: every feature above. The
+   check found three bugs: format and organise imports left out
+   TypeScript's default spacing (no space after a comma), a late answer
+   reopened the signature after its call was closed, and the new styles
+   were missing.
 6. **Projects and export.** IndexedDB projects and the migration from
    `localStorage` (7.1), the `#p1=` share format with its size limit (7.3),
    and Export (7.5).

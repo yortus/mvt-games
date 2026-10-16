@@ -230,6 +230,52 @@ describe('a workspace model', () => {
         expect(model.layout.narrowPanel).toBe('code');
     });
 
+    it('makes edits across files, from the end of each file back, and counts them as external', () => {
+        const model = createWorkspaceModel({ project: { name: 'Edits', files: [{ path: 'main.ts', text: 'abc abc' }, { path: 'b.ts', text: 'abc' }] } });
+        const external = model.externalEdits;
+        model.applyEdits([
+            { path: 'main.ts', start: 0, end: 3, newText: 'xyz' },
+            { path: 'main.ts', start: 4, end: 7, newText: 'xyz!' },
+            { path: 'b.ts', start: 0, end: 3, newText: 'xyz' },
+            { path: 'not-in-project.ts', start: 0, end: 0, newText: 'ignored' },
+        ]);
+        expect(model.textOf('main.ts')).toBe('xyz xyz!');
+        expect(model.textOf('b.ts')).toBe('xyz');
+        expect(model.paths).not.toContain('not-in-project.ts');
+        expect(model.externalEdits).toBe(external + 1);
+    });
+
+    it('lists the problems that stop a run, then type problems on other lines, and counts errors by file', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.update(500);
+        model.reportChecked({ checkNumber: model.checksRequested, problems: [{ path: 'main.ts', line: 2, message: 'Unexpected token' }], sandboxDocument: undefined });
+        const typeProblem = (line: number, severity: 'error' | 'warning') => ({
+            path: 'main.ts', line, column: 1, start: 0, length: 1, message: `on line ${line}`, severity, fixes: [],
+        });
+        model.reportTypeProblems({ checkNumber: model.checksRequested, problems: [typeProblem(2, 'error'), typeProblem(5, 'error'), typeProblem(6, 'warning')] });
+        expect(model.problemList.map((p) => [p.line, p.isBlocking])).toEqual([[2, true], [5, false], [6, false]]);
+        expect(model.problemCountOf('main.ts')).toBe(2);
+        expect(model.problemCountOf('views/b-view.ts')).toBe(0);
+    });
+
+    it('ignores type problems the files have changed since', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        const stale = model.checksRequested;
+        model.editFile('main.ts', 'changed');
+        model.update(500);
+        model.reportTypeProblems({ checkNumber: stale, problems: [{ path: 'main.ts', line: 1, column: 1, start: 0, length: 1, message: 'old', severity: 'error', fixes: [] }] });
+        expect(model.typeProblems).toEqual([]);
+    });
+
+    it('opens a library\'s declarations read-only, at a place', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.openLibraryFile({ path: '/node_modules/pixi.js/lib/index.d.ts', text: 'declare const x: 1;', line: 1, column: 15 });
+        expect(model.activePath).toBe('/node_modules/pixi.js/lib/index.d.ts');
+        expect(model.textOf(model.activePath)).toBe('declare const x: 1;');
+        expect(model.paths).not.toContain(model.activePath);
+        expect(model.placesShown).toBe(1);
+    });
+
     it('opens a file at a place asked for', () => {
         const model = createWorkspaceModel({ project: PROJECT });
         model.showPlace({ path: 'models/a-model.ts', line: 2 });

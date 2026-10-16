@@ -197,6 +197,20 @@ button:disabled {
     color: var(--site-accent);
 }
 
+/* How many errors a file has, as the language service found them */
+.file-problems {
+    flex: none;
+    min-width: 18px;
+    margin-right: 4px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #5a1e1e;
+    color: #ffa198;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: center;
+}
+
 .file-remove {
     color: var(--site-text-muted);
     visibility: hidden;
@@ -206,14 +220,72 @@ button:disabled {
     visibility: visible;
 }
 
+/* A column, so the editor takes the height the banner leaves */
 .editor-pane {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     min-height: 0;
 }
 
-.code-editor,
+/* Says that the file shown is a library's, and can't be edited */
+.editor-banner {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--site-nav-border);
+    background: #1c2128;
+    font-size: 12px;
+}
+
+.editor-banner-path {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    color: var(--site-accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.editor-banner-note {
+    flex: none;
+    color: var(--site-text-muted);
+}
+
+.code-editor {
+    flex: 1;
+    min-height: 0;
+}
+
 .code-editor .cm-editor {
     height: 100%;
+}
+
+/* A hover's type and documentation, and a call's signature */
+.language-info {
+    max-width: 640px;
+    max-height: 320px;
+    overflow: auto;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.language-info-type {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.language-info-type strong {
+    color: var(--site-accent);
+}
+
+.language-info-doc {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #3a3f4b;
+    font-family: var(--site-font-ui);
+    white-space: pre-wrap;
 }
 
 .code-editor .cm-scroller {
@@ -356,8 +428,23 @@ button:disabled {
 }
 
 .console-error,
-.problem-text {
+.problem-error .problem-text {
     color: #f85149;
+}
+
+.problem-warning .problem-text {
+    color: #d29922;
+}
+
+/* Marks a problem that stops the project running, as a type problem does not */
+.problem-blocking {
+    margin-right: 8px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: #5a1e1e;
+    color: #ffa198;
+    font-family: var(--site-font-ui);
+    font-size: 11px;
 }
 
 .console-place,

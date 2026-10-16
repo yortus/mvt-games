@@ -1,4 +1,5 @@
 import { findExample } from '../examples';
+import type { FileEdit, TypeProblem } from '../language';
 import { findProjectLocation, MAIN_PATH, type Problem, type ProjectFile, type SourceLocation } from '../runtime';
 import type { ConsoleLevel, SandboxMessage } from '../sandbox';
 import { createLayoutModel, type LayoutModel, type LayoutModelOptions } from './layout-model';
@@ -26,6 +27,29 @@ export interface ConsoleEntry {
     readonly level: ConsoleLevel;
     readonly text: string;
     readonly location?: SourceLocation;
+}
+
+/**
+ * A problem as the Problems list shows it: one that stops the project
+ * running, such as a syntax error or a missing file, or a type error or
+ * warning, which never does.
+ */
+export interface ListedProblem {
+    readonly path: string;
+    /** Lines and columns count from 1. */
+    readonly line?: number;
+    readonly column?: number;
+    readonly message: string;
+    readonly severity: 'error' | 'warning';
+    /** Whether it stops the project running. */
+    readonly isBlocking: boolean;
+}
+
+/** A library's declaration file, open read-only, as go to definition opens it. */
+export interface LibraryFile {
+    /** Its path among the language service's files, such as `/node_modules/pixi.js/lib/index.d.ts`. */
+    readonly path: string;
+    readonly text: string;
 }
 
 /** The playground's workspace: the project and its files, the file open, the run, and the console. */
@@ -80,6 +104,18 @@ export interface WorkspaceModel {
      * visitor stopped.
      */
     readonly isRunOnChange: boolean;
+    /** Type errors and warnings, as the language service last found them. They never stop a run. */
+    readonly typeProblems: readonly TypeProblem[];
+    /** Rises each time the type problems change, for the editor to mark them. */
+    readonly typeChecks: number;
+    /** Every problem, as the Problems list shows them: those that stop the run first, then the type problems. */
+    readonly problemList: readonly ListedProblem[];
+    /** How many errors a file has, of either kind. */
+    readonly problemCountOf: (path: string) => number;
+    /** Rises each time files change other than by typing in the editor, as a rename or a fix changes them. */
+    readonly externalEdits: number;
+    /** The library declaration file open, if one has been opened. */
+    readonly libraryFile: LibraryFile | undefined;
 
     readonly shareStatus: ShareStatus;
     /** Rises each time Share is pressed, for the page to write the link. */
@@ -98,6 +134,10 @@ export interface WorkspaceModel {
     readonly addFile: (path: string) => string | undefined;
     /** Removes a file. `main.ts` cannot be removed. */
     readonly removeFile: (path: string) => void;
+    /** Makes edits to any of the project's files, as a rename or a fix does. Edits to files the project does not have are left out. */
+    readonly applyEdits: (edits: readonly FileEdit[]) => void;
+    /** Opens a library's declaration file, read-only, at a place. */
+    readonly openLibraryFile: (file: LibraryFile & { readonly line: number; readonly column: number }) => void;
 
     readonly run: () => void;
     readonly stop: () => void;
@@ -122,6 +162,8 @@ export interface WorkspaceModel {
      * check the files have changed since is ignored.
      */
     readonly reportChecked: (check: CheckResult) => void;
+    /** From the page: the type problems the language service found. A report the files have changed since is ignored. */
+    readonly reportTypeProblems: (report: { readonly checkNumber: number; readonly problems: readonly TypeProblem[] }) => void;
     /** From the preview: a message from the sandbox. */
     readonly reportSandboxMessage: (message: SandboxMessage) => void;
     /** From the page: how sharing went. */
@@ -190,6 +232,12 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     /** Whether the files have changed since the last check was asked for. */
     let isCheckDue = false;
     let msSinceEdit = 0;
+    let typeProblems: readonly TypeProblem[] = [];
+    let typeChecks = 0;
+    let problemList: readonly ListedProblem[] = [];
+    let problemCounts = new Map<string, number>();
+    let externalEdits = 0;
+    let libraryFile: LibraryFile | undefined;
     const layout = createLayoutModel({ saved: options.savedLayout });
 
     openProject(options.project);
@@ -199,7 +247,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get exampleId() { return exampleId; },
         get paths() { return paths; },
         get files() { return files; },
-        textOf: (path) => texts.get(path) ?? '',
+        textOf: (path) => texts.get(path) ?? (path === libraryFile?.path ? libraryFile.text : ''),
         get activePath() { return activePath; },
         get projectsOpened() { return projectsOpened; },
         get edits() { return edits; },
@@ -219,6 +267,12 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get problems() { return problems; },
         get checksRequested() { return checksRequested; },
         get isRunOnChange() { return isRunOnChange; },
+        get typeProblems() { return typeProblems; },
+        get typeChecks() { return typeChecks; },
+        get problemList() { return problemList; },
+        problemCountOf: (path) => problemCounts.get(path) ?? 0,
+        get externalEdits() { return externalEdits; },
+        get libraryFile() { return libraryFile; },
         layout,
 
         openProject,
@@ -256,6 +310,32 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
             if (path === MAIN_PATH || !texts.delete(path)) return;
             onFilesChanged();
             if (activePath === path) activePath = MAIN_PATH;
+        },
+
+        applyEdits(fileEdits) {
+            let isChanged = false;
+            for (const path of new Set(fileEdits.map((e) => e.path))) {
+                const text = texts.get(path);
+                if (text === undefined) continue;
+                // From the end, so each edit's offsets still hold as the ones after it are made
+                const ordered = fileEdits.filter((e) => e.path === path).sort((a, b) => b.start - a.start);
+                let edited = text;
+                for (const edit of ordered) edited = edited.slice(0, edit.start) + edit.newText + edited.slice(edit.end);
+                if (edited === text) continue;
+                texts.set(path, edited);
+                isChanged = true;
+            }
+            if (!isChanged) return;
+            onFilesChanged();
+            externalEdits++;
+        },
+
+        openLibraryFile(file) {
+            libraryFile = { path: file.path, text: file.text };
+            activePath = file.path;
+            shownPlace = { path: file.path, line: file.line, column: file.column };
+            placesShown++;
+            layout.showPanel('code');
         },
 
         run() {
@@ -315,12 +395,14 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         reportPrepared(document) {
             if (phase !== 'preparing') return;
             problems = [];
+            listProblems();
             startSandbox(document, true);
         },
 
         reportProblems(found) {
             if (phase !== 'preparing') return;
             problems = found;
+            listProblems();
             for (const problem of found) {
                 // A problem with a place shows it as a link, so its text need not name it
                 const location = problem.line === undefined ? undefined : { path: problem.path, line: problem.line };
@@ -332,11 +414,19 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         reportChecked(check) {
             if (check.checkNumber !== checksRequested) return;
             problems = check.problems;
+            listProblems();
             const isRestartable = phase === 'starting' || phase === 'running' || phase === 'failed';
             if (isRunOnChange && isRestartable && problems.length === 0 && check.sandboxDocument !== undefined) {
                 consoleEntries = [];
                 startSandbox(check.sandboxDocument, false);
             }
+        },
+
+        reportTypeProblems(report) {
+            if (report.checkNumber !== checksRequested) return;
+            typeProblems = report.problems;
+            typeChecks++;
+            listProblems();
         },
 
         reportSandboxMessage(message) {
@@ -395,6 +485,35 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         activePath = texts.has(MAIN_PATH) ? MAIN_PATH : (paths[0] ?? MAIN_PATH);
         projectsOpened++;
         shownPlace = undefined;
+        libraryFile = undefined;
+        problems = [];
+        typeProblems = [];
+        typeChecks++;
+        listProblems();
+    }
+
+    /**
+     * Lists every problem: those that stop the run, then the type problems,
+     * leaving out a type problem on a line that one of the first kind names
+     * already, such as the same syntax error found twice. Counts each file's
+     * errors.
+     */
+    function listProblems(): void {
+        const listed: ListedProblem[] = [];
+        const blockedLines = new Set<string>();
+        for (const p of problems) {
+            listed.push({ path: p.path, line: p.line, message: p.message, severity: 'error', isBlocking: true });
+            blockedLines.add(`${p.path}:${p.line}`);
+        }
+        for (const p of typeProblems) {
+            if (blockedLines.has(`${p.path}:${p.line}`)) continue;
+            listed.push({ path: p.path, line: p.line, column: p.column, message: p.message, severity: p.severity, isBlocking: false });
+        }
+        problemList = listed;
+        problemCounts = new Map();
+        for (const p of listed) {
+            if (p.severity === 'error') problemCounts.set(p.path, (problemCounts.get(p.path) ?? 0) + 1);
+        }
     }
 
     function onFilesChanged(): void {

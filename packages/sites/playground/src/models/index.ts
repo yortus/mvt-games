@@ -11,6 +11,8 @@ export {
     type CheckResult,
     type ConsoleEntry,
     createWorkspaceModel,
+    type LibraryFile,
+    type ListedProblem,
     MAX_FILES,
     type RunPhase,
     type ShareStatus,

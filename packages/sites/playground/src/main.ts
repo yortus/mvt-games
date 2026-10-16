@@ -1,6 +1,7 @@
 import { refreshView, updateView } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import { EXAMPLES, findExample } from './examples';
+import { createLanguageClient } from './language';
 import { createWorkspaceModel, type WorkspaceModel } from './models';
 import {
     buildSandboxDocument,
@@ -62,10 +63,18 @@ const settingsWatcher = watch({
 watcher.poll();
 settingsWatcher.poll();
 
+// The language service starts once the page has drawn, since loading
+// TypeScript takes a while, and the editor works as plain text until it is ready
+const language = createLanguageClient({ files: () => model.files });
+
 const root = document.getElementById('playground');
 if (root === null) throw new Error('The page has no #playground element');
-root.append(PlaygroundView({ model, examples: EXAMPLES }));
+root.append(PlaygroundView({ model, examples: EXAMPLES, language }));
 model.run();
+requestAnimationFrame(() => {
+    language.start();
+    void checkTypes(model);
+});
 
 // ---------------------------------------------------------------------------
 // The loop
@@ -89,7 +98,10 @@ function frame(timeMs: number): void {
 function followModel(workspace: WorkspaceModel): void {
     const { runs, checks, shares, edits, exampleId } = watcher.poll();
     if (runs.increased) void prepareRun(workspace);
-    if (checks.increased) void checkProject(workspace);
+    if (checks.increased) {
+        void checkProject(workspace);
+        void checkTypes(workspace);
+    }
     if (shares.increased) void share(workspace);
     if (edits.changed) saveProject({ name: workspace.projectName, files: workspace.files });
     if (edits.changed || exampleId.changed) {
@@ -110,6 +122,9 @@ const MAX_STEP_MS = 100;
 
 /** The largest project, in characters, that a share link holds. A link of about 90 KB, gzipped. */
 const MAX_SHARED_CHARACTERS = 300_000;
+
+/** How often the first type check looks to see if the language service is ready. */
+const LANGUAGE_WAIT_MS = 200;
 
 /** How long Share shows how it went, before it says "Share" again. */
 const SHARE_STATUS_MS = 2500;
@@ -155,6 +170,14 @@ async function checkProject(workspace: WorkspaceModel): Promise<void> {
         problems: prepared.problems,
         sandboxDocument: prepared.problems.length > 0 ? undefined : toSandboxDocument(prepared, urls),
     });
+}
+
+/** Asks the language service for the project's type problems, once it is ready, and tells the model. */
+async function checkTypes(workspace: WorkspaceModel): Promise<void> {
+    const checkNumber = workspace.checksRequested;
+    while (!language.isReady) await new Promise((resolve) => setTimeout(resolve, LANGUAGE_WAIT_MS));
+    const problems = await language.diagnostics();
+    if (problems !== undefined) workspace.reportTypeProblems({ checkNumber, problems });
 }
 
 function toSandboxDocument(prepared: PreparedProject, urls: LibraryUrls): string {

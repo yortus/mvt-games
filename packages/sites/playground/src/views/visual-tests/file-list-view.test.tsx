@@ -11,6 +11,15 @@ htmlTest('a project\'s files, one open', () => inBox(FileListView({
     activePath: () => 'models/ball-model.ts',
     fixedPath: 'main.ts',
     isFolded: () => false,
+    problemCountOf: () => 0,
+}), 230, 220));
+
+htmlTest('a file with errors', () => inBox(FileListView({
+    paths: () => PATHS,
+    activePath: () => 'main.ts',
+    fixedPath: 'main.ts',
+    isFolded: () => false,
+    problemCountOf: (path) => (path === 'views/ball-view.ts' ? 2 : 0),
 }), 230, 220));
 
 htmlTest('folded away', () => inBox(FileListView({
@@ -18,4 +27,5 @@ htmlTest('folded away', () => inBox(FileListView({
     activePath: () => 'main.ts',
     fixedPath: 'main.ts',
     isFolded: () => true,
+    problemCountOf: () => 0,
 }), 34, 220));

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions, defineConfig } from 'vite';
 import { LIBRARIES, LIBRARY_MANIFEST, SANDBOX_RUNNER, toLibraryEntryName } from './libraries/index.ts';
+import { libraryTypesPlugin } from './scripts/index.ts';
 
 const ROOT = import.meta.dirname;
 
@@ -24,6 +25,13 @@ export default defineConfig({
     root: ROOT,
     base: (process.env.BASE_URL ?? '/') + PLAYGROUND_PATH,
     publicDir: false,
+    // The language service's type bundles: served in development, and written as assets by the build
+    plugins: [libraryTypesPlugin()],
+    // The language service's worker is built on its own, so it needs the plugin too
+    worker: {
+        format: 'es',
+        plugins: () => [libraryTypesPlugin()],
+    },
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
     },

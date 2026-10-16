@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
-import type { Problem, SourceLocation } from '../runtime';
+import type { ListedProblem } from '../models';
+import type { SourceLocation } from '../runtime';
 import { createPlaceLabeller } from './place-label';
 
 // ---------------------------------------------------------------------------
@@ -8,7 +9,7 @@ import { createPlaceLabeller } from './place-label';
 // ---------------------------------------------------------------------------
 
 export interface ProblemsViewBindings {
-    readonly problems: () => readonly Problem[];
+    readonly problems: () => readonly ListedProblem[];
     /** Reported as a problem's place is pressed, to open its file there. */
     readonly onPlaceChosen?: (location: SourceLocation) => void;
 }
@@ -18,9 +19,10 @@ export interface ProblemsViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * What stops the project running: syntax errors, and imports of files or
- * packages that are not there. Each links to its file, at its line where
- * that is known. It says so when there are none.
+ * The project's problems, each linked to its file, at its line where that is
+ * known. Those that stop it running come first, such as a syntax error or a
+ * missing file, marked so. Then come type errors and warnings, which never
+ * stop it. It says so when there are none.
  */
 export function ProblemsView(bindings: ProblemsViewBindings): Element {
     return (
@@ -31,13 +33,14 @@ export function ProblemsView(bindings: ProblemsViewBindings): Element {
                     {(problem) => {
                         const placeLabel = createPlaceLabeller();
                         return (
-                            <li class="problem">
+                            <li class={() => PROBLEM_CLASSES[problem().isBlocking ? 'blocking' : problem().severity]}>
                                 <button
                                     type="button"
                                     class="problem-place"
                                     text={() => placeLabel(problem())}
-                                    onClick={() => bindings.onPlaceChosen?.({ path: problem().path, line: problem().line ?? 1 })}
+                                    onClick={() => bindings.onPlaceChosen?.({ path: problem().path, line: problem().line ?? 1, column: problem().column })}
                                 />
+                                <span class="problem-blocking" visible={() => problem().isBlocking} text="Stops the run" />
                                 <span class="problem-text" text={() => problem().message} />
                             </li>
                         );
@@ -47,3 +50,13 @@ export function ProblemsView(bindings: ProblemsViewBindings): Element {
         </section>
     );
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const PROBLEM_CLASSES: Readonly<Record<'blocking' | 'error' | 'warning', string>> = {
+    blocking: 'problem problem-error',
+    error: 'problem problem-error',
+    warning: 'problem problem-warning',
+};

@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { watch } from '@mvtjs/utils';
+import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
 import type { PanelKind, ShareStatus, WorkspaceModel } from '../models';
 import { MAIN_PATH } from '../runtime';
 import { CodeEditorView } from './code-editor-view';
@@ -20,6 +21,8 @@ export interface PlaygroundViewBindings {
     readonly model: WorkspaceModel;
     /** The examples to offer, by id and name. */
     readonly examples: readonly { readonly id: string; readonly name: string }[];
+    /** The language service, for the editor's completions, hover and the rest. */
+    readonly language?: LanguageClient;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,6 +41,8 @@ export interface PlaygroundViewBindings {
 export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
     const { model } = bindings;
     const { layout } = model;
+    let problemsByPath: Map<string, TypeProblem[]> | undefined;
+    let filteredChecks = -1;
     const sizes = watch({
         filesWidth: () => layout.filesWidth,
         runWidth: () => layout.runWidth,
@@ -71,6 +76,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     activePath={() => model.activePath}
                     fixedPath={MAIN_PATH}
                     isFolded={() => layout.isFilesFolded}
+                    problemCountOf={model.problemCountOf}
                     onFoldToggled={() => layout.toggleFiles()}
                     onFileChosen={(path) => model.openFile(path)}
                     onAddPressed={addFile}
@@ -78,13 +84,24 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                 />
                 <DividerView orientation="vertical" label="Resize the file list" onDragged={(deltaPx) => layout.resizeFiles(deltaPx)} />
                 <div class="editor-pane">
+                    <div class="editor-banner" visible={isLibraryOpen}>
+                        <span class="editor-banner-path" text={() => model.libraryFile?.path ?? ''} />
+                        <span class="editor-banner-note" text="Read-only: a library's declarations" />
+                    </div>
                     {CodeEditorView({
                         activePath: () => model.activePath,
                         textOf: model.textOf,
+                        isReadOnly: (path) => path === model.libraryFile?.path,
                         projectsOpened: () => model.projectsOpened,
+                        externalEdits: () => model.externalEdits,
                         shownPlace: () => model.shownPlace,
                         placesShown: () => model.placesShown,
+                        typeChecks: () => model.typeChecks,
+                        typeProblemsFor: typeProblemsFor,
+                        language: bindings.language,
                         onTextEdited: (path, text) => model.editFile(path, text),
+                        onDefinitionFound: openDefinition,
+                        onEditsWanted: (edits) => model.applyEdits(edits),
                     })}
                 </div>
                 <DividerView orientation="vertical" label="Resize the run" onDragged={(deltaPx) => layout.resizeRun(deltaPx)} />
@@ -126,7 +143,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                                 type="button"
                                 role="tab"
                                 class={() => (layout.runPaneTab === 'problems' ? 'run-tab run-tab-active' : 'run-tab')}
-                                text={() => PROBLEM_TAB_LABELS[Math.min(model.problems.length, PROBLEM_TAB_LABELS.length - 1)]}
+                                text={() => PROBLEM_TAB_LABELS[Math.min(model.problemList.length, PROBLEM_TAB_LABELS.length - 1)]}
                                 onClick={() => layout.showRunPaneTab('problems')}
                             />
                             <button type="button" class="run-tab-clear" text="Clear" visible={() => layout.runPaneTab === 'console'} onClick={() => model.clearConsole()} />
@@ -135,7 +152,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                             <ConsoleView entries={() => model.consoleEntries} onPlaceChosen={(location) => model.showPlace(location)} />
                         </div>
                         <div class="run-tab-body" visible={() => layout.runPaneTab === 'problems'}>
-                            <ProblemsView problems={() => model.problems} onPlaceChosen={(location) => model.showPlace(location)} />
+                            <ProblemsView problems={() => model.problemList} onPlaceChosen={(location) => model.showPlace(location)} />
                         </div>
                     </div>
                 </div>
@@ -153,6 +170,38 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
             />
         </div>
     );
+
+    function isLibraryOpen(): boolean {
+        return model.libraryFile !== undefined && model.activePath === model.libraryFile.path;
+    }
+
+    /**
+     * A file's type problems. The model's list is filtered here, and only when
+     * it changes, so the editor's refresh builds no array.
+     */
+    function typeProblemsFor(path: string): readonly TypeProblem[] {
+        if (problemsByPath === undefined || filteredChecks !== model.typeChecks) {
+            filteredChecks = model.typeChecks;
+            problemsByPath = new Map();
+            for (const problem of model.typeProblems) {
+                const list = problemsByPath.get(problem.path) ?? [];
+                list.push(problem);
+                problemsByPath.set(problem.path, list);
+            }
+        }
+        return problemsByPath.get(path) ?? NO_PROBLEMS;
+    }
+
+    /** Opens a definition: a place in the project, or a library's declarations, read-only. */
+    function openDefinition(target: DefinitionTarget): void {
+        if (!target.isLibrary) {
+            model.showPlace({ path: target.path, line: target.line, column: target.column });
+            return;
+        }
+        void bindings.language?.libraryFileText(target.path).then((text) => {
+            if (text !== undefined) model.openLibraryFile({ path: target.path, text, line: target.line, column: target.column });
+        });
+    }
 
     /** Writes the panes' sizes to the CSS, as each changes. */
     function writeSizes(workspace: Element): void {
@@ -198,6 +247,8 @@ const SHARE_LABELS: Readonly<Record<ShareStatus, string>> = {
     'too-large': 'Too large to share',
     'failed': 'Could not copy',
 };
+
+const NO_PROBLEMS: readonly TypeProblem[] = [];
 
 /** The panels a narrow screen shows one at a time, in the order of their tabs. */
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [

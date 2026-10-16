@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
+import { memoiseLast } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -13,6 +14,8 @@ export interface FileListViewBindings {
     readonly fixedPath: string;
     /** Whether the list is folded away, leaving only its unfold button. */
     readonly isFolded: () => boolean;
+    /** How many errors a file has. A file with any shows the count beside its name. */
+    readonly problemCountOf: (path: string) => number;
     readonly onFoldToggled?: () => void;
     readonly onFileChosen?: (path: string) => void;
     readonly onAddPressed?: () => void;
@@ -43,19 +46,28 @@ export function FileListView(bindings: FileListViewBindings): Element {
             </div>
             <ul class="files-list">
                 <List items={bindings.paths}>
-                    {(path) => (
-                        <li class={() => (path() === bindings.activePath() ? 'file file-active' : 'file')}>
-                            <button type="button" class="file-name" text={path} onClick={() => bindings.onFileChosen?.(path())} />
-                            <button
-                                type="button"
-                                class="file-remove"
-                                title="Remove this file"
-                                text="×"
-                                visible={() => path() !== bindings.fixedPath}
-                                onClick={() => bindings.onRemovePressed?.(path())}
-                            />
-                        </li>
-                    )}
+                    {(path) => {
+                        const countLabel = memoiseLast((count: number) => String(count));
+                        return (
+                            <li class={() => (path() === bindings.activePath() ? 'file file-active' : 'file')}>
+                                <button type="button" class="file-name" text={path} onClick={() => bindings.onFileChosen?.(path())} />
+                                <span
+                                    class="file-problems"
+                                    title="Errors in this file"
+                                    visible={() => bindings.problemCountOf(path()) > 0}
+                                    text={() => countLabel(bindings.problemCountOf(path()))}
+                                />
+                                <button
+                                    type="button"
+                                    class="file-remove"
+                                    title="Remove this file"
+                                    text="×"
+                                    visible={() => path() !== bindings.fixedPath}
+                                    onClick={() => bindings.onRemovePressed?.(path())}
+                                />
+                            </li>
+                        );
+                    }}
                 </List>
             </ul>
         </nav>
