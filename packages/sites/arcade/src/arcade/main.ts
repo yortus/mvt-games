@@ -351,11 +351,10 @@ const SAVE_EVERY_MS = 5000;
 const LIVE_SHOWN_AFTER_FRAMES = 3;
 const DEV = import.meta.env.DEV;
 
-/** Gives the host the sound settings. Muting mutes both chips, the entries' and the page's own. */
+/** Gives the host the sound settings. Muting mutes every chip, the entries' and the page's own. */
 function applySoundSettings(settings: ArcadeSoundSettings): void {
     sound.settings = settings;
-    sound.entryControls.isMuted = settings.isMuted;
-    sound.pageControls.isMuted = settings.isMuted;
+    sound.isMuted = settings.isMuted;
 }
 
 /**

@@ -1,8 +1,8 @@
 import { Container } from 'pixi.js';
 import { findEntry } from '@mvtjs/arcade/entries';
-import type { EntryInputConfig, PixiEntryStarter } from '@mvtjs/arcade/entry-types';
+import { type EntryInputConfig, type PixiEntryStarter, type SoundChipsByKind, startPixiEntry } from '@mvtjs/arcade/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/audio/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 
@@ -37,21 +37,26 @@ const params = readParams();
 const measure = String(params.measure);
 const starter = await loadPixiStarter(String(params.entry));
 const stage = new Container();
-// The entry plays on a silent chip. Its clock advances as the host advances
-// the real chip's, so the audio views do their usual work, but no sound is
-// made.
-const { audio80, controls } = createHeadlessAudio80();
-const session = starter.start({ stage, sound: audio80 });
+// An entry that plays on a chip plays on a silent one. Its clock advances as
+// the host advances the real chip's, so the audio views do their usual work,
+// but no sound is made. An entry that makes no sound is given no chip, as
+// the host gives it none.
+const audio80Chip = createHeadlessAudio80();
+const audio90Chip = createHeadlessAudio90();
+const chips: SoundChipsByKind = { audio80: audio80Chip.audio80, audio90: audio90Chip.audio90 };
+const session = startPixiEntry(starter, { stage }, (kind) => chips[kind]);
+const controls = starter.soundChip === 'audio90' ? audio90Chip.controls : audio80Chip.controls;
+const sessionControls = starter.soundChip === undefined ? undefined : controls;
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
-    controls.update(FRAME_MS);
+    sessionControls?.update(FRAME_MS);
     updateView(stage, FRAME_MS);
     refreshView(stage);
-    controls.flush();
+    sessionControls?.flush();
 };
 
 if (measure === 'time') {

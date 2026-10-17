@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setRefresh } from '@mvtjs/html';
 import { type Audio80, createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
 import type { Audio80Write } from '@mvtjs/audio/headless';
+import type { Audio90 } from '@mvtjs/audio';
 import type { ElementEntryStarter } from '../entry-types';
 import { createEntryHost, type EntryHost } from './entry-host';
-import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
+import { type FakeChip, type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound, type PageSound } from './page-sound';
 
 vi.mock('@mvtjs/audio/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
@@ -30,9 +31,9 @@ describe('createEntryHost', () => {
         host.start(game.starter);
         host.tick(0, TICK_MS);
 
-        const [chip] = fake.chips;
+        const chip = entryChip();
         expect(listPlays(chip.audio80.log)).toEqual([EFFECT]);
-        // The game's chip is the entries' chip, which the host advances with the game
+        // The game's chip is the Audio80 for entries, which the host advances with the game
         expect(game.sound()?.time).toBe(TICK_MS);
         destroyAll(host, sound);
     });
@@ -42,7 +43,7 @@ describe('createEntryHost', () => {
         const game = createFakeGame();
         await host.prepare(game.starter);
         host.start(game.starter);
-        const [chip] = fake.chips;
+        const chip = entryChip();
 
         host.tick(0, TICK_MS);
         expect(game.flushCountsAtRefresh()).toEqual([0]);
@@ -55,7 +56,7 @@ describe('createEntryHost', () => {
         const game = createFakeGame();
         await host.prepare(game.starter);
         host.start(game.starter);
-        const [chip] = fake.chips;
+        const chip = entryChip();
         host.tick(0, TICK_MS);
 
         host.isPaused = true;
@@ -74,7 +75,7 @@ describe('createEntryHost', () => {
         const { sound, host } = createHostWithSound();
         const game = createFakeGame();
         await host.prepare(game.starter);
-        const [chip] = fake.chips;
+        const chip = entryChip();
 
         host.start(game.starter);
         expect(chip.resetCount).toBe(1);
@@ -84,6 +85,63 @@ describe('createEntryHost', () => {
         host.restart();
         // A restart stops the session and starts another
         expect(chip.resetCount).toBe(5);
+        destroyAll(host, sound);
+    });
+
+    it('gives an entry that makes no sound no chip, and loads none for it', async () => {
+        const { sound, host } = createHostWithSound();
+        const demo = createFakeSilentDemo();
+
+        await host.prepare(demo.starter);
+        // Only the page's own chip
+        expect(fake.chips).toHaveLength(1);
+        host.start(demo.starter);
+        host.tick(0, TICK_MS);
+        expect(demo.wasGivenSound()).toBe(false);
+        expect(fake.chips[0].flushCount).toBe(0);
+        host.stop();
+        destroyAll(host, sound);
+    });
+
+    it('loads the entries\' chip for the first entry that plays on it, after one that makes no sound', async () => {
+        const { sound, host } = createHostWithSound();
+        const demo = createFakeSilentDemo();
+        const game = createFakeGame();
+        await host.prepare(demo.starter);
+        host.start(demo.starter);
+
+        await host.prepare(game.starter);
+        expect(fake.chips).toHaveLength(2);
+        host.start(game.starter);
+        host.tick(0, TICK_MS);
+        expect(listPlays(entryChip().audio80.log)).toEqual([EFFECT]);
+        destroyAll(host, sound);
+    });
+
+    it('gives an entry that plays on the Audio90 an Audio90, and advances and flushes it, loading no entry Audio80', async () => {
+        const { sound, host } = createHostWithSound();
+        let given: Audio90 | undefined;
+        const starter: ElementEntryStarter<'audio90'> = {
+            kind: 'element',
+            soundChip: 'audio90',
+            start: (options) => {
+                given = options.sound;
+                const view = document.createElement('div');
+                setRefresh(view, () => options.sound.setTempo(120));
+                return { views: [view], update: () => {}, render: () => {}, destroy: () => {} };
+            },
+        };
+        await host.prepare(starter);
+        expect(fake.chips).toHaveLength(1);
+        expect(fake.audio90Chips).toHaveLength(1);
+        host.start(starter);
+        host.tick(0, TICK_MS);
+        const [chip] = fake.audio90Chips;
+        expect(given?.time).toBe(TICK_MS);
+        expect(chip.audio90.log).toEqual([{ kind: 'set-tempo', bpm: 120, time: TICK_MS }]);
+        expect(chip.flushCount).toBe(1);
+        host.stop();
+        expect(chip.resetCount).toBeGreaterThan(0);
         destroyAll(host, sound);
     });
 });
@@ -109,6 +167,15 @@ function destroyAll(host: EntryHost, sound: PageSound): void {
 }
 
 /**
+ * Returns the fake browser chip that entries play on. The page's own chip is
+ * made first, when the sound is first prepared, and the entries' chip after
+ * it, when an entry that plays on it is prepared.
+ */
+function entryChip(): FakeChip {
+    return fake.chips[1];
+}
+
+/**
  * Creates an element entry with one view, which plays an effect each time it
  * refreshes. The entry keeps the chip it was given, and the chip's flush
  * count at each refresh.
@@ -116,13 +183,14 @@ function destroyAll(host: EntryHost, sound: PageSound): void {
 function createFakeGame() {
     let sound: Audio80 | undefined;
     const flushCountsAtRefresh: number[] = [];
-    const starter: ElementEntryStarter = {
+    const starter: ElementEntryStarter<'audio80'> = {
         kind: 'element',
+        soundChip: 'audio80',
         start: (options) => {
             sound = options.sound;
             const view = document.createElement('div');
             setRefresh(view, () => {
-                flushCountsAtRefresh.push(fake.chips[0].flushCount);
+                flushCountsAtRefresh.push(entryChip().flushCount);
                 options.sound.play(EFFECT);
             });
             return {
@@ -134,6 +202,19 @@ function createFakeGame() {
         },
     };
     return { starter, sound: () => sound, flushCountsAtRefresh: () => flushCountsAtRefresh };
+}
+
+/** Creates an element entry that makes no sound. It keeps whether it was given a chip anyway. */
+function createFakeSilentDemo() {
+    let wasGivenSound = false;
+    const starter: ElementEntryStarter = {
+        kind: 'element',
+        start: (options) => {
+            wasGivenSound = 'sound' in options;
+            return { views: [], update: () => {}, render: () => {}, destroy: () => {} };
+        },
+    };
+    return { starter, wasGivenSound: () => wasGivenSound };
 }
 
 /** Returns the sound effects played, in order. */

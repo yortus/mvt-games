@@ -1,5 +1,5 @@
 import { createPerformanceMetrics } from '@mvtjs/pixi';
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createDemoModel, TANK_SIZES } from '../models';
 import { DEFAULT_VARIANTS, type DemoVariants, formatVariants, parseVariants } from '../variants';
 import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
@@ -9,7 +9,7 @@ import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 // ---------------------------------------------------------------------------
 
 /** Returns how to start the falling-sand demo, which has no assets to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
@@ -49,7 +49,7 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});
 
 // ---------------------------------------------------------------------------
 // Internals

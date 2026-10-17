@@ -1,8 +1,8 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
-import type { Audio80, AudioControls } from '@mvtjs/audio';
+import type { AudioControls } from '@mvtjs/audio';
 import { KeyboardInputView, TouchInputView } from '#shared';
-import type { EntryInputConfig, EntrySession, PixiEntryStarter, StartOptions } from '../entry-types';
+import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 
 // ---------------------------------------------------------------------------
@@ -52,10 +52,14 @@ export interface PixiStageOptions {
     readonly isPaused: () => boolean;
     /** Whether the page has turned the canvas a quarter turn clockwise, with a CSS transform on an ancestor. */
     readonly isTurned: () => boolean;
-    /** The host's Audio80, given to each session. */
-    readonly audio80: Audio80;
-    /** The Audio80's controls. The stage advances the chip's clock with the session's models, and sends its writes after each refresh. */
-    readonly audioControls: AudioControls;
+    /** Finds the chip of a kind, for a session that plays on one. */
+    readonly findChip: SoundChipFinder;
+    /**
+     * The controls of the chip the session plays on, or undefined while no
+     * session plays on one. The stage advances the chip's clock with the
+     * session's models, and sends its writes after each refresh.
+     */
+    readonly audioControls: () => AudioControls | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +68,7 @@ export interface PixiStageOptions {
 
 /** Creates the entry host's Pixi stage, and adds its canvas to `options.element`. */
 export async function createPixiStage(options: PixiStageOptions): Promise<PixiStage> {
-    const { element, isPixelArt, isTouch, takesInput, audio80, audioControls } = options;
+    const { element, isPixelArt, isTouch, takesInput, findChip } = options;
 
     const app = new Application();
     await app.init({
@@ -159,19 +163,20 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     }
 
     // Each step of the ticker runs the MVT order for the stage. First the
-    // entry's models advance, and the Audio80's clock with them. Then the
+    // entry's models advance, and its sound chip's clock with them. Then the
     // stage's views update and refresh. Then the chip's writes are sent. The
     // application renders after this, from its own, later listener.
     app.ticker.add(() => {
         const deltaMs = app.ticker.deltaMS;
         const session = options.session();
+        const controls = options.audioControls();
         if (session !== undefined && !options.isPaused()) {
             session.update(deltaMs);
-            audioControls.update(deltaMs);
+            controls?.update(deltaMs);
         }
         updateView(app.stage, deltaMs);
         refreshView(app.stage);
-        audioControls.flush();
+        controls?.flush();
     });
 
     const stage: PixiStage = {
@@ -181,12 +186,11 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             starter = next;
             // This applies to the textures the entry makes as it starts, such as text
             TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
-            const session = next.start({
+            const session = startPixiEntry(next, {
                 ...startOptions,
                 stage: entryContainer,
                 host: { renderer: app.renderer, ticker: app.ticker },
-                sound: audio80,
-            });
+            }, findChip);
             canvas.hidden = false;
             // The session's controls are known now, and they can change the fit
             fitTo(areaWidth, areaHeight, session.inputConfig);

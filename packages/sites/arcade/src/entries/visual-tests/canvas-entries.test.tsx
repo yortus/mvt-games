@@ -12,11 +12,10 @@
 
 import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { canvasTest } from 'v-snap';
 import type { PixiImageOptions } from 'v-snap/pixi';
 import type { ArcadeEntry, PixiEntryStarter } from '../../entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless } from '../../runner';
+import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless } from '../../runner';
 import { CATALOGUE } from '../catalogue';
 
 /**
@@ -64,12 +63,12 @@ interface Crop {
 function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
     const stage = new Container();
     // A headless chip makes no sound.
-    const { audio80, controls } = createHeadlessAudio80();
-    const session = startPixiHeadless({ entry, starter, stage, sound: audio80 });
+    const sound = createHeadlessSound(starter);
+    const session = startPixiHeadless({ entry, starter, stage, sound });
     // This runs after the stage is rendered to an image and destroyed.
     // Destroying a Pixi object twice is harmless.
     onTestFinished(() => session.destroy());
-    advanceHeadless({ session, views: [stage], controls, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
+    advanceHeadless({ session, views: [stage], controls: sound.controls, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
     if (crop === undefined) return stage;
     const cropped = new Container();
     stage.position.set(-crop.x, -crop.y);

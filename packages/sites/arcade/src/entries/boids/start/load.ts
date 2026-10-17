@@ -1,6 +1,6 @@
 import { PERFMON_HEIGHT } from '#shared';
 import { createPerformanceMetrics } from '@mvtjs/pixi';
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createFlockModel } from '../models';
 import { BoidsView, PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from '../views';
 
@@ -13,7 +13,7 @@ import { BoidsView, PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } f
  * itself out for the area it plays in: the arena with the controls beside it,
  * or below it in a tall, narrow area.
  */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     let layout = computeLayout(DESIGN_WIDTH, DESIGN_HEIGHT);
     return {
         kind: 'pixi',
@@ -87,7 +87,7 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});
 
 // ---------------------------------------------------------------------------
 // Internals

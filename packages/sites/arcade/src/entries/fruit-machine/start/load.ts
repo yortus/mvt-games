@@ -2,7 +2,7 @@ import { Application } from 'pixi.js';
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { createPointerPicker, destroyObject } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
-import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
+import { defineElementLoader, type ElementEntrySession } from '../../../entry-types';
 import { createFruitMachineModel } from '../models';
 import {
     BanditView, ControlPanelView, dressBanditScene, frameBanditCamera, loadSymbolArt, MachineAudioView, PixiMachineView, TerminalView,
@@ -24,11 +24,12 @@ import '../fruit-machine.css';
  * `updateView` and `refreshView` visit every view (they are the same
  * functions for every renderer), then Pixi and three.js draw.
  */
-export async function load(): Promise<ElementEntryStarter> {
+export const load = defineElementLoader(async () => {
     const art = await loadSymbolArt();
 
     return {
         kind: 'element',
+        soundChip: 'audio80',
         thumbnailAdvanceMs: 500,
         start({ element, sound }): ElementEntrySession {
             element.classList.add('fruit-machine');
@@ -140,7 +141,7 @@ export async function load(): Promise<ElementEntryStarter> {
             }
         },
     };
-}
+});
 
 // ---------------------------------------------------------------------------
 // Internals

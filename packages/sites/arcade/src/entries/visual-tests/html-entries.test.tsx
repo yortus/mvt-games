@@ -8,10 +8,9 @@
  */
 
 import { onTestFinished } from 'vitest';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { htmlTest } from 'v-snap';
-import type { ElementEntryStarter } from '../../entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs, waitForLayout } from '../../runner';
+import { type ElementEntryStarter, startElementEntry } from '../../entry-types';
+import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, waitForLayout } from '../../runner';
 import { CATALOGUE } from '../catalogue';
 
 /**
@@ -54,15 +53,15 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     // measure it.
     document.body.append(element);
     // A headless chip makes no sound.
-    const { audio80, controls } = createHeadlessAudio80();
-    const session = starter.start({ element, sound: audio80 });
+    const sound = createHeadlessSound(starter);
+    const session = startElementEntry(starter, { element }, sound.findChip);
     // This runs after the element is captured and destroyed. Destroying a
     // view twice is harmless.
     onTestFinished(() => session.destroy());
     await session.ready;
     // An entry that sizes itself to its element learns its size here.
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, controls, totalMs: findThumbnailAdvanceMs(starter) });
+    advanceHeadless({ session, views: session.views, controls: sound.controls, totalMs: findThumbnailAdvanceMs(starter) });
     session.render();
     return element;
 }

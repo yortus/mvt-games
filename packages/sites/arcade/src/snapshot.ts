@@ -1,8 +1,7 @@
 import { Application, TextureSource } from 'pixi.js';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { CATALOGUE, findEntry } from './entries';
-import { type ArcadeEntry, thumbnailCropOf } from './entry-types';
-import { advanceHeadless, findThumbnailAdvanceMs, startPixiHeadless, waitForLayout } from './runner';
+import { type ArcadeEntry, startElementEntry, thumbnailCropOf } from './entry-types';
+import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless, waitForLayout } from './runner';
 
 // This is the snapshot page (`snapshot.html`). Only
 // `scripts/generate-thumbnails.ts` uses it. The dev server serves it, and the
@@ -92,22 +91,22 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         if (isPixelArt) app.canvas.style.imageRendering = 'pixelated';
         root.append(app.canvas);
         // The entry runs headless, with no host and a silent chip, as when it is measured
-        const { audio80, controls } = createHeadlessAudio80();
-        const session = startPixiHeadless({ entry, starter, stage: app.stage, sound: audio80 });
-        advanceHeadless({ session, views: [app.stage], controls, totalMs, input: starter.thumbnailInput });
+        const sound = createHeadlessSound(starter);
+        const session = startPixiHeadless({ entry, starter, stage: app.stage, sound });
+        advanceHeadless({ session, views: [app.stage], controls: sound.controls, totalMs, input: starter.thumbnailInput });
         app.render();
         return;
     }
 
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
-    const { audio80, controls } = createHeadlessAudio80();
-    const session = starter.start({ element: root, sound: audio80 });
+    const sound = createHeadlessSound(starter);
+    const session = startElementEntry(starter, { element: root }, sound.findChip);
     // Some renderers start asynchronously, so this waits until they can draw,
     // and until an entry that sizes itself to its element knows its size.
     await session.ready;
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, controls, totalMs });
+    advanceHeadless({ session, views: session.views, controls: sound.controls, totalMs });
     session.render();
 }
 

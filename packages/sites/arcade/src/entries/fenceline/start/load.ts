@@ -1,5 +1,5 @@
 import { isTouchDevice } from '#shared';
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { FIELD_COLS, FIELD_ROWS, ROUNDS } from '../data';
 import { createGameModel, type HeldDirection } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
@@ -9,9 +9,10 @@ import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 // ---------------------------------------------------------------------------
 
 /** Returns how to start Fenceline. It draws all its art itself, so there is nothing to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
+        soundChip: 'audio80',
         pixelArt: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
@@ -71,7 +72,7 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});
 
 // ---------------------------------------------------------------------------
 // Internals

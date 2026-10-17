@@ -1,5 +1,10 @@
+import type { AudioControls } from '@mvtjs/audio';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
-import type { ElementEntrySession, EntrySession, EntryStarter, PixiEntryStarter, StartOptions } from '../entry-types';
+import {
+    type ElementEntrySession, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,
+    startElementEntry, type StartOptions,
+} from '../entry-types';
+import { listenToKeyboard } from '../input';
 import { createPageSound, type PageSound } from './page-sound';
 import { fitPlayArea, type PlayArea } from './play-area';
 import type { PixiStage } from './pixi-stage';
@@ -51,9 +56,10 @@ export interface EntryHost {
      * renderers, it lets go of the Pixi application. So the host holds no
      * renderer it does not use.
      *
-     * It also loads the page's sound, if the host was given one, and waits
-     * for it. So a session never starts before the chip has loaded. Where
-     * audio cannot start, the chip stays silent.
+     * It also loads the page's sound, if the host was given one, with the
+     * chip the entry plays on, and waits for them. So a session never starts
+     * before its chip has loaded. An entry that makes no sound loads no chip.
+     * Where audio cannot start, the chip stays silent.
      */
     prepare: (starter: EntryStarter) => Promise<void>;
     /**
@@ -117,10 +123,10 @@ export interface EntryHostOptions {
      */
     readonly takesInput?: boolean;
     /**
-     * The page's sound. The host plays its sessions on the sound's
-     * `entryAudio80`, and prepares the sound along with each entry. The page
-     * owns it, sets its settings and destroys it. Without it, the host's
-     * sessions play on a silent chip.
+     * The page's sound. The host plays each session on the sound's entry chip
+     * of the kind the entry names, and prepares that chip along with the
+     * entry. The page owns the sound, sets its settings and destroys it.
+     * Without it, the host's sessions play on silent chips.
      */
     readonly sound?: PageSound;
 }
@@ -143,6 +149,22 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let pixiStage: PixiStage | undefined;
     const sound = options.sound ?? createPageSound({ isEnabled: false });
     const isSoundOwned = options.sound === undefined;
+    const findChip: SoundChipFinder = (kind) => sound.entryChips[kind].chip;
+    // The controls of the chip the session plays on, or undefined for a session that makes no sound
+    let sessionControls: AudioControls | undefined;
+
+    // The Pixi stage listens to the keyboard for a Pixi entry. The host listens for an element entry, with no
+    // renderer, and passes the keys to its session's controls while it runs and is not paused
+    const stopKeyboard = takesInput
+        ? listenToKeyboard({
+                isActive: () => starter?.kind === 'element' && session?.inputConfig !== undefined && !isPaused,
+                onXDirectionChanged: (direction) => session?.inputConfig?.onXDirectionChanged?.(direction),
+                onYDirectionChanged: (direction) => session?.inputConfig?.onYDirectionChanged?.(direction),
+                onPrimaryButtonChanged: (pressed) => session?.inputConfig?.onPrimaryButtonChanged?.(pressed),
+                onSecondaryButtonChanged: (pressed) => session?.inputConfig?.onSecondaryButtonChanged?.(pressed),
+                onRestartButtonChanged: (pressed) => session?.inputConfig?.onRestartButtonChanged?.(pressed),
+            })
+        : undefined;
 
     // The element an element entry mounts into. The host ticks the entry's
     // views itself, so the page's walk skips this subtree.
@@ -181,7 +203,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
 
         async prepare(next) {
-            await Promise.all([sound.prepare(), prepareRenderer(next)]);
+            await Promise.all([sound.prepare(next.soundChip), prepareRenderer(next)]);
         },
 
         start(next, options = {}) {
@@ -189,8 +211,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             starter = next;
             startOptions = options;
             isPaused = false;
+            sessionControls = next.soundChip === undefined ? undefined : sound.entryChips[next.soundChip].controls;
             // No sound of the last session's carries into this one
-            sound.entryControls.reset();
+            sessionControls?.reset();
             session = startSession(next, options);
         },
 
@@ -203,11 +226,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             if (session === undefined || starter === undefined) return undefined;
             const frame = starter.kind === 'pixi' ? pixiStage?.captureFrame() : undefined;
             session.destroy();
-            sound.entryControls.reset();
+            sessionControls?.reset();
             if (starter.kind === 'pixi') pixiStage?.hide();
             else entryElement.hidden = true;
             session = undefined;
             starter = undefined;
+            sessionControls = undefined;
             return frame;
         },
 
@@ -218,18 +242,18 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 return;
             }
             const elementSession = session as ElementEntrySession;
-            const controls = sound.entryControls;
+            const controls = sessionControls;
             if (!isPaused) {
                 elementSession.update(deltaMs);
                 // The chip's clock advances only with the models, so it stops while the game is paused
-                controls.update(deltaMs);
+                controls?.update(deltaMs);
             }
             const views = elementSession.views;
             if (!isPaused) {
                 for (let i = 0; i < views.length; i++) updateView(views[i], deltaMs);
             }
             for (let i = 0; i < views.length; i++) refreshView(views[i]);
-            controls.flush();
+            controls?.flush();
             elementSession.render();
         },
 
@@ -250,6 +274,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 
         destroy() {
             host.stop();
+            stopKeyboard?.();
             resizeObserver.disconnect();
             pixiStage?.destroy();
             pixiStage = undefined;
@@ -281,8 +306,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             session: () => session,
             isPaused: () => isPaused,
             isTurned: () => isTurned,
-            audio80: sound.entryAudio80,
-            audioControls: sound.entryControls,
+            findChip,
+            audioControls: () => sessionControls,
         });
         pixiStage.fit(areaRect.width, areaRect.height);
     }
@@ -294,7 +319,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             return pixiStage.start(next, options);
         }
         entryElement.hidden = false;
-        return next.start({ ...options, element: entryElement, sound: sound.entryAudio80 });
+        return startElementEntry(next, { ...options, element: entryElement }, findChip);
     }
 
     /**

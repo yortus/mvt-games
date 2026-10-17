@@ -1,6 +1,6 @@
 import type { Container, Renderer, Ticker } from 'pixi.js';
 import type { View } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80, Audio90 } from '@mvtjs/audio';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -13,14 +13,87 @@ import type { Audio80 } from '@mvtjs/audio';
  */
 export type EntryStarter = PixiEntryStarter | ElementEntryStarter;
 
+/** The sound chips an entry can play on. */
+export type SoundChipKind = 'audio80' | 'audio90';
+
+/** The chip of each kind, as an entry's audio views see it. */
+export interface SoundChipsByKind {
+    readonly audio80: Audio80;
+    readonly audio90: Audio90;
+}
+
+/** The chip a starter plays on, or undefined for a starter that makes no sound. */
+export type SoundChoice = SoundChipKind | undefined;
+
 /**
- * An entry drawn with Pixi on the host's stage. The host owns the Pixi
- * application, scales the play area to fit, draws touch controls around it,
- * and pauses the entry by leaving its container out of `updateView`. It can
- * also start the entry headless, on a bare container, as thumbnails and
- * benchmarks do.
+ * What a starter says about its sound. A starter that plays on a chip names
+ * it, and one that makes no sound names none.
  */
-export interface PixiEntryStarter {
+export type SoundChipField<K extends SoundChoice> = K extends SoundChipKind ? HasSoundChip<K> : HasNoSoundChip;
+
+/** A starter that plays on chip `K`. */
+export interface HasSoundChip<K extends SoundChipKind> {
+    /**
+     * The chip the entry's audio views play on. The host loads it as it
+     * prepares the entry, and gives it to each session as `sound`.
+     */
+    readonly soundChip: K;
+}
+
+/**
+ * A starter's `soundChip`, as `definePixiLoader` reads it to work out `K`:
+ * the chip it names, or none.
+ */
+export interface NamedSoundChip<K extends SoundChoice> {
+    readonly soundChip?: K;
+}
+
+/** A starter that makes no sound. */
+export interface HasNoSoundChip {
+    /** Absent, since the entry makes no sound. Its sessions are given no chip. */
+    readonly soundChip?: undefined;
+}
+
+/** The `sound` start option that goes with a starter's chip. A starter that makes no sound is given none. */
+export type SoundOption<K extends SoundChoice> = K extends SoundChipKind ? GivenSound<K> : GivenNoSound;
+
+/** The start options of a session that plays on chip `K`. */
+export interface GivenSound<K extends SoundChipKind> {
+    /**
+     * The chip that the entry's audio views play on. The host owns it and
+     * resets it between sessions. It is silent when the entry is started
+     * headless, or where audio cannot start.
+     */
+    readonly sound: SoundChipsByKind[K];
+}
+
+/** The start options of a session that makes no sound. */
+export interface GivenNoSound {
+    /** Absent, since the entry makes no sound. */
+    readonly sound?: undefined;
+}
+
+/** Finds the chip of a kind, for a session that plays on it. */
+export type SoundChipFinder = <K extends SoundChipKind>(kind: K) => SoundChipsByKind[K];
+
+/**
+ * An entry drawn with Pixi on the host's stage, which plays on chip `K`, or
+ * makes no sound. Without `K`, it is any Pixi entry, and TypeScript tells them
+ * apart by `soundChip`. An entry makes its `load` with `definePixiLoader`,
+ * which works out `K` from the `soundChip` its starter names, so that the
+ * `sound` its sessions are given is that chip.
+ */
+export type PixiEntryStarter<K extends SoundChoice = SoundChoice> = K extends unknown
+    ? PixiEntryStarterFields<K> & SoundChipField<K>
+    : never;
+
+/**
+ * What every Pixi entry's starter has. The host owns the Pixi application,
+ * scales the play area to fit, draws touch controls around it, and pauses the
+ * entry by leaving its container out of `updateView`. It can also start the
+ * entry headless, on a bare container, as thumbnails and benchmarks do.
+ */
+export interface PixiEntryStarterFields<K extends SoundChoice> {
     readonly kind: 'pixi';
     /**
      * The play area, in the entry's own pixels. An entry that fits itself to
@@ -58,21 +131,18 @@ export interface PixiEntryStarter {
      */
     readonly thumbnailInput?: (session: EntrySession, elapsedMs: number) => void;
     /** Starts a session, adding the entry's view to `stage`. */
-    readonly start: (options: PixiStartOptions) => EntrySession;
+    readonly start: (options: PixiStartOptions<K>) => EntrySession;
 }
 
-/** How to start a Pixi entry. */
-export interface PixiStartOptions extends StartOptions {
+/** How to start a Pixi entry that plays on chip `K`, or makes no sound. */
+export type PixiStartOptions<K extends SoundChoice> = PixiStartBase & SoundOption<K>;
+
+/** How to start a Pixi entry, but for its sound. */
+export interface PixiStartBase extends StartOptions {
     /** The container to add the entry's view to. */
     readonly stage: Container;
     /** The application the entry runs in. Absent when it is started headless. */
     readonly host?: PixiHost;
-    /**
-     * The Audio80 that the entry's audio views play on. The host owns it and
-     * resets it between sessions. It is silent when the entry is started
-     * headless, or where audio cannot start.
-     */
-    readonly sound: Audio80;
 }
 
 /** What the host gives an entry of either kind as it starts. */
@@ -93,26 +163,37 @@ export interface PixiHost {
 }
 
 /**
- * An entry that brings its own renderers (three.js, a Pixi application, the
- * DOM, or several at once) and mounts into an element the host gives it. The
- * host still drives its frames, in the MVT order. It calls the session's
- * `update`, then `updateView` and `refreshView` over its `views`, then its
- * `render`.
+ * An entry that brings its own renderers and mounts into an element, which
+ * plays on chip `K`, or makes no sound. Without `K`, it is any element entry.
+ * An entry makes its `load` with `defineElementLoader`, as a Pixi entry does
+ * with `definePixiLoader`.
  */
-export interface ElementEntryStarter {
+export type ElementEntryStarter<K extends SoundChoice = SoundChoice> = K extends unknown
+    ? ElementEntryStarterFields<K> & SoundChipField<K>
+    : never;
+
+/**
+ * What every element entry's starter has. It brings its own renderers
+ * (three.js, a Pixi application, the DOM, or several at once) and mounts into
+ * an element the host gives it. The host still drives its frames, in the MVT
+ * order. It calls the session's `update`, then `updateView` and `refreshView`
+ * over its `views`, then its `render`.
+ */
+export interface ElementEntryStarterFields<K extends SoundChoice> {
     readonly kind: 'element';
     /** As for a Pixi entry: how long to advance before taking the thumbnail. */
     readonly thumbnailAdvanceMs?: number;
     /** Starts a session, building the entry inside `element`, which it fills. */
-    readonly start: (options: ElementStartOptions) => ElementEntrySession;
+    readonly start: (options: ElementStartOptions<K>) => ElementEntrySession;
 }
 
-/** How to start an element entry. */
-export interface ElementStartOptions extends StartOptions {
+/** How to start an element entry that plays on chip `K`, or makes no sound. */
+export type ElementStartOptions<K extends SoundChoice> = ElementStartBase & SoundOption<K>;
+
+/** How to start an element entry, but for its sound. */
+export interface ElementStartBase extends StartOptions {
     /** The element to build the entry in. */
     readonly element: HTMLElement;
-    /** The Audio80 that the entry's audio views play on, as for a Pixi entry. */
-    readonly sound: Audio80;
 }
 
 /** A running entry. */
@@ -192,4 +273,57 @@ export interface EntryInputConfig {
     readonly onPrimaryButtonChanged?: (pressed: boolean) => void;
     readonly onSecondaryButtonChanged?: (pressed: boolean) => void;
     readonly onRestartButtonChanged?: (pressed: boolean) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns `load`, typed for the chip its starter names. An entry's
+ * `start/load.ts` makes its `load` with this, so TypeScript works the chip out
+ * from the starter's `soundChip`: the `sound` that `start` is given is that
+ * chip, or none for a starter that names no chip. A chip that does not exist
+ * is an error, and nothing needs a type written.
+ */
+export function definePixiLoader<K extends SoundChoice = undefined>(
+    load: () => Promise<PixiEntryStarterFields<K> & NamedSoundChip<K>>,
+): () => Promise<PixiEntryStarter<K>> {
+    // `K` is worked out from `soundChip`, so a starter whose `K` is a chip names it
+    return load as () => Promise<PixiEntryStarter<K>>;
+}
+
+/** Returns `load`, typed for the chip its starter names, as `definePixiLoader` does. */
+export function defineElementLoader<K extends SoundChoice = undefined>(
+    load: () => Promise<ElementEntryStarterFields<K> & NamedSoundChip<K>>,
+): () => Promise<ElementEntryStarter<K>> {
+    return load as () => Promise<ElementEntryStarter<K>>;
+}
+
+/**
+ * Starts a session of a Pixi entry with `options`. An entry that plays on a
+ * chip is also given the chip of its kind, from `findChip`. One that makes no
+ * sound is given none.
+ */
+export function startPixiEntry(starter: PixiEntryStarter, options: PixiStartBase, findChip: SoundChipFinder): EntrySession {
+    switch (starter.soundChip) {
+        case undefined:
+            return starter.start(options);
+        case 'audio80':
+            return starter.start({ ...options, sound: findChip('audio80') });
+        case 'audio90':
+            return starter.start({ ...options, sound: findChip('audio90') });
+    }
+}
+
+/** Starts a session of an element entry with `options`, and its chip, as `startPixiEntry` does. */
+export function startElementEntry(starter: ElementEntryStarter, options: ElementStartBase, findChip: SoundChipFinder): ElementEntrySession {
+    switch (starter.soundChip) {
+        case undefined:
+            return starter.start(options);
+        case 'audio80':
+            return starter.start({ ...options, sound: findChip('audio80') });
+        case 'audio90':
+            return starter.start({ ...options, sound: findChip('audio90') });
+    }
 }

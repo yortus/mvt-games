@@ -1,4 +1,4 @@
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
@@ -7,7 +7,7 @@ import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 // ---------------------------------------------------------------------------
 
 /** Returns how to start Deep Dive, which has no assets to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
@@ -43,4 +43,4 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});

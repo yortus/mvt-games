@@ -11,7 +11,8 @@
     },
     "imports": {
         "#highscores": "./src/highscores/index.ts",
-        "#shared": "./src/shared/index.ts"
+        "#shared": "./src/shared/index.ts",
+        "#tunes": "./src/tunes/index.ts"
     },
     "scripts": {
         "dev": "vite --host",

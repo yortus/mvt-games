@@ -1,7 +1,7 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { createPointerPicker, destroyObject, setRefresh, setUpdate } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
-import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
+import { defineElementLoader, type ElementEntrySession } from '../../../entry-types';
 import { createFlockModel } from '../../boids';
 import { FlockPanelView, FlockView } from '../views';
 import '../boids-3d.css';
@@ -16,7 +16,7 @@ import '../boids-3d.css';
  * HTML panel of settings beside it through the HTML one. Two views of one
  * model, on two renderers.
  */
-export async function load(): Promise<ElementEntryStarter> {
+export const load = defineElementLoader(async () => {
     return {
         kind: 'element',
         thumbnailAdvanceMs: 2000,
@@ -87,7 +87,7 @@ export async function load(): Promise<ElementEntryStarter> {
             }
         },
     };
-}
+});
 
 // ---------------------------------------------------------------------------
 // Internals

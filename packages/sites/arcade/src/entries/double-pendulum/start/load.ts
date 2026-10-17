@@ -1,4 +1,4 @@
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createPendulumModel } from '../models';
 import { PendulumView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
@@ -7,7 +7,7 @@ import { PendulumView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 // ---------------------------------------------------------------------------
 
 /** Returns how to start the double pendulum, which has no assets to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
@@ -32,4 +32,4 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});

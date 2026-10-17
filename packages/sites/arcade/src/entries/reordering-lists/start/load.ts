@@ -1,4 +1,4 @@
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createCardRowModel } from '../models';
 import { CardRowView } from '../views';
 
@@ -10,7 +10,7 @@ const SCREEN_HEIGHT = 420;
 // ---------------------------------------------------------------------------
 
 /** Returns how to start the reordering-lists demo, which has no assets to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
@@ -34,4 +34,4 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});

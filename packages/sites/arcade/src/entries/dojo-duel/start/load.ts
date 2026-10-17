@@ -1,4 +1,4 @@
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 
@@ -7,9 +7,10 @@ import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 // ---------------------------------------------------------------------------
 
 /** Returns how to start Dojo Duel, which has no assets to load. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     return {
         kind: 'pixi',
+        soundChip: 'audio80',
         pixelArt: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
@@ -43,4 +44,4 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});

@@ -1,5 +1,5 @@
 import { destroyElement } from '@mvtjs/html';
-import type { ElementEntrySession, ElementEntryStarter } from '../../../entry-types';
+import { defineElementLoader, type ElementEntrySession } from '../../../entry-types';
 import { createScopeModel } from '../models';
 import { ScopeView } from '../views';
 import '../fractalscope.css';
@@ -16,7 +16,7 @@ import '../fractalscope.css';
  * picture, in the views' update step, and `refreshView` colours what changed
  * and draws it.
  */
-export async function load(): Promise<ElementEntryStarter> {
+export const load = defineElementLoader(async () => {
     return {
         kind: 'element',
         // Long enough for the picture at the rest setting to come out sharp
@@ -43,4 +43,4 @@ export async function load(): Promise<ElementEntryStarter> {
             };
         },
     };
-}
+});

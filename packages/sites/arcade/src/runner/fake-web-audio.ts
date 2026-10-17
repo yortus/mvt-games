@@ -1,5 +1,5 @@
-import type { Audio80, Audio80WithControls, AudioControls } from '@mvtjs/audio';
-import { type Audio80Log, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import type { Audio80, Audio80WithControls, Audio90, Audio90WithControls, AudioControls } from '@mvtjs/audio';
+import { type Audio80Log, type Audio90Log, createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/audio/headless';
 
 // The runner's tests fake the browser's audio with this file. A test file
 // mocks the chip's code with it, as below. Then the file calls
@@ -19,11 +19,14 @@ import { type Audio80Log, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 /** The fake browser's audio, as a test sees and steers it. */
 export interface FakeWebAudio {
     /**
-     * The browser's chips are faked. Each is a headless chip that logs its
-     * writes. They are made in order, the entries' chip first and then the
-     * page's.
+     * The browser's Audio80s are faked. Each is a headless chip that logs its
+     * writes. They are listed in the order they are made: the page's own chip
+     * first, as the sound is first prepared, then the entries' chip, as an
+     * entry that plays on it is first prepared.
      */
     readonly chips: readonly FakeChip[];
+    /** The browser's Audio90s, faked in the same way, in the order they are made. */
+    readonly audio90Chips: readonly FakeAudio90Chip[];
     /** The audio contexts made, in order. */
     readonly contexts: readonly FakeAudioContext[];
     /** The state each new context starts in. Defaults to `'running'`. */
@@ -35,6 +38,16 @@ export interface FakeWebAudio {
 /** A fake browser chip, which logs its writes and counts the calls to its controls that a headless chip ignores. */
 export interface FakeChip {
     readonly audio80: Audio80 & Audio80Log;
+    readonly controls: AudioControls;
+    /** How many times `AudioControls.flush` has been called. */
+    readonly flushCount: number;
+    /** How many times `AudioControls.reset` has been called. */
+    readonly resetCount: number;
+}
+
+/** A fake browser Audio90, as `FakeChip` is a fake Audio80. */
+export interface FakeAudio90Chip {
+    readonly audio90: Audio90 & Audio90Log;
     readonly controls: AudioControls;
     /** How many times `AudioControls.flush` has been called. */
     readonly flushCount: number;
@@ -72,6 +85,7 @@ export interface FakeWebAudioOptions {
 export function installFakeWebAudio(options?: FakeWebAudioOptions): FakeWebAudio {
     const fake = findFakeState();
     fake.chips.length = 0;
+    fake.audio90Chips.length = 0;
     fake.contexts.length = 0;
     fake.initialState = 'running';
     fake.failsNextImport = false;
@@ -97,22 +111,29 @@ export function uninstallFakeWebAudio(): void {
 }
 
 /** Returns the fake chip's code, in place of `@mvtjs/audio/web`. Throws if the test asked the import to fail. */
-export function importFakeWebAudio(): { createWebAudio80: (options: { readonly context: unknown }) => Audio80WithControls } {
+export function importFakeWebAudio(): FakeWebAudioModule {
     const fake = findFakeState();
     if (fake.failsNextImport) {
         fake.failsNextImport = false;
         throw new Error('The fake download failed.');
     }
-    return { createWebAudio80: () => createFakeChip({ fake }) };
+    return { createWebAudio80: () => createFakeChip({ fake }), createWebAudio90: () => createFakeAudio90Chip({ fake }) };
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
+/** What the fake puts in place of `@mvtjs/audio/web`. */
+interface FakeWebAudioModule {
+    readonly createWebAudio80: (options: { readonly context: unknown }) => Audio80WithControls;
+    readonly createWebAudio90: (options: { readonly context: unknown }) => Audio90WithControls;
+}
+
 /** The fake's state, with lists that the fake adds to. */
 interface MutableFakeWebAudio extends FakeWebAudio {
     readonly chips: FakeChip[];
+    readonly audio90Chips: FakeAudio90Chip[];
     readonly contexts: FakeAudioContext[];
 }
 
@@ -123,7 +144,7 @@ interface MutableFakeWebAudio extends FakeWebAudio {
  */
 function findFakeState(): MutableFakeWebAudio {
     const holder = globalThis as { [STATE_KEY]?: MutableFakeWebAudio };
-    holder[STATE_KEY] ??= { chips: [], contexts: [], initialState: 'running', failsNextImport: false };
+    holder[STATE_KEY] ??= { chips: [], audio90Chips: [], contexts: [], initialState: 'running', failsNextImport: false };
     return holder[STATE_KEY];
 }
 
@@ -153,6 +174,32 @@ function createFakeChip(options: { readonly fake: MutableFakeWebAudio }): Audio8
     };
     fake.chips.push({
         audio80: chip.audio80,
+        controls: chip.controls,
+        get flushCount() {
+            return flushCount;
+        },
+        get resetCount() {
+            return resetCount;
+        },
+    });
+    return chip;
+}
+
+/** Creates a fake browser Audio90, and adds it to the fake's Audio90s. */
+function createFakeAudio90Chip(options: { readonly fake: MutableFakeWebAudio }): Audio90WithControls {
+    const { fake } = options;
+    const chip = createHeadlessAudio90({ record: true });
+    let flushCount = 0;
+    let resetCount = 0;
+    // A headless chip's `flush` and `reset` do nothing, so they are replaced with counters
+    chip.controls.flush = () => {
+        flushCount++;
+    };
+    chip.controls.reset = () => {
+        resetCount++;
+    };
+    fake.audio90Chips.push({
+        audio90: chip.audio90,
         controls: chip.controls,
         get flushCount() {
             return flushCount;

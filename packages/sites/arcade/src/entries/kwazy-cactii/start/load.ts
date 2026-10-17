@@ -1,4 +1,4 @@
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { GRID_ROWS, GRID_COLS, textures } from '../data';
@@ -8,11 +8,12 @@ import { GRID_ROWS, GRID_COLS, textures } from '../data';
 // ---------------------------------------------------------------------------
 
 /** Loads Kwazy Cactii's textures, and returns how to start it. */
-export async function load(): Promise<PixiEntryStarter> {
+export const load = definePixiLoader(async () => {
     await textures.load();
 
     return {
         kind: 'pixi',
+        soundChip: 'audio80',
         pixelArt: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
@@ -48,4 +49,4 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});
