@@ -6,8 +6,9 @@ import type { EntryStarter } from './entry-starter';
 
 /**
  * Something the site lists and runs: a game, a demo or an art piece. It holds
- * only what the arcade shows without running anything, so listing every entry
- * loads no entry's code. `load` imports the code, and loads its assets.
+ * only what the arcade's cards show, so listing every entry loads no entry's
+ * code, and none of its long text. `loadDetails` imports the long text, and
+ * `load` imports the code and loads its assets.
  */
 export interface ArcadeEntry {
     /** Unique, and the name of the entry's directory (`'crumb-chase'`). */
@@ -16,8 +17,6 @@ export interface ArcadeEntry {
     readonly name: string;
     /** One or two lines: the first thing its info panel says, and a place the search looks. */
     readonly summary: string;
-    /** A paragraph or two, for the entry's info panel. */
-    readonly description: string;
     readonly tags: EntryTags;
     /**
      * The entry's play area, in its own pixels: the shape of its card and its
@@ -26,10 +25,6 @@ export interface ArcadeEntry {
      */
     readonly screenWidth: number;
     readonly screenHeight: number;
-    /** How to play, for the info panel and the pause menu. */
-    readonly instructions?: string;
-    /** The techniques and patterns the entry shows, for the info panel. */
-    readonly techniques?: readonly string[];
     /**
      * The classic the entry is inspired by, if it is one game rather than a
      * genre: credited in the info panel, and a place the search looks. The
@@ -54,8 +49,24 @@ export interface ArcadeEntry {
      * their `scoring`, and whose id is in the highscores Worker's games.
      */
     readonly hasHighscores?: boolean;
+    /**
+     * Imports the entry's long text, from its `start/details.ts`. The arcade
+     * loads every entry's after its first paint, so the home page's first load
+     * holds only what the cards show.
+     */
+    readonly loadDetails: () => Promise<EntryDetails>;
     /** Imports the entry's code, and loads its assets. */
     readonly load: () => Promise<EntryStarter>;
+}
+
+/** An entry's long text: what its info panel tells beyond its card, and what the search reads beyond its summary. */
+export interface EntryDetails {
+    /** A paragraph or two, for the entry's info panel. Paragraphs are separated by a blank line. */
+    readonly description: string;
+    /** How to play, for the info panel and the pause menu. */
+    readonly instructions?: string;
+    /** The techniques and patterns the entry shows, for the info panel. */
+    readonly techniques?: readonly string[];
 }
 
 /** A game an entry is inspired by: its title, who made it, and the year it came out. */

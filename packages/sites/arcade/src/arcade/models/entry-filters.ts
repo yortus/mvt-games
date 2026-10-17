@@ -1,4 +1,4 @@
-import { type ArcadeEntry, type EntryFacts, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS } from '../../entry-types';
+import { type ArcadeEntry, type EntryDetails, type EntryFacts, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS } from '../../entry-types';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -70,17 +70,20 @@ export function searchWordsOf(text: string): string[] {
 
 /**
  * Whether `entry` matches every word of a search: each is somewhere in its
- * name, or begins a word of its summary, description, techniques or the
- * title it is inspired by (`'flock'` finds flocking), or begins one of its
- * tags (`'sim'` finds simulations).
+ * name, or begins a word of its summary, the title it is inspired by, its
+ * description or its techniques (`'flock'` finds flocking), or begins one of
+ * its tags (`'sim'` finds simulations). Without its `details`, which load
+ * after the cards, the description and techniques are not searched.
  */
-export function matchesWords(entry: ArcadeEntry, facts: EntryFacts | undefined, words: readonly string[]): boolean {
+export function matchesWords(entry: ArcadeEntry, facts: EntryFacts | undefined, details: EntryDetails | undefined, words: readonly string[]): boolean {
     if (words.length === 0) return true;
     const name = entry.name.toLowerCase();
-    const prose = proseWordsOf(entry);
+    const prose = cardWordsOf(entry);
+    const detailProse = details === undefined ? NONE : detailWordsOf(details);
     for (const word of words) {
         if (name.includes(word)) continue;
         if (prose.some((proseWord) => proseWord.startsWith(word))) continue;
+        if (detailProse.some((proseWord) => proseWord.startsWith(word))) continue;
         const isTag = TAG_GROUPS.some((group) => tagValuesOf(entry, facts, group).some((value) => value.startsWith(word)));
         if (!isTag) return false;
     }
@@ -98,17 +101,33 @@ export function sortByName(indices: number[], entries: readonly ArcadeEntry[]): 
 
 const NONE: readonly string[] = [];
 
-/** Each entry's summary, description, techniques and the title it is inspired by, as lower-case words: worked out once. */
-const proseWords = new WeakMap<ArcadeEntry, readonly string[]>();
+/** Each entry's summary and the title it is inspired by, as lower-case words: worked out once. */
+const cardWords = new WeakMap<ArcadeEntry, readonly string[]>();
 
-function proseWordsOf(entry: ArcadeEntry): readonly string[] {
-    let words = proseWords.get(entry);
+/** Each entry's description and techniques, as lower-case words: worked out once they load. */
+const detailWords = new WeakMap<EntryDetails, readonly string[]>();
+
+function cardWordsOf(entry: ArcadeEntry): readonly string[] {
+    let words = cardWords.get(entry);
     if (words === undefined) {
-        const text = [entry.summary, entry.description, ...(entry.techniques ?? []), entry.inspiredBy?.title ?? ''].join(' ').toLowerCase();
-        words = text.split(/[^\p{L}\p{N}]+/u).filter((word) => word !== '');
-        proseWords.set(entry, words);
+        words = wordsOf([entry.summary, entry.inspiredBy?.title ?? '']);
+        cardWords.set(entry, words);
     }
     return words;
+}
+
+function detailWordsOf(details: EntryDetails): readonly string[] {
+    let words = detailWords.get(details);
+    if (words === undefined) {
+        words = wordsOf([details.description, ...(details.techniques ?? [])]);
+        detailWords.set(details, words);
+    }
+    return words;
+}
+
+/** The words of `texts`, in lower case. */
+function wordsOf(texts: readonly string[]): readonly string[] {
+    return texts.join(' ').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((word) => word !== '');
 }
 
 const GROUP_ORDERS: Readonly<Record<TagGroup, readonly string[]>> = {

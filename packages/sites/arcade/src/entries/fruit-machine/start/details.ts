@@ -1,0 +1,23 @@
+import type { EntryDetails } from '../../../entry-types';
+
+// ---------------------------------------------------------------------------
+// Details
+// ---------------------------------------------------------------------------
+
+/** The fruit machine's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+export const details: EntryDetails = {
+    description: [
+        'A five-reel fruit machine, played and watched through four views at once: a modern machine in Pixi, an '
+        + 'old one-armed bandit in three.js, an HTML control panel, and a text terminal.',
+        'Spin from any of them and all four follow, each in its own way. None of them knows the others exist: '
+        + 'each reads the one model every frame, and any of them may call its actions.',
+    ].join('\n\n'),
+    instructions: 'Spin from any quadrant: the Pixi button, the 3D lever, the panel\'s Spin, or `spin` in the '
+        + 'terminal. Drag the 3D cabinet to turn it.',
+    techniques: [
+        'One model, four projections, on three renderers',
+        'One loop drives every renderer: update, then updateView and refreshView, then draw',
+        'Reels as a domain model; the fruit is the views\' theme',
+        'An HTML control panel and a terminal, written in HTML JSX',
+    ],
+};

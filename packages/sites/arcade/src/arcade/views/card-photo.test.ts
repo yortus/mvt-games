@@ -139,7 +139,7 @@ function entryOf(id: string, screenWidth: number, screenHeight: number, thumbnai
         id,
         name: id,
         summary: '',
-        description: '',
+        loadDetails: () => Promise.reject(new Error('not loaded in these tests')),
         tags: { kind: 'demo', genres: ['ui'] },
         screenWidth,
         screenHeight,

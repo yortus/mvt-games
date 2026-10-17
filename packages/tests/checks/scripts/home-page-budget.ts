@@ -2,7 +2,8 @@
 // JavaScript it needs before its first paint must not include a renderer
 // (Pixi or three.js), and must stay under a budget, gzipped. The Arcade shows
 // cards, not entries: an entry's code, and the renderer it draws with, load
-// only once it is launched, as dynamic imports. A static import of one, from
+// only once it is launched, as dynamic imports, and its long text just after
+// the first paint. A static import of one, from
 // anywhere the home page reaches, would bring it into the first load
 // unnoticed, and the page would take seconds longer to appear.
 //

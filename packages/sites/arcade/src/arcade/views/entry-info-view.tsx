@@ -2,7 +2,7 @@
 import { List } from '@mvtjs/html';
 import { memoiseLast } from '@mvtjs/utils';
 import type { HighscoreRow } from '../../highscores';
-import type { ArcadeEntry, EntryFacts, Inspiration } from '../../entry-types';
+import type { ArcadeEntry, EntryDetails, EntryFacts, Inspiration } from '../../entry-types';
 import { type HighscoresStatus, TAG_GROUPS, tagValuesOf } from '../models';
 import { focusOnOpen } from './focus-on-open';
 import { HighscoreTableView } from './highscore-table-view';
@@ -15,6 +15,8 @@ import { GROUP_LABELS, sizeLabel, SOURCE_ROOT, tagLabel } from './labels';
 export interface EntryInfoViewBindings {
     /** The entry to tell about, or none, when the panel is closed. */
     readonly entry: () => ArcadeEntry | undefined;
+    /** The entry's long text, once it has loaded. Until then, the panel tells what the card does. */
+    readonly details: () => EntryDetails | undefined;
     readonly factsFor: (id: string) => EntryFacts | undefined;
     /** The table of the entry with `id`, best first, for an entry that keeps one. */
     readonly highscoreRowsFor: (id: string) => readonly HighscoreRow[];
@@ -37,7 +39,7 @@ export interface EntryInfoViewBindings {
  */
 export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
     // Each is worked out once per entry shown, keyed by the entry's id
-    const paragraphsFor = memoiseLast((_id: string | undefined) => bindings.entry()?.description.split('\n\n') ?? NONE);
+    const paragraphsOf = memoiseLast((description: string | undefined) => description?.split('\n\n') ?? NONE);
     const tagsFor = memoiseLast((_id: string | undefined) => describeTags(bindings.entry(), bindings.factsFor));
     const sizeFor = memoiseLast((id: string | undefined) => describeSize(id === undefined ? undefined : bindings.factsFor(id)));
     const inspirationFor = memoiseLast((_id: string | undefined) => describeInspiration(bindings.entry()?.inspiredBy));
@@ -45,7 +47,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
         const facts = id === undefined ? undefined : bindings.factsFor(id);
         return facts === undefined ? SOURCE_ROOT : SOURCE_ROOT + facts.sourcePath;
     });
-    const techniques = (): readonly string[] => bindings.entry()?.techniques ?? NONE;
+    const techniques = (): readonly string[] => bindings.details()?.techniques ?? NONE;
     // The keyboard starts on Play
     const focusPlay = focusOnOpen({
         isOpen: () => bindings.entry() !== undefined,
@@ -70,7 +72,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                         text={() => inspirationFor(bindings.entry()?.id)}
                     />
                     <p class="info-summary" text={() => bindings.entry()?.summary ?? ''} />
-                    <List items={() => paragraphsFor(bindings.entry()?.id)}>
+                    <List items={() => paragraphsOf(bindings.details()?.description)}>
                         {(paragraph) => <p class="info-description" text={paragraph} />}
                     </List>
                     <div class="info-section" visible={() => bindings.entry()?.hasHighscores === true}>
@@ -80,9 +82,9 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             status={bindings.highscoresStatus}
                         />
                     </div>
-                    <div class="info-section" visible={() => bindings.entry()?.instructions !== undefined}>
+                    <div class="info-section" visible={() => bindings.details()?.instructions !== undefined}>
                         <h3 text="How to play" />
-                        <pre class="info-instructions" text={() => bindings.entry()?.instructions ?? ''} />
+                        <pre class="info-instructions" text={() => bindings.details()?.instructions ?? ''} />
                     </div>
                     <div class="info-section" visible={() => techniques().length > 0}>
                         <h3 text="Techniques" />

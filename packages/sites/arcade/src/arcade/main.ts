@@ -204,6 +204,10 @@ window.addEventListener('popstate', onHistoryStep);
 
 let lastTimeMs: number | undefined;
 requestAnimationFrame(frame);
+// The entries' long text loads once the wall is first drawn, not before it,
+// so the home page's first load holds only what the cards show. A search
+// that only an entry's description matches finds it when the text arrives
+requestAnimationFrame(() => setTimeout(model.loadDetails, 0));
 
 function frame(timeMs: number): void {
     // A long gap (a hidden tab) is clamped rather than simulated

@@ -98,7 +98,7 @@ const ENTRY: ArcadeEntry = {
     name: 'A Game',
     tags: { kind: 'game', era: '1980s', genres: ['maze'] },
     summary: '',
-    description: '',
+    loadDetails: () => Promise.resolve({ description: '' }),
     screenWidth: 100,
     screenHeight: 100,
     thumbnail: '',

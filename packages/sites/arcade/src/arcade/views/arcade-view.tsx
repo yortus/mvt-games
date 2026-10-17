@@ -2,7 +2,7 @@
 import type { Audio80 } from '@mvtjs/audio';
 import { destroyElement, Match, Switch } from '@mvtjs/html';
 import { assert, memoiseLast, watch } from '@mvtjs/utils';
-import type { ArcadeEntry, EntryStarter } from '../../entry-types';
+import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
 import { ArcadeHeadView } from './arcade-head-view';
 import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';
@@ -107,6 +107,8 @@ export interface ArcadeViewBindings {
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
     const { entries, highscores } = model;
+    /** The long text of `entry`, once it has loaded. */
+    const detailsOf = (entry: ArcadeEntry | undefined): EntryDetails | undefined => (entry === undefined ? undefined : model.detailsFor(entry.id));
 
     const layout = createCardWallLayout({
         count: entries.length,
@@ -204,6 +206,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             </div>
             <EntryInfoView
                 entry={() => model.infoEntry}
+                details={() => detailsOf(model.infoEntry)}
                 factsFor={model.factsFor}
                 highscoreRowsFor={highscores.tableFor}
                 highscoresStatus={() => highscores.status}
@@ -240,7 +243,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 }}
                 onEffectsIconPressed={() => toggleSound(model.effectsVolume, model.turnEffectsOn, model.turnEffectsOff)}
                 title={() => model.activeEntry?.name ?? ''}
-                instructions={() => model.activeEntry?.instructions}
+                instructions={() => detailsOf(model.activeEntry)?.instructions}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
                 isTurned={bindings.isTurned}
                 onBackPressed={model.exit}

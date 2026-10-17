@@ -33,10 +33,19 @@ describe('the catalogue', () => {
         }
     });
 
-    it('tells how to play each game, for the pause menu', () => {
+    it('describes each entry, in long text it loads apart from its card', async () => {
+        for (const entry of CATALOGUE) {
+            const details = await entry.loadDetails();
+            expect(details.description.trim(), entry.id).toBeTruthy();
+            for (const technique of details.techniques ?? []) expect(technique.trim(), entry.id).toBeTruthy();
+        }
+    });
+
+    it('tells how to play each game, for the pause menu', async () => {
         for (const entry of CATALOGUE) {
             if (entry.tags.kind !== 'game') continue;
-            expect(entry.instructions?.trim(), entry.id).toBeTruthy();
+            const details = await entry.loadDetails();
+            expect(details.instructions?.trim(), entry.id).toBeTruthy();
         }
     });
 

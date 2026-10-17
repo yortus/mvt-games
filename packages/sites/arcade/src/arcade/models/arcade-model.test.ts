@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryHighscoreStore, type HighscoreStore } from '../../highscores';
-import type { ArcadeEntry, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
+import type { ArcadeEntry, EntryDetails, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
 import { createArcadeModel, type ArcadeModelOptions } from './arcade-model';
 import { DEFAULT_SOUND_SETTINGS } from './sound-settings';
 
@@ -80,8 +80,10 @@ describe('ArcadeModel', () => {
             expect(shownIds(model)).toEqual([]);
         });
 
-        it('shows entries whose summaries, descriptions or techniques have a word beginning with each word typed', () => {
+        it('shows entries whose summaries, descriptions or techniques have a word beginning with each word typed', async () => {
             const model = createArcadeModel(options());
+            model.loadDetails();
+            await settle();
             model.searchText = 'flock';
             expect(shownIds(model)).toEqual(['sim-demo']);
             model.searchText = 'asteroids';
@@ -91,6 +93,29 @@ describe('ArcadeModel', () => {
             // The start of a word, not the inside of one: 'ocking' begins none
             model.searchText = 'ocking';
             expect(shownIds(model)).toEqual([]);
+        });
+
+        it('searches an entry\'s description and techniques once they have loaded, and its summary from the start', async () => {
+            const model = createArcadeModel(options());
+            model.searchText = 'flock';
+            expect(shownIds(model)).toEqual([]);
+            model.searchText = 'asteroids';
+            expect(shownIds(model)).toEqual(['old-shooter']);
+            model.loadDetails();
+            await settle();
+            expect(shownIds(model)).toEqual(['old-shooter']);
+            model.searchText = 'flock';
+            expect(shownIds(model)).toEqual(['sim-demo']);
+        });
+
+        it('shows the entries a search finds as their long text arrives, with no change of query', async () => {
+            const model = createArcadeModel(options({ search: '?q=flock' }));
+            const revision = model.queryRevision;
+            expect(shownIds(model)).toEqual([]);
+            model.loadDetails();
+            await settle();
+            expect(shownIds(model)).toEqual(['sim-demo']);
+            expect(model.queryRevision).toBe(revision);
         });
 
         it('shows entries inspired by a game whose title has a word beginning with each word typed', () => {
@@ -447,6 +472,55 @@ describe('ArcadeModel', () => {
         });
     });
 
+    describe('the entries\' long text', () => {
+        it('has none until it is loaded', () => {
+            const model = createArcadeModel(options());
+            expect(model.detailsFor('sim-demo')).toBeUndefined();
+        });
+
+        it('loads every entry\'s text when asked, each once', async () => {
+            const { entries, loadsOf } = countingEntries();
+            const model = createArcadeModel(options({ entries }));
+            model.loadDetails();
+            model.loadDetails();
+            await settle();
+            expect(model.detailsFor('sim-demo')?.instructions).toBe('Watch.');
+            expect(model.detailsFor('no-such-entry')).toBeUndefined();
+            for (const e of entries) expect(loadsOf(e.id), e.id).toBe(1);
+        });
+
+        it('loads an entry\'s text as its info panel opens, and no other\'s', async () => {
+            const { entries, loadsOf } = countingEntries();
+            const model = createArcadeModel(options({ entries }));
+            model.openInfo('sim-demo');
+            await settle();
+            expect(model.detailsFor('sim-demo')?.description).toBe('Birds flocking, in 3D.');
+            expect(loadsOf('maze-game')).toBe(0);
+        });
+
+        it('loads an entry\'s text as it launches, for the pause menu', async () => {
+            const model = createArcadeModel(options());
+            model.launch('sim-demo');
+            await settle();
+            expect(model.detailsFor('sim-demo')?.instructions).toBe('Watch.');
+        });
+
+        it('asks again for text that failed to load', async () => {
+            let fails = 1;
+            const flaky: ArcadeEntry = {
+                ...ENTRIES[2],
+                loadDetails: () => (fails-- > 0 ? Promise.reject(new Error('offline')) : Promise.resolve({ description: 'Back.' })),
+            };
+            const model = createArcadeModel(options({ entries: [flaky] }));
+            model.loadDetails();
+            await settle();
+            expect(model.detailsFor('sim-demo')).toBeUndefined();
+            model.loadDetails();
+            await settle();
+            expect(model.detailsFor('sim-demo')?.description).toBe('Back.');
+        });
+    });
+
     describe('favourites', () => {
         it('shows the favourites first, then the rest, each in order of name', () => {
             const model = createArcadeModel(options());
@@ -536,8 +610,8 @@ const ENTRIES: readonly ArcadeEntry[] = [
         inspiredBy: { title: 'Grid Runner', maker: 'Someone', year: 1980 },
         hasHighscores: true,
     },
-    { ...entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }), techniques: ['Object pooling'] },
-    { ...entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }), description: 'Birds flocking, in 3D.' },
+    entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }, { description: '', techniques: ['Object pooling'] }),
+    entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }, { description: 'Birds flocking, in 3D.', instructions: 'Watch.' }),
     { ...entry('old-shooter', 'Old Shooter', { kind: 'game', era: '1970s', genres: ['shooter'] }), summary: 'Rocks and asteroids.' },
 ];
 
@@ -568,12 +642,26 @@ function countingStore(): { store: HighscoreStore; loads: () => number } {
     };
 }
 
-function entry(id: string, name: string, tags: EntryTags): ArcadeEntry {
+function entry(id: string, name: string, tags: EntryTags, details: EntryDetails = { description: '' }): ArcadeEntry {
     return {
         id, name, tags,
-        summary: '', description: '', screenWidth: 100, screenHeight: 100, thumbnail: '',
+        summary: '', screenWidth: 100, screenHeight: 100, thumbnail: '',
+        loadDetails: () => Promise.resolve(details),
         load: () => Promise.resolve(STARTER),
     };
+}
+
+/** The test's entries, each counting the times its long text is loaded. */
+function countingEntries(): { entries: ArcadeEntry[]; loadsOf: (id: string) => number } {
+    const loads = new Map<string, number>();
+    const entries = ENTRIES.map((e): ArcadeEntry => ({
+        ...e,
+        loadDetails: () => {
+            loads.set(e.id, (loads.get(e.id) ?? 0) + 1);
+            return e.loadDetails();
+        },
+    }));
+    return { entries, loadsOf: (id) => loads.get(id) ?? 0 };
 }
 
 function facts(renderers: EntryFacts['renderers']): EntryFacts {

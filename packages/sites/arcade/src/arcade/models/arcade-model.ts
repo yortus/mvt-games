@@ -1,5 +1,5 @@
 import type { HighscoreStore } from '../../highscores';
-import type { ArcadeEntry, EntryFacts, EntryStarter } from '../../entry-types';
+import type { ArcadeEntry, EntryDetails, EntryFacts, EntryStarter } from '../../entry-types';
 import { type ArcadeQuery, parseArcadeQuery } from './arcade-query';
 import { createHighscoresModel, type HighscoresModel } from './highscores-model';
 import {
@@ -21,6 +21,20 @@ export interface ArcadeModel {
     readonly entries: readonly ArcadeEntry[];
     /** What was measured of an entry's code when the site was built. */
     readonly factsFor: (id: string) => EntryFacts | undefined;
+
+    // --- The entries' long text ---------------------------------------------
+    // Each entry's description, instructions and techniques load after the
+    // cards, so that the home page's first load holds only what the cards show.
+
+    /** The long text of the entry with `id`, once it has loaded. */
+    readonly detailsFor: (id: string) => EntryDetails | undefined;
+    /**
+     * Loads the long text of every entry whose text has not loaded. The page
+     * calls it after its first paint. Opening an entry's info panel, or
+     * launching it, loads that entry's text at once. The search reads each
+     * entry's text as it arrives.
+     */
+    readonly loadDetails: () => void;
 
     // --- Searching ----------------------------------------------------------
 
@@ -49,6 +63,7 @@ export interface ArcadeModel {
      * What has been typed beside the tags. An entry shows only if each of its
      * words is in the entry's name, begins a word of its summary, description,
      * techniques or the title it is inspired by, or begins one of its tags.
+     * An entry's description and techniques count once they have loaded.
      */
     searchText: string;
     /** Clears the tags and the words. */
@@ -234,6 +249,11 @@ export interface ArcadeModelOptions {
 export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     const { entries, factsFor, loadEntry } = options;
     const chips = chipsFor(entries, factsFor);
+    const indexById = new Map(entries.map((entry, i) => [entry.id, i]));
+
+    // Each entry's long text, once loaded, and whether it has been asked for
+    const details: (EntryDetails | undefined)[] = entries.map(() => undefined);
+    const isDetailsAskedAt: boolean[] = entries.map(() => false);
 
     // The favourites: as ids, for the page to keep, and as a flag for each entry, for the wall's order
     const isFavouriteAt: boolean[] = entries.map((entry) => options.favouriteIds?.includes(entry.id) === true);
@@ -276,6 +296,14 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     const model: ArcadeModel = {
         entries,
         factsFor,
+
+        detailsFor(id) {
+            const index = indexById.get(id);
+            return index === undefined ? undefined : details[index];
+        },
+        loadDetails() {
+            for (let i = 0; i < entries.length; i++) askForDetailsAt(i);
+        },
 
         chips,
         chipCountAt: (index) => chipCounts[index],
@@ -398,6 +426,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (phase !== 'browsing') return;
             const entry = entries.find((e) => e.id === id);
             if (entry === undefined) return;
+            askForDetailsAt(entries.indexOf(entry));
             activeEntry = entry;
             starter = undefined;
             loadFailure = undefined;
@@ -480,6 +509,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         openInfo(id) {
             panel = entries.find((e) => e.id === id) ?? panel;
+            const index = indexById.get(id);
+            if (index !== undefined) askForDetailsAt(index);
             // The panel shows the entry's table: as it stands now
             if (panel !== 'about' && panel?.id === id && panel.hasHighscores === true) highscores.reload();
         },
@@ -503,6 +534,25 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     };
 
     return model;
+
+    /**
+     * Loads the long text of the entry at `index`, unless it has been asked
+     * for already. Once it arrives, the search reads it. A load that fails can
+     * be asked for again.
+     */
+    function askForDetailsAt(index: number): void {
+        if (isDetailsAskedAt[index]) return;
+        isDetailsAskedAt[index] = true;
+        entries[index].loadDetails().then(
+            (loaded) => {
+                details[index] = loaded;
+                deriveFromSearch();
+            },
+            () => {
+                isDetailsAskedAt[index] = false;
+            },
+        );
+    }
 
     /** Replaces the sound settings with a copy changed as `change` says, if it changes anything. */
     function changeSound(change: Partial<ArcadeSoundSettings>): void {
@@ -541,7 +591,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         for (let i = 0; i < entries.length; i++) {
             if (!isTagged[i]) continue;
             taggedCount++;
-            if (matchesWords(entries[i], factsFor(entries[i].id), words)) shown.push(i);
+            if (matchesWords(entries[i], factsFor(entries[i].id), details[i], words)) shown.push(i);
         }
         sortByName(shown, entries);
         putFavouritesFirst();
