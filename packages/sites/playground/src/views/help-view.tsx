@@ -131,6 +131,7 @@ function helpSections(libraries: readonly HelpLibrary[]): HelpSection[] {
                 paragraph("Press Run to start your project in the preview on the right. You usually won't need to press it again. With Run on change ticked, the project restarts by itself a moment after you stop typing. If there's a problem that would stop it running, it waits until you've fixed it."),
                 paragraph("Pause and Step let you freeze time and move forward one frame at a time. That's handy for seeing exactly what happens. The speed menu slows time down or speeds it up."),
                 paragraph("Below the preview, the Console shows anything your project logs with `console.log`. Problems lists anything that's wrong, with a link to the exact place. Problems that stop your project from running come first. Type errors are listed too, but they won't stop it from running."),
+                paragraph('The Performance tab shows how fast your project runs, and how much work each frame does. Click its (i) to find out what each number means.'),
             ],
         },
         {

@@ -1,3 +1,5 @@
+import type { PerformanceSample } from '@mvtjs/utils';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -23,6 +25,8 @@ export type SandboxMessage =
     /** Sent twice a second, while the sandbox can run its timers, so the page can tell it has not frozen. */
     | { readonly kind: 'heartbeat' }
     | { readonly kind: 'console'; readonly level: ConsoleLevel; readonly text: string }
+    /** The project's performance over the last quarter of a second, sent each time one is measured. */
+    | { readonly kind: 'metrics'; readonly sample: PerformanceSample }
     | {
         readonly kind: 'error';
         readonly phase: ErrorPhase;

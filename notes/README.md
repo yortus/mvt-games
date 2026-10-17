@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**056**.
+**057**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -151,6 +151,7 @@ of old links closed an item in 017, until the conversion was dropped.
 | 053 | [Models Name What the Player Means, Not the Controls](tasks/backlog/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 | 054 | [Smooth Window Resizes While an Entry Plays](tasks/backlog/054-smooth-window-resizes.md) | low | 2026-10-16 |
 | 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](tasks/backlog/055-chiptune-package.md) | medium | 2026-10-17 |
+| 056 | [A Floating Perfmon Throughout the Arcade](tasks/backlog/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
 
 ## Archive
 

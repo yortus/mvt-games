@@ -544,6 +544,35 @@ button:disabled {
     min-height: 0;
 }
 
+/* The Perfmon fills the Performance tab, in the theme's colours. Its own colours for each metric suit a dark theme */
+.run-performance {
+    overflow: auto;
+    padding: 8px;
+}
+
+.run-performance .mvt-perfmon {
+    --mvt-perfmon-background: var(--pg-panel);
+    --mvt-perfmon-info-background: var(--pg-panel);
+    --mvt-perfmon-text: var(--pg-text);
+    --mvt-perfmon-muted: var(--pg-muted);
+    /* As tall as the tab, so its explanation has all of it, and never shorter than its rows */
+    flex: 1 0 auto;
+    padding: 0;
+    /* Square, as it fills the tab, so its explanation's corners hide the graphs that reach them */
+    border-radius: 0;
+}
+
+/* Deeper colours, which read on a light theme's panel */
+[data-scheme="light"] .run-performance .mvt-perfmon {
+    --mvt-perfmon-fps: #1a7f37;
+    --mvt-perfmon-cpuMs: #0969da;
+    --mvt-perfmon-gpuMs: #bc4c00;
+    --mvt-perfmon-reads: #8250df;
+    --mvt-perfmon-methodCalls: #9a6700;
+    --mvt-perfmon-methodListRebuilds: #cf222e;
+    --mvt-perfmon-rebuildNodeVisits: #a40e26;
+}
+
 .console,
 .problems {
     display: flex;

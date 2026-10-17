@@ -142,6 +142,20 @@ describe('a workspace model', () => {
         expect(silent.consoleEntries.at(-1)?.text).toContain('stopped responding');
     });
 
+    it('keeps the performance the sandbox measures, and starts afresh with each run', () => {
+        const model = createRunningModel();
+        expect(model.performance).toBeUndefined();
+        const sample = { fps: 60, cpuMs: 2.5, gpuMs: undefined, reads: 300, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 };
+        model.reportSandboxMessage({ kind: 'metrics', sample });
+        model.reportSandboxMessage({ kind: 'metrics', sample: { ...sample, fps: 58 } });
+        expect(model.performance?.sampleCount).toBe(2);
+        expect(model.performance?.fps).toBe(58);
+
+        model.run();
+        model.reportPrepared('<html>');
+        expect(model.performance).toBeUndefined();
+    });
+
     it('ignores the sandbox once stopped', () => {
         const model = createRunningModel();
         model.stop();

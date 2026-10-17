@@ -1,4 +1,5 @@
 import { createWebAudio80 } from '@mvtjs/audio/web';
+import { createPerformanceMeter, type PerformanceMeter, type PerformanceSample } from '@mvtjs/utils';
 import type { Project, StartOptions, StartResult } from '../project-api';
 import type { ErrorPhase, HostMessage, SandboxMessage } from './messages';
 import type { RendererHost } from './renderer-host';
@@ -33,7 +34,8 @@ export interface RunSandboxOptions {
  * Runs a project in the sandbox. It loads `main.ts`, makes the renderer its
  * `project` asks for, calls `start`, and runs the MVT loop each frame: the
  * project's `update`, then `updateView` and `refreshView` over its root, then
- * a draw. The page pauses, steps and speeds it up with messages. An error
+ * a draw. It measures each frame, and sends the page its performance a few
+ * times a second. The page pauses, steps and speeds it up with messages. An error
  * stops the loop, so the page does not fill with the same error sixty times
  * a second.
  */
@@ -69,11 +71,13 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         return;
     }
 
+    const meter = createPerformanceMeter({ takeGpuMs: host.takeGpuMs });
     let isPaused = false;
     let speed = 1;
     let stepMs = 0;
     let lastTime: number | undefined;
     let frames = 0;
+    let sentSamples = 0;
     window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
         if (event.source !== window.parent) return;
         const message = event.data;
@@ -94,6 +98,7 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         const deltaMs = isPaused ? stepMs : elapsed * speed;
         const isAdvancing = !isPaused || stepMs > 0;
         stepMs = 0;
+        meter.startFrame();
         (globalThis as { __pgFrameStart?: number }).__pgFrameStart = performance.now();
         try {
             if (isAdvancing) {
@@ -104,6 +109,7 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
             }
             host.refresh();
             host.render();
+            meter.endFrame();
             sound.controls()?.flush();
         }
         catch (error) {
@@ -112,6 +118,10 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         }
         frames += 1;
         if (frames === 1) report.post({ kind: 'first-frame' });
+        if (meter.sampleCount !== sentSamples) {
+            sentSamples = meter.sampleCount;
+            report.post({ kind: 'metrics', sample: toSample(meter) });
+        }
         requestAnimationFrame(frame);
     }
 }
@@ -123,6 +133,12 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
 const HEARTBEAT_MS = 500;
 /** The longest frame the loop advances by, so a tab left in the background does not jump ahead. */
 const MAX_FRAME_MS = 100;
+
+/** The meter's latest values, as a plain object a message can carry. */
+function toSample(meter: PerformanceMeter): PerformanceSample {
+    const { fps, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits } = meter;
+    return { fps, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits };
+}
 
 /** Makes the renderer the project asks for. Each is loaded only when a project uses it. */
 async function createRendererHost(project: Project): Promise<RendererHost<object>> {

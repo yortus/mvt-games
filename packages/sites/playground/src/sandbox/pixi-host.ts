@@ -1,5 +1,5 @@
 import { Application, Container, TextureSource } from 'pixi.js';
-import { refreshView, updateView } from '@mvtjs/pixi';
+import { createGpuTimer, refreshView, updateView } from '@mvtjs/pixi';
 import type { PixiProject, PixiStartOptions } from '../project-api';
 import { DEFAULT_BACKGROUND, fitToWindow } from './fit-to-window';
 import type { RendererHost } from './renderer-host';
@@ -12,7 +12,7 @@ import type { RendererHost } from './renderer-host';
  * Makes a Pixi application of the project's size, scaled to fit the
  * sandbox, with a container on its stage for the project's views. The
  * runner draws each frame itself, so the application's own ticker is
- * stopped.
+ * stopped. Each render is timed on the GPU, where the browser allows it.
  */
 export async function createPixiHost(project: PixiProject): Promise<RendererHost<Omit<PixiStartOptions, 'sound'>>> {
     const { width, height } = project;
@@ -35,10 +35,12 @@ export async function createPixiHost(project: PixiProject): Promise<RendererHost
 
     const stage = new Container();
     app.stage.addChild(stage);
+    const gpuTimer = createGpuTimer({ renderer: app.renderer });
     return {
         startOptions: { stage, width, height },
         update: (deltaMs) => updateView(stage, deltaMs),
         refresh: () => refreshView(stage),
         render: () => app.render(),
+        takeGpuMs: gpuTimer?.takeMedianMs,
     };
 }

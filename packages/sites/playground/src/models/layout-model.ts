@@ -6,7 +6,7 @@
 export type PanelKind = 'files' | 'code' | 'run';
 
 /** What the bottom of the run pane shows. */
-export type RunPaneTabKind = 'console' | 'problems';
+export type RunPaneTabKind = 'console' | 'problems' | 'performance';
 
 /** The sizes of the panes the visitor can drag, in CSS pixels. */
 export interface PaneSizes {

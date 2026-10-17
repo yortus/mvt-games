@@ -14,4 +14,6 @@ export interface RendererHost<O> {
     readonly refresh: () => void;
     /** Draws the frame, where the renderer draws to a canvas. */
     readonly render: () => void;
+    /** Returns the GPU's milliseconds per frame since the last call, where the renderer can time the GPU. */
+    readonly takeGpuMs?: () => number | undefined;
 }

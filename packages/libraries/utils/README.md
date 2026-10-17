@@ -19,6 +19,11 @@ make common parts of it shorter, and none of them needs a renderer:
   every installed renderer. Use them through a renderer package
   (`@mvtjs/pixi`, `@mvtjs/three`, `@mvtjs/html`), which registers its nodes
   and re-exports them.
+- **Measuring performance:** `createPerformanceMeter` measures frames per
+  second, the time each frame takes, and how much work the views do, from
+  any frame loop that tells it when each frame starts and ends.
+  `createPerformanceHistory` holds metrics that were measured somewhere
+  else, such as in an iframe. `@mvtjs/html`'s `PerfmonView` shows either.
 - **For renderer packages:** `registerRenderer`, which teaches the tick API a
   new kind of tree, and, at `@mvtjs/utils/jsx`, the base that each renderer's
   JSX runtime is built on.

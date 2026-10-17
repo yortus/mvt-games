@@ -31,7 +31,7 @@
             "default": "./dist/jsx/jsx-dev-runtime.js"
         }
     },
-    "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx"],
+    "files": ["dist", "src", "!src/**/*.test.ts", "!src/**/*.test.tsx", "!src/**/visual-tests"],
     "scripts": {
         "build": "tsdown"
     },
@@ -40,6 +40,7 @@
     },
     "devDependencies": {
         "tsdown": "^0.23.0",
+        "v-snap": "*",
         "vitest": "^5.0.1"
     },
     "publishConfig": { "access": "public" }

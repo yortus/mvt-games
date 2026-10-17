@@ -1,4 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
+import { PerfmonView } from '@mvtjs/html';
 import { memoiseLast, watch } from '@mvtjs/utils';
 import { LIBRARIES, LIBRARY_SUMMARIES } from '../../libraries';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
@@ -173,6 +174,14 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                                 text={() => PROBLEM_TAB_LABELS[Math.min(model.problemList.length, PROBLEM_TAB_LABELS.length - 1)]}
                                 onClick={() => layout.showRunPaneTab('problems')}
                             />
+                            <button
+                                type="button"
+                                role="tab"
+                                class={() => (layout.runPaneTab === 'performance' ? 'run-tab run-tab-active' : 'run-tab')}
+                                text="Performance"
+                                title="How fast the project runs, and how much work each frame does"
+                                onClick={() => layout.showRunPaneTab('performance')}
+                            />
                             <button type="button" class="run-tab-clear" text="Clear" visible={() => layout.runPaneTab === 'console'} onClick={() => model.clearConsole()} />
                         </div>
                         <div class="run-tab-body" visible={() => layout.runPaneTab === 'console'}>
@@ -180,6 +189,9 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         </div>
                         <div class="run-tab-body" visible={() => layout.runPaneTab === 'problems'}>
                             <ProblemsView problems={() => model.problemList} onPlaceChosen={(location) => model.showPlace(location)} />
+                        </div>
+                        <div class="run-tab-body run-performance" visible={() => layout.runPaneTab === 'performance'}>
+                            <PerfmonView metrics={() => model.performance} />
                         </div>
                     </div>
                 </div>

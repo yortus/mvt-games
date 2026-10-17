@@ -19,13 +19,13 @@ function setup(options: SetupOptions = {}) {
     vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
     let tickListener: (() => void) | undefined;
-    const hooks: { prerender: () => void; postrender: () => void }[] = [];
+    const hooks: { prerender?: () => void; postrender?: () => void }[] = [];
     const ticker = {
         add: (fn: () => void) => { tickListener = fn; },
         remove: () => { tickListener = undefined; },
     } as unknown as Ticker;
     const runner = {
-        add: (item: { prerender: () => void; postrender: () => void }) => { if (!hooks.includes(item)) hooks.push(item); },
+        add: (item: { prerender?: () => void; postrender?: () => void }) => { if (!hooks.includes(item)) hooks.push(item); },
         remove: () => undefined,
     };
     const renderer = {
@@ -41,8 +41,8 @@ function setup(options: SetupOptions = {}) {
         tickListener!();
         work?.();
         nowMs += busyMs;
-        for (const h of hooks) h.prerender();
-        for (const h of hooks) h.postrender();
+        for (const h of hooks) h.prerender?.();
+        for (const h of hooks) h.postrender?.();
         nowMs += frameMs - busyMs;
     }
 

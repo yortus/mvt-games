@@ -18,10 +18,10 @@ the Arcade, the docs, the benchmarks and the checks.
 ```
 packages/
 ├── libraries/           What people build with
-│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
+│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
 │   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
-│   ├── html/            @mvtjs/html: the tick API for DOM elements, and its JSX runtime
+│   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
 │   └── audio/           @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects

@@ -8,3 +8,4 @@ export { advanceTime, type Advanceable } from '@mvtjs/utils';
 export { addReads, countTick, tickCounter } from '@mvtjs/utils';
 export type { RefreshMethod, TickCounter, TickCounts, UpdateMethod, View } from '@mvtjs/utils';
 export * from './jsx';
+export { PerfmonView, type PerfmonViewBindings } from './perfmon';

@@ -69,6 +69,18 @@ const boxView = (
 
 A function attribute is read on every refresh; a plain value is set once.
 
+## Measuring performance
+
+`createPerformanceMetrics({ renderer: app.renderer, ticker: app.ticker })`
+measures a Pixi application as it runs: frames per second, the time each
+frame takes on the CPU and the GPU, and how much work the views do. It
+hooks into the ticker and the renderer, so there's nothing else to call.
+Show the numbers with `@mvtjs/html`'s `PerfmonView`, or draw them yourself.
+
+If you drive the frames yourself instead of with Pixi's ticker, use
+`createPerformanceMeter` from `@mvtjs/utils`, and give it a GPU timer from
+`createGpuTimer({ renderer })`.
+
 ## Learn more
 
 - [The guide and reference](https://yortus.com/mvt-games/docs/)

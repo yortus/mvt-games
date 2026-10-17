@@ -1,3 +1,4 @@
+import { createPerformanceHistory, type PerformanceHistory, type PerformanceMetrics } from '@mvtjs/utils';
 import { findExample, findStarter } from '../examples';
 import type { FileEdit, TypeProblem } from '../language';
 import type { RendererKind } from '../project-api';
@@ -144,6 +145,8 @@ export interface WorkspaceModel {
     readonly steps: number;
 
     readonly consoleEntries: readonly ConsoleEntry[];
+    /** The running project's performance, as the sandbox measures it, or `undefined` until this run's first measure. */
+    readonly performance: PerformanceMetrics | undefined;
     /** The place in a file last asked for, as from a console entry. */
     readonly shownPlace: SourceLocation | undefined;
     /** Rises each time a place is asked for, for the editor to scroll to it. */
@@ -360,6 +363,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let silentMs = 0;
 
     let consoleEntries: ConsoleEntry[] = [];
+    let performanceHistory: PerformanceHistory | undefined;
     let shownPlace: SourceLocation | undefined;
     let placesShown = 0;
     let shareStatus: ShareStatus = 'idle';
@@ -412,6 +416,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get isRunByVisitor() { return isRunByVisitor; },
         get steps() { return steps; },
         get consoleEntries() { return consoleEntries; },
+        get performance() { return performanceHistory; },
         get shownPlace() { return shownPlace; },
         get placesShown() { return placesShown; },
         get shareStatus() { return shareStatus; },
@@ -669,6 +674,10 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
                 case 'console':
                     log({ level: message.level, text: message.text });
                     break;
+                case 'metrics':
+                    performanceHistory ??= createPerformanceHistory();
+                    performanceHistory.add(message.sample);
+                    break;
                 case 'error': {
                     const location = findProjectLocation(message.message, message.stack, new Set(paths));
                     log({ level: 'error', text: `${ERROR_PREFIXES[message.phase]}${message.message}`, location });
@@ -856,6 +865,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         phase = 'starting';
         isPaused = false;
         silentMs = 0;
+        performanceHistory = undefined;
     }
 
     function isRunLive(): boolean {

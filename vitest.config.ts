@@ -11,8 +11,9 @@ const SOURCE_CONDITION = '@mvtjs/source';
 // One test run over every workspace in packages/: the unit tests in Node, and
 // the Arcade's and the playground's visual tests in a browser. The "unit"
 // project leaves out the visual tests, which run in v-snap's projects:
-// `visual-canvas` and `visual-html` for the Arcade, and
-// `visual-playground-html` for the playground. They bring v-snap's reporter
+// `visual-canvas` and `visual-html` for the Arcade,
+// `visual-playground-html` for the playground, and `visual-library-html` for
+// the HTML library's views. They bring v-snap's reporter
 // with them. `-p unit` and `-p "visual-*"` run each kind alone. v-snap is
 // left out, as if it lived in a repo of its own: its own config runs its
 // tests, and the scripts call it.
@@ -61,6 +62,11 @@ export default defineConfig({
             ...vsnap({
                 root: resolve(ROOT, 'packages/sites/playground'),
                 name: 'visual-playground',
+            }),
+            // The HTML library's, for the views it offers, such as its Perfmon
+            ...vsnap({
+                root: resolve(ROOT, 'packages/libraries/html'),
+                name: 'visual-library',
             }),
         ],
     },

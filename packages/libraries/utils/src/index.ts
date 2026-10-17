@@ -13,5 +13,8 @@ export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
 export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';
 export { createOrderedSlotList, type OrderedSlot, type OrderedSlotList } from './slot-list';
+export { createPerformanceHistory, METRIC_KINDS, type MetricKind, type PerformanceHistory, type PerformanceHistoryOptions } from './performance-history';
+export type { PerformanceMetrics, PerformanceSample } from './performance-history';
+export { createPerformanceMeter, type PerformanceMeter, type PerformanceMeterOptions } from './performance-meter';
 export type { DeepReadonly } from './type-utils';
 export { watch } from './watch';

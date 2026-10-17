@@ -3,8 +3,9 @@
 // module it thinks is pure when a program uses only names it re-exports (such
 // as `updateView`, from `@mvtjs/utils`), and this import would go with it.
 import './container-mixin';
-export { createPerformanceMetrics, type MetricKind, type PerformanceMetrics } from './performance-metrics';
-export type { PerformanceMetricsOptions } from './performance-metrics';
+export { createPerformanceMetrics, type PerformanceMetricsOptions, type PixiPerformanceMetrics } from './performance-metrics';
+export { createGpuTimer, type GpuTimer, type GpuTimerOptions } from './gpu-timer';
+export type { MetricKind, PerformanceMetrics } from '@mvtjs/utils';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { hasRefresh, hasUpdate, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/utils';
 export { advanceTime, type Advanceable } from '@mvtjs/utils';

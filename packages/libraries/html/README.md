@@ -67,6 +67,22 @@ const healthView = (
 
 A function attribute is read on every refresh; a plain value is set once.
 
+## A performance monitor
+
+`PerfmonView` shows how fast your game runs: frames per second, the time
+each frame takes, and how much work the views do, each with a small graph.
+Give it the metrics to show, from `createPerformanceMetrics` in
+`@mvtjs/pixi`, or `createPerformanceMeter` in `@mvtjs/utils`:
+
+```ts
+document.body.append(PerfmonView({ metrics: () => metrics }));
+```
+
+It fits the space you give it. In a small box over a corner of your game,
+it's a compact panel, and in a larger one its text and graphs grow. It
+brings its own styles. To match your page, set its CSS variables, such as
+`--mvt-perfmon-background` and `--mvt-perfmon-text`.
+
 ## Notes
 
 - Changes to the element tree are noticed through a `MutationObserver`, so

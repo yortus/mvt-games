@@ -178,6 +178,9 @@ export const THEME_CHOICES: readonly { readonly kind: ThemeKind; readonly name: 
 export function writePalette(element: HTMLElement, theme: Theme): void {
     for (const key of PALETTE_KEYS) element.style.setProperty(`--pg-${key}`, theme.palette[key]);
     element.style.colorScheme = theme.scheme;
+    // For CSS that picks colours by the scheme. The build lowers `light-dark()` for older
+    // browsers in a way that only works where `color-scheme` is set in CSS, not here
+    element.dataset.scheme = theme.scheme;
 }
 
 // ---------------------------------------------------------------------------
