@@ -2,6 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { createSequence, watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -34,13 +35,9 @@ export function SectionAnnouncementView(bindings: SectionAnnouncementViewBinding
 
     return (
         <container alpha={getAlpha} onUpdate={update}>
-            <text
-                text={() => (sequence.isActive ? text : '')}
-                anchor={0.5}
-                x={bindings.screenWidth / 2}
-                y={bindings.screenHeight * 0.25}
-                style={LABEL_STYLE}
-            />
+            <container x={bindings.screenWidth / 2} y={Math.round(bindings.screenHeight * 0.25)}>
+                <PixelTextView text={() => (sequence.isActive ? text : '')} color={LABEL_COLOR} scale={2} anchorX={0.5} anchorY={0.5} />
+            </container>
         </container>
     );
 
@@ -72,4 +69,5 @@ const SECTION_NAMES: readonly string[] = [
     'SECTION 3 - BASE',
 ];
 
-const LABEL_STYLE = { fontFamily: 'monospace', fontSize: 20, fill: 0xffff00, align: 'center' };
+/** Its color. It is set in the pixel glyphs at twice their size. */
+const LABEL_COLOR = 0xffff00;

@@ -150,6 +150,7 @@ export function GameView(bindings: GameViewBindings): Container {
 
             {/* Section clear and game over */}
             <OverlayView
+                font="pixel"
                 width={SCREEN_WIDTH}
                 height={PLAY_HEIGHT}
                 isVisible={() => model.phase === 'game-over' || model.phase === 'section-clear'}

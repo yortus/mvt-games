@@ -1,5 +1,6 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import type { GamePhase } from '../data';
 import { POINTS_TO_WIN_ROUND } from '../data';
 import { SCREEN_WIDTH, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
@@ -81,19 +82,11 @@ export function HudView(bindings: HudViewBindings): Container {
         opponentRoundPips.push(pip);
     }
 
-    // Timer text (centre)
-    const timerText = new Text({
-        text: '30',
-        style: {
-            fontFamily: 'monospace',
-            fontSize: 16,
-            fill: 0xffffff,
-            align: 'center',
-        },
-    });
-    timerText.anchor.set(0.5);
-    timerText.position.set(SCREEN_WIDTH / 2, pipY);
-    view.addChild(timerText);
+    // Timer text (centre), at twice the glyphs' size, written when the time or the phase changes
+    let timerText = '';
+    const timerLine = PixelTextView({ text: () => timerText, color: 0xffffff, scale: 2, anchorX: 0.5, anchorY: 0.5 });
+    timerLine.position.set(SCREEN_WIDTH / 2, pipY);
+    view.addChild(timerLine);
 
     // Watcher for change detection
     const watcher = watch({
@@ -140,13 +133,13 @@ export function HudView(bindings: HudViewBindings): Container {
         if (watched.timeSeconds.changed || watched.phase.changed) {
             const phase = watched.phase.value;
             if (phase === 'fighting') {
-                timerText.text = String(Math.max(0, watched.timeSeconds.value));
+                timerText = String(Math.max(0, watched.timeSeconds.value));
             }
             else if (phase === 'round-intro') {
-                timerText.text = String(Math.ceil(POINTS_TO_WIN_ROUND));
+                timerText = String(Math.ceil(POINTS_TO_WIN_ROUND));
             }
             else {
-                timerText.text = '';
+                timerText = '';
             }
         }
     }

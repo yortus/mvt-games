@@ -172,6 +172,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     cellSize={CELL_SIZE}
                 />
                 <OverlayView
+                    font="pixel"
                     width={FIELD_WIDTH}
                     height={FIELD_HEIGHT}
                     isVisible={() => model.phase === 'ready' || model.phase === 'round-clear' || model.phase === 'game-over'}

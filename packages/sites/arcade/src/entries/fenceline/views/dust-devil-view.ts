@@ -1,6 +1,7 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { COLOURS, HUD_FONT } from './view-constants';
+import { PixelTextView } from '#shared';
+import { COLOURS } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -53,7 +54,7 @@ export function DustDevilView(bindings: DustDevilViewBindings): Container {
         pieces.push(piece);
         scattered.addChild(piece.container);
     }
-    const points = new Text({ text: `+${blowOutPoints}`, anchor: 0.5, style: POINTS_STYLE });
+    const points = PixelTextView({ text: `+${blowOutPoints}`, color: 0xffffff, outline: COLOURS.devilEdge, anchorX: 0.5, anchorY: 0.5 });
     const view = new Container();
     view.addChild(body, scattered, points);
 
@@ -130,14 +131,6 @@ const PIECE_ANGLES: readonly number[] = [Math.PI * -0.8, Math.PI * -0.2, Math.PI
 /** How far the pieces fly, in pixels, and how big each is to start with, as a share of the whole. */
 const PIECE_FLIGHT = 40;
 const PIECE_SIZE = 0.6;
-
-const POINTS_STYLE = {
-    fontFamily: HUD_FONT,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fill: 0xffffff,
-    stroke: { color: COLOURS.devilEdge, width: 3 },
-} as const;
 
 /** One funnel of dust. It has rings, light streaks that circle them, and grit. */
 interface Funnel {

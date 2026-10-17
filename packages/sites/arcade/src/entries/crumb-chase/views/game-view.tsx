@@ -81,6 +81,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 <HudView score={() => model.score} hint={isTouch ? 'Swipe to steer' : ''} width={canvasW} />
             </container>
             <OverlayView
+                font="pixel"
                 width={canvasW}
                 height={canvasH}
                 isVisible={() => model.phase !== 'playing'}

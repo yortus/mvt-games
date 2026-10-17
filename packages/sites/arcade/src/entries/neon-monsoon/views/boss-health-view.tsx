@@ -3,7 +3,8 @@
 import { type Container, Texture } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import { HUD_FONT, NEON } from './view-constants';
+import { PixelTextView } from '#shared';
+import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -55,13 +56,9 @@ export function BossHealthView(bindings: BossHealthViewBindings): Container {
                     {(_, i) => <sprite texture={Texture.WHITE} x={i * 6} width={4} height={2} tint={NEON.magenta} />}
                 </List>
             </container>
-            <text
-                text={() => secondsText(Math.ceil(bindings.timeLeftMs() / 1000))}
-                x={width - BAR_X}
-                y={-3}
-                anchorX={1}
-                style={TIMER_STYLE}
-            />
+            <container x={width - BAR_X} y={-2}>
+                <PixelTextView text={() => secondsText(Math.ceil(bindings.timeLeftMs() / 1000))} color={TIMER_COLOR} anchorX={1} />
+            </container>
         </container>
     );
 
@@ -85,4 +82,5 @@ const TIMER_WIDTH = 22;
 /** Roughly how long the bar takes to catch up with the true health. */
 const SLIDE_MS = 150;
 
-const TIMER_STYLE = { fontFamily: HUD_FONT, fontSize: 10, fill: 0xffd1e8 };
+/** The seconds left, set in the pixel glyphs at their own size. */
+const TIMER_COLOR = 0xffd1e8;

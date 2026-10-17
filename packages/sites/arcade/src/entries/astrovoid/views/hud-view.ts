@@ -1,6 +1,7 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { setRefresh } from '@mvtjs/pixi';
+import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -23,8 +24,10 @@ export function HudView(bindings: HudViewBindings): Container {
         lives: bindings.lives,
         wave: bindings.wave,
     });
-    let scoreText: Text;
-    let waveText: Text;
+    // The text each line shows, written when its number changes
+    let scoreText = 'SCORE: 0';
+    let waveText = 'WAVE 1';
+    let waveLine: Container;
     let livesContainer: Container;
 
     const view = new Container();
@@ -34,19 +37,13 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        scoreText = new Text({
-            text: 'Score: 0',
-            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-        });
-        scoreText.position.set(8, 6);
-        view.addChild(scoreText);
+        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        scoreLine.position.set(8, 6);
+        view.addChild(scoreLine);
 
         // Wave - right
-        waveText = new Text({
-            text: 'Wave 1',
-            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-        });
-        view.addChild(waveText);
+        waveLine = PixelTextView({ text: () => waveText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        view.addChild(waveLine);
 
         // Lives - centre (ship icons)
         livesContainer = new Container();
@@ -57,10 +54,10 @@ export function HudView(bindings: HudViewBindings): Container {
         const watched = watcher.poll();
 
         if (watched.score.changed) {
-            scoreText.text = `Score: ${watched.score.value}`;
+            scoreText = `SCORE: ${watched.score.value}`;
         }
         if (watched.wave.changed) {
-            waveText.text = `Wave ${watched.wave.value}`;
+            waveText = `WAVE ${watched.wave.value}`;
             updateWaveLayout();
         }
         if (watched.lives.changed) {
@@ -70,7 +67,7 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function updateWaveLayout(): void {
         const width = bindings.screenWidth();
-        waveText.position.set(width - 72, 6);
+        waveLine.position.set(width - 8, 6);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
@@ -89,3 +86,11 @@ export function HudView(bindings: HudViewBindings): Container {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const TEXT_COLOR = 0xffffff;
+/** The glyphs at twice their size: capitals 14 pixels tall. */
+const TEXT_SCALE = 2;

@@ -1,12 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate, SKIP_DESCENDANTS } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import { FARM_FENCED_HORN_MS } from '../data';
 import type { Direction } from '../models';
 import { drawOutlinedPixels, drawPixels, type PixelRects } from './drawing';
 import { DustDevilView } from './dust-devil-view';
 import { FarmhandView } from './farmhand-view';
-import { PixelTextView } from './pixel-text-view';
 import { SheepView } from './sheep-view';
 import { COLOURS, findFarmLook } from './view-constants';
 
@@ -100,7 +100,7 @@ export function FarmFencedView(bindings: FarmFencedViewBindings): Container {
         dust.addChild(puff);
     }
 
-    const title = PixelTextView({ text: () => 'FARM FENCED!', colour: COLOURS.flowerYellow, shadow: COLOURS.shirt, scale: 3 });
+    const title = PixelTextView({ text: 'FARM FENCED!', color: COLOURS.flowerYellow, shadow: COLOURS.shirt, scale: 3, anchorX: 0.5 });
     // Each line of the story, and how much of it has been typed out so far.
     // The rest is spaces, so the line keeps its place as it types.
     const storyLines: string[] = [];
@@ -111,7 +111,7 @@ export function FarmFencedView(bindings: FarmFencedViewBindings): Container {
         storyLines.push('');
         typedCounts.push(0);
         typedLines.push('');
-        const line = PixelTextView({ text: () => typeLine(i), colour: COLOURS.hudText, shadow: COLOURS.earth, scale: 2 });
+        const line = PixelTextView({ text: () => typeLine(i), color: COLOURS.hudText, shadow: COLOURS.earth, scale: 2, anchorX: 0.5 });
         line.position.set(Math.round(width / 2), LINE_TOP + i * LINE_GAP);
         lines.push(line);
     }

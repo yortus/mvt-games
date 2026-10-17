@@ -3,8 +3,9 @@
 import { type Container, Texture } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
+import { PixelTextView } from '#shared';
 import { textures } from '../data';
-import { HUD_FONT, NEON } from './view-constants';
+import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -46,29 +47,22 @@ export function HudView(bindings: HudViewBindings): Container {
 
     return (
         <container>
-            <text text={() => scoreText(bindings.score())} x={EDGE} y={EDGE} style={SCORE_STYLE} />
-            <text
-                text={() => highScoreText(bindings.highScore())}
-                x={width - EDGE}
-                y={EDGE + 1}
-                anchorX={1}
-                style={LABEL_STYLE}
-            />
-            <text
-                text={() => loopText(bindings.loop())}
-                visible={() => bindings.loop() > 1}
-                x={width / 2}
-                y={EDGE + 1}
-                anchorX={0.5}
-                style={LABEL_STYLE}
-            />
+            <container x={EDGE} y={EDGE}>
+                <PixelTextView text={() => scoreText(bindings.score())} color={SCORE_COLOR} />
+            </container>
+            <container x={width - EDGE} y={EDGE}>
+                <PixelTextView text={() => highScoreText(bindings.highScore())} color={LABEL_COLOR} anchorX={1} />
+            </container>
+            <container x={width / 2} y={EDGE} visible={() => bindings.loop() > 1}>
+                <PixelTextView text={() => loopText(bindings.loop())} color={LABEL_COLOR} anchorX={0.5} />
+            </container>
 
             {/* The chain, and how long is left to extend it */}
             <container x={EDGE} y={EDGE + 12} visible={() => bindings.chain() > 1}>
-                <text text={() => chainText(bindings.chain())} style={CHAIN_STYLE} />
+                <PixelTextView text={() => chainText(bindings.chain())} color={NEON.cyan} />
                 <sprite
                     texture={Texture.WHITE}
-                    y={10}
+                    y={9}
                     height={2}
                     width={() => CHAIN_BAR_WIDTH * bindings.chainFraction()}
                     tint={NEON.cyan}
@@ -80,14 +74,9 @@ export function HudView(bindings: HudViewBindings): Container {
                     {(_, i) => <sprite texture={ship.icon} x={i * (ICON_SIZE + 2)} />}
                 </List>
             </container>
-            <text
-                text={() => grazeText(bindings.grazeCount())}
-                x={width / 2}
-                y={height - EDGE}
-                anchorX={0.5}
-                anchorY={1}
-                style={LABEL_STYLE}
-            />
+            <container x={width / 2} y={height - EDGE}>
+                <PixelTextView text={() => grazeText(bindings.grazeCount())} color={LABEL_COLOR} anchorX={0.5} anchorY={1} />
+            </container>
             <container x={width - EDGE - ICON_SIZE} y={height - EDGE - ICON_SIZE}>
                 <List items={{ length: bindings.bombs, at: (i) => i }}>
                     {(_, i) => <sprite texture={bombIcon} x={-i * (ICON_SIZE + 2)} />}
@@ -105,6 +94,6 @@ const EDGE = 4;
 const ICON_SIZE = 8;
 const CHAIN_BAR_WIDTH = 40;
 
-const SCORE_STYLE = { fontFamily: HUD_FONT, fontSize: 11, fill: 0xffffff };
-const LABEL_STYLE = { fontFamily: HUD_FONT, fontSize: 9, fill: 0xb7b3d9 };
-const CHAIN_STYLE = { fontFamily: HUD_FONT, fontSize: 9, fill: NEON.cyan };
+// The text is set in the pixel glyphs at their own size
+const SCORE_COLOR = 0xffffff;
+const LABEL_COLOR = 0xb7b3d9;

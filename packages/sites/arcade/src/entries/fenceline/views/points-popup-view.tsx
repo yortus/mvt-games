@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { memoiseLast, watch } from '@mvtjs/utils';
-import { HUD_FONT } from './view-constants';
+import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -41,16 +41,15 @@ export function PointsPopupView(bindings: PointsPopupViewBindings): Container {
     let ageMs = SHOW_MS;
 
     return (
-        <text
-            text={() => pointsText(shownPoints)}
-            anchor={0.5}
-            style={STYLE}
+        <container
             visible={() => ageMs < SHOW_MS}
             x={() => x}
             y={() => Math.round(y - ageMs * RISE_PER_MS)}
             alpha={() => Math.min(1, 2 * (1 - ageMs / SHOW_MS))}
             onUpdate={update}
-        />
+        >
+            <PixelTextView text={() => pointsText(shownPoints)} color={0xffffff} outline={OUTLINE_COLOR} anchorX={0.5} anchorY={0.5} />
+        </container>
     );
 
     function update(deltaMs: number): void {
@@ -70,10 +69,5 @@ export function PointsPopupView(bindings: PointsPopupViewBindings): Container {
 const SHOW_MS = 1300;
 const RISE_PER_MS = 0.015;
 
-const STYLE = {
-    fontFamily: HUD_FONT,
-    fontSize: 12,
-    fontWeight: 'bold',
-    fill: 0xffffff,
-    stroke: { color: 0x24180d, width: 3 },
-} as const;
+/** The outline round the points, in the pixel glyphs at their own size. */
+const OUTLINE_COLOR = 0x24180d;

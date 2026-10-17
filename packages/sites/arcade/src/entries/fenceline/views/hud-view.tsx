@@ -3,8 +3,9 @@
 import { type Container, type Graphics, Texture } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { memoiseLast } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import { drawPixels, type PixelRects } from './drawing';
-import { COLOURS, HUD_FONT, HUD_HEIGHT } from './view-constants';
+import { COLOURS, HUD_HEIGHT } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -46,8 +47,12 @@ export function HudView(bindings: HudViewBindings): Container {
     return (
         <container>
             <graphics ref={(g) => g.rect(0, 0, width, HUD_HEIGHT).fill(COLOURS.hud)} />
-            <text text={() => scoreText(bindings.score())} x={8} y={6} style={SCORE_STYLE} />
-            <text text={() => roundText(bindings.round())} x={74} y={7} style={LABEL_STYLE} />
+            <container x={8} y={TEXT_Y}>
+                <PixelTextView text={() => scoreText(bindings.score())} color={COLOURS.hudText} />
+            </container>
+            <container x={74} y={TEXT_Y}>
+                <PixelTextView text={() => roundText(bindings.round())} color={COLOURS.hudDim} />
+            </container>
 
             {/* How much is fenced off, against the target */}
             <container x={BAR_X} y={8}>
@@ -67,18 +72,12 @@ export function HudView(bindings: HudViewBindings): Container {
                     tint={COLOURS.hudText}
                 />
             </container>
-            <text
-                text={() => shareText(Math.floor(bindings.share() * 100))}
-                x={BAR_X + BAR_WIDTH + 6}
-                y={7}
-                style={SCORE_LABEL_STYLE}
-            />
-            <text
-                text={() => targetText(Math.round(bindings.targetShare() * 100))}
-                x={BAR_X + BAR_WIDTH + 30}
-                y={7}
-                style={LABEL_STYLE}
-            />
+            <container x={BAR_X + BAR_WIDTH + 6} y={TEXT_Y}>
+                <PixelTextView text={() => shareText(Math.floor(bindings.share() * 100))} color={COLOURS.hudText} />
+            </container>
+            <container x={BAR_X + BAR_WIDTH + 30} y={TEXT_Y}>
+                <PixelTextView text={() => targetText(Math.round(bindings.targetShare() * 100))} color={COLOURS.hudDim} />
+            </container>
 
             {/* A sheep for each in the round: white once penned */}
             <container x={width - 112} y={17}>
@@ -97,13 +96,9 @@ export function HudView(bindings: HudViewBindings): Container {
                 <List items={{ length: () => countHats(bindings.lives()), at: (i) => i }}>
                     {(_, i) => <graphics x={i * 12} ref={drawHat} />}
                 </List>
-                <text
-                    text={() => livesText(bindings.lives())}
-                    visible={() => bindings.lives() > MAX_HATS}
-                    x={7}
-                    y={-9}
-                    style={SCORE_LABEL_STYLE}
-                />
+                <container x={7} y={TEXT_Y - 16} visible={() => bindings.lives() > MAX_HATS}>
+                    <PixelTextView text={() => livesText(bindings.lives())} color={COLOURS.hudText} />
+                </container>
             </container>
         </container>
     );
@@ -118,9 +113,8 @@ const BAR_X = 150;
 const MAX_HATS = 3;
 const BAR_WIDTH = 120;
 
-const SCORE_STYLE = { fontFamily: HUD_FONT, fontSize: 12, fontWeight: 'bold', fill: COLOURS.hudText } as const;
-const SCORE_LABEL_STYLE = { fontFamily: HUD_FONT, fontSize: 10, fontWeight: 'bold', fill: COLOURS.hudText } as const;
-const LABEL_STYLE = { fontFamily: HUD_FONT, fontSize: 10, fill: COLOURS.hudDim } as const;
+/** The text's top: the pixel glyphs at their own size, level with the middle of the bar. */
+const TEXT_Y = 9;
 
 // Small icons, with their feet at the origin
 

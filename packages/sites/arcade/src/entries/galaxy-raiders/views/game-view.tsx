@@ -97,6 +97,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 />
             </container>
             <OverlayView
+                font="pixel"
                 width={ARENA_WIDTH}
                 height={ARENA_HEIGHT}
                 isVisible={() => model.phase === 'game-over' || model.phase === 'stage-clear'}

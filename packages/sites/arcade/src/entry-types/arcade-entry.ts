@@ -121,7 +121,8 @@ export type Genre =
     | '3d'
     | 'ui'
     | 'demoscene'
-    | 'tiny';
+    | 'tiny'
+    | 'sound';
 
 /** The arcade's candy palette, for cards. */
 export type CardColor = 'bubblegum' | 'peach' | 'apricot' | 'lemon' | 'mint' | 'seafoam' | 'sky' | 'lavender' | 'orchid';
@@ -133,7 +134,7 @@ export type RendererKind = 'pixi' | 'three' | 'html';
 export const ENTRY_KINDS: readonly EntryKind[] = ['game', 'demo', 'art'];
 export const ERAS: readonly Era[] = ['1970s', '1980s', '1990s', '2000s', '2010s'];
 export const GENRES: readonly Genre[] = [
-    'shooter', 'maze', 'action', 'fighting', 'scrolling', 'puzzle', 'simulation', '3d', 'ui', 'demoscene', 'tiny',
+    'shooter', 'maze', 'action', 'fighting', 'scrolling', 'puzzle', 'simulation', '3d', 'ui', 'demoscene', 'tiny', 'sound',
 ];
 export const RENDERER_KINDS: readonly RendererKind[] = ['pixi', 'three', 'html'];
 export const CARD_COLORS: readonly CardColor[] = [

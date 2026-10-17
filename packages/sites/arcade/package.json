@@ -12,6 +12,7 @@
     "imports": {
         "#highscores": "./src/highscores/index.ts",
         "#shared": "./src/shared/index.ts",
+        "#pixel-glyphs": "./src/pixel-glyphs/index.ts",
         "#tunes": "./src/tunes/index.ts"
     },
     "scripts": {

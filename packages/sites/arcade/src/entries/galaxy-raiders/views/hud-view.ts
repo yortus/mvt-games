@@ -1,5 +1,6 @@
-import { Container, Sprite, Text } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
 
@@ -25,8 +26,10 @@ export function HudView(bindings: HudViewBindings): Container {
         stage: bindings.stage,
     });
 
-    let scoreText: Text;
-    let stageText: Text;
+    // The text each line shows, written when its number changes
+    let scoreText = 'SCORE: 0';
+    let stageText = 'STAGE 1';
+    let stageLine: Container;
     let livesContainer: Container;
 
     const view = new Container();
@@ -36,19 +39,13 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        scoreText = new Text({
-            text: 'Score: 0',
-            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-        });
-        scoreText.position.set(8, 6);
-        view.addChild(scoreText);
+        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        scoreLine.position.set(8, 8);
+        view.addChild(scoreLine);
 
         // Stage - right
-        stageText = new Text({
-            text: 'Stage 1',
-            style: { fontFamily: 'monospace', fontSize: 14, fill: 0xffffff },
-        });
-        view.addChild(stageText);
+        stageLine = PixelTextView({ text: () => stageText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        view.addChild(stageLine);
 
         // Lives - centre (ship icons)
         livesContainer = new Container();
@@ -59,10 +56,10 @@ export function HudView(bindings: HudViewBindings): Container {
         const watched = watcher.poll();
 
         if (watched.score.changed) {
-            scoreText.text = `Score: ${watched.score.value}`;
+            scoreText = `SCORE: ${watched.score.value}`;
         }
         if (watched.stage.changed) {
-            stageText.text = `Stage ${watched.stage.value}`;
+            stageText = `STAGE ${watched.stage.value}`;
             updateStageLayout();
         }
         if (watched.lives.changed) {
@@ -72,7 +69,7 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function updateStageLayout(): void {
         const width = bindings.screenWidth();
-        stageText.position.set(width - 72, 6);
+        stageLine.position.set(width - 8, 8);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
@@ -86,3 +83,11 @@ export function HudView(bindings: HudViewBindings): Container {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const TEXT_COLOR = 0xffffff;
+/** The glyphs at their own size, as an arcade's 8-pixel font: the screen is too narrow for more beside the lives. */
+const TEXT_SCALE = 1;

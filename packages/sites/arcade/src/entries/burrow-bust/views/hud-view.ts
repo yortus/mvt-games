@@ -1,5 +1,6 @@
-import { Container, Sprite, Text } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
 
@@ -26,8 +27,10 @@ export function HudView(bindings: HudViewBindings): Container {
         level: bindings.level,
     });
 
-    let scoreText: Text;
-    let levelText: Text;
+    // The text each line shows, written when its number changes
+    let scoreText = 'SCORE: 0';
+    let levelText = 'LV 1';
+    let levelLine: Container;
     let livesContainer: Container;
 
     const view = new Container();
@@ -37,19 +40,13 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        scoreText = new Text({
-            text: 'Score: 0',
-            style: { fontFamily: 'monospace', fontSize: 16, fill: 0xffffff },
-        });
-        scoreText.position.set(8, 4);
-        view.addChild(scoreText);
+        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        scoreLine.position.set(8, 8);
+        view.addChild(scoreLine);
 
         // Level - right
-        levelText = new Text({
-            text: 'LV 1',
-            style: { fontFamily: 'monospace', fontSize: 16, fill: 0xffffff },
-        });
-        view.addChild(levelText);
+        levelLine = PixelTextView({ text: () => levelText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        view.addChild(levelLine);
 
         // Lives - center (small icons)
         livesContainer = new Container();
@@ -60,10 +57,10 @@ export function HudView(bindings: HudViewBindings): Container {
         const watched = watcher.poll();
 
         if (watched.score.changed) {
-            scoreText.text = `Score: ${watched.score.value}`;
+            scoreText = `SCORE: ${watched.score.value}`;
         }
         if (watched.level.changed) {
-            levelText.text = `LV ${watched.level.value}`;
+            levelText = `LV ${watched.level.value}`;
             updateLevelLayout();
         }
         if (watched.lives.changed) {
@@ -73,7 +70,7 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function updateLevelLayout(): void {
         const width = bindings.cols() * bindings.tileSize();
-        levelText.position.set(width - 60, 4);
+        levelLine.position.set(width - 8, 8);
         livesContainer.position.set(width / 2 - 20, 4);
     }
 
@@ -87,3 +84,11 @@ export function HudView(bindings: HudViewBindings): Container {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const TEXT_COLOR = 0xffffff;
+/** The glyphs at their own size, as an arcade's 8-pixel font: the screen is too narrow for more beside the lives. */
+const TEXT_SCALE = 1;

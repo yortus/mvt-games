@@ -109,6 +109,7 @@ export function GameView(bindings: GameViewBindings): Container {
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     view.addChild(
         OverlayView({
+            font: 'pixel',
             width: SCREEN_WIDTH,
             height: SCREEN_HEIGHT,
             isVisible: () => game.phase === 'round-intro'

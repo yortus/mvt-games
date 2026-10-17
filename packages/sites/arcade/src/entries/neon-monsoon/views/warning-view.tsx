@@ -1,7 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { HUD_FONT, NEON } from './view-constants';
+import { PixelTextView } from '#shared';
+import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,14 +30,12 @@ export function WarningView(bindings: WarningViewBindings): Container {
             alpha={() => 0.55 + 0.45 * Math.cos(bindings.elapsedMs() * PULSE_RATE)}
         >
             <graphics ref={(g) => drawBanner(g, width)} />
-            <text text="WARNING" x={width / 2} y={BANNER_HEIGHT / 2 - 7} anchor={0.5} style={TITLE_STYLE} />
-            <text
-                text="THE STORMCORE APPROACHES"
-                x={width / 2}
-                y={BANNER_HEIGHT / 2 + 9}
-                anchor={0.5}
-                style={SUBTITLE_STYLE}
-            />
+            <container x={width / 2} y={BANNER_HEIGHT / 2 - 7}>
+                <PixelTextView text="WARNING" color={NEON.magenta} scale={2} anchorX={0.5} anchorY={0.5} />
+            </container>
+            <container x={width / 2} y={BANNER_HEIGHT / 2 + 9}>
+                <PixelTextView text="THE STORMCORE APPROACHES" color={SUBTITLE_COLOR} anchorX={0.5} anchorY={0.5} />
+            </container>
         </container>
     );
 }
@@ -48,8 +47,8 @@ export function WarningView(bindings: WarningViewBindings): Container {
 const BANNER_HEIGHT = 44;
 const PULSE_RATE = 0.008;
 
-const TITLE_STYLE = { fontFamily: HUD_FONT, fontSize: 18, fontWeight: 'bold' as const, fill: NEON.magenta, letterSpacing: 4 };
-const SUBTITLE_STYLE = { fontFamily: HUD_FONT, fontSize: 9, fill: 0xffd1e8 };
+/** The line under the title. The title is set in the pixel glyphs at twice their size, the line at their own. */
+const SUBTITLE_COLOR = 0xffd1e8;
 
 function drawBanner(g: Graphics, width: number): void {
     g.rect(0, 0, width, BANNER_HEIGHT).fill({ color: 0x1a0612, alpha: 0.7 });

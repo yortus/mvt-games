@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Container, Text } from 'pixi.js';
+import { type Container, Graphics, Text } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { SheepPhase } from '../models';
 import { SheepView } from './sheep-view';
@@ -27,7 +27,7 @@ function run(view: Container, ms: number): void {
     }
 }
 
-/** The text of every visible text object in the view, if the view itself shows. */
+/** The text of every visible text object in the view, and every visible label, which is how pixel text tells what it spells, if the view itself shows. */
 function listShownTexts(view: Container): string[] {
     const texts: string[] = [];
     walk(view);
@@ -36,6 +36,8 @@ function listShownTexts(view: Container): string[] {
     function walk(node: Container): void {
         if (!node.visible || node.alpha === 0) return;
         if (node instanceof Text) texts.push(node.text);
+        // A Graphics is labelled with its kind, so only other labels are text
+        else if (!(node instanceof Graphics) && typeof node.label === 'string' && node.label !== '') texts.push(node.label);
         for (const child of node.children) walk(child);
     }
 }

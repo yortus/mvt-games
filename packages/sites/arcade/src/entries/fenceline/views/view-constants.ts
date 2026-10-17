@@ -25,9 +25,6 @@ export const FIELD_HEIGHT = FIELD_ROWS * CELL_SIZE;
 export const SCREEN_WIDTH = FIELD_WIDTH + MARGIN * 2;
 export const SCREEN_HEIGHT = HUD_HEIGHT + FIELD_HEIGHT + MARGIN;
 
-/** The font of the HUD and the points. */
-export const HUD_FONT = 'monospace';
-
 // ---------------------------------------------------------------------------
 // Colours
 // ---------------------------------------------------------------------------

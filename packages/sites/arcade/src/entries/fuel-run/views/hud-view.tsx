@@ -3,6 +3,7 @@
 import { type Container, Texture } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
+import { PixelTextView } from '#shared';
 import { textures } from '../data';
 
 // ---------------------------------------------------------------------------
@@ -39,8 +40,12 @@ export function HudView(bindings: HudViewBindings): Container {
 
     return (
         <container>
-            <text text={() => scoreText(bindings.score())} x={8} y={HUD_TEXT_Y} style={SCORE_STYLE} />
-            <text text={getSectionText} x={80} y={HUD_TEXT_Y + 2} style={LABEL_STYLE} />
+            <container x={8} y={GLYPHS_Y}>
+                <PixelTextView text={() => scoreText(bindings.score())} color={SCORE_COLOR} />
+            </container>
+            <container x={80} y={GLYPHS_Y}>
+                <PixelTextView text={getSectionText} color={LABEL_COLOR} />
+            </container>
 
             <container x={screenWidth / 2 - 30} y={HUD_TEXT_Y}>
                 <List items={{ length: bindings.lives, at: (i) => i }}>
@@ -48,7 +53,9 @@ export function HudView(bindings: HudViewBindings): Container {
                 </List>
             </container>
 
-            <text text="FUEL" x={fuelBarX - 36} y={HUD_TEXT_Y + 1} style={LABEL_STYLE} />
+            <container x={fuelBarX - 6} y={GLYPHS_Y}>
+                <PixelTextView text="FUEL" color={LABEL_COLOR} anchorX={1} />
+            </container>
             <container x={fuelBarX} y={HUD_TEXT_Y + 2}>
                 <graphics ref={(g) => g.rect(0, 0, FUEL_BAR_WIDTH, FUEL_BAR_HEIGHT).fill(0x333333)} />
                 <sprite
@@ -82,9 +89,11 @@ const FUEL_BAR_WIDTH = 80;
 const FUEL_BAR_HEIGHT = 10;
 const FUEL_BAR_X_OFFSET = 8;
 const HUD_TEXT_Y = 5;
+/** The text, in the pixel glyphs at their own size, level with the middle of the fuel bar. */
+const GLYPHS_Y = HUD_TEXT_Y + 3;
 
-const SCORE_STYLE = { fontFamily: 'monospace', fontSize: 12, fill: 0xffffff };
-const LABEL_STYLE = { fontFamily: 'monospace', fontSize: 10, fill: 0xaaaaaa };
+const SCORE_COLOR = 0xffffff;
+const LABEL_COLOR = 0xaaaaaa;
 
 /** Green above half, yellow above a quarter, red below. */
 function pickFuelColor(fuel: number): number {

@@ -230,6 +230,7 @@ export function GameView(bindings: GameViewBindings): Container {
             />
             <WarningView elapsedMs={() => model.warningElapsedMs} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} />
             <OverlayView
+                font="pixel"
                 width={SCREEN_WIDTH}
                 height={SCREEN_HEIGHT}
                 isVisible={() => model.phase === 'tally' || model.phase === 'game-over' || model.phase === 'all-clear'}

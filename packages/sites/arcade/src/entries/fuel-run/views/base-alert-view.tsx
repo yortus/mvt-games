@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
+import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,13 +30,9 @@ export function BaseAlertView(bindings: BaseAlertViewBindings): Container {
             alpha={() => (Math.sin(flashMs * 0.008) + 1) * 0.5}
             onUpdate={(deltaMs) => { flashMs += deltaMs; }}
         >
-            <text
-                text="DESTROY THE BASE!"
-                anchor={0.5}
-                x={bindings.screenWidth / 2}
-                y={bindings.screenHeight * 0.2}
-                style={ALERT_STYLE}
-            />
+            <container x={bindings.screenWidth / 2} y={Math.round(bindings.screenHeight * 0.2)}>
+                <PixelTextView text="DESTROY THE BASE!" color={ALERT_COLOR} scale={2} anchorX={0.5} anchorY={0.5} />
+            </container>
         </container>
     );
 }
@@ -44,4 +41,5 @@ export function BaseAlertView(bindings: BaseAlertViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const ALERT_STYLE = { fontFamily: 'monospace', fontSize: 18, fill: 0xff4444, align: 'center' };
+/** Its color. It is set in the pixel glyphs at twice their size. */
+const ALERT_COLOR = 0xff4444;

@@ -7,8 +7,6 @@ import { ARENA_HEIGHT, ARENA_WIDTH } from '../data';
 export const SCREEN_WIDTH = ARENA_WIDTH;
 export const SCREEN_HEIGHT = ARENA_HEIGHT;
 
-export const HUD_FONT = 'monospace';
-
 /**
  * The game's neon: every glowing thing that is not a bullet. All cool
  * colours, cyan to magenta, since the bullets are all warm, red to gold, and

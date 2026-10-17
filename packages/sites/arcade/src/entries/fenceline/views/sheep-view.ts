@@ -1,9 +1,10 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
+import { PixelTextView } from '#shared';
 import type { SheepPhase } from '../models';
 import { drawOutlinedPixels, drawPixels, type PixelRects } from './drawing';
-import { COLOURS, HUD_FONT } from './view-constants';
+import { COLOURS } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -51,7 +52,7 @@ export function SheepView(bindings: SheepViewBindings): Container {
         hearts.push(heart);
         cheer.addChild(heart);
     }
-    const bonus = new Text({ text: `+${penPoints}`, anchor: 0.5, style: BONUS_STYLE });
+    const bonus = PixelTextView({ text: `+${penPoints}`, color: 0xffffff, outline: COLOURS.heartEdge, anchorX: 0.5, anchorY: 0.5 });
     cheer.addChild(bonus);
     const view = new Container();
     view.addChild(sheep, cheer);
@@ -138,14 +139,6 @@ const HEART_MS = 1000;
 const HEART_GAP_MS = 110;
 /** Where each heart rises from, across the sheep, in its pixels. */
 const HEART_XS: readonly number[] = [-4, 3, -1, 5, -6];
-
-const BONUS_STYLE = {
-    fontFamily: HUD_FONT,
-    fontSize: 10,
-    fontWeight: 'bold',
-    fill: 0xffffff,
-    stroke: { color: COLOURS.heartEdge, width: 3 },
-} as const;
 
 /** Full until 60% of the way through, then fading to nothing. */
 function fadeOut(progress: number): number {
