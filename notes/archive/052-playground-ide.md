@@ -16,20 +16,22 @@
 > a package of its own, `packages/sites/playground/`, and the website, which is
 > then the Arcade and nothing else, is renamed `packages/sites/arcade/`.
 
-**Status:** proposed, and spiked (section 16). The spike confirmed the
-runtime, the sandbox and the editor in Chromium, Firefox and WebKit, and
-changed four details: a cheaper loop guard (5.5), gzip for share links
-(7.3), the editor's own glue to the language service (6.2), and a `CORS`
-file for the test deploy (13). The rest of the design stands. Step 2, the
-rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 to 10: the new package is the playground,
-at `/playground/`, with its layout, Problems list, run on change,
-intellisense, the editor's menu and keys, dark and light themes, projects
-kept in the browser, New, Export, a file tree with moves and kept barrels,
-and its help, and the old one is gone. The docs are up to date. Next is
-step 11, the later ideas, each a proposal or task of its own when its
-turn comes, and step 12, the investigation of opening Arcade entries from
-GitHub.
+**Status:** implemented, and archived on 2026-10-17. Steps 1 to 10 are
+done: the playground is a package of its own, at `/playground/`, with its
+layout, Problems list, run on change, intellisense, the editor's menu and
+keys, dark and light themes, projects kept in the browser, New, Export, a
+file tree with moves and kept barrels, and its Help, and the docs are up to
+date. A few things changed after step 10, as listed after the steps
+(section 15, "After step 10"): the old links were dropped, Help's button
+moved to the site's nav, and the run pane gained a Performance tab. What's
+left went into tasks of its own: step 12 is 057, section 10's ideas are 058
+to 061, a check on real phones and in Safari is 062, and two loose ends are
+063 and 064.
+
+The spike (section 16) confirmed the runtime, the sandbox and the editor in
+Chromium, Firefox and WebKit, and changed four details: a cheaper loop
+guard (5.5), gzip for share links (7.3), the editor's own glue to the
+language service (6.2), and a `CORS` file for the test deploy (13).
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -67,7 +69,7 @@ first draft had.
 **Related:**
 [036](../archive/036-website-arcade.md) (the Arcade, and the entry shape a project can be ported to) -
 [045](../archive/045-sound-chip.md) (the Audio80, which a project's views can play) -
-[051](./051-audio90-chip.md) (entries choosing their chip, which a project would follow) -
+[051](../proposals/051-audio90-chip.md) (entries choosing their chip, which a project would follow) -
 [011](../archive/011-multi-package-repo.md) (the workspace of packages that this adds one to) -
 [017](../tasks/backlog/017-misc-loose-ends.md) (old playground links that assign `view.onRefresh`) -
 [047](../tasks/backlog/047-pixel-art-as-multiline-strings.md) (pixel art in code, which suits a playground with no image files) -
@@ -1652,10 +1654,26 @@ Each step ends with the site working and deployable.
    words, and why as well as what, for someone new to the playground. The
    first draft was accurate but stilted ("`start` is given where the views
    go").
-11. **Later.** Each of section 10's ideas, as a proposal or task of its own
+   Some of this changed after the step: Help's ? became an (i) in the
+   site's nav, the old `#preset=` and `#code=` links were dropped (7.4),
+   and with them 017's link conversion. See "After step 10", below.
+11. ~~**Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
-   for an MVT playground, then the port to an Arcade entry (10.2).
-12. **Investigate: open an Arcade entry in the playground, from GitHub.**
+   for an MVT playground, then the port to an Arcade entry (10.2).~~ Moved
+   to tasks on 2026-10-17: swapping views (10.1) is
+   [058](../tasks/backlog/058-swap-views-keep-the-model.md), the port to an
+   Arcade entry (10.2) is
+   [059](../tasks/backlog/059-port-a-project-to-an-arcade-entry.md), the
+   rules as live diagnostics (10.3) are
+   [060](../tasks/backlog/060-architecture-rules-as-live-diagnostics.md),
+   and embeds for the docs (10.4) are
+   [061](../tasks/backlog/061-playground-embeds-for-the-docs.md). Remixing
+   an entry (10.5) became step 12, and is 057.
+12. ~~**Investigate: open an Arcade entry in the playground, from GitHub.**~~
+    Investigated on 2026-10-17, and moved to
+    [057](../tasks/backlog/057-open-arcade-entries-in-the-playground.md),
+    which holds the findings and the owner's open questions. Nothing was
+    built. The step as it was written:
     Added at the owner's request on 2026-10-16, after step 7's playtest.
     It is 10.5's remix, with one constraint: the entry's files are read
     from the repo on GitHub as the visitor opens it, and no copy of them is
@@ -1694,6 +1712,36 @@ Each step ends with the site working and deployable.
     - **Which entries.** Try each entry in the catalogue, and sort them:
       runs as it is, runs with the conversion, needs `#shared` or assets,
       too large.
+
+
+### After step 10
+
+Done on 2026-10-17, after the owner's review of step 10, and before 052
+was archived:
+
+- **Help's libraries** each have a short description, kept beside the
+  list in `libraries/libraries.ts` (`LIBRARY_SUMMARIES`), typed so that a
+  library can't be added without one. Help's export steps were reworded.
+- **`@mvtjs/utils/jsx` was dropped** from what a project can import: no
+  playground project needs to make a JSX runtime. Its types stay in the
+  editor's type bundle, because the JSX runtimes' types import them, and a
+  test checks that each renderer's JSX still reports a wrong attribute.
+- **The old links were dropped** (7.4): `#preset=` and `#code=` links, the
+  move of the old playground's saved project out of `localStorage`, and
+  `lz-string`. The old playground was never publicised.
+- **Help's ? became an (i)** in the site's nav, after the GitHub link,
+  coloured as the GitHub icon is. It opens and closes Help.
+- **A Performance tab** beside Console and Problems. The sandbox measures
+  each frame and sends the page a sample about four times a second. The
+  measuring moved into `@mvtjs/utils` (`createPerformanceMeter`, and
+  `createPerformanceHistory` for samples measured elsewhere), with
+  `@mvtjs/pixi`'s `createPerformanceMetrics` now a thin wrapper and its GPU
+  timer exported as `createGpuTimer`. The panel is `@mvtjs/html`'s new
+  `PerfmonView`, the first view in a library, which fits the space it's
+  given, so it can also float over the Arcade later (task 056).
+- **Notes recorded from this proposal's loose ends:** 055 (rename
+  `@mvtjs/audio` to `@mvtjs/chiptune`, and publish it), 056 (a floating
+  Perfmon in the Arcade), and 057 to 064, listed in the Status above.
 
 ---
 
