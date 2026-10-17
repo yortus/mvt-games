@@ -1,404 +1,349 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio90SoundEffect } from '@mvtjs/audio';
+import { STORM_HIT } from './instruments';
 
-// These are Neon Monsoon's instruments and sound effects, for the Audio80.
-// All were written for this game. The arcades of the 1990s had FM chips and
-// samples, which this chip lacks. So it comes nearer the softer sound of that
-// decade by other means than its square waves. It uses wavetables drawn from
-// FM tones (a sine bent by a second sine, at a low index), saws through a
-// low-pass filter, slow attacks, gentle vibrato, and the echo on almost
-// everything.
-
-// ---------------------------------------------------------------------------
-// Wavetables
-// ---------------------------------------------------------------------------
-
-/** An electric piano's tone: a sine, with a little of its second and third harmonics. */
-const EPIANO_WAVE = '8ACE FFFE DDCB BA98 8765 4432 2100 0135';
-/** A bell: a sine bent at three times its pitch, as a two-operator FM voice would. */
-const BELL_WAVE = '7CEF FEDD DFFD A766 7998 5200 2221 0013';
-/** A plain sine, for soft sweeps and sparkles. */
-const SINE_WAVE = '89AC DEEF FFEE DCA9 8653 2110 0011 2356';
-
-// ---------------------------------------------------------------------------
-// The tunes' instruments
-// ---------------------------------------------------------------------------
-
-/** The lead: a saw through filter `b`, slow to speak, with a delayed vibrato and the echo behind it. */
-export const LEAD = createAudio80Instrument({
-    wave: 'saw',
-    filter: 'b',
-    envelope: { attackMs: 25, decayMs: 400, sustain: 0.7, releaseMs: 220 },
-    vibrato: { semitones: 0.18, hz: 5.5, delayMs: 220 },
-    echo: 0.4,
-    volume: 0.55,
-});
-
-/** The bell, which plays the chords as arpeggios. It gives the music the decade's shimmer. */
-export const BELLS = createAudio80Instrument({
-    wave: 'wavetable',
-    wavetable: BELL_WAVE,
-    envelope: { attackMs: 2, decayMs: 380, sustain: 0.25, releaseMs: 200 },
-    stepMs: 50,
-    echo: 0.5,
-    volume: 0.45,
-});
-
-/** Long notes on the electric piano, for the slower tunes. */
-export const EPIANO = createAudio80Instrument({
-    wave: 'wavetable',
-    wavetable: EPIANO_WAVE,
-    envelope: { attackMs: 3, decayMs: 900, sustain: 0.35, releaseMs: 400 },
-    vibrato: { semitones: 0.08, hz: 4.5, delayMs: 300 },
-    echo: 0.45,
-    volume: 0.7,
-});
-
-/** The bass: a saw through filter `a`, the filter closing on each note. */
-export const BASS = createAudio80Instrument({
-    wave: 'saw',
-    filter: 'a',
-    filterSweep: { fromHz: 1600, toHz: 260, ms: 180 },
-    envelope: { attackMs: 2, decayMs: 220, sustain: 0.45, releaseMs: 60 },
-    volume: 0.8,
-});
-
-/** A kick: a triangle dropping fast. */
-export const KICK = createAudio80Instrument({
-    note: 'C-2',
-    stepMs: 12,
-    envelope: { attackMs: 0, decayMs: 190, sustain: 0, releaseMs: 0 },
-    steps: `
-        # wave     pitch
-        triangle   +24
-        triangle   +14
-        triangle   +7
-        triangle   +3
-        triangle   +0
-        triangle   -3
-    `,
-});
-
-/** A snare: a crack of noise over a short, low body. */
-export const SNARE = createAudio80Instrument({
-    note: 'D-5',
-    stepMs: 20,
-    envelope: { attackMs: 0, decayMs: 170, sustain: 0, releaseMs: 0 },
-    echo: 0.15,
-    volume: 0.6,
-    steps: `
-        # wave     pitch   vol
-        noise      +0      vF
-        triangle   -24     vC
-        noise      +0      vB
-    `,
-});
-
-/** A closed hat: a tick of high noise. */
-export const HAT = createAudio80Instrument({
-    wave: 'noise',
-    note: 'C-7',
-    envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 },
-    volume: 0.22,
-});
+// These are Neon Monsoon's sound effects, for the Audio90. All were written
+// for this game. Each plays where it happens: the game's audio view pans it
+// by its place across the arena when it plays. So the sounds are mono, and
+// the echo and the reverb give them room. The explosions are white noise
+// alone, through a gentle filter that falls from bright, with no resonance
+// to give them a pitch, the bigger ones rumbling roughly down. Each effect's
+// volume sets its loudness against the music's, the guns' and the grazes'
+// quiet, as they repeat, the explosions' and the pickups' loud.
 
 // ---------------------------------------------------------------------------
 // The ship
 // ---------------------------------------------------------------------------
 
-/** The guns' soft, short blip, quiet under everything else. It plays at half the rate of the volleys while the ship flies. */
-export const SHOT = createAudio80SoundEffect({
-    note: 'A-5',
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 25 },
-    priority: 0,
-    volume: 0.42,
-    steps: `
-        # wave   pitch  vol  width
-        pulse    +12    vC   p3
-        pulse    +5     v9
-        pulse    +0     v6
-        pulse    -4     v3
-    `,
-});
-
-/** The guns, focused: lower and narrower, a tick more than a blip. */
-export const FOCUSED_SHOT = createAudio80SoundEffect({
+/** The guns' soft tick, dark and quiet under everything else. It plays at half the rate of the volleys while the ship flies. */
+export const SHOT = createAudio90SoundEffect({
+    oscillator: { wave: 'triangle' },
+    filter: { mode: 'lowpass12', cutoffHz: 1400 },
+    envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 15 },
     note: 'E-5',
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 25 },
+    glideTo: 'B-4',
+    lengthMs: 40,
     priority: 0,
-    volume: 0.42,
-    steps: `
-        pulse    +7     vC   p2
-        pulse    +0     v8
-        pulse    -5     v4
-    `,
+    volume: 1.32,
 });
 
-/** Slowing to focus: a soft sine, falling. */
-export const FOCUS = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'wavetable',
-        wavetable: SINE_WAVE,
-        envelope: { attackMs: 5, decayMs: 0, sustain: 1, releaseMs: 60 },
-    }),
+/** The guns, focused: lower and shorter, a tick more than a blip. */
+export const FOCUSED_SHOT = createAudio90SoundEffect({
+    oscillator: { wave: 'triangle' },
+    filter: { mode: 'lowpass12', cutoffHz: 1100 },
+    envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 15 },
+    note: 'B-4',
+    glideTo: 'F#4',
+    lengthMs: 30,
+    priority: 0,
+    volume: 1.36,
+});
+
+/** Slowing to focus: a soft sine, falling an octave. */
+export const FOCUS = createAudio90SoundEffect({
+    oscillator: { wave: 'sine' },
+    envelope: { attackMs: 5, decayMs: 0, sustain: 1, releaseMs: 60 },
     note: 'E-5',
     glideTo: 'E-4',
     lengthMs: 90,
     priority: 1,
-    volume: 0.5,
+    volume: 1.03,
 });
 
 /** A bullet grazed: a tiny, high bell. */
-export const GRAZE = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'wavetable',
-        wavetable: BELL_WAVE,
-        envelope: { attackMs: 0, decayMs: 60, sustain: 0, releaseMs: 0 },
-    }),
+export const GRAZE = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 0, decayMs: 80, sustain: 0, releaseMs: 30 } },
+        { ratio: 3.5, level: 0.8, envelope: { attackMs: 0, decayMs: 40, sustain: 0, releaseMs: 20 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 30 },
     note: 'E-7',
     lengthMs: 60,
     priority: 0,
-    volume: 0.45,
+    volume: 1.13,
+    reverb: 0.2,
 });
 
-/** The ship hit: a long, falling crash, ringing in the echo. */
-export const SHIP_EXPLODE = createAudio80SoundEffect({
-    note: 'C-4',
-    stepMs: 60,
+/** The ship hit: a long roar of white noise, falling darker, rumbling roughly down, ringing in the echo. */
+export const SHIP_EXPLODE = createAudio90SoundEffect({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'lowpass12', cutoffHz: 900, envelope: { octaves: 3, decayMs: 1100, releaseMs: 500 } },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 500 },
-    echo: 0.5,
-    priority: 3,
+    stepMs: 65,
     steps: `
-        noise      +19   vF
-        saw        +12   vE
-        noise      +12   vE
-        noise      +7    vD
-        noise      +3    vB
-        noise      +0    v9
-        noise      -3    v7
-        noise      -6    v5
-        noise      -9    v3
+        vF
+        vE
+        vF
+        vD
+        vC
+        vD
+        vB
+        vA
+        vB
+        v9
+        v8
+        v7
+        v6
+        v5
+        v4
+        v3
+        v2
+        v1
     `,
+    priority: 3,
+    volume: 5.89,
+    echo: 0.3,
+    reverb: 0.4,
 });
 
-/** The ship coming back: a sine rising, with a shimmer. */
-export const RESPAWN = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'wavetable',
-        wavetable: SINE_WAVE,
-        envelope: { attackMs: 60, decayMs: 0, sustain: 1, releaseMs: 300 },
-        vibrato: { semitones: 0.25, hz: 9 },
-        echo: 0.5,
-    }),
+/** The ship coming back: a sine rising two octaves, with a shimmer. */
+export const RESPAWN = createAudio90SoundEffect({
+    oscillator: { wave: 'sine' },
+    envelope: { attackMs: 60, decayMs: 0, sustain: 1, releaseMs: 300 },
+    vibrato: { semitones: 0.25, hz: 9 },
     note: 'D-4',
     glideTo: 'D-6',
     lengthMs: 600,
     priority: 3,
-    volume: 0.8,
+    volume: 1.16,
+    echo: 0.4,
 });
 
-/** A bomb: a rush of noise swelling and dying, over a low sine falling away. */
-export const BOMB = createAudio80SoundEffect({
-    note: 'C-4',
-    stepMs: 80,
-    envelope: { attackMs: 20, decayMs: 0, sustain: 1, releaseMs: 600 },
-    echo: 0.4,
+/** A bomb: a rush of white noise swelling as its filter opens, then rumbling away as it closes. */
+export const BOMB = createAudio90SoundEffect({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'lowpass12', cutoffHz: 700, envelope: { octaves: 3.5, attackMs: 250, decayMs: 1100, releaseMs: 500 } },
+    envelope: { attackMs: 60, decayMs: 1800, sustain: 0, releaseMs: 500 },
+    lengthMs: 1200,
     priority: 3,
-    steps: `
-        noise      +12   v8
-        noise      +16   vC
-        noise      +19   vF
-        noise      +14   vF
-        noise      +10   vE
-        noise      +6    vC
-        noise      +3    vA
-        noise      +0    v8
-        noise      -3    v6
-        noise      -6    v4
-    `,
+    volume: 6.31,
+    reverb: 0.5,
 });
 
 // ---------------------------------------------------------------------------
 // Pickups
 // ---------------------------------------------------------------------------
 
-/** A power-up: the electric piano, up a major chord and on. */
-export const POWER_UP = createAudio80SoundEffect({
+/** A power-up: an electric piano, up a major chord and on. */
+export const POWER_UP = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 1, decayMs: 600, sustain: 0.3, releaseMs: 200 } },
+        { level: 0.5, envelope: { attackMs: 0, decayMs: 300, sustain: 0.1, releaseMs: 100 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
     note: 'C-5',
     stepMs: 45,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
-    echo: 0.4,
-    priority: 2,
-    volume: 0.7,
-    wave: 'wavetable',
-    wavetable: EPIANO_WAVE,
     steps: `
-        wavetable  +0
-        wavetable  +4
-        wavetable  +7
-        wavetable  +12
-        wavetable  +16
+        +0
+        +4
+        +7
+        +12
+        +16
     `,
+    priority: 2,
+    volume: 2.54,
+    echo: 0.35,
 });
 
 /** A bomb picked up: the same, lower, on a fourth. */
-export const BOMB_PICKUP = createAudio80SoundEffect({
+export const BOMB_PICKUP = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 1, decayMs: 600, sustain: 0.3, releaseMs: 200 } },
+        { level: 0.5, envelope: { attackMs: 0, decayMs: 300, sustain: 0.1, releaseMs: 100 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
     note: 'G-4',
     stepMs: 45,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
-    echo: 0.4,
-    priority: 2,
-    volume: 0.7,
-    wave: 'wavetable',
-    wavetable: EPIANO_WAVE,
     steps: `
-        wavetable  +0
-        wavetable  +5
-        wavetable  +7
-        wavetable  +12
+        +0
+        +5
+        +7
+        +12
     `,
+    priority: 2,
+    volume: 2.49,
+    echo: 0.35,
 });
 
-/** A gem collected: a quick sparkle on the sine, a fifth up. */
-export const GEM = createAudio80SoundEffect({
+/** A gem collected: a quick sparkle on a sine, a fifth up. */
+export const GEM = createAudio90SoundEffect({
+    oscillator: { wave: 'sine' },
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 70 },
     note: 'B-6',
     stepMs: 25,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 70 },
+    steps: `
+        +0
+        +7
+    `,
     priority: 0,
     maxVoices: 2,
-    volume: 0.42,
-    wave: 'wavetable',
-    wavetable: SINE_WAVE,
-    steps: `
-        wavetable  +0
-        wavetable  +7
-    `,
+    volume: 0.79,
 });
 
 /** An extra life: bells, up two octaves, ringing on. */
-export const EXTEND = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'wavetable',
-        wavetable: BELL_WAVE,
-        envelope: { attackMs: 0, decayMs: 900, sustain: 0, releaseMs: 300 },
-        arpeggio: [0, 7, 12, 16, 19, 24],
-        stepMs: 60,
-        echo: 0.5,
-    }),
+export const EXTEND = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 0, decayMs: 900, sustain: 0, releaseMs: 300 } },
+        { ratio: 3.5, level: 1, envelope: { attackMs: 0, decayMs: 500, sustain: 0, releaseMs: 200 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 300 },
+    arpeggio: [0, 7, 12, 16, 19, 24],
+    stepMs: 60,
     note: 'D-5',
     lengthMs: 700,
     priority: 3,
-    volume: 0.8,
+    volume: 2.34,
+    echo: 0.4,
+    reverb: 0.3,
 });
 
 // ---------------------------------------------------------------------------
 // Explosions
 // ---------------------------------------------------------------------------
 
-/** A small craft destroyed: a short burst of noise, falling. */
-export const EXPLODE_SMALL = createAudio80SoundEffect({
-    note: 'C-4',
-    stepMs: 30,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },
-    echo: 0.2,
+/**
+ * A small craft destroyed, the commonest sound in the game: a soft hiss of
+ * white noise, its lowest frequencies cut so it does not thud, fading in
+ * over a few milliseconds rather than struck, and kept quiet under the rest.
+ */
+export const EXPLODE_SMALL = createAudio90SoundEffect({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'highpass', cutoffHz: 700 },
+    envelope: { attackMs: 8, decayMs: 320, sustain: 0, releaseMs: 80 },
+    lengthMs: 250,
     priority: 1,
     maxVoices: 2,
-    volume: 0.7,
-    steps: `
-        noise   +17   vF
-        noise   +12   vD
-        noise   +8    vA
-        noise   +5    v7
-        noise   +2    v4
-    `,
+    volume: 0.68,
+    reverb: 0.1,
 });
 
-/** A barge destroyed: deeper and longer, with a thump. */
-export const EXPLODE_LARGE = createAudio80SoundEffect({
-    note: 'C-3',
-    stepMs: 45,
+/** A barge destroyed: a longer burst of white noise, rumbling roughly down as it darkens. */
+export const EXPLODE_LARGE = createAudio90SoundEffect({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'lowpass12', cutoffHz: 1200, envelope: { octaves: 2.5, decayMs: 600, releaseMs: 250 } },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 250 },
-    echo: 0.3,
+    stepMs: 45,
+    steps: `
+        vF
+        vD
+        vE
+        vB
+        vC
+        v9
+        vA
+        v7
+        v8
+        v5
+        v6
+        v4
+        v3
+        v2
+        v1
+    `,
     priority: 2,
     maxVoices: 2,
-    steps: `
-        noise      +19   vF
-        triangle   +0    vF
-        noise      +12   vE
-        noise      +8    vC
-        noise      +5    vA
-        noise      +2    v7
-        noise      +0    v4
-    `,
+    volume: 5.89,
+    reverb: 0.25,
 });
 
-/** A gunship, or the boss, destroyed: a long roar, sinking, ringing out. */
-export const EXPLODE_HUGE = createAudio80SoundEffect({
-    note: 'C-3',
+/** A gunship, or the boss, destroyed: a long roar of white noise, rumbling roughly down, ringing out. */
+export const EXPLODE_HUGE = createAudio90SoundEffect({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'lowpass12', cutoffHz: 800, envelope: { octaves: 3, decayMs: 1200, releaseMs: 500 } },
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 500 },
     stepMs: 70,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 700 },
-    echo: 0.55,
-    priority: 3,
     steps: `
-        noise      +19   vF
-        triangle   +0    vF
-        noise      +14   vF
-        noise      +10   vE
-        noise      +7    vD
-        noise      +4    vB
-        noise      +2    v9
-        noise      +0    v7
-        noise      -2    v5
-        noise      -4    v3
+        vF
+        vE
+        vF
+        vD
+        vE
+        vC
+        vD
+        vB
+        vC
+        vA
+        vB
+        v9
+        v8
+        v9
+        v7
+        v6
+        v5
+        v4
+        v3
+        v2
+        v1
     `,
+    priority: 3,
+    volume: 5.89,
+    echo: 0.2,
+    reverb: 0.45,
 });
 
 // ---------------------------------------------------------------------------
 // The boss
 // ---------------------------------------------------------------------------
 
-/** The boss's warning, which sounds again and again while it shows. It is a saw that swells up an octave, through the echo. */
-export const WARNING = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'saw',
-        envelope: { attackMs: 120, decayMs: 0, sustain: 1, releaseMs: 200 },
-        echo: 0.4,
-    }),
+/** The boss's warning, which sounds again and again while it shows: the orchestra hit, in the reverb. */
+export const WARNING = createAudio90SoundEffect({
+    instrument: STORM_HIT,
     note: 'A-3',
-    glideTo: 'A-4',
-    lengthMs: 550,
+    lengthMs: 600,
     priority: 3,
-    volume: 0.55,
+    volume: 7.85,
+    reverb: 0.4,
 });
 
 /** The boss taking hits. It is a quiet metal tick, played again and again while the shots land. */
-export const BOSS_HIT = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'noise',
-        envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 0 },
-    }),
-    note: 'A-6',
+export const BOSS_HIT = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 0, decayMs: 40, sustain: 0, releaseMs: 10 } },
+        { ratio: 7.5, level: 2, envelope: { attackMs: 0, decayMs: 25, sustain: 0, releaseMs: 10 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 },
+    note: 'A-5',
     lengthMs: 35,
     priority: 0,
-    volume: 0.4,
+    volume: 1.34,
 });
 
-/** One of the boss's attacks ending, broken or timed out. Bells tumble down over a crash. */
-export const ATTACK_BROKEN = createAudio80SoundEffect({
+/** One of the boss's attacks ending, broken or timed out: bells tumbling down, in the echo. */
+export const ATTACK_BROKEN = createAudio90SoundEffect({
+    engine: 'fm',
+    algorithm: '2>1',
+    operators: [
+        { envelope: { attackMs: 0, decayMs: 600, sustain: 0, releaseMs: 300 } },
+        { ratio: 3.5, level: 1.1, envelope: { attackMs: 0, decayMs: 300, sustain: 0, releaseMs: 200 } },
+    ],
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 400 },
     note: 'E-6',
     stepMs: 50,
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 400 },
-    echo: 0.55,
-    priority: 3,
-    volume: 0.8,
-    wavetable: BELL_WAVE,
     steps: `
-        noise      +12   vF
-        wavetable  +0    vE
-        wavetable  -5    vD
-        wavetable  -8    vC
-        wavetable  -12   vB
-        wavetable  -17   v9
-        wavetable  -20   v7
-        wavetable  -24   v5
+        +0
+        -5
+        -8
+        -12
+        -17
+        -20
+        -24
     `,
+    priority: 3,
+    volume: 2.79,
+    echo: 0.45,
+    reverb: 0.3,
 });

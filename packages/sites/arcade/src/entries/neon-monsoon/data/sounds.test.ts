@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from '@mvtjs/audio/headless';
+import { AUDIO90_VOICE_COUNT, prepareAudio90Samples } from '@mvtjs/audio';
+import { findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong, renderSoundEffect } from '@mvtjs/audio/headless';
+import { SAMPLES } from './instruments';
 import * as music from './music';
 import * as sounds from './sounds';
 
@@ -11,8 +13,10 @@ import * as sounds from './sounds';
 // `vitest -u`.
 
 const { songs, effects } = findSounds({ ...sounds, ...music });
+// The orchestra hit is bounced as the game loads, so it is bounced before the sounds are rendered
+prepareAudio90Samples(SAMPLES);
 
-describe('neon monsoon sounds', () => {
+describe('neon monsoon sounds', { timeout: 30_000 }, () => {
     it('has effects and songs to test', () => {
         expect(effects.length).toBeGreaterThan(0);
         expect(songs.length).toBeGreaterThan(0);
@@ -37,9 +41,8 @@ describe('neon monsoon sounds', () => {
         });
     }
 
-    it('leaves the effects four voices', () => {
-        const { voiceCount } = createHeadlessAudio80().audio80;
-        for (const [, song] of songs) expect(voiceCount - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
+    it('leaves the effects eight voices', () => {
+        for (const [, song] of songs) expect(AUDIO90_VOICE_COUNT - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
     });
 });
 
@@ -48,13 +51,15 @@ describe('neon monsoon sounds', () => {
 // ---------------------------------------------------------------------------
 
 /** How many of the chip's voices the music must leave free for the sound effects. */
-const EFFECT_VOICES = 4;
+const EFFECT_VOICES = 8;
 /** Quieter than this, a sound is lost under the music. */
 const AUDIBLE = 0.08;
 /**
  * The peak at which a sound counts as clipped. The output rounds off loud
  * levels, so a peak never reaches 1, and a peak above this one has been
  * rounded off hard. This is a limit to stay under, not a peak to aim for.
- * An effect should peak at about 0.08 to 0.3.
+ * An effect's level is set by its loudness, not its peak: a burst of noise,
+ * such as an explosion, peaks far above its loudness, so it may peak at 0.7
+ * where a tone as loud peaks at 0.3.
  */
 const CLIPPING = 0.9;

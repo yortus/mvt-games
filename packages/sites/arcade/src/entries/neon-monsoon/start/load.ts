@@ -1,5 +1,6 @@
+import { prepareAudio90Samples } from '@mvtjs/audio';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
-import { BOSS_ATTACKS, STAGE_EVENTS, textures } from '../data';
+import { BOSS_ATTACKS, SAMPLES, STAGE_EVENTS, textures } from '../data';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
@@ -7,13 +8,14 @@ import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Loads Neon Monsoon's textures, and returns how to start it. */
+/** Loads Neon Monsoon's textures, bounces its samples, and returns how to start it. It plays on the Audio90. */
 export const load = definePixiLoader(async () => {
     await textures.load();
+    prepareAudio90Samples(SAMPLES);
 
     return {
         kind: 'pixi',
-        soundChip: 'audio80',
+        soundChip: 'audio90',
         pixelArt: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,

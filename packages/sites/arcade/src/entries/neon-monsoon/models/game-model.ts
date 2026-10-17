@@ -103,6 +103,8 @@ export interface GameModel {
     readonly explosionsStarted: number;
     /** The size of the explosion started last, or `undefined` before the first in a game. */
     readonly lastExplosionSize: ExplosionSize | undefined;
+    /** Where across the arena the explosion started last is, from 0 to `ARENA_WIDTH`. In the middle before the first in a game. */
+    readonly lastExplosionX: number;
     /** Items picked up this game. Each rise is one or more pickups. */
     readonly itemsCollected: number;
     /** The kind of item picked up last, or `undefined` before the first in a game. */
@@ -212,6 +214,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let stepCount = 0;
     let explosionsStarted = 0;
     let lastExplosionSize: ExplosionSize | undefined;
+    let lastExplosionX = ARENA_WIDTH / 2;
     let itemsCollected = 0;
     let lastItemKind: ItemKind | undefined;
     let gemsCollected = 0;
@@ -269,6 +272,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get lastExplosionSize() {
             return lastExplosionSize;
         },
+        get lastExplosionX() {
+            return lastExplosionX;
+        },
         get itemsCollected() {
             return itemsCollected;
         },
@@ -300,6 +306,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             stepCount = 0;
             explosionsStarted = 0;
             lastExplosionSize = undefined;
+            lastExplosionX = ARENA_WIDTH / 2;
             itemsCollected = 0;
             lastItemKind = undefined;
             gemsCollected = 0;
@@ -648,6 +655,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     function explode(x: number, y: number, size: ExplosionSize): void {
         explosionsStarted++;
         lastExplosionSize = size;
+        lastExplosionX = x;
         if (!explosions.isFull) explosions.insert(createExplosionModel({ size, x, y }));
     }
 

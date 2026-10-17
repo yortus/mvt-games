@@ -3,9 +3,9 @@
 import { type Container, Graphics } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio90 } from '@mvtjs/audio';
 import { isTouchDevice, OverlayView } from '#shared';
-import { textures } from '../data';
+import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { BombFlashView } from './bomb-flash-view';
 import { BossHealthView } from './boss-health-view';
@@ -31,7 +31,7 @@ import { WarningView } from './warning-view';
 export interface GameViewBindings {
     model: GameModel;
     /** The chip the game's sound plays on. It is the view's output, not model state, so the view reads it once. */
-    sound: Audio80;
+    sound: Audio90;
     /**
      * The best score in the Arcade's table for the game, from everyone who
      * has played it. The HUD's "HI" shows it, or this session's best if that
@@ -80,6 +80,10 @@ export function GameView(bindings: GameViewBindings): Container {
                 itemsCollected={() => model.itemsCollected}
                 lastItemKind={() => model.lastItemKind}
                 gemsCollected={() => model.gemsCollected}
+                shipX={() => ship.x}
+                bossX={() => boss.x}
+                lastExplosionX={() => model.lastExplosionX}
+                arenaWidth={ARENA_WIDTH}
             />
             {/* The arena, clipped to the screen and shaken by bombs and the boss's death */}
             <container mask={arenaMask}>

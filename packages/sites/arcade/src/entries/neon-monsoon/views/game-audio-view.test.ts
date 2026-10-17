@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80Song } from '@mvtjs/audio';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { type Audio90Song, createMusicPlayer } from '@mvtjs/audio';
+import { type Audio90Write, createHeadlessAudio90 } from '@mvtjs/audio/headless';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
@@ -206,6 +206,22 @@ describe('GameAudioView', () => {
         expect(listWrites(chip.log, 'reserve-voices')).toEqual([expect.objectContaining({ count: 0 })]);
     });
 
+    it('plays each sound where it happens: the ship\'s where the ship is, the boss\'s where the boss is, and each explosion where it went off', () => {
+        const { chip, state, tick } = setUp({ shipX: 0, bossX: ARENA / 2, lastExplosionX: ARENA });
+        state.grazes++;
+        state.lastExplosionSize = 'small';
+        state.explosionsStarted++;
+        state.bossPhase = 'breaking';
+        state.isBombing = true;
+        tick();
+        const panOf = (effect: Play['effect']) => listPlays(chip.log, effect)[0]?.pan;
+        expect(panOf(GRAZE)).toBeLessThan(-0.5);
+        expect(panOf(EXPLODE_SMALL)).toBeGreaterThan(0.5);
+        expect(panOf(ATTACK_BROKEN)).toBeCloseTo(0, 9);
+        // A bomb fills the screen, so it plays in the middle
+        expect(panOf(BOMB)).toBeUndefined();
+    });
+
     it('plays nothing for the counts\' starting values', () => {
         const { chip } = setUp({ grazes: 40, explosionsStarted: 12, itemsCollected: 3, gemsCollected: 90, extendsEarned: 1 });
         expect(listWrites(chip.log, 'play')).toHaveLength(0);
@@ -216,8 +232,11 @@ describe('GameAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<Audio80Write, { kind: 'play' }>;
-type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
+type Play = Extract<Audio90Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio90Write, { kind: 'note-on' }>;
+
+/** The arena's width, which the places across it are measured in. */
+const ARENA = 240;
 
 interface State {
     phase: GamePhase;
@@ -234,6 +253,9 @@ interface State {
     itemsCollected: number;
     lastItemKind: ItemKind | undefined;
     gemsCollected: number;
+    shipX: number;
+    bossX: number;
+    lastExplosionX: number;
 }
 
 /**
@@ -245,9 +267,10 @@ function setUp(initial: Partial<State> = {}) {
     const state: State = {
         phase: 'playing', extendsEarned: 0, isBombing: false, warningElapsedMs: -1, bossPhase: 'absent',
         bossMsSinceHit: Infinity, isFiring: false, isFocused: false, grazes: 0, explosionsStarted: 0,
-        lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0, ...initial,
+        lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0,
+        shipX: ARENA / 2, bossX: ARENA / 2, lastExplosionX: ARENA / 2, ...initial,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -264,6 +287,10 @@ function setUp(initial: Partial<State> = {}) {
         itemsCollected: () => state.itemsCollected,
         lastItemKind: () => state.lastItemKind,
         gemsCollected: () => state.gemsCollected,
+        shipX: () => state.shipX,
+        bossX: () => state.bossX,
+        lastExplosionX: () => state.lastExplosionX,
+        arenaWidth: ARENA,
     });
     // One tick as the Arcade runs it: the chip's clock, then the view's update and refresh
     const tick = (): void => {
@@ -293,11 +320,11 @@ function runWarning(state: State, tick: () => void, totalMs: number): void {
     }
 }
 
-function listWrites<K extends Audio80Write['kind']>(log: readonly Audio80Write[], kind: K): Extract<Audio80Write, { kind: K }>[] {
-    return log.filter((write): write is Extract<Audio80Write, { kind: K }> => write.kind === kind);
+function listWrites<K extends Audio90Write['kind']>(log: readonly Audio90Write[], kind: K): Extract<Audio90Write, { kind: K }>[] {
+    return log.filter((write): write is Extract<Audio90Write, { kind: K }> => write.kind === kind);
 }
 
-function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
+function listPlays(log: readonly Audio90Write[], effect: Play['effect']): Play[] {
     return listWrites(log, 'play').filter((write) => write.effect === effect);
 }
 
@@ -308,7 +335,7 @@ function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[]
  * time is in ms from the song's first note-on, to three decimal places. So the
  * notes of one song match even when it started at different chip times.
  */
-function describeSongNotes(log: readonly Audio80Write[]): string[] {
+function describeSongNotes(log: readonly Audio90Write[]): string[] {
     let start = 0;
     for (let i = 0; i < log.length; i++) {
         const write = log[i];
@@ -324,9 +351,9 @@ function describeSongNotes(log: readonly Audio80Write[]): string[] {
  * one it starts in, and describes the notes it plays. This is what the view
  * should play over the same ticks.
  */
-function recordSong(song: Audio80Song): string[] {
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
+function recordSong(song: Audio90Song): string[] {
+    const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+    const player = createMusicPlayer({ audio90: chip });
     player.play(song);
     player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
